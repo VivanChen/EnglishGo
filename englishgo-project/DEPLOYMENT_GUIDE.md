@@ -114,20 +114,39 @@ VITE_SUPABASE_ANON_KEY=eyJhbGci...（你的 anon key）
 
 ### 3-3. 建立資料表
 
-1. 在 Supabase Dashboard 左側選 **SQL Editor**
-2. 點 **New query**
-3. 打開專案包裡的 `supabase/schema.sql`，複製全部內容貼上
-4. 點 **Run** 執行
+在 Supabase Dashboard 左側選 **SQL Editor**，需要執行 **三次** SQL：
 
-這會建立以下資料表：
-- `profiles` — 使用者資料
-- `vocabulary` — 自訂單字庫
-- `flashcard_progress` — SRS 學習進度
-- `quiz_history` — 測驗紀錄
-- `daily_goals` — 每日學習目標
-- `ai_chat_history` — AI 對話紀錄
+**第一次：建立使用者相關表格**
+1. 點 **New query**
+2. 打開 `supabase/schema.sql`，複製貼上
+3. 點 **Run**
 
-同時也會設定 Row Level Security (RLS)，確保每個使用者只能存取自己的資料。
+這會建立：profiles, vocabulary, flashcard_progress, quiz_history, daily_goals, ai_chat_history
+
+**第二次：建立單字庫表格**
+1. 再點 **New query**
+2. 打開 `supabase/word_bank_schema.sql`，複製貼上
+3. 點 **Run**
+
+這會建立 `word_bank` 表格，用來存放所有等級的單字。
+
+**第三次：匯入 300 個精選單字**
+1. 再點 **New query**
+2. 打開 `supabase/seed_vocabulary.sql`，複製貼上
+3. 點 **Run**（這個檔案比較大，需等幾秒）
+
+匯入完成後可以驗證：
+```sql
+SELECT level, COUNT(*) FROM word_bank GROUP BY level;
+-- 應顯示：elementary 100, junior 100, senior 100
+```
+
+**之後擴充到 7000 字的方法：**
+- 方法 A：用 NotebookLM 生成更多單字 CSV，在 Supabase Dashboard > Table Editor > word_bank > Import 匯入
+- 方法 B：手動複製大考中心的詞彙表，整理成 CSV 格式匯入
+- CSV 欄位格式：`word,pos,meaning,level,ceec_level,example,example_zh,category,phonetic`
+
+同時也設定了 Row Level Security (RLS)，word_bank 所有人可讀，只有管理者可寫。
 
 ### 3-4. 設定 Auth（登入方式）
 
@@ -312,12 +331,16 @@ englishgo-project/
 │   └── favicon.svg             # 網站圖標
 ├── src/
 │   ├── main.jsx                # React 進入點
-│   └── App.jsx                 # 主應用程式（所有功能）
+│   ├── App.jsx                 # 主應用程式（所有功能）
+│   └── lib/
+│       └── supabase.js         # Supabase 客戶端 + 查詢函式
 └── supabase/
-    ├── schema.sql              # 資料庫建表 SQL
+    ├── schema.sql              # 使用者相關資料表 SQL
+    ├── word_bank_schema.sql    # 單字庫資料表 SQL
+    ├── seed_vocabulary.sql     # 300 精選單字種子資料
     └── functions/
         └── gemini-proxy/
-            └── index.ts        # Gemini API 代理 Edge Function
+            └── index.ts        # Gemini API 安全代理
 ```
 
 ### 各檔案用途
@@ -325,8 +348,11 @@ englishgo-project/
 | 檔案 | 用途 |
 |------|------|
 | `src/App.jsx` | 整個 App 的核心，包含所有頁面和功能 |
-| `supabase/schema.sql` | 在 Supabase SQL Editor 執行一次即可 |
-| `supabase/functions/gemini-proxy/index.ts` | 部署到 Supabase 做 API 代理 |
+| `src/lib/supabase.js` | Supabase 連線 + 單字庫查詢函式 |
+| `supabase/schema.sql` | 使用者相關資料表（profiles, quiz_history 等） |
+| `supabase/word_bank_schema.sql` | 單字庫資料表結構 |
+| `supabase/seed_vocabulary.sql` | 300 精選單字種子資料（每級 100 字） |
+| `supabase/functions/gemini-proxy/index.ts` | 部署到 Supabase 做 Gemini API 代理 |
 | `netlify.toml` | 告訴 Netlify 如何建置和處理路由 |
 | `.env` | 本地開發的環境變數（不會上傳到 GitHub） |
 
@@ -373,7 +399,9 @@ npm install
 - [ ] 註冊 GitHub、Netlify、Supabase、Google 帳號
 - [ ] 解壓縮專案，執行 `npm install`
 - [ ] 建立 Supabase 專案，取得 URL 和 Key
-- [ ] 在 SQL Editor 執行 `schema.sql`
+- [ ] 在 SQL Editor 執行 `schema.sql`（使用者表）
+- [ ] 在 SQL Editor 執行 `word_bank_schema.sql`（單字庫表）
+- [ ] 在 SQL Editor 執行 `seed_vocabulary.sql`（匯入 300 字）
 - [ ] 取得 Gemini API Key（aistudio.google.com）
 - [ ] 填寫 `.env` 檔案
 - [ ] `npm run dev` 本地測試
@@ -381,3 +409,4 @@ npm install
 - [ ] Netlify 連結 GitHub 並設定環境變數
 - [ ] 部署 Supabase Edge Function
 - [ ] 完成！開始學英文 🎉
+- [ ] （選配）擴充到 7000 字：用 CSV 匯入更多單字

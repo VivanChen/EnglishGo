@@ -1,5 +1,50 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 
+// ═══ SUPABASE CLIENT (lazy init, graceful fallback) ═════════════════
+let _sb = null;
+let _sbInit = false;
+
+async function getSb() {
+  if (_sbInit) return _sb;
+  _sbInit = true;
+  try {
+    const url = typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_URL;
+    const key = typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_ANON_KEY;
+    if (url && key) {
+      const mod = await import('https://esm.sh/@supabase/supabase-js@2');
+      _sb = mod.createClient(url, key);
+    }
+  } catch {}
+  return _sb;
+}
+
+async function fetchCloudVocab(level, count = 20) {
+  const sb = await getSb();
+  if (!sb) return null;
+  try {
+    const { data: allIds } = await sb.from('word_bank').select('id').eq('level', level);
+    if (!allIds?.length) return null;
+    const ids = allIds.sort(() => Math.random() - 0.5).slice(0, count).map(r => r.id);
+    const { data } = await sb.from('word_bank').select('*').in('id', ids);
+    if (!data) return null;
+    return data.sort(() => Math.random() - 0.5).map(r => ({
+      w: r.word, ph: r.phonetic || '', p: r.pos || '', m: r.meaning,
+      f: typeof r.forms === 'string' ? JSON.parse(r.forms || '[]') : (r.forms || []),
+      c: typeof r.collocations === 'string' ? JSON.parse(r.collocations || '[]') : (r.collocations || []),
+      ex: r.example || '', ez: r.example_zh || '', img: ''
+    }));
+  } catch { return null; }
+}
+
+async function fetchCloudCount(level) {
+  const sb = await getSb();
+  if (!sb) return 0;
+  try {
+    const { count } = await sb.from('word_bank').select('*', { count: 'exact', head: true }).eq('level', level);
+    return count || 0;
+  } catch { return 0; }
+}
+
 // ═══ HOOK: localStorage ═════════════════════════════════════════════
 function useLS(key, init) {
   const [val, setVal] = useState(() => { try { const s = localStorage.getItem("eg_" + key); return s ? JSON.parse(s) : init; } catch { return init; } });
@@ -212,6 +257,8 @@ function Landing({onSelect,dark,setDark}){
 function Menu({lv,onSelect,daily,c,xp,streak,achUnlocked,weakWords}){
   const pct=Math.round((daily.done/daily.target)*100);
   const todayWord=V[lv][new Date().getDate()%V[lv].length];
+  const[cloudCount,setCloudCount]=useState(0);
+  useEffect(()=>{fetchCloudCount(lv).then(n=>setCloudCount(n||0))},[lv]);
   return(<div>
     {/* Daily word card */}
     <div style={{...S.card,padding:"16px 18px",marginBottom:12,background:`linear-gradient(135deg,${c.bg},var(--color-background-primary,#fff))`}}>
@@ -228,7 +275,7 @@ function Menu({lv,onSelect,daily,c,xp,streak,achUnlocked,weakWords}){
     {/* Modules */}
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))",gap:10}}>
       {[
-        {id:"srs",icon:"🃏",t:"SRS 單字卡",d:"Anki 間隔重複"},
+        {id:"srs",icon:"🃏",t:"SRS 單字卡",d:cloudCount?`雲端 ${cloudCount} 字`:"Anki 間隔重複"},
         {id:"quiz",icon:"📝",t:"單字測驗",d:"四選一回饋"},
         {id:"dictation",icon:"🎧",t:"聽寫訓練",d:"聽力養成"},
         {id:"scramble",icon:"🧩",t:"句子重組",d:"語序訓練"},
@@ -249,18 +296,21 @@ function Menu({lv,onSelect,daily,c,xp,streak,achUnlocked,weakWords}){
 
 // ═══ SRS FLASHCARD ══════════════════════════════════════════════════
 function SRS({lv,onBack,onXp,onDone,trackWeak}){
-  const built=V[lv];const[cards,setCards]=useState(built);const[deck,setDeck]=useState(()=>createDeck(built));const[flip,setFlip]=useState(false);const[info,setInfo]=useState(false);const c=LV[lv];const fr=useRef();
+  const built=V[lv];const[cards,setCards]=useState(built);const[deck,setDeck]=useState(()=>createDeck(built));const[flip,setFlip]=useState(false);const[info,setInfo]=useState(false);const[loading,setLoading]=useState(true);const[src,setSrc]=useState("built-in");const c=LV[lv];const fr=useRef();
+  // Try cloud fetch on mount
+  useEffect(()=>{(async()=>{setLoading(true);const cloud=await fetchCloudVocab(lv,20);if(cloud&&cloud.length>0){setCards(cloud);setDeck(createDeck(cloud));setSrc(`cloud (${cloud.length}字)`);}else setSrc("built-in ("+built.length+"字)");setLoading(false)})()},[lv]);
   const cur=deck.queue[0]!==undefined?cards[deck.queue[0]]:null;const left=deck.queue.length;const done=left===0;
   useEffect(()=>{if(cur)preImg(cards,deck.queue[0],3)},[deck.queue[0]]);
   useEffect(()=>{if(cur&&!flip)speak(cur.w)},[deck.queue[0],flip]);
   const rate=useCallback(a=>{if(a==="again"&&cur)trackWeak(cur.w);if(a==="easy"||a==="good")onXp();setDeck(d=>rateDeck(d,a));setFlip(false)},[onXp,cur,trackWeak]);
   useEffect(()=>{const h=e=>{if(done)return;if(e.code==="Space"){e.preventDefault();setFlip(f=>{if(!f&&cur?.ex)setTimeout(()=>speak(cur.ex),350);return!f})}if(flip){if(e.key==="1")rate("again");if(e.key==="2")rate("hard");if(e.key==="3")rate("good");if(e.key==="4")rate("easy")}if(e.key==="Enter"){e.preventDefault();if(cur)speak(flip?(cur.ex||cur.w):cur.w)}};window.addEventListener("keydown",h);return()=>window.removeEventListener("keydown",h)},[flip,done,cur,rate]);
   const handleCSV=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{const p=parseCSV(ev.target.result);if(p.length){setCards(p);setDeck(createDeck(p));setFlip(false)}};r.readAsText(f,"utf-8")};
-  useEffect(()=>{if(done)onDone()},[done]);
-  if(done){const{stats,total}=deck;return(<div><Hdr t="SRS 單字卡" onBack={onBack} cl={c.cl}/><div style={{textAlign:"center",padding:"32px 16px"}}><div style={{fontSize:48}}>🎉</div><h2 style={{fontSize:18,fontWeight:700,color:S.t1,marginTop:8}}>練習完成！共 {total} 張</h2><div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6,maxWidth:320,margin:"16px auto"}}>{[["Again",stats.again,"#E24B4A"],["Hard",stats.hard,"#EF9F27"],["Good",stats.good,"#1D9E75"],["Easy",stats.easy,"#185FA5"]].map(([l,v,cl])=>(<div key={l} style={{...S.card,padding:"8px 4px",textAlign:"center"}}><div style={{fontSize:18,fontWeight:700,color:cl}}>{v}</div><div style={{fontSize:9,color:S.t3}}>{l}</div></div>))}</div><button onClick={()=>{setDeck(createDeck(cards));setFlip(false)}} style={{...S.btn,background:c.cl,color:"#fff",marginRight:8,fontSize:13}}>重來</button><button onClick={onBack} style={{...S.btn,background:S.bg2,color:S.t1,fontSize:13}}>返回</button></div></div>)}
+  useEffect(()=>{if(done&&!loading)onDone()},[done,loading]);
+  if(loading)return(<div><Hdr t="SRS 單字卡" onBack={onBack} cl={c.cl}/><div style={{textAlign:"center",padding:"48px 16px",color:S.t3,fontSize:14}}>載入單字庫中...</div></div>);
+  if(done){const{stats,total}=deck;return(<div><Hdr t="SRS 單字卡" onBack={onBack} cl={c.cl}/><div style={{textAlign:"center",padding:"32px 16px"}}><div style={{fontSize:48}}>🎉</div><h2 style={{fontSize:18,fontWeight:700,color:S.t1,marginTop:8}}>練習完成！共 {total} 張</h2><div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6,maxWidth:320,margin:"16px auto"}}>{[["Again",stats.again,"#E24B4A"],["Hard",stats.hard,"#EF9F27"],["Good",stats.good,"#1D9E75"],["Easy",stats.easy,"#185FA5"]].map(([l,v,cl])=>(<div key={l} style={{...S.card,padding:"8px 4px",textAlign:"center"}}><div style={{fontSize:18,fontWeight:700,color:cl}}>{v}</div><div style={{fontSize:9,color:S.t3}}>{l}</div></div>))}</div><button onClick={async()=>{setLoading(true);const cloud=await fetchCloudVocab(lv,20);if(cloud?.length){setCards(cloud);setDeck(createDeck(cloud))}else setDeck(createDeck(cards));setFlip(false);setLoading(false)}} style={{...S.btn,background:c.cl,color:"#fff",marginRight:8,fontSize:13}}>新一輪</button><button onClick={onBack} style={{...S.btn,background:S.bg2,color:S.t1,fontSize:13}}>返回</button></div></div>)}
   const pct=Math.round(((deck.total-left)/deck.total)*100);
   return(<div><Hdr t="SRS 單字卡" onBack={onBack} cl={c.cl} extra={<div style={{display:"flex",gap:4}}><button onClick={()=>setInfo(!info)} style={{background:"none",border:`1px solid ${S.bd}`,borderRadius:8,padding:"2px 6px",fontSize:10,cursor:"pointer",color:S.t2}}>ⓘ</button><label style={{background:"none",border:`1px solid ${S.bd}`,borderRadius:8,padding:"2px 6px",fontSize:10,cursor:"pointer",color:S.t2}}>📥<input ref={fr} type="file" accept=".csv" onChange={handleCSV} style={{display:"none"}}/></label></div>}/>
-    {info&&<div style={{...S.card,padding:"10px 14px",marginBottom:8,fontSize:11,color:S.t2,lineHeight:1.7}}><b>Space</b> 翻牌 · <b>Enter</b> 朗讀 · <b>1</b>Again <b>2</b>Hard <b>3</b>Good <b>4</b>Easy</div>}
+    {info&&<div style={{...S.card,padding:"10px 14px",marginBottom:8,fontSize:11,color:S.t2,lineHeight:1.7}}><b>Space</b> 翻牌 · <b>Enter</b> 朗讀 · <b>1</b>Again <b>2</b>Hard <b>3</b>Good <b>4</b>Easy<div style={{marginTop:4,fontSize:10,color:S.t3}}>來源：{src}</div></div>}
     <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:8,fontSize:10}}><div style={{flex:1,height:4,background:S.bg2,borderRadius:2}}><div style={{height:"100%",width:`${pct}%`,background:c.cl,borderRadius:2,transition:"width .3s"}}/></div><span style={{color:S.t3}}>{left}/{deck.total}</span>{[["#E24B4A",deck.stats.again],["#EF9F27",deck.stats.hard],["#1D9E75",deck.stats.good],["#185FA5",deck.stats.easy]].map(([cl,v],i)=><span key={i} style={{color:cl,fontWeight:600}}>{v}</span>)}</div>
     <div onClick={()=>{if(!flip){setFlip(true);if(cur.ex)setTimeout(()=>speak(cur.ex),350)}}} style={{cursor:!flip?"pointer":"default",borderRadius:16,padding:flip?"14px 16px 18px":"40px 16px",textAlign:"center",minHeight:flip?240:180,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:flip?"flex-start":"center",background:flip?`linear-gradient(135deg,${c.bg},#fff)`:S.bg1,border:`2px solid ${flip?c.ac:S.bd}`,transition:"all .25s"}}>
       {!flip?(<>{cur.img&&<div style={{fontSize:36,marginBottom:6}}>{cur.img}</div>}<div style={{fontSize:28,fontWeight:700,color:S.t1}}>{cur.w}<button onClick={e=>{e.stopPropagation();speak(cur.w)}} style={{background:"none",border:"none",fontSize:16,cursor:"pointer",marginLeft:4}}>🔊</button></div>{cur.ph&&<div style={{fontSize:11,color:S.t3,marginTop:3}}>{cur.ph}</div>}<div style={{fontSize:10,color:S.t3,marginTop:8}}>Space 翻牌</div></>):(<>
@@ -277,10 +327,12 @@ function SRS({lv,onBack,onXp,onDone,trackWeak}){
 }
 // ═══ QUIZ ═══════════════════════════════════════════════════════════
 function QuizM({lv,onBack,onXp,onPerfect,trackWeak}){
-  const words=V[lv];const[qi,setQi]=useState(0);const[score,setScore]=useState(0);const[sel,setSel]=useState(null);const[done,setDone]=useState(false);const c=LV[lv];
-  const qs=useMemo(()=>words.map((w,i)=>{const wr=words.filter((_,j)=>j!==i).sort(()=>Math.random()-.5).slice(0,3);return{word:w.w,ph:w.ph,correct:w.m,opts:[...wr.map(x=>x.m),w.m].sort(()=>Math.random()-.5)}}).sort(()=>Math.random()-.5),[]);
+  const built=V[lv];const[words,setWords]=useState(built);const[loading,setLoading]=useState(true);const[qi,setQi]=useState(0);const[score,setScore]=useState(0);const[sel,setSel]=useState(null);const[done,setDone]=useState(false);const c=LV[lv];
+  useEffect(()=>{(async()=>{const cloud=await fetchCloudVocab(lv,20);if(cloud?.length)setWords(cloud);setLoading(false)})()},[lv]);
+  const qs=useMemo(()=>words.map((w,i)=>{const wr=words.filter((_,j)=>j!==i).sort(()=>Math.random()-.5).slice(0,3);return{word:w.w,ph:w.ph,correct:w.m,opts:[...wr.map(x=>x.m),w.m].sort(()=>Math.random()-.5)}}).sort(()=>Math.random()-.5),[words]);
   const pick=o=>{if(sel!==null)return;setSel(o);const ok=o===qs[qi].correct;if(ok){setScore(s=>s+1);onXp()}else trackWeak(qs[qi].word);setTimeout(()=>{setSel(null);qi+1>=qs.length?setDone(true):setQi(qi+1)},800)};
   useEffect(()=>{if(done&&score===qs.length)onPerfect()},[done]);
+  if(loading)return(<div><Hdr t="單字測驗" onBack={onBack} cl={c.cl}/><div style={{textAlign:"center",padding:"48px 16px",color:S.t3,fontSize:14}}>載入中...</div></div>);
   if(done){return(<div style={{textAlign:"center",padding:"36px 16px"}}><Hdr t="單字測驗" onBack={onBack} cl={c.cl}/><div style={{fontSize:44}}>{score>=8?"🏆":score>=6?"👏":"💪"}</div><h2 style={{fontSize:17,fontWeight:700,color:S.t1,marginTop:6}}>{score}/{qs.length}</h2><button onClick={()=>{setQi(0);setScore(0);setSel(null);setDone(false)}} style={{...S.btn,background:c.cl,color:"#fff",marginTop:16,marginRight:8,fontSize:12}}>再測</button><button onClick={onBack} style={{...S.btn,background:S.bg2,color:S.t1,fontSize:12}}>返回</button></div>)}
   const q=qs[qi];
   return(<div><Hdr t="單字測驗" onBack={onBack} cl={c.cl}/><PB v={qi} mx={qs.length} cl={c.cl}/><div style={{...S.card,padding:"22px 16px",textAlign:"center"}}><div style={{fontSize:26,fontWeight:700,color:S.t1}}>{q.word}</div><div style={{fontSize:10,color:S.t3,marginBottom:12}}>{q.ph}</div><button onClick={()=>speak(q.word)} style={{background:"none",border:"none",fontSize:15,cursor:"pointer",marginBottom:10}}>🔊</button><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>{q.opts.map((o,i)=>{const ok=o===q.correct,pk=sel===o;let bg=S.bg2,bd=`1px solid ${S.bd}`;if(sel!==null){if(ok){bg="#EAF3DE";bd="2px solid #639922"}else if(pk){bg="#FCEBEB";bd="2px solid #E24B4A"}}return<button key={i} onClick={()=>pick(o)} style={{padding:"10px 6px",borderRadius:10,background:bg,border:bd,cursor:sel?"default":"pointer",fontSize:12,fontFamily:"inherit",color:S.t1}}>{o}</button>})}</div></div></div>);
