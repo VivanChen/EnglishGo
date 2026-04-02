@@ -266,11 +266,15 @@ export default function App(){
         {/* Ad Banner */}
         <AdBanner/>
       </div>
-      {/* Footer with attributions */}
-      <footer style={{textAlign:"center",padding:"16px 12px calc(24px + env(safe-area-inset-bottom, 0px))",fontSize:11,color:S.t3,lineHeight:2}}>
-        {gifKey&&<div style={{marginBottom:6}}><a href="https://giphy.com/" target="_blank" rel="noreferrer"><img src="https://giphy.com/static/img/powered-by-giphy.png" alt="Powered by GIPHY" style={{height:20,opacity:.5}}/></a></div>}
-        <div>AI Tutor powered by <b>Gemini</b> · Speech by <b>Web Speech API</b></div>
-        <div>© {new Date().getFullYear()} EnglishGo · 專為台灣學生設計</div>
+      {/* Footer */}
+      <footer style={{textAlign:"center",padding:"20px 16px calc(28px + env(safe-area-inset-bottom, 0px))",fontSize:11,color:S.t3,lineHeight:1.8,borderTop:`1px solid ${S.bd}`,marginTop:16}}>
+        <div style={{maxWidth:480,margin:"0 auto"}}>
+          <div style={{fontWeight:600,fontSize:12,color:S.t2,marginBottom:6}}>📘 如何使用 EnglishGo</div>
+          <div style={{marginBottom:8}}>選擇等級（小學／國中／高中）後，透過 SRS 單字卡記憶單字，搭配口說練習、打地鼠拼字、配對翻牌等遊戲強化學習。AI 家教可即時回答英文問題。每天練習 10 題即可累積經驗值與成就徽章！</div>
+          <div style={{fontSize:10,color:S.t3,marginBottom:6}}>本站使用 Google AdSense 投放廣告，並可能使用 Cookie 提供個人化廣告體驗。</div>
+          <div>AI Tutor powered by <b>Gemini</b> · Speech by <b>Web Speech API</b></div>
+          <div>© {new Date().getFullYear()} EnglishGo · 專為台灣學生設計</div>
+        </div>
       </footer>
     </div>
   );
@@ -293,10 +297,14 @@ function Landing({onSelect,dark,setDark}){
         {[{i:"🃏",t:"SRS 記憶",d:"Anki 演算法"},{i:"🎧",t:"聽寫訓練",d:"聽力最弱救星"},{i:"🧩",t:"句子重組",d:"語感養成"},{i:"🤖",t:"AI 家教",d:"Gemini 免費"},{i:"🏆",t:"成就系統",d:"徽章收集"},{i:"🌙",t:"深色模式",d:"護眼學習"}].map((f,i)=>(<div key={i} style={{textAlign:"center",width:95}}><div style={{fontSize:22,marginBottom:3}}>{f.i}</div><div style={{fontSize:11,fontWeight:600}}>{f.t}</div><div style={{fontSize:11,color:"rgba(255,255,255,.35)"}}>{f.d}</div></div>))}
       </div>
       {/* Landing Footer */}
-      <footer style={{textAlign:"center",padding:"32px 16px 48px",fontSize:11,color:"rgba(255,255,255,.3)",lineHeight:2}}>
-        <div><a href="https://giphy.com/" target="_blank" rel="noreferrer"><img src="https://giphy.com/static/img/powered-by-giphy.png" alt="Powered by GIPHY" style={{height:18,opacity:.4}}/></a></div>
-        <div>AI Tutor powered by <b>Gemini</b> · Speech by <b>Web Speech API</b></div>
-        <div>© {new Date().getFullYear()} EnglishGo · 專為台灣學生設計</div>
+      <footer style={{textAlign:"center",padding:"40px 20px 56px",fontSize:11,color:"rgba(255,255,255,.35)",lineHeight:1.8,borderTop:"1px solid rgba(255,255,255,.08)",marginTop:32}}>
+        <div style={{maxWidth:480,margin:"0 auto"}}>
+          <div style={{fontWeight:600,fontSize:12,color:"rgba(255,255,255,.5)",marginBottom:6}}>📘 如何使用</div>
+          <div style={{marginBottom:10}}>選擇你的等級，透過 SRS 單字卡、口說練習、遊戲等多種模式學英文。AI 家教隨時回答問題。每天只要 10 分鐘！</div>
+          <div style={{fontSize:10,marginBottom:8}}>本站使用 Google AdSense 投放廣告，並可能使用 Cookie 提供個人化廣告體驗。</div>
+          <div>AI Tutor powered by <b>Gemini</b> · Speech by <b>Web Speech API</b></div>
+          <div>© {new Date().getFullYear()} EnglishGo · 專為台灣學生設計</div>
+        </div>
       </footer>
     </div>
   </div>);
