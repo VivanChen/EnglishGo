@@ -263,7 +263,15 @@ export default function App(){
          mod==="scramble"?<ScramM lv={lv} onBack={back} onXp={addXp} onDone={()=>setStats(s=>({...s,scramDone:s.scramDone+1}))}/>:
          mod==="ai"?<AIT lv={lv} onBack={back} apiKey={gemKey} onSetKey={setGemKey}/>:
          mod==="achievements"?<AchPage onBack={back} unlocked={achUnlocked} c={c}/>:null}
+        {/* Ad Banner */}
+        <AdBanner/>
       </div>
+      {/* Footer with attributions */}
+      <footer style={{textAlign:"center",padding:"16px 12px calc(24px + env(safe-area-inset-bottom, 0px))",fontSize:11,color:S.t3,lineHeight:2}}>
+        {gifKey&&<div style={{marginBottom:6}}><a href="https://giphy.com/" target="_blank" rel="noreferrer"><img src="https://giphy.com/static/img/powered-by-giphy.png" alt="Powered by GIPHY" style={{height:20,opacity:.5}}/></a></div>}
+        <div>AI Tutor powered by <b>Gemini</b> · Speech by <b>Web Speech API</b></div>
+        <div>© {new Date().getFullYear()} EnglishGo · 專為台灣學生設計</div>
+      </footer>
     </div>
   );
 }
@@ -284,6 +292,12 @@ function Landing({onSelect,dark,setDark}){
       <div style={{marginTop:40,display:"flex",flexWrap:"wrap",justifyContent:"center",gap:20,animation:"fadeUp .7s .8s both"}}>
         {[{i:"🃏",t:"SRS 記憶",d:"Anki 演算法"},{i:"🎧",t:"聽寫訓練",d:"聽力最弱救星"},{i:"🧩",t:"句子重組",d:"語感養成"},{i:"🤖",t:"AI 家教",d:"Gemini 免費"},{i:"🏆",t:"成就系統",d:"徽章收集"},{i:"🌙",t:"深色模式",d:"護眼學習"}].map((f,i)=>(<div key={i} style={{textAlign:"center",width:95}}><div style={{fontSize:22,marginBottom:3}}>{f.i}</div><div style={{fontSize:11,fontWeight:600}}>{f.t}</div><div style={{fontSize:11,color:"rgba(255,255,255,.35)"}}>{f.d}</div></div>))}
       </div>
+      {/* Landing Footer */}
+      <footer style={{textAlign:"center",padding:"32px 16px 48px",fontSize:11,color:"rgba(255,255,255,.3)",lineHeight:2}}>
+        <div><a href="https://giphy.com/" target="_blank" rel="noreferrer"><img src="https://giphy.com/static/img/powered-by-giphy.png" alt="Powered by GIPHY" style={{height:18,opacity:.4}}/></a></div>
+        <div>AI Tutor powered by <b>Gemini</b> · Speech by <b>Web Speech API</b></div>
+        <div>© {new Date().getFullYear()} EnglishGo · 專為台灣學生設計</div>
+      </footer>
     </div>
   </div>);
 }
@@ -965,6 +979,14 @@ function AchPage({onBack,unlocked,c}){
       )})}
     </div>
   </div>);
+}
+// ═══ SHARED ════════════════════════════════════════════════════════
+// ═══ AD BANNER (Google AdSense) ═════════════════════════════════
+function AdBanner(){
+  const ref=useRef(null);
+  useEffect(()=>{try{if(window.adsbygoogle&&ref.current)(window.adsbygoogle=window.adsbygoogle||[]).push({})}catch{}},[]);
+  if(typeof window==="undefined"||!window.adsbygoogle)return null;
+  return(<div style={{textAlign:"center",margin:"16px 0",minHeight:50}}><ins className="adsbygoogle" ref={ref} style={{display:"block"}} data-ad-format="auto" data-full-width-responsive="true"/></div>);
 }
 // ═══ SHARED ════════════════════════════════════════════════════════
 function Hdr({t,onBack,cl,extra}){return(<div style={{display:"flex",alignItems:"center",gap:4,marginBottom:8}}><button onClick={onBack} style={{background:"none",border:"none",fontSize:12,color:cl,cursor:"pointer",fontWeight:600,fontFamily:"inherit",padding:"6px 8px",minHeight:36,borderRadius:8,WebkitTapHighlightColor:"transparent"}}>← 返回</button><h2 style={{fontSize:16,fontWeight:700,color:S.t1,margin:0,flex:1}}>{t}</h2>{extra}</div>)}
