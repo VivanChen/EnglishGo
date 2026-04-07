@@ -553,7 +553,7 @@ function SpeakM({lv,onBack,onXp}){
       }
       setSpoken(best);setListening(false);
     };
-    r.onerror=()=>{setListening(false);setSpoken("[沒有聽到聲音，再試一次]")};
+    r.onerror=()=>{setListening(false);setPhase("ready");setSpoken("[沒有聽到聲音，再試一次]")};
     r.onend=()=>setListening(false);
     recogRef.current=r;
     return()=>{try{r.abort()}catch{}};
@@ -564,7 +564,7 @@ function SpeakM({lv,onBack,onXp}){
 
   // Compare when spoken
   useEffect(()=>{
-    if(!spoken||spoken.startsWith("["))return;
+    if(!spoken||spoken.startsWith("[")||!cur)return;
     const comp=compareWords(cur.en,spoken);
     setComparison(comp);
     if(comp.pct>=70){
@@ -593,7 +593,7 @@ function SpeakM({lv,onBack,onXp}){
   const comboLabel=combo>=7?"🔥🔥 ON FIRE!":combo>=5?"🔥 COMBO x"+combo:combo>=3?"✨ "+combo+" 連擊！":"";
 
   if(noSupport)return(<div><Hdr t="🗣️ 口說練習" onBack={onBack} cl={c.cl}/><div style={{...S.card,padding:"24px 16px",textAlign:"center"}}><div style={{fontSize:40,marginBottom:10}}>😔</div><div style={{fontSize:14,color:S.t1,fontWeight:600}}>瀏覽器不支援語音辨識</div><div style={{fontSize:12,color:S.t2,marginTop:6}}>請使用 Chrome 或 Edge 瀏覽器</div></div></div>);
-  if(loading)return(<div><Hdr t="🗣️ 口說練習" onBack={onBack} cl={c.cl}/><div style={{textAlign:"center",padding:"48px",color:S.t3}}>載入中...</div></div>);
+  if(loading||!cur)return(<div><Hdr t="🗣️ 口說練習" onBack={onBack} cl={c.cl}/><div style={{textAlign:"center",padding:"48px",color:S.t3}}>載入中...</div></div>);
 
   if(phase==="done")return(<div>{showConfetti&&<Confetti/>}<Hdr t="🗣️ 口說練習" onBack={onBack} cl={c.cl}/><div style={{textAlign:"center",padding:"32px 16px"}}><div style={{fontSize:56,animation:"bounceIn .5s ease-out"}}>{score>=items.length*0.8?"🏆":score>=items.length*0.5?"🎉":"💪"}</div><h2 style={{fontSize:22,fontWeight:700,color:S.t1,marginTop:8}}>口說練習完成！</h2><div style={{fontSize:18,color:c.cl,fontWeight:600,marginTop:6}}>{score}/{items.length} 句通過</div>{maxCombo>=3&&<div style={{fontSize:13,color:"#EF9F27",fontWeight:600,marginTop:4}}>🔥 最高 {maxCombo} 連擊！</div>}<div style={{fontSize:14,color:S.t2,marginTop:8,marginBottom:16}}>{score>=items.length*0.8?"口說太棒了！🌟":"多說多練，越來越流利！💪"}</div><button onClick={restart} style={{...S.btn,background:c.cl,color:"#fff",marginRight:8,fontSize:14}}>🔄 換一批</button><button onClick={onBack} style={{...S.btn,background:S.bg2,color:S.t1,fontSize:14}}>返回</button></div></div>);
 
@@ -729,7 +729,7 @@ function WhackM({lv,onBack,onXp}){
     setWi(w=>w+1);setPhase("ready");
   };
 
-  const restart=()=>{setWi(0);setScore(0);setCombo(0);setMaxCombo(0);setPhase("ready")};
+  const restart=async()=>{setLoading(true);setWi(0);setScore(0);setCombo(0);setMaxCombo(0);setPhase("ready");const cloud=await fetchCloudVocab(lv,TOTAL_WORDS);if(cloud?.length)setWords(cloud.slice(0,TOTAL_WORDS));setLoading(false)};
 
   if(loading)return(<div><Hdr t="🔨 打地鼠拼字" onBack={onBack} cl={c.cl}/><div style={{textAlign:"center",padding:"48px",color:S.t3}}>載入中...</div></div>);
 
