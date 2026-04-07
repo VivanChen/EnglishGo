@@ -296,6 +296,16 @@ function Landing({onSelect,dark,setDark}){
       <div style={{marginTop:40,display:"flex",flexWrap:"wrap",justifyContent:"center",gap:20,animation:"fadeUp .7s .8s both"}}>
         {[{i:"🃏",t:"SRS 記憶",d:"Anki 演算法"},{i:"🎧",t:"聽寫訓練",d:"聽力最弱救星"},{i:"🧩",t:"句子重組",d:"語感養成"},{i:"🤖",t:"AI 家教",d:"Gemini 免費"},{i:"🏆",t:"成就系統",d:"徽章收集"},{i:"🌙",t:"深色模式",d:"護眼學習"}].map((f,i)=>(<div key={i} style={{textAlign:"center",width:95}}><div style={{fontSize:22,marginBottom:3}}>{f.i}</div><div style={{fontSize:11,fontWeight:600}}>{f.t}</div><div style={{fontSize:11,color:"rgba(255,255,255,.35)"}}>{f.d}</div></div>))}
       </div>
+      {/* Learning Articles */}
+      <div style={{marginTop:40,animation:"fadeUp .7s 1s both"}}>
+        <div style={{fontSize:14,fontWeight:600,color:"rgba(255,255,255,.6)",marginBottom:14,textAlign:"center"}}>📖 學習資源</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))",gap:12}}>
+          {[{href:"/learn/srs-method.html",t:"什麼是 SRS 間隔重複記憶法？",d:"科學證實最有效的單字記憶方法",ic:"🧠"},
+            {href:"/learn/speaking-tips.html",t:"如何提升英文口說能力？",d:"5 個不用出國也能練好的方法",ic:"🗣️"},
+            {href:"/learn/vocabulary-guide.html",t:"國中會考單字準備攻略",d:"1,200 字怎麼背最有效？",ic:"📚"}
+          ].map((a,i)=>(<a key={i} href={a.href} style={{display:"block",background:"rgba(255,255,255,.05)",border:"1px solid rgba(255,255,255,.08)",borderRadius:12,padding:"16px",textDecoration:"none",color:"#fff",transition:"all .2s"}} onMouseEnter={e=>e.currentTarget.style.background="rgba(255,255,255,.1)"} onMouseLeave={e=>e.currentTarget.style.background="rgba(255,255,255,.05)"}><div style={{fontSize:20,marginBottom:4}}>{a.ic}</div><div style={{fontSize:13,fontWeight:600,marginBottom:2}}>{a.t}</div><div style={{fontSize:11,color:"rgba(255,255,255,.4)"}}>{a.d}</div></a>))}
+        </div>
+      </div>
       {/* Landing Footer */}
       <footer style={{textAlign:"center",padding:"40px 20px 56px",fontSize:11,color:"rgba(255,255,255,.35)",lineHeight:1.8,borderTop:"1px solid rgba(255,255,255,.08)",marginTop:32}}>
         <div style={{maxWidth:480,margin:"0 auto"}}>
