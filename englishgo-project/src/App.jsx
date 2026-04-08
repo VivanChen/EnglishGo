@@ -212,8 +212,17 @@ export default function App(){
   const[gemKey,setGemKey]=useLS("gemkey","");
   const[gifKey,setGifKey]=useLS("gifkey","");
   const[weakWords,setWeakWords]=useLS("weak",[]);
-  const[history,setHistory]=useLS("hist",[]);// [{date,xp,done,words}]
+  const[history,setHistory]=useLS("hist",[]);
   const[showAch,setShowAch]=useState(null);
+
+  // Deep link: detect ?word=xxx&lv=xxx from shared URL
+  useEffect(()=>{
+    const p=new URLSearchParams(window.location.search);
+    const w=p.get("word"),l=p.get("lv");
+    if(w&&l&&LV[l]){setLv(l);setMod("srs")}
+    // Clean URL without reload
+    if(w)window.history.replaceState({},"",window.location.pathname);
+  },[]);
 
   // Check streak & daily reset + log history
   useEffect(()=>{const today=new Date().toDateString();if(daily.date!==today){
@@ -522,8 +531,8 @@ function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,onSetGifKey}){
     {flip&&<>
       <div style={{display:"flex",justifyContent:"center",gap:8,marginTop:8}}>
         <button onClick={()=>{setFlip(false);setFlipAnim(false)}} style={{background:S.bg2,border:`1px solid ${S.bd}`,borderRadius:14,padding:"10px 20px",fontSize:14,cursor:"pointer",color:S.t2,fontFamily:"inherit",minHeight:44}}>🔙 翻回</button>
-        <button onClick={()=>{const t=`📘 EnglishGo 單字卡\n\n📝 ${cur.w} (${cur.p})\n🔤 ${cur.ph||""}\n💡 ${cur.m}\n${cur.ex?`📖 ${cur.ex}`:""}${cur.ez?`\n   ${cur.ez}`:""}\n\n👉 https://englishgo-vevan.netlify.app`;window.open(`https://social-plugins.line.me/lineit/share?url=${encodeURIComponent("https://englishgo-vevan.netlify.app")}&text=${encodeURIComponent(t)}`,"_blank")}} style={{background:"#06C755",border:"none",borderRadius:14,padding:"10px 16px",fontSize:14,cursor:"pointer",color:"#fff",fontFamily:"inherit",minHeight:44,fontWeight:600}}>📤 LINE</button>
-        <button onClick={()=>{const t=`📘 ${cur.w} (${cur.p}) — ${cur.m}${cur.ex?`\n📖 ${cur.ex}`:""}\n👉 englishgo-vevan.netlify.app`;navigator.clipboard?.writeText(t).then(()=>alert("已複製！"))}} style={{background:S.bg2,border:`1px solid ${S.bd}`,borderRadius:14,padding:"10px 16px",fontSize:14,cursor:"pointer",color:S.t2,fontFamily:"inherit",minHeight:44}}>📋 複製</button>
+        <button onClick={()=>{const url=`https://englishgo-vevan.netlify.app/?word=${encodeURIComponent(cur.w)}&lv=${lv}`;const t=`📘 今天學了一個英文單字！\n\n📝 ${cur.w}${cur.ph?` ${cur.ph}`:""}\n   ${cur.p} ${cur.m}\n${cur.ex?`\n📖 ${cur.ex}`:""}\n${cur.ez?`   ${cur.ez}`:""}\n\n一起來學英文 👇\n${url}`;window.open(`https://line.me/R/share?text=${encodeURIComponent(t)}`,"_blank")}} style={{background:"#06C755",border:"none",borderRadius:14,padding:"10px 16px",fontSize:14,cursor:"pointer",color:"#fff",fontFamily:"inherit",minHeight:44,fontWeight:600}}>📤 LINE</button>
+        <button onClick={()=>{const url=`https://englishgo-vevan.netlify.app/?word=${encodeURIComponent(cur.w)}&lv=${lv}`;const t=`📘 ${cur.w}${cur.ph?` ${cur.ph}`:""} — ${cur.m}${cur.ex?`\n📖 ${cur.ex}`:""}${cur.ez?`\n   ${cur.ez}`:""}\n${url}`;navigator.clipboard?.writeText(t).then(()=>alert("已複製！"))}} style={{background:S.bg2,border:`1px solid ${S.bd}`,borderRadius:14,padding:"10px 16px",fontSize:14,cursor:"pointer",color:S.t2,fontFamily:"inherit",minHeight:44}}>📋 複製</button>
       </div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6,marginTop:8}}>{[{k:"again",l:"Again",n:"1",cl:"#E24B4A",bg:"#FCEBEB",em:"😅"},{k:"hard",l:"Hard",n:"2",cl:"#BA7517",bg:"#FAEEDA",em:"🤔"},{k:"good",l:"Good",n:"3",cl:"#0F6E56",bg:"#E1F5EE",em:"😊"},{k:"easy",l:"Easy",n:"4",cl:"#185FA5",bg:"#E6F1FB",em:"🤩"}].map(b=>(<button key={b.k} onClick={()=>rate(b.k)} style={{...S.btn,background:b.bg,color:b.cl,padding:"14px 4px",fontSize:14,display:"flex",flexDirection:"column",alignItems:"center",gap:2,transition:"transform .1s",minHeight:60,WebkitTapHighlightColor:"transparent"}} onTouchStart={e=>e.currentTarget.style.transform="scale(0.93)"} onTouchEnd={e=>e.currentTarget.style.transform="scale(1)"} onMouseDown={e=>e.currentTarget.style.transform="scale(0.95)"} onMouseUp={e=>e.currentTarget.style.transform="scale(1)"}><span style={{fontSize:24}}>{b.em}</span>{b.l}<span style={{fontSize:10,opacity:.5}}>{b.n}</span></button>))}</div>
       <div style={{textAlign:"center",fontSize:11,color:S.t3,marginTop:5}}>📱 也可滑動：← Again · → Good · ↑ Easy · ↓ Hard</div>
@@ -1091,8 +1100,8 @@ function WeakPage({onBack,weakWords,setWeakWords,c,lv}){
 }
 // ═══ DASHBOARD (學習報告) ═══════════════════════════════════════════
 function Dashboard({onBack,c,xp,streak,stats,daily,weakWords,history,achUnlocked,lv}){
-  const shareText=`🏆 EnglishGo 學習報告\n⭐ ${xp} XP · 🔥 ${streak} 天連續\n📊 SRS ${stats.srsRounds} 輪 · 測驗滿分 ${stats.perfectQuiz} 次\n📕 弱點 ${weakWords.length} 字 · 🏅 ${achUnlocked.length} 成就\n👉 https://englishgo-vevan.netlify.app`;
-  const shareToLine=()=>{window.open(`https://social-plugins.line.me/lineit/share?url=${encodeURIComponent("https://englishgo-vevan.netlify.app")}&text=${encodeURIComponent(shareText)}`,"_blank")};
+  const shareText=`🏆 我的 EnglishGo 學習成績！\n\n⭐ ${xp} XP · 🔥 連續 ${streak} 天\n📊 SRS ${stats.srsRounds} 輪完成\n💯 測驗滿分 ${stats.perfectQuiz} 次\n🏅 成就 ${achUnlocked.length} 個\n\n一起來學英文 👇\nhttps://englishgo-vevan.netlify.app`;
+  const shareToLine=()=>{window.open(`https://line.me/R/share?text=${encodeURIComponent(shareText)}`,"_blank")};
   const shareCopy=()=>{navigator.clipboard?.writeText(shareText).then(()=>alert("已複製到剪貼簿！")).catch(()=>{})};
 
   // Compute stats
