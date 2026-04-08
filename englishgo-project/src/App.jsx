@@ -162,10 +162,30 @@ const ACH_DEFS = [
 
 // ═══ CONFIG ═════════════════════════════════════════════════════════
 const LV={elementary:{l:"小學",en:"Elementary",cl:"#0F6E56",bg:"#E1F5EE",ac:"#1D9E75",ic:"🌱",wd:"300字"},junior:{l:"國中",en:"Junior High",cl:"#534AB7",bg:"#EEEDFE",ac:"#7F77DD",ic:"📚",wd:"1200字"},senior:{l:"高中",en:"Senior High",cl:"#993C1D",bg:"#FAECE7",ac:"#D85A30",ic:"🎓",wd:"4500+字"}};
-let _voiceUri = null; // selected voice URI
+let _voiceUri = null; // selected English voice URI
 try{_voiceUri=localStorage.getItem("eg_voice")||null}catch{}
 function getVoices(){return window.speechSynthesis?.getVoices()?.filter(v=>/^en/i.test(v.lang))||[]}
-function speak(t,l="en-US",r=0.85){if(!window.speechSynthesis)return;window.speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang=l;u.rate=r;if(_voiceUri){const v=window.speechSynthesis.getVoices().find(x=>x.voiceURI===_voiceUri);if(v){u.voice=v;u.lang=v.lang}}window.speechSynthesis.speak(u)}
+function getZhVoice(){
+  const vs=window.speechSynthesis?.getVoices()||[];
+  return vs.find(v=>/zh[-_]TW/i.test(v.lang)&&!/male/i.test(v.name))
+    ||vs.find(v=>/zh[-_]TW/i.test(v.lang))
+    ||vs.find(v=>/zh[-_]HK/i.test(v.lang))
+    ||vs.find(v=>/zh/i.test(v.lang))||null;
+}
+function speak(t,l="en-US",r=0.85){
+  if(!window.speechSynthesis)return;
+  window.speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(t);u.lang=l;u.rate=r;
+  const isZh=/^zh/i.test(l);
+  if(isZh){
+    const zhV=getZhVoice();
+    if(zhV){u.voice=zhV;u.lang=zhV.lang}
+  }else if(_voiceUri){
+    const v=window.speechSynthesis.getVoices().find(x=>x.voiceURI===_voiceUri);
+    if(v){u.voice=v;u.lang=v.lang}
+  }
+  window.speechSynthesis.speak(u);
+}
 function VoicePicker(){const[voices,setVoices]=useState([]);const[cur,setCur]=useState(_voiceUri||"");useEffect(()=>{const load=()=>{const v=getVoices();if(v.length)setVoices(v)};load();window.speechSynthesis?.addEventListener?.("voiceschanged",load);return()=>window.speechSynthesis?.removeEventListener?.("voiceschanged",load)},[]);if(!voices.length)return null;return(<select value={cur} onChange={e=>{_voiceUri=e.target.value||null;setCur(e.target.value);try{localStorage.setItem("eg_voice",e.target.value)}catch{};if(e.target.value){const v=voices.find(x=>x.voiceURI===e.target.value);if(v)speak("Hello!","en-US",0.85)}}} style={{padding:"3px 4px",borderRadius:6,border:`1px solid var(--color-border-tertiary,#e0dfd9)`,fontSize:11,background:"var(--color-background-primary,#fff)",color:"var(--color-text-secondary,#73726c)",maxWidth:110,fontFamily:"inherit"}}><option value="">預設語音</option>{voices.map(v=><option key={v.voiceURI} value={v.voiceURI}>{v.name.replace(/Microsoft |Google |Apple /,"").slice(0,18)}{v.lang.includes("GB")?" 🇬🇧":v.lang.includes("AU")?" 🇦🇺":v.lang.includes("US")?" 🇺🇸":""}</option>)}</select>)}
 function createDeck(c){return{queue:c.map((_,i)=>i),rm:[],stats:{again:0,hard:0,good:0,easy:0},total:c.length}}
 function rateDeck(d,a){const n={...d,queue:[...d.queue],rm:[...d.rm],stats:{...d.stats}};const c=n.queue.shift();if(c===undefined)return n;n.stats[a]++;if(a==="again")n.queue.splice(Math.min(1,n.queue.length),0,c);else if(a==="hard")n.queue.splice(Math.floor(n.queue.length/2),0,c);else if(a==="good")n.queue.push(c);else n.rm.push(c);return n}
@@ -173,7 +193,7 @@ function parseCSV(t){return t.trim().split("\n").slice(1).map(l=>{const m=l.matc
 const imgC={};function preImg(ws,s=0,n=3){for(let i=s;i<Math.min(s+n,ws.length);i++){const w=ws[i]?.w;if(w&&!imgC[w]){const img=new Image();img.src=`https://loremflickr.com/300/150/${encodeURIComponent(w)}?lock=${i}`;imgC[w]=img.src}}}
 // ─── Markdown renderer ──────────────────────────────────────────────
 function Md({text,color}){if(!text)return null;return text.split("\n").map((line,li)=>{if(!line.trim())return <br key={li}/>;const isB=/^\s*[\*\-•]\s+/.test(line);const cl=isB?line.replace(/^\s*[\*\-•]\s+/,""):line;const parts=[];let rem=cl,k=0;while(rem.length>0){const m=rem.match(/\*\*(.+?)\*\*/);if(m){const idx=rem.indexOf(m[0]);if(idx>0)parts.push(<span key={k++}>{rem.slice(0,idx)}</span>);const isEn=/^[a-zA-Z]/.test(m[1]);parts.push(<strong key={k++} style={{fontWeight:700,cursor:isEn?"pointer":"default",color:isEn?color:"inherit",textDecoration:isEn?"underline dotted":"none",textUnderlineOffset:"3px"}} onClick={()=>isEn&&speak(m[1])}>{m[1]}</strong>);rem=rem.slice(idx+m[0].length)}else{parts.push(<span key={k++}>{rem}</span>);break}}return<div key={li} style={{marginBottom:2,paddingLeft:isB?16:0,position:"relative"}}>{isB&&<span style={{position:"absolute",left:0}}>•</span>}{parts}</div>})}
-function speakMx(text,rate=0.85){if(!window.speechSynthesis)return;window.speechSynthesis.cancel();const cl=text.replace(/\*\*/g,"").replace(/[#•\-]/g," ");const segs=cl.split(/([a-zA-Z][a-zA-Z\s\-',.!?;:()]+)/g).filter(s=>s.trim());let d=0;segs.forEach(s=>{const en=/^[a-zA-Z]/.test(s.trim());const u=new SpeechSynthesisUtterance(s.trim());u.lang=en?"en-US":"zh-TW";u.rate=en?rate:rate+.15;if(en&&_voiceUri){const v=window.speechSynthesis.getVoices().find(x=>x.voiceURI===_voiceUri);if(v){u.voice=v;u.lang=v.lang}}setTimeout(()=>window.speechSynthesis.speak(u),d);d+=s.length*(en?55:80)})}
+function speakMx(text,rate=0.85){if(!window.speechSynthesis)return;window.speechSynthesis.cancel();const cl=text.replace(/\*\*/g,"").replace(/[#•\-]/g," ");const segs=cl.split(/([a-zA-Z][a-zA-Z\s\-',.!?;:()]+)/g).filter(s=>s.trim());let d=0;segs.forEach(s=>{const en=/^[a-zA-Z]/.test(s.trim());const u=new SpeechSynthesisUtterance(s.trim());u.lang=en?"en-US":"zh-TW";u.rate=en?rate:rate+.15;if(en&&_voiceUri){const v=window.speechSynthesis.getVoices().find(x=>x.voiceURI===_voiceUri);if(v){u.voice=v;u.lang=v.lang}}else if(!en){const zhV=getZhVoice();if(zhV){u.voice=zhV;u.lang=zhV.lang}}setTimeout(()=>window.speechSynthesis.speak(u),d);d+=s.length*(en?55:80)})}
 
 const S={btn:{padding:"12px 24px",borderRadius:12,border:"none",fontWeight:600,fontSize:16,cursor:"pointer",fontFamily:"inherit",transition:"all .15s"},
   card:{background:"var(--color-background-primary,#fff)",borderRadius:16,border:"1px solid var(--color-border-tertiary,#e0dfd9)"},
