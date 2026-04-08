@@ -314,6 +314,7 @@ export default function App(){
         <div style={{maxWidth:480,margin:"0 auto"}}>
           <div style={{fontWeight:600,fontSize:12,color:S.t2,marginBottom:6}}>📘 如何使用 EnglishGo</div>
           <div style={{marginBottom:8}}>選擇等級（小學／國中／高中）後，透過 SRS 單字卡記憶單字，搭配口說練習、打地鼠拼字、配對翻牌等遊戲強化學習。AI 家教可即時回答英文問題。每天練習 10 題即可累積經驗值與成就徽章！</div>
+          <div style={{marginBottom:8}}><a href="/learn/api-keys.html" style={{color:c.cl,textDecoration:"underline"}}>🔑 API Key 申請教學</a> — 解鎖 AI 家教 & 單字動圖</div>
           <div style={{fontSize:10,color:S.t3,marginBottom:6}}>本站使用 Google AdSense 投放廣告，並可能使用 Cookie 提供個人化廣告體驗。</div>
           <div>AI Tutor powered by <b>Gemini</b> · Speech by <b>Web Speech API</b></div>
           <div>© {new Date().getFullYear()} EnglishGo · 專為台灣學生設計</div>
@@ -345,7 +346,8 @@ function Landing({onSelect,dark,setDark}){
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))",gap:12}}>
           {[{href:"/learn/srs-method.html",t:"什麼是 SRS 間隔重複記憶法？",d:"科學證實最有效的單字記憶方法",ic:"🧠"},
             {href:"/learn/speaking-tips.html",t:"如何提升英文口說能力？",d:"5 個不用出國也能練好的方法",ic:"🗣️"},
-            {href:"/learn/vocabulary-guide.html",t:"國中會考單字準備攻略",d:"1,200 字怎麼背最有效？",ic:"📚"}
+            {href:"/learn/vocabulary-guide.html",t:"國中會考單字準備攻略",d:"1,200 字怎麼背最有效？",ic:"📚"},
+            {href:"/learn/api-keys.html",t:"API Key 申請教學",d:"解鎖 AI 家教 & 單字動圖",ic:"🔑"}
           ].map((a,i)=>(<a key={i} href={a.href} style={{display:"block",background:"rgba(255,255,255,.05)",border:"1px solid rgba(255,255,255,.08)",borderRadius:12,padding:"16px",textDecoration:"none",color:"#fff",transition:"all .2s"}} onMouseEnter={e=>e.currentTarget.style.background="rgba(255,255,255,.1)"} onMouseLeave={e=>e.currentTarget.style.background="rgba(255,255,255,.05)"}><div style={{fontSize:20,marginBottom:4}}>{a.ic}</div><div style={{fontSize:13,fontWeight:600,marginBottom:2}}>{a.t}</div><div style={{fontSize:11,color:"rgba(255,255,255,.4)"}}>{a.d}</div></a>))}
         </div>
       </div>
