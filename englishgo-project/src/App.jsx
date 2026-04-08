@@ -18,6 +18,13 @@ async function getSb() {
   return _sb;
 }
 
+function mapWord(r){
+  try{return{w:r.word,ph:r.phonetic||'',p:r.pos||'',m:r.meaning,
+    f:typeof r.forms==='string'?JSON.parse(r.forms||'[]'):(r.forms||[]),
+    c:typeof r.collocations==='string'?JSON.parse(r.collocations||'[]'):(r.collocations||[]),
+    ex:r.example||'',ez:r.example_zh||'',img:''}}catch{return null}
+}
+
 async function fetchCloudVocab(level, count = 20) {
   const sb = await getSb();
   if (!sb) return null;
@@ -27,12 +34,7 @@ async function fetchCloudVocab(level, count = 20) {
     const ids = allIds.sort(() => Math.random() - 0.5).slice(0, count).map(r => r.id);
     const { data } = await sb.from('word_bank').select('*').in('id', ids);
     if (!data) return null;
-    return data.sort(() => Math.random() - 0.5).map(r => ({
-      w: r.word, ph: r.phonetic || '', p: r.pos || '', m: r.meaning,
-      f: typeof r.forms === 'string' ? JSON.parse(r.forms || '[]') : (r.forms || []),
-      c: typeof r.collocations === 'string' ? JSON.parse(r.collocations || '[]') : (r.collocations || []),
-      ex: r.example || '', ez: r.example_zh || '', img: ''
-    }));
+    return data.sort(() => Math.random() - 0.5).map(r => mapWord(r)).filter(Boolean);
   } catch { return null; }
 }
 
@@ -194,6 +196,12 @@ const imgC={};function preImg(ws,s=0,n=3){for(let i=s;i<Math.min(s+n,ws.length);
 // ─── Markdown renderer ──────────────────────────────────────────────
 function Md({text,color}){if(!text)return null;return text.split("\n").map((line,li)=>{if(!line.trim())return <br key={li}/>;const isB=/^\s*[\*\-•]\s+/.test(line);const cl=isB?line.replace(/^\s*[\*\-•]\s+/,""):line;const parts=[];let rem=cl,k=0;while(rem.length>0){const m=rem.match(/\*\*(.+?)\*\*/);if(m){const idx=rem.indexOf(m[0]);if(idx>0)parts.push(<span key={k++}>{rem.slice(0,idx)}</span>);const isEn=/^[a-zA-Z]/.test(m[1]);parts.push(<strong key={k++} style={{fontWeight:700,cursor:isEn?"pointer":"default",color:isEn?color:"inherit",textDecoration:isEn?"underline dotted":"none",textUnderlineOffset:"3px"}} onClick={()=>isEn&&speak(m[1])}>{m[1]}</strong>);rem=rem.slice(idx+m[0].length)}else{parts.push(<span key={k++}>{rem}</span>);break}}return<div key={li} style={{marginBottom:2,paddingLeft:isB?16:0,position:"relative"}}>{isB&&<span style={{position:"absolute",left:0}}>•</span>}{parts}</div>})}
 function speakMx(text,rate=0.85){if(!window.speechSynthesis)return;window.speechSynthesis.cancel();const cl=text.replace(/\*\*/g,"").replace(/[#•\-]/g," ");const segs=cl.split(/([a-zA-Z][a-zA-Z\s\-',.!?;:()]+)/g).filter(s=>s.trim());let d=0;segs.forEach(s=>{const en=/^[a-zA-Z]/.test(s.trim());const u=new SpeechSynthesisUtterance(s.trim());u.lang=en?"en-US":"zh-TW";u.rate=en?rate:rate+.15;if(en&&_voiceUri){const v=window.speechSynthesis.getVoices().find(x=>x.voiceURI===_voiceUri);if(v){u.voice=v;u.lang=v.lang}}else if(!en){const zhV=getZhVoice();if(zhV){u.voice=zhV;u.lang=zhV.lang}}setTimeout(()=>window.speechSynthesis.speak(u),d);d+=s.length*(en?55:80)})}
+// LINE share: mobile uses line.me/R/share, desktop uses social-plugins
+function shareLine(text,url){
+  const isMobile=/iPhone|iPad|Android|Mobile/i.test(navigator.userAgent);
+  if(isMobile){window.open(`https://line.me/R/share?text=${encodeURIComponent(text)}`,"_blank")}
+  else{window.open(`https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(url||"https://englishgo-vevan.netlify.app")}&text=${encodeURIComponent(text)}`,"_blank")}
+}
 
 const S={btn:{padding:"12px 24px",borderRadius:12,border:"none",fontWeight:600,fontSize:16,cursor:"pointer",fontFamily:"inherit",transition:"all .15s"},
   card:{background:"var(--color-background-primary,#fff)",borderRadius:16,border:"1px solid var(--color-border-tertiary,#e0dfd9)"},
@@ -214,13 +222,13 @@ export default function App(){
   const[weakWords,setWeakWords]=useLS("weak",[]);
   const[history,setHistory]=useLS("hist",[]);
   const[showAch,setShowAch]=useState(null);
+  const[sharedWord,setSharedWord]=useState(null);// deep link word
 
   // Deep link: detect ?word=xxx&lv=xxx from shared URL
   useEffect(()=>{
     const p=new URLSearchParams(window.location.search);
     const w=p.get("word"),l=p.get("lv");
-    if(w&&l&&LV[l]){setLv(l);setMod("srs")}
-    // Clean URL without reload
+    if(w&&l&&LV[l]){setLv(l);setMod("srs");setSharedWord(w)}
     if(w)window.history.replaceState({},"",window.location.pathname);
   },[]);
 
@@ -285,7 +293,7 @@ export default function App(){
       </nav>
       <div style={{maxWidth:760,margin:"0 auto",padding:"12px 12px calc(16px + env(safe-area-inset-bottom, 0px))"}}>
         {!mod?<Menu lv={lv} onSelect={setMod} daily={daily} c={c} xp={xp} streak={streak} achUnlocked={achUnlocked} weakWords={weakWords}/>:
-         mod==="srs"?<SRS lv={lv} onBack={back} onXp={addXp} onDone={()=>setStats(s=>({...s,srsRounds:s.srsRounds+1}))} trackWeak={trackWeak} gifKey={gifKey} onSetGifKey={setGifKey}/>:
+         mod==="srs"?<SRS lv={lv} onBack={back} onXp={addXp} onDone={()=>setStats(s=>({...s,srsRounds:s.srsRounds+1}))} trackWeak={trackWeak} gifKey={gifKey} onSetGifKey={setGifKey} sharedWord={sharedWord}/>:
          mod==="quiz"?<QuizM lv={lv} onBack={back} onXp={addXp} onPerfect={()=>setStats(s=>({...s,perfectQuiz:s.perfectQuiz+1}))} trackWeak={trackWeak}/>:
          mod==="speak"?<SpeakM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="whack"?<WhackM lv={lv} onBack={back} onXp={addXp}/>:
@@ -470,11 +478,18 @@ function playSound(type){try{const ac=new(window.AudioContext||window.webkitAudi
 
 function Confetti(){const ps=useMemo(()=>Array.from({length:40},(_,i)=>({id:i,x:Math.random()*100,d:Math.random()*3+2,c:["#E24B4A","#EF9F27","#1D9E75","#185FA5","#D85A30","#7F77DD","#FF69B4","#FFD700"][i%8],s:Math.random()*.4+.3,r:Math.random()*360})),[]);return(<div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:9999,overflow:"hidden"}}>{ps.map(p=><div key={p.id} style={{position:"absolute",left:`${p.x}%`,top:0,width:8,height:8,background:p.c,borderRadius:p.id%3===0?"50%":"2px",animation:`confDrop ${p.d}s ${p.s}s ease-in forwards`,transform:`rotate(${p.r}deg)`}}/>)}</div>)}
 
-function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,onSetGifKey}){
+function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,onSetGifKey,sharedWord}){
   const built=V[lv];const[cards,setCards]=useState(built);const[deck,setDeck]=useState(()=>createDeck(built));const[flip,setFlip]=useState(false);const[info,setInfo]=useState(false);const[loading,setLoading]=useState(true);const[src,setSrc]=useState("built-in");const c=LV[lv];const fr=useRef();
   const[combo,setCombo]=useState(0);const[maxCombo,setMaxCombo]=useState(0);const[comboAnim,setComboAnim]=useState(false);const[showConfetti,setShowConfetti]=useState(false);const[flipAnim,setFlipAnim]=useState(false);const[mascotMood,setMascotMood]=useState("idle");
   const[gifUrl,setGifUrl]=useState(null);const[gifLoading,setGifLoading]=useState(false);const[gifKeyInp,setGifKeyInp]=useState(gifKey||"");
-  useEffect(()=>{(async()=>{setLoading(true);const cloud=await fetchCloudVocab(lv,20);if(cloud&&cloud.length>0){setCards(cloud);setDeck(createDeck(cloud));setSrc(`cloud (${cloud.length}字)`);}else setSrc("built-in ("+built.length+"字)");setLoading(false)})()},[lv]);
+  useEffect(()=>{(async()=>{setLoading(true);const cloud=await fetchCloudVocab(lv,20);if(cloud&&cloud.length>0){
+    // If sharedWord, put it first in the deck
+    let ordered=cloud;
+    if(sharedWord){const si=cloud.findIndex(w=>w.w.toLowerCase()===sharedWord.toLowerCase());if(si>0){ordered=[cloud[si],...cloud.slice(0,si),...cloud.slice(si+1)]}else if(si<0){
+      // Word not in cloud batch, try to fetch it specifically
+      try{const sb=await getSb();if(sb){const{data}=await sb.from('word_bank').select('*').ilike('word',sharedWord).limit(1);if(data?.[0]){const w=mapWord(data[0]);if(w)ordered=[w,...cloud.slice(0,19)]}}}catch{}
+    }}
+    setCards(ordered);setDeck(createDeck(ordered));setSrc(`cloud (${ordered.length}字)`);}else setSrc("built-in ("+built.length+"字)");setLoading(false)})()},[lv]);
   const cur=deck.queue[0]!==undefined?cards[deck.queue[0]]:null;const left=deck.queue.length;const done=left===0;
   // Fetch GIF for current word
   useEffect(()=>{if(!cur||!gifKey)return;setGifLoading(true);fetchGif(cur.w,gifKey).then(url=>{setGifUrl(url);setGifLoading(false)})},[cur?.w,gifKey]);
@@ -531,7 +546,7 @@ function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,onSetGifKey}){
     {flip&&<>
       <div style={{display:"flex",justifyContent:"center",gap:8,marginTop:8}}>
         <button onClick={()=>{setFlip(false);setFlipAnim(false)}} style={{background:S.bg2,border:`1px solid ${S.bd}`,borderRadius:14,padding:"10px 20px",fontSize:14,cursor:"pointer",color:S.t2,fontFamily:"inherit",minHeight:44}}>🔙 翻回</button>
-        <button onClick={()=>{const url=`https://englishgo-vevan.netlify.app/?word=${encodeURIComponent(cur.w)}&lv=${lv}`;const t=`📘 今天學了一個英文單字！\n\n📝 ${cur.w}${cur.ph?` ${cur.ph}`:""}\n   ${cur.p} ${cur.m}\n${cur.ex?`\n📖 ${cur.ex}`:""}\n${cur.ez?`   ${cur.ez}`:""}\n\n一起來學英文 👇\n${url}`;window.open(`https://line.me/R/share?text=${encodeURIComponent(t)}`,"_blank")}} style={{background:"#06C755",border:"none",borderRadius:14,padding:"10px 16px",fontSize:14,cursor:"pointer",color:"#fff",fontFamily:"inherit",minHeight:44,fontWeight:600}}>📤 LINE</button>
+        <button onClick={()=>{const url=`https://englishgo-vevan.netlify.app/?word=${encodeURIComponent(cur.w)}&lv=${lv}`;const t=`📘 今天學了一個英文單字！\n\n📝 ${cur.w}${cur.ph?` ${cur.ph}`:""}\n   ${cur.p} ${cur.m}\n${cur.ex?`\n📖 ${cur.ex}`:""}\n${cur.ez?`   ${cur.ez}`:""}\n\n一起來學英文 👇\n${url}`;shareLine(t,url)}} style={{background:"#06C755",border:"none",borderRadius:14,padding:"10px 16px",fontSize:14,cursor:"pointer",color:"#fff",fontFamily:"inherit",minHeight:44,fontWeight:600}}>📤 LINE</button>
         <button onClick={()=>{const url=`https://englishgo-vevan.netlify.app/?word=${encodeURIComponent(cur.w)}&lv=${lv}`;const t=`📘 ${cur.w}${cur.ph?` ${cur.ph}`:""} — ${cur.m}${cur.ex?`\n📖 ${cur.ex}`:""}${cur.ez?`\n   ${cur.ez}`:""}\n${url}`;navigator.clipboard?.writeText(t).then(()=>alert("已複製！"))}} style={{background:S.bg2,border:`1px solid ${S.bd}`,borderRadius:14,padding:"10px 16px",fontSize:14,cursor:"pointer",color:S.t2,fontFamily:"inherit",minHeight:44}}>📋 複製</button>
       </div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6,marginTop:8}}>{[{k:"again",l:"Again",n:"1",cl:"#E24B4A",bg:"#FCEBEB",em:"😅"},{k:"hard",l:"Hard",n:"2",cl:"#BA7517",bg:"#FAEEDA",em:"🤔"},{k:"good",l:"Good",n:"3",cl:"#0F6E56",bg:"#E1F5EE",em:"😊"},{k:"easy",l:"Easy",n:"4",cl:"#185FA5",bg:"#E6F1FB",em:"🤩"}].map(b=>(<button key={b.k} onClick={()=>rate(b.k)} style={{...S.btn,background:b.bg,color:b.cl,padding:"14px 4px",fontSize:14,display:"flex",flexDirection:"column",alignItems:"center",gap:2,transition:"transform .1s",minHeight:60,WebkitTapHighlightColor:"transparent"}} onTouchStart={e=>e.currentTarget.style.transform="scale(0.93)"} onTouchEnd={e=>e.currentTarget.style.transform="scale(1)"} onMouseDown={e=>e.currentTarget.style.transform="scale(0.95)"} onMouseUp={e=>e.currentTarget.style.transform="scale(1)"}><span style={{fontSize:24}}>{b.em}</span>{b.l}<span style={{fontSize:10,opacity:.5}}>{b.n}</span></button>))}</div>
@@ -1101,7 +1116,7 @@ function WeakPage({onBack,weakWords,setWeakWords,c,lv}){
 // ═══ DASHBOARD (學習報告) ═══════════════════════════════════════════
 function Dashboard({onBack,c,xp,streak,stats,daily,weakWords,history,achUnlocked,lv}){
   const shareText=`🏆 我的 EnglishGo 學習成績！\n\n⭐ ${xp} XP · 🔥 連續 ${streak} 天\n📊 SRS ${stats.srsRounds} 輪完成\n💯 測驗滿分 ${stats.perfectQuiz} 次\n🏅 成就 ${achUnlocked.length} 個\n\n一起來學英文 👇\nhttps://englishgo-vevan.netlify.app`;
-  const shareToLine=()=>{window.open(`https://line.me/R/share?text=${encodeURIComponent(shareText)}`,"_blank")};
+  const shareToLine=()=>{shareLine(shareText,"https://englishgo-vevan.netlify.app")};
   const shareCopy=()=>{navigator.clipboard?.writeText(shareText).then(()=>alert("已複製到剪貼簿！")).catch(()=>{})};
 
   // Compute stats
