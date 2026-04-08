@@ -298,6 +298,8 @@ export default function App(){
          mod==="speak"?<SpeakM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="whack"?<WhackM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="match"?<MatchM lv={lv} onBack={back} onXp={addXp}/>:
+         mod==="bomb"?<BombM lv={lv} onBack={back} onXp={addXp}/>:
+         mod==="balloon"?<BalloonM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="grammar"?<GrammarM lv={lv} onBack={back}/>:
          mod==="reading"?<ReadingM lv={lv} onBack={back}/>:
          mod==="dictation"?<DictM lv={lv} onBack={back} onXp={addXp} onDone={()=>setStats(s=>({...s,dictDone:s.dictDone+1}))}/>:
@@ -398,6 +400,8 @@ function Menu({lv,onSelect,daily,c,xp,streak,achUnlocked,weakWords}){
         {id:"speak",icon:"🗣️",t:"口說練習",d:"唸出來！"},
         {id:"whack",icon:"🔨",t:"打地鼠拼字",d:"限時拼字"},
         {id:"match",icon:"🎴",t:"配對翻牌",d:"記憶遊戲"},
+        {id:"bomb",icon:"💣",t:"拆彈拼字",d:"限時拆彈！"},
+        {id:"balloon",icon:"🎈",t:"射氣球",d:"點對的氣球"},
         {id:"dictation",icon:"🎧",t:"聽寫訓練",d:"聽力養成"},
         {id:"scramble",icon:"🧩",t:"句子重組",d:"語序訓練"},
         {id:"grammar",icon:"🧠",t:"文法學堂",d:`${G[lv].length} 個重點`},
@@ -929,6 +933,182 @@ function MatchM({lv,onBack,onXp}){
   </div>);
 }
 
+// ═══ BOMB DEFUSE SPELLING (拆彈拼字) ════════════════════════════════
+function BombM({lv,onBack,onXp}){
+  const c=LV[lv];
+  const[words,setWords]=useState(V[lv]);const[loading,setLoading]=useState(true);
+  const[wi,setWi]=useState(0);const[input,setInput]=useState("");
+  const[timeLeft,setTimeLeft]=useState(0);const[phase,setPhase]=useState("ready");
+  const[score,setScore]=useState(0);const[combo,setCombo]=useState(0);const[maxCombo,setMaxCombo]=useState(0);
+  const[showConfetti,setShowConfetti]=useState(false);const[shake,setShake]=useState(false);
+  const timerRef=useRef(null);const inputRef=useRef(null);
+  const BOMB_TIME=lv==="elementary"?20:lv==="junior"?15:12;
+  const TOTAL=8;
+
+  useEffect(()=>{(async()=>{const cloud=await fetchCloudVocab(lv,TOTAL);if(cloud?.length)setWords(cloud.slice(0,TOTAL));setLoading(false)})()},[lv]);
+
+  const cur=words[wi];
+  const startRound=()=>{setInput("");setTimeLeft(BOMB_TIME);setPhase("play");
+    if(timerRef.current)clearInterval(timerRef.current);
+    timerRef.current=setInterval(()=>{setTimeLeft(t=>{if(t<=1){clearInterval(timerRef.current);setPhase("explode");setCombo(0);playSound("bad");return 0}return t-1})},1000);
+    setTimeout(()=>inputRef.current?.focus(),100);
+  };
+  useEffect(()=>{if(phase==="ready"&&!loading&&cur)startRound()},[wi,loading,phase]);
+  useEffect(()=>()=>{if(timerRef.current)clearInterval(timerRef.current)},[]);
+
+  const submit=()=>{
+    if(phase!=="play"||!input.trim())return;
+    if(input.trim().toLowerCase()===cur.w.toLowerCase()){
+      clearInterval(timerRef.current);setPhase("defused");setScore(s=>s+1);onXp(10);
+      setCombo(cb=>{const nc=cb+1;setMaxCombo(mc=>Math.max(mc,nc));if(nc>=3)playSound("combo");else playSound("good");return nc});
+    }else{setShake(true);setTimeout(()=>setShake(false),400);playSound("bad");setInput("")}
+  };
+
+  const next=()=>{
+    if(wi+1>=Math.min(words.length,TOTAL)){playSound("done");setShowConfetti(true);setTimeout(()=>setShowConfetti(false),3500);setPhase("done");return}
+    setWi(w=>w+1);setPhase("ready");
+  };
+  const restart=async()=>{setLoading(true);setWi(0);setScore(0);setCombo(0);setMaxCombo(0);setPhase("ready");const cloud=await fetchCloudVocab(lv,TOTAL);if(cloud?.length)setWords(cloud.slice(0,TOTAL));setLoading(false)};
+
+  if(loading)return(<div><Hdr t="💣 拆彈拼字" onBack={onBack} cl={c.cl}/><div style={{textAlign:"center",padding:"48px",color:S.t3}}>載入中...</div></div>);
+
+  if(phase==="done"){const total=Math.min(words.length,TOTAL);return(<div>{showConfetti&&<Confetti/>}<Hdr t="💣 拆彈拼字" onBack={onBack} cl={c.cl}/><div style={{textAlign:"center",padding:"32px 16px"}}><div style={{fontSize:56,animation:"bounceIn .5s ease-out"}}>{score>=total*0.8?"🏆":score>=total*0.5?"🎉":"💪"}</div><h2 style={{fontSize:22,fontWeight:700,color:S.t1,marginTop:8}}>任務結束！</h2><div style={{fontSize:18,color:c.cl,fontWeight:600,marginTop:6}}>成功拆彈 {score}/{total}</div>{maxCombo>=3&&<div style={{fontSize:13,color:"#EF9F27",fontWeight:600,marginTop:4}}>🔥 最高 {maxCombo} 連擊！</div>}<div style={{fontSize:14,color:S.t2,marginTop:8,marginBottom:16}}>{score>=total*0.8?"拆彈專家！🌟":"多練幾次就能全部拆除！💪"}</div><button onClick={restart} style={{...S.btn,background:c.cl,color:"#fff",marginRight:8,fontSize:14}}>🔄 再玩一次</button><button onClick={onBack} style={{...S.btn,background:S.bg2,color:S.t1,fontSize:14}}>返回</button></div></div>)}
+
+  const pct=Math.round((wi/Math.min(words.length,TOTAL))*100);
+  const urgency=timeLeft<=3?"#E24B4A":timeLeft<=6?"#EF9F27":"#1D9E75";
+  const comboLabel=combo>=7?"🔥🔥 ON FIRE!":combo>=5?"🔥 COMBO x"+combo:combo>=3?"✨ "+combo+" 連擊！":"";
+
+  return(<div><Hdr t="💣 拆彈拼字" onBack={onBack} cl={c.cl}/>
+    <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:6,fontSize:12}}><div style={{flex:1,height:6,background:S.bg2,borderRadius:3}}><div style={{height:"100%",width:`${pct}%`,background:`linear-gradient(90deg,${c.cl},${c.ac})`,borderRadius:3,transition:"width .3s"}}/></div><span style={{color:S.t3}}>{wi+1}/{Math.min(words.length,TOTAL)}</span><span style={{color:"#1D9E75",fontWeight:600}}>{score}✓</span></div>
+    {comboLabel&&<div style={{textAlign:"center",fontSize:14,fontWeight:700,color:"#EF9F27",marginBottom:4,animation:"comboFlash .5s"}}>{comboLabel}</div>}
+
+    {/* Bomb card */}
+    <div style={{...S.card,padding:"24px 20px",textAlign:"center",marginBottom:12,animation:shake?"moleShake .4s":"none",position:"relative",overflow:"hidden"}}>
+      {/* Bomb visual */}
+      <div style={{fontSize:phase==="explode"?72:56,animation:phase==="play"&&timeLeft<=5?"emojiPulse .5s infinite":phase==="defused"?"bounceIn .5s":"none",transition:"all .3s"}}>{phase==="explode"?"💥":phase==="defused"?"✅":"💣"}</div>
+      {/* Timer */}
+      {phase==="play"&&<div style={{fontSize:36,fontWeight:700,color:urgency,fontFamily:"monospace",marginTop:8,animation:timeLeft<=3?"emojiPulse .4s infinite":"none"}}>{timeLeft}s</div>}
+      <div style={{height:8,background:S.bg2,borderRadius:4,margin:"10px auto",maxWidth:240,overflow:"hidden"}}><div style={{height:"100%",width:`${(timeLeft/BOMB_TIME)*100}%`,background:urgency,borderRadius:4,transition:"width .8s"}}/></div>
+      {/* Clue */}
+      <div style={{fontSize:14,color:c.cl,fontWeight:600,marginTop:8}}>拼出這個字來拆彈！</div>
+      <div style={{fontSize:28,fontWeight:700,color:S.t1,marginTop:6}}>{cur.m}</div>
+      <div style={{fontSize:13,color:S.t2,marginTop:2}}>{cur.p}{cur.ph?` · ${cur.ph}`:""}</div>
+      <button onClick={()=>speak(cur.w)} style={{background:"none",border:"none",fontSize:24,cursor:"pointer",marginTop:6}}>🔊 提示發音</button>
+
+      {/* Input */}
+      {phase==="play"&&<div style={{marginTop:14}}>
+        <input ref={inputRef} value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")submit()}} placeholder="輸入英文單字..." autoComplete="off" autoCapitalize="off" style={{width:"100%",maxWidth:280,padding:"14px 16px",borderRadius:14,border:`2px solid ${urgency}`,fontSize:18,fontFamily:"inherit",background:S.bg1,color:S.t1,outline:"none",textAlign:"center",fontWeight:600,letterSpacing:1}}/>
+        <div style={{marginTop:10}}><button onClick={submit} disabled={!input.trim()} style={{...S.btn,background:urgency,color:"#fff",padding:"10px 28px",fontSize:15,opacity:input.trim()?1:.4}}>💣 拆彈！</button></div>
+      </div>}
+
+      {/* Result */}
+      {phase==="defused"&&<div style={{marginTop:12}}><div style={{fontSize:18,fontWeight:700,color:"#1D9E75"}}>✅ 成功拆彈！</div><div style={{fontSize:16,color:S.t1,marginTop:4}}>{cur.w}</div></div>}
+      {phase==="explode"&&<div style={{marginTop:12}}><div style={{fontSize:18,fontWeight:700,color:"#E24B4A"}}>💥 爆炸了！</div><div style={{fontSize:16,color:S.t1,marginTop:4}}>正確答案：<b style={{color:c.cl}}>{cur.w}</b></div></div>}
+    </div>
+
+    {(phase==="defused"||phase==="explode")&&<div style={{textAlign:"center"}}><button onClick={next} style={{...S.btn,background:c.cl,color:"#fff",padding:"12px 24px",fontSize:14}}>{wi+1>=Math.min(words.length,TOTAL)?"🏁 看成績":"▶ 下一題"}</button></div>}
+  </div>);
+}
+
+// ═══ BALLOON POP (射氣球) ══════════════════════════════════════════
+function BalloonM({lv,onBack,onXp}){
+  const c=LV[lv];
+  const[words,setWords]=useState(V[lv]);const[loading,setLoading]=useState(true);
+  const[qi,setQi]=useState(0);const[score,setScore]=useState(0);const[combo,setCombo]=useState(0);const[maxCombo,setMaxCombo]=useState(0);
+  const[phase,setPhase]=useState("play");// play,correct,wrong,done
+  const[showConfetti,setShowConfetti]=useState(false);const[popped,setPopped]=useState(null);
+  const[balloons,setBalloons]=useState([]);
+  const TOTAL=10;
+
+  useEffect(()=>{(async()=>{const cloud=await fetchCloudVocab(lv,TOTAL*3);if(cloud?.length)setWords(cloud);setLoading(false)})()},[lv]);
+
+  const generateBalloons=useCallback((correct)=>{
+    if(!correct)return;
+    const wrongs=words.filter(w=>w.w!==correct.w).sort(()=>Math.random()-.5).slice(0,3);
+    const opts=[correct,...wrongs].sort(()=>Math.random()-.5);
+    const colors=["#E24B4A","#4285F4","#FBBC04","#34A853","#9C27B0","#FF6B6B","#00BCD4","#FF9800"];
+    return opts.map((w,i)=>({
+      id:i,word:w,isCorrect:w.w===correct.w,
+      x:10+Math.random()*60,
+      color:colors[Math.floor(Math.random()*colors.length)],
+      delay:i*0.3,
+      speed:4+Math.random()*3
+    }));
+  },[words]);
+
+  useEffect(()=>{if(!loading&&words[qi])setBalloons(generateBalloons(words[qi])||[])},[qi,loading,generateBalloons]);
+
+  const pop=(balloon)=>{
+    if(phase!=="play")return;
+    setPopped(balloon.id);
+    playSound("flip");
+    if(balloon.isCorrect){
+      setScore(s=>s+1);onXp(10);setPhase("correct");
+      setCombo(cb=>{const nc=cb+1;setMaxCombo(mc=>Math.max(mc,nc));if(nc>=3)playSound("combo");else playSound("good");return nc});
+    }else{
+      setPhase("wrong");setCombo(0);playSound("bad");
+    }
+    setTimeout(()=>{
+      if(qi+1>=Math.min(words.length,TOTAL)){playSound("done");setShowConfetti(true);setTimeout(()=>setShowConfetti(false),3500);setPhase("done")}
+      else{setQi(q=>q+1);setPhase("play");setPopped(null)}
+    },1200);
+  };
+
+  const restart=async()=>{setLoading(true);setQi(0);setScore(0);setCombo(0);setMaxCombo(0);setPhase("play");setPopped(null);const cloud=await fetchCloudVocab(lv,TOTAL*3);if(cloud?.length)setWords(cloud);setLoading(false)};
+  const cur=words[qi];
+
+  if(loading||!cur)return(<div><Hdr t="🎈 射氣球" onBack={onBack} cl={c.cl}/><div style={{textAlign:"center",padding:"48px",color:S.t3}}>載入中...</div></div>);
+
+  if(phase==="done"){const total=Math.min(words.length,TOTAL);return(<div>{showConfetti&&<Confetti/>}<Hdr t="🎈 射氣球" onBack={onBack} cl={c.cl}/><div style={{textAlign:"center",padding:"32px 16px"}}><div style={{fontSize:56,animation:"bounceIn .5s ease-out"}}>{score>=total*0.8?"🏆":score>=total*0.5?"🎉":"💪"}</div><h2 style={{fontSize:22,fontWeight:700,color:S.t1,marginTop:8}}>遊戲結束！</h2><div style={{fontSize:18,color:c.cl,fontWeight:600,marginTop:6}}>射中 {score}/{total} 個</div>{maxCombo>=3&&<div style={{fontSize:13,color:"#EF9F27",fontWeight:600,marginTop:4}}>🔥 最高 {maxCombo} 連擊！</div>}<div style={{fontSize:14,color:S.t2,marginTop:8,marginBottom:16}}>{score>=total*0.8?"神射手！🌟":"多玩幾次會更準！💪"}</div><button onClick={restart} style={{...S.btn,background:c.cl,color:"#fff",marginRight:8,fontSize:14}}>🔄 再玩一次</button><button onClick={onBack} style={{...S.btn,background:S.bg2,color:S.t1,fontSize:14}}>返回</button></div></div>)}
+
+  const pct=Math.round((qi/Math.min(words.length,TOTAL))*100);
+  const comboLabel=combo>=7?"🔥🔥 ON FIRE!":combo>=5?"🔥 COMBO x"+combo:combo>=3?"✨ "+combo+" 連擊！":"";
+
+  return(<div><Hdr t="🎈 射氣球" onBack={onBack} cl={c.cl}/>
+    <style>{`@keyframes balloonFloat{0%{transform:translateY(120%) scale(0.8);opacity:0}10%{opacity:1;transform:translateY(100%) scale(1)}90%{opacity:1}100%{transform:translateY(-20%) scale(0.9);opacity:0}}@keyframes balloonPop{0%{transform:scale(1)}50%{transform:scale(1.4);opacity:.5}100%{transform:scale(0);opacity:0}}`}</style>
+    <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:6,fontSize:12}}><div style={{flex:1,height:6,background:S.bg2,borderRadius:3}}><div style={{height:"100%",width:`${pct}%`,background:`linear-gradient(90deg,${c.cl},${c.ac})`,borderRadius:3,transition:"width .3s"}}/></div><span style={{color:S.t3}}>{qi+1}/{Math.min(words.length,TOTAL)}</span><span style={{color:"#1D9E75",fontWeight:600}}>{score}✓</span></div>
+    {comboLabel&&<div style={{textAlign:"center",fontSize:14,fontWeight:700,color:"#EF9F27",marginBottom:4,animation:"comboFlash .5s"}}>{comboLabel}</div>}
+
+    {/* Question */}
+    <div style={{...S.card,padding:"20px",textAlign:"center",marginBottom:12}}>
+      <div style={{fontSize:13,color:c.cl,fontWeight:600}}>射中正確翻譯的氣球！</div>
+      <div style={{fontSize:32,fontWeight:700,color:S.t1,marginTop:6}}>{cur?.w}</div>
+      <div style={{fontSize:13,color:S.t2,marginTop:2}}>{cur?.ph} · {cur?.p}</div>
+      <button onClick={()=>speak(cur?.w)} style={{background:"none",border:"none",fontSize:24,cursor:"pointer",marginTop:4}}>🔊</button>
+    </div>
+
+    {/* Balloon area */}
+    <div style={{position:"relative",height:280,background:`linear-gradient(180deg,#87CEEB22,#87CEEB08)`,borderRadius:20,overflow:"hidden",border:`1px solid ${S.bd}`}}>
+      {/* Clouds */}
+      <div style={{position:"absolute",top:12,left:"10%",fontSize:28,opacity:.15}}>☁️</div>
+      <div style={{position:"absolute",top:30,right:"15%",fontSize:22,opacity:.1}}>☁️</div>
+      {/* Balloons */}
+      {balloons.map(b=>(
+        <button key={b.id} onClick={()=>pop(b)} disabled={phase!=="play"} style={{
+          position:"absolute",left:`${b.x}%`,bottom:0,
+          width:120,padding:"14px 8px",
+          background:popped===b.id?`${b.color}33`:b.color,
+          color:popped===b.id?"transparent":"#fff",
+          border:"none",borderRadius:"50% 50% 50% 50% / 40% 40% 60% 60%",
+          fontSize:14,fontWeight:600,fontFamily:"inherit",
+          cursor:phase==="play"?"pointer":"default",
+          animation:popped===b.id?"balloonPop .5s ease-out forwards":`balloonFloat ${b.speed}s ${b.delay}s ease-in-out infinite`,
+          boxShadow:`inset -4px -4px 12px rgba(255,255,255,.3), 0 4px 12px ${b.color}40`,
+          WebkitTapHighlightColor:"transparent",
+          display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2,
+          transition:"opacity .2s"
+        }}>
+          <div style={{fontSize:12,opacity:.8}}>🎈</div>
+          <div>{b.word.m}</div>
+        </button>
+      ))}
+      {/* Result overlay */}
+      {phase==="correct"&&<div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(29,158,117,.15)",borderRadius:20}}><div style={{fontSize:48,animation:"bounceIn .3s"}}>🎯</div></div>}
+      {phase==="wrong"&&<div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(226,75,74,.1)",borderRadius:20,flexDirection:"column"}}><div style={{fontSize:48}}>❌</div><div style={{fontSize:16,fontWeight:700,color:"#E24B4A",marginTop:4}}>正確：{cur?.m}</div></div>}
+    </div>
+  </div>);
+}
+
 // ═══ QUIZ ═══════════════════════════════════════════════════════════
 function QuizM({lv,onBack,onXp,onPerfect,trackWeak}){
   const built=V[lv];const[words,setWords]=useState(built);const[loading,setLoading]=useState(true);const[qi,setQi]=useState(0);const[score,setScore]=useState(0);const[sel,setSel]=useState(null);const[done,setDone]=useState(false);const c=LV[lv];
@@ -1178,7 +1358,7 @@ function Dashboard({onBack,c,xp,streak,stats,daily,weakWords,history,achUnlocked
       {[...weakWords].sort((a,b)=>b.n-a.n).slice(0,5).map((w,i)=>(<div key={w.w} style={{display:"flex",alignItems:"center",gap:10,padding:"6px 0",borderBottom:i<4?`1px solid ${S.bd}`:"none"}}>
         <div style={{fontSize:14,fontWeight:700,color:"#E24B4A",width:24,textAlign:"center"}}>{w.n}</div>
         <div style={{flex:1,fontSize:14,fontWeight:600,color:S.t1}}>{w.w}</div>
-        <div style={{width:`${Math.min((w.n/Math.max(...weakWords.map(x=>x.n)))*80,80)}px`,height:8,background:"linear-gradient(90deg,#E24B4A,#EF9F27)",borderRadius:4}}/>
+        <div style={{width:`${Math.min((w.n/Math.max(...weakWords.map(x=>x.n),1))*80,80)}px`,height:8,background:"linear-gradient(90deg,#E24B4A,#EF9F27)",borderRadius:4}}/>
       </div>))}
     </div>}
 
