@@ -1074,67 +1074,67 @@ function BombM({lv,onBack,onXp}){
   </div>);
 }
 
-// ═══ FRUIT SLASH (切水果) ══════════════════════════════════════════
+// ═══ FRUIT SLASH (切水果 v3) ════════════════════════════════════════
 function BalloonM({lv,onBack,onXp}){
   const c=LV[lv];
   const[words,setWords]=useState(V[lv]);const[loading,setLoading]=useState(true);
   const[qi,setQi]=useState(0);const[score,setScore]=useState(0);const[combo,setCombo]=useState(0);const[maxCombo,setMaxCombo]=useState(0);
   const[phase,setPhase]=useState("play");const[showConfetti,setShowConfetti]=useState(false);
-  const[fruits,setFruits]=useState([]);const[slashed,setSlashed]=useState(null);const[lives,setLives]=useState(3);
-  const[splats,setSplats]=useState([]);
+  const[options,setOptions]=useState([]);const[slashed,setSlashed]=useState(null);const[lives,setLives]=useState(3);
   const TOTAL=10;
   const FRUIT_EMOJIS=["🍎","🍊","🍋","🍇","🍉","🍓","🍑","🥝","🍌","🫐","🍒","🥭"];
 
   useEffect(()=>{(async()=>{const cloud=await fetchCloudVocab(lv,TOTAL*3);if(cloud?.length)setWords(cloud);setLoading(false)})()},[lv]);
 
-  const generateFruits=useCallback((correct)=>{
+  const generateOptions=useCallback((correct)=>{
     if(!correct)return[];
     const wrongs=words.filter(w=>w.w!==correct.w).sort(()=>Math.random()-.5).slice(0,3);
-    const opts=[correct,...wrongs].sort(()=>Math.random()-.5);
-    return opts.map((w,i)=>({
+    return[correct,...wrongs].sort(()=>Math.random()-.5).map((w,i)=>({
       id:i,word:w,isCorrect:w.w===correct.w,
       emoji:FRUIT_EMOJIS[Math.floor(Math.random()*FRUIT_EMOJIS.length)],
-      x:5+i*23+Math.random()*5,
-      delay:i*0.5+Math.random()*0.3,
-      speed:2.8+Math.random()*1.2,
-      rotation:Math.random()*360
     }));
   },[words]);
 
-  useEffect(()=>{if(!loading&&words[qi])setFruits(generateFruits(words[qi]))},[qi,loading,generateFruits]);
+  useEffect(()=>{if(!loading&&words[qi])setOptions(generateOptions(words[qi]))},[qi,loading,generateOptions]);
 
-  const slash=(fruit)=>{
+  const slash=(opt)=>{
     if(phase!=="play"||slashed!==null)return;
-    setSlashed(fruit.id);
-    setSplats(s=>[...s,{id:Date.now(),x:fruit.x,emoji:fruit.emoji}]);
-    setTimeout(()=>setSplats(s=>s.filter(x=>Date.now()-x.id<800)),1000);
+    setSlashed(opt.id);
     playSound("flip");
-    if(fruit.isCorrect){
+    if(opt.isCorrect){
       setScore(s=>s+1);onXp(10);setPhase("correct");
       setCombo(cb=>{const nc=cb+1;setMaxCombo(mc=>Math.max(mc,nc));if(nc>=3)playSound("combo");else playSound("good");return nc});
-      speak(fruit.word.w);
+      speak(opt.word.w);
     }else{
       setPhase("wrong");setCombo(0);setLives(l=>l-1);playSound("bad");
     }
     setTimeout(()=>{
-      if(lives<=1&&!fruit.isCorrect){playSound("done");setPhase("done");return}
+      if(lives<=1&&!opt.isCorrect){playSound("done");setPhase("done");return}
       if(qi+1>=Math.min(words.length,TOTAL)){playSound("done");setShowConfetti(true);setTimeout(()=>setShowConfetti(false),3500);setPhase("done")}
       else{setQi(q=>q+1);setPhase("play");setSlashed(null)}
-    },1200);
+    },1400);
   };
 
-  const restart=async()=>{setLoading(true);setQi(0);setScore(0);setCombo(0);setMaxCombo(0);setLives(3);setPhase("play");setSlashed(null);setSplats([]);const cloud=await fetchCloudVocab(lv,TOTAL*3);if(cloud?.length)setWords(cloud);setLoading(false)};
+  const restart=async()=>{setLoading(true);setQi(0);setScore(0);setCombo(0);setMaxCombo(0);setLives(3);setPhase("play");setSlashed(null);const cloud=await fetchCloudVocab(lv,TOTAL*3);if(cloud?.length)setWords(cloud);setLoading(false)};
   const cur=words[qi];
 
   if(loading||!cur)return(<div><Hdr t="🍉 切水果" onBack={onBack} cl={c.cl}/><div style={{textAlign:"center",padding:"48px",color:S.t3}}>載入中...</div></div>);
 
-  if(phase==="done"){const total=Math.min(words.length,TOTAL);return(<div>{showConfetti&&<Confetti/>}<Hdr t="🍉 切水果" onBack={onBack} cl={c.cl}/><div style={{textAlign:"center",padding:"32px 16px"}}><div style={{fontSize:56,animation:"bounceIn .5s ease-out"}}>{lives<=0?"💀":score>=total*0.8?"🏆":"🎉"}</div><h2 style={{fontSize:22,fontWeight:700,color:S.t1,marginTop:8}}>{lives<=0?"遊戲結束！":"切完了！"}</h2><div style={{fontSize:18,color:c.cl,fontWeight:600,marginTop:6}}>切中 {score} 個</div>{maxCombo>=3&&<div style={{fontSize:13,color:"#EF9F27",fontWeight:600,marginTop:4}}>🔥 最高 {maxCombo} 連擊！</div>}<div style={{fontSize:14,color:S.t2,marginTop:8,marginBottom:16}}>{score>=total*0.8?"水果忍者！🌟":"多練幾次反應會更快！💪"}</div><button onClick={restart} style={{...S.btn,background:c.cl,color:"#fff",marginRight:8,fontSize:14}}>🔄 再玩一次</button><button onClick={onBack} style={{...S.btn,background:S.bg2,color:S.t1,fontSize:14}}>返回</button></div></div>)}
+  if(phase==="done"){const total=Math.min(words.length,TOTAL);return(<div>{showConfetti&&<Confetti/>}<Hdr t="🍉 切水果" onBack={onBack} cl={c.cl}/><div style={{textAlign:"center",padding:"32px 16px"}}><div style={{fontSize:56,animation:"bounceIn .5s ease-out"}}>{lives<=0?"💀":score>=total*0.8?"🏆":"🎉"}</div><h2 style={{fontSize:22,fontWeight:700,color:S.t1,marginTop:8}}>{lives<=0?"遊戲結束！":"切完了！"}</h2><div style={{fontSize:18,color:c.cl,fontWeight:600,marginTop:6}}>切中 {score}/{total}</div>{maxCombo>=3&&<div style={{fontSize:13,color:"#EF9F27",fontWeight:600,marginTop:4}}>🔥 最高 {maxCombo} 連擊！</div>}<div style={{fontSize:14,color:S.t2,marginTop:8,marginBottom:16}}>{score>=total*0.8?"水果忍者！🌟":"多練幾次反應會更快！💪"}</div><button onClick={restart} style={{...S.btn,background:c.cl,color:"#fff",marginRight:8,fontSize:14}}>🔄 再玩一次</button><button onClick={onBack} style={{...S.btn,background:S.bg2,color:S.t1,fontSize:14}}>返回</button></div></div>)}
 
   const pct=Math.round((qi/Math.min(words.length,TOTAL))*100);
   const comboLabel=combo>=7?"🔥🔥 ON FIRE!":combo>=5?"🔥 COMBO x"+combo:combo>=3?"✨ "+combo+" 連擊！":"";
 
   return(<div><Hdr t="🍉 切水果" onBack={onBack} cl={c.cl}/>
-    <style>{`@keyframes fruitFly{0%{transform:translateY(100%) scale(0.5) rotate(0deg);opacity:0}15%{opacity:1;transform:translateY(20%) scale(1) rotate(45deg)}50%{transform:translateY(-80%) scale(1.05) rotate(180deg)}85%{opacity:1;transform:translateY(10%) scale(0.95) rotate(300deg)}100%{transform:translateY(110%) scale(0.5) rotate(360deg);opacity:0}}@keyframes fruitSlash{0%{transform:scale(1) rotate(0deg)}30%{transform:scale(1.3) rotate(20deg)}60%{transform:scale(0.3) rotate(-10deg);opacity:.3}100%{transform:scale(0) rotate(30deg);opacity:0}}@keyframes splatDrip{0%{transform:scale(0);opacity:1}40%{transform:scale(2);opacity:.8}100%{transform:scale(3);opacity:0}}@keyframes slashLine{0%{width:0;opacity:1}100%{width:120px;opacity:0}}`}</style>
+    <style>{`
+      @keyframes fruitArc0{0%{transform:translate(0,0) rotate(0);opacity:0}8%{opacity:1}50%{transform:translate(10px,-220px) rotate(180deg)}100%{transform:translate(20px,40px) rotate(360deg);opacity:0}}
+      @keyframes fruitArc1{0%{transform:translate(0,0) rotate(0);opacity:0}12%{opacity:1}50%{transform:translate(-15px,-250px) rotate(-180deg)}100%{transform:translate(-30px,30px) rotate(-360deg);opacity:0}}
+      @keyframes fruitArc2{0%{transform:translate(0,0) rotate(0);opacity:0}16%{opacity:1}50%{transform:translate(5px,-200px) rotate(160deg)}100%{transform:translate(10px,50px) rotate(320deg);opacity:0}}
+      @keyframes fruitArc3{0%{transform:translate(0,0) rotate(0);opacity:0}20%{opacity:1}50%{transform:translate(-10px,-240px) rotate(-170deg)}100%{transform:translate(-20px,35px) rotate(-340deg);opacity:0}}
+      @keyframes fruitSlash{0%{transform:scale(1)}20%{transform:scale(1.3)}50%{transform:scale(0.5);opacity:.4}100%{transform:scale(0);opacity:0}}
+      @keyframes juiceSplat{0%{transform:scale(0);opacity:1}50%{transform:scale(2.5);opacity:.6}100%{transform:scale(4);opacity:0}}
+      @keyframes slashBlade{0%{width:0;opacity:1}50%{opacity:1}100%{width:200px;opacity:0}}
+    `}</style>
     {/* Progress + Lives */}
     <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:6,fontSize:12}}>
       <div style={{flex:1,height:6,background:S.bg2,borderRadius:3}}><div style={{height:"100%",width:`${pct}%`,background:`linear-gradient(90deg,${c.cl},${c.ac})`,borderRadius:3,transition:"width .3s"}}/></div>
@@ -1144,45 +1144,56 @@ function BalloonM({lv,onBack,onXp}){
     {comboLabel&&<div style={{textAlign:"center",fontSize:14,fontWeight:700,color:"#EF9F27",marginBottom:4,animation:"comboFlash .5s"}}>{comboLabel}</div>}
 
     {/* Question */}
-    <div style={{...S.card,padding:"16px 20px",textAlign:"center",marginBottom:10}}>
+    <div style={{...S.card,padding:"14px 20px",textAlign:"center",marginBottom:10}}>
       <div style={{fontSize:13,color:c.cl,fontWeight:600}}>🔪 切中正確翻譯的水果！</div>
-      <div style={{fontSize:34,fontWeight:700,color:S.t1,marginTop:4}}>{cur.w}</div>
-      <div style={{fontSize:13,color:S.t2}}>{cur.ph} · {cur.p}</div>
-      <button onClick={()=>speak(cur.w)} style={{background:"none",border:"none",fontSize:24,cursor:"pointer",marginTop:2}}>🔊</button>
+      <div style={{fontSize:36,fontWeight:700,color:S.t1,marginTop:4}}>{cur.w}</div>
+      <div style={{fontSize:14,color:S.t2}}>{cur.ph} · {cur.p}</div>
+      <button onClick={()=>speak(cur.w)} style={{background:"none",border:"none",fontSize:26,cursor:"pointer",marginTop:2}}>🔊</button>
     </div>
 
-    {/* Fruit arena */}
-    <div style={{position:"relative",height:300,background:"linear-gradient(180deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%)",borderRadius:20,overflow:"hidden",border:`1px solid ${S.bd}`}}>
+    {/* Fruit arena — grid style for better usability */}
+    <div style={{position:"relative",minHeight:360,background:"linear-gradient(180deg,#0a0a1a 0%,#111133 40%,#1a1a4e 100%)",borderRadius:24,overflow:"hidden",border:`1px solid rgba(255,255,255,.1)`,padding:"20px 12px"}}>
       {/* Stars */}
-      {Array.from({length:15},(_,i)=><div key={i} style={{position:"absolute",left:`${8+Math.random()*84}%`,top:`${5+Math.random()*40}%`,width:Math.random()>0.5?2:1,height:Math.random()>0.5?2:1,background:"#fff",borderRadius:"50%",opacity:.2+Math.random()*.4}}/>)}
-      {/* Slash FX */}
-      {slashed!==null&&<div style={{position:"absolute",top:"45%",left:"10%",height:3,background:"linear-gradient(90deg,transparent,#fff,transparent)",borderRadius:2,animation:"slashLine .3s ease-out forwards",transformOrigin:"left"}}/>}
-      {/* Splat FX */}
-      {splats.map(s=><div key={s.id} style={{position:"absolute",left:`${s.x+5}%`,top:"40%",fontSize:36,animation:"splatDrip .8s ease-out forwards",pointerEvents:"none"}}>{s.emoji}</div>)}
+      {Array.from({length:20},(_,i)=><div key={i} style={{position:"absolute",left:`${5+Math.random()*90}%`,top:`${3+Math.random()*50}%`,width:Math.random()>.5?2:1,height:Math.random()>.5?2:1,background:"#fff",borderRadius:"50%",opacity:.15+Math.random()*.3}}/>)}
+      {/* Moon */}
+      <div style={{position:"absolute",top:16,right:24,fontSize:24,opacity:.15}}>🌙</div>
 
-      {/* Fruits */}
-      {fruits.map(f=>(
-        <button key={`${qi}-${f.id}`} onClick={()=>slash(f)} disabled={phase!=="play"||slashed!==null} style={{
-          position:"absolute",left:`${f.x}%`,bottom:0,
-          width:100,height:110,background:"none",border:"none",
-          cursor:phase==="play"&&slashed===null?"pointer":"default",
-          display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
-          animation:slashed===f.id?"fruitSlash .5s ease-out forwards":`fruitFly ${f.speed}s ${f.delay}s ease-in-out infinite`,
-          WebkitTapHighlightColor:"transparent",padding:0,gap:4,
-          filter:slashed!==null&&slashed!==f.id?"brightness(0.3)":"none",
-          transition:"filter .3s"
-        }}>
-          <div style={{fontSize:48,transform:`rotate(${f.rotation}deg)`,textShadow:"0 4px 16px rgba(0,0,0,.4)"}}>{f.emoji}</div>
-          <div style={{background:"rgba(0,0,0,.7)",color:"#fff",padding:"4px 12px",borderRadius:12,fontSize:14,fontWeight:600,maxWidth:96,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",backdropFilter:"blur(4px)",border:"1px solid rgba(255,255,255,.1)"}}>{f.word.m}</div>
-        </button>
-      ))}
+      {/* Blade slash effect */}
+      {slashed!==null&&<div style={{position:"absolute",top:"40%",left:"5%",height:3,background:"linear-gradient(90deg,transparent,#fff,#FFD700,transparent)",borderRadius:2,animation:"slashBlade .4s ease-out forwards",transformOrigin:"left",zIndex:10}}/>}
+
+      {/* Fruit buttons — 2x2 grid for big tap targets */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginTop:16,position:"relative",zIndex:5}}>
+        {options.map((opt,i)=>{
+          const isSlashed=slashed===opt.id;
+          const dimmed=slashed!==null&&!isSlashed;
+          return(<button key={`${qi}-${opt.id}`} onClick={()=>slash(opt)} disabled={phase!=="play"||slashed!==null} style={{
+            padding:"20px 10px",borderRadius:22,border:"none",
+            background:isSlashed?(opt.isCorrect?"rgba(29,158,117,.3)":"rgba(226,75,74,.3)"):"linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,.04))",
+            backdropFilter:"blur(8px)",
+            cursor:phase==="play"&&slashed===null?"pointer":"default",
+            display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:6,
+            animation:isSlashed?"fruitSlash .6s ease-out forwards":`fruitArc${i} 3s ${i*0.15}s ease-out infinite`,
+            opacity:dimmed?.25:1,
+            transition:"opacity .3s",
+            WebkitTapHighlightColor:"transparent",
+            minHeight:120,
+            boxShadow:isSlashed?"none":"0 4px 20px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.15)",
+          }}>
+            <div style={{fontSize:52,textShadow:"0 4px 16px rgba(0,0,0,.4)",filter:dimmed?"grayscale(.8)":"none"}}>{opt.emoji}</div>
+            <div style={{color:"#fff",fontSize:18,fontWeight:700,padding:"4px 16px",background:"rgba(0,0,0,.5)",borderRadius:14,maxWidth:"100%",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",textShadow:"0 1px 4px rgba(0,0,0,.5)"}}>{opt.word.m}</div>
+          </button>);
+        })}
+      </div>
+
+      {/* Juice splat effect */}
+      {slashed!==null&&<div style={{position:"absolute",top:"45%",left:"45%",fontSize:40,animation:"juiceSplat .7s ease-out forwards",pointerEvents:"none",zIndex:20}}>{options.find(o=>o.id===slashed)?.emoji}</div>}
 
       {/* Result overlay */}
-      {phase==="correct"&&<div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",pointerEvents:"none"}}><div style={{fontSize:64,animation:"bounceIn .3s",textShadow:"0 0 30px rgba(29,158,117,.6)"}}>⚔️</div></div>}
-      {phase==="wrong"&&<div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,.4)",flexDirection:"column",pointerEvents:"none"}}><div style={{fontSize:56}}>❌</div><div style={{fontSize:18,fontWeight:700,color:"#fff",marginTop:6,textShadow:"0 2px 8px rgba(0,0,0,.5)"}}>正確：{cur?.m}</div></div>}
+      {phase==="correct"&&<div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",pointerEvents:"none",zIndex:15}}><div style={{fontSize:72,animation:"bounceIn .3s",textShadow:"0 0 40px rgba(29,158,117,.5)"}}>⚔️</div></div>}
+      {phase==="wrong"&&<div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,.4)",flexDirection:"column",pointerEvents:"none",zIndex:15}}><div style={{fontSize:56}}>❌</div><div style={{fontSize:20,fontWeight:700,color:"#fff",marginTop:8,textShadow:"0 2px 8px rgba(0,0,0,.5)"}}>正確：{cur?.m}</div></div>}
     </div>
 
-    <div style={{textAlign:"center",fontSize:11,color:S.t3,marginTop:8}}>🔪 水果飛上來時，切中正確翻譯的水果！切錯扣 ❤️</div>
+    <div style={{textAlign:"center",fontSize:12,color:S.t3,marginTop:8}}>🔪 點擊寫著正確中文翻譯的水果！</div>
   </div>);
 }
 
