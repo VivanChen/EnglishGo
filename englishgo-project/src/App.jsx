@@ -192,7 +192,24 @@ function VoicePicker(){const[voices,setVoices]=useState([]);const[cur,setCur]=us
 function createDeck(c){return{queue:c.map((_,i)=>i),rm:[],stats:{again:0,hard:0,good:0,easy:0},total:c.length}}
 function rateDeck(d,a){const n={...d,queue:[...d.queue],rm:[...d.rm],stats:{...d.stats}};const c=n.queue.shift();if(c===undefined)return n;n.stats[a]++;if(a==="again")n.queue.splice(Math.min(1,n.queue.length),0,c);else if(a==="hard")n.queue.splice(Math.floor(n.queue.length/2),0,c);else if(a==="good")n.queue.push(c);else n.rm.push(c);return n}
 function parseCSV(t){return t.trim().split("\n").slice(1).map(l=>{const m=l.match(/^"?([^",]+)"?\s*,\s*"?([\s\S]*?)"?\s*$/);if(!m)return null;const w=m[1].trim(),b=m[2].trim(),p=b.match(/\(([a-z.\/]+)\)\s*(.+?)(?:\n|$)/);return{w,ph:"",p:p?.[1]||"",m:p?.[2]?.trim()||b.split("\n")[0],f:[],c:[],ex:"",ez:""}}).filter(Boolean)}
-const imgC={};function preImg(ws,s=0,n=3){for(let i=s;i<Math.min(s+n,ws.length);i++){const w=ws[i]?.w;if(w&&!imgC[w]){const img=new Image();img.src=`https://loremflickr.com/300/150/${encodeURIComponent(w)}?lock=${i}`;imgC[w]=img.src}}}
+// Static image cache — preload word images
+const _imgCache={};
+function getWordImg(word){
+  if(!word)return null;
+  const k=word.toLowerCase();
+  if(_imgCache[k])return _imgCache[k];
+  // Use multiple sources for better accuracy
+  const url=`https://loremflickr.com/400/220/${encodeURIComponent(k)}?lock=${k.charCodeAt(0)*100+k.length}`;
+  _imgCache[k]=url;
+  // Preload
+  const img=new Image();img.src=url;
+  return url;
+}
+function preloadImgs(words,start=0,n=3){
+  for(let i=start;i<Math.min(start+n,words.length);i++){
+    if(words[i]?.w)getWordImg(words[i].w);
+  }
+}
 // ─── Markdown renderer ──────────────────────────────────────────────
 function Md({text,color}){if(!text)return null;return text.split("\n").map((line,li)=>{if(!line.trim())return <br key={li}/>;const isB=/^\s*[\*\-•]\s+/.test(line);const cl=isB?line.replace(/^\s*[\*\-•]\s+/,""):line;const parts=[];let rem=cl,k=0;while(rem.length>0){const m=rem.match(/\*\*(.+?)\*\*/);if(m){const idx=rem.indexOf(m[0]);if(idx>0)parts.push(<span key={k++}>{rem.slice(0,idx)}</span>);const isEn=/^[a-zA-Z]/.test(m[1]);parts.push(<strong key={k++} style={{fontWeight:700,cursor:isEn?"pointer":"default",color:isEn?color:"inherit",textDecoration:isEn?"underline dotted":"none",textUnderlineOffset:"3px"}} onClick={()=>isEn&&speak(m[1])}>{m[1]}</strong>);rem=rem.slice(idx+m[0].length)}else{parts.push(<span key={k++}>{rem}</span>);break}}return<div key={li} style={{marginBottom:2,paddingLeft:isB?16:0,position:"relative"}}>{isB&&<span style={{position:"absolute",left:0}}>•</span>}{parts}</div>})}
 function speakMx(text,rate=0.85){if(!window.speechSynthesis)return;window.speechSynthesis.cancel();const cl=text.replace(/\*\*/g,"").replace(/[#•\-]/g," ");const segs=cl.split(/([a-zA-Z][a-zA-Z\s\-',.!?;:()]+)/g).filter(s=>s.trim());let d=0;segs.forEach(s=>{const en=/^[a-zA-Z]/.test(s.trim());const u=new SpeechSynthesisUtterance(s.trim());u.lang=en?"en-US":"zh-TW";u.rate=en?rate:rate+.15;if(en&&_voiceUri){const v=window.speechSynthesis.getVoices().find(x=>x.voiceURI===_voiceUri);if(v){u.voice=v;u.lang=v.lang}}else if(!en){const zhV=getZhVoice();if(zhV){u.voice=zhV;u.lang=zhV.lang}}setTimeout(()=>window.speechSynthesis.speak(u),d);d+=s.length*(en?55:80)})}
@@ -301,7 +318,6 @@ export default function App(){
          mod==="whack"?<WhackM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="match"?<MatchM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="bomb"?<BombM lv={lv} onBack={back} onXp={addXp}/>:
-         mod==="balloon"?<BalloonM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="grammar"?<GrammarM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="reading"?<ReadingM lv={lv} onBack={back}/>:
          mod==="dictation"?<DictM lv={lv} onBack={back} onXp={addXp} onDone={()=>setStats(s=>({...s,dictDone:s.dictDone+1}))}/>:
@@ -406,7 +422,6 @@ function Menu({lv,onSelect,daily,c,xp,streak,achUnlocked,weakWords,isSponsor}){
         {id:"whack",icon:"🔨",t:"打地鼠拼字",d:"限時拼字"},
         {id:"match",icon:"🎴",t:"配對翻牌",d:"記憶遊戲"},
         {id:"bomb",icon:"💣",t:"拆彈拼字",d:"限時拆彈！"},
-        {id:"balloon",icon:"🍉",t:"切水果",d:"水果忍者"},
         {id:"dictation",icon:"🎧",t:"聽寫訓練",d:"聽力養成"},
         {id:"scramble",icon:"🧩",t:"句子重組",d:"語序訓練"},
         {id:"grammar",icon:"🧠",t:"文法學堂",d:`${G[lv].length} 個重點`},
@@ -494,6 +509,7 @@ function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,onSetGifKey,sharedWord}){
   const built=V[lv];const[cards,setCards]=useState(built);const[deck,setDeck]=useState(()=>createDeck(built));const[flip,setFlip]=useState(false);const[info,setInfo]=useState(false);const[loading,setLoading]=useState(true);const[src,setSrc]=useState("built-in");const c=LV[lv];const fr=useRef();
   const[combo,setCombo]=useState(0);const[maxCombo,setMaxCombo]=useState(0);const[comboAnim,setComboAnim]=useState(false);const[showConfetti,setShowConfetti]=useState(false);const[flipAnim,setFlipAnim]=useState(false);const[mascotMood,setMascotMood]=useState("idle");
   const[gifUrl,setGifUrl]=useState(null);const[gifLoading,setGifLoading]=useState(false);const[gifKeyInp,setGifKeyInp]=useState(gifKey||"");
+  const[imgUrl,setImgUrl]=useState(null);
   useEffect(()=>{(async()=>{setLoading(true);const cloud=await fetchCloudVocab(lv,20);if(cloud&&cloud.length>0){
     // If sharedWord, put it first in the deck
     let ordered=cloud;
@@ -505,13 +521,18 @@ function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,onSetGifKey,sharedWord}){
   const cur=deck.queue[0]!==undefined?cards[deck.queue[0]]:null;const left=deck.queue.length;const done=left===0;
   // Fetch GIF for current word
   useEffect(()=>{if(!cur||!gifKey)return;setGifLoading(true);fetchGif(cur.w,gifKey).then(url=>{setGifUrl(url);setGifLoading(false)})},[cur?.w,gifKey]);
-  useEffect(()=>{if(cur)preImg(cards,deck.queue[0],3)},[deck.queue[0]]);
+  // Static image — always available regardless of Giphy key
+  useEffect(()=>{if(cur){setImgUrl(getWordImg(cur.w));preloadImgs(cards,deck.queue[0],3)}},[cur?.w]);
   useEffect(()=>{if(cur&&!flip&&!loading)speak(cur.w)},[cur?.w,flip,loading]);
   const rate=useCallback(a=>{if(a==="again"&&cur)trackWeak(cur.w);if(a==="easy"||a==="good"){onXp();setMascotMood(a==="easy"?"great":"happy");setCombo(cb=>{const nc=cb+1;setMaxCombo(mc=>Math.max(mc,nc));if(nc>=3){playSound("combo");setComboAnim(true);setTimeout(()=>setComboAnim(false),600)}else playSound("good");return nc})}else if(a==="again"){setCombo(0);setMascotMood("sad");playSound("bad")}else{setMascotMood("think");playSound("flip")}setTimeout(()=>setMascotMood("idle"),1500);setDeck(d=>rateDeck(d,a));setFlip(false);setFlipAnim(false)},[onXp,cur,trackWeak]);
   useEffect(()=>{const h=e=>{if(done)return;if(e.code==="Space"){e.preventDefault();if(!flip){setFlip(true);setFlipAnim(true);playSound("flip");if(cur?.ex)setTimeout(()=>speak(cur.ex),350)}else{setFlip(false);setFlipAnim(false)}}if(flip){if(e.key==="1")rate("again");if(e.key==="2")rate("hard");if(e.key==="3")rate("good");if(e.key==="4")rate("easy")}if(e.key==="Enter"){e.preventDefault();if(cur)speak(flip?(cur.ex||cur.w):cur.w)}};window.addEventListener("keydown",h);return()=>window.removeEventListener("keydown",h)},[flip,done,cur,rate]);
   const touchStart=useRef(null);
-  const onTouchStart=e=>{touchStart.current={x:e.touches[0].clientX,y:e.touches[0].clientY}};
-  const onTouchEnd=e=>{if(!touchStart.current||!flip)return;const dx=e.changedTouches[0].clientX-touchStart.current.x;const dy=e.changedTouches[0].clientY-touchStart.current.y;touchStart.current=null;if(Math.abs(dx)<40&&Math.abs(dy)<40)return;if(Math.abs(dx)>Math.abs(dy)){if(dx>0)rate("good");else rate("again")}else{if(dy<0)rate("easy");else rate("hard")}};
+  const onTouchStart=e=>{touchStart.current={x:e.touches[0].clientX,y:e.touches[0].clientY,t:Date.now()}};
+  const onTouchEnd=e=>{if(!touchStart.current||!flip)return;const dx=e.changedTouches[0].clientX-touchStart.current.x;const dy=e.changedTouches[0].clientY-touchStart.current.y;const dt=Date.now()-touchStart.current.t;touchStart.current=null;
+    // Require fast deliberate swipe (>80px in <400ms) to avoid scroll conflicts
+    if(dt>400)return;if(Math.abs(dx)<80&&Math.abs(dy)<80)return;
+    if(Math.abs(dx)>Math.abs(dy)){if(dx>0)rate("good");else rate("again")}
+    else{if(dy<0)rate("easy");else rate("hard")}};
   const handleCardTap=()=>{if(!flip){setFlip(true);setFlipAnim(true);playSound("flip");if(cur.ex)setTimeout(()=>speak(cur.ex),350)}};
   const handleCSV=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{const p=parseCSV(ev.target.result);if(p.length){setCards(p);setDeck(createDeck(p));setFlip(false)}};r.readAsText(f,"utf-8")};
   useEffect(()=>{if(done&&!loading){onDone();playSound("done");setShowConfetti(true);setTimeout(()=>setShowConfetti(false),3500)}},[done,loading]);
@@ -534,20 +555,19 @@ function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,onSetGifKey,sharedWord}){
       {!flip&&<CardSparkles color={c.cl}/>}
       {/* Mascot */}
       <Mascot mood={mascotMood}/>
-      {!flip?(()=>{const ea=cur?getWordEmoji(cur):null;return<>
-        {/* GIF or animated emoji */}
-        {gifUrl?<img src={gifUrl} alt={cur.w} style={{width:"90%",maxWidth:280,height:200,objectFit:"cover",borderRadius:18,marginBottom:12,position:"relative",zIndex:1,boxShadow:"0 6px 20px rgba(0,0,0,.15)"}} onError={e=>e.target.style.display="none"}/>:
-         gifLoading&&gifKey?<div style={{fontSize:14,color:S.t3,marginBottom:8,position:"relative",zIndex:1,animation:"pulse 1s infinite"}}>載入動圖...</div>:
-         ea&&<div style={{fontSize:64,marginBottom:10,animation:`${ea.anim} 1.5s ease-in-out infinite`,position:"relative",zIndex:1}}>{ea.emoji}</div>}
+      {!flip?(<>
+        {/* Front face: show GIF if available, else static image */}
+        {gifUrl?<img src={gifUrl} alt={cur.w} style={{width:"90%",maxWidth:280,height:200,objectFit:"cover",borderRadius:18,marginBottom:10,position:"relative",zIndex:1,boxShadow:"0 6px 20px rgba(0,0,0,.15)"}} onError={e=>e.target.style.display="none"}/>
+        :imgUrl?<img src={imgUrl} alt={cur.w} style={{width:"90%",maxWidth:280,height:200,objectFit:"cover",borderRadius:18,marginBottom:10,position:"relative",zIndex:1,boxShadow:"0 4px 16px rgba(0,0,0,.1)"}} onError={e=>e.target.style.display="none"}/>
+        :gifLoading&&gifKey?<div style={{fontSize:13,color:S.t3,marginBottom:6,position:"relative",zIndex:1,animation:"pulse 1s infinite"}}>載入圖片中...</div>:null}
         <div style={{fontSize:38,fontWeight:700,color:S.t1,letterSpacing:1,position:"relative",zIndex:1}}>{cur.w}<button onClick={e=>{e.stopPropagation();speak(cur.w)}} style={{background:"none",border:"none",fontSize:28,cursor:"pointer",marginLeft:6,verticalAlign:"middle",padding:"4px",minWidth:40,minHeight:40}}>🔊</button></div>
         {cur.ph&&<div style={{fontSize:14,color:S.t3,marginTop:3,position:"relative",zIndex:1}}>{cur.ph}</div>}
         <div style={{fontSize:14,color:"#fff",marginTop:16,padding:"10px 24px",background:`linear-gradient(135deg,${c.cl},${c.ac})`,borderRadius:24,fontWeight:600,boxShadow:`0 2px 8px ${c.cl}40`,position:"relative",zIndex:1}}>👆 點擊翻牌</div>
         <div style={{fontSize:11,color:S.t3,marginTop:5,position:"relative",zIndex:1}}>電腦可按 Space</div>
-      </>})():(<>
-        {/* Back face GIF or emoji */}
-        {gifUrl?<img src={gifUrl} alt={cur.w} style={{width:"85%",maxWidth:260,height:180,objectFit:"cover",borderRadius:16,marginBottom:10,boxShadow:"0 4px 16px rgba(0,0,0,.12)"}} onError={e=>e.target.style.display="none"}/>:
-         (()=>{const ea=cur?getWordEmoji(cur):null;return ea?<div style={{fontSize:36,marginBottom:6,animation:`${ea.anim} 2s ease-in-out infinite`}}>{ea.emoji}</div>:null})()}
-        {imgC[cur.w]&&<img src={imgC[cur.w]} alt="" style={{width:"100%",maxWidth:260,height:120,objectFit:"cover",borderRadius:10,marginBottom:8}} onError={e=>e.target.style.display="none"}/>}
+      </>):(<>
+        {/* Back face images — GIF + static image */}
+        {gifUrl&&<img src={gifUrl} alt={cur.w} style={{width:"80%",maxWidth:240,height:150,objectFit:"cover",borderRadius:14,marginBottom:6,boxShadow:"0 4px 12px rgba(0,0,0,.1)",border:`2px solid ${c.bg}`}} onError={e=>e.target.style.display="none"}/>}
+        {imgUrl&&<img src={imgUrl} alt={cur.w} style={{width:"85%",maxWidth:260,height:140,objectFit:"cover",borderRadius:14,marginBottom:8,boxShadow:"0 3px 10px rgba(0,0,0,.08)"}} onError={e=>e.target.style.display="none"}/>}
         <div style={{fontSize:28,fontWeight:700,color:c.cl,letterSpacing:.5}}>{cur.w} <span style={{fontSize:13,fontWeight:400,color:S.t3}}>({cur.p})</span> <button onClick={e=>{e.stopPropagation();speak(cur.w)}} style={{background:"none",border:"none",fontSize:24,cursor:"pointer",verticalAlign:"middle",padding:"4px",minWidth:36,minHeight:36}}>🔊</button></div>
         <div style={{fontSize:22,fontWeight:600,color:S.t1,margin:"4px 0 8px"}}>{cur.m} <button onClick={e=>{e.stopPropagation();speak(cur.m,"zh-TW",0.9)}} style={{background:"none",border:"none",fontSize:22,cursor:"pointer",verticalAlign:"middle",padding:"4px",minWidth:36,minHeight:36}}>🔈</button></div>
         {cur.f?.length>0&&<div style={{fontSize:13,color:S.t2,marginBottom:6,width:"100%",padding:"8px 12px",background:`${c.ac}0a`,borderRadius:10,textAlign:"left"}}><b style={{color:c.cl,fontSize:12}}>📝 詞性變化</b><div style={{marginTop:3,display:"flex",flexWrap:"wrap",gap:4}}>{cur.f.map((f,i)=><span key={i} style={{background:S.bg2,padding:"2px 8px",borderRadius:6,fontSize:12}}>{f.w} <span style={{color:S.t3}}>({f.p}) {f.n}</span></span>)}</div></div>}
@@ -1071,129 +1091,6 @@ function BombM({lv,onBack,onXp}){
     </div>
 
     {(phase==="defused"||phase==="explode")&&<div style={{textAlign:"center"}}><button onClick={next} style={{...S.btn,background:c.cl,color:"#fff",padding:"12px 28px",fontSize:15}}>{lives<=0&&phase==="explode"?"💀 遊戲結束":wi+1>=Math.min(words.length,TOTAL)?"🏁 看成績":"▶ 下一顆炸彈"}</button></div>}
-  </div>);
-}
-
-// ═══ FRUIT SLASH (切水果 v3) ════════════════════════════════════════
-function BalloonM({lv,onBack,onXp}){
-  const c=LV[lv];
-  const[words,setWords]=useState(V[lv]);const[loading,setLoading]=useState(true);
-  const[qi,setQi]=useState(0);const[score,setScore]=useState(0);const[combo,setCombo]=useState(0);const[maxCombo,setMaxCombo]=useState(0);
-  const[phase,setPhase]=useState("play");const[showConfetti,setShowConfetti]=useState(false);
-  const[options,setOptions]=useState([]);const[slashed,setSlashed]=useState(null);const[lives,setLives]=useState(3);
-  const TOTAL=10;
-  const FRUIT_EMOJIS=["🍎","🍊","🍋","🍇","🍉","🍓","🍑","🥝","🍌","🫐","🍒","🥭"];
-
-  useEffect(()=>{(async()=>{const cloud=await fetchCloudVocab(lv,TOTAL*3);if(cloud?.length)setWords(cloud);setLoading(false)})()},[lv]);
-
-  const generateOptions=useCallback((correct)=>{
-    if(!correct)return[];
-    const wrongs=words.filter(w=>w.w!==correct.w).sort(()=>Math.random()-.5).slice(0,3);
-    return[correct,...wrongs].sort(()=>Math.random()-.5).map((w,i)=>({
-      id:i,word:w,isCorrect:w.w===correct.w,
-      emoji:FRUIT_EMOJIS[Math.floor(Math.random()*FRUIT_EMOJIS.length)],
-    }));
-  },[words]);
-
-  useEffect(()=>{if(!loading&&words[qi])setOptions(generateOptions(words[qi]))},[qi,loading,generateOptions]);
-
-  const slash=(opt)=>{
-    if(phase!=="play"||slashed!==null)return;
-    setSlashed(opt.id);
-    playSound("flip");
-    if(opt.isCorrect){
-      setScore(s=>s+1);onXp(10);setPhase("correct");
-      setCombo(cb=>{const nc=cb+1;setMaxCombo(mc=>Math.max(mc,nc));if(nc>=3)playSound("combo");else playSound("good");return nc});
-      speak(opt.word.w);
-    }else{
-      setPhase("wrong");setCombo(0);setLives(l=>l-1);playSound("bad");
-    }
-    setTimeout(()=>{
-      if(lives<=1&&!opt.isCorrect){playSound("done");setPhase("done");return}
-      if(qi+1>=Math.min(words.length,TOTAL)){playSound("done");setShowConfetti(true);setTimeout(()=>setShowConfetti(false),3500);setPhase("done")}
-      else{setQi(q=>q+1);setPhase("play");setSlashed(null)}
-    },1400);
-  };
-
-  const restart=async()=>{setLoading(true);setQi(0);setScore(0);setCombo(0);setMaxCombo(0);setLives(3);setPhase("play");setSlashed(null);const cloud=await fetchCloudVocab(lv,TOTAL*3);if(cloud?.length)setWords(cloud);setLoading(false)};
-  const cur=words[qi];
-
-  if(loading||!cur)return(<div><Hdr t="🍉 切水果" onBack={onBack} cl={c.cl}/><div style={{textAlign:"center",padding:"48px",color:S.t3}}>載入中...</div></div>);
-
-  if(phase==="done"){const total=Math.min(words.length,TOTAL);return(<div>{showConfetti&&<Confetti/>}<Hdr t="🍉 切水果" onBack={onBack} cl={c.cl}/><div style={{textAlign:"center",padding:"32px 16px"}}><div style={{fontSize:56,animation:"bounceIn .5s ease-out"}}>{lives<=0?"💀":score>=total*0.8?"🏆":"🎉"}</div><h2 style={{fontSize:22,fontWeight:700,color:S.t1,marginTop:8}}>{lives<=0?"遊戲結束！":"切完了！"}</h2><div style={{fontSize:18,color:c.cl,fontWeight:600,marginTop:6}}>切中 {score}/{total}</div>{maxCombo>=3&&<div style={{fontSize:13,color:"#EF9F27",fontWeight:600,marginTop:4}}>🔥 最高 {maxCombo} 連擊！</div>}<div style={{fontSize:14,color:S.t2,marginTop:8,marginBottom:16}}>{score>=total*0.8?"水果忍者！🌟":"多練幾次反應會更快！💪"}</div><button onClick={restart} style={{...S.btn,background:c.cl,color:"#fff",marginRight:8,fontSize:14}}>🔄 再玩一次</button><button onClick={onBack} style={{...S.btn,background:S.bg2,color:S.t1,fontSize:14}}>返回</button></div></div>)}
-
-  const pct=Math.round((qi/Math.min(words.length,TOTAL))*100);
-  const comboLabel=combo>=7?"🔥🔥 ON FIRE!":combo>=5?"🔥 COMBO x"+combo:combo>=3?"✨ "+combo+" 連擊！":"";
-
-  return(<div><Hdr t="🍉 切水果" onBack={onBack} cl={c.cl}/>
-    <style>{`
-      @keyframes fruitArc0{0%{transform:translate(0,0) rotate(0);opacity:0}8%{opacity:1}50%{transform:translate(10px,-220px) rotate(180deg)}100%{transform:translate(20px,40px) rotate(360deg);opacity:0}}
-      @keyframes fruitArc1{0%{transform:translate(0,0) rotate(0);opacity:0}12%{opacity:1}50%{transform:translate(-15px,-250px) rotate(-180deg)}100%{transform:translate(-30px,30px) rotate(-360deg);opacity:0}}
-      @keyframes fruitArc2{0%{transform:translate(0,0) rotate(0);opacity:0}16%{opacity:1}50%{transform:translate(5px,-200px) rotate(160deg)}100%{transform:translate(10px,50px) rotate(320deg);opacity:0}}
-      @keyframes fruitArc3{0%{transform:translate(0,0) rotate(0);opacity:0}20%{opacity:1}50%{transform:translate(-10px,-240px) rotate(-170deg)}100%{transform:translate(-20px,35px) rotate(-340deg);opacity:0}}
-      @keyframes fruitSlash{0%{transform:scale(1)}20%{transform:scale(1.3)}50%{transform:scale(0.5);opacity:.4}100%{transform:scale(0);opacity:0}}
-      @keyframes juiceSplat{0%{transform:scale(0);opacity:1}50%{transform:scale(2.5);opacity:.6}100%{transform:scale(4);opacity:0}}
-      @keyframes slashBlade{0%{width:0;opacity:1}50%{opacity:1}100%{width:200px;opacity:0}}
-    `}</style>
-    {/* Progress + Lives */}
-    <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:6,fontSize:12}}>
-      <div style={{flex:1,height:6,background:S.bg2,borderRadius:3}}><div style={{height:"100%",width:`${pct}%`,background:`linear-gradient(90deg,${c.cl},${c.ac})`,borderRadius:3,transition:"width .3s"}}/></div>
-      <span style={{color:S.t3}}>{qi+1}/{Math.min(words.length,TOTAL)}</span>
-      <span style={{fontSize:14}}>{"❤️".repeat(lives)}{"🖤".repeat(Math.max(0,3-lives))}</span>
-    </div>
-    {comboLabel&&<div style={{textAlign:"center",fontSize:14,fontWeight:700,color:"#EF9F27",marginBottom:4,animation:"comboFlash .5s"}}>{comboLabel}</div>}
-
-    {/* Question */}
-    <div style={{...S.card,padding:"14px 20px",textAlign:"center",marginBottom:10}}>
-      <div style={{fontSize:13,color:c.cl,fontWeight:600}}>🔪 切中正確翻譯的水果！</div>
-      <div style={{fontSize:36,fontWeight:700,color:S.t1,marginTop:4}}>{cur.w}</div>
-      <div style={{fontSize:14,color:S.t2}}>{cur.ph} · {cur.p}</div>
-      <button onClick={()=>speak(cur.w)} style={{background:"none",border:"none",fontSize:26,cursor:"pointer",marginTop:2}}>🔊</button>
-    </div>
-
-    {/* Fruit arena — grid style for better usability */}
-    <div style={{position:"relative",minHeight:360,background:"linear-gradient(180deg,#0a0a1a 0%,#111133 40%,#1a1a4e 100%)",borderRadius:24,overflow:"hidden",border:`1px solid rgba(255,255,255,.1)`,padding:"20px 12px"}}>
-      {/* Stars */}
-      {Array.from({length:20},(_,i)=><div key={i} style={{position:"absolute",left:`${5+Math.random()*90}%`,top:`${3+Math.random()*50}%`,width:Math.random()>.5?2:1,height:Math.random()>.5?2:1,background:"#fff",borderRadius:"50%",opacity:.15+Math.random()*.3}}/>)}
-      {/* Moon */}
-      <div style={{position:"absolute",top:16,right:24,fontSize:24,opacity:.15}}>🌙</div>
-
-      {/* Blade slash effect */}
-      {slashed!==null&&<div style={{position:"absolute",top:"40%",left:"5%",height:3,background:"linear-gradient(90deg,transparent,#fff,#FFD700,transparent)",borderRadius:2,animation:"slashBlade .4s ease-out forwards",transformOrigin:"left",zIndex:10}}/>}
-
-      {/* Fruit buttons — 2x2 grid for big tap targets */}
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginTop:16,position:"relative",zIndex:5}}>
-        {options.map((opt,i)=>{
-          const isSlashed=slashed===opt.id;
-          const dimmed=slashed!==null&&!isSlashed;
-          return(<button key={`${qi}-${opt.id}`} onClick={()=>slash(opt)} disabled={phase!=="play"||slashed!==null} style={{
-            padding:"20px 10px",borderRadius:22,border:"none",
-            background:isSlashed?(opt.isCorrect?"rgba(29,158,117,.3)":"rgba(226,75,74,.3)"):"linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,.04))",
-            backdropFilter:"blur(8px)",
-            cursor:phase==="play"&&slashed===null?"pointer":"default",
-            display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:6,
-            animation:isSlashed?"fruitSlash .6s ease-out forwards":`fruitArc${i} 3s ${i*0.15}s ease-out infinite`,
-            opacity:dimmed?.25:1,
-            transition:"opacity .3s",
-            WebkitTapHighlightColor:"transparent",
-            minHeight:120,
-            boxShadow:isSlashed?"none":"0 4px 20px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.15)",
-          }}>
-            <div style={{fontSize:52,textShadow:"0 4px 16px rgba(0,0,0,.4)",filter:dimmed?"grayscale(.8)":"none"}}>{opt.emoji}</div>
-            <div style={{color:"#fff",fontSize:18,fontWeight:700,padding:"4px 16px",background:"rgba(0,0,0,.5)",borderRadius:14,maxWidth:"100%",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",textShadow:"0 1px 4px rgba(0,0,0,.5)"}}>{opt.word.m}</div>
-          </button>);
-        })}
-      </div>
-
-      {/* Juice splat effect */}
-      {slashed!==null&&<div style={{position:"absolute",top:"45%",left:"45%",fontSize:40,animation:"juiceSplat .7s ease-out forwards",pointerEvents:"none",zIndex:20}}>{options.find(o=>o.id===slashed)?.emoji}</div>}
-
-      {/* Result overlay */}
-      {phase==="correct"&&<div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",pointerEvents:"none",zIndex:15}}><div style={{fontSize:72,animation:"bounceIn .3s",textShadow:"0 0 40px rgba(29,158,117,.5)"}}>⚔️</div></div>}
-      {phase==="wrong"&&<div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,.4)",flexDirection:"column",pointerEvents:"none",zIndex:15}}><div style={{fontSize:56}}>❌</div><div style={{fontSize:20,fontWeight:700,color:"#fff",marginTop:8,textShadow:"0 2px 8px rgba(0,0,0,.5)"}}>正確：{cur?.m}</div></div>}
-    </div>
-
-    <div style={{textAlign:"center",fontSize:12,color:S.t3,marginTop:8}}>🔪 點擊寫著正確中文翻譯的水果！</div>
   </div>);
 }
 
