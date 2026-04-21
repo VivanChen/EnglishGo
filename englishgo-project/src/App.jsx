@@ -2325,6 +2325,318 @@ function PetsGuard(props){
   return null;
 }
 
+// ═══ PET SVG ILLUSTRATIONS (精美寵物插圖) ══════════════════════════════
+function PetSVG({petId,size=200,animate=true}){
+  const renderers={
+    bunny:()=>(<g transform="translate(190, 195)">
+      <ellipse cx="-30" cy="-100" rx="18" ry="55" fill="#FFF8F0" stroke="#D8B4B4" strokeWidth="2" transform="rotate(-10 -30 -100)"/>
+      <ellipse cx="30" cy="-100" rx="18" ry="55" fill="#FFF8F0" stroke="#D8B4B4" strokeWidth="2" transform="rotate(10 30 -100)"/>
+      <ellipse cx="-30" cy="-100" rx="8" ry="40" fill="#FFB6C1" transform="rotate(-10 -30 -100)"/>
+      <ellipse cx="30" cy="-100" rx="8" ry="40" fill="#FFB6C1" transform="rotate(10 30 -100)"/>
+      <circle cx="0" cy="-30" r="55" fill="#FFF8F0" stroke="#D8B4B4" strokeWidth="2"/>
+      <circle cx="-30" cy="-10" r="8" fill="#FFB6C1" opacity="0.6"/>
+      <circle cx="30" cy="-10" r="8" fill="#FFB6C1" opacity="0.6"/>
+      <ellipse cx="-18" cy="-35" rx="7" ry="10" fill="#2c2c2a"/>
+      <ellipse cx="18" cy="-35" rx="7" ry="10" fill="#2c2c2a"/>
+      <circle cx="-16" cy="-38" r="2.5" fill="#fff"/>
+      <circle cx="20" cy="-38" r="2.5" fill="#fff"/>
+      <path d="M -5 -15 L 5 -15 L 0 -9 Z" fill="#FF9BB3"/>
+      <path d="M 0 -9 Q -6 -2 -10 -4" fill="none" stroke="#2c2c2a" strokeWidth="1.8" strokeLinecap="round"/>
+      <path d="M 0 -9 Q 6 -2 10 -4" fill="none" stroke="#2c2c2a" strokeWidth="1.8" strokeLinecap="round"/>
+      <ellipse cx="0" cy="55" rx="55" ry="45" fill="#FFF8F0" stroke="#D8B4B4" strokeWidth="2"/>
+      <ellipse cx="-22" cy="80" rx="15" ry="20" fill="#FFF8F0" stroke="#D8B4B4" strokeWidth="2"/>
+      <ellipse cx="22" cy="80" rx="15" ry="20" fill="#FFF8F0" stroke="#D8B4B4" strokeWidth="2"/>
+      <circle cx="-22" cy="90" r="4" fill="#FFB6C1"/>
+      <circle cx="22" cy="90" r="4" fill="#FFB6C1"/>
+      <circle cx="45" cy="45" r="12" fill="#FFF8F0" stroke="#D8B4B4" strokeWidth="2"/>
+    </g>),
+    chick:()=>(<g transform="translate(190, 200)">
+      <ellipse cx="0" cy="20" rx="65" ry="55" fill="#FFE066" stroke="#E5A500" strokeWidth="2"/>
+      <circle cx="0" cy="-40" r="50" fill="#FFE066" stroke="#E5A500" strokeWidth="2"/>
+      <ellipse cx="-18" cy="-45" rx="7" ry="10" fill="#2c2c2a"/>
+      <ellipse cx="18" cy="-45" rx="7" ry="10" fill="#2c2c2a"/>
+      <circle cx="-16" cy="-48" r="2.5" fill="#fff"/>
+      <circle cx="20" cy="-48" r="2.5" fill="#fff"/>
+      <path d="M -8 -22 L 8 -22 L 0 -10 Z" fill="#FF8A00"/>
+      <circle cx="-28" cy="-20" r="6" fill="#FFA0B0" opacity="0.5"/>
+      <circle cx="28" cy="-20" r="6" fill="#FFA0B0" opacity="0.5"/>
+      <path d="M -50 10 Q -80 30 -55 50" fill="#FFE066" stroke="#E5A500" strokeWidth="2"/>
+      <path d="M 50 10 Q 80 30 55 50" fill="#FFE066" stroke="#E5A500" strokeWidth="2"/>
+      <path d="M -15 75 L -15 85 L -20 90 M -15 85 L -10 90 M -15 85 L -15 92" stroke="#FF8A00" strokeWidth="3" strokeLinecap="round" fill="none"/>
+      <path d="M 15 75 L 15 85 L 20 90 M 15 85 L 10 90 M 15 85 L 15 92" stroke="#FF8A00" strokeWidth="3" strokeLinecap="round" fill="none"/>
+      <path d="M -5 -85 L 0 -95 L 5 -85" fill="#FFE066" stroke="#E5A500" strokeWidth="2"/>
+    </g>),
+    puppy:()=>(<g transform="translate(190, 200)">
+      <ellipse cx="-48" cy="-50" rx="20" ry="35" fill="#A0522D" stroke="#5D3317" strokeWidth="2" transform="rotate(-15 -48 -50)"/>
+      <ellipse cx="48" cy="-50" rx="20" ry="35" fill="#A0522D" stroke="#5D3317" strokeWidth="2" transform="rotate(15 48 -50)"/>
+      <circle cx="0" cy="-20" r="55" fill="#D2B48C" stroke="#5D3317" strokeWidth="2"/>
+      <ellipse cx="0" cy="10" rx="32" ry="22" fill="#F5DEB3"/>
+      <ellipse cx="-18" cy="-25" rx="7" ry="9" fill="#2c2c2a"/>
+      <ellipse cx="18" cy="-25" rx="7" ry="9" fill="#2c2c2a"/>
+      <circle cx="-16" cy="-28" r="2.5" fill="#fff"/>
+      <circle cx="20" cy="-28" r="2.5" fill="#fff"/>
+      <ellipse cx="0" cy="5" rx="8" ry="6" fill="#2c2c2a"/>
+      <path d="M 0 12 L 0 18 M 0 18 Q -6 22 -10 18 M 0 18 Q 6 22 10 18" stroke="#2c2c2a" strokeWidth="2" fill="none" strokeLinecap="round"/>
+      <ellipse cx="0" cy="65" rx="55" ry="40" fill="#D2B48C" stroke="#5D3317" strokeWidth="2"/>
+      <ellipse cx="-25" cy="95" rx="14" ry="18" fill="#D2B48C" stroke="#5D3317" strokeWidth="2"/>
+      <ellipse cx="25" cy="95" rx="14" ry="18" fill="#D2B48C" stroke="#5D3317" strokeWidth="2"/>
+      <ellipse cx="50" cy="50" rx="8" ry="18" fill="#D2B48C" stroke="#5D3317" strokeWidth="2" transform="rotate(30 50 50)"/>
+    </g>),
+    kitty:()=>(<g transform="translate(190, 200)">
+      <path d="M -52 -50 L -38 -95 L -20 -65 Z" fill="#E8E8E8" stroke="#888" strokeWidth="2"/>
+      <path d="M 52 -50 L 38 -95 L 20 -65 Z" fill="#E8E8E8" stroke="#888" strokeWidth="2"/>
+      <path d="M -45 -55 L -38 -85 L -28 -65 Z" fill="#FFB6C1"/>
+      <path d="M 45 -55 L 38 -85 L 28 -65 Z" fill="#FFB6C1"/>
+      <circle cx="0" cy="-25" r="55" fill="#E8E8E8" stroke="#888" strokeWidth="2"/>
+      <ellipse cx="-20" cy="-28" rx="8" ry="12" fill="#4a7c4e"/>
+      <ellipse cx="20" cy="-28" rx="8" ry="12" fill="#4a7c4e"/>
+      <ellipse cx="-20" cy="-28" rx="2.5" ry="10" fill="#2c2c2a"/>
+      <ellipse cx="20" cy="-28" rx="2.5" ry="10" fill="#2c2c2a"/>
+      <circle cx="-18" cy="-32" r="1.5" fill="#fff"/>
+      <circle cx="22" cy="-32" r="1.5" fill="#fff"/>
+      <path d="M -4 -12 L 4 -12 L 0 -7 Z" fill="#FF9BB3"/>
+      <path d="M 0 -7 L 0 -2 M 0 -2 Q -5 1 -8 -1 M 0 -2 Q 5 1 8 -1" stroke="#2c2c2a" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+      <line x1="-28" y1="-15" x2="-48" y2="-18" stroke="#2c2c2a" strokeWidth="1"/>
+      <line x1="-28" y1="-10" x2="-50" y2="-8" stroke="#2c2c2a" strokeWidth="1"/>
+      <line x1="28" y1="-15" x2="48" y2="-18" stroke="#2c2c2a" strokeWidth="1"/>
+      <line x1="28" y1="-10" x2="50" y2="-8" stroke="#2c2c2a" strokeWidth="1"/>
+      <ellipse cx="0" cy="50" rx="48" ry="42" fill="#E8E8E8" stroke="#888" strokeWidth="2"/>
+      <ellipse cx="-22" cy="85" rx="12" ry="15" fill="#E8E8E8" stroke="#888" strokeWidth="2"/>
+      <ellipse cx="22" cy="85" rx="12" ry="15" fill="#E8E8E8" stroke="#888" strokeWidth="2"/>
+      <path d="M 45 45 Q 70 40 72 20 Q 68 15 65 25" fill="#E8E8E8" stroke="#888" strokeWidth="2"/>
+    </g>),
+    piggy:()=>(<g transform="translate(190, 200)">
+      <path d="M -40 -75 L -28 -95 L -20 -75 Z" fill="#FFB6C1" stroke="#C88"  strokeWidth="2"/>
+      <path d="M 40 -75 L 28 -95 L 20 -75 Z" fill="#FFB6C1" stroke="#C88" strokeWidth="2"/>
+      <circle cx="0" cy="-30" r="55" fill="#FFC0CB" stroke="#C88" strokeWidth="2"/>
+      <ellipse cx="-18" cy="-35" rx="6" ry="8" fill="#2c2c2a"/>
+      <ellipse cx="18" cy="-35" rx="6" ry="8" fill="#2c2c2a"/>
+      <circle cx="-16" cy="-38" r="2" fill="#fff"/>
+      <circle cx="20" cy="-38" r="2" fill="#fff"/>
+      <ellipse cx="0" cy="-5" rx="22" ry="16" fill="#FFB6C1" stroke="#C88" strokeWidth="2"/>
+      <circle cx="-7" cy="-5" r="3" fill="#2c2c2a"/>
+      <circle cx="7" cy="-5" r="3" fill="#2c2c2a"/>
+      <ellipse cx="0" cy="55" rx="55" ry="45" fill="#FFC0CB" stroke="#C88" strokeWidth="2"/>
+      <ellipse cx="-22" cy="90" rx="14" ry="18" fill="#FFB6C1" stroke="#C88" strokeWidth="2"/>
+      <ellipse cx="22" cy="90" rx="14" ry="18" fill="#FFB6C1" stroke="#C88" strokeWidth="2"/>
+      <path d="M 50 50 Q 70 45 65 25" fill="none" stroke="#C88" strokeWidth="3" strokeLinecap="round"/>
+    </g>),
+    froggy:()=>(<g transform="translate(190, 195)">
+      <ellipse cx="0" cy="20" rx="70" ry="60" fill="#7FD1AE" stroke="#3F8564" strokeWidth="2"/>
+      <ellipse cx="0" cy="55" rx="45" ry="20" fill="#C5E8D1"/>
+      <circle cx="-30" cy="-40" r="25" fill="#7FD1AE" stroke="#3F8564" strokeWidth="2"/>
+      <circle cx="30" cy="-40" r="25" fill="#7FD1AE" stroke="#3F8564" strokeWidth="2"/>
+      <circle cx="-30" cy="-40" r="15" fill="#fff"/>
+      <circle cx="30" cy="-40" r="15" fill="#fff"/>
+      <circle cx="-30" cy="-38" r="10" fill="#2c2c2a"/>
+      <circle cx="30" cy="-38" r="10" fill="#2c2c2a"/>
+      <circle cx="-27" cy="-42" r="3" fill="#fff"/>
+      <circle cx="33" cy="-42" r="3" fill="#fff"/>
+      <path d="M -25 0 Q 0 15 25 0" fill="none" stroke="#3F8564" strokeWidth="3" strokeLinecap="round"/>
+      <ellipse cx="-50" cy="70" rx="18" ry="10" fill="#7FD1AE" stroke="#3F8564" strokeWidth="2"/>
+      <ellipse cx="50" cy="70" rx="18" ry="10" fill="#7FD1AE" stroke="#3F8564" strokeWidth="2"/>
+      <ellipse cx="-60" cy="72" rx="5" ry="3" fill="#C5E8D1"/>
+      <ellipse cx="60" cy="72" rx="5" ry="3" fill="#C5E8D1"/>
+    </g>),
+    panda:()=>(<g transform="translate(190, 200)">
+      <circle cx="-40" cy="-80" r="18" fill="#2c2c2a"/>
+      <circle cx="40" cy="-80" r="18" fill="#2c2c2a"/>
+      <circle cx="0" cy="-25" r="60" fill="#fff" stroke="#CCC" strokeWidth="2"/>
+      <ellipse cx="-22" cy="-25" rx="18" ry="22" fill="#2c2c2a"/>
+      <ellipse cx="22" cy="-25" rx="18" ry="22" fill="#2c2c2a"/>
+      <circle cx="-22" cy="-25" r="8" fill="#fff"/>
+      <circle cx="22" cy="-25" r="8" fill="#fff"/>
+      <circle cx="-22" cy="-23" r="5" fill="#2c2c2a"/>
+      <circle cx="22" cy="-23" r="5" fill="#2c2c2a"/>
+      <ellipse cx="0" cy="0" rx="6" ry="4" fill="#2c2c2a"/>
+      <path d="M 0 4 L 0 10 M 0 10 Q -6 14 -10 10 M 0 10 Q 6 14 10 10" stroke="#2c2c2a" strokeWidth="2" fill="none" strokeLinecap="round"/>
+      <ellipse cx="0" cy="55" rx="55" ry="45" fill="#fff" stroke="#CCC" strokeWidth="2"/>
+      <ellipse cx="-40" cy="30" rx="18" ry="30" fill="#2c2c2a"/>
+      <ellipse cx="40" cy="30" rx="18" ry="30" fill="#2c2c2a"/>
+      <ellipse cx="-25" cy="90" rx="18" ry="15" fill="#2c2c2a"/>
+      <ellipse cx="25" cy="90" rx="18" ry="15" fill="#2c2c2a"/>
+    </g>),
+    koala:()=>(<g transform="translate(190, 200)">
+      <circle cx="-48" cy="-55" r="30" fill="#A8A8A8" stroke="#666" strokeWidth="2"/>
+      <circle cx="48" cy="-55" r="30" fill="#A8A8A8" stroke="#666" strokeWidth="2"/>
+      <circle cx="-48" cy="-55" r="18" fill="#FFF5E6"/>
+      <circle cx="48" cy="-55" r="18" fill="#FFF5E6"/>
+      <circle cx="0" cy="-15" r="55" fill="#A8A8A8" stroke="#666" strokeWidth="2"/>
+      <ellipse cx="-18" cy="-20" rx="6" ry="8" fill="#2c2c2a"/>
+      <ellipse cx="18" cy="-20" rx="6" ry="8" fill="#2c2c2a"/>
+      <circle cx="-16" cy="-23" r="2" fill="#fff"/>
+      <circle cx="20" cy="-23" r="2" fill="#fff"/>
+      <ellipse cx="0" cy="5" rx="14" ry="10" fill="#2c2c2a"/>
+      <path d="M 0 12 Q -8 18 -12 14 M 0 12 Q 8 18 12 14" fill="none" stroke="#2c2c2a" strokeWidth="2" strokeLinecap="round"/>
+      <ellipse cx="0" cy="60" rx="50" ry="40" fill="#A8A8A8" stroke="#666" strokeWidth="2"/>
+      <ellipse cx="-22" cy="90" rx="14" ry="16" fill="#888" stroke="#666" strokeWidth="2"/>
+      <ellipse cx="22" cy="90" rx="14" ry="16" fill="#888" stroke="#666" strokeWidth="2"/>
+    </g>),
+    fox:()=>(<g transform="translate(190, 200)">
+      <path d="M -60 -45 L -50 -100 L -25 -60 Z" fill="#E8702A" stroke="#A04810" strokeWidth="2"/>
+      <path d="M 60 -45 L 50 -100 L 25 -60 Z" fill="#E8702A" stroke="#A04810" strokeWidth="2"/>
+      <path d="M -50 -60 L -48 -90 L -35 -68 Z" fill="#fff"/>
+      <path d="M 50 -60 L 48 -90 L 35 -68 Z" fill="#fff"/>
+      <path d="M -40 -20 L 0 30 L 40 -20 L 30 -55 L -30 -55 Z" fill="#E8702A" stroke="#A04810" strokeWidth="2"/>
+      <path d="M -18 10 L 0 30 L 18 10 L 15 0 L -15 0 Z" fill="#fff"/>
+      <ellipse cx="-18" cy="-25" rx="6" ry="9" fill="#2c2c2a"/>
+      <ellipse cx="18" cy="-25" rx="6" ry="9" fill="#2c2c2a"/>
+      <circle cx="-16" cy="-28" r="2" fill="#fff"/>
+      <circle cx="20" cy="-28" r="2" fill="#fff"/>
+      <ellipse cx="0" cy="15" rx="5" ry="4" fill="#2c2c2a"/>
+      <path d="M 0 20 L 0 25 M 0 25 Q -5 28 -8 25 M 0 25 Q 5 28 8 25" stroke="#2c2c2a" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+      <ellipse cx="0" cy="70" rx="48" ry="38" fill="#E8702A" stroke="#A04810" strokeWidth="2"/>
+      <ellipse cx="0" cy="75" rx="28" ry="22" fill="#fff"/>
+      <ellipse cx="-22" cy="100" rx="12" ry="14" fill="#E8702A" stroke="#A04810" strokeWidth="2"/>
+      <ellipse cx="22" cy="100" rx="12" ry="14" fill="#E8702A" stroke="#A04810" strokeWidth="2"/>
+      <path d="M 45 60 Q 80 50 85 20 Q 90 10 80 12" fill="#E8702A" stroke="#A04810" strokeWidth="2"/>
+      <path d="M 78 16 Q 82 13 80 12" fill="#fff" stroke="#A04810" strokeWidth="2"/>
+    </g>),
+    owl:()=>(<g transform="translate(190, 200)">
+      <path d="M -55 -80 L -35 -100 L -20 -65 Z" fill="#8B5A3C" stroke="#4A2F1E" strokeWidth="2"/>
+      <path d="M 55 -80 L 35 -100 L 20 -65 Z" fill="#8B5A3C" stroke="#4A2F1E" strokeWidth="2"/>
+      <ellipse cx="0" cy="-10" rx="65" ry="60" fill="#8B5A3C" stroke="#4A2F1E" strokeWidth="2"/>
+      <ellipse cx="0" cy="10" rx="45" ry="45" fill="#C9A57A"/>
+      <circle cx="-22" cy="-15" r="22" fill="#fff" stroke="#4A2F1E" strokeWidth="2"/>
+      <circle cx="22" cy="-15" r="22" fill="#fff" stroke="#4A2F1E" strokeWidth="2"/>
+      <circle cx="-22" cy="-15" r="15" fill="#FFD700"/>
+      <circle cx="22" cy="-15" r="15" fill="#FFD700"/>
+      <circle cx="-22" cy="-15" r="9" fill="#2c2c2a"/>
+      <circle cx="22" cy="-15" r="9" fill="#2c2c2a"/>
+      <circle cx="-19" cy="-18" r="3" fill="#fff"/>
+      <circle cx="25" cy="-18" r="3" fill="#fff"/>
+      <path d="M -8 10 L 0 25 L 8 10 Z" fill="#FF8A00" stroke="#4A2F1E" strokeWidth="1.5"/>
+      <ellipse cx="0" cy="60" rx="55" ry="42" fill="#8B5A3C" stroke="#4A2F1E" strokeWidth="2"/>
+      <ellipse cx="-40" cy="40" rx="18" ry="35" fill="#8B5A3C" stroke="#4A2F1E" strokeWidth="2" transform="rotate(-10 -40 40)"/>
+      <ellipse cx="40" cy="40" rx="18" ry="35" fill="#8B5A3C" stroke="#4A2F1E" strokeWidth="2" transform="rotate(10 40 40)"/>
+      <path d="M -8 95 L -8 100 M -14 95 L -14 100 M -20 95 L -20 100" stroke="#FF8A00" strokeWidth="3" strokeLinecap="round"/>
+      <path d="M 8 95 L 8 100 M 14 95 L 14 100 M 20 95 L 20 100" stroke="#FF8A00" strokeWidth="3" strokeLinecap="round"/>
+    </g>),
+    penguin:()=>(<g transform="translate(190, 200)">
+      <circle cx="0" cy="-30" r="50" fill="#2c2c2a"/>
+      <ellipse cx="0" cy="-15" rx="34" ry="30" fill="#fff"/>
+      <ellipse cx="-15" cy="-40" rx="5" ry="7" fill="#2c2c2a"/>
+      <ellipse cx="15" cy="-40" rx="5" ry="7" fill="#2c2c2a"/>
+      <circle cx="-13" cy="-42" r="2" fill="#fff"/>
+      <circle cx="17" cy="-42" r="2" fill="#fff"/>
+      <path d="M -7 -15 L 7 -15 L 0 -5 Z" fill="#FF8A00"/>
+      <ellipse cx="0" cy="60" rx="55" ry="50" fill="#2c2c2a"/>
+      <ellipse cx="0" cy="65" rx="40" ry="45" fill="#fff"/>
+      <ellipse cx="-45" cy="50" rx="14" ry="35" fill="#2c2c2a" transform="rotate(-15 -45 50)"/>
+      <ellipse cx="45" cy="50" rx="14" ry="35" fill="#2c2c2a" transform="rotate(15 45 50)"/>
+      <ellipse cx="-18" cy="110" rx="14" ry="6" fill="#FF8A00"/>
+      <ellipse cx="18" cy="110" rx="14" ry="6" fill="#FF8A00"/>
+    </g>),
+    unicorn:()=>(<g transform="translate(190, 200)">
+      <path d="M -15 -95 L 15 -95 L 5 -55 L -5 -55 Z" fill="#FFD700" stroke="#E5A500" strokeWidth="1.5"/>
+      <path d="M -10 -88 L 10 -88 M -8 -78 L 8 -78 M -6 -68 L 6 -68" stroke="#E5A500" strokeWidth="1.5"/>
+      <path d="M -45 -55 L -35 -90 L -20 -65 Z" fill="#fff" stroke="#CCC" strokeWidth="2"/>
+      <path d="M 45 -55 L 35 -90 L 20 -65 Z" fill="#fff" stroke="#CCC" strokeWidth="2"/>
+      <path d="M -38 -65 L -35 -85 L -26 -68 Z" fill="#FFB6C1"/>
+      <path d="M 38 -65 L 35 -85 L 26 -68 Z" fill="#FFB6C1"/>
+      <circle cx="0" cy="-25" r="55" fill="#fff" stroke="#CCC" strokeWidth="2"/>
+      <path d="M -50 -50 Q -70 -20 -45 10" fill="#FF8FD8" stroke="#C068A8" strokeWidth="2"/>
+      <path d="M -48 -40 Q -65 -15 -42 5" fill="#7EE8FA" stroke="#4A8FB8" strokeWidth="2"/>
+      <ellipse cx="-18" cy="-30" rx="6" ry="9" fill="#2c2c2a"/>
+      <ellipse cx="18" cy="-30" rx="6" ry="9" fill="#2c2c2a"/>
+      <circle cx="-16" cy="-33" r="2" fill="#fff"/>
+      <circle cx="20" cy="-33" r="2" fill="#fff"/>
+      <ellipse cx="0" cy="5" rx="25" ry="15" fill="#fff" stroke="#CCC" strokeWidth="2"/>
+      <circle cx="-10" cy="5" r="2" fill="#2c2c2a"/>
+      <circle cx="10" cy="5" r="2" fill="#2c2c2a"/>
+      <path d="M -6 12 Q 0 18 6 12" fill="none" stroke="#2c2c2a" strokeWidth="1.5" strokeLinecap="round"/>
+      <ellipse cx="0" cy="65" rx="55" ry="42" fill="#fff" stroke="#CCC" strokeWidth="2"/>
+      <path d="M 50 55 Q 85 40 90 15 Q 85 10 80 25 Q 75 30 70 30" fill="#FFB6C1" stroke="#C088" strokeWidth="2"/>
+      <path d="M 55 50 Q 85 40 85 18" fill="none" stroke="#7EE8FA" strokeWidth="3" strokeLinecap="round"/>
+      <ellipse cx="-25" cy="95" rx="14" ry="16" fill="#fff" stroke="#CCC" strokeWidth="2"/>
+      <ellipse cx="25" cy="95" rx="14" ry="16" fill="#fff" stroke="#CCC" strokeWidth="2"/>
+    </g>),
+    dragon:()=>(<g transform="translate(190, 200)">
+      <path d="M -35 -65 L -45 -105 L -10 -75 Z" fill="#B22222" stroke="#7A1111" strokeWidth="2"/>
+      <path d="M 35 -65 L 45 -105 L 10 -75 Z" fill="#B22222" stroke="#7A1111" strokeWidth="2"/>
+      <path d="M -30 -70 L -38 -98 L -15 -78 Z" fill="#FF6347"/>
+      <path d="M 30 -70 L 38 -98 L 15 -78 Z" fill="#FF6347"/>
+      <circle cx="0" cy="-25" r="55" fill="#DC143C" stroke="#7A1111" strokeWidth="2"/>
+      <ellipse cx="0" cy="0" rx="28" ry="20" fill="#FFD700"/>
+      <ellipse cx="-18" cy="-30" rx="7" ry="10" fill="#FFD700"/>
+      <ellipse cx="18" cy="-30" rx="7" ry="10" fill="#FFD700"/>
+      <circle cx="-18" cy="-30" r="4" fill="#2c2c2a"/>
+      <circle cx="18" cy="-30" r="4" fill="#2c2c2a"/>
+      <circle cx="-16" cy="-32" r="1.5" fill="#fff"/>
+      <circle cx="20" cy="-32" r="1.5" fill="#fff"/>
+      <ellipse cx="-8" cy="0" rx="3" ry="2" fill="#2c2c2a"/>
+      <ellipse cx="8" cy="0" rx="3" ry="2" fill="#2c2c2a"/>
+      <path d="M -8 8 L -4 15 L 0 10 L 4 15 L 8 8" fill="#FFF8DC" stroke="#7A1111" strokeWidth="1.5"/>
+      <path d="M -3 12 L -3 20 L 3 20 L 3 12" fill="#fff" stroke="#7A1111" strokeWidth="1"/>
+      <path d="M -15 -80 L -12 -90 L -5 -82" fill="#FFF8DC" stroke="#7A1111" strokeWidth="1.5"/>
+      <path d="M 15 -80 L 12 -90 L 5 -82" fill="#FFF8DC" stroke="#7A1111" strokeWidth="1.5"/>
+      <ellipse cx="0" cy="55" rx="52" ry="45" fill="#DC143C" stroke="#7A1111" strokeWidth="2"/>
+      <ellipse cx="0" cy="60" rx="32" ry="35" fill="#FFD700"/>
+      <path d="M -65 30 L -85 5 L -55 20 L -75 -5 L -50 10 Z" fill="#B22222" stroke="#7A1111" strokeWidth="2"/>
+      <path d="M 65 30 L 85 5 L 55 20 L 75 -5 L 50 10 Z" fill="#B22222" stroke="#7A1111" strokeWidth="2"/>
+      <ellipse cx="-22" cy="95" rx="13" ry="15" fill="#DC143C" stroke="#7A1111" strokeWidth="2"/>
+      <ellipse cx="22" cy="95" rx="13" ry="15" fill="#DC143C" stroke="#7A1111" strokeWidth="2"/>
+    </g>),
+    whale:()=>(<g transform="translate(190, 200)">
+      <ellipse cx="0" cy="10" rx="85" ry="55" fill="#4A90E2" stroke="#2458A8" strokeWidth="2"/>
+      <ellipse cx="-5" cy="20" rx="55" ry="35" fill="#7EB5F0"/>
+      <ellipse cx="-45" cy="-15" rx="8" ry="10" fill="#fff"/>
+      <ellipse cx="-45" cy="-15" rx="5" ry="7" fill="#2c2c2a"/>
+      <circle cx="-44" cy="-17" r="1.5" fill="#fff"/>
+      <path d="M -70 -10 Q -80 -12 -78 -5 M -72 -12 L -80 -20 L -72 -22" fill="none" stroke="#2458A8" strokeWidth="2" strokeLinecap="round"/>
+      <path d="M -85 -20 Q -95 -40 -85 -45 M -82 -22 Q -100 -40 -92 -50 M -78 -25 Q -95 -35 -88 -45" fill="none" stroke="#7EB5F0" strokeWidth="3" strokeLinecap="round" opacity="0.7"/>
+      <path d="M -70 20 Q 0 38 70 20" fill="none" stroke="#2458A8" strokeWidth="2" strokeLinecap="round"/>
+      <path d="M 75 5 L 105 -10 L 95 15 L 105 30 L 75 15 Z" fill="#4A90E2" stroke="#2458A8" strokeWidth="2"/>
+      <path d="M -30 -40 L -25 -50 L -15 -40 Z" fill="#4A90E2" stroke="#2458A8" strokeWidth="2"/>
+      <ellipse cx="30" cy="50" rx="20" ry="10" fill="#4A90E2" stroke="#2458A8" strokeWidth="2"/>
+    </g>),
+    phoenix:()=>(<g transform="translate(190, 200)">
+      <path d="M -90 -20 Q -110 -60 -80 -80 Q -60 -60 -50 -30 Z" fill="#FF6347" stroke="#C41E00" strokeWidth="2"/>
+      <path d="M 90 -20 Q 110 -60 80 -80 Q 60 -60 50 -30 Z" fill="#FF6347" stroke="#C41E00" strokeWidth="2"/>
+      <path d="M -80 -30 Q -95 -55 -75 -70 Q -65 -55 -55 -35 Z" fill="#FFD700"/>
+      <path d="M 80 -30 Q 95 -55 75 -70 Q 65 -55 55 -35 Z" fill="#FFD700"/>
+      <path d="M -15 -95 Q -5 -105 0 -95 M 0 -95 Q 5 -105 15 -95" fill="#FFD700" stroke="#E5A500" strokeWidth="2"/>
+      <path d="M -20 -90 L -10 -105 L 0 -95 L 10 -105 L 20 -90" fill="#FF6347" stroke="#C41E00" strokeWidth="2"/>
+      <circle cx="0" cy="-30" r="50" fill="#FFD700" stroke="#C41E00" strokeWidth="2"/>
+      <ellipse cx="0" cy="-10" rx="28" ry="22" fill="#FF6347"/>
+      <ellipse cx="-16" cy="-35" rx="7" ry="10" fill="#2c2c2a"/>
+      <ellipse cx="16" cy="-35" rx="7" ry="10" fill="#2c2c2a"/>
+      <circle cx="-14" cy="-38" r="2" fill="#fff"/>
+      <circle cx="18" cy="-38" r="2" fill="#fff"/>
+      <path d="M -8 -10 L 8 -10 L 0 0 Z" fill="#FF8A00" stroke="#C41E00" strokeWidth="1.5"/>
+      <ellipse cx="0" cy="55" rx="55" ry="45" fill="#FF6347" stroke="#C41E00" strokeWidth="2"/>
+      <ellipse cx="0" cy="60" rx="32" ry="32" fill="#FFD700"/>
+      <path d="M -30 90 Q -60 120 -20 115" fill="#FF6347" stroke="#C41E00" strokeWidth="2"/>
+      <path d="M 30 90 Q 60 120 20 115" fill="#FF6347" stroke="#C41E00" strokeWidth="2"/>
+      <path d="M 0 95 L -15 135 L 15 135 Z" fill="#FFD700" stroke="#C41E00" strokeWidth="2"/>
+    </g>),
+    celestial:()=>(<g transform="translate(190, 200)">
+      <circle cx="0" cy="-20" r="80" fill="#E5D4FF" stroke="#9D7BD8" strokeWidth="2" opacity="0.4"/>
+      <circle cx="0" cy="-20" r="60" fill="#B794F4" stroke="#9D7BD8" strokeWidth="2"/>
+      <path d="M 0 -85 L 5 -68 L 22 -68 L 9 -58 L 14 -40 L 0 -50 L -14 -40 L -9 -58 L -22 -68 L -5 -68 Z" fill="#FFD700" stroke="#FFA500" strokeWidth="2"/>
+      <ellipse cx="-14" cy="-22" rx="7" ry="10" fill="#2c2c2a"/>
+      <ellipse cx="14" cy="-22" rx="7" ry="10" fill="#2c2c2a"/>
+      <circle cx="-12" cy="-25" r="2.5" fill="#fff"/>
+      <circle cx="16" cy="-25" r="2.5" fill="#fff"/>
+      <path d="M -8 5 L 8 5" stroke="#2c2c2a" strokeWidth="2" strokeLinecap="round"/>
+      <circle cx="-22" cy="-5" r="6" fill="#FFB6C1" opacity="0.7"/>
+      <circle cx="22" cy="-5" r="6" fill="#FFB6C1" opacity="0.7"/>
+      <path d="M -65 -50 L -55 -45 L -60 -35 Z" fill="#FFD700" stroke="#FFA500" strokeWidth="1"/>
+      <path d="M 65 -50 L 55 -45 L 60 -35 Z" fill="#FFD700" stroke="#FFA500" strokeWidth="1"/>
+      <path d="M -75 10 L -65 15 L -70 25 Z" fill="#fff" stroke="#B794F4" strokeWidth="1"/>
+      <path d="M 75 10 L 65 15 L 70 25 Z" fill="#fff" stroke="#B794F4" strokeWidth="1"/>
+      <ellipse cx="0" cy="55" rx="50" ry="40" fill="#B794F4" stroke="#9D7BD8" strokeWidth="2"/>
+      <circle cx="0" cy="55" r="20" fill="#FFD700" opacity="0.6"/>
+      <ellipse cx="-25" cy="85" rx="12" ry="14" fill="#B794F4" stroke="#9D7BD8" strokeWidth="2"/>
+      <ellipse cx="25" cy="85" rx="12" ry="14" fill="#B794F4" stroke="#9D7BD8" strokeWidth="2"/>
+    </g>),
+  };
+  const R=renderers[petId]||renderers.puppy;
+  return(<svg width={size} height={size} viewBox="0 0 380 380" xmlns="http://www.w3.org/2000/svg">
+    {R()}
+  </svg>);
+}
+
 // ═══ PET HOME SCENE (寵物的家 - 沉浸式場景) ═══════════════════════
 function PetHomeScene({pet,petDef,ri,mood,c}){
   const home=PET_HOMES[petDef.id]||PET_HOMES.puppy;
@@ -2391,7 +2703,7 @@ function PetHomeScene({pet,petDef,ri,mood,c}){
 
   const urgentNeed=pet.hunger<30?{icon:"🍖",text:"好餓..."}:pet.clean<30?{icon:"💦",text:"好髒..."}:pet.energy<30?{icon:"😴",text:"好累..."}:null;
 
-  return(<div style={{position:"relative",width:"100%",height:340,borderRadius:20,overflow:"hidden",marginBottom:12,background:home.bg,boxShadow:"0 6px 20px rgba(0,0,0,.15)",border:`3px solid ${ri.color}`}}>
+  return(<div style={{position:"relative",width:"100%",height:380,borderRadius:20,overflow:"hidden",marginBottom:12,background:home.bg,boxShadow:"0 6px 20px rgba(0,0,0,.15)",border:`3px solid ${ri.color}`}}>
     <style>{`
       @keyframes petBreathe{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.05)}}
       @keyframes petBounce{0%{transform:translate(-50%,-50%) scale(1)}25%{transform:translate(-50%,-90%) scale(1.15)}50%{transform:translate(-50%,-50%) scale(0.95)}75%{transform:translate(-50%,-70%) scale(1.1)}100%{transform:translate(-50%,-50%) scale(1)}}
@@ -2436,12 +2748,12 @@ function PetHomeScene({pet,petDef,ri,mood,c}){
       <div style={{position:"absolute",bottom:-5,left:"50%",transform:"translateX(-50%)",width:0,height:0,borderLeft:"6px solid transparent",borderRight:"6px solid transparent",borderTop:"6px solid #fff"}}/>
     </div>}
 
-    {/* THE PET! Big and interactive */}
+    {/* THE PET! Big and interactive - SVG illustration */}
     <button onClick={tapPet} style={{
       position:"absolute",
       left:`${petPos.x}%`,top:`${petPos.y}%`,
       transform:"translate(-50%,-50%)",
-      fontSize:petFontSize,background:"none",border:"none",cursor:"pointer",
+      background:"none",border:"none",cursor:"pointer",
       WebkitTapHighlightColor:"transparent",padding:0,
       animation:petPos.bouncing?"petBounce .6s ease-out":urgentNeed?"petShake 1.2s ease-in-out infinite":"petBreathe 2.5s ease-in-out infinite",
       transition:"left 2s ease-in-out, top 2s ease-in-out",
@@ -2450,7 +2762,7 @@ function PetHomeScene({pet,petDef,ri,mood,c}){
       lineHeight:1,
       userSelect:"none",
     }}>
-      {petDef.emoji}
+      <PetSVG petId={petDef.id} size={petFontSize*1.5}/>
     </button>
 
     {/* Ground line with items */}
