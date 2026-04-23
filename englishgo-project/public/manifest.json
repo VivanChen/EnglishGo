@@ -1,0 +1,27 @@
+{
+  "name": "EnglishGo 英語學習平台",
+  "short_name": "EnglishGo",
+  "description": "專為台灣學生設計 · AI 驅動英語學習平台",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#091825",
+  "theme_color": "#185FA5",
+  "lang": "zh-TW",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["education", "kids"],
+  "screenshots": []
+}

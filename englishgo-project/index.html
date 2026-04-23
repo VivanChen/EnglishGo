@@ -2,40 +2,41 @@
 <html lang="zh-TW">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>EnglishGo — 英語學習平台</title>
-    <meta name="description" content="專為台灣學生設計的英語學習平台，SRS 記憶卡、口說練習、AI 家教、遊戲化學習，涵蓋 4400+ 單字。" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    <!-- Google AdSense -->
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1718782570565490" crossorigin="anonymous"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+    <meta name="theme-color" content="#185FA5" />
+    <meta name="description" content="EnglishGo 英語學習平台 - 專為台灣學生設計 · AI 驅動英語學習" />
+
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png" />
+
+    <!-- iOS PWA support -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="EnglishGo" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+
+    <!-- SEO -->
+    <meta property="og:title" content="EnglishGo 英語學習平台" />
+    <meta property="og:description" content="專為台灣學生設計的 AI 英語學習平台" />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/icon-512.png" />
+
+    <title>EnglishGo 英語學習平台</title>
     <style>
-      * { margin: 0; padding: 0; box-sizing: border-box; }
-      body { font-family: 'Noto Sans TC', 'Segoe UI', sans-serif; -webkit-font-smoothing: antialiased; }
+      html, body { margin: 0; padding: 0; height: 100%; overflow-x: hidden; }
+      body { font-family: 'Noto Sans TC', 'Segoe UI', sans-serif; background: #091825; }
       #root { min-height: 100vh; }
+      #root:empty::before {
+        content: '📘 EnglishGo 載入中...';
+        position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+        color: #fff; font-size: 16px; letter-spacing: 1px;
+      }
     </style>
   </head>
   <body>
     <div id="root"></div>
-    <noscript>
-      <div style="max-width:800px;margin:0 auto;padding:40px 20px;font-family:'Noto Sans TC',sans-serif;color:#333;line-height:1.8">
-        <h1 style="font-size:28px;margin-bottom:8px">📘 EnglishGo — 專為台灣學生設計的英語學習平台</h1>
-        <p style="color:#666;margin-bottom:24px">免費線上英語學習工具，涵蓋小學、國中、高中共 4,400+ 個單字，結合 SRS 間隔重複記憶法、AI 家教、口說練習等 15 種學習模式。</p>
-        <h2>🎯 15 個學習模組</h2>
-        <p>🃏 SRS 單字卡（遊戲化＋GIF動圖＋音效＋連擊系統）· 📝 單字測驗（四選一＋Combo）· 🗣️ 口說練習（BeeSpeaker風格＋AI語音辨識）· 🔨 打地鼠拼字（限時拼字遊戲）· 🎴 配對翻牌（記憶遊戲）· 💣 拆彈拼字（導火線倒數＋生命值）· 🍉 切水果（水果忍者風格）· 🎧 聽寫訓練（三種語速）· 🧩 句子重組（拖放語序）· 🧠 文法學堂（分級＋小測驗）· 📖 閱讀理解（分級短文）· 🤖 AI 家教（Gemini免費對話）· 🏆 成就徽章 · 📕 錯題本 · 📊 學習報告（含LINE分享）</p>
-        <h2>📚 單字庫</h2>
-        <p>收錄超過 4,400 個英文單字，依據台灣教育部課綱分級：小學 ~334 字、國中 ~1,368 字、高中 ~2,838 字。每個單字包含音標、詞性、中文翻譯、詞性變化、常見搭配、例句及翻譯。</p>
-        <h2>📖 學習資源</h2>
-        <p><a href="/learn/srs-method.html">📖 什麼是 SRS 間隔重複記憶法？</a></p>
-        <p><a href="/learn/speaking-tips.html">🗣️ 台灣學生如何提升英文口說能力？</a></p>
-        <p><a href="/learn/vocabulary-guide.html">📚 國中會考英文單字準備攻略</a></p>
-        <p><a href="/learn/api-keys.html">🔑 API Key 申請教學</a></p>
-        <p><a href="/learn/sponsor.html">💎 贊助 EnglishGo</a></p>
-        <p style="margin-top:32px;color:#999;font-size:12px">© 2026 EnglishGo · AI Tutor powered by Gemini · 本站使用 Google AdSense 投放廣告。</p>
-      </div>
-    </noscript>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

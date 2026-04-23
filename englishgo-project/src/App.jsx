@@ -347,6 +347,26 @@ const STAGE_SAYINGS={
   evolved:["I am powerful!","Together we grow!","Master and pet!","We are champions!","Knowledge is power!","I protect you!","Legendary bond!"],
 };
 
+// Time-based greetings (overrides stage sayings when appropriate)
+const TIME_GREETINGS={
+  morning:["Good morning!","Rise and shine!","What a beautiful day!","Morning sunshine!","Time to learn!"],
+  noon:["Time for lunch!","I'm hungry!","Let's eat!","Noon already?","Hungry hungry!"],
+  afternoon:["Let's play!","Nice afternoon!","Study time?","Snack time?","Having fun?"],
+  evening:["Good evening!","Long day huh?","Let's relax!","Dinner soon?","Sunset is pretty!"],
+  night:["Good night!","I'm sleepy...","Bedtime soon!","Sweet dreams!","See you tomorrow!"],
+  sleeping:["Zzz...","Dreaming...","So tired..."],
+};
+
+function getTimeOfDay(){
+  const h=new Date().getHours();
+  if(h>=22||h<7)return"sleeping";
+  if(h<10)return"morning";
+  if(h<13)return"noon";
+  if(h<17)return"afternoon";
+  if(h<20)return"evening";
+  return"night";
+}
+
 // ═══ DAILY TASKS (每日任務 - 跟寵物連動) ════════════════════════════
 const DAILY_TASK_DEFS=[
   {id:"srs_5",icon:"🃏",name:"複習 5 個單字",desc:"完成 5 張 SRS 卡片",target:5,reward:{coins:20,exp:15},statKey:"srsToday"},
@@ -393,15 +413,56 @@ function getBondLevel(bond){
 const STAT_DECAY = {hunger:5,clean:3,energy:4};
 const MAX_STAT = 100;
 
+// Check if pet should be sleeping (22:00 - 07:00)
+function isPetSleeping(){
+  const h=new Date().getHours();
+  return h>=22||h<7;
+}
+
+// Chance of poop per hour when awake (25% per hour)
+const POOP_CHANCE_PER_HOUR=0.25;
+
 function calcDecay(pet){
   if(!pet.lastUpdate)return pet;
   const hoursAgo=(Date.now()-new Date(pet.lastUpdate).getTime())/3600000;
   if(hoursAgo<0.1)return pet;
+  // Calculate how many hours were spent sleeping vs awake
+  const lastT=new Date(pet.lastUpdate).getTime();
+  let sleepHours=0,awakeHours=0;
+  // Sample every 30 min to estimate sleep time
+  const steps=Math.min(48,Math.ceil(hoursAgo*2));
+  for(let i=0;i<steps;i++){
+    const t=new Date(lastT+(i/steps)*hoursAgo*3600000);
+    const h=t.getHours();
+    const isSleep=h>=22||h<7;
+    if(isSleep)sleepHours+=hoursAgo/steps;
+    else awakeHours+=hoursAgo/steps;
+  }
+  // While sleeping: no hunger/clean decay, but energy recovers!
+  const decayHours=awakeHours;
+  const energyRecovery=sleepHours*15;// +15/hr while sleeping
+  // Poop accumulation (only while awake)
+  const newPoops=[];
+  const existingPoops=pet.poops||[];
+  if(awakeHours>0.5){
+    const poopCount=Math.floor(awakeHours*POOP_CHANCE_PER_HOUR);
+    for(let i=0;i<poopCount;i++){
+      newPoops.push({
+        id:Date.now()+i,
+        x:15+Math.random()*70,// % position
+        time:new Date(lastT+(i+1)*(awakeHours/poopCount)*3600000).toISOString(),
+      });
+    }
+  }
+  const totalPoops=[...existingPoops,...newPoops].slice(-5);// max 5
+  // Extra clean decay per poop (each poop costs -5 clean)
+  const poopPenalty=totalPoops.length*5;
   return {
     ...pet,
-    hunger:Math.max(0,(pet.hunger??80)-STAT_DECAY.hunger*hoursAgo),
-    clean:Math.max(0,(pet.clean??80)-STAT_DECAY.clean*hoursAgo),
-    energy:Math.max(0,(pet.energy??80)-STAT_DECAY.energy*hoursAgo),
+    hunger:Math.max(0,(pet.hunger??80)-STAT_DECAY.hunger*decayHours),
+    clean:Math.max(0,(pet.clean??80)-STAT_DECAY.clean*decayHours-poopPenalty),
+    energy:Math.min(MAX_STAT,(pet.energy??80)-STAT_DECAY.energy*decayHours+energyRecovery),
+    poops:totalPoops,
     lastUpdate:new Date().toISOString(),
   };
 }
@@ -493,6 +554,10 @@ export default function App(){
   const[inventory,setInventory]=useLS("inv",{});// {foodId: count}
   const[petAccount,setPetAccount]=useLS("petAcc",null);// {username, pinHash, lastSync}
   const[petTasks,setPetTasks]=useLS("petTasks",{date:"",counts:{}});// daily task counters
+  const[loginBonus,setLoginBonus]=useLS("loginBonus",{lastDate:"",streak:0,claimed:false});
+  const[installPrompt,setInstallPrompt]=useState(null);// beforeinstallprompt event
+  const[installDismissed,setInstallDismissed]=useLS("installDismissed",false);
+  const[isOffline,setIsOffline]=useState(!navigator.onLine);
   const[streak,setStreak]=useLS("streak",1);
   const[daily,setDaily]=useLS("daily",{target:10,done:0,date:new Date().toDateString()});
   const[stats,setStats]=useLS("stats",{srsRounds:0,perfectQuiz:0,dictDone:0,scramDone:0});
@@ -524,6 +589,59 @@ export default function App(){
   // Check achievements
   useEffect(()=>{const s={xp,streak,...stats};ACH_DEFS.forEach(a=>{if(!achUnlocked.includes(a.id)&&a.check(s)){setAchUnlocked(u=>[...u,a.id]);setShowAch(a)}});},[xp,streak,stats]);
 
+
+  // PWA: listen for install prompt and online/offline
+  useEffect(()=>{
+    const handleInstallPrompt=(e)=>{e.preventDefault();setInstallPrompt(e)};
+    const handleOnline=()=>setIsOffline(false);
+    const handleOffline=()=>setIsOffline(true);
+    window.addEventListener("beforeinstallprompt",handleInstallPrompt);
+    window.addEventListener("online",handleOnline);
+    window.addEventListener("offline",handleOffline);
+    return()=>{
+      window.removeEventListener("beforeinstallprompt",handleInstallPrompt);
+      window.removeEventListener("online",handleOnline);
+      window.removeEventListener("offline",handleOffline);
+    };
+  },[]);
+
+  const handleInstall=async()=>{
+    if(!installPrompt)return;
+    installPrompt.prompt();
+    const{outcome}=await installPrompt.userChoice;
+    if(outcome==="accepted"){setInstallPrompt(null);playSound("combo")}
+  };
+
+  // Daily login bonus check on mount
+  const[loginBonusModal,setLoginBonusModal]=useState(null);
+  useEffect(()=>{
+    const today=new Date().toDateString();
+    const yesterday=new Date(Date.now()-86400000).toDateString();
+    if(loginBonus.lastDate===today)return;// already checked today
+    const isConsecutive=loginBonus.lastDate===yesterday;
+    const newStreak=isConsecutive?(loginBonus.streak||0)+1:1;
+    setLoginBonus({lastDate:today,streak:newStreak,claimed:false});
+    // Show bonus modal after a short delay
+    setTimeout(()=>setLoginBonusModal({streak:newStreak}),800);
+  },[]);
+  
+  // Rewards by streak day
+  const getLoginReward=(streak)=>{
+    if(streak>=30)return{coins:200,xp:100,msg:"🎉 30 天連續登入！傳奇學習者！"};
+    if(streak>=14)return{coins:100,xp:60,msg:"🌟 14 天連續登入！超強毅力！"};
+    if(streak>=7)return{coins:70,xp:40,msg:"⭐ 連續一週登入！加油！"};
+    if(streak>=3)return{coins:40,xp:25,msg:"✨ 連續 3 天！好習慣養成中"};
+    return{coins:20,xp:10,msg:"👋 歡迎回來！"};
+  };
+
+  const claimLoginBonus=()=>{
+    const r=getLoginReward(loginBonusModal.streak);
+    setCoins(co=>co+r.coins);
+    setXp(x=>x+r.xp);
+    setLoginBonus(l=>({...l,claimed:true}));
+    setLoginBonusModal(null);
+    playSound("combo");
+  };
 
   // Auto-sync pet data to cloud (debounced)
   useEffect(()=>{
@@ -563,6 +681,62 @@ export default function App(){
 
   return(
     <div style={{minHeight:"100vh",background:S.bg3,fontFamily:"'Noto Sans TC','Segoe UI',sans-serif"}}>
+      {/* Offline indicator - top bar */}
+      {isOffline&&<div style={{position:"sticky",top:0,zIndex:100,background:"#EF9F27",color:"#fff",padding:"8px 14px",textAlign:"center",fontSize:12,fontWeight:600,letterSpacing:.5}}>
+        📡 離線模式 · 已上過的內容可以繼續使用
+      </div>}
+
+      {/* Install to home screen banner */}
+      {installPrompt&&!installDismissed&&<div style={{position:"sticky",top:isOffline?34:0,zIndex:99,background:`linear-gradient(135deg,${c.cl},${c.ac})`,color:"#fff",padding:"10px 14px",display:"flex",alignItems:"center",gap:10,boxShadow:"0 2px 8px rgba(0,0,0,.15)"}}>
+        <div style={{fontSize:24}}>📱</div>
+        <div style={{flex:1,fontSize:12,lineHeight:1.4}}>
+          <div style={{fontWeight:700}}>安裝 EnglishGo 到主畫面</div>
+          <div style={{opacity:.9,fontSize:11}}>離線也能用！像 App 一樣</div>
+        </div>
+        <button onClick={handleInstall} style={{background:"#fff",color:c.cl,border:"none",borderRadius:8,padding:"8px 14px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>安裝</button>
+        <button onClick={()=>setInstallDismissed(true)} style={{background:"rgba(255,255,255,.2)",color:"#fff",border:"none",borderRadius:8,padding:"8px 10px",fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>✕</button>
+      </div>}
+      {/* Daily Login Bonus Modal */}
+      {loginBonusModal&&(()=>{const r=getLoginReward(loginBonusModal.streak);return(<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.7)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:20,animation:"fadeUp .3s"}} onClick={claimLoginBonus}>
+        <div style={{background:"var(--color-background-primary,#fff)",borderRadius:24,padding:"32px 24px",maxWidth:340,width:"100%",textAlign:"center",border:`3px solid ${c.cl}`,boxShadow:`0 12px 32px ${c.cl}44`,animation:"bounceIn .5s ease-out"}} onClick={e=>e.stopPropagation()}>
+          <div style={{fontSize:56,marginBottom:10,animation:"emojiBounce 1s ease-in-out infinite"}}>🎁</div>
+          <div style={{fontSize:20,fontWeight:700,color:S.t1}}>每日登入獎勵</div>
+          <div style={{fontSize:13,color:S.t2,marginTop:6}}>{r.msg}</div>
+
+          {/* Streak display */}
+          <div style={{margin:"16px 0",padding:"14px 12px",background:`linear-gradient(135deg,${c.cl}22,${c.ac}22)`,borderRadius:12,border:`2px dashed ${c.cl}66`}}>
+            <div style={{fontSize:11,color:S.t3,letterSpacing:1}}>連續登入</div>
+            <div style={{fontSize:36,fontWeight:700,color:c.cl,fontFamily:"monospace",lineHeight:1}}>{loginBonusModal.streak} <span style={{fontSize:14,color:S.t2}}>天</span></div>
+            <div style={{fontSize:20,marginTop:4}}>{"🔥".repeat(Math.min(loginBonusModal.streak,7))}</div>
+          </div>
+
+          {/* Rewards */}
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:18}}>
+            <div style={{padding:"12px 8px",background:"#FFF3CD",border:"1px solid #EF9F27",borderRadius:10}}>
+              <div style={{fontSize:20}}>🪙</div>
+              <div style={{fontSize:18,fontWeight:700,color:"#856404"}}>+{r.coins}</div>
+              <div style={{fontSize:10,color:"#856404"}}>金幣</div>
+            </div>
+            <div style={{padding:"12px 8px",background:"#E1F5EE",border:"1px solid #1D9E75",borderRadius:10}}>
+              <div style={{fontSize:20}}>⭐</div>
+              <div style={{fontSize:18,fontWeight:700,color:"#0F6E56"}}>+{r.xp}</div>
+              <div style={{fontSize:10,color:"#0F6E56"}}>經驗</div>
+            </div>
+          </div>
+
+          {/* Streak milestones */}
+          <div style={{marginBottom:14,fontSize:11,color:S.t3,lineHeight:1.6}}>
+            下一個獎勵：
+            {loginBonusModal.streak<3&&<> 連續 3 天 → +40 🪙</>}
+            {loginBonusModal.streak>=3&&loginBonusModal.streak<7&&<> 連續 7 天 → +70 🪙</>}
+            {loginBonusModal.streak>=7&&loginBonusModal.streak<14&&<> 連續 14 天 → +100 🪙</>}
+            {loginBonusModal.streak>=14&&loginBonusModal.streak<30&&<> 連續 30 天 → +200 🪙</>}
+            {loginBonusModal.streak>=30&&<> 🏆 已達最高獎勵！</>}
+          </div>
+
+          <button onClick={claimLoginBonus} style={{...S.btn,background:`linear-gradient(135deg,${c.cl},${c.ac})`,color:"#fff",padding:"14px 28px",fontSize:15,width:"100%"}}>✨ 領取獎勵</button>
+        </div>
+      </div>)})()}
       {/* Global mobile styles */}
       <style>{`
         *{-webkit-tap-highlight-color:transparent;box-sizing:border-box}
@@ -1945,7 +2119,7 @@ function GachaPage({onBack,c,coins,setCoins,eggs,setEggs,pets}){
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(100px,1fr))",gap:8}}>
           {result.multi.map((r,i)=>{const ri=RARITY_INFO[r.rarity];return(<div key={r.id} style={{...S.card,padding:"14px 8px",textAlign:"center",background:ri.bg,border:`2px solid ${ri.color}`,animation:`bounceIn .4s ${i*0.08}s both`}}>
             <div style={{fontSize:10,fontWeight:700,color:ri.color}}>{ri.label}</div>
-            <div style={{fontSize:36,margin:"4px 0"}}>🥚</div>
+            <div style={{display:"flex",justifyContent:"center",margin:"4px auto"}}><PixelPet petId={r.petId} stage="egg" size={48} animate={false}/></div>
             <div style={{fontSize:11,color:S.t2}}>{r.pet.name}</div>
           </div>)})}
         </div>
@@ -1958,7 +2132,7 @@ function GachaPage({onBack,c,coins,setCoins,eggs,setEggs,pets}){
     return(<div><Hdr t="🎰 扭蛋結果" onBack={()=>{setShowResult(false);setResult(null)}} cl={c.cl}/>
       <div style={{...S.card,padding:"32px 20px",textAlign:"center",background:`linear-gradient(135deg,${ri.bg},var(--color-background-primary,#fff))`,border:`3px solid ${ri.color}`,animation:"bounceIn .5s ease-out"}}>
         <div style={{fontSize:14,fontWeight:700,color:ri.color,marginBottom:8}}>{ri.stars} {ri.label}</div>
-        <div style={{fontSize:96,marginBottom:12,animation:"emojiBounce 1.5s ease-in-out infinite"}}>🥚</div>
+        <div style={{display:"flex",justifyContent:"center",marginBottom:12,animation:"emojiBounce 1.5s ease-in-out infinite"}}><PixelPet petId={result.petId} stage="egg" size={128}/></div>
         <div style={{fontSize:22,fontWeight:700,color:S.t1}}>獲得 {result.pet.name} 蛋！</div>
         <div style={{fontSize:13,color:S.t2,marginTop:4}}>預覽：{result.pet.emoji} {result.pet.name}</div>
         <div style={{fontSize:12,color:S.t3,marginTop:8,fontStyle:"italic"}}>{result.pet.story}</div>
@@ -2010,7 +2184,7 @@ function GachaPage({onBack,c,coins,setCoins,eggs,setEggs,pets}){
     </div>
 
     {rolling&&<div style={{...S.card,padding:"24px",textAlign:"center",marginBottom:12}}>
-      <div style={{fontSize:64,animation:"emojiBounce .5s infinite"}}>🥚</div>
+      <div style={{display:"flex",justifyContent:"center",animation:"emojiBounce .5s infinite"}}><PixelPet petId="bunny" stage="egg" size={96}/></div>
       <div style={{fontSize:14,color:S.t2,marginTop:8}}>抽獎中...</div>
     </div>}
 
@@ -2325,324 +2499,897 @@ function PetsGuard(props){
   return null;
 }
 
-// ═══ PET SVG ILLUSTRATIONS (精美寵物插圖) ══════════════════════════════
-function PetSVG({petId,size=200,animate=true}){
-  const renderers={
-    bunny:()=>(<g transform="translate(190, 195)">
-      <ellipse cx="-30" cy="-100" rx="18" ry="55" fill="#FFF8F0" stroke="#D8B4B4" strokeWidth="2" transform="rotate(-10 -30 -100)"/>
-      <ellipse cx="30" cy="-100" rx="18" ry="55" fill="#FFF8F0" stroke="#D8B4B4" strokeWidth="2" transform="rotate(10 30 -100)"/>
-      <ellipse cx="-30" cy="-100" rx="8" ry="40" fill="#FFB6C1" transform="rotate(-10 -30 -100)"/>
-      <ellipse cx="30" cy="-100" rx="8" ry="40" fill="#FFB6C1" transform="rotate(10 30 -100)"/>
-      <circle cx="0" cy="-30" r="55" fill="#FFF8F0" stroke="#D8B4B4" strokeWidth="2"/>
-      <circle cx="-30" cy="-10" r="8" fill="#FFB6C1" opacity="0.6"/>
-      <circle cx="30" cy="-10" r="8" fill="#FFB6C1" opacity="0.6"/>
-      <ellipse cx="-18" cy="-35" rx="7" ry="10" fill="#2c2c2a"/>
-      <ellipse cx="18" cy="-35" rx="7" ry="10" fill="#2c2c2a"/>
-      <circle cx="-16" cy="-38" r="2.5" fill="#fff"/>
-      <circle cx="20" cy="-38" r="2.5" fill="#fff"/>
-      <path d="M -5 -15 L 5 -15 L 0 -9 Z" fill="#FF9BB3"/>
-      <path d="M 0 -9 Q -6 -2 -10 -4" fill="none" stroke="#2c2c2a" strokeWidth="1.8" strokeLinecap="round"/>
-      <path d="M 0 -9 Q 6 -2 10 -4" fill="none" stroke="#2c2c2a" strokeWidth="1.8" strokeLinecap="round"/>
-      <ellipse cx="0" cy="55" rx="55" ry="45" fill="#FFF8F0" stroke="#D8B4B4" strokeWidth="2"/>
-      <ellipse cx="-22" cy="80" rx="15" ry="20" fill="#FFF8F0" stroke="#D8B4B4" strokeWidth="2"/>
-      <ellipse cx="22" cy="80" rx="15" ry="20" fill="#FFF8F0" stroke="#D8B4B4" strokeWidth="2"/>
-      <circle cx="-22" cy="90" r="4" fill="#FFB6C1"/>
-      <circle cx="22" cy="90" r="4" fill="#FFB6C1"/>
-      <circle cx="45" cy="45" r="12" fill="#FFF8F0" stroke="#D8B4B4" strokeWidth="2"/>
-    </g>),
-    chick:()=>(<g transform="translate(190, 200)">
-      <ellipse cx="0" cy="20" rx="65" ry="55" fill="#FFE066" stroke="#E5A500" strokeWidth="2"/>
-      <circle cx="0" cy="-40" r="50" fill="#FFE066" stroke="#E5A500" strokeWidth="2"/>
-      <ellipse cx="-18" cy="-45" rx="7" ry="10" fill="#2c2c2a"/>
-      <ellipse cx="18" cy="-45" rx="7" ry="10" fill="#2c2c2a"/>
-      <circle cx="-16" cy="-48" r="2.5" fill="#fff"/>
-      <circle cx="20" cy="-48" r="2.5" fill="#fff"/>
-      <path d="M -8 -22 L 8 -22 L 0 -10 Z" fill="#FF8A00"/>
-      <circle cx="-28" cy="-20" r="6" fill="#FFA0B0" opacity="0.5"/>
-      <circle cx="28" cy="-20" r="6" fill="#FFA0B0" opacity="0.5"/>
-      <path d="M -50 10 Q -80 30 -55 50" fill="#FFE066" stroke="#E5A500" strokeWidth="2"/>
-      <path d="M 50 10 Q 80 30 55 50" fill="#FFE066" stroke="#E5A500" strokeWidth="2"/>
-      <path d="M -15 75 L -15 85 L -20 90 M -15 85 L -10 90 M -15 85 L -15 92" stroke="#FF8A00" strokeWidth="3" strokeLinecap="round" fill="none"/>
-      <path d="M 15 75 L 15 85 L 20 90 M 15 85 L 10 90 M 15 85 L 15 92" stroke="#FF8A00" strokeWidth="3" strokeLinecap="round" fill="none"/>
-      <path d="M -5 -85 L 0 -95 L 5 -85" fill="#FFE066" stroke="#E5A500" strokeWidth="2"/>
-    </g>),
-    puppy:()=>(<g transform="translate(190, 200)">
-      <ellipse cx="-48" cy="-50" rx="20" ry="35" fill="#A0522D" stroke="#5D3317" strokeWidth="2" transform="rotate(-15 -48 -50)"/>
-      <ellipse cx="48" cy="-50" rx="20" ry="35" fill="#A0522D" stroke="#5D3317" strokeWidth="2" transform="rotate(15 48 -50)"/>
-      <circle cx="0" cy="-20" r="55" fill="#D2B48C" stroke="#5D3317" strokeWidth="2"/>
-      <ellipse cx="0" cy="10" rx="32" ry="22" fill="#F5DEB3"/>
-      <ellipse cx="-18" cy="-25" rx="7" ry="9" fill="#2c2c2a"/>
-      <ellipse cx="18" cy="-25" rx="7" ry="9" fill="#2c2c2a"/>
-      <circle cx="-16" cy="-28" r="2.5" fill="#fff"/>
-      <circle cx="20" cy="-28" r="2.5" fill="#fff"/>
-      <ellipse cx="0" cy="5" rx="8" ry="6" fill="#2c2c2a"/>
-      <path d="M 0 12 L 0 18 M 0 18 Q -6 22 -10 18 M 0 18 Q 6 22 10 18" stroke="#2c2c2a" strokeWidth="2" fill="none" strokeLinecap="round"/>
-      <ellipse cx="0" cy="65" rx="55" ry="40" fill="#D2B48C" stroke="#5D3317" strokeWidth="2"/>
-      <ellipse cx="-25" cy="95" rx="14" ry="18" fill="#D2B48C" stroke="#5D3317" strokeWidth="2"/>
-      <ellipse cx="25" cy="95" rx="14" ry="18" fill="#D2B48C" stroke="#5D3317" strokeWidth="2"/>
-      <ellipse cx="50" cy="50" rx="8" ry="18" fill="#D2B48C" stroke="#5D3317" strokeWidth="2" transform="rotate(30 50 50)"/>
-    </g>),
-    kitty:()=>(<g transform="translate(190, 200)">
-      <path d="M -52 -50 L -38 -95 L -20 -65 Z" fill="#E8E8E8" stroke="#888" strokeWidth="2"/>
-      <path d="M 52 -50 L 38 -95 L 20 -65 Z" fill="#E8E8E8" stroke="#888" strokeWidth="2"/>
-      <path d="M -45 -55 L -38 -85 L -28 -65 Z" fill="#FFB6C1"/>
-      <path d="M 45 -55 L 38 -85 L 28 -65 Z" fill="#FFB6C1"/>
-      <circle cx="0" cy="-25" r="55" fill="#E8E8E8" stroke="#888" strokeWidth="2"/>
-      <ellipse cx="-20" cy="-28" rx="8" ry="12" fill="#4a7c4e"/>
-      <ellipse cx="20" cy="-28" rx="8" ry="12" fill="#4a7c4e"/>
-      <ellipse cx="-20" cy="-28" rx="2.5" ry="10" fill="#2c2c2a"/>
-      <ellipse cx="20" cy="-28" rx="2.5" ry="10" fill="#2c2c2a"/>
-      <circle cx="-18" cy="-32" r="1.5" fill="#fff"/>
-      <circle cx="22" cy="-32" r="1.5" fill="#fff"/>
-      <path d="M -4 -12 L 4 -12 L 0 -7 Z" fill="#FF9BB3"/>
-      <path d="M 0 -7 L 0 -2 M 0 -2 Q -5 1 -8 -1 M 0 -2 Q 5 1 8 -1" stroke="#2c2c2a" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
-      <line x1="-28" y1="-15" x2="-48" y2="-18" stroke="#2c2c2a" strokeWidth="1"/>
-      <line x1="-28" y1="-10" x2="-50" y2="-8" stroke="#2c2c2a" strokeWidth="1"/>
-      <line x1="28" y1="-15" x2="48" y2="-18" stroke="#2c2c2a" strokeWidth="1"/>
-      <line x1="28" y1="-10" x2="50" y2="-8" stroke="#2c2c2a" strokeWidth="1"/>
-      <ellipse cx="0" cy="50" rx="48" ry="42" fill="#E8E8E8" stroke="#888" strokeWidth="2"/>
-      <ellipse cx="-22" cy="85" rx="12" ry="15" fill="#E8E8E8" stroke="#888" strokeWidth="2"/>
-      <ellipse cx="22" cy="85" rx="12" ry="15" fill="#E8E8E8" stroke="#888" strokeWidth="2"/>
-      <path d="M 45 45 Q 70 40 72 20 Q 68 15 65 25" fill="#E8E8E8" stroke="#888" strokeWidth="2"/>
-    </g>),
-    piggy:()=>(<g transform="translate(190, 200)">
-      <path d="M -40 -75 L -28 -95 L -20 -75 Z" fill="#FFB6C1" stroke="#C88"  strokeWidth="2"/>
-      <path d="M 40 -75 L 28 -95 L 20 -75 Z" fill="#FFB6C1" stroke="#C88" strokeWidth="2"/>
-      <circle cx="0" cy="-30" r="55" fill="#FFC0CB" stroke="#C88" strokeWidth="2"/>
-      <ellipse cx="-18" cy="-35" rx="6" ry="8" fill="#2c2c2a"/>
-      <ellipse cx="18" cy="-35" rx="6" ry="8" fill="#2c2c2a"/>
-      <circle cx="-16" cy="-38" r="2" fill="#fff"/>
-      <circle cx="20" cy="-38" r="2" fill="#fff"/>
-      <ellipse cx="0" cy="-5" rx="22" ry="16" fill="#FFB6C1" stroke="#C88" strokeWidth="2"/>
-      <circle cx="-7" cy="-5" r="3" fill="#2c2c2a"/>
-      <circle cx="7" cy="-5" r="3" fill="#2c2c2a"/>
-      <ellipse cx="0" cy="55" rx="55" ry="45" fill="#FFC0CB" stroke="#C88" strokeWidth="2"/>
-      <ellipse cx="-22" cy="90" rx="14" ry="18" fill="#FFB6C1" stroke="#C88" strokeWidth="2"/>
-      <ellipse cx="22" cy="90" rx="14" ry="18" fill="#FFB6C1" stroke="#C88" strokeWidth="2"/>
-      <path d="M 50 50 Q 70 45 65 25" fill="none" stroke="#C88" strokeWidth="3" strokeLinecap="round"/>
-    </g>),
-    froggy:()=>(<g transform="translate(190, 195)">
-      <ellipse cx="0" cy="20" rx="70" ry="60" fill="#7FD1AE" stroke="#3F8564" strokeWidth="2"/>
-      <ellipse cx="0" cy="55" rx="45" ry="20" fill="#C5E8D1"/>
-      <circle cx="-30" cy="-40" r="25" fill="#7FD1AE" stroke="#3F8564" strokeWidth="2"/>
-      <circle cx="30" cy="-40" r="25" fill="#7FD1AE" stroke="#3F8564" strokeWidth="2"/>
-      <circle cx="-30" cy="-40" r="15" fill="#fff"/>
-      <circle cx="30" cy="-40" r="15" fill="#fff"/>
-      <circle cx="-30" cy="-38" r="10" fill="#2c2c2a"/>
-      <circle cx="30" cy="-38" r="10" fill="#2c2c2a"/>
-      <circle cx="-27" cy="-42" r="3" fill="#fff"/>
-      <circle cx="33" cy="-42" r="3" fill="#fff"/>
-      <path d="M -25 0 Q 0 15 25 0" fill="none" stroke="#3F8564" strokeWidth="3" strokeLinecap="round"/>
-      <ellipse cx="-50" cy="70" rx="18" ry="10" fill="#7FD1AE" stroke="#3F8564" strokeWidth="2"/>
-      <ellipse cx="50" cy="70" rx="18" ry="10" fill="#7FD1AE" stroke="#3F8564" strokeWidth="2"/>
-      <ellipse cx="-60" cy="72" rx="5" ry="3" fill="#C5E8D1"/>
-      <ellipse cx="60" cy="72" rx="5" ry="3" fill="#C5E8D1"/>
-    </g>),
-    panda:()=>(<g transform="translate(190, 200)">
-      <circle cx="-40" cy="-80" r="18" fill="#2c2c2a"/>
-      <circle cx="40" cy="-80" r="18" fill="#2c2c2a"/>
-      <circle cx="0" cy="-25" r="60" fill="#fff" stroke="#CCC" strokeWidth="2"/>
-      <ellipse cx="-22" cy="-25" rx="18" ry="22" fill="#2c2c2a"/>
-      <ellipse cx="22" cy="-25" rx="18" ry="22" fill="#2c2c2a"/>
-      <circle cx="-22" cy="-25" r="8" fill="#fff"/>
-      <circle cx="22" cy="-25" r="8" fill="#fff"/>
-      <circle cx="-22" cy="-23" r="5" fill="#2c2c2a"/>
-      <circle cx="22" cy="-23" r="5" fill="#2c2c2a"/>
-      <ellipse cx="0" cy="0" rx="6" ry="4" fill="#2c2c2a"/>
-      <path d="M 0 4 L 0 10 M 0 10 Q -6 14 -10 10 M 0 10 Q 6 14 10 10" stroke="#2c2c2a" strokeWidth="2" fill="none" strokeLinecap="round"/>
-      <ellipse cx="0" cy="55" rx="55" ry="45" fill="#fff" stroke="#CCC" strokeWidth="2"/>
-      <ellipse cx="-40" cy="30" rx="18" ry="30" fill="#2c2c2a"/>
-      <ellipse cx="40" cy="30" rx="18" ry="30" fill="#2c2c2a"/>
-      <ellipse cx="-25" cy="90" rx="18" ry="15" fill="#2c2c2a"/>
-      <ellipse cx="25" cy="90" rx="18" ry="15" fill="#2c2c2a"/>
-    </g>),
-    koala:()=>(<g transform="translate(190, 200)">
-      <circle cx="-48" cy="-55" r="30" fill="#A8A8A8" stroke="#666" strokeWidth="2"/>
-      <circle cx="48" cy="-55" r="30" fill="#A8A8A8" stroke="#666" strokeWidth="2"/>
-      <circle cx="-48" cy="-55" r="18" fill="#FFF5E6"/>
-      <circle cx="48" cy="-55" r="18" fill="#FFF5E6"/>
-      <circle cx="0" cy="-15" r="55" fill="#A8A8A8" stroke="#666" strokeWidth="2"/>
-      <ellipse cx="-18" cy="-20" rx="6" ry="8" fill="#2c2c2a"/>
-      <ellipse cx="18" cy="-20" rx="6" ry="8" fill="#2c2c2a"/>
-      <circle cx="-16" cy="-23" r="2" fill="#fff"/>
-      <circle cx="20" cy="-23" r="2" fill="#fff"/>
-      <ellipse cx="0" cy="5" rx="14" ry="10" fill="#2c2c2a"/>
-      <path d="M 0 12 Q -8 18 -12 14 M 0 12 Q 8 18 12 14" fill="none" stroke="#2c2c2a" strokeWidth="2" strokeLinecap="round"/>
-      <ellipse cx="0" cy="60" rx="50" ry="40" fill="#A8A8A8" stroke="#666" strokeWidth="2"/>
-      <ellipse cx="-22" cy="90" rx="14" ry="16" fill="#888" stroke="#666" strokeWidth="2"/>
-      <ellipse cx="22" cy="90" rx="14" ry="16" fill="#888" stroke="#666" strokeWidth="2"/>
-    </g>),
-    fox:()=>(<g transform="translate(190, 200)">
-      <path d="M -60 -45 L -50 -100 L -25 -60 Z" fill="#E8702A" stroke="#A04810" strokeWidth="2"/>
-      <path d="M 60 -45 L 50 -100 L 25 -60 Z" fill="#E8702A" stroke="#A04810" strokeWidth="2"/>
-      <path d="M -50 -60 L -48 -90 L -35 -68 Z" fill="#fff"/>
-      <path d="M 50 -60 L 48 -90 L 35 -68 Z" fill="#fff"/>
-      <path d="M -40 -20 L 0 30 L 40 -20 L 30 -55 L -30 -55 Z" fill="#E8702A" stroke="#A04810" strokeWidth="2"/>
-      <path d="M -18 10 L 0 30 L 18 10 L 15 0 L -15 0 Z" fill="#fff"/>
-      <ellipse cx="-18" cy="-25" rx="6" ry="9" fill="#2c2c2a"/>
-      <ellipse cx="18" cy="-25" rx="6" ry="9" fill="#2c2c2a"/>
-      <circle cx="-16" cy="-28" r="2" fill="#fff"/>
-      <circle cx="20" cy="-28" r="2" fill="#fff"/>
-      <ellipse cx="0" cy="15" rx="5" ry="4" fill="#2c2c2a"/>
-      <path d="M 0 20 L 0 25 M 0 25 Q -5 28 -8 25 M 0 25 Q 5 28 8 25" stroke="#2c2c2a" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
-      <ellipse cx="0" cy="70" rx="48" ry="38" fill="#E8702A" stroke="#A04810" strokeWidth="2"/>
-      <ellipse cx="0" cy="75" rx="28" ry="22" fill="#fff"/>
-      <ellipse cx="-22" cy="100" rx="12" ry="14" fill="#E8702A" stroke="#A04810" strokeWidth="2"/>
-      <ellipse cx="22" cy="100" rx="12" ry="14" fill="#E8702A" stroke="#A04810" strokeWidth="2"/>
-      <path d="M 45 60 Q 80 50 85 20 Q 90 10 80 12" fill="#E8702A" stroke="#A04810" strokeWidth="2"/>
-      <path d="M 78 16 Q 82 13 80 12" fill="#fff" stroke="#A04810" strokeWidth="2"/>
-    </g>),
-    owl:()=>(<g transform="translate(190, 200)">
-      <path d="M -55 -80 L -35 -100 L -20 -65 Z" fill="#8B5A3C" stroke="#4A2F1E" strokeWidth="2"/>
-      <path d="M 55 -80 L 35 -100 L 20 -65 Z" fill="#8B5A3C" stroke="#4A2F1E" strokeWidth="2"/>
-      <ellipse cx="0" cy="-10" rx="65" ry="60" fill="#8B5A3C" stroke="#4A2F1E" strokeWidth="2"/>
-      <ellipse cx="0" cy="10" rx="45" ry="45" fill="#C9A57A"/>
-      <circle cx="-22" cy="-15" r="22" fill="#fff" stroke="#4A2F1E" strokeWidth="2"/>
-      <circle cx="22" cy="-15" r="22" fill="#fff" stroke="#4A2F1E" strokeWidth="2"/>
-      <circle cx="-22" cy="-15" r="15" fill="#FFD700"/>
-      <circle cx="22" cy="-15" r="15" fill="#FFD700"/>
-      <circle cx="-22" cy="-15" r="9" fill="#2c2c2a"/>
-      <circle cx="22" cy="-15" r="9" fill="#2c2c2a"/>
-      <circle cx="-19" cy="-18" r="3" fill="#fff"/>
-      <circle cx="25" cy="-18" r="3" fill="#fff"/>
-      <path d="M -8 10 L 0 25 L 8 10 Z" fill="#FF8A00" stroke="#4A2F1E" strokeWidth="1.5"/>
-      <ellipse cx="0" cy="60" rx="55" ry="42" fill="#8B5A3C" stroke="#4A2F1E" strokeWidth="2"/>
-      <ellipse cx="-40" cy="40" rx="18" ry="35" fill="#8B5A3C" stroke="#4A2F1E" strokeWidth="2" transform="rotate(-10 -40 40)"/>
-      <ellipse cx="40" cy="40" rx="18" ry="35" fill="#8B5A3C" stroke="#4A2F1E" strokeWidth="2" transform="rotate(10 40 40)"/>
-      <path d="M -8 95 L -8 100 M -14 95 L -14 100 M -20 95 L -20 100" stroke="#FF8A00" strokeWidth="3" strokeLinecap="round"/>
-      <path d="M 8 95 L 8 100 M 14 95 L 14 100 M 20 95 L 20 100" stroke="#FF8A00" strokeWidth="3" strokeLinecap="round"/>
-    </g>),
-    penguin:()=>(<g transform="translate(190, 200)">
-      <circle cx="0" cy="-30" r="50" fill="#2c2c2a"/>
-      <ellipse cx="0" cy="-15" rx="34" ry="30" fill="#fff"/>
-      <ellipse cx="-15" cy="-40" rx="5" ry="7" fill="#2c2c2a"/>
-      <ellipse cx="15" cy="-40" rx="5" ry="7" fill="#2c2c2a"/>
-      <circle cx="-13" cy="-42" r="2" fill="#fff"/>
-      <circle cx="17" cy="-42" r="2" fill="#fff"/>
-      <path d="M -7 -15 L 7 -15 L 0 -5 Z" fill="#FF8A00"/>
-      <ellipse cx="0" cy="60" rx="55" ry="50" fill="#2c2c2a"/>
-      <ellipse cx="0" cy="65" rx="40" ry="45" fill="#fff"/>
-      <ellipse cx="-45" cy="50" rx="14" ry="35" fill="#2c2c2a" transform="rotate(-15 -45 50)"/>
-      <ellipse cx="45" cy="50" rx="14" ry="35" fill="#2c2c2a" transform="rotate(15 45 50)"/>
-      <ellipse cx="-18" cy="110" rx="14" ry="6" fill="#FF8A00"/>
-      <ellipse cx="18" cy="110" rx="14" ry="6" fill="#FF8A00"/>
-    </g>),
-    unicorn:()=>(<g transform="translate(190, 200)">
-      <path d="M -15 -95 L 15 -95 L 5 -55 L -5 -55 Z" fill="#FFD700" stroke="#E5A500" strokeWidth="1.5"/>
-      <path d="M -10 -88 L 10 -88 M -8 -78 L 8 -78 M -6 -68 L 6 -68" stroke="#E5A500" strokeWidth="1.5"/>
-      <path d="M -45 -55 L -35 -90 L -20 -65 Z" fill="#fff" stroke="#CCC" strokeWidth="2"/>
-      <path d="M 45 -55 L 35 -90 L 20 -65 Z" fill="#fff" stroke="#CCC" strokeWidth="2"/>
-      <path d="M -38 -65 L -35 -85 L -26 -68 Z" fill="#FFB6C1"/>
-      <path d="M 38 -65 L 35 -85 L 26 -68 Z" fill="#FFB6C1"/>
-      <circle cx="0" cy="-25" r="55" fill="#fff" stroke="#CCC" strokeWidth="2"/>
-      <path d="M -50 -50 Q -70 -20 -45 10" fill="#FF8FD8" stroke="#C068A8" strokeWidth="2"/>
-      <path d="M -48 -40 Q -65 -15 -42 5" fill="#7EE8FA" stroke="#4A8FB8" strokeWidth="2"/>
-      <ellipse cx="-18" cy="-30" rx="6" ry="9" fill="#2c2c2a"/>
-      <ellipse cx="18" cy="-30" rx="6" ry="9" fill="#2c2c2a"/>
-      <circle cx="-16" cy="-33" r="2" fill="#fff"/>
-      <circle cx="20" cy="-33" r="2" fill="#fff"/>
-      <ellipse cx="0" cy="5" rx="25" ry="15" fill="#fff" stroke="#CCC" strokeWidth="2"/>
-      <circle cx="-10" cy="5" r="2" fill="#2c2c2a"/>
-      <circle cx="10" cy="5" r="2" fill="#2c2c2a"/>
-      <path d="M -6 12 Q 0 18 6 12" fill="none" stroke="#2c2c2a" strokeWidth="1.5" strokeLinecap="round"/>
-      <ellipse cx="0" cy="65" rx="55" ry="42" fill="#fff" stroke="#CCC" strokeWidth="2"/>
-      <path d="M 50 55 Q 85 40 90 15 Q 85 10 80 25 Q 75 30 70 30" fill="#FFB6C1" stroke="#C088" strokeWidth="2"/>
-      <path d="M 55 50 Q 85 40 85 18" fill="none" stroke="#7EE8FA" strokeWidth="3" strokeLinecap="round"/>
-      <ellipse cx="-25" cy="95" rx="14" ry="16" fill="#fff" stroke="#CCC" strokeWidth="2"/>
-      <ellipse cx="25" cy="95" rx="14" ry="16" fill="#fff" stroke="#CCC" strokeWidth="2"/>
-    </g>),
-    dragon:()=>(<g transform="translate(190, 200)">
-      <path d="M -35 -65 L -45 -105 L -10 -75 Z" fill="#B22222" stroke="#7A1111" strokeWidth="2"/>
-      <path d="M 35 -65 L 45 -105 L 10 -75 Z" fill="#B22222" stroke="#7A1111" strokeWidth="2"/>
-      <path d="M -30 -70 L -38 -98 L -15 -78 Z" fill="#FF6347"/>
-      <path d="M 30 -70 L 38 -98 L 15 -78 Z" fill="#FF6347"/>
-      <circle cx="0" cy="-25" r="55" fill="#DC143C" stroke="#7A1111" strokeWidth="2"/>
-      <ellipse cx="0" cy="0" rx="28" ry="20" fill="#FFD700"/>
-      <ellipse cx="-18" cy="-30" rx="7" ry="10" fill="#FFD700"/>
-      <ellipse cx="18" cy="-30" rx="7" ry="10" fill="#FFD700"/>
-      <circle cx="-18" cy="-30" r="4" fill="#2c2c2a"/>
-      <circle cx="18" cy="-30" r="4" fill="#2c2c2a"/>
-      <circle cx="-16" cy="-32" r="1.5" fill="#fff"/>
-      <circle cx="20" cy="-32" r="1.5" fill="#fff"/>
-      <ellipse cx="-8" cy="0" rx="3" ry="2" fill="#2c2c2a"/>
-      <ellipse cx="8" cy="0" rx="3" ry="2" fill="#2c2c2a"/>
-      <path d="M -8 8 L -4 15 L 0 10 L 4 15 L 8 8" fill="#FFF8DC" stroke="#7A1111" strokeWidth="1.5"/>
-      <path d="M -3 12 L -3 20 L 3 20 L 3 12" fill="#fff" stroke="#7A1111" strokeWidth="1"/>
-      <path d="M -15 -80 L -12 -90 L -5 -82" fill="#FFF8DC" stroke="#7A1111" strokeWidth="1.5"/>
-      <path d="M 15 -80 L 12 -90 L 5 -82" fill="#FFF8DC" stroke="#7A1111" strokeWidth="1.5"/>
-      <ellipse cx="0" cy="55" rx="52" ry="45" fill="#DC143C" stroke="#7A1111" strokeWidth="2"/>
-      <ellipse cx="0" cy="60" rx="32" ry="35" fill="#FFD700"/>
-      <path d="M -65 30 L -85 5 L -55 20 L -75 -5 L -50 10 Z" fill="#B22222" stroke="#7A1111" strokeWidth="2"/>
-      <path d="M 65 30 L 85 5 L 55 20 L 75 -5 L 50 10 Z" fill="#B22222" stroke="#7A1111" strokeWidth="2"/>
-      <ellipse cx="-22" cy="95" rx="13" ry="15" fill="#DC143C" stroke="#7A1111" strokeWidth="2"/>
-      <ellipse cx="22" cy="95" rx="13" ry="15" fill="#DC143C" stroke="#7A1111" strokeWidth="2"/>
-    </g>),
-    whale:()=>(<g transform="translate(190, 200)">
-      <ellipse cx="0" cy="10" rx="85" ry="55" fill="#4A90E2" stroke="#2458A8" strokeWidth="2"/>
-      <ellipse cx="-5" cy="20" rx="55" ry="35" fill="#7EB5F0"/>
-      <ellipse cx="-45" cy="-15" rx="8" ry="10" fill="#fff"/>
-      <ellipse cx="-45" cy="-15" rx="5" ry="7" fill="#2c2c2a"/>
-      <circle cx="-44" cy="-17" r="1.5" fill="#fff"/>
-      <path d="M -70 -10 Q -80 -12 -78 -5 M -72 -12 L -80 -20 L -72 -22" fill="none" stroke="#2458A8" strokeWidth="2" strokeLinecap="round"/>
-      <path d="M -85 -20 Q -95 -40 -85 -45 M -82 -22 Q -100 -40 -92 -50 M -78 -25 Q -95 -35 -88 -45" fill="none" stroke="#7EB5F0" strokeWidth="3" strokeLinecap="round" opacity="0.7"/>
-      <path d="M -70 20 Q 0 38 70 20" fill="none" stroke="#2458A8" strokeWidth="2" strokeLinecap="round"/>
-      <path d="M 75 5 L 105 -10 L 95 15 L 105 30 L 75 15 Z" fill="#4A90E2" stroke="#2458A8" strokeWidth="2"/>
-      <path d="M -30 -40 L -25 -50 L -15 -40 Z" fill="#4A90E2" stroke="#2458A8" strokeWidth="2"/>
-      <ellipse cx="30" cy="50" rx="20" ry="10" fill="#4A90E2" stroke="#2458A8" strokeWidth="2"/>
-    </g>),
-    phoenix:()=>(<g transform="translate(190, 200)">
-      <path d="M -90 -20 Q -110 -60 -80 -80 Q -60 -60 -50 -30 Z" fill="#FF6347" stroke="#C41E00" strokeWidth="2"/>
-      <path d="M 90 -20 Q 110 -60 80 -80 Q 60 -60 50 -30 Z" fill="#FF6347" stroke="#C41E00" strokeWidth="2"/>
-      <path d="M -80 -30 Q -95 -55 -75 -70 Q -65 -55 -55 -35 Z" fill="#FFD700"/>
-      <path d="M 80 -30 Q 95 -55 75 -70 Q 65 -55 55 -35 Z" fill="#FFD700"/>
-      <path d="M -15 -95 Q -5 -105 0 -95 M 0 -95 Q 5 -105 15 -95" fill="#FFD700" stroke="#E5A500" strokeWidth="2"/>
-      <path d="M -20 -90 L -10 -105 L 0 -95 L 10 -105 L 20 -90" fill="#FF6347" stroke="#C41E00" strokeWidth="2"/>
-      <circle cx="0" cy="-30" r="50" fill="#FFD700" stroke="#C41E00" strokeWidth="2"/>
-      <ellipse cx="0" cy="-10" rx="28" ry="22" fill="#FF6347"/>
-      <ellipse cx="-16" cy="-35" rx="7" ry="10" fill="#2c2c2a"/>
-      <ellipse cx="16" cy="-35" rx="7" ry="10" fill="#2c2c2a"/>
-      <circle cx="-14" cy="-38" r="2" fill="#fff"/>
-      <circle cx="18" cy="-38" r="2" fill="#fff"/>
-      <path d="M -8 -10 L 8 -10 L 0 0 Z" fill="#FF8A00" stroke="#C41E00" strokeWidth="1.5"/>
-      <ellipse cx="0" cy="55" rx="55" ry="45" fill="#FF6347" stroke="#C41E00" strokeWidth="2"/>
-      <ellipse cx="0" cy="60" rx="32" ry="32" fill="#FFD700"/>
-      <path d="M -30 90 Q -60 120 -20 115" fill="#FF6347" stroke="#C41E00" strokeWidth="2"/>
-      <path d="M 30 90 Q 60 120 20 115" fill="#FF6347" stroke="#C41E00" strokeWidth="2"/>
-      <path d="M 0 95 L -15 135 L 15 135 Z" fill="#FFD700" stroke="#C41E00" strokeWidth="2"/>
-    </g>),
-    celestial:()=>(<g transform="translate(190, 200)">
-      <circle cx="0" cy="-20" r="80" fill="#E5D4FF" stroke="#9D7BD8" strokeWidth="2" opacity="0.4"/>
-      <circle cx="0" cy="-20" r="60" fill="#B794F4" stroke="#9D7BD8" strokeWidth="2"/>
-      <path d="M 0 -85 L 5 -68 L 22 -68 L 9 -58 L 14 -40 L 0 -50 L -14 -40 L -9 -58 L -22 -68 L -5 -68 Z" fill="#FFD700" stroke="#FFA500" strokeWidth="2"/>
-      <ellipse cx="-14" cy="-22" rx="7" ry="10" fill="#2c2c2a"/>
-      <ellipse cx="14" cy="-22" rx="7" ry="10" fill="#2c2c2a"/>
-      <circle cx="-12" cy="-25" r="2.5" fill="#fff"/>
-      <circle cx="16" cy="-25" r="2.5" fill="#fff"/>
-      <path d="M -8 5 L 8 5" stroke="#2c2c2a" strokeWidth="2" strokeLinecap="round"/>
-      <circle cx="-22" cy="-5" r="6" fill="#FFB6C1" opacity="0.7"/>
-      <circle cx="22" cy="-5" r="6" fill="#FFB6C1" opacity="0.7"/>
-      <path d="M -65 -50 L -55 -45 L -60 -35 Z" fill="#FFD700" stroke="#FFA500" strokeWidth="1"/>
-      <path d="M 65 -50 L 55 -45 L 60 -35 Z" fill="#FFD700" stroke="#FFA500" strokeWidth="1"/>
-      <path d="M -75 10 L -65 15 L -70 25 Z" fill="#fff" stroke="#B794F4" strokeWidth="1"/>
-      <path d="M 75 10 L 65 15 L 70 25 Z" fill="#fff" stroke="#B794F4" strokeWidth="1"/>
-      <ellipse cx="0" cy="55" rx="50" ry="40" fill="#B794F4" stroke="#9D7BD8" strokeWidth="2"/>
-      <circle cx="0" cy="55" r="20" fill="#FFD700" opacity="0.6"/>
-      <ellipse cx="-25" cy="85" rx="12" ry="14" fill="#B794F4" stroke="#9D7BD8" strokeWidth="2"/>
-      <ellipse cx="25" cy="85" rx="12" ry="14" fill="#B794F4" stroke="#9D7BD8" strokeWidth="2"/>
-    </g>),
-  };
-  const R=renderers[petId]||renderers.puppy;
-  return(<svg width={size} height={size} viewBox="0 0 380 380" xmlns="http://www.w3.org/2000/svg">
-    {R()}
-  </svg>);
+
+// ═══ PIXEL PET SYSTEM (像素風寵物 - Tamagotchi 風格) ═══════════════════
+// Each pet has 4 growth stage sprites encoded as 16x14 character grids
+// Characters map to colors (see PIXEL_COLORS). '.' means transparent.
+
+const PIXEL_COLORS={
+  '.':'transparent',
+  '_':'#2c2c2a',  // black outline
+  '#':'#2c2c2a',  // black
+  'W':'#FFF8F0',  // white
+  'B':'#ffffff',  // bright white
+  'Y':'#FFE066',  // yellow
+  'o':'#FFD700',  // gold
+  'O':'#FFA500',  // orange
+  'R':'#FF6B6B',  // red
+  'P':'#FFC8D0',  // pink
+  'p':'#FF9BB3',  // deep pink
+  'n':'#FFB6C1',  // nose pink
+  'c':'#E8D4F2',  // light purple
+  'C':'#B794F4',  // purple
+  'v':'#9D7BD8',  // dark purple
+  'G':'#7FD1AE',  // green
+  'g':'#4A9B7F',  // dark green
+  'L':'#C5E8D1',  // light green
+  'S':'#7EE8FA',  // sky cyan
+  's':'#4A90E2',  // blue
+  'I':'#2458A8',  // dark blue
+  'T':'#D2B48C',  // tan
+  't':'#A0522D',  // brown
+  'M':'#5D3317',  // dark brown
+  'K':'#E8E8E8',  // gray
+  'k':'#A8A8A8',  // dark gray
+  'E':'#FFE8D6',  // egg light
+  'e':'#FFD4B0',  // egg mid
+  'd':'#FFB48A',  // egg dark
+  'F':'#FF8A00',  // flame orange
+  'f':'#DC143C',  // flame red
+  'x':'#C41E00',  // dark red
+};
+
+// Shared egg sprite (used for all pets in egg stage, with color variations later)
+const EGG_SPRITE=[
+  '......EEEE......',
+  '....EEDDDDEE....',
+  '...EDDDDDDDDE...',
+  '..EDDDdDDDDDDE..',
+  '..EDDdddDDDDDE..',
+  '..DDDdddDDDDDD..',
+  '.DDDdddddDDDDDD.',
+  '.DDdddddddDDDD.',
+  '.DdddddddddddDD.',
+  '.DdddddddddddDD.',
+  '..DdddddddddDDD.',
+  '..DDDdddddDDDD..',
+  '...DDDdddDDDD...',
+  '....DDDDDDD.....',
+];
+
+// Pet sprites: each pet has {baby, adult, evolved} stages. All 16x14 grid.
+const PIXEL_PETS={
+  bunny:{
+    baby:[
+      '..WW........WW..',
+      '.WPW........WPW.',
+      '.WPW........WPW.',
+      '.WWWWWWWWWWWWWW.',
+      '.WWW_WWWW_WWWWW.',
+      'WWWW_WWnn_WWWWWW',
+      'WPWWWWWnnnWWWPW.',
+      '.WWWWWW##WWWWWW.',
+      '..WWWWWWWWWWWWW.',
+      '..WW.WWWW.WW....',
+      '..WW.WWWW.WW....',
+      '................',
+      '................',
+      '................',
+    ],
+    adult:[
+      'WW...........WW.',
+      'WPW.........WPW.',
+      'WPW.........WPW.',
+      'WPW.........WPW.',
+      'WWWWWWWWWWWWWW..',
+      'WWWW_WWWW_WWWW..',
+      'WWWW_WWnn_WWWW..',
+      'WWWWWWnnnnnWWWW.',
+      'WPWWWWW###WWWWPW',
+      '.WWWWWWWWWWWWWW.',
+      '.WWWWWWWWWWWWWW.',
+      '.WWWWWWWWWWWWWW.',
+      '.WW..WWWWWW..WW.',
+      '.WW..WWWWWW..WW.',
+    ],
+    evolved:[
+      '....o.o.o.o.....',
+      '.WWooooooooooWW.',
+      'WPW.........WPW.',
+      'WPW.........WPW.',
+      'WWWWWWWWWWWWWW..',
+      'WWWW_SWWWS_WWWW.',
+      'WWWW_WnnnnW_WWW.',
+      'WWWWWWnnnnnWWWW.',
+      'WPWWWWW###WWWWPW',
+      '.WWWWWWWWWWWWWW.',
+      '.WWWWWWWWWWWWWW.',
+      '.WWWWWWWWWWWWWW.',
+      '.WW..WWWWWW..WW.',
+      '.WW..WWWWWW..WW.',
+    ],
+  },
+  chick:{
+    baby:[
+      '................',
+      '.....YYYYYY.....',
+      '....YYYYYYYY....',
+      '...YY_YYYY_YY...',
+      '...YYY_YY_YYY...',
+      '...YYYYOOYYYY...',
+      '....YYYYYYYY....',
+      '...YYYYYYYYYY...',
+      '..YYYYYYYYYYYY..',
+      '..YYYYYYYYYYYY..',
+      '..YYYYYYYYYYYY..',
+      '...YYYYYYYYYY...',
+      '....OO....OO....',
+      '....OO....OO....',
+    ],
+    adult:[
+      '.......Y........',
+      '....YYYYYYYY....',
+      '...YYYYYYYYYY...',
+      '..YY_YYYYYY_YY..',
+      '..YYY_YYYY_YYY..',
+      '..YYYYOOOOYYYY..',
+      '..YYYYYOOYYYYY..',
+      '.YYYYYYYYYYYYY..',
+      'YYYYYYYYYYYYYYYY',
+      'YYYYYYYYYYYYYYYY',
+      'YYYYYYYYYYYYYYYY',
+      '.YYYYYYYYYYYYYY.',
+      '..OO........OO..',
+      '..OO........OO..',
+    ],
+    evolved:[
+      '....ooooooo.....',
+      '...oYYYYYYYo....',
+      '..oYYYYYYYYYo...',
+      '.YY_YYYYYY_YY...',
+      '.YYY_YYYY_YYY...',
+      '.YYYYOOOOYYYY...',
+      '.YYYYYOOYYYYY...',
+      'YYYYYYYYYYYYYY..',
+      'YYYYYoYYYYoYYYY.',
+      'YYYYYYYYYYYYYYYY',
+      'YYYYYYYYYYYYYYYY',
+      '.YYYYYYYYYYYYYY.',
+      '..OO........OO..',
+      '..OO........OO..',
+    ],
+  },
+  puppy:{
+    baby:[
+      '..tt........tt..',
+      '.tttt......tttt.',
+      '.ttTT......TTtt.',
+      '..TTTTTTTTTTTT..',
+      '.TTTTTTTTTTTTTT.',
+      'TTTT_TTTT_TTTTTT',
+      'TTTT_TT##_TTTTTT',
+      '.TTTTT####TTTTT.',
+      '.TTTTTTTTTTTTTT.',
+      '..TTTTTTTTTTTT..',
+      '..TT..TTTT..TT..',
+      '..TT..TTTT..TT..',
+      '................',
+      '................',
+    ],
+    adult:[
+      '..tt..........tt',
+      '.tttt........ttt',
+      '.ttTT........TTt',
+      '.TTTTTTTTTTTTTT.',
+      'TTTTTTTTTTTTTTTT',
+      'TTTT_TTTT_TTTTTT',
+      'TTTT_TT##_TTTTTT',
+      'TTTTTT####TTTTTT',
+      'TTTTTTTTTTTTTTT.',
+      'TTTTTTTTTTTTTTT.',
+      '.TTTTTTTTTTTTTT.',
+      '.TT...TTTT...TT.',
+      '.TT...TTTT...TT.',
+      '................',
+    ],
+    evolved:[
+      '....o.o.o.......',
+      '.ttoooooootttttt',
+      '.tttt........ttt',
+      '.ttTT........TTt',
+      '.TTTTTTTTTTTTTT.',
+      'TTTTSSTTTTSSTTTT',
+      'TTTT_TTTT_TTTTTT',
+      'TTTT_TT##_TTTTTT',
+      'TTTTTT####TTTTTT',
+      'TTTTTTTTTTTTTTTT',
+      'TTTTTTTTTTTTTTTT',
+      '.TTTTTTTTTTTTTT.',
+      '.TT...TTTT...TT.',
+      '.TT...TTTT...TT.',
+    ],
+  },
+  kitty:{
+    baby:[
+      '.KK..........KK.',
+      'KKKK........KKKK',
+      'KPKK........KKPK',
+      '.KKKKKKKKKKKKKK.',
+      '.KKKK_KKKK_KKKK.',
+      'KKKKK_KnnnKKKKKK',
+      'KKKKKKKnnKKKKKKK',
+      '_KKKKKKK##KKKKK_',
+      '.KKKKKKKKKKKKKK.',
+      '..KKKKKKKKKKKK..',
+      '..KKKKKKKKKKKK..',
+      '..KK..KKKK..KK..',
+      '..KK..KKKK..KK..',
+      '................',
+    ],
+    adult:[
+      '.KK..........KK.',
+      'KKKK........KKKK',
+      'KPKK........KKPK',
+      '.KKKKKKKKKKKKKK.',
+      '.KKKK_KKKK_KKKK.',
+      'KKKKK_KnnnKKKKKK',
+      '_KKKKKKK##KKKKK_',
+      'KKKKKKKKKKKKKKKK',
+      'KKKKKKKKKKKKKKKK',
+      '.KKKKKKKKKKKKKK.',
+      '.KKKKKKKKKKKKKK.',
+      '.KK..KKKKKK..KK.',
+      '.KK..KKKKKK..KK.',
+      '...........KKK..',
+    ],
+    evolved:[
+      '....o.o.o.......',
+      '.KKoooooooooKKK.',
+      'KPKK........KKPK',
+      '.KKKKKKKKKKKKKK.',
+      '.KKKS_KKKK_SKKK.',
+      'KKKKK_KnnnKKKKKK',
+      '_KKKKKKK##KKKKK_',
+      'KKKKKKKKKKKKKKKK',
+      'KKKKKKKKKKKKKKKK',
+      '.KKKKKKKKKKKKKK.',
+      '.KKKKKKKKKKKKKK.',
+      '.KK..KKKKKK..KK.',
+      '.KK..KKKKKK..KK.',
+      '...........KKKK.',
+    ],
+  },
+  piggy:{
+    baby:[
+      '..PP........PP..',
+      '.PPpP........PPp',
+      '.PPPPPPPPPPPPPP.',
+      '.PPP_PPPP_PPPPP.',
+      'PPPPP_PPPP_PPPPP',
+      'PPPPPppnnppPPPPP',
+      'PPPPP#pnnp#PPPPP',
+      'PPPPPPP##PPPPPPP',
+      '.PPPPPPPPPPPPPP.',
+      '..PPPPPPPPPPPP..',
+      '..PP..PPPP..PP..',
+      '..PP..PPPP..PP..',
+      '................',
+      '................',
+    ],
+    adult:[
+      '..PP........PP..',
+      '.PPpP........PPp',
+      '.PPPPPPPPPPPPPP.',
+      '.PPPP_PPPP_PPPP.',
+      'PPPPP_PPPP_PPPPP',
+      'PPPPPppnnppPPPPP',
+      'PPPPP#pnnp#PPPPP',
+      'PPPPPPP##PPPPPPP',
+      'PPPPPPPPPPPPPPPP',
+      '.PPPPPPPPPPPPPP.',
+      '.PPPPPPPPPPPPPP.',
+      '.PP..PPPPPP..PP.',
+      '.PP..PPPPPP..PP.',
+      '................',
+    ],
+    evolved:[
+      '....o.o.o.o.....',
+      '.PPoooooooooopPP',
+      '.PPPPPPPPPPPPPP.',
+      '.PPPS_PPPP_SPPP.',
+      'PPPPP_PPPP_PPPPP',
+      'PPPPPppnnppPPPPP',
+      'PPPPP#pnnp#PPPPP',
+      'PPPPPPP##PPPPPPP',
+      'PPPPPPPPPPPPPPPP',
+      '.PPPPPPPPPPPPPP.',
+      '.PPPPPPPPPPPPPP.',
+      '.PP..PPPPPP..PP.',
+      '.PP..PPPPPP..PP.',
+      '................',
+    ],
+  },
+  froggy:{
+    baby:[
+      '................',
+      '....gg....gg....',
+      '..GGGgGGGGgGGG..',
+      '.GGGG_GGGG_GGGG.',
+      '.GGGGGGGGGGGGGG.',
+      'GGGGGGGGGGGGGGGG',
+      'GGGGGG####GGGGGG',
+      'GGGGG######GGGGG',
+      'GGGGGGGGGGGGGGGG',
+      '.GGGGGGGGGGGGGG.',
+      '.gGGGGGGGGGGGGg.',
+      'gg...gGGGGg...gg',
+      '................',
+      '................',
+    ],
+    adult:[
+      '................',
+      '....BB....BB....',
+      '...BWWB..BWWB...',
+      '...B_WB..BW_B...',
+      '..GGGGGGGGGGGG..',
+      'GGGGGGGGGGGGGGGG',
+      'GGGGGGGGGGGGGGGG',
+      'GGGGG######GGGGG',
+      'GGGGGGGGGGGGGGGG',
+      '.GGGGGGGGGGGGGG.',
+      '.GGGGGGGGGGGGGG.',
+      'gGGGGgGGGGgGGGGg',
+      'gg...gGGGGg...gg',
+      '................',
+    ],
+    evolved:[
+      '....o.o.o.o.....',
+      '.BBoooooooooBB..',
+      '..BWWB..BWWB....',
+      '..B_WB..BW_B....',
+      '.GGGGGGGGGGGGGG.',
+      'GGGGGGGGGGGGGGGG',
+      'GGGGGSSSSSSSGGGG',
+      'GGGGG######GGGGG',
+      'GGGGGGGGGGGGGGGG',
+      '.GGGGGGGGGGGGGG.',
+      '.GGGGGGGGGGGGGG.',
+      'gGGGGgGGGGgGGGGg',
+      'gg...gGGGGg...gg',
+      '................',
+    ],
+  },
+  panda:{
+    baby:[
+      '..##........##..',
+      '.####......####.',
+      '..WWWWWWWWWWWW..',
+      '.WWWWWWWWWWWWWW.',
+      'W###WWWWWW###WWW',
+      'W#W#WWWWWW#W#WWW',
+      'W###WW##WW###WWW',
+      'WWWW########WWWW',
+      '.WWWWW####WWWWW.',
+      '.WW##WWWW##WWWW.',
+      '.WW##WWWW##WWWW.',
+      '.WW##WWWW##WWWW.',
+      '.WW..##WW..WW...',
+      '................',
+    ],
+    adult:[
+      '.##..........##.',
+      '####........####',
+      '.#WWWWWWWWWWWW#.',
+      'WWWWWWWWWWWWWWWW',
+      '###WWWWWWWW###WW',
+      '#W#WWWWWWWW#W#WW',
+      '###WW####W####WW',
+      'WWWW########WWWW',
+      'WWWWWW####WWWWWW',
+      '#WWWWWWWWWWWWWW#',
+      '#WWWWWWWWWWWWWW#',
+      '##WWWWWWWWWWWW##',
+      '##.#WWWWWW#.##.',
+      '##.#WWWWWW#.##.',
+    ],
+    evolved:[
+      '##..o.o.o.o...##',
+      '####oooooooo####',
+      '.#WWWWWWWWWWWW#.',
+      'WWWWWWWWWWWWWWWW',
+      '###WWSSSSSSW###W',
+      '#W#WSWWWWWWS#W#W',
+      '###WW####W####WW',
+      'WWWW########WWWW',
+      'WWWWWW####WWWWWW',
+      '#WWWWWWWWWWWWWW#',
+      '#WWWWWWWWWWWWWW#',
+      '##WWWWWWWWWWWW##',
+      '##.#WWWWWW#.##..',
+      '##.#WWWWWW#.##..',
+    ],
+  },
+  koala:{
+    baby:[
+      'kkk..........kkk',
+      'kKKk........kKKk',
+      'KKWW........WWKK',
+      'KKKKKKKKKKKKKKKK',
+      'KKKK_KKKKK_KKKKK',
+      'KKKK_KK##K_KKKKK',
+      'KKKKKK####KKKKKK',
+      'KKKKKKK##KKKKKKK',
+      '.KKKKKKKKKKKKKK.',
+      '.KKKKKKKKKKKKKK.',
+      '..KK.KKKKKK.KK..',
+      '..KK.KKKKKK.KK..',
+      '................',
+      '................',
+    ],
+    adult:[
+      'kkk..........kkk',
+      'kKKk........kKKk',
+      'KKWW........WWKK',
+      'KKKKKKKKKKKKKKKK',
+      'KKKK_KKKKK_KKKKK',
+      'KKKK_KK##K_KKKKK',
+      'KKKKKK####KKKKKK',
+      'KKKKKKK##KKKKKKK',
+      'KKKKKKKKKKKKKKKK',
+      '.KKKKKKKKKKKKKK.',
+      '.KKKKKKKKKKKKKK.',
+      '.KK..KKKKKK..KK.',
+      '.KK..KKKKKK..KK.',
+      '................',
+    ],
+    evolved:[
+      'kkk.o.o.o.o..kkk',
+      'kKKkooooooookKKk',
+      'KKWW........WWKK',
+      'KKKKKKKKKKKKKKKK',
+      'KKKKS_KKKKK_SKKK',
+      'KKKK_KK##K_KKKKK',
+      'KKKKKK####KKKKKK',
+      'KKKKKKK##KKKKKKK',
+      'KKKKKKKKKKKKKKKK',
+      '.KKKKKKKKKKKKKK.',
+      '.KKKKKKKKKKKKKK.',
+      '.KK..KKKKKK..KK.',
+      '.KK..KKKKKK..KK.',
+      '................',
+    ],
+  },
+  fox:{
+    baby:[
+      '.OO..........OO.',
+      'OOOO........OOOO',
+      'OWWO........OWWO',
+      '.OOOOOOOOOOOOOO.',
+      '.OOOO_OOOO_OOOO.',
+      'OOOOO_OO##_OOOOO',
+      'WWWWWWWW##WWWWWW',
+      'WWWWWWWW##WWWWWW',
+      'WWWWWWWWWWWWWWWW',
+      '.WWWWWWWWWWWWWW.',
+      '.OO..OOOOOO..OO.',
+      '................',
+      '................',
+      '................',
+    ],
+    adult:[
+      'OO...........OO.',
+      'OOOO........OOOO',
+      'OWWO........OWWO',
+      '.OOOOOOOOOOOOOO.',
+      '.OOOO_OOOO_OOOO.',
+      'OOOOO_OO##_OOOOO',
+      'WWWWWWWW##WWWWWWO',
+      'WWWWWWWW##WWWWWWO',
+      'WWWWWWWWWWWWWWWO',
+      'WWWWWWWWWWWWWWWO',
+      '.WWWWWWWWWWWWWWO',
+      '.OO..OOOOOO..OOW',
+      '.OO..OOOOOO..OOW',
+      '............OOWW',
+    ],
+    evolved:[
+      'OO..o.o.o.o..OO.',
+      'OOoooooooooooOOO',
+      'OWWo.........WWO',
+      '.OOOOOOOOOOOOOO.',
+      '.OOOSSOOOOOOSSO.',
+      'OOOOO_OO##_OOOOO',
+      'WWWWWWWW##WWWWWWO',
+      'WWWWWWWW##WWWWWWO',
+      'WWWWWWWWWWWWWWWO',
+      '.WWWWWWWWWWWWWWO',
+      '.OO..OOOOOO..OOW',
+      '.OO..OOOOOO..OOW',
+      '............OOWW',
+      '................',
+    ],
+  },
+  owl:{
+    baby:[
+      '.tt..........tt.',
+      'tMtt........tMtt',
+      'ttttttttttttttt.',
+      'ttBBBBBttBBBBBtt',
+      'ttBYYBBttBBYYBtt',
+      'ttBY_BBttBB_YBtt',
+      'tttBBBttttBBBttt',
+      'ttttttOOOOttttt.',
+      'ttttttttttttttt.',
+      '.ttttttttttttt..',
+      '.ttt.ttttttt.tt.',
+      '..O..........O..',
+      '..O..........O..',
+      '................',
+    ],
+    adult:[
+      '.tt..........tt.',
+      'tMtt........tMtt',
+      'tttttttttttttttM',
+      'tBBBBBttttBBBBBt',
+      'tBYYBBttttBBYYBt',
+      'tBY_BBttttBB_YBt',
+      'ttBBBtttttttBBBt',
+      'tttttOOOOOOOttttM',
+      'tttttttttttttttM',
+      'ttttttttttttttt.',
+      '.ttttttttttttt..',
+      '..OOOO....OOOO..',
+      '..OOOO....OOOO..',
+      '................',
+    ],
+    evolved:[
+      'tt..o.o.o.o..tt.',
+      'tMtooooooooootMt',
+      'tBBBBBSSttBBBBBt',
+      'tBYYBBttttBBYYBt',
+      'tBYoBBttttBBoYBt',
+      'tBY_BBttttBB_YBt',
+      'ttBBBtttttttBBBt',
+      'tttttOOOOOOttttM',
+      'tttttttttttttttM',
+      'ttttttttttttttt.',
+      '.ttttttttttttt..',
+      '..OOOO....OOOO..',
+      '..OOOO....OOOO..',
+      '................',
+    ],
+  },
+  penguin:{
+    baby:[
+      '....########....',
+      '...###WWWW###...',
+      '..###WWWWWW###..',
+      '.###WW_WW_WW###.',
+      '.##WW_WWWW_WW##.',
+      '.##WWWWOOWWWWW##',
+      '.##WWWWOOWWWWW##',
+      '###WWWWWWWWWW###',
+      '###WWWWWWWWWW###',
+      '###WWWWWWWWWW###',
+      '###WWWWWWWWWW###',
+      '.##WWWWWWWWWW##.',
+      '..OO........OO..',
+      '..OO........OO..',
+    ],
+    adult:[
+      '....########....',
+      '...###WWWW###...',
+      '..###WWWWWW###..',
+      '.###WW_WW_WW###.',
+      '.##WW_WWWW_WW##.',
+      '.##WWWWOOWWWWW##',
+      '##WWWWWWWWWWWW##',
+      '##WWWWWWWWWWWW##',
+      '##WWWWWWWWWWWW##',
+      '##WWWWWWWWWWWW##',
+      '##WWWWWWWWWWWW##',
+      '##WWWWWWWWWWWW##',
+      '.##WWWWWWWWWW##.',
+      '..OO........OO..',
+    ],
+    evolved:[
+      '....########....',
+      '...#Sooooo#S...',
+      '..###WWWWWW###..',
+      '.###WW_WW_WW###.',
+      '.##WW_WWWW_WW##.',
+      '.##WWWWOOWWWWW##',
+      '##WWWWWWWWWWWW##',
+      '##WWWWWWWWWWWW##',
+      '##WSWWWWWWWWSW##',
+      '##WWWWWWWWWWWW##',
+      '##WWWWWWWWWWWW##',
+      '##WWWWWWWWWWWW##',
+      '.##WWWWWWWWWW##.',
+      '..OO........OO..',
+    ],
+  },
+  unicorn:{
+    baby:[
+      '......ooo.......',
+      '.....ooooo......',
+      'WW...ooooo...WW.',
+      'WPW..BBBBB..WPW.',
+      'WPW.BBBBBBB.WPW.',
+      'WWWWWWWWWWWWWW..',
+      'WWWWC_WWWW_CWWW.',
+      'WWWWW_WnnnWWWWW.',
+      'WWWWWWWWWWWWWWS.',
+      'WWCWWWWWWWWWSSW.',
+      '.WWWWWWWWWWWWW..',
+      '..WW.WWWWWW.WW..',
+      '..WW.WWWWWW.WW..',
+      '................',
+    ],
+    adult:[
+      '......ooo.......',
+      '.....ooooo......',
+      'WW...ooooo...WW.',
+      'WPW..BBBBB..WPW.',
+      'WPW.BBBBBBB.WPW.',
+      'WWWWWWWWWWWWWW..',
+      'WWWWC_WWWW_CWWW.',
+      'WWWWW_WnnnWWWWW.',
+      'WWWWWWWWWWWWWWS.',
+      'WWCWWWWWWWWWSSW.',
+      '.WWWWWWWWWWWWW..',
+      '..WW.WWWWWW.WW..',
+      '..WW.WWWWWW.WW..',
+      '...............W',
+    ],
+    evolved:[
+      '......oRo.......',
+      '.....oRORo......',
+      'WW...oROoo...WW.',
+      'WPW..CCSSC..WPW.',
+      'WPW.CCSSCCC.WPW.',
+      'WWWWWWWWWWWWWW..',
+      'WWWWC_SSSS_CWWW.',
+      'WWWWW_WnnnWWWWW.',
+      'WWWWWWWWWWWWWWSS',
+      'WWCWWWWWWWWWSSCW',
+      'WWWWWWWWWWWWWWW.',
+      '.WW.WWWWWWWW.WW.',
+      '.WW.WWWWWWWW.WW.',
+      '................',
+    ],
+  },
+  dragon:{
+    baby:[
+      '..xf........xf..',
+      '.xffx......xffx.',
+      '.xffffffffffffx.',
+      'xfffRRRRRRRRfffx',
+      'xffRR_RRRR_RRffx',
+      'xffRRoRRRRoRRffx',
+      'xffRRRRooooRRRffx',
+      'xffRRRRRooRRRffx',
+      'xxffffffffffffxx',
+      'xxffffffffffffxx',
+      'x..xfffffxxxffx.',
+      'xx.xfffffx.xffxx',
+      '.x..xxxxxx..xx..',
+      '................',
+    ],
+    adult:[
+      '..xf........xf..',
+      '.xffx......xffx.',
+      'x..xffffffff.xxx',
+      'xfffRRRRRRRRfffx',
+      'xffRR_RRRR_RRffx',
+      'xffRRoRRRRoRRffx',
+      'xffRRRRooooRRRffx',
+      'xffRRRR####RRRffx',
+      'xxffffffffffffxx',
+      'xxffffffffffffxx',
+      'xffxffffffxxffx.',
+      'xffx.fffff.xffx.',
+      '.xx..xxxxxx..xx.',
+      '................',
+    ],
+    evolved:[
+      '.oxo.o.o.o.o.oxo',
+      '.xffxooooooxffx.',
+      '..xffffffffffxx.',
+      'xfffRSSSSSSRfffx',
+      'xffRR_RRRR_RRffx',
+      'xffRRoRRRRoRRffx',
+      'xffRRRRooooRRRffx',
+      'xffRRRR####RRRffx',
+      'xxffffffffffffxx',
+      'xxffffffffffffxx',
+      'xffxffffffxxffx.',
+      'xffx.fffff.xffx.',
+      '.xx..xxxxxx..xx.',
+      '................',
+    ],
+  },
+  whale:{
+    baby:[
+      '...SS...........',
+      '....SSS.........',
+      '.....sss........',
+      '..IIsssssssssII.',
+      '.IssssssssssssII',
+      'IssSsssssssssssI',
+      'IsSssssss#sssssI',
+      'IssssssSssssss.I',
+      'IssssssSsssssII.',
+      '.IssssssssssII..',
+      '..IIIIIIIIIII..I',
+      '...........III..',
+      '................',
+      '................',
+    ],
+    adult:[
+      '...SS.S.........',
+      '....SSSS........',
+      '.....sssS.......',
+      '..IIsssssssssIII',
+      '.IsssssssssssssI',
+      'IssSssssssssssssI',
+      'IsSssss#ssssssssI',
+      'IssssssSssssssssI',
+      'IssssssSsssssssII',
+      '.IsssssssssssII..',
+      '..IIIIIIIIIIII..I',
+      '............III.',
+      '................',
+      '................',
+    ],
+    evolved:[
+      '.o.SoSoS.oooo...',
+      '..ooSSSS........',
+      '.....sssSooo....',
+      '..IIsssssssssIII',
+      '.IsSSSsssssssssI',
+      'IssSssssssssssssI',
+      'IsSssss#ssssssssI',
+      'IssssssSssssssssI',
+      'IsSSSssSsssssssII',
+      '.IsssssssssssII..',
+      '..IIIIIIIIIIII..I',
+      '............III.',
+      '................',
+      '................',
+    ],
+  },
+  phoenix:{
+    baby:[
+      '......FFF.......',
+      'F....FFOOOFF...F',
+      'FF..FFOOROOFF.FF',
+      'FFFFFOROOROFFFFFF',
+      'FFFOOOO__OO_OOFFF',
+      'FFOOO_OOOO_OOOOFF',
+      'FFOOOOOnnOOOOOFFF',
+      'FFOOOO####OOOOFFF',
+      'FFFFOOOOOOOOFFFFF',
+      'FFFFFFOOOOFFFFFFF',
+      'FF.FFFOOOOFFF.FFF',
+      'FF..FFFFFFFFF.FFF',
+      '..FF..OOOO..FF..',
+      '..FF........FF..',
+    ],
+    adult:[
+      '.F....FFF....F..',
+      'FF...FFOOOFF..FF',
+      'FF..FFOOROOFF.FF',
+      'FFFFOROOROFFFFFF',
+      'FFFOOOO__OOOO_FFF',
+      'FFOOO_OOOO_OOOOFF',
+      'FFOOOOOnnOOOOOFFF',
+      'FFOOOO####OOOOFFF',
+      'FFFFOOOOOOOOFFFFF',
+      'FFFFFFOOOOFFFFFFF',
+      'FF.FFFOOOOFFF.FF.',
+      'FF..FFFFFFFFF.FF.',
+      '..FF..OOOO..FF..',
+      '..FF........FF..',
+    ],
+    evolved:[
+      'oFoooFoFFFoFooooF',
+      'FFoooFFOOOFFooFFF',
+      'FF..FFOOROOFF.FF.',
+      'FFFFOROOROFFFFFF.',
+      'FFFSoOO__OOSoFFFF',
+      'FFOOO_OOOO_OOOOFF',
+      'FFOOOSSnnSSOOOFFF',
+      'FFOOOO####OOOOFFF',
+      'FFFFSOOOOOOSFFFFF',
+      'FFFFFFOOOOFFFFFFF',
+      'FFoFFFOOOOFFF.FF.',
+      'FFooFFFFFFFFFoFF.',
+      '..FF..OOOO..FF..',
+      '..FF........FF..',
+    ],
+  },
+  celestial:{
+    baby:[
+      '.......o........',
+      '......ooo.......',
+      '.....ooCoo......',
+      '....cCCCCCc.....',
+      '...cCCSSSCCCc...',
+      '..cCCCSSCSCCCCc.',
+      '.cCCC_CCCC_CCCc.',
+      '.cCCC_CCCC_CCCc.',
+      '.cCCCCC__CCCCCc.',
+      '..cCCCCCCCCCCc..',
+      '...cCCCCCCCCc...',
+      '....ccCCCCcc....',
+      '.....cc..cc.....',
+      '................',
+    ],
+    adult:[
+      '.......o........',
+      '......ooo.......',
+      '...o.ooCoo.o....',
+      '....cCCCCCc.....',
+      '...cCCSSSCCCc...',
+      '..cCCCSSCSCCCCc.',
+      'o.cCCC_CCCC_CCCc.',
+      '.cCCC_CCCC_CCCco',
+      '.cCCCCC__CCCCCc.',
+      'o.cCCCCCCCCCCc..',
+      '...cCCCCCCCCc.o.',
+      '....ccCCCCcc....',
+      '.....cc..cc.....',
+      '................',
+    ],
+    evolved:[
+      '.o..o..o.o..o.o.',
+      '.oo.oo.ooo.oo.o.',
+      '...oooooCooooo..',
+      '..cccCCCCCCCcc..',
+      '..cCCSSSSSCCCcc.',
+      '.cCCCSSCSCCCCCc.',
+      'ocCCo_CCCC_oCCCco',
+      'ocCCo_CCCC_oCCCco',
+      '.cCCCCC__CCCCCc.',
+      'o.cCCCCCCCCCCc.o',
+      '..ccCCCCCCCCcc..',
+      '...ccccCCCcccc..',
+      '....cc....cc....',
+      '.o.............o',
+    ],
+  },
+};
+
+// Render a pixel sprite
+function PixelPet({petId,stage="adult",size=180,animate=true}){
+  // Eggs use shared egg sprite with rarity-based tint
+  if(stage==="egg")return(<PixelSprite grid={EGG_SPRITE} size={size} animate={animate}/>);
+  const petData=PIXEL_PETS[petId];
+  if(!petData)return(<PixelSprite grid={EGG_SPRITE} size={size} animate={animate}/>);
+  const grid=petData[stage]||petData.adult;
+  return(<PixelSprite grid={grid} size={size} animate={animate}/>);
 }
 
+function PixelSprite({grid,size=180,animate=true}){
+  const cellSize=size/16;
+  return(<div style={{display:"inline-block",imageRendering:"pixelated",animation:animate?"pixelBreathe 1.6s steps(2) infinite":"none"}}>
+    <style>{`@keyframes pixelBreathe{0%,100%{transform:scale(1)}50%{transform:scale(1.04) translateY(-2px)}}`}</style>
+    <div style={{display:"grid",gridTemplateColumns:`repeat(16,${cellSize}px)`,gap:0,lineHeight:0}}>
+      {grid.flatMap((row,rowIdx)=>row.split("").map((ch,colIdx)=>(<div key={`${rowIdx}-${colIdx}`} style={{width:cellSize,height:cellSize,background:PIXEL_COLORS[ch]||"transparent"}}/>)))}
+    </div>
+  </div>);
+}
+
+
 // ═══ PET HOME SCENE (寵物的家 - 沉浸式場景) ═══════════════════════
-function PetHomeScene({pet,petDef,ri,mood,c}){
+function PetHomeScene({pet,petDef,ri,mood,c,onCleanPoop}){
   const home=PET_HOMES[petDef.id]||PET_HOMES.puppy;
   const stage=getPetStage(pet);
   const petFontSize=getPetSize(stage);
   const stageSayings=STAGE_SAYINGS[stage]||PET_SAYINGS;
+  const sleeping=isPetSleeping();
+  const poops=pet.poops||[];
   const[bubble,setBubble]=useState(null);
   const[petPos,setPetPos]=useState({x:50,y:50,bouncing:false});
   const[floatingItems,setFloatingItems]=useState([]);
@@ -2659,15 +3406,21 @@ function PetHomeScene({pet,petDef,ri,mood,c}){
     return()=>clearInterval(t);
   },[]);
 
-  // Random sayings every 8-15 seconds
+  // Random sayings every 8-15 seconds (mix time greetings with stage sayings)
   useEffect(()=>{
     const showBubble=()=>{
-      const say=stageSayings[Math.floor(Math.random()*stageSayings.length)];
+      const useTime=Math.random()<0.4;// 40% chance of time-based greeting
+      const timeKey=getTimeOfDay();
+      const timeSayings=TIME_GREETINGS[timeKey]||TIME_GREETINGS.afternoon;
+      const pool=useTime?timeSayings:stageSayings;
+      const say=pool[Math.floor(Math.random()*pool.length)];
       setBubble(say);
       setTimeout(()=>setBubble(null),3000);
     };
+    // Show greeting right away on mount
+    const initial=setTimeout(showBubble,500);
     const t=setInterval(showBubble,8000+Math.random()*7000);
-    return()=>clearInterval(t);
+    return()=>{clearTimeout(initial);clearInterval(t)};
   },[]);
 
   // Floating ambient items
@@ -2708,6 +3461,9 @@ function PetHomeScene({pet,petDef,ri,mood,c}){
       @keyframes petBreathe{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.05)}}
       @keyframes petBounce{0%{transform:translate(-50%,-50%) scale(1)}25%{transform:translate(-50%,-90%) scale(1.15)}50%{transform:translate(-50%,-50%) scale(0.95)}75%{transform:translate(-50%,-70%) scale(1.1)}100%{transform:translate(-50%,-50%) scale(1)}}
       @keyframes petShake{0%,100%{transform:translate(-50%,-50%) rotate(0)}25%{transform:translate(-52%,-50%) rotate(-5deg)}75%{transform:translate(-48%,-50%) rotate(5deg)}}
+      @keyframes petSleep{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-48%) scale(1.02)}}
+      @keyframes zzzFloat{0%{transform:translate(-50%,-50%) translateY(0);opacity:1}50%{opacity:.6}100%{transform:translate(-50%,-50%) translateY(-30px);opacity:0}}
+      @keyframes poopWiggle{0%,100%{transform:translateX(-50%) rotate(-3deg)}50%{transform:translateX(-50%) rotate(3deg)}}
       @keyframes floatUp{0%{transform:translateY(0) rotate(0);opacity:0}10%{opacity:1}90%{opacity:1}100%{transform:translateY(-350px) rotate(360deg);opacity:0}}
       @keyframes heartFloat{0%{transform:translate(-50%,-50%) scale(0);opacity:1}50%{transform:translate(-50%,-120%) scale(1.5);opacity:1}100%{transform:translate(-50%,-200%) scale(0.5);opacity:0}}
       @keyframes bubbleIn{0%{transform:scale(0) translateY(10px);opacity:0}60%{transform:scale(1.1) translateY(0);opacity:1}100%{transform:scale(1) translateY(0);opacity:1}}
@@ -2730,11 +3486,16 @@ function PetHomeScene({pet,petDef,ri,mood,c}){
 
     {/* Mood indicator top-right */}
     <div style={{position:"absolute",top:10,right:10,background:"rgba(255,255,255,.85)",backdropFilter:"blur(4px)",borderRadius:14,padding:"4px 10px",zIndex:10}}>
-      <span style={{fontSize:13}}>{mood.emoji} </span><span style={{fontSize:11,fontWeight:600,color:mood.color}}>{mood.text}</span>
+      <span style={{fontSize:13}}>{sleeping?"💤":mood.emoji} </span><span style={{fontSize:11,fontWeight:600,color:sleeping?"#7EB5F0":mood.color}}>{sleeping?"睡覺中":mood.text}</span>
     </div>
 
-    {/* Urgent need alert */}
-    {urgentNeed&&<div style={{position:"absolute",top:46,right:10,background:"rgba(226,75,74,.9)",color:"#fff",borderRadius:14,padding:"4px 10px",zIndex:10,fontSize:11,fontWeight:600,animation:"emojiPulse 1s infinite"}}>
+    {/* Poop counter (only when poops exist) */}
+    {poops.length>0&&<div style={{position:"absolute",top:46,right:10,background:"rgba(139,69,19,.9)",color:"#fff",borderRadius:14,padding:"4px 10px",zIndex:10,fontSize:11,fontWeight:600,animation:"emojiPulse 1.2s infinite"}}>
+      💩 {poops.length} 個要清
+    </div>}
+
+    {/* Urgent need alert (below poop if both exist) */}
+    {urgentNeed&&<div style={{position:"absolute",top:poops.length>0?82:46,right:10,background:"rgba(226,75,74,.9)",color:"#fff",borderRadius:14,padding:"4px 10px",zIndex:10,fontSize:11,fontWeight:600,animation:"emojiPulse 1s infinite"}}>
       {urgentNeed.icon} {urgentNeed.text}
     </div>}
 
@@ -2755,15 +3516,24 @@ function PetHomeScene({pet,petDef,ri,mood,c}){
       transform:"translate(-50%,-50%)",
       background:"none",border:"none",cursor:"pointer",
       WebkitTapHighlightColor:"transparent",padding:0,
-      animation:petPos.bouncing?"petBounce .6s ease-out":urgentNeed?"petShake 1.2s ease-in-out infinite":"petBreathe 2.5s ease-in-out infinite",
+      animation:petPos.bouncing?"petBounce .6s ease-out":sleeping?"petSleep 3s ease-in-out infinite":urgentNeed?"petShake 1.2s ease-in-out infinite":"petBreathe 2.5s ease-in-out infinite",
       transition:"left 2s ease-in-out, top 2s ease-in-out",
-      filter:urgentNeed?"grayscale(.3)":"none",
+      filter:urgentNeed?"grayscale(.3)":sleeping?"brightness(.7)":"none",
       zIndex:5,
       lineHeight:1,
       userSelect:"none",
     }}>
-      <PetSVG petId={petDef.id} size={petFontSize*1.5}/>
+      <PixelPet petId={petDef.id} stage={stage} size={petFontSize*1.6} animate={!sleeping}/>
     </button>
+
+    {/* Sleep ZZZ indicator */}
+    {sleeping&&<div style={{position:"absolute",left:`${petPos.x+10}%`,top:`${petPos.y-15}%`,transform:"translate(-50%,-50%)",fontSize:32,animation:"zzzFloat 2s ease-in-out infinite",zIndex:6,pointerEvents:"none",color:"#7EB5F0",fontWeight:700,fontFamily:"monospace"}}>💤</div>}
+
+    {/* Poops on the ground - clickable to clean */}
+    {poops.map(poop=>(<button key={poop.id} onClick={(e)=>{e.stopPropagation();if(onCleanPoop)onCleanPoop(poop.id)}} style={{position:"absolute",left:`${poop.x}%`,bottom:42,transform:"translateX(-50%)",fontSize:28,background:"none",border:"none",cursor:"pointer",zIndex:4,WebkitTapHighlightColor:"transparent",padding:0,animation:"poopWiggle 2s ease-in-out infinite",lineHeight:1}} title="點我清理！">💩</button>))}
+
+    {/* Night overlay */}
+    {sleeping&&<div style={{position:"absolute",inset:0,background:"radial-gradient(circle at 50% 30%, rgba(30,30,60,.2), rgba(20,20,40,.5))",pointerEvents:"none",zIndex:3}}/>}
 
     {/* Ground line with items */}
     <div style={{position:"absolute",bottom:0,left:0,right:0,height:40,background:`linear-gradient(180deg,transparent,rgba(0,0,0,.15))`,display:"flex",alignItems:"flex-end",justifyContent:"space-around",padding:"0 10px",fontSize:20,opacity:.65,letterSpacing:2,zIndex:2}}>
@@ -2850,6 +3620,11 @@ function PetsPage({onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,s
   };
 
   const performAction=(pet,actionKey,foodId=null)=>{
+    // Don't let user disturb sleeping pet (except feed which is OK if really hungry)
+    if(isPetSleeping()&&actionKey!=="feed"&&actionKey!=="sleep"){
+      alert("🌙 寵物正在睡覺，請不要吵醒他！\n(晚上 10 點 ~ 早上 7 點是睡覺時間)");
+      return;
+    }
     const action=PET_ACTIONS[actionKey];
     const prompts=ACTION_PROMPTS[actionKey];
     const prompt=prompts[Math.floor(Math.random()*prompts.length)];
@@ -2953,7 +3728,7 @@ function PetsPage({onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,s
     return(<div><Hdr t={`💭 ${petDef.name}問你`} onBack={()=>setEventModal(null)} cl={c.cl}/>
       <div style={{...S.card,padding:"24px 20px"}}>
         <div style={{textAlign:"center",marginBottom:16}}>
-          <div style={{fontSize:96,animation:"emojiBounce 1s ease-in-out infinite"}}>{petDef.emoji}</div>
+          <div style={{display:"flex",justifyContent:"center",animation:"emojiBounce 1s ease-in-out infinite"}}><PixelPet petId={petDef.id} stage={getPetStage(pet)} size={120}/></div>
           <div style={{marginTop:12,padding:"14px 18px",background:c.bg,borderRadius:16,display:"inline-block",border:`2px solid ${c.cl}`,fontSize:15,fontWeight:600,color:S.t1}}>
             💭 {event.q}
           </div>
@@ -2993,7 +3768,7 @@ function PetsPage({onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,s
     const petDef=PETS[pet.rarity].find(p=>p.id===pet.petId);
     return(<div><Hdr t={`${action.icon} ${action.name} ${petDef.emoji}`} onBack={()=>setActionModal(null)} cl={c.cl}/>
       <div style={{...S.card,padding:"28px 20px",textAlign:"center",background:`linear-gradient(135deg,${c.bg},var(--color-background-primary,#fff))`}}>
-        <div style={{fontSize:72,animation:"emojiBounce 1s ease-in-out infinite"}}>{petDef.emoji}</div>
+        <div style={{display:"flex",justifyContent:"center",animation:"emojiBounce 1s ease-in-out infinite"}}><PixelPet petId={petDef.id} stage={getPetStage(pet)} size={96}/></div>
         <div style={{fontSize:14,color:c.cl,fontWeight:600,marginTop:8}}>念出這句話來{action.name}！</div>
         <div style={{...S.card,padding:"18px 14px",marginTop:14,background:"var(--color-background-primary,#fff)"}}>
           <div style={{fontSize:22,fontWeight:700,color:S.t1}}>"{prompt}"</div>
@@ -3045,7 +3820,14 @@ function PetsPage({onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,s
     return(<div><Hdr t={`${petDef.emoji} ${petDef.name}`} onBack={()=>setSelectedPet(null)} cl={c.cl} extra={<button onClick={()=>setShopOpen(true)} style={{background:"none",border:`1px solid ${S.bd}`,borderRadius:8,padding:"4px 10px",fontSize:11,cursor:"pointer",color:S.t2}}>🏪 商店</button>}/>
 
       {/* Pet Home Scene - immersive environment */}
-      <PetHomeScene pet={selectedPet} petDef={petDef} ri={ri} mood={mood} c={c}/>
+      <PetHomeScene pet={selectedPet} petDef={petDef} ri={ri} mood={mood} c={c} onCleanPoop={(poopId)=>{
+        const updated={...selectedPet,poops:(selectedPet.poops||[]).filter(p=>p.id!==poopId),clean:Math.min(MAX_STAT,(selectedPet.clean||0)+5),bond:(selectedPet.bond||0)+2,lastUpdate:new Date().toISOString()};
+        setPets(ps=>ps.map(p=>p.petId===selectedPet.petId?updated:p));
+        setSelectedPet(updated);
+        setCoins(co=>co+2);
+        playSound("good");
+        speak("Clean up!");
+      }}/>
 
       {/* Level + Exp under the home */}
       <div style={{...S.card,padding:"12px 16px",marginBottom:12,textAlign:"center"}}>
@@ -3212,7 +3994,7 @@ function PetsPage({onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,s
         const ready=egg.progress>=needed;
         return(<div key={egg.id} style={{...S.card,padding:"16px",border:`2px solid ${ri.color}`,background:ready?`linear-gradient(135deg,${ri.bg},var(--color-background-primary,#fff))`:"var(--color-background-primary,#fff)"}}>
           <div style={{display:"flex",gap:12,alignItems:"center"}}>
-            <div style={{fontSize:56,animation:ready?"emojiBounce 1s infinite":"none"}}>{ready?"✨🥚":"🥚"}</div>
+            <div style={{display:"flex",alignItems:"center",animation:ready?"emojiBounce 1s infinite":"none"}}><PixelPet petId={egg.petId} stage="egg" size={56}/></div>
             <div style={{flex:1}}>
               <span style={{fontSize:10,fontWeight:700,color:ri.color,background:ri.bg,padding:"2px 8px",borderRadius:10}}>{ri.stars} {ri.label}</span>
               <div style={{fontSize:15,fontWeight:700,color:S.t1,marginTop:4}}>{petDef.name} 蛋</div>
@@ -3245,7 +4027,7 @@ function PetsPage({onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,s
         return(<div key={i} onClick={()=>{setSelectedPet(pet);triggerEvent(pet)}} style={{...S.card,padding:"14px 8px",textAlign:"center",border:`2px solid ${needsCare?"#E24B4A":ri.color}`,background:ri.bg,cursor:"pointer",transition:"transform .15s",position:"relative"}} onTouchStart={e=>e.currentTarget.style.transform="scale(0.95)"} onTouchEnd={e=>e.currentTarget.style.transform="scale(1)"}>
           {needsCare&&<div style={{position:"absolute",top:-6,right:-6,background:"#E24B4A",color:"#fff",borderRadius:"50%",width:22,height:22,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,animation:"emojiPulse 1s infinite"}}>!</div>}
           <div style={{fontSize:10,fontWeight:700,color:ri.color}}>{ri.stars}</div>
-          <div style={{fontSize:48,margin:"4px 0",animation:"emojiFloat 3s ease-in-out infinite",animationDelay:`${i*0.2}s`}}>{petDef.emoji}</div>
+          <div style={{margin:"4px auto",display:"flex",justifyContent:"center",animation:"emojiFloat 3s ease-in-out infinite",animationDelay:`${i*0.2}s`}}><PixelPet petId={petDef.id} stage={getPetStage(pet)} size={56} animate={false}/></div>
           <div style={{fontSize:12,fontWeight:600,color:S.t1}}>{petDef.name}</div>
           <div style={{fontSize:10,color:c.cl,fontWeight:600}}>Lv.{pet.level} {mood.emoji}</div>
           {pet.dupes>0&&<div style={{fontSize:9,color:S.t3,marginTop:2}}>×{pet.dupes+1}</div>}
