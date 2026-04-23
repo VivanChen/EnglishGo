@@ -790,6 +790,7 @@ export default function App(){
          mod==="dictation"?<DictM lv={lv} onBack={back} onXp={addXp} onDone={()=>setStats(s=>({...s,dictDone:s.dictDone+1}))}/>:
          mod==="scramble"?<ScramM lv={lv} onBack={back} onXp={addXp} onDone={()=>setStats(s=>({...s,scramDone:s.scramDone+1}))}/>:
          mod==="ai"?<AIT lv={lv} onBack={back} apiKey={gemKey} onSetKey={setGemKey}/>:
+         mod==="story"?<StoryMode lv={lv} onBack={back} apiKey={gemKey} onSetKey={setGemKey} pets={pets} c={c} onXp={addXp} trackWeak={trackWeak}/>:
          mod==="achievements"?<AchPage onBack={back} unlocked={achUnlocked} c={c}/>:
          mod==="weak"?<WeakPage onBack={back} weakWords={weakWords} setWeakWords={setWeakWords} c={c} lv={lv}/>:
          mod==="dashboard"?<Dashboard onBack={back} c={c} xp={xp} streak={streak} stats={stats} daily={daily} weakWords={weakWords} history={history} achUnlocked={achUnlocked} lv={lv} isSponsor={isSponsor}/>:
@@ -897,6 +898,7 @@ function Menu({lv,onSelect,daily,c,xp,coins,streak,achUnlocked,weakWords,isSpons
         {id:"grammar",icon:"🧠",t:"文法學堂",d:`${G[lv].length} 個重點`},
         {id:"reading",icon:"📖",t:"閱讀理解",d:`${R[lv].length} 篇文章`},
         {id:"ai",icon:"🤖",t:"AI 家教",d:"Gemini 對話"},
+        {id:"story",icon:"📖",t:"AI 故事",d:"寵物英文故事"},
         {id:"achievements",icon:"🏆",t:"成就徽章",d:`${achUnlocked.length}/${ACH_DEFS.length} 已解鎖`},
         {id:"weak",icon:"📕",t:"錯題本",d:weakWords.length?`${weakWords.length} 字需加強`:"還沒有錯題"},
         {id:"dashboard",icon:"📊",t:"學習報告",d:"數據分析"},
@@ -1921,6 +1923,289 @@ function AchPage({onBack,unlocked,c}){
     </div>
   </div>);
 }
+// ═══ AI STORY MODE (AI 故事模式 - 用你的寵物做主角) ═══════════════════
+function StoryMode({lv,onBack,apiKey,onSetKey,pets,c,onXp,trackWeak}){
+  const[step,setStep]=useState("setup");// setup | loading | reading | quiz | done
+  const[selectedPet,setSelectedPet]=useState(pets[0]||null);
+  const[theme,setTheme]=useState("adventure");
+  const[story,setStory]=useState(null);// {title, zh_title, pages[], questions[]}
+  const[pageIdx,setPageIdx]=useState(0);
+  const[quizIdx,setQuizIdx]=useState(0);
+  const[quizAnswered,setQuizAnswered]=useState(null);
+  const[quizScore,setQuizScore]=useState(0);
+  const[showApiKeyInput,setShowApiKeyInput]=useState(false);
+  const[error,setError]=useState("");
+
+  const themes=[
+    {id:"adventure",icon:"🗺️",name:"冒險",desc:"勇闖神秘地方"},
+    {id:"friendship",icon:"💖",name:"友情",desc:"交新朋友的故事"},
+    {id:"food",icon:"🍰",name:"美食",desc:"吃遍各種食物"},
+    {id:"magic",icon:"✨",name:"魔法",desc:"學會神奇魔法"},
+    {id:"school",icon:"🏫",name:"學校",desc:"校園生活故事"},
+    {id:"space",icon:"🚀",name:"太空",desc:"太空探索之旅"},
+  ];
+
+  const lvDesc={elem:"elementary school (A1)",junior:"junior high school (A2-B1)",senior:"senior high school (B1-B2)"};
+
+  const genStory=async()=>{
+    if(!apiKey){setShowApiKeyInput(true);return}
+    if(!selectedPet){setError("請先擁有一隻寵物！去扭蛋機抽一隻吧");return}
+    setStep("loading");setError("");
+    const petName=PETS[selectedPet.rarity].find(p=>p.id===selectedPet.petId)?.name||"寵物";
+    const themeObj=themes.find(t=>t.id===theme);
+    const prompt=`Create an engaging short English story for a Taiwanese ${lvDesc[lv]||"elementary"} student.
+
+Main character: A pet named "${petName}" (${selectedPet.petId})
+Theme: ${themeObj.name} (${themeObj.desc})
+Story length: 4 pages, each page is 2-3 short simple sentences
+Level: Simple vocabulary suitable for the student's level
+
+After the story, create 3 comprehension questions (multiple choice, 4 options each).
+
+Return STRICT JSON only (no markdown, no explanations):
+{
+  "title": "Story Title in English",
+  "zh_title": "中文標題",
+  "pages": [
+    {"en": "English text", "zh": "中文翻譯", "keywords": ["key_word1", "key_word2"]},
+    {"en": "...", "zh": "...", "keywords": [...]},
+    {"en": "...", "zh": "...", "keywords": [...]},
+    {"en": "...", "zh": "...", "keywords": [...]}
+  ],
+  "questions": [
+    {"q": "Question in English", "choices": ["A", "B", "C", "D"], "correct": 0, "explain": "中文解釋"},
+    {"q": "...", "choices": [...], "correct": 0, "explain": "..."},
+    {"q": "...", "choices": [...], "correct": 0, "explain": "..."}
+  ]
+}`;
+    try{
+      const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+          contents:[{parts:[{text:prompt}]}],
+          generationConfig:{maxOutputTokens:2000,temperature:0.9,responseMimeType:"application/json"},
+        }),
+      });
+      const data=await res.json();
+      const text=data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      if(!text){throw new Error(data?.error?.message||"No response")}
+      const parsed=JSON.parse(text);
+      if(!parsed.pages||!parsed.questions)throw new Error("Invalid story format");
+      setStory(parsed);
+      setPageIdx(0);setQuizIdx(0);setQuizAnswered(null);setQuizScore(0);
+      setStep("reading");
+    }catch(e){
+      setError("故事生成失敗："+(e.message||"請重試")+"\n（如果持續失敗，API Key 可能無效）");
+      setStep("setup");
+    }
+  };
+
+  const saveKey=(k)=>{onSetKey(k);setShowApiKeyInput(false)};
+
+  const nextPage=()=>{
+    if(pageIdx<story.pages.length-1)setPageIdx(pageIdx+1);
+    else setStep("quiz");
+  };
+
+  const answerQuiz=(idx)=>{
+    if(quizAnswered!==null)return;
+    setQuizAnswered(idx);
+    const correct=idx===story.questions[quizIdx].correct;
+    if(correct){setQuizScore(s=>s+1);onXp&&onXp(10)}
+    else{trackWeak&&trackWeak(story.questions[quizIdx].q.split(" ")[0])}
+  };
+
+  const nextQuiz=()=>{
+    if(quizIdx<story.questions.length-1){setQuizIdx(quizIdx+1);setQuizAnswered(null)}
+    else setStep("done");
+  };
+
+  // API Key input
+  if(showApiKeyInput){
+    const[tmpKey,setTmpKey]=[null,null];// inline
+    return(<div><Hdr t="🔑 設定 Gemini API" onBack={()=>setShowApiKeyInput(false)} cl={c.cl}/>
+      <div style={{...S.card,padding:"20px"}}>
+        <div style={{fontSize:13,color:S.t2,lineHeight:1.7,marginBottom:14}}>
+          故事模式需要 Google Gemini API Key（免費申請）。<br/>
+          請到 <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" style={{color:c.cl}}>Google AI Studio</a> 免費取得 API Key，貼到下方：
+        </div>
+        <input type="password" placeholder="貼上你的 API Key..." defaultValue={apiKey} onChange={e=>onSetKey(e.target.value)} style={{width:"100%",padding:"12px",fontSize:14,border:`2px solid ${S.bd}`,borderRadius:10,fontFamily:"monospace",boxSizing:"border-box",background:S.bg1,color:S.t1}}/>
+        <button onClick={()=>{setShowApiKeyInput(false);if(apiKey)genStory()}} style={{...S.btn,background:c.cl,color:"#fff",width:"100%",padding:"14px",fontSize:14,marginTop:12}}>✓ 儲存並開始故事</button>
+      </div>
+    </div>);
+  }
+
+  // Setup: choose pet + theme
+  if(step==="setup"){
+    if(pets.length===0){
+      return(<div><Hdr t="📖 AI 故事" onBack={onBack} cl={c.cl}/>
+        <div style={{...S.card,padding:"32px 20px",textAlign:"center"}}>
+          <div style={{fontSize:56}}>🐾</div>
+          <div style={{fontSize:16,fontWeight:600,color:S.t1,marginTop:8}}>還沒有寵物</div>
+          <div style={{fontSize:13,color:S.t2,marginTop:4}}>要先擁有一隻寵物才能當故事主角喔！</div>
+          <div style={{fontSize:12,color:S.t3,marginTop:12}}>去「🎰 扭蛋機」抽一隻寵物吧</div>
+        </div>
+      </div>);
+    }
+    return(<div><Hdr t="📖 AI 故事" onBack={onBack} cl={c.cl}/>
+      <div style={{...S.card,padding:"14px 16px",marginBottom:12,background:`linear-gradient(135deg,${c.bg},var(--color-background-primary,#fff))`}}>
+        <div style={{fontSize:14,fontWeight:700,color:S.t1}}>📖 用你的寵物創造英文故事</div>
+        <div style={{fontSize:12,color:S.t2,marginTop:4,lineHeight:1.6}}>選一隻寵物 + 主題 → AI 會為你生成 4 頁小故事 + 3 題測驗</div>
+      </div>
+
+      {/* Pet selector */}
+      <div style={{...S.card,padding:"14px 16px",marginBottom:12}}>
+        <div style={{fontSize:13,fontWeight:600,color:S.t1,marginBottom:10}}>🐾 選主角</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
+          {pets.map(p=>{const pd=PETS[p.rarity].find(x=>x.id===p.petId);if(!pd)return null;const ri=RARITY_INFO[p.rarity];const sel=selectedPet?.petId===p.petId;return(<div key={p.petId} onClick={()=>setSelectedPet(p)} style={{padding:"10px 6px",border:sel?`2px solid ${c.cl}`:`1px solid ${S.bd}`,borderRadius:10,textAlign:"center",cursor:"pointer",background:sel?`${c.cl}11`:"transparent"}}>
+            <div style={{display:"flex",justifyContent:"center"}}><PixelPet petId={p.petId} stage={getPetStage(p)} size={44} animate={false}/></div>
+            <div style={{fontSize:11,fontWeight:600,color:S.t1,marginTop:4}}>{pd.name}</div>
+            <div style={{fontSize:9,color:ri.color}}>Lv.{p.level}</div>
+          </div>)})}
+        </div>
+      </div>
+
+      {/* Theme selector */}
+      <div style={{...S.card,padding:"14px 16px",marginBottom:12}}>
+        <div style={{fontSize:13,fontWeight:600,color:S.t1,marginBottom:10}}>🎨 選主題</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:8}}>
+          {themes.map(t=>(<div key={t.id} onClick={()=>setTheme(t.id)} style={{padding:"10px",border:theme===t.id?`2px solid ${c.cl}`:`1px solid ${S.bd}`,borderRadius:10,cursor:"pointer",background:theme===t.id?`${c.cl}11`:"transparent"}}>
+            <div style={{fontSize:22}}>{t.icon}</div>
+            <div style={{fontSize:13,fontWeight:600,color:S.t1,marginTop:2}}>{t.name}</div>
+            <div style={{fontSize:10,color:S.t3}}>{t.desc}</div>
+          </div>))}
+        </div>
+      </div>
+
+      {error&&<div style={{padding:"10px 14px",background:"#FCEBEB",border:"1px solid #E24B4A",borderRadius:10,color:"#A32D2D",fontSize:12,marginBottom:12,whiteSpace:"pre-wrap"}}>❌ {error}</div>}
+
+      <button onClick={genStory} style={{...S.btn,background:`linear-gradient(135deg,${c.cl},${c.ac})`,color:"#fff",width:"100%",padding:"16px",fontSize:15,boxShadow:`0 4px 12px ${c.cl}44`}}>✨ 開始生成故事</button>
+
+      <div style={{fontSize:11,color:S.t3,textAlign:"center",marginTop:8}}>
+        {apiKey?"✓ API Key 已設定":<button onClick={()=>setShowApiKeyInput(true)} style={{background:"none",border:"none",color:c.cl,fontSize:11,textDecoration:"underline",cursor:"pointer"}}>設定 API Key</button>}
+      </div>
+    </div>);
+  }
+
+  // Loading
+  if(step==="loading"){
+    return(<div><Hdr t="✨ 創作中..." onBack={()=>setStep("setup")} cl={c.cl}/>
+      <div style={{...S.card,padding:"48px 20px",textAlign:"center"}}>
+        <div style={{display:"flex",justifyContent:"center",animation:"emojiBounce 1s ease-in-out infinite"}}>{selectedPet&&<PixelPet petId={selectedPet.petId} stage={getPetStage(selectedPet)} size={96}/>}</div>
+        <div style={{fontSize:16,color:S.t1,fontWeight:600,marginTop:16}}>正在為你創作故事</div>
+        <div style={{fontSize:12,color:S.t2,marginTop:6}}>AI 正在編寫專屬於你的冒險...</div>
+        <div style={{width:120,height:4,background:S.bg2,borderRadius:2,margin:"16px auto",overflow:"hidden"}}>
+          <div style={{width:"60%",height:"100%",background:`linear-gradient(90deg,${c.cl},${c.ac})`,animation:"pulse 1s infinite"}}/>
+        </div>
+      </div>
+    </div>);
+  }
+
+  // Reading story pages
+  if(step==="reading"&&story){
+    const page=story.pages[pageIdx];
+    const readAloud=()=>speak(page.en);
+    return(<div><Hdr t={`📖 ${story.zh_title}`} onBack={()=>{if(window.confirm("離開故事？進度不會保存"))setStep("setup")}} cl={c.cl}/>
+      {/* Progress dots */}
+      <div style={{display:"flex",justifyContent:"center",gap:6,marginBottom:12}}>
+        {story.pages.map((_,i)=>(<div key={i} style={{width:24,height:4,background:i<=pageIdx?c.cl:S.bg2,borderRadius:2,transition:"background .3s"}}/>))}
+      </div>
+
+      {/* Story card */}
+      <div style={{...S.card,padding:"20px 18px",marginBottom:12,minHeight:260,background:`linear-gradient(135deg,${c.bg}66,var(--color-background-primary,#fff))`,border:`2px solid ${c.cl}33`}}>
+        <div style={{display:"flex",justifyContent:"center",marginBottom:14}}>
+          <PixelPet petId={selectedPet.petId} stage={getPetStage(selectedPet)} size={96}/>
+        </div>
+
+        {/* English text (big) */}
+        <div style={{fontSize:17,fontWeight:500,color:S.t1,lineHeight:1.7,textAlign:"center",margin:"0 0 12px"}}>
+          {page.en}
+        </div>
+
+        {/* Chinese translation */}
+        <div style={{fontSize:13,color:S.t2,textAlign:"center",lineHeight:1.7,padding:"8px 12px",background:S.bg2,borderRadius:8}}>
+          {page.zh}
+        </div>
+
+        {/* Keywords */}
+        {page.keywords&&page.keywords.length>0&&<div style={{marginTop:12,display:"flex",flexWrap:"wrap",gap:6,justifyContent:"center"}}>
+          {page.keywords.map((kw,i)=>(<span key={i} onClick={()=>speak(kw)} style={{padding:"4px 10px",background:c.bg,border:`1px solid ${c.cl}`,borderRadius:12,fontSize:12,color:c.cl,cursor:"pointer",fontWeight:600}}>🔊 {kw}</span>))}
+        </div>}
+      </div>
+
+      {/* Controls */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+        <button onClick={readAloud} style={{...S.btn,background:S.bg2,color:S.t1,padding:"14px",fontSize:13}}>🔊 再聽一次</button>
+        <button onClick={nextPage} style={{...S.btn,background:c.cl,color:"#fff",padding:"14px",fontSize:13}}>{pageIdx<story.pages.length-1?"下一頁 →":"📝 開始測驗"}</button>
+      </div>
+
+      <div style={{textAlign:"center",fontSize:11,color:S.t3,marginTop:8}}>第 {pageIdx+1} 頁 / 共 {story.pages.length} 頁</div>
+    </div>);
+  }
+
+  // Quiz
+  if(step==="quiz"&&story){
+    const q=story.questions[quizIdx];
+    return(<div><Hdr t="📝 閱讀測驗" onBack={()=>{if(window.confirm("離開測驗？"))setStep("setup")}} cl={c.cl}/>
+      <div style={{display:"flex",justifyContent:"center",gap:6,marginBottom:12}}>
+        {story.questions.map((_,i)=>(<div key={i} style={{width:24,height:4,background:i<=quizIdx?c.cl:S.bg2,borderRadius:2}}/>))}
+      </div>
+
+      <div style={{...S.card,padding:"18px 16px",marginBottom:12}}>
+        <div style={{fontSize:10,color:c.cl,fontWeight:700,letterSpacing:1}}>問題 {quizIdx+1} / {story.questions.length}</div>
+        <div style={{fontSize:16,fontWeight:600,color:S.t1,marginTop:6,lineHeight:1.5}}>{q.q}</div>
+      </div>
+
+      <div style={{display:"grid",gap:8,marginBottom:12}}>
+        {q.choices.map((ch,i)=>{
+          const chosen=quizAnswered===i;
+          const correct=quizAnswered!==null&&i===q.correct;
+          const wrong=chosen&&i!==q.correct;
+          let bg=S.bg1,bd=`1px solid ${S.bd}`,color=S.t1;
+          if(correct){bg="#E1F5EE";bd="2px solid #1D9E75";color="#0F6E56"}
+          else if(wrong){bg="#FCEBEB";bd="2px solid #E24B4A";color="#A32D2D"}
+          return(<button key={i} onClick={()=>answerQuiz(i)} disabled={quizAnswered!==null} style={{padding:"14px 16px",borderRadius:12,background:bg,border:bd,fontSize:14,textAlign:"left",color,fontFamily:"inherit",fontWeight:500,cursor:quizAnswered===null?"pointer":"default",transition:"all .2s"}}>
+            {String.fromCharCode(65+i)}. {ch} {correct&&"✓"}{wrong&&"✗"}
+          </button>);
+        })}
+      </div>
+
+      {quizAnswered!==null&&<div style={{...S.card,padding:"14px 16px",marginBottom:12,background:quizAnswered===q.correct?"#E1F5EE":"#FFF3CD"}}>
+        <div style={{fontSize:13,fontWeight:700,color:S.t1,marginBottom:4}}>{quizAnswered===q.correct?"✅ 答對了！":"❌ 不太對"}</div>
+        <div style={{fontSize:12,color:S.t2,lineHeight:1.6}}>{q.explain}</div>
+      </div>}
+
+      {quizAnswered!==null&&<button onClick={nextQuiz} style={{...S.btn,background:c.cl,color:"#fff",width:"100%",padding:"14px",fontSize:14}}>{quizIdx<story.questions.length-1?"下一題 →":"🏁 查看結果"}</button>}
+    </div>);
+  }
+
+  // Done
+  if(step==="done"&&story){
+    const pct=Math.round((quizScore/story.questions.length)*100);
+    return(<div><Hdr t="🏁 故事完成！" onBack={onBack} cl={c.cl}/>
+      <div style={{...S.card,padding:"28px 20px",textAlign:"center",background:`linear-gradient(135deg,${c.bg},var(--color-background-primary,#fff))`,border:`3px solid ${c.cl}`}}>
+        <div style={{fontSize:56,animation:"emojiBounce 1s ease-in-out infinite"}}>{pct>=80?"🏆":pct>=50?"🎉":"💪"}</div>
+        <div style={{fontSize:20,fontWeight:700,color:S.t1,marginTop:8}}>閱讀完成！</div>
+        <div style={{fontSize:13,color:S.t2,marginTop:4}}>答對 {quizScore} / {story.questions.length} 題 · {pct}%</div>
+        <div style={{margin:"20px 0",fontSize:12,color:S.t3,lineHeight:1.7}}>
+          {pct>=80?"🌟 太棒了！完全理解這個故事":pct>=50?"👍 不錯喔！再多讀幾個就更熟了":"📚 別灰心，多看幾次會更好"}
+        </div>
+        <div style={{padding:"10px 12px",background:S.bg2,borderRadius:10,fontSize:12,color:S.t1}}>
+          📖 <b>{story.zh_title}</b><br/>
+          <span style={{color:S.t3,fontSize:11}}>{story.title}</span>
+        </div>
+      </div>
+
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginTop:12}}>
+        <button onClick={()=>{setStep("reading");setPageIdx(0)}} style={{...S.btn,background:S.bg2,color:S.t1,padding:"14px",fontSize:13}}>🔁 重讀故事</button>
+        <button onClick={()=>setStep("setup")} style={{...S.btn,background:c.cl,color:"#fff",padding:"14px",fontSize:13}}>✨ 來個新故事</button>
+      </div>
+    </div>);
+  }
+
+  return null;
+}
+
 // ═══ WRONG ANSWER REVIEW (錯題本) ═══════════════════════════════════
 function WeakPage({onBack,weakWords,setWeakWords,c,lv}){
   const sorted=[...weakWords].sort((a,b)=>b.n-a.n);
