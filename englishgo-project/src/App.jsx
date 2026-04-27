@@ -485,29 +485,147 @@ function levelUpPet(pet){
 const LV={elementary:{l:"小學",en:"Elementary",cl:"#0F6E56",bg:"#E1F5EE",ac:"#1D9E75",ic:"🌱",wd:"300字"},junior:{l:"國中",en:"Junior High",cl:"#534AB7",bg:"#EEEDFE",ac:"#7F77DD",ic:"📚",wd:"1200字"},senior:{l:"高中",en:"Senior High",cl:"#993C1D",bg:"#FAECE7",ac:"#D85A30",ic:"🎓",wd:"4500+字"}};
 let _voiceUri = null; // selected English voice URI
 try{_voiceUri=localStorage.getItem("eg_voice")||null}catch{}
-function getVoices(){return window.speechSynthesis?.getVoices()?.filter(v=>/^en/i.test(v.lang))||[]}
+
+// Score a voice by perceived quality (higher = better)
+function scoreVoice(v){
+  let score=0;
+  const n=v.name.toLowerCase();
+  // Premium neural voices (best quality)
+  if(/neural|natural|online|premium|enhanced|studio/i.test(v.name))score+=100;
+  // Known good voice names (female, warm, story-friendly)
+  if(/aria|jenny|sonia|libby|ava|emma|olivia|nova|shimmer|samantha|karen|tessa|moira|kate|serena/i.test(n))score+=80;
+  // Microsoft Edge voices are high quality
+  if(/microsoft/i.test(n)&&!/desktop/i.test(n))score+=50;
+  // Google voices are decent
+  if(/google/i.test(n))score+=40;
+  // Apple voices are decent
+  if(/apple|^com\.apple/i.test(n))score+=30;
+  // Prefer female voices (better for kids content)
+  if(/female|woman/i.test(n))score+=20;
+  if(/male|man/i.test(n)&&!/female/i.test(n))score-=5;
+  // Penalize low-quality voices
+  if(/compact|espeak|robot/i.test(n))score-=50;
+  if(/novelty|whisper|bubbles|bells|bahh|boing|deranged|hysterical|cellos|organ|trinoids|zarvox|wobble/i.test(n))score-=200;
+  // Localized English preferences
+  if(/en-us/i.test(v.lang))score+=10;
+  if(/en-gb/i.test(v.lang))score+=8;
+  if(/en-au/i.test(v.lang))score+=5;
+  return score;
+}
+
+function getVoices(){
+  const vs=window.speechSynthesis?.getVoices()?.filter(v=>/^en/i.test(v.lang))||[];
+  return vs.sort((a,b)=>scoreVoice(b)-scoreVoice(a));// best first
+}
+
+// Auto-pick best voice if user hasn't chosen one
+function getBestEnVoice(){
+  if(_voiceUri){
+    const v=window.speechSynthesis?.getVoices().find(x=>x.voiceURI===_voiceUri);
+    if(v)return v;
+  }
+  return getVoices()[0]||null;
+}
+
 function getZhVoice(){
   const vs=window.speechSynthesis?.getVoices()||[];
-  return vs.find(v=>/zh[-_]TW/i.test(v.lang)&&!/male/i.test(v.name))
-    ||vs.find(v=>/zh[-_]TW/i.test(v.lang))
-    ||vs.find(v=>/zh[-_]HK/i.test(v.lang))
-    ||vs.find(v=>/zh/i.test(v.lang))||null;
+  // Apply scoring to Chinese voices too
+  const zh=vs.filter(v=>/^zh/i.test(v.lang));
+  zh.sort((a,b)=>{
+    let sa=0,sb=0;
+    if(/neural|natural|online|premium/i.test(a.name))sa+=100;
+    if(/neural|natural|online|premium/i.test(b.name))sb+=100;
+    if(/hsiao|yating|mei-jia|tracy|hanhan|tina/i.test(a.name.toLowerCase()))sa+=50;
+    if(/hsiao|yating|mei-jia|tracy|hanhan|tina/i.test(b.name.toLowerCase()))sb+=50;
+    if(/tw/i.test(a.lang))sa+=20;
+    if(/tw/i.test(b.lang))sb+=20;
+    if(/male/i.test(a.name)&&!/female/i.test(a.name))sa-=10;
+    if(/male/i.test(b.name)&&!/female/i.test(b.name))sb-=10;
+    return sb-sa;
+  });
+  return zh[0]||null;
 }
-function speak(t,l="en-US",r=0.85){
-  if(!window.speechSynthesis)return;
+
+function speak(t,l="en-US",r=0.9,opts={}){
+  if(!window.speechSynthesis||!t)return null;
   window.speechSynthesis.cancel();
-  const u=new SpeechSynthesisUtterance(t);u.lang=l;u.rate=r;
+  const u=new SpeechSynthesisUtterance(t);
+  u.lang=l;
+  u.rate=r;
+  u.pitch=opts.pitch||1.05;// slightly higher = warmer/livelier
+  u.volume=opts.volume||1;
   const isZh=/^zh/i.test(l);
   if(isZh){
     const zhV=getZhVoice();
     if(zhV){u.voice=zhV;u.lang=zhV.lang}
-  }else if(_voiceUri){
-    const v=window.speechSynthesis.getVoices().find(x=>x.voiceURI===_voiceUri);
-    if(v){u.voice=v;u.lang=v.lang}
+  }else{
+    const enV=getBestEnVoice();
+    if(enV){u.voice=enV;u.lang=enV.lang}
   }
+  if(opts.onend)u.onend=opts.onend;
+  if(opts.onboundary)u.onboundary=opts.onboundary;
   window.speechSynthesis.speak(u);
+  return u;
 }
-function VoicePicker(){const[voices,setVoices]=useState([]);const[cur,setCur]=useState(_voiceUri||"");useEffect(()=>{const load=()=>{const v=getVoices();if(v.length)setVoices(v)};load();window.speechSynthesis?.addEventListener?.("voiceschanged",load);return()=>window.speechSynthesis?.removeEventListener?.("voiceschanged",load)},[]);if(!voices.length)return null;return(<select value={cur} onChange={e=>{_voiceUri=e.target.value||null;setCur(e.target.value);try{localStorage.setItem("eg_voice",e.target.value)}catch{};if(e.target.value){const v=voices.find(x=>x.voiceURI===e.target.value);if(v)speak("Hello!","en-US",0.85)}}} style={{padding:"3px 4px",borderRadius:6,border:`1px solid var(--color-border-tertiary,#e0dfd9)`,fontSize:11,background:"var(--color-background-primary,#fff)",color:"var(--color-text-secondary,#73726c)",maxWidth:110,fontFamily:"inherit"}}><option value="">預設語音</option>{voices.map(v=><option key={v.voiceURI} value={v.voiceURI}>{v.name.replace(/Microsoft |Google |Apple /,"").slice(0,18)}{v.lang.includes("GB")?" 🇬🇧":v.lang.includes("AU")?" 🇦🇺":v.lang.includes("US")?" 🇺🇸":""}</option>)}</select>)}
+
+// Speak multiple sentences with natural pauses between them (story narration)
+// Returns a control handle with cancel() for cleanup
+function speakStory(sentences,opts={}){
+  if(!window.speechSynthesis||!sentences||!sentences.length)return{cancel:()=>{}};
+  window.speechSynthesis.cancel();
+  let i=0;
+  let cancelled=false;
+  let pendingTimer=null;
+  const playNext=()=>{
+    if(cancelled)return;
+    if(i>=sentences.length){opts.onFinish&&opts.onFinish();return}
+    const text=sentences[i];
+    const isLast=i===sentences.length-1;
+    i++;
+    opts.onSentence&&opts.onSentence(i-1,text);
+    speak(text,"en-US",opts.rate||0.88,{
+      pitch:opts.pitch||1.08,
+      onend:()=>{
+        if(cancelled)return;
+        if(isLast){opts.onFinish&&opts.onFinish()}
+        else{pendingTimer=setTimeout(playNext,400)}// 400ms natural pause between sentences
+      },
+    });
+  };
+  playNext();
+  return{
+    cancel:()=>{
+      cancelled=true;
+      if(pendingTimer)clearTimeout(pendingTimer);
+      window.speechSynthesis?.cancel();
+    },
+  };
+}
+function VoicePicker(){
+  const[voices,setVoices]=useState([]);
+  const[cur,setCur]=useState(_voiceUri||"");
+  useEffect(()=>{
+    const load=()=>{const v=getVoices();if(v.length)setVoices(v)};
+    load();
+    window.speechSynthesis?.addEventListener?.("voiceschanged",load);
+    return()=>window.speechSynthesis?.removeEventListener?.("voiceschanged",load);
+  },[]);
+  if(!voices.length)return null;
+  // Mark top 3 voices with ⭐ (high quality)
+  const topScores=voices.slice(0,3).map(v=>v.voiceURI);
+  return(<select value={cur} onChange={e=>{
+    _voiceUri=e.target.value||null;setCur(e.target.value);
+    try{localStorage.setItem("eg_voice",e.target.value)}catch{};
+    if(e.target.value){const v=voices.find(x=>x.voiceURI===e.target.value);if(v)speak("Hello! Let me tell you a story.","en-US",0.9,{pitch:1.08})}
+  }} style={{padding:"3px 4px",borderRadius:6,border:`1px solid var(--color-border-tertiary,#e0dfd9)`,fontSize:11,background:"var(--color-background-primary,#fff)",color:"var(--color-text-secondary,#73726c)",maxWidth:130,fontFamily:"inherit"}}>
+    <option value="">🎤 自動選最佳</option>
+    {voices.map(v=>{
+      const star=topScores.includes(v.voiceURI)?"⭐ ":"";
+      const flag=v.lang.includes("GB")?" 🇬🇧":v.lang.includes("AU")?" 🇦🇺":v.lang.includes("US")?" 🇺🇸":"";
+      return(<option key={v.voiceURI} value={v.voiceURI}>{star}{v.name.replace(/Microsoft |Google |Apple /,"").slice(0,18)}{flag}</option>);
+    })}
+  </select>);
+}
 function createDeck(c){return{queue:c.map((_,i)=>i),rm:[],stats:{again:0,hard:0,good:0,easy:0},total:c.length}}
 function rateDeck(d,a){const n={...d,queue:[...d.queue],rm:[...d.rm],stats:{...d.stats}};const c=n.queue.shift();if(c===undefined)return n;n.stats[a]++;if(a==="again")n.queue.splice(Math.min(1,n.queue.length),0,c);else if(a==="hard")n.queue.splice(Math.floor(n.queue.length/2),0,c);else if(a==="good")n.queue.push(c);else n.rm.push(c);return n}
 function parseCSV(t){return t.trim().split("\n").slice(1).map(l=>{const m=l.match(/^"?([^",]+)"?\s*,\s*"?([\s\S]*?)"?\s*$/);if(!m)return null;const w=m[1].trim(),b=m[2].trim(),p=b.match(/\(([a-z.\/]+)\)\s*(.+?)(?:\n|$)/);return{w,ph:"",p:p?.[1]||"",m:p?.[2]?.trim()||b.split("\n")[0],f:[],c:[],ex:"",ez:""}}).filter(Boolean)}
@@ -798,16 +916,15 @@ export default function App(){
          mod==="pets"?<PetsGuard onBack={back} c={c} pets={pets} setPets={setPets} eggs={eggs} setEggs={setEggs} coins={coins} setCoins={setCoins} inventory={inventory} setInventory={setInventory} petAccount={petAccount} setPetAccount={setPetAccount} petTasks={petTasks} setPetTasks={setPetTasks} incrTask={incrTask}/>:
          mod==="sponsor"?<SponsorPage onBack={back} c={c} sponsor={sponsor} setSponsor={setSponsor}/>:null}
         {/* Ad Banner — hidden for sponsors */}
-        {!isSponsor&&<AdBanner/>}
-        {isSponsor&&<div style={{textAlign:"center",fontSize:11,color:c.cl,padding:"8px",opacity:.5}}>💎 感謝贊助！已為您移除廣告</div>}
+        {/* No ads — pure learning experience */}
       </div>
       {/* Footer */}
       <footer style={{textAlign:"center",padding:"20px 16px calc(28px + env(safe-area-inset-bottom, 0px))",fontSize:11,color:S.t3,lineHeight:1.8,borderTop:`1px solid ${S.bd}`,marginTop:16}}>
         <div style={{maxWidth:480,margin:"0 auto"}}>
           <div style={{fontWeight:600,fontSize:12,color:S.t2,marginBottom:6}}>📘 如何使用 EnglishGo</div>
           <div style={{marginBottom:8}}>選擇等級（小學／國中／高中）後，透過 SRS 單字卡記憶單字，搭配口說練習、打地鼠拼字、配對翻牌等遊戲強化學習。AI 家教可即時回答英文問題。每天練習 10 題即可累積經驗值與成就徽章！</div>
-          <div style={{marginBottom:8}}><a href="/learn/api-keys.html" style={{color:c.cl,textDecoration:"underline"}}>🔑 API Key 申請教學</a> · <a href="/learn/sponsor.html" style={{color:c.cl,textDecoration:"underline"}}>💎 贊助我們</a></div>
-          <div style={{fontSize:10,color:S.t3,marginBottom:6}}>本站使用 Google AdSense 投放廣告，並可能使用 Cookie 提供個人化廣告體驗。</div>
+          <div style={{marginBottom:8}}><a href="/learn/api-keys.html" style={{color:c.cl,textDecoration:"underline"}}>🔑 API Key 申請教學</a> · <a href="/learn/sponsor.html" style={{color:c.cl,textDecoration:"underline"}}>☕ 支持我們</a></div>
+          <div style={{display:"inline-block",fontSize:10,color:"#1D9E75",fontWeight:600,padding:"3px 10px",background:"#E1F5EE",borderRadius:10,marginBottom:6}}>✨ 100% 無廣告 · 純淨學習空間</div>
           <div>AI Tutor powered by <b>Gemini</b> · Speech by <b>Web Speech API</b></div>
           <div>© {new Date().getFullYear()} EnglishGo · 專為台灣學生設計</div>
         </div>
@@ -840,7 +957,7 @@ function Landing({onSelect,dark,setDark}){
             {href:"/learn/speaking-tips.html",t:"如何提升英文口說能力？",d:"5 個不用出國也能練好的方法",ic:"🗣️"},
             {href:"/learn/vocabulary-guide.html",t:"國中會考單字準備攻略",d:"1,200 字怎麼背最有效？",ic:"📚"},
             {href:"/learn/api-keys.html",t:"API Key 申請教學",d:"解鎖 AI 家教 & 單字動圖",ic:"🔑"},
-            {href:"/learn/sponsor.html",t:"贊助 EnglishGo",d:"移除廣告、支持免費教育",ic:"💎"}
+            {href:"/learn/sponsor.html",t:"支持 EnglishGo",d:"請開發者喝杯咖啡，讓平台持續更新",ic:"☕"}
           ].map((a,i)=>(<a key={i} href={a.href} style={{display:"block",background:"rgba(255,255,255,.05)",border:"1px solid rgba(255,255,255,.08)",borderRadius:12,padding:"16px",textDecoration:"none",color:"#fff",transition:"all .2s"}} onMouseEnter={e=>e.currentTarget.style.background="rgba(255,255,255,.1)"} onMouseLeave={e=>e.currentTarget.style.background="rgba(255,255,255,.05)"}><div style={{fontSize:20,marginBottom:4}}>{a.ic}</div><div style={{fontSize:13,fontWeight:600,marginBottom:2}}>{a.t}</div><div style={{fontSize:11,color:"rgba(255,255,255,.4)"}}>{a.d}</div></a>))}
         </div>
       </div>
@@ -849,7 +966,7 @@ function Landing({onSelect,dark,setDark}){
         <div style={{maxWidth:480,margin:"0 auto"}}>
           <div style={{fontWeight:600,fontSize:12,color:"rgba(255,255,255,.5)",marginBottom:6}}>📘 如何使用</div>
           <div style={{marginBottom:10}}>選擇你的等級，透過 SRS 單字卡、口說練習、遊戲等多種模式學英文。AI 家教隨時回答問題。每天只要 10 分鐘！</div>
-          <div style={{fontSize:10,marginBottom:8}}>本站使用 Google AdSense 投放廣告，並可能使用 Cookie 提供個人化廣告體驗。</div>
+          <div style={{display:"inline-block",fontSize:10,color:"#7FD1AE",fontWeight:600,padding:"4px 12px",background:"rgba(127,209,174,.1)",border:"1px solid rgba(127,209,174,.3)",borderRadius:12,marginBottom:10}}>✨ 100% 無廣告 · 純淨學習空間</div>
           <div>AI Tutor powered by <b>Gemini</b> · Speech by <b>Web Speech API</b></div>
           <div>© {new Date().getFullYear()} EnglishGo · 專為台灣學生設計</div>
         </div>
@@ -904,7 +1021,7 @@ function Menu({lv,onSelect,daily,c,xp,coins,streak,achUnlocked,weakWords,isSpons
         {id:"dashboard",icon:"📊",t:"學習報告",d:"數據分析"},
         {id:"gacha",icon:"🎰",t:"扭蛋機",d:`🪙 ${coins} 金幣`},
         {id:"pets",icon:"🐾",t:"寵物圖鑑",d:`${pets.length} 隻 · ${eggs.length} 顆蛋`},
-        {id:"sponsor",icon:"💎",t:isSponsor?"贊助會員 ✓":"贊助我們",d:isSponsor?"已啟用無廣告":"移除廣告"},
+        {id:"sponsor",icon:"☕",t:isSponsor?"支持者 ✓":"支持我們",d:isSponsor?"感謝您的支持！":"請開發者喝杯咖啡"},
       ].map(m=>(<div key={m.id} onClick={()=>onSelect(m.id)} style={{cursor:"pointer",...S.card,padding:"20px 14px",transition:"all .12s",WebkitTapHighlightColor:"transparent"}}
         onTouchStart={e=>e.currentTarget.style.transform="scale(0.96)"}
         onTouchEnd={e=>e.currentTarget.style.transform="none"}
@@ -1923,6 +2040,180 @@ function AchPage({onBack,unlocked,c}){
     </div>
   </div>);
 }
+// ═══ STORY READER (故事閱讀器 - 帶朗讀高亮) ═══════════════════════
+function StoryReader({story,pageIdx,setPageIdx,selectedPet,c,onNext,onExit}){
+  const page=story.pages[pageIdx];
+  const[charIdx,setCharIdx]=useState(-1);// char being spoken (for highlighting)
+  const[playing,setPlaying]=useState(false);
+  const[playingAll,setPlayingAll]=useState(false);// reading the whole page
+  const[voiceName,setVoiceName]=useState("");
+  const utterRef=useRef(null);
+  const fallbackTimerRef=useRef(null);
+  const storyHandleRef=useRef(null);
+
+  // Get best voice name for display
+  useEffect(()=>{
+    const load=()=>{
+      const v=getBestEnVoice();
+      if(v)setVoiceName(v.name.replace(/Microsoft |Google |Apple /,"").slice(0,30));
+    };
+    load();
+    window.speechSynthesis?.addEventListener?.("voiceschanged",load);
+    return()=>window.speechSynthesis?.removeEventListener?.("voiceschanged",load);
+  },[]);
+
+  // Clean up on unmount or page change
+  useEffect(()=>{
+    return()=>{
+      window.speechSynthesis?.cancel();
+      if(fallbackTimerRef.current)clearInterval(fallbackTimerRef.current);
+      if(storyHandleRef.current)storyHandleRef.current.cancel();
+      setPlaying(false);
+      setCharIdx(-1);
+    };
+  },[pageIdx]);
+
+  // playPage declared before useEffect that uses it (avoid TDZ issues)
+  const playPage=useCallback(()=>{
+    window.speechSynthesis?.cancel();
+    if(fallbackTimerRef.current)clearInterval(fallbackTimerRef.current);
+    setPlaying(true);setCharIdx(0);setPlayingAll(false);
+
+    // Fallback word highlighter for mobile browsers (onboundary not supported)
+    // Estimate: ~350ms per word average at rate 0.88
+    const words=page.en.split(/\s+/);
+    let useFallback=true;// enabled by default; onboundary will disable if it fires
+    const charPositions=[];
+    let pos=0;
+    for(const w of words){
+      charPositions.push(pos);
+      pos+=w.length+1;// +1 for space
+    }
+    let wordIdx=0;
+    const msPerWord=Math.max(200,Math.round(380/0.88));// ~430ms per word at rate 0.88
+    fallbackTimerRef.current=setInterval(()=>{
+      if(!useFallback){clearInterval(fallbackTimerRef.current);return}
+      if(wordIdx<words.length){
+        setCharIdx(charPositions[wordIdx]);
+        wordIdx++;
+      }else{
+        clearInterval(fallbackTimerRef.current);
+      }
+    },msPerWord);
+
+    const u=speak(page.en,"en-US",0.88,{
+      pitch:1.08,
+      onboundary:(ev)=>{
+        // Real boundary event fired - disable fallback and use real data
+        useFallback=false;
+        if(fallbackTimerRef.current)clearInterval(fallbackTimerRef.current);
+        if(ev.name==="word"||ev.charIndex!==undefined){
+          setCharIdx(ev.charIndex);
+        }
+      },
+      onend:()=>{
+        if(fallbackTimerRef.current)clearInterval(fallbackTimerRef.current);
+        setPlaying(false);setCharIdx(-1);
+      },
+    });
+    utterRef.current=u;
+  },[page.en]);
+
+  // Auto-play on page load
+  useEffect(()=>{
+    const t=setTimeout(()=>playPage(),400);
+    return()=>clearTimeout(t);
+  },[pageIdx,playPage]);
+
+  const stopPlay=()=>{
+    window.speechSynthesis?.cancel();
+    if(fallbackTimerRef.current)clearInterval(fallbackTimerRef.current);
+    if(storyHandleRef.current){storyHandleRef.current.cancel();storyHandleRef.current=null}
+    setPlaying(false);setCharIdx(-1);setPlayingAll(false);
+  };
+
+  // Play all pages one by one (story mode)
+  const playAllStory=()=>{
+    window.speechSynthesis?.cancel();
+    if(fallbackTimerRef.current)clearInterval(fallbackTimerRef.current);
+    if(storyHandleRef.current)storyHandleRef.current.cancel();
+    setPlayingAll(true);setPlaying(true);
+    const sentences=story.pages.map(p=>p.en);
+    storyHandleRef.current=speakStory(sentences,{
+      rate:0.88,
+      pitch:1.08,
+      onSentence:(idx)=>{
+        setPageIdx(idx);
+        setCharIdx(0);
+      },
+      onFinish:()=>{setPlaying(false);setPlayingAll(false);setCharIdx(-1);storyHandleRef.current=null},
+    });
+  };
+
+  // Build highlighted text: split into words, highlight the one being spoken
+  const renderHighlightedText=()=>{
+    if(charIdx<0||!playing){
+      return(<span>{page.en}</span>);
+    }
+    // Find word boundary containing charIdx
+    const text=page.en;
+    let wordStart=Math.min(charIdx,text.length-1);
+    let wordEnd=wordStart;
+    // Walk back to find word start
+    while(wordStart>0&&/\S/.test(text[wordStart-1]))wordStart--;
+    // Walk forward to find word end
+    while(wordEnd<text.length&&/\S/.test(text[wordEnd]))wordEnd++;
+    return(<>
+      <span>{text.slice(0,wordStart)}</span>
+      <span style={{background:`${c.cl}33`,padding:"2px 4px",borderRadius:4,color:c.cl,fontWeight:700,transition:"all .15s"}}>{text.slice(wordStart,wordEnd)}</span>
+      <span>{text.slice(wordEnd)}</span>
+    </>);
+  };
+
+  return(<div><Hdr t={`📖 ${story.zh_title}`} onBack={()=>{stopPlay();onExit()}} cl={c.cl} extra={<button onClick={playAllStory} disabled={playing&&!playingAll} style={{background:playingAll?c.cl:"none",border:`1px solid ${c.cl}`,borderRadius:8,padding:"4px 10px",fontSize:11,cursor:playing&&!playingAll?"default":"pointer",color:playingAll?"#fff":c.cl,opacity:playing&&!playingAll?.4:1}}>{playingAll?"📖 朗讀中...":"🎙️ 整本朗讀"}</button>}/>
+    {/* Progress dots */}
+    <div style={{display:"flex",justifyContent:"center",gap:6,marginBottom:12}}>
+      {story.pages.map((_,i)=>(<div key={i} style={{width:24,height:4,background:i<=pageIdx?c.cl:S.bg2,borderRadius:2,transition:"background .3s"}}/>))}
+    </div>
+
+    {/* Story card */}
+    <div style={{...S.card,padding:"20px 18px",marginBottom:12,minHeight:280,background:`linear-gradient(135deg,${c.bg}66,var(--color-background-primary,#fff))`,border:`2px solid ${c.cl}33`,position:"relative"}}>
+      {/* Playing indicator */}
+      {playing&&<div style={{position:"absolute",top:10,right:10,background:c.cl,color:"#fff",borderRadius:10,padding:"3px 8px",fontSize:10,fontWeight:700,animation:"emojiPulse 1s infinite"}}>🎙️ 朗讀中</div>}
+
+      <div style={{display:"flex",justifyContent:"center",marginBottom:14}}>
+        <PixelPet petId={selectedPet.petId} stage={getPetStage(selectedPet)} size={96} animate={playing}/>
+      </div>
+
+      {/* English text (big, with word highlighting) */}
+      <div style={{fontSize:18,fontWeight:500,color:S.t1,lineHeight:1.75,textAlign:"center",margin:"0 0 14px",minHeight:60}}>
+        {renderHighlightedText()}
+      </div>
+
+      {/* Chinese translation */}
+      <div style={{fontSize:13,color:S.t2,textAlign:"center",lineHeight:1.7,padding:"8px 12px",background:S.bg2,borderRadius:8}}>
+        {page.zh}
+      </div>
+
+      {/* Keywords */}
+      {page.keywords&&page.keywords.length>0&&<div style={{marginTop:12,display:"flex",flexWrap:"wrap",gap:6,justifyContent:"center"}}>
+        {page.keywords.map((kw,i)=>(<span key={i} onClick={()=>speak(kw,"en-US",0.85,{pitch:1.1})} style={{padding:"4px 10px",background:c.bg,border:`1px solid ${c.cl}`,borderRadius:12,fontSize:12,color:c.cl,cursor:"pointer",fontWeight:600,WebkitTapHighlightColor:"transparent"}}>🔊 {kw}</span>))}
+      </div>}
+    </div>
+
+    {/* Voice info */}
+    {voiceName&&<div style={{textAlign:"center",fontSize:10,color:S.t3,marginBottom:10}}>🎤 {voiceName}</div>}
+
+    {/* Controls */}
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+      <button onClick={playing?stopPlay:playPage} style={{...S.btn,background:playing?"#E24B4A":S.bg2,color:playing?"#fff":S.t1,padding:"14px",fontSize:13}}>{playing?"⏹️ 停止":"🔊 再聽一次"}</button>
+      <button onClick={()=>{stopPlay();onNext()}} style={{...S.btn,background:c.cl,color:"#fff",padding:"14px",fontSize:13}}>{pageIdx<story.pages.length-1?"下一頁 →":"📝 開始測驗"}</button>
+    </div>
+
+    <div style={{textAlign:"center",fontSize:11,color:S.t3,marginTop:8}}>第 {pageIdx+1} 頁 / 共 {story.pages.length} 頁</div>
+  </div>);
+}
+
 // ═══ AI STORY MODE (AI 故事模式 - 用你的寵物做主角) ═══════════════════
 function StoryMode({lv,onBack,apiKey,onSetKey,pets,c,onXp,trackWeak}){
   const[step,setStep]=useState("setup");// setup | loading | reading | quiz | done
@@ -1979,23 +2270,87 @@ Return STRICT JSON only (no markdown, no explanations):
   ]
 }`;
     try{
-      const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,{
-        method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({
-          contents:[{parts:[{text:prompt}]}],
-          generationConfig:{maxOutputTokens:2000,temperature:0.9,responseMimeType:"application/json"},
-        }),
-      });
-      const data=await res.json();
-      const text=data?.candidates?.[0]?.content?.parts?.[0]?.text;
-      if(!text){throw new Error(data?.error?.message||"No response")}
-      const parsed=JSON.parse(text);
-      if(!parsed.pages||!parsed.questions)throw new Error("Invalid story format");
+      // Try main model first, fall back to lite if overloaded
+      const models=["gemini-2.5-flash","gemini-2.5-flash-lite","gemini-2.0-flash"];
+      let lastErr=null,parsed=null;
+
+      outer:for(const model of models){
+        // Up to 3 retries per model with exponential backoff
+        for(let attempt=0;attempt<3;attempt++){
+          try{
+            const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,{
+              method:"POST",headers:{"Content-Type":"application/json"},
+              body:JSON.stringify({
+                contents:[{parts:[{text:prompt}]}],
+                generationConfig:{maxOutputTokens:2500,temperature:0.9},
+              }),
+            });
+            const data=await res.json();
+
+            // Handle overload explicitly
+            if(data?.error){
+              const msg=data.error.message||"";
+              if(msg.includes("high demand")||msg.includes("overloaded")||data.error.code===503||data.error.code===429){
+                lastErr=new Error("模型忙碌中");
+                // Wait before retry: 1s, 2s, 4s
+                await new Promise(r=>setTimeout(r,1000*Math.pow(2,attempt)));
+                continue;// retry same model
+              }
+              // Other errors (invalid key, quota) → throw to outer
+              lastErr=new Error(msg);
+              break;
+            }
+
+            let text=data?.candidates?.[0]?.content?.parts?.[0]?.text;
+            if(!text){lastErr=new Error("AI 沒回傳內容");break}
+
+            // Extract JSON from response (handles ```json blocks, prefix text, etc)
+            text=text.trim();
+            // Remove ```json or ``` wrappers
+            text=text.replace(/^```(?:json)?\s*/i,"").replace(/\s*```\s*$/,"");
+            // Find first { and last } to extract JSON
+            const s=text.indexOf("{");const e=text.lastIndexOf("}");
+            if(s>=0&&e>s)text=text.slice(s,e+1);
+
+            try{
+              parsed=JSON.parse(text);
+            }catch(je){
+              lastErr=new Error("AI 回傳格式有問題，重試中...");
+              await new Promise(r=>setTimeout(r,1500));
+              continue;// retry same model
+            }
+
+            if(!parsed.pages||!parsed.questions||!Array.isArray(parsed.pages)){
+              lastErr=new Error("故事內容不完整");
+              await new Promise(r=>setTimeout(r,1500));
+              continue;
+            }
+
+            // Success - break out of both loops
+            break outer;
+          }catch(fetchErr){
+            lastErr=fetchErr;
+            await new Promise(r=>setTimeout(r,1000));
+          }
+        }
+      }
+
+      if(!parsed)throw lastErr||new Error("生成失敗");
+
       setStory(parsed);
       setPageIdx(0);setQuizIdx(0);setQuizAnswered(null);setQuizScore(0);
       setStep("reading");
     }catch(e){
-      setError("故事生成失敗："+(e.message||"請重試")+"\n（如果持續失敗，API Key 可能無效）");
+      const msg=e.message||"";
+      let userMsg="故事生成失敗";
+      if(msg.includes("忙碌")||msg.includes("demand")||msg.includes("overloaded")){
+        userMsg="AI 目前很忙，請稍後再試一次\n（已自動重試多次和切換模型）";
+      }else if(msg.includes("API")||msg.includes("key")||msg.includes("403")){
+        userMsg="API Key 無效，請檢查設定";
+      }else{
+        userMsg="故事生成失敗："+msg+"\n請再試一次";
+      }
+      setError(userMsg);
       setStep("setup");
     }
   };
@@ -2094,6 +2449,7 @@ Return STRICT JSON only (no markdown, no explanations):
         <div style={{display:"flex",justifyContent:"center",animation:"emojiBounce 1s ease-in-out infinite"}}>{selectedPet&&<PixelPet petId={selectedPet.petId} stage={getPetStage(selectedPet)} size={96}/>}</div>
         <div style={{fontSize:16,color:S.t1,fontWeight:600,marginTop:16}}>正在為你創作故事</div>
         <div style={{fontSize:12,color:S.t2,marginTop:6}}>AI 正在編寫專屬於你的冒險...</div>
+        <div style={{fontSize:11,color:S.t3,marginTop:4}}>（如果 AI 忙碌，會自動重試，請稍候 10-30 秒）</div>
         <div style={{width:120,height:4,background:S.bg2,borderRadius:2,margin:"16px auto",overflow:"hidden"}}>
           <div style={{width:"60%",height:"100%",background:`linear-gradient(90deg,${c.cl},${c.ac})`,animation:"pulse 1s infinite"}}/>
         </div>
@@ -2104,49 +2460,13 @@ Return STRICT JSON only (no markdown, no explanations):
   // Reading story pages
   if(step==="reading"&&story){
     const page=story.pages[pageIdx];
-    const readAloud=()=>speak(page.en);
-    return(<div><Hdr t={`📖 ${story.zh_title}`} onBack={()=>{if(window.confirm("離開故事？進度不會保存"))setStep("setup")}} cl={c.cl}/>
-      {/* Progress dots */}
-      <div style={{display:"flex",justifyContent:"center",gap:6,marginBottom:12}}>
-        {story.pages.map((_,i)=>(<div key={i} style={{width:24,height:4,background:i<=pageIdx?c.cl:S.bg2,borderRadius:2,transition:"background .3s"}}/>))}
-      </div>
-
-      {/* Story card */}
-      <div style={{...S.card,padding:"20px 18px",marginBottom:12,minHeight:260,background:`linear-gradient(135deg,${c.bg}66,var(--color-background-primary,#fff))`,border:`2px solid ${c.cl}33`}}>
-        <div style={{display:"flex",justifyContent:"center",marginBottom:14}}>
-          <PixelPet petId={selectedPet.petId} stage={getPetStage(selectedPet)} size={96}/>
-        </div>
-
-        {/* English text (big) */}
-        <div style={{fontSize:17,fontWeight:500,color:S.t1,lineHeight:1.7,textAlign:"center",margin:"0 0 12px"}}>
-          {page.en}
-        </div>
-
-        {/* Chinese translation */}
-        <div style={{fontSize:13,color:S.t2,textAlign:"center",lineHeight:1.7,padding:"8px 12px",background:S.bg2,borderRadius:8}}>
-          {page.zh}
-        </div>
-
-        {/* Keywords */}
-        {page.keywords&&page.keywords.length>0&&<div style={{marginTop:12,display:"flex",flexWrap:"wrap",gap:6,justifyContent:"center"}}>
-          {page.keywords.map((kw,i)=>(<span key={i} onClick={()=>speak(kw)} style={{padding:"4px 10px",background:c.bg,border:`1px solid ${c.cl}`,borderRadius:12,fontSize:12,color:c.cl,cursor:"pointer",fontWeight:600}}>🔊 {kw}</span>))}
-        </div>}
-      </div>
-
-      {/* Controls */}
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-        <button onClick={readAloud} style={{...S.btn,background:S.bg2,color:S.t1,padding:"14px",fontSize:13}}>🔊 再聽一次</button>
-        <button onClick={nextPage} style={{...S.btn,background:c.cl,color:"#fff",padding:"14px",fontSize:13}}>{pageIdx<story.pages.length-1?"下一頁 →":"📝 開始測驗"}</button>
-      </div>
-
-      <div style={{textAlign:"center",fontSize:11,color:S.t3,marginTop:8}}>第 {pageIdx+1} 頁 / 共 {story.pages.length} 頁</div>
-    </div>);
+    return(<StoryReader story={story} pageIdx={pageIdx} setPageIdx={setPageIdx} selectedPet={selectedPet} c={c} onNext={nextPage} onExit={()=>setStep("setup")}/>);
   }
 
   // Quiz
   if(step==="quiz"&&story){
     const q=story.questions[quizIdx];
-    return(<div><Hdr t="📝 閱讀測驗" onBack={()=>{if(window.confirm("離開測驗？"))setStep("setup")}} cl={c.cl}/>
+    return(<div><Hdr t="📝 閱讀測驗" onBack={()=>setStep("setup")} cl={c.cl}/>
       <div style={{display:"flex",justifyContent:"center",gap:6,marginBottom:12}}>
         {story.questions.map((_,i)=>(<div key={i} style={{width:24,height:4,background:i<=quizIdx?c.cl:S.bg2,borderRadius:2}}/>))}
       </div>
@@ -2498,42 +2818,240 @@ function GachaPage({onBack,c,coins,setCoins,eggs,setEggs,pets}){
 }
 
 
-// ═══ PET SOUNDS (寵物叫聲) ═════════════════════════════════════════
+// ═══ PET SOUNDS (寵物叫聲 v2 - 真實聲音模擬) ═════════════════════════════
+// Helper: create one "note" with frequency sweep, vibrato, ADSR envelope
+function playNote(ctx,opts){
+  const{freq,freqEnd,dur,type="sine",volume=0.2,attack=0.01,decay=0.05,start=0,vibrato=0,vibratoSpeed=6,filterFreq=null,filterQ=1,detune=0}=opts;
+  const osc=ctx.createOscillator();
+  const gain=ctx.createGain();
+  osc.type=type;
+  osc.frequency.value=freq;
+  if(detune)osc.detune.value=detune;
+  const when=ctx.currentTime+start;
+  // Frequency sweep (makes sound alive - like real animal vocalization)
+  if(freqEnd!==undefined){
+    osc.frequency.setValueAtTime(freq,when);
+    osc.frequency.exponentialRampToValueAtTime(Math.max(20,freqEnd),when+dur);
+  }
+  // Vibrato (warbling effect for cuter sounds)
+  let vibOsc=null,vibGain=null;
+  if(vibrato>0){
+    vibOsc=ctx.createOscillator();
+    vibGain=ctx.createGain();
+    vibOsc.frequency.value=vibratoSpeed;
+    vibGain.gain.value=vibrato;
+    vibOsc.connect(vibGain);
+    vibGain.connect(osc.frequency);
+    vibOsc.start(when);
+    vibOsc.stop(when+dur);
+  }
+  // ADSR envelope
+  gain.gain.setValueAtTime(0,when);
+  gain.gain.linearRampToValueAtTime(volume,when+attack);
+  gain.gain.linearRampToValueAtTime(volume*0.7,when+attack+decay);
+  gain.gain.exponentialRampToValueAtTime(0.0001,when+dur);
+  // Optional lowpass filter (makes sound warmer/mufflred)
+  let node=gain;
+  if(filterFreq){
+    const filter=ctx.createBiquadFilter();
+    filter.type="lowpass";
+    filter.frequency.value=filterFreq;
+    filter.Q.value=filterQ;
+    gain.connect(filter);
+    node=filter;
+  }
+  osc.connect(gain);
+  node.connect(ctx.destination);
+  osc.start(when);
+  osc.stop(when+dur);
+  return osc;
+}
+
+// Helper: create noise burst (for consonants, air sounds)
+function playNoise(ctx,opts){
+  const{dur,volume=0.1,start=0,filterFreq=2000,filterType="bandpass",filterQ=5}=opts;
+  const bufferSize=ctx.sampleRate*dur;
+  const buffer=ctx.createBuffer(1,bufferSize,ctx.sampleRate);
+  const data=buffer.getChannelData(0);
+  for(let i=0;i<bufferSize;i++)data[i]=Math.random()*2-1;
+  const src=ctx.createBufferSource();
+  src.buffer=buffer;
+  const filter=ctx.createBiquadFilter();
+  filter.type=filterType;
+  filter.frequency.value=filterFreq;
+  filter.Q.value=filterQ;
+  const gain=ctx.createGain();
+  const when=ctx.currentTime+start;
+  gain.gain.setValueAtTime(0,when);
+  gain.gain.linearRampToValueAtTime(volume,when+0.005);
+  gain.gain.exponentialRampToValueAtTime(0.0001,when+dur);
+  src.connect(filter);
+  filter.connect(gain);
+  gain.connect(ctx.destination);
+  src.start(when);
+  src.stop(when+dur);
+}
+
 function playPetSound(petId){
   if(!window.AudioContext&&!window.webkitAudioContext)return;
-  try{
-    const ctx=new (window.AudioContext||window.webkitAudioContext)();
-    // Different sound profile per pet type
-    const profiles={
-      bunny:{freq:[800,1200,900],dur:.12,type:"sine"},
-      chick:{freq:[1800,2200,2000],dur:.08,type:"triangle"},
-      puppy:{freq:[300,400,350],dur:.15,type:"square"},
-      kitty:{freq:[700,900,600],dur:.2,type:"sine"},
-      piggy:{freq:[250,300,280],dur:.1,type:"sawtooth"},
-      froggy:{freq:[200,300,250],dur:.12,type:"square"},
-      panda:{freq:[250,350,300],dur:.2,type:"sine"},
-      koala:{freq:[200,280,220],dur:.25,type:"sine"},
-      fox:{freq:[600,800,500],dur:.12,type:"triangle"},
-      owl:{freq:[400,350,400],dur:.3,type:"sine"},
-      penguin:{freq:[500,400,500],dur:.15,type:"triangle"},
-      unicorn:{freq:[900,1200,1500],dur:.25,type:"sine"},
-      dragon:{freq:[150,200,180],dur:.3,type:"sawtooth"},
-      whale:{freq:[100,150,120],dur:.5,type:"sine"},
-      phoenix:{freq:[1200,1500,1800],dur:.3,type:"triangle"},
-      celestial:{freq:[1000,1400,1200,1600],dur:.25,type:"sine"},
-    };
-    const p=profiles[petId]||profiles.puppy;
-    p.freq.forEach((f,i)=>{
-      const osc=ctx.createOscillator();const gain=ctx.createGain();
-      osc.type=p.type;osc.frequency.value=f;
-      osc.connect(gain);gain.connect(ctx.destination);
-      const start=ctx.currentTime+i*p.dur*0.7;
-      gain.gain.setValueAtTime(0,start);
-      gain.gain.linearRampToValueAtTime(.15,start+.01);
-      gain.gain.exponentialRampToValueAtTime(.001,start+p.dur);
-      osc.start(start);osc.stop(start+p.dur);
-    });
-  }catch{}
+  let ctx;
+  try{ctx=new (window.AudioContext||window.webkitAudioContext)()}catch{return}
+
+  // Detailed sound recipes per pet species
+  const recipes={
+    // N tier - everyday cute animals
+    bunny:()=>{
+      // Soft squeak "mew mew" - two short rising chirps
+      playNote(ctx,{freq:720,freqEnd:1100,dur:0.08,type:"sine",volume:0.12,vibrato:15,vibratoSpeed:20,filterFreq:3000,attack:0.005});
+      playNote(ctx,{freq:800,freqEnd:1200,dur:0.09,type:"sine",volume:0.12,vibrato:15,vibratoSpeed:20,filterFreq:3000,start:0.12,attack:0.005});
+    },
+    chick:()=>{
+      // "Cheep cheep cheep!" - three quick high chirps
+      [0,0.13,0.26].forEach(t=>{
+        playNote(ctx,{freq:2400,freqEnd:1800,dur:0.06,type:"triangle",volume:0.08,vibrato:40,vibratoSpeed:30,filterFreq:5000,start:t,attack:0.003});
+      });
+    },
+    puppy:()=>{
+      // Playful "yip!" - quick bark with slight growl
+      playNote(ctx,{freq:180,freqEnd:220,dur:0.04,type:"sawtooth",volume:0.1,filterFreq:800,filterQ:2,attack:0.002});
+      playNote(ctx,{freq:500,freqEnd:350,dur:0.14,type:"sawtooth",volume:0.15,filterFreq:1200,start:0.03,attack:0.005});
+      playNoise(ctx,{dur:0.05,volume:0.04,filterFreq:3000,filterType:"highpass"});
+    },
+    kitty:()=>{
+      // "Meow" - warm descending purr-like sound
+      playNote(ctx,{freq:800,freqEnd:400,dur:0.35,type:"triangle",volume:0.13,vibrato:8,vibratoSpeed:5,filterFreq:1500,filterQ:2,attack:0.03,decay:0.1});
+      playNote(ctx,{freq:1200,freqEnd:600,dur:0.3,type:"sine",volume:0.05,vibrato:8,vibratoSpeed:5,filterFreq:2000,start:0.02});
+    },
+    piggy:()=>{
+      // "Oink oink!" - two grunts
+      [0,0.18].forEach(t=>{
+        playNote(ctx,{freq:220,freqEnd:180,dur:0.12,type:"sawtooth",volume:0.13,filterFreq:900,filterQ:3,start:t,attack:0.005});
+        playNoise(ctx,{dur:0.1,volume:0.05,filterFreq:1500,filterType:"bandpass",filterQ:3,start:t});
+      });
+    },
+    froggy:()=>{
+      // "Ribbit!" - low warble with throat resonance
+      playNote(ctx,{freq:180,freqEnd:240,dur:0.1,type:"square",volume:0.1,filterFreq:600,filterQ:4,attack:0.003});
+      playNote(ctx,{freq:240,freqEnd:180,dur:0.15,type:"square",volume:0.11,filterFreq:600,filterQ:4,vibrato:30,vibratoSpeed:25,start:0.1});
+    },
+    // R tier
+    panda:()=>{
+      // Cute bleat-like sound
+      playNote(ctx,{freq:280,freqEnd:320,dur:0.15,type:"sine",volume:0.13,vibrato:20,vibratoSpeed:15,filterFreq:1200,attack:0.02});
+      playNote(ctx,{freq:320,freqEnd:260,dur:0.2,type:"sine",volume:0.12,vibrato:20,vibratoSpeed:15,filterFreq:1200,start:0.17});
+    },
+    koala:()=>{
+      // Low grunt-bellow
+      playNote(ctx,{freq:130,freqEnd:100,dur:0.3,type:"sawtooth",volume:0.14,filterFreq:500,filterQ:5,attack:0.05,decay:0.1});
+      playNote(ctx,{freq:260,freqEnd:200,dur:0.25,type:"triangle",volume:0.06,filterFreq:800,start:0.05});
+    },
+    fox:()=>{
+      // High "yip-yip!" - sharp and quick
+      [0,0.12].forEach(t=>{
+        playNote(ctx,{freq:900,freqEnd:600,dur:0.08,type:"triangle",volume:0.13,vibrato:20,filterFreq:2500,start:t,attack:0.003});
+      });
+    },
+    owl:()=>{
+      // "Hoo hoo" - two deep hoots with wide vibrato
+      [0,0.35].forEach(t=>{
+        playNote(ctx,{freq:400,freqEnd:380,dur:0.3,type:"sine",volume:0.1,vibrato:15,vibratoSpeed:8,filterFreq:1000,filterQ:3,attack:0.08,decay:0.05,start:t});
+      });
+    },
+    penguin:()=>{
+      // Honking bray
+      playNote(ctx,{freq:500,freqEnd:700,dur:0.12,type:"sawtooth",volume:0.12,filterFreq:1500,filterQ:3,attack:0.01});
+      playNote(ctx,{freq:700,freqEnd:400,dur:0.15,type:"sawtooth",volume:0.13,filterFreq:1500,filterQ:3,start:0.1});
+    },
+    // SR tier - magical creatures
+    unicorn:()=>{
+      // Magical sparkle + gentle whinny
+      playNote(ctx,{freq:800,freqEnd:1400,dur:0.15,type:"triangle",volume:0.09,vibrato:30,vibratoSpeed:12,filterFreq:3000,attack:0.02});
+      playNote(ctx,{freq:1600,freqEnd:2400,dur:0.2,type:"sine",volume:0.06,filterFreq:4000,start:0.08,attack:0.02});
+      playNote(ctx,{freq:2400,freqEnd:3600,dur:0.25,type:"sine",volume:0.04,start:0.15,attack:0.03});
+    },
+    dragon:()=>{
+      // Deep growl + flame whoosh
+      playNote(ctx,{freq:80,freqEnd:60,dur:0.4,type:"sawtooth",volume:0.15,filterFreq:400,filterQ:6,vibrato:5,attack:0.05});
+      playNote(ctx,{freq:160,freqEnd:120,dur:0.35,type:"square",volume:0.1,filterFreq:600,start:0.02});
+      playNoise(ctx,{dur:0.3,volume:0.08,filterFreq:800,filterType:"lowpass",start:0.1});
+    },
+    whale:()=>{
+      // Deep haunting song with wave modulation
+      playNote(ctx,{freq:150,freqEnd:110,dur:0.8,type:"sine",volume:0.14,vibrato:10,vibratoSpeed:3,filterFreq:500,filterQ:2,attack:0.1,decay:0.15});
+      playNote(ctx,{freq:110,freqEnd:170,dur:0.7,type:"sine",volume:0.1,vibrato:8,vibratoSpeed:2,filterFreq:600,start:0.4,attack:0.1});
+    },
+    // SSR tier - legendary
+    phoenix:()=>{
+      // Majestic bird call with flame crackle
+      playNote(ctx,{freq:1400,freqEnd:2200,dur:0.25,type:"triangle",volume:0.12,vibrato:40,vibratoSpeed:18,filterFreq:4000,attack:0.01});
+      playNote(ctx,{freq:2200,freqEnd:1800,dur:0.2,type:"triangle",volume:0.1,vibrato:30,vibratoSpeed:15,filterFreq:4000,start:0.22});
+      playNote(ctx,{freq:1800,freqEnd:2600,dur:0.15,type:"sine",volume:0.08,filterFreq:5000,start:0.4});
+      playNoise(ctx,{dur:0.5,volume:0.03,filterFreq:3000,filterType:"bandpass",filterQ:8});
+    },
+    celestial:()=>{
+      // Ethereal chord with shimmer
+      [0,0.05,0.1].forEach((t,i)=>{
+        playNote(ctx,{freq:[880,1100,1320][i],dur:0.5,type:"sine",volume:0.07,vibrato:15,vibratoSpeed:6,filterFreq:3000,attack:0.1,decay:0.1,start:t});
+      });
+      playNote(ctx,{freq:1760,dur:0.4,type:"sine",volume:0.04,vibrato:30,vibratoSpeed:10,start:0.2,attack:0.1});
+      playNote(ctx,{freq:2640,freqEnd:3520,dur:0.3,type:"sine",volume:0.03,start:0.3,attack:0.1});
+    },
+  };
+
+  const recipe=recipes[petId]||recipes.puppy;
+  try{recipe()}catch{}
+}
+
+// Action-specific sound effects (when feeding, playing, etc)
+function playActionSound(action){
+  if(!window.AudioContext&&!window.webkitAudioContext)return;
+  let ctx;
+  try{ctx=new (window.AudioContext||window.webkitAudioContext)()}catch{return}
+  const recipes={
+    feed:()=>{
+      // Munch munch!
+      [0,0.15,0.3].forEach(t=>{
+        playNoise(ctx,{dur:0.08,volume:0.1,filterFreq:800,filterType:"lowpass",start:t});
+        playNote(ctx,{freq:200,freqEnd:150,dur:0.1,type:"square",volume:0.05,filterFreq:500,start:t});
+      });
+    },
+    clean:()=>{
+      // Splashing water
+      playNoise(ctx,{dur:0.4,volume:0.08,filterFreq:1500,filterType:"bandpass",filterQ:2});
+      playNote(ctx,{freq:600,freqEnd:1200,dur:0.2,type:"sine",volume:0.06,vibrato:50,vibratoSpeed:15,start:0.1});
+      playNote(ctx,{freq:1200,freqEnd:800,dur:0.15,type:"sine",volume:0.05,start:0.25});
+    },
+    play:()=>{
+      // Happy bounce
+      [0,0.1,0.2,0.3].forEach((t,i)=>{
+        const freq=[800,1000,1200,1500][i];
+        playNote(ctx,{freq,dur:0.08,type:"triangle",volume:0.1,filterFreq:3000,start:t,attack:0.01});
+      });
+    },
+    sleep:()=>{
+      // Sleepy yawn
+      playNote(ctx,{freq:400,freqEnd:200,dur:0.6,type:"sine",volume:0.12,vibrato:10,vibratoSpeed:3,filterFreq:1000,filterQ:2,attack:0.1,decay:0.2});
+    },
+    study:()=>{
+      // Cute "aha!" moment (ding)
+      playNote(ctx,{freq:1200,dur:0.1,type:"sine",volume:0.1,filterFreq:3000,attack:0.005});
+      playNote(ctx,{freq:1800,dur:0.15,type:"sine",volume:0.08,start:0.08});
+      playNote(ctx,{freq:2400,dur:0.2,type:"sine",volume:0.06,start:0.16});
+    },
+    levelUp:()=>{
+      // Triumphant fanfare
+      [523,659,784,1047].forEach((f,i)=>{
+        playNote(ctx,{freq:f,dur:0.15,type:"triangle",volume:0.1,filterFreq:3000,start:i*0.08,attack:0.005});
+      });
+    },
+    heart:()=>{
+      // Heart pop sound
+      playNote(ctx,{freq:1200,freqEnd:1800,dur:0.1,type:"sine",volume:0.08,attack:0.003});
+      playNote(ctx,{freq:1500,freqEnd:2200,dur:0.15,type:"triangle",volume:0.06,start:0.05});
+    },
+  };
+  const recipe=recipes[action];
+  if(recipe){try{recipe()}catch{}}
 }
 
 // Pet home environments
@@ -3722,22 +4240,62 @@ function PetHomeScene({pet,petDef,ri,mood,c,onCleanPoop}){
   },[]);
 
   // Interaction: tap pet
+  const tapCountRef=useRef(0);
+  const tapResetRef=useRef(null);
+
   const tapPet=()=>{
+    // Track rapid tapping for combo effect
+    tapCountRef.current++;
+    clearTimeout(tapResetRef.current);
+    tapResetRef.current=setTimeout(()=>{tapCountRef.current=0},1500);
+    const comboCount=tapCountRef.current;
+
+    // Don't disturb sleeping pet (just a sleepy grumble)
+    if(sleeping){
+      const id=Date.now();
+      setFloatingItems(f=>[...f,{id,emoji:"💤",x:petPos.x,startY:petPos.y,duration:2,isHeart:true}]);
+      setTimeout(()=>setFloatingItems(f=>f.filter(x=>x.id!==id)),2000);
+      setBubble("Zzz... don't wake me...");
+      setTimeout(()=>setBubble(null),2000);
+      return;
+    }
+
     playPetSound(petDef.id);
     // Pet bounces
     setPetPos(p=>({...p,bouncing:true}));
     setTimeout(()=>setPetPos(p=>({...p,bouncing:false})),600);
-    // Show random saying
-    const say=stageSayings[Math.floor(Math.random()*stageSayings.length)];
+
+    // Show random saying (or combo reaction for rapid taps)
+    let say;
+    if(comboCount>=5){
+      say=["So much love!","Hehe, stop it!","You're the best!","Tickle tickle!"][Math.floor(Math.random()*4)];
+    }else if(comboCount>=3){
+      say=["Haha!","More please!","That tickles!","You like me?"][Math.floor(Math.random()*4)];
+    }else{
+      say=stageSayings[Math.floor(Math.random()*stageSayings.length)];
+    }
     setBubble(say);
     setTimeout(()=>setBubble(null),2500);
     // Speak English greeting
     speak(say);
-    // Hearts emit
-    const id=Date.now();
-    setFloatingItems(f=>[...f,{id,emoji:"💖",x:petPos.x,startY:petPos.y,duration:2,isHeart:true}]);
-    setTimeout(()=>setFloatingItems(f=>f.filter(x=>x.id!==id)),2500);
+
+    // Multi-particle emission - more cute!
+    const particles=comboCount>=5?["💖","✨","💕","⭐","🌟"]:comboCount>=3?["💖","💕","✨"]:["💖"];
+    const count=Math.min(3+comboCount,8);
+    for(let i=0;i<count;i++){
+      const id=Date.now()+Math.random();
+      const emoji=particles[Math.floor(Math.random()*particles.length)];
+      const offsetX=(Math.random()-0.5)*30;
+      setFloatingItems(f=>[...f,{id,emoji,x:petPos.x+offsetX,startY:petPos.y,duration:2+Math.random(),isHeart:true}]);
+      setTimeout(()=>setFloatingItems(f=>f.filter(x=>x.id!==id)),2500);
+    }
+
+    // Action heart sound for feedback
+    if(comboCount>=3)playActionSound("heart");
   };
+
+  // Cleanup tap timer
+  useEffect(()=>()=>clearTimeout(tapResetRef.current),[]);
 
   const urgentNeed=pet.hunger<30?{icon:"🍖",text:"好餓..."}:pet.clean<30?{icon:"💦",text:"好髒..."}:pet.energy<30?{icon:"😴",text:"好累..."}:null;
 
@@ -3845,6 +4403,13 @@ function PetsPage({onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,s
   const[shopOpen,setShopOpen]=useState(false);
   const[eventModal,setEventModal]=useState(null);// {pet,event}
   const[milestoneShown,setMilestoneShown]=useState(null);// celebration popup
+  const[toast,setToast]=useState(null);// {msg, icon, type}
+  const[confirmModal,setConfirmModal]=useState(null);// {msg, onConfirm}
+
+  const showToast=(msg,icon="💬",type="info")=>{
+    setToast({msg,icon,type});
+    setTimeout(()=>setToast(null),2800);
+  };
 
   // Today's task progress
   const today=new Date().toDateString();
@@ -3907,7 +4472,7 @@ function PetsPage({onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,s
   const performAction=(pet,actionKey,foodId=null)=>{
     // Don't let user disturb sleeping pet (except feed which is OK if really hungry)
     if(isPetSleeping()&&actionKey!=="feed"&&actionKey!=="sleep"){
-      alert("🌙 寵物正在睡覺，請不要吵醒他！\n(晚上 10 點 ~ 早上 7 點是睡覺時間)");
+      showToast("Zzz... 寵物正在睡覺，別吵醒他！","💤","sleep");
       return;
     }
     const action=PET_ACTIONS[actionKey];
@@ -3958,7 +4523,9 @@ function PetsPage({onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,s
 
     setPets(ps=>ps.map((p,i)=>i===petIdx?updated:p));
     setCoins(co=>co+5);// reward for caring
-    playSound("good");
+    // Play action sound + pet's own voice for personality
+    playActionSound(actionKey);
+    setTimeout(()=>playPetSound(pet.petId),400);// pet reacts happily after action
     setActionModal(null);
     if(selectedPet&&selectedPet.petId===pet.petId)setSelectedPet(updated);
   };
@@ -4194,10 +4761,32 @@ function PetsPage({onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,s
 
   // Tab views
   return(<div><Hdr t="🐾 寵物圖鑑" onBack={onBack} cl={c.cl} extra={<div style={{display:"flex",gap:4}}><button onClick={()=>setShopOpen(true)} style={{background:"none",border:`1px solid ${S.bd}`,borderRadius:8,padding:"4px 10px",fontSize:11,cursor:"pointer",color:S.t2}}>🏪 商店</button></div>}/>
+
+    {/* Toast notification (cute, auto-dismiss) */}
+    {toast&&<div style={{position:"fixed",bottom:30,left:"50%",transform:"translateX(-50%)",zIndex:9999,background:toast.type==="sleep"?"linear-gradient(135deg,#5C6BC0,#3949AB)":"linear-gradient(135deg,"+c.cl+","+c.ac+")",color:"#fff",padding:"14px 22px",borderRadius:24,fontSize:14,fontWeight:600,boxShadow:"0 8px 24px rgba(0,0,0,.3)",animation:"toastIn .3s ease-out, toastOut .3s ease-in 2.5s forwards",display:"flex",alignItems:"center",gap:10,maxWidth:"calc(100% - 40px)"}}>
+      <style>{`
+        @keyframes toastIn{from{transform:translateX(-50%) translateY(60px);opacity:0}to{transform:translateX(-50%) translateY(0);opacity:1}}
+        @keyframes toastOut{to{transform:translateX(-50%) translateY(60px);opacity:0}}
+      `}</style>
+      <span style={{fontSize:22}}>{toast.icon}</span>
+      <span>{toast.msg}</span>
+    </div>}
+
+    {/* Custom Confirm Modal (replaces window.confirm) */}
+    {confirmModal&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:9998,display:"flex",alignItems:"center",justifyContent:"center",padding:20,animation:"fadeUp .25s"}} onClick={()=>setConfirmModal(null)}>
+      <div onClick={e=>e.stopPropagation()} style={{background:"var(--color-background-primary,#fff)",borderRadius:20,padding:"24px 22px",maxWidth:340,width:"100%",textAlign:"center",border:`2px solid ${c.cl}`,boxShadow:`0 12px 32px ${c.cl}33`,animation:"bounceIn .35s ease-out"}}>
+        <div style={{fontSize:48,marginBottom:8}}>{confirmModal.icon}</div>
+        <div style={{fontSize:14,color:S.t1,lineHeight:1.7,marginBottom:20,whiteSpace:"pre-line"}}>{confirmModal.msg}</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+          <button onClick={()=>setConfirmModal(null)} style={{...S.btn,background:S.bg2,color:S.t1,padding:"12px",fontSize:13}}>取消</button>
+          <button onClick={()=>{const fn=confirmModal.onConfirm;setConfirmModal(null);fn&&fn()}} style={{...S.btn,background:c.cl,color:"#fff",padding:"12px",fontSize:13}}>確定</button>
+        </div>
+      </div>
+    </div>}
     {/* Account bar */}
     {petAccount&&<div style={{...S.card,padding:"8px 14px",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"space-between",background:`${c.cl}08`}}>
       <div style={{fontSize:12,color:S.t2}}>👤 <b style={{color:c.cl}}>{petAccount.username}</b> <span style={{color:S.t3,marginLeft:4}}>· 已同步雲端 ☁️</span></div>
-      <button onClick={()=>{if(window.confirm("登出帳號？本地寵物資料將保留，但不會再同步雲端。"))setPetAccount(null)}} style={{background:"none",border:"none",fontSize:11,color:S.t3,cursor:"pointer",padding:"4px 8px",textDecoration:"underline"}}>登出</button>
+      <button onClick={()=>setConfirmModal({msg:"登出帳號？\n\n本地寵物資料將保留，但不會再同步到雲端。",icon:"👋",onConfirm:()=>setPetAccount(null)})} style={{background:"none",border:"none",fontSize:11,color:S.t3,cursor:"pointer",padding:"4px 8px",textDecoration:"underline"}}>登出</button>
     </div>}
     <div style={{display:"flex",gap:6,marginBottom:12}}>
       <button onClick={()=>setTab("tasks")} style={{flex:1,padding:"10px",borderRadius:12,background:tab==="tasks"?c.cl:S.bg2,color:tab==="tasks"?"#fff":S.t1,border:tab==="tasks"?"none":`1px solid ${S.bd}`,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>📋 任務 ({DAILY_TASK_DEFS.filter(t=>!claimedToday.includes(t.id)&&(taskCounts[t.statKey]||0)>=t.target).length})</button>
@@ -4322,7 +4911,7 @@ function PetsPage({onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,s
   </div>);
 }
 
-// ═══ SPONSOR PAGE (贊助頁面) ═══════════════════════════════════════
+// ═══ SPONSOR PAGE (支持頁面 - 純粹的小額贊助) ══════════════════════
 // Code validation: format EG-XXXX, sum of charCodes % 73 === 0
 function validateSponsorCode(code){
   if(!code||code.length<6)return false;
@@ -4341,95 +4930,155 @@ function SponsorPage({onBack,c,sponsor,setSponsor}){
   const activate=()=>{
     const code=codeInp.trim().toUpperCase();
     if(validateSponsorCode(code)){
-      setSponsor({code,active:true,name:"贊助者",date:new Date().toISOString()});
-      setMsg("✅ 贊助碼驗證成功！已為您移除所有廣告 🎉");
+      setSponsor({code,active:true,name:"支持者",date:new Date().toISOString()});
+      setMsg("✅ 感謝您！您的支持碼已啟用 ☕");
       playSound("done");
     }else{
-      setMsg("❌ 贊助碼無效，請確認後再試");
+      setMsg("❌ 支持碼無效，請確認後再試");
       playSound("bad");
     }
   };
 
-  const deactivate=()=>{setSponsor({code:"",active:false,name:""});setMsg("已取消贊助狀態");setCodeInp("")};
+  const deactivate=()=>{setSponsor({code:"",active:false,name:""});setMsg("已取消支持狀態");setCodeInp("")};
 
-  return(<div><Hdr t="💎 贊助我們" onBack={onBack} cl={c.cl}/>
-    {/* Current status */}
-    {sponsor.active?(<div style={{...S.card,padding:"24px 20px",textAlign:"center",marginBottom:12,background:`linear-gradient(135deg,${c.bg},var(--color-background-primary,#fff))`,border:`2px solid ${c.cl}`}}>
-      <div style={{fontSize:48,marginBottom:8}}>💎</div>
-      <div style={{fontSize:20,fontWeight:700,color:c.cl}}>感謝您的贊助！</div>
-      <div style={{fontSize:14,color:S.t2,marginTop:4}}>已為您移除所有廣告</div>
-      <div style={{fontSize:12,color:S.t3,marginTop:6}}>贊助碼：{sponsor.code}</div>
-      <button onClick={deactivate} style={{background:"none",border:"none",fontSize:12,color:S.t3,cursor:"pointer",marginTop:12,textDecoration:"underline"}}>取消贊助狀態</button>
-    </div>):(
-    <>
-      {/* Why sponsor */}
-      <div style={{...S.card,padding:"20px",marginBottom:12}}>
-        <div style={{fontSize:18,fontWeight:700,color:S.t1,marginBottom:8}}>🙏 為什麼需要贊助？</div>
-        <div style={{fontSize:14,color:S.t2,lineHeight:1.9}}>
-          EnglishGo 是一個<b>完全免費</b>的英語學習平台，目前由個人開發者維護。您的贊助可以幫助：
-        </div>
-        <div style={{display:"grid",gap:8,marginTop:12}}>
-          {[{icon:"🖥️",title:"伺服器費用",desc:"Supabase 資料庫 + Netlify 部署"},
-            {icon:"📚",title:"單字庫擴充",desc:"持續新增到 6,000+ 字"},
-            {icon:"🛠️",title:"功能開發",desc:"更多遊戲、更好的學習體驗"},
-            {icon:"🤖",title:"AI 服務",desc:"維持 Gemini API 免費使用"}
-          ].map((item,i)=>(<div key={i} style={{display:"flex",gap:10,alignItems:"center",padding:"8px 0",borderBottom:i<3?`1px solid ${S.bd}`:"none"}}>
-            <div style={{fontSize:24,flexShrink:0}}>{item.icon}</div>
-            <div><div style={{fontSize:13,fontWeight:600,color:S.t1}}>{item.title}</div><div style={{fontSize:12,color:S.t3}}>{item.desc}</div></div>
-          </div>))}
-        </div>
+  return(<div><Hdr t="☕ 支持我們" onBack={onBack} cl={c.cl}/>
+    {/* Hero - no ads pledge */}
+    <div style={{...S.card,padding:"20px",marginBottom:12,background:`linear-gradient(135deg,${c.bg},var(--color-background-primary,#fff))`,border:`2px solid ${c.cl}33`,textAlign:"center"}}>
+      <div style={{fontSize:48,marginBottom:8}}>☕</div>
+      <div style={{fontSize:18,fontWeight:700,color:S.t1}}>EnglishGo 永遠免費</div>
+      <div style={{fontSize:13,color:S.t2,marginTop:4,lineHeight:1.7}}>
+        無廣告 · 無付費牆 · 無功能限制
+      </div>
+      <div style={{display:"inline-block",marginTop:10,padding:"6px 14px",background:"#E1F5EE",color:"#0F6E56",borderRadius:14,fontSize:11,fontWeight:600,border:"1px solid #1D9E75"}}>
+        ✨ 100% 無廣告承諾
+      </div>
+    </div>
+
+    {/* Status: already a supporter */}
+    {sponsor.active&&(<div style={{...S.card,padding:"20px",textAlign:"center",marginBottom:12,background:`linear-gradient(135deg,#FFF4D6,var(--color-background-primary,#fff))`,border:`2px solid #EF9F27`}}>
+      <div style={{fontSize:36}}>💛</div>
+      <div style={{fontSize:18,fontWeight:700,color:"#856404"}}>謝謝您的支持！</div>
+      <div style={{fontSize:13,color:"#856404",marginTop:4}}>您是 EnglishGo 持續成長的力量</div>
+      <div style={{fontSize:11,color:S.t3,marginTop:8,fontFamily:"monospace"}}>{sponsor.code}</div>
+      <button onClick={deactivate} style={{background:"none",border:"none",fontSize:11,color:S.t3,cursor:"pointer",marginTop:8,textDecoration:"underline"}}>取消支持狀態</button>
+    </div>)}
+
+    {/* Why support */}
+    <div style={{...S.card,padding:"18px 16px",marginBottom:12}}>
+      <div style={{fontSize:15,fontWeight:700,color:S.t1,marginBottom:10}}>🌱 您的支持會用在哪裡？</div>
+      <div style={{display:"grid",gap:10}}>
+        {[
+          {icon:"🖥️",title:"伺服器費用",desc:"Supabase 資料庫 + Netlify 託管 (約 NT$500/月)"},
+          {icon:"📚",title:"擴充單字庫",desc:"持續新增到 6,000+ 高中單字"},
+          {icon:"🎨",title:"開發新功能",desc:"更多寵物、新遊戲、學習報告升級"},
+          {icon:"🤖",title:"AI 服務維運",desc:"Gemini API 使用額度"},
+          {icon:"☕",title:"開發者咖啡",desc:"半夜寫程式的燃料"},
+        ].map((item,i)=>(<div key={i} style={{display:"flex",gap:12,alignItems:"center",padding:"4px 0"}}>
+          <div style={{fontSize:24,flexShrink:0,width:32,textAlign:"center"}}>{item.icon}</div>
+          <div style={{flex:1}}>
+            <div style={{fontSize:13,fontWeight:600,color:S.t1}}>{item.title}</div>
+            <div style={{fontSize:11,color:S.t3,lineHeight:1.6}}>{item.desc}</div>
+          </div>
+        </div>))}
+      </div>
+    </div>
+
+    {/* Suggested amounts */}
+    <div style={{...S.card,padding:"18px 16px",marginBottom:12}}>
+      <div style={{fontSize:15,fontWeight:700,color:S.t1,marginBottom:6}}>💰 隨意贊助金額</div>
+      <div style={{fontSize:12,color:S.t2,marginBottom:12,lineHeight:1.7}}>沒有固定金額，量力而為就好！</div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
+        {[
+          {amt:"NT$50",label:"請喝奶茶",icon:"🧋"},
+          {amt:"NT$100",label:"請喝咖啡",icon:"☕"},
+          {amt:"NT$300",label:"請吃午餐",icon:"🍱"},
+        ].map((tier,i)=>(<div key={i} style={{padding:"12px 8px",border:`1px solid ${S.bd}`,borderRadius:10,textAlign:"center",background:S.bg1}}>
+          <div style={{fontSize:22}}>{tier.icon}</div>
+          <div style={{fontSize:13,fontWeight:700,color:c.cl,marginTop:2}}>{tier.amt}</div>
+          <div style={{fontSize:10,color:S.t3,marginTop:1}}>{tier.label}</div>
+        </div>))}
+      </div>
+    </div>
+
+    {/* Payment methods */}
+    <div style={{...S.card,padding:"18px 16px",marginBottom:12}}>
+      <div style={{fontSize:15,fontWeight:700,color:S.t1,marginBottom:10}}>💳 支付方式</div>
+
+      <div style={{display:"grid",gap:8}}>
+        {/* LINE Pay */}
+        <a href="/learn/sponsor.html" target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",background:"#06C755",color:"#fff",borderRadius:10,textDecoration:"none"}}>
+          <div style={{fontSize:24}}>💚</div>
+          <div style={{flex:1}}>
+            <div style={{fontSize:14,fontWeight:700}}>LINE Pay</div>
+            <div style={{fontSize:11,opacity:.85}}>掃描 QR Code 即可</div>
+          </div>
+          <div style={{fontSize:18}}>→</div>
+        </a>
+
+        {/* JKO Pay */}
+        <a href="/learn/sponsor.html" target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",background:"#EF8200",color:"#fff",borderRadius:10,textDecoration:"none"}}>
+          <div style={{fontSize:24}}>🟧</div>
+          <div style={{flex:1}}>
+            <div style={{fontSize:14,fontWeight:700}}>街口支付</div>
+            <div style={{fontSize:11,opacity:.85}}>JKOS QR Code</div>
+          </div>
+          <div style={{fontSize:18}}>→</div>
+        </a>
+
+        {/* Bank Transfer */}
+        <a href="/learn/sponsor.html" target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",background:S.bg2,color:S.t1,borderRadius:10,textDecoration:"none",border:`1px solid ${S.bd}`}}>
+          <div style={{fontSize:24}}>🏦</div>
+          <div style={{flex:1}}>
+            <div style={{fontSize:14,fontWeight:700,color:S.t1}}>銀行轉帳</div>
+            <div style={{fontSize:11,color:S.t3}}>傳統匯款（最低手續費）</div>
+          </div>
+          <div style={{fontSize:18,color:S.t2}}>→</div>
+        </a>
+
+        {/* Buy Me Coffee (international) */}
+        <a href="/learn/sponsor.html" target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",background:"#FFDD00",color:"#000",borderRadius:10,textDecoration:"none"}}>
+          <div style={{fontSize:24}}>☕</div>
+          <div style={{flex:1}}>
+            <div style={{fontSize:14,fontWeight:700}}>Buy Me a Coffee</div>
+            <div style={{fontSize:11,opacity:.7}}>國外信用卡支付</div>
+          </div>
+          <div style={{fontSize:18}}>→</div>
+        </a>
       </div>
 
-      {/* Sponsor benefits */}
-      <div style={{...S.card,padding:"20px",marginBottom:12}}>
-        <div style={{fontSize:18,fontWeight:700,color:S.t1,marginBottom:8}}>🎁 贊助者福利</div>
-        <div style={{display:"grid",gap:10}}>
-          {[{icon:"🚫",title:"移除所有廣告",desc:"乾淨的學習畫面，不再被廣告打斷"},
-            {icon:"💎",title:"贊助者徽章",desc:"Menu 顯示專屬 💎 標誌"},
-            {icon:"❤️",title:"支持開源教育",desc:"幫助更多台灣學生免費學英文"}
-          ].map((item,i)=>(<div key={i} style={{display:"flex",gap:10,alignItems:"center"}}>
-            <div style={{fontSize:22,flexShrink:0}}>{item.icon}</div>
-            <div><div style={{fontSize:13,fontWeight:600,color:S.t1}}>{item.title}</div><div style={{fontSize:12,color:S.t3}}>{item.desc}</div></div>
-          </div>))}
-        </div>
+      <div style={{fontSize:11,color:S.t3,lineHeight:1.7,marginTop:12,padding:"10px 12px",background:S.bg2,borderRadius:8}}>
+        💡 詳細的支付資訊（QR Code、銀行帳號）請點擊以上選項查看 <a href="/learn/sponsor.html" target="_blank" rel="noreferrer" style={{color:c.cl,fontWeight:600}}>支持頁面</a>
       </div>
+    </div>
 
-      {/* How to sponsor */}
-      <div style={{...S.card,padding:"20px",marginBottom:12}}>
-        <div style={{fontSize:18,fontWeight:700,color:S.t1,marginBottom:8}}>💳 如何贊助</div>
-        <div style={{fontSize:14,color:S.t2,lineHeight:1.9}}>
-          詳細的贊助方式請參考：<br/>
-          <a href="/learn/sponsor.html" style={{color:c.cl,fontWeight:600}} target="_blank" rel="noreferrer">👉 贊助說明頁面</a>
-        </div>
-        <div style={{fontSize:13,color:S.t3,marginTop:8,lineHeight:1.8}}>
-          贊助完成後，您會收到一組<b>贊助碼</b>（格式：EG-XXXX），在下方輸入即可啟用。
-        </div>
+    {/* Other ways to support */}
+    <div style={{...S.card,padding:"18px 16px",marginBottom:12}}>
+      <div style={{fontSize:15,fontWeight:700,color:S.t1,marginBottom:10}}>❤️ 其他支持方式（不用花錢！）</div>
+      <div style={{display:"grid",gap:8,fontSize:13,color:S.t2,lineHeight:1.8}}>
+        <div>📢 <b>分享給朋友</b> — 讓更多家長認識 EnglishGo</div>
+        <div>💬 <b>提供回饋</b> — 告訴我們希望加什麼功能</div>
+        <div>⭐ <b>留言鼓勵</b> — 開發者最需要的就是這個</div>
+        <div>🐛 <b>回報 Bug</b> — 幫忙找問題讓產品更穩定</div>
       </div>
+    </div>
 
-      {/* Code input */}
-      <div style={{...S.card,padding:"20px",marginBottom:12}}>
-        <div style={{fontSize:16,fontWeight:700,color:S.t1,marginBottom:8}}>🔑 輸入贊助碼</div>
-        {!showInput?(<button onClick={()=>setShowInput(true)} style={{...S.btn,background:c.cl,color:"#fff",padding:"12px 24px",fontSize:14,width:"100%"}}>我已經贊助，輸入贊助碼</button>):(
-        <div>
-          <input value={codeInp} onChange={e=>setCodeInp(e.target.value.toUpperCase())} onKeyDown={e=>{if(e.key==="Enter")activate()}} placeholder="EG-XXXXXXXX" style={{width:"100%",padding:"14px 16px",borderRadius:12,border:`2px solid ${S.bd}`,fontSize:18,fontFamily:"monospace",background:S.bg1,color:S.t1,outline:"none",textAlign:"center",fontWeight:600,letterSpacing:2}}/>
-          <button onClick={activate} disabled={!codeInp.trim()} style={{...S.btn,background:c.cl,color:"#fff",padding:"12px 24px",fontSize:14,width:"100%",marginTop:8,opacity:codeInp.trim()?1:.4}}>驗證贊助碼</button>
-        </div>)}
-        {msg&&<div style={{marginTop:10,fontSize:14,fontWeight:600,color:msg.startsWith("✅")?"#1D9E75":"#E24B4A",textAlign:"center",animation:"fadeUp .3s"}}>{msg}</div>}
-      </div>
-    </>)}
+    {/* Code input - smaller, less prominent */}
+    {!sponsor.active&&<div style={{...S.card,padding:"16px",marginBottom:12,background:S.bg2,border:`1px dashed ${S.bd}`}}>
+      <div style={{fontSize:12,fontWeight:600,color:S.t2,marginBottom:8}}>🔑 已支持過？輸入支持碼</div>
+      {!showInput?(<button onClick={()=>setShowInput(true)} style={{background:"none",border:`1px solid ${S.bd}`,color:S.t2,padding:"8px 14px",fontSize:12,fontFamily:"inherit",borderRadius:8,cursor:"pointer"}}>輸入支持碼</button>):(
+      <div>
+        <input value={codeInp} onChange={e=>setCodeInp(e.target.value.toUpperCase())} onKeyDown={e=>{if(e.key==="Enter")activate()}} placeholder="EG-XXXXXXXX" style={{width:"100%",padding:"12px 14px",borderRadius:10,border:`2px solid ${S.bd}`,fontSize:16,fontFamily:"monospace",background:"var(--color-background-primary,#fff)",color:S.t1,outline:"none",textAlign:"center",fontWeight:600,letterSpacing:2,boxSizing:"border-box"}}/>
+        <button onClick={activate} disabled={!codeInp.trim()} style={{...S.btn,background:c.cl,color:"#fff",padding:"10px 20px",fontSize:13,width:"100%",marginTop:8,opacity:codeInp.trim()?1:.4}}>啟用支持碼</button>
+      </div>)}
+      {msg&&<div style={{marginTop:10,fontSize:13,fontWeight:600,color:msg.startsWith("✅")?"#1D9E75":"#E24B4A",textAlign:"center",animation:"fadeUp .3s"}}>{msg}</div>}
+    </div>}
 
     {/* Privacy note */}
-    <div style={{...S.card,padding:"14px 16px",fontSize:12,color:S.t3,lineHeight:1.8}}>
-      🔒 <b>隱私說明</b>：贊助碼只存在您的瀏覽器中（localStorage），不會上傳到任何伺服器。清除瀏覽器資料時需要重新輸入。
+    <div style={{...S.card,padding:"12px 14px",fontSize:11,color:S.t3,lineHeight:1.7}}>
+      🔒 <b>隱私說明</b>：支持碼只存在您的瀏覽器中（localStorage），不會上傳到任何伺服器。<br/>
+      無論是否支持，所有功能都完全免費開放使用。
     </div>
   </div>);
-}
-// ═══ SHARED ════════════════════════════════════════════════════════
-function AdBanner(){
-  const ref=useRef(null);
-  useEffect(()=>{try{if(window.adsbygoogle&&ref.current)(window.adsbygoogle=window.adsbygoogle||[]).push({})}catch{}},[]);
-  if(typeof window==="undefined"||!window.adsbygoogle)return null;
-  return(<div style={{textAlign:"center",margin:"16px 0",minHeight:50}}><ins className="adsbygoogle" ref={ref} style={{display:"block"}} data-ad-format="auto" data-full-width-responsive="true"/></div>);
 }
 // ═══ SHARED ════════════════════════════════════════════════════════
 function Hdr({t,onBack,cl,extra}){return(<div style={{display:"flex",alignItems:"center",gap:4,marginBottom:8}}><button onClick={onBack} style={{background:"none",border:"none",fontSize:12,color:cl,cursor:"pointer",fontWeight:600,fontFamily:"inherit",padding:"6px 8px",minHeight:36,borderRadius:8,WebkitTapHighlightColor:"transparent"}}>← 返回</button><h2 style={{fontSize:16,fontWeight:700,color:S.t1,margin:0,flex:1}}>{t}</h2>{extra}</div>)}
