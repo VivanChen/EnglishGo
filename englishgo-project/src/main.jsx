@@ -15,7 +15,6 @@ if ('serviceWorker' in navigator) {
       .register('/sw.js')
       .then((reg) => {
         console.log('[PWA] Service worker registered:', reg.scope);
-        // Check for updates every hour
         setInterval(() => reg.update(), 3600000);
       })
       .catch((err) => {

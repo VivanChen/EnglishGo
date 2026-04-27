@@ -631,27 +631,41 @@ function rateDeck(d,a){const n={...d,queue:[...d.queue],rm:[...d.rm],stats:{...d
 function parseCSV(t){return t.trim().split("\n").slice(1).map(l=>{const m=l.match(/^"?([^",]+)"?\s*,\s*"?([\s\S]*?)"?\s*$/);if(!m)return null;const w=m[1].trim(),b=m[2].trim(),p=b.match(/\(([a-z.\/]+)\)\s*(.+?)(?:\n|$)/);return{w,ph:"",p:p?.[1]||"",m:p?.[2]?.trim()||b.split("\n")[0],f:[],c:[],ex:"",ez:""}}).filter(Boolean)}
 // ═══ EXAMPLE QUALITY DETECTION & GENERATION ═══════════════════════════
 // Detect placeholder/low-quality examples like "Example: word.", "This is a word.", "I have a word."
+function escapeRegexSafe(s){return s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")}
+
 function isPlaceholderExample(example, word){
   if(!example||!word)return true;
-  const ex=example.trim().toLowerCase();
+  const ex=example.trim();
+  const exLower=ex.toLowerCase();
   const w=word.toLowerCase();
-  // Empty or trivially short
-  if(ex.length<10)return true;
-  // Common placeholder patterns
-  const patterns=[
-    /^example[:\s]+\w+\.?$/i,                  // "Example: word."
-    /^this is (a|an|the) \w+\.?$/i,            // "This is a word."
-    /^i (have|see|like) (a|an|the) \w+\.?$/i,  // "I have a word."
-    /^the \w+ is \w+\.?$/i,                    // "The word is good."
-    /^\w+\.?$/i,                                // Just the word itself
-    /^(a|an|the)?\s*\w+ is (good|nice|great)\.?$/i,
+
+  // 1. 太短（少於 8 字元）
+  if(ex.length<8)return true;
+
+  // 2. "Example:" 開頭的垃圾模板
+  if(/^example\s*[:\-]/i.test(ex))return true;
+  if(/^\(example\)/i.test(ex))return true;
+
+  // 3. 只有單字本身
+  if(new RegExp(`^${escapeRegexSafe(w)}\\.?$`,"i").test(ex))return true;
+
+  // 4. 例句不包含原單字（允許變化形）
+  const wordRoot=w.replace(/(ing|ed|s|es|ly)$/i,"");
+  if(!exLower.includes(w)&&wordRoot.length>=3&&!exLower.includes(wordRoot))return true;
+
+  // 5. 字數少於 3 個英文字
+  const wordCount=ex.replace(/[^\w\s]/g,"").split(/\s+/).filter(Boolean).length;
+  if(wordCount<3)return true;
+
+  // 6. 制式破碎模板
+  const garbage=[
+    /^(this|that)\s+is\s+\w+\.?$/i,
+    /^\w+\s+is\s+(good|nice|great|bad)\.?$/i,
+    /^see\s+\w+\.?$/i,
+    /^the\s+\w+\.?$/i,
   ];
-  if(patterns.some(p=>p.test(ex)))return true;
-  // If example is just word + 1-2 generic words
-  const words=ex.replace(/[^\w\s]/g,"").split(/\s+/).filter(Boolean);
-  if(words.length<=3)return true;
-  // If word doesn't appear in example (broken data)
-  if(!ex.includes(w))return true;
+  if(garbage.some(p=>p.test(ex)))return true;
+
   return false;
 }
 
@@ -753,6 +767,9 @@ const VERB_ICONS={
 const PHOTO_FRIENDLY_WORDS=new Set([
   "mountain","ocean","beach","forest","desert","sunset","sunrise","river","lake","waterfall","sky","cloud","star","city","street","castle","temple","church","bridge","building","skyscraper","village","farm","pizza","sushi","ramen","steak","cake","fruit","vegetable","cheese","bread","train","airplane","ship","yacht","motorcycle","helicopter","soccer","basketball","baseball","football","tennis","golf","skiing","surfing","tiger","elephant","panda","dolphin","whale","butterfly","peacock"
 ]);
+
+// Image cache (URL or {type, value} per word, or null for no image)
+const _imgCache={};
 
 function getWordImg(word){
   if(!word)return null;
