@@ -629,18 +629,151 @@ function VoicePicker(){
 function createDeck(c){return{queue:c.map((_,i)=>i),rm:[],stats:{again:0,hard:0,good:0,easy:0},total:c.length}}
 function rateDeck(d,a){const n={...d,queue:[...d.queue],rm:[...d.rm],stats:{...d.stats}};const c=n.queue.shift();if(c===undefined)return n;n.stats[a]++;if(a==="again")n.queue.splice(Math.min(1,n.queue.length),0,c);else if(a==="hard")n.queue.splice(Math.floor(n.queue.length/2),0,c);else if(a==="good")n.queue.push(c);else n.rm.push(c);return n}
 function parseCSV(t){return t.trim().split("\n").slice(1).map(l=>{const m=l.match(/^"?([^",]+)"?\s*,\s*"?([\s\S]*?)"?\s*$/);if(!m)return null;const w=m[1].trim(),b=m[2].trim(),p=b.match(/\(([a-z.\/]+)\)\s*(.+?)(?:\n|$)/);return{w,ph:"",p:p?.[1]||"",m:p?.[2]?.trim()||b.split("\n")[0],f:[],c:[],ex:"",ez:""}}).filter(Boolean)}
-// Static image cache — preload word images
-const _imgCache={};
+// ═══ EXAMPLE QUALITY DETECTION & GENERATION ═══════════════════════════
+// Detect placeholder/low-quality examples like "Example: word.", "This is a word.", "I have a word."
+function isPlaceholderExample(example, word){
+  if(!example||!word)return true;
+  const ex=example.trim().toLowerCase();
+  const w=word.toLowerCase();
+  // Empty or trivially short
+  if(ex.length<10)return true;
+  // Common placeholder patterns
+  const patterns=[
+    /^example[:\s]+\w+\.?$/i,                  // "Example: word."
+    /^this is (a|an|the) \w+\.?$/i,            // "This is a word."
+    /^i (have|see|like) (a|an|the) \w+\.?$/i,  // "I have a word."
+    /^the \w+ is \w+\.?$/i,                    // "The word is good."
+    /^\w+\.?$/i,                                // Just the word itself
+    /^(a|an|the)?\s*\w+ is (good|nice|great)\.?$/i,
+  ];
+  if(patterns.some(p=>p.test(ex)))return true;
+  // If example is just word + 1-2 generic words
+  const words=ex.replace(/[^\w\s]/g,"").split(/\s+/).filter(Boolean);
+  if(words.length<=3)return true;
+  // If word doesn't appear in example (broken data)
+  if(!ex.includes(w))return true;
+  return false;
+}
+
+// AI-generate a quality example sentence (cached per word)
+const _exampleCache={};
+async function generateExample(word, meaning, pos, apiKey){
+  if(!word||!apiKey)return null;
+  const k=word.toLowerCase();
+  if(_exampleCache[k])return _exampleCache[k];
+  // Check localStorage for persisted cache
+  try{
+    const cached=localStorage.getItem(`ex_${k}`);
+    if(cached){
+      const obj=JSON.parse(cached);
+      _exampleCache[k]=obj;
+      return obj;
+    }
+  }catch{}
+  const prompt=`Create one short, natural English example sentence (8-15 words) using the word "${word}" (meaning: ${meaning}, part of speech: ${pos}). Then provide a Traditional Chinese translation.
+
+Return STRICT JSON only:
+{"en": "English sentence here", "zh": "中文翻譯"}`;
+  try{
+    const models=["gemini-2.5-flash-lite","gemini-2.5-flash","gemini-2.0-flash"];
+    for(const model of models){
+      try{
+        const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,{
+          method:"POST",headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:300,temperature:0.7}}),
+        });
+        const data=await res.json();
+        if(data?.error)continue;
+        let text=data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if(!text)continue;
+        text=text.trim().replace(/^```(?:json)?\s*/i,"").replace(/\s*```\s*$/,"");
+        const s=text.indexOf("{");const e=text.lastIndexOf("}");
+        if(s>=0&&e>s)text=text.slice(s,e+1);
+        const parsed=JSON.parse(text);
+        if(parsed.en&&parsed.zh){
+          _exampleCache[k]=parsed;
+          try{localStorage.setItem(`ex_${k}`,JSON.stringify(parsed))}catch{}
+          return parsed;
+        }
+      }catch{}
+    }
+  }catch{}
+  return null;
+}
+
+// Curated emoji/icon illustrations for common words (better than random photos)
+const WORD_ICONS={
+  // Animals
+  cat:"🐱",dog:"🐶",puppy:"🐶",kitten:"🐱",bird:"🐦",fish:"🐟",rabbit:"🐰",bunny:"🐰",horse:"🐴",cow:"🐄",pig:"🐷",sheep:"🐑",chicken:"🐔",duck:"🦆",
+  lion:"🦁",tiger:"🐯",elephant:"🐘",monkey:"🐒",bear:"🐻",panda:"🐼",fox:"🦊",wolf:"🐺",mouse:"🐭",
+  butterfly:"🦋",bee:"🐝",ant:"🐜",spider:"🕷️",snail:"🐌",frog:"🐸",snake:"🐍",turtle:"🐢",dolphin:"🐬",shark:"🦈",whale:"🐳",
+  // Body
+  hand:"✋",foot:"🦶",feet:"🦶",eye:"👁️",eyes:"👀",ear:"👂",nose:"👃",mouth:"👄",heart:"❤️",brain:"🧠",hair:"💇",tooth:"🦷",teeth:"🦷",
+  // Food
+  apple:"🍎",banana:"🍌",orange:"🍊",grape:"🍇",strawberry:"🍓",watermelon:"🍉",lemon:"🍋",peach:"🍑",
+  bread:"🍞",cake:"🍰",rice:"🍚",noodle:"🍜",noodles:"🍜",pizza:"🍕",hamburger:"🍔",sandwich:"🥪",cookie:"🍪",chocolate:"🍫",candy:"🍬",
+  milk:"🥛",water:"💧",coffee:"☕",tea:"🍵",juice:"🧃",
+  meat:"🥩",egg:"🥚",eggs:"🥚",cheese:"🧀",salad:"🥗",soup:"🍲",
+  // Nature
+  sun:"☀️",moon:"🌙",star:"⭐",stars:"⭐",cloud:"☁️",rain:"🌧️",snow:"❄️",rainbow:"🌈",fire:"🔥",wind:"💨",
+  tree:"🌳",flower:"🌸",grass:"🌱",leaf:"🍃",mountain:"⛰️",beach:"🏖️",ocean:"🌊",river:"🏞️",forest:"🌲",sea:"🌊",lake:"🏞️",
+  // Objects
+  book:"📚",pen:"🖊️",pencil:"✏️",bag:"🎒",chair:"🪑",table:"🪑",bed:"🛏️",door:"🚪",window:"🪟",key:"🔑",
+  phone:"📱",computer:"💻",television:"📺",tv:"📺",camera:"📷",clock:"🕐",watch:"⌚",glasses:"👓",
+  car:"🚗",bus:"🚌",train:"🚆",plane:"✈️",ship:"🚢",boat:"⛵",bike:"🚲",bicycle:"🚲",
+  cup:"🥤",bottle:"🍼",box:"📦",lamp:"💡",light:"💡",map:"🗺️",
+  // Places
+  house:"🏠",home:"🏠",school:"🏫",hospital:"🏥",park:"🏞️",store:"🏪",shop:"🏬",restaurant:"🍴",hotel:"🏨",bank:"🏦",library:"📚",zoo:"🦁",garden:"🏡",city:"🌆",
+  // Sports & activities
+  ball:"⚽",basketball:"🏀",football:"🏈",tennis:"🎾",baseball:"⚾",
+  music:"🎵",song:"🎵",guitar:"🎸",piano:"🎹",drum:"🥁",
+  game:"🎮",toy:"🧸",
+  // People
+  family:"👨‍👩‍👧‍👦",mother:"👩",mom:"👩",father:"👨",dad:"👨",sister:"👧",brother:"👦",baby:"👶",child:"🧒",friend:"👫",teacher:"👩‍🏫",student:"🧑‍🎓",doctor:"👨‍⚕️",nurse:"👩‍⚕️",
+  king:"👑",queen:"👸",
+  boy:"👦",girl:"👧",man:"👨",woman:"👩",
+  // Weather/time
+  morning:"🌅",night:"🌙",day:"☀️",afternoon:"🌤️",evening:"🌆",
+  spring:"🌸",summer:"☀️",autumn:"🍂",fall:"🍂",winter:"❄️",
+  // Clothes
+  shirt:"👕",pants:"👖",dress:"👗",shoes:"👟",hat:"🎩",socks:"🧦",coat:"🧥",
+  // Misc
+  money:"💰",gift:"🎁",present:"🎁",party:"🎉",birthday:"🎂",
+  letter:"✉️",mail:"📧",newspaper:"📰",medicine:"💊",
+};
+
+// Verbs that have meaningful action emojis
+const VERB_ICONS={
+  run:"🏃",jump:"🦘",swim:"🏊",fly:"🛫",sleep:"😴",eat:"🍽️",drink:"🥤",read:"📖",write:"✍️",
+  walk:"🚶",dance:"💃",sing:"🎤",play:"🎮",draw:"🎨",cook:"👨‍🍳",clean:"🧹",
+  laugh:"😂",cry:"😭",smile:"😊",think:"🤔",listen:"👂",look:"👀",see:"👀",watch:"👀",
+};
+
+// Words where photos look great and are unambiguous
+const PHOTO_FRIENDLY_WORDS=new Set([
+  "mountain","ocean","beach","forest","desert","sunset","sunrise","river","lake","waterfall","sky","cloud","star","city","street","castle","temple","church","bridge","building","skyscraper","village","farm","pizza","sushi","ramen","steak","cake","fruit","vegetable","cheese","bread","train","airplane","ship","yacht","motorcycle","helicopter","soccer","basketball","baseball","football","tennis","golf","skiing","surfing","tiger","elephant","panda","dolphin","whale","butterfly","peacock"
+]);
+
 function getWordImg(word){
   if(!word)return null;
-  const k=word.toLowerCase();
-  if(_imgCache[k])return _imgCache[k];
-  // Use multiple sources for better accuracy
-  const url=`https://loremflickr.com/400/220/${encodeURIComponent(k)}?lock=${k.charCodeAt(0)*100+k.length}`;
-  _imgCache[k]=url;
-  // Preload
-  const img=new Image();img.src=url;
-  return url;
+  const k=word.toLowerCase().trim();
+  if(_imgCache[k]!==undefined)return _imgCache[k];
+
+  // Priority 1: emoji icon if available (most reliable)
+  if(WORD_ICONS[k]){_imgCache[k]={type:"emoji",value:WORD_ICONS[k]};return _imgCache[k]}
+  if(VERB_ICONS[k]){_imgCache[k]={type:"emoji",value:VERB_ICONS[k]};return _imgCache[k]}
+
+  // Priority 2: high-quality photo for known concrete words
+  if(PHOTO_FRIENDLY_WORDS.has(k)){
+    const url=`https://loremflickr.com/400/220/${encodeURIComponent(k)}?lock=${k.charCodeAt(0)*100+k.length}`;
+    _imgCache[k]={type:"photo",value:url};
+    try{const img=new Image();img.src=url}catch{}
+    return _imgCache[k];
+  }
+
+  // Otherwise: no image (better than wrong image)
+  _imgCache[k]=null;
+  return null;
 }
 function preloadImgs(words,start=0,n=3){
   for(let i=start;i<Math.min(start+n,words.length);i++){
@@ -897,7 +1030,7 @@ export default function App(){
       </nav>
       <div style={{maxWidth:760,margin:"0 auto",padding:"12px 12px calc(16px + env(safe-area-inset-bottom, 0px))"}}>
         {!mod?<Menu lv={lv} onSelect={setMod} daily={daily} c={c} xp={xp} coins={coins} streak={streak} achUnlocked={achUnlocked} weakWords={weakWords} isSponsor={isSponsor} pets={pets} eggs={eggs}/>:
-         mod==="srs"?<SRS lv={lv} onBack={back} onXp={n=>addXpWithTask(n,"srsToday")} onDone={()=>setStats(s=>({...s,srsRounds:s.srsRounds+1}))} trackWeak={trackWeak} gifKey={gifKey} onSetGifKey={setGifKey} sharedWord={sharedWord}/>:
+         mod==="srs"?<SRS lv={lv} onBack={back} onXp={n=>addXpWithTask(n,"srsToday")} onDone={()=>setStats(s=>({...s,srsRounds:s.srsRounds+1}))} trackWeak={trackWeak} gifKey={gifKey} onSetGifKey={setGifKey} sharedWord={sharedWord} apiKey={gemKey} onSetApiKey={setGemKey}/>:
          mod==="quiz"?<QuizM lv={lv} onBack={back} onXp={n=>addXpWithTask(n,"quizToday")} onPerfect={()=>setStats(s=>({...s,perfectQuiz:s.perfectQuiz+1}))} trackWeak={trackWeak}/>:
          mod==="speak"?<SpeakM lv={lv} onBack={back} onXp={n=>addXpWithTask(n,"speakToday")}/>:
          mod==="whack"?<WhackM lv={lv} onBack={back} onXp={addXp}/>:
@@ -1096,11 +1229,13 @@ function playSound(type){try{const ac=new(window.AudioContext||window.webkitAudi
 
 function Confetti(){const ps=useMemo(()=>Array.from({length:40},(_,i)=>({id:i,x:Math.random()*100,d:Math.random()*3+2,c:["#E24B4A","#EF9F27","#1D9E75","#185FA5","#D85A30","#7F77DD","#FF69B4","#FFD700"][i%8],s:Math.random()*.4+.3,r:Math.random()*360})),[]);return(<div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:9999,overflow:"hidden"}}>{ps.map(p=><div key={p.id} style={{position:"absolute",left:`${p.x}%`,top:0,width:8,height:8,background:p.c,borderRadius:p.id%3===0?"50%":"2px",animation:`confDrop ${p.d}s ${p.s}s ease-in forwards`,transform:`rotate(${p.r}deg)`}}/>)}</div>)}
 
-function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,onSetGifKey,sharedWord}){
+function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,onSetGifKey,sharedWord,apiKey,onSetApiKey}){
   const built=V[lv];const[cards,setCards]=useState(built);const[deck,setDeck]=useState(()=>createDeck(built));const[flip,setFlip]=useState(false);const[info,setInfo]=useState(false);const[loading,setLoading]=useState(true);const[src,setSrc]=useState("built-in");const c=LV[lv];const fr=useRef();
   const[combo,setCombo]=useState(0);const[maxCombo,setMaxCombo]=useState(0);const[comboAnim,setComboAnim]=useState(false);const[showConfetti,setShowConfetti]=useState(false);const[flipAnim,setFlipAnim]=useState(false);const[mascotMood,setMascotMood]=useState("idle");
   const[gifUrl,setGifUrl]=useState(null);const[gifLoading,setGifLoading]=useState(false);const[gifKeyInp,setGifKeyInp]=useState(gifKey||"");
   const[imgUrl,setImgUrl]=useState(null);
+  const[aiExample,setAiExample]=useState(null);// AI-generated example {en, zh}
+  const[exampleLoading,setExampleLoading]=useState(false);
   useEffect(()=>{(async()=>{setLoading(true);const cloud=await fetchCloudVocab(lv,20);if(cloud&&cloud.length>0){
     // If sharedWord, put it first in the deck
     let ordered=cloud;
@@ -1114,6 +1249,24 @@ function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,onSetGifKey,sharedWord}){
   useEffect(()=>{if(!cur||!gifKey)return;setGifLoading(true);fetchGif(cur.w,gifKey).then(url=>{setGifUrl(url);setGifLoading(false)})},[cur?.w,gifKey]);
   // Static image — always available regardless of Giphy key
   useEffect(()=>{if(cur){setImgUrl(getWordImg(cur.w));preloadImgs(cards,deck.queue[0],3)}},[cur?.w]);
+  // Auto-detect bad examples and replace with AI-generated ones (when API key set)
+  useEffect(()=>{
+    if(!cur)return;
+    setAiExample(null);
+    if(!isPlaceholderExample(cur.ex,cur.w)){return}// Original example is good, use it
+    // Check if we have a cached AI example
+    const k=cur.w.toLowerCase();
+    if(_exampleCache[k]){setAiExample(_exampleCache[k]);return}
+    try{const cached=localStorage.getItem(`ex_${k}`);if(cached){const obj=JSON.parse(cached);_exampleCache[k]=obj;setAiExample(obj);return}}catch{}
+    // No cache - if API key available, generate
+    if(apiKey){
+      setExampleLoading(true);
+      generateExample(cur.w,cur.m,cur.p,apiKey).then(ex=>{
+        if(ex)setAiExample(ex);
+        setExampleLoading(false);
+      });
+    }
+  },[cur?.w,apiKey]);
   useEffect(()=>{if(cur&&!flip&&!loading)speak(cur.w)},[cur?.w,flip,loading]);
   const rate=useCallback(a=>{if(a==="again"&&cur)trackWeak(cur.w);if(a==="easy"||a==="good"){onXp();setMascotMood(a==="easy"?"great":"happy");setCombo(cb=>{const nc=cb+1;setMaxCombo(mc=>Math.max(mc,nc));if(nc>=3){playSound("combo");setComboAnim(true);setTimeout(()=>setComboAnim(false),600)}else playSound("good");return nc})}else if(a==="again"){setCombo(0);setMascotMood("sad");playSound("bad")}else{setMascotMood("think");playSound("flip")}setTimeout(()=>setMascotMood("idle"),1500);setDeck(d=>rateDeck(d,a));setFlip(false);setFlipAnim(false)},[onXp,cur,trackWeak]);
   useEffect(()=>{const h=e=>{if(done)return;if(e.code==="Space"){e.preventDefault();if(!flip){setFlip(true);setFlipAnim(true);playSound("flip");if(cur?.ex)setTimeout(()=>speak(cur.ex),350)}else{setFlip(false);setFlipAnim(false)}}if(flip){if(e.key==="1")rate("again");if(e.key==="2")rate("hard");if(e.key==="3")rate("good");if(e.key==="4")rate("easy")}if(e.key==="Enter"){e.preventDefault();if(cur)speak(flip?(cur.ex||cur.w):cur.w)}};window.addEventListener("keydown",h);return()=>window.removeEventListener("keydown",h)},[flip,done,cur,rate]);
@@ -1142,7 +1295,8 @@ function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,onSetGifKey,sharedWord}){
       {!flip?(<>
         {/* Front face: show GIF if available, else static image */}
         {gifUrl?<img src={gifUrl} alt={cur.w} style={{width:"90%",maxWidth:280,height:200,objectFit:"cover",borderRadius:18,marginBottom:10,position:"relative",zIndex:1,boxShadow:"0 6px 20px rgba(0,0,0,.15)"}} onError={e=>e.target.style.display="none"}/>
-        :imgUrl?<img src={imgUrl} alt={cur.w} style={{width:"90%",maxWidth:280,height:200,objectFit:"cover",borderRadius:18,marginBottom:10,position:"relative",zIndex:1,boxShadow:"0 4px 16px rgba(0,0,0,.1)"}} onError={e=>e.target.style.display="none"}/>
+        :imgUrl?(imgUrl.type==="emoji"?<div style={{fontSize:120,marginBottom:10,position:"relative",zIndex:1,lineHeight:1,filter:"drop-shadow(0 4px 12px rgba(0,0,0,.15))"}}>{imgUrl.value}</div>
+        :<img src={imgUrl.value} alt={cur.w} style={{width:"90%",maxWidth:280,height:200,objectFit:"cover",borderRadius:18,marginBottom:10,position:"relative",zIndex:1,boxShadow:"0 4px 16px rgba(0,0,0,.1)"}} onError={e=>e.target.style.display="none"}/>)
         :gifLoading&&gifKey?<div style={{fontSize:13,color:S.t3,marginBottom:6,position:"relative",zIndex:1,animation:"pulse 1s infinite"}}>載入圖片中...</div>:null}
         <div style={{fontSize:38,fontWeight:700,color:S.t1,letterSpacing:1,position:"relative",zIndex:1}}>{cur.w}<button onClick={e=>{e.stopPropagation();speak(cur.w)}} style={{background:"none",border:"none",fontSize:28,cursor:"pointer",marginLeft:6,verticalAlign:"middle",padding:"4px",minWidth:40,minHeight:40}}>🔊</button></div>
         {cur.ph&&<div style={{fontSize:14,color:S.t3,marginTop:3,position:"relative",zIndex:1}}>{cur.ph}</div>}
@@ -1151,12 +1305,50 @@ function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,onSetGifKey,sharedWord}){
       </>):(<>
         {/* Back face images — GIF + static image */}
         {gifUrl&&<img src={gifUrl} alt={cur.w} style={{width:"80%",maxWidth:240,height:150,objectFit:"cover",borderRadius:14,marginBottom:6,boxShadow:"0 4px 12px rgba(0,0,0,.1)",border:`2px solid ${c.bg}`}} onError={e=>e.target.style.display="none"}/>}
-        {imgUrl&&<img src={imgUrl} alt={cur.w} style={{width:"85%",maxWidth:260,height:140,objectFit:"cover",borderRadius:14,marginBottom:8,boxShadow:"0 3px 10px rgba(0,0,0,.08)"}} onError={e=>e.target.style.display="none"}/>}
+        {imgUrl&&(imgUrl.type==="emoji"?<div style={{fontSize:80,marginBottom:6,lineHeight:1}}>{imgUrl.value}</div>:<img src={imgUrl.value} alt={cur.w} style={{width:"85%",maxWidth:260,height:140,objectFit:"cover",borderRadius:14,marginBottom:8,boxShadow:"0 3px 10px rgba(0,0,0,.08)"}} onError={e=>e.target.style.display="none"}/>)}
         <div style={{fontSize:28,fontWeight:700,color:c.cl,letterSpacing:.5}}>{cur.w} <span style={{fontSize:13,fontWeight:400,color:S.t3}}>({cur.p})</span> <button onClick={e=>{e.stopPropagation();speak(cur.w)}} style={{background:"none",border:"none",fontSize:24,cursor:"pointer",verticalAlign:"middle",padding:"4px",minWidth:36,minHeight:36}}>🔊</button></div>
         <div style={{fontSize:22,fontWeight:600,color:S.t1,margin:"4px 0 8px"}}>{cur.m} <button onClick={e=>{e.stopPropagation();speak(cur.m,"zh-TW",0.9)}} style={{background:"none",border:"none",fontSize:22,cursor:"pointer",verticalAlign:"middle",padding:"4px",minWidth:36,minHeight:36}}>🔈</button></div>
         {cur.f?.length>0&&<div style={{fontSize:13,color:S.t2,marginBottom:6,width:"100%",padding:"8px 12px",background:`${c.ac}0a`,borderRadius:10,textAlign:"left"}}><b style={{color:c.cl,fontSize:12}}>📝 詞性變化</b><div style={{marginTop:3,display:"flex",flexWrap:"wrap",gap:4}}>{cur.f.map((f,i)=><span key={i} style={{background:S.bg2,padding:"2px 8px",borderRadius:6,fontSize:12}}>{f.w} <span style={{color:S.t3}}>({f.p}) {f.n}</span></span>)}</div></div>}
         {cur.c?.length>0&&<div style={{fontSize:13,color:S.t2,marginBottom:6,width:"100%",padding:"8px 12px",background:`${c.ac}08`,borderRadius:10,textAlign:"left"}}><b style={{color:c.cl,fontSize:12}}>🔗 常見搭配</b><div style={{marginTop:3}}>{cur.c.map((x,i)=><div key={i} style={{fontSize:13,padding:"2px 0",borderBottom:i<cur.c.length-1?`1px solid ${S.bd}`:"none"}}>· {x}</div>)}</div></div>}
-        {cur.ex&&<div style={{fontSize:14,color:S.t1,width:"100%",padding:"10px 14px",background:`linear-gradient(135deg,${S.bg2},${c.bg}22)`,borderRadius:12,textAlign:"left",borderLeft:`3px solid ${c.cl}`}}>📖 <i>"{cur.ex}"</i><button onClick={e=>{e.stopPropagation();speak(cur.ex)}} style={{background:"none",border:"none",fontSize:22,cursor:"pointer",marginLeft:4,verticalAlign:"middle",padding:"2px"}}>🔊</button>{cur.ez&&<div style={{fontSize:13,color:S.t3,fontStyle:"normal",marginTop:2}}>{cur.ez} <button onClick={e=>{e.stopPropagation();speak(cur.ez,"zh-TW",0.9)}} style={{background:"none",border:"none",fontSize:18,cursor:"pointer",verticalAlign:"middle",padding:"2px"}}>🔈</button></div>}</div>}
+        {(()=>{
+          // Decide which example to show
+          const useAi=aiExample&&isPlaceholderExample(cur.ex,cur.w);
+          const exEn=useAi?aiExample.en:cur.ex;
+          const exZh=useAi?aiExample.zh:cur.ez;
+          const isPlaceholder=isPlaceholderExample(cur.ex,cur.w);
+
+          // Show AI-generated example
+          if(useAi){
+            return(<div style={{fontSize:14,color:S.t1,width:"100%",padding:"10px 14px",background:`linear-gradient(135deg,${S.bg2},${c.bg}22)`,borderRadius:12,textAlign:"left",borderLeft:`3px solid ${c.cl}`}}>
+              <div style={{fontSize:10,color:c.cl,fontWeight:600,marginBottom:4}}>✨ AI 生成例句</div>
+              📖 <i>"{exEn}"</i>
+              <button onClick={e=>{e.stopPropagation();speak(exEn)}} style={{background:"none",border:"none",fontSize:22,cursor:"pointer",marginLeft:4,verticalAlign:"middle",padding:"2px"}}>🔊</button>
+              {exZh&&<div style={{fontSize:13,color:S.t3,fontStyle:"normal",marginTop:2}}>{exZh} <button onClick={e=>{e.stopPropagation();speak(exZh,"zh-TW",0.9)}} style={{background:"none",border:"none",fontSize:18,cursor:"pointer",verticalAlign:"middle",padding:"2px"}}>🔈</button></div>}
+            </div>);
+          }
+          // Loading state
+          if(isPlaceholder&&exampleLoading){
+            return(<div style={{fontSize:13,color:S.t3,padding:"10px 14px",background:S.bg2,borderRadius:12,textAlign:"center",animation:"pulse 1s infinite"}}>
+              ✨ AI 正在生成例句...
+            </div>);
+          }
+          // Placeholder detected but no API key - show prompt
+          if(isPlaceholder&&!apiKey){
+            return(<div style={{fontSize:12,color:S.t3,padding:"10px 14px",background:S.bg2,borderRadius:12,textAlign:"center",lineHeight:1.6}}>
+              💡 此單字的例句不太完整<br/>
+              <button onClick={(e)=>{e.stopPropagation();const k=prompt("請輸入 Gemini API Key 以自動生成優質例句：\n（免費申請：https://aistudio.google.com/apikey）");if(k){onSetApiKey(k.trim());}}} style={{background:"none",border:`1px solid ${c.cl}`,color:c.cl,padding:"4px 12px",fontSize:11,borderRadius:8,marginTop:6,cursor:"pointer",fontFamily:"inherit"}}>🔑 設定 API Key 自動生成</button>
+            </div>);
+          }
+          // Original example is good, show it
+          if(cur.ex&&!isPlaceholder){
+            return(<div style={{fontSize:14,color:S.t1,width:"100%",padding:"10px 14px",background:`linear-gradient(135deg,${S.bg2},${c.bg}22)`,borderRadius:12,textAlign:"left",borderLeft:`3px solid ${c.cl}`}}>
+              📖 <i>"{cur.ex}"</i>
+              <button onClick={e=>{e.stopPropagation();speak(cur.ex)}} style={{background:"none",border:"none",fontSize:22,cursor:"pointer",marginLeft:4,verticalAlign:"middle",padding:"2px"}}>🔊</button>
+              {cur.ez&&<div style={{fontSize:13,color:S.t3,fontStyle:"normal",marginTop:2}}>{cur.ez} <button onClick={e=>{e.stopPropagation();speak(cur.ez,"zh-TW",0.9)}} style={{background:"none",border:"none",fontSize:18,cursor:"pointer",verticalAlign:"middle",padding:"2px"}}>🔈</button></div>}
+            </div>);
+          }
+          return null;
+        })()}
       </>)}
     </div>
     {flip&&<>
@@ -2066,7 +2258,7 @@ function StoryReader({story,pageIdx,setPageIdx,selectedPet,c,onNext,onExit}){
   useEffect(()=>{
     return()=>{
       window.speechSynthesis?.cancel();
-      if(fallbackTimerRef.current)clearInterval(fallbackTimerRef.current);
+      if(fallbackTimerRef.current)clearTimeout(fallbackTimerRef.current);
       if(storyHandleRef.current)storyHandleRef.current.cancel();
       setPlaying(false);
       setCharIdx(-1);
@@ -2076,47 +2268,70 @@ function StoryReader({story,pageIdx,setPageIdx,selectedPet,c,onNext,onExit}){
   // playPage declared before useEffect that uses it (avoid TDZ issues)
   const playPage=useCallback(()=>{
     window.speechSynthesis?.cancel();
-    if(fallbackTimerRef.current)clearInterval(fallbackTimerRef.current);
+    if(fallbackTimerRef.current)clearTimeout(fallbackTimerRef.current);
     setPlaying(true);setCharIdx(0);setPlayingAll(false);
 
     // Fallback word highlighter for mobile browsers (onboundary not supported)
-    // Estimate: ~350ms per word average at rate 0.88
-    const words=page.en.split(/\s+/);
-    let useFallback=true;// enabled by default; onboundary will disable if it fires
-    const charPositions=[];
+    // Use chained setTimeout with per-word duration based on length & punctuation
+    const text=page.en;
+    const words=text.split(/(\s+)/);// keep whitespace tokens
+    const wordTokens=[];// {word, startIdx, durMs}
     let pos=0;
-    for(const w of words){
-      charPositions.push(pos);
-      pos+=w.length+1;// +1 for space
-    }
-    let wordIdx=0;
-    const msPerWord=Math.max(200,Math.round(380/0.88));// ~430ms per word at rate 0.88
-    fallbackTimerRef.current=setInterval(()=>{
-      if(!useFallback){clearInterval(fallbackTimerRef.current);return}
-      if(wordIdx<words.length){
-        setCharIdx(charPositions[wordIdx]);
-        wordIdx++;
-      }else{
-        clearInterval(fallbackTimerRef.current);
+    const RATE=0.88;
+    // Average reading speed: ~150 wpm at rate 1.0 = 400ms/word
+    // At rate 0.88: ~455ms/word baseline
+    // Per-character timing helps with long/short words
+    const baseMsPerChar=72;// ~72ms per char average at rate 0.88
+    for(const tok of words){
+      if(/\s/.test(tok)){
+        pos+=tok.length;
+        continue;
       }
-    },msPerWord);
+      // Calculate this word's duration based on char count + punctuation pause
+      const lettersOnly=tok.replace(/[^a-zA-Z]/g,"");
+      let dur=Math.max(180,lettersOnly.length*baseMsPerChar);
+      // Punctuation adds pause AFTER the word
+      if(/[.!?]$/.test(tok))dur+=400;// sentence-ending pause
+      else if(/[,;:]$/.test(tok))dur+=200;// clause pause
+      else if(/[—–]$/.test(tok))dur+=250;// dash pause
+      wordTokens.push({startIdx:pos,durMs:dur});
+      pos+=tok.length;
+    }
 
-    const u=speak(page.en,"en-US",0.88,{
+    let useFallback=true;// onboundary will disable if it fires
+    let cancelled=false;
+    let curIdx=0;
+    const tickWord=()=>{
+      if(cancelled||!useFallback)return;
+      if(curIdx>=wordTokens.length)return;
+      setCharIdx(wordTokens[curIdx].startIdx);
+      const thisDur=wordTokens[curIdx].durMs;
+      curIdx++;
+      fallbackTimerRef.current=setTimeout(tickWord,thisDur);
+    };
+    // Start with small delay to give TTS time to initialize
+    fallbackTimerRef.current=setTimeout(tickWord,150);
+
+    const u=speak(text,"en-US",RATE,{
       pitch:1.08,
       onboundary:(ev)=>{
         // Real boundary event fired - disable fallback and use real data
         useFallback=false;
-        if(fallbackTimerRef.current)clearInterval(fallbackTimerRef.current);
+        if(fallbackTimerRef.current){clearTimeout(fallbackTimerRef.current);fallbackTimerRef.current=null}
         if(ev.name==="word"||ev.charIndex!==undefined){
           setCharIdx(ev.charIndex);
         }
       },
       onend:()=>{
-        if(fallbackTimerRef.current)clearInterval(fallbackTimerRef.current);
+        cancelled=true;
+        if(fallbackTimerRef.current){clearTimeout(fallbackTimerRef.current);fallbackTimerRef.current=null}
         setPlaying(false);setCharIdx(-1);
       },
     });
     utterRef.current=u;
+
+    // Return cleanup for this play session
+    return()=>{cancelled=true;if(fallbackTimerRef.current)clearTimeout(fallbackTimerRef.current)};
   },[page.en]);
 
   // Auto-play on page load
@@ -2127,7 +2342,7 @@ function StoryReader({story,pageIdx,setPageIdx,selectedPet,c,onNext,onExit}){
 
   const stopPlay=()=>{
     window.speechSynthesis?.cancel();
-    if(fallbackTimerRef.current)clearInterval(fallbackTimerRef.current);
+    if(fallbackTimerRef.current)clearTimeout(fallbackTimerRef.current);
     if(storyHandleRef.current){storyHandleRef.current.cancel();storyHandleRef.current=null}
     setPlaying(false);setCharIdx(-1);setPlayingAll(false);
   };
@@ -2135,7 +2350,7 @@ function StoryReader({story,pageIdx,setPageIdx,selectedPet,c,onNext,onExit}){
   // Play all pages one by one (story mode)
   const playAllStory=()=>{
     window.speechSynthesis?.cancel();
-    if(fallbackTimerRef.current)clearInterval(fallbackTimerRef.current);
+    if(fallbackTimerRef.current)clearTimeout(fallbackTimerRef.current);
     if(storyHandleRef.current)storyHandleRef.current.cancel();
     setPlayingAll(true);setPlaying(true);
     const sentences=story.pages.map(p=>p.en);
