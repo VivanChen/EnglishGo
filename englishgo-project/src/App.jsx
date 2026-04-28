@@ -474,6 +474,37 @@ function getPetMood(pet){
   return{emoji:"😢",text:"不開心",color:"#E24B4A"};
 }
 
+// ═══ 寵物列表卡片用 - 緊急需求判定 (P0-1 視覺優化) ═══════════════════
+function getPetUrgentNeed(pet){
+  const h=pet.hunger??80, cl=pet.clean??80, en=pet.energy??80;
+  const poops=(pet.poops||[]).length;
+  // 緊急（< 20）
+  if(h<20)return{emoji:"😫",label:"好餓...",urgency:2,key:"hunger"};
+  if(cl<20)return{emoji:"🤢",label:"好髒...",urgency:2,key:"clean"};
+  if(en<20)return{emoji:"😵",label:"好累...",urgency:2,key:"energy"};
+  if(poops>=3)return{emoji:"💩",label:"要清理！",urgency:2,key:"poop"};
+  // 提醒（< 30）
+  if(h<30)return{emoji:"😋",label:"想吃東西",urgency:1,key:"hunger"};
+  if(cl<30)return{emoji:"🛁",label:"想洗澡",urgency:1,key:"clean"};
+  if(en<30)return{emoji:"😴",label:"好想睡",urgency:1,key:"energy"};
+  if(poops>0)return{emoji:"💩",label:"有便便",urgency:1,key:"poop"};
+  // 平靜
+  if(isPetSleeping())return{emoji:"💤",label:"睡覺中",urgency:0,key:"sleep"};
+  const bond=pet.bond||0;
+  if(bond>=300)return{emoji:"💖",label:"超愛你",urgency:0,key:"happy"};
+  if(bond>=100)return{emoji:"😊",label:"很開心",urgency:0,key:"happy"};
+  return{emoji:"🙂",label:"還不錯",urgency:0,key:"happy"};
+}
+
+function getCareCount(pet){
+  let n=0;
+  if((pet.hunger??80)<30)n++;
+  if((pet.clean??80)<30)n++;
+  if((pet.energy??80)<30)n++;
+  if((pet.poops||[]).length>0)n++;
+  return n;
+}
+
 function levelUpPet(pet){
   const expNeeded=pet.level*100;
   if(pet.exp>=expNeeded){return{...pet,level:pet.level+1,exp:pet.exp-expNeeded}}
@@ -5123,23 +5154,122 @@ function PetsPage({onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,s
       <div style={{fontSize:16,fontWeight:600,color:S.t1}}>還沒有寵物！</div>
       <div style={{fontSize:13,color:S.t2,marginTop:4}}>先去扭蛋機獲得蛋，然後學習孵化吧！</div>
     </div>):(
-    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(110px,1fr))",gap:10}}>
+    <>
+    <style>{`
+@keyframes pet_urgentRing { 0%,100%{box-shadow:0 0 0 0 rgba(226,75,74,.55)} 50%{box-shadow:0 0 0 6px rgba(226,75,74,0)} }
+@keyframes pet_moodBob { 0%,100%{transform:translateY(0) rotate(-4deg)} 50%{transform:translateY(-3px) rotate(4deg)} }
+@keyframes pet_sleepZ { 0%{transform:translate(0,0) scale(.8);opacity:0} 20%{opacity:.9} 100%{transform:translate(10px,-18px) scale(1.3);opacity:0} }
+@keyframes pet_badgePulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.15)} }
+@media (prefers-reduced-motion: reduce) { [data-pet-card] *{animation:none !important} }
+`}</style>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(120px,1fr))",gap:10}}>
       {pets.map((pet,i)=>{
         const petDef=PETS[pet.rarity].find(p=>p.id===pet.petId);
         if(!petDef)return null;
         const ri=RARITY_INFO[pet.rarity];
-        const mood=getPetMood(pet);
-        const needsCare=(pet.hunger<30)||(pet.clean<30)||(pet.energy<30);
-        return(<div key={i} onClick={()=>{setSelectedPet(pet);triggerEvent(pet)}} style={{...S.card,padding:"14px 8px",textAlign:"center",border:`2px solid ${needsCare?"#E24B4A":ri.color}`,background:ri.bg,cursor:"pointer",transition:"transform .15s",position:"relative"}} onTouchStart={e=>e.currentTarget.style.transform="scale(0.95)"} onTouchEnd={e=>e.currentTarget.style.transform="scale(1)"}>
-          {needsCare&&<div style={{position:"absolute",top:-6,right:-6,background:"#E24B4A",color:"#fff",borderRadius:"50%",width:22,height:22,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,animation:"emojiPulse 1s infinite"}}>!</div>}
-          <div style={{fontSize:10,fontWeight:700,color:ri.color}}>{ri.stars}</div>
-          <div style={{margin:"4px auto",display:"flex",justifyContent:"center",animation:"emojiFloat 3s ease-in-out infinite",animationDelay:`${i*0.2}s`}}><PixelPet petId={petDef.id} stage={getPetStage(pet)} size={56} animate={false}/></div>
+        const need=getPetUrgentNeed(pet);
+        const careCount=getCareCount(pet);
+        const sleeping=isPetSleeping();
+        const stats=[
+          {v:pet.hunger??80,c:"#EF9F27"},
+          {v:pet.clean??80,c:"#4A90E2"},
+          {v:pet.energy??80,c:"#1D9E75"},
+          {v:Math.min(100,(pet.bond||0)/3),c:"#E91E63"},
+        ];
+        const isUrgent=need.urgency===2;
+        return(
+        <div key={i} data-pet-card onClick={()=>{setSelectedPet(pet);triggerEvent(pet)}}
+          style={{
+            ...S.card,
+            padding:"10px 8px 8px",
+            textAlign:"center",
+            border:`2px solid ${isUrgent?"#E24B4A":need.urgency===1?"#EF9F27":ri.color}`,
+            background:ri.bg,
+            cursor:"pointer",
+            transition:"transform .15s",
+            position:"relative",
+            overflow:"hidden",
+            animation:isUrgent?"pet_urgentRing 1.4s ease-in-out infinite":"none",
+          }}
+          onTouchStart={e=>e.currentTarget.style.transform="scale(0.95)"}
+          onTouchEnd={e=>e.currentTarget.style.transform="scale(1)"}
+        >
+          {/* 心情氣泡 - 左上 */}
+          <div style={{
+            position:"absolute",top:6,left:6,
+            background:"#fff",borderRadius:14,
+            padding:"2px 7px 2px 5px",
+            fontSize:11,fontWeight:600,
+            color:isUrgent?"#E24B4A":need.urgency===1?"#856404":"#5F5E5A",
+            boxShadow:"0 1px 3px rgba(0,0,0,.12)",
+            display:"flex",alignItems:"center",gap:3,
+            zIndex:3,
+            animation:need.urgency>0?"pet_moodBob 1.6s ease-in-out infinite":"none",
+          }}>
+            <span style={{fontSize:13}}>{need.emoji}</span>
+            <span style={{fontSize:9,letterSpacing:.5}}>{need.label}</span>
+          </div>
+
+          {/* 待辦徽章 - 右上 */}
+          {careCount>0&&<div style={{
+            position:"absolute",top:-6,right:-6,
+            background:"#E24B4A",color:"#fff",
+            borderRadius:"50%",width:24,height:24,
+            display:"flex",alignItems:"center",justifyContent:"center",
+            fontSize:12,fontWeight:700,
+            boxShadow:"0 2px 6px rgba(226,75,74,.4)",
+            animation:"pet_badgePulse 1s ease-in-out infinite",
+            zIndex:4,
+          }}>{careCount}</div>}
+
+          {/* 稀有度星星 */}
+          <div style={{fontSize:10,fontWeight:700,color:ri.color,marginTop:14}}>{ri.stars}</div>
+
+          {/* 寵物本體 */}
+          <div style={{
+            margin:"4px auto",
+            display:"flex",justifyContent:"center",
+            position:"relative",
+            animation:"emojiFloat 3s ease-in-out infinite",
+            animationDelay:`${i*0.2}s`,
+            opacity:sleeping?0.65:1,
+            filter:sleeping?"saturate(0.7)":"none",
+            transition:"opacity .3s, filter .3s",
+          }}>
+            <PixelPet petId={petDef.id} stage={getPetStage(pet)} size={56} animate={false}/>
+            {sleeping&&<>
+              <span style={{position:"absolute",top:-4,right:8,fontSize:11,color:"#7B61FF",fontWeight:700,animation:"pet_sleepZ 2s ease-out infinite"}}>z</span>
+              <span style={{position:"absolute",top:-4,right:8,fontSize:11,color:"#7B61FF",fontWeight:700,animation:"pet_sleepZ 2s ease-out infinite",animationDelay:"0.7s"}}>Z</span>
+            </>}
+          </div>
+
+          {/* 寵物名稱 */}
           <div style={{fontSize:12,fontWeight:600,color:S.t1}}>{petDef.name}</div>
-          <div style={{fontSize:10,color:c.cl,fontWeight:600}}>Lv.{pet.level} {mood.emoji}</div>
-          {pet.dupes>0&&<div style={{fontSize:9,color:S.t3,marginTop:2}}>×{pet.dupes+1}</div>}
+
+          {/* 等級 */}
+          <div style={{fontSize:10,color:c.cl,fontWeight:600,marginBottom:6}}>Lv.{pet.level}</div>
+
+          {/* 重複寵物徽章（保留原功能） */}
+          {pet.dupes>0&&<div style={{fontSize:9,color:S.t3,marginTop:-4,marginBottom:4}}>×{pet.dupes+1}</div>}
+
+          {/* 4 條微狀態條 - 卡片底部 */}
+          <div style={{display:"flex",gap:2,padding:"0 2px"}}>
+            {stats.map((s,si)=>(
+              <div key={si} style={{flex:1,height:3,background:"rgba(0,0,0,.08)",borderRadius:2,overflow:"hidden"}}>
+                <div style={{
+                  height:"100%",
+                  width:`${Math.max(4,Math.min(100,s.v))}%`,
+                  background:s.c,
+                  transition:"width .4s",
+                  animation:s.v<20?"pet_badgePulse 1s ease-in-out infinite":"none",
+                }}/>
+              </div>
+            ))}
+          </div>
         </div>);
       })}
-    </div>))}
+    </div>
+    </>))}
   </div>);
 }
 
