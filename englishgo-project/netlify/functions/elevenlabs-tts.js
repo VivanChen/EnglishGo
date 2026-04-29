@@ -1,5 +1,4 @@
-const DEFAULT_VOICE_ID = "21m00Tcm4TlvDq8ikWAM"; // Rachel
-const DEFAULT_MODEL_ID = "eleven_flash_v2_5";
+const DEFAULT_VOICE_ID = "1AKkSX7KMPHIWuz76m0n";
 
 function json(statusCode, payload) {
   return {
@@ -7,6 +6,19 @@ function json(statusCode, payload) {
     headers: { "Content-Type": "application/json; charset=utf-8" },
     body: JSON.stringify(payload),
   };
+}
+
+function parseElevenLabsError(raw) {
+  try {
+    const obj = JSON.parse(raw);
+    const detail = obj?.detail;
+    if (typeof detail === "string") return detail;
+    if (detail?.message) return detail.message;
+    if (detail?.status) return `${detail.status}: ${detail.message || ""}`.trim();
+    return JSON.stringify(obj).slice(0, 800);
+  } catch {
+    return String(raw || "").slice(0, 800);
+  }
 }
 
 export async function handler(event) {
@@ -36,11 +48,13 @@ export async function handler(event) {
   }
 
   const voiceId = process.env.ELEVENLABS_VOICE_ID || body.voiceId || DEFAULT_VOICE_ID;
-  const modelId = process.env.ELEVENLABS_MODEL_ID || body.modelId || DEFAULT_MODEL_ID;
 
   try {
+    // Keep this request aligned with the official SDK minimal payload:
+    // client.textToSpeech.convert(voiceId, { text })
+    // Avoid forcing model_id / voice_settings because some free-plan voices reject them.
     const response = await fetch(
-      `https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voiceId)}?output_format=mp3_44100_128`,
+      `https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voiceId)}`,
       {
         method: "POST",
         headers: {
@@ -48,22 +62,17 @@ export async function handler(event) {
           "Content-Type": "application/json",
           "Accept": "audio/mpeg",
         },
-        body: JSON.stringify({
-          text,
-          model_id: modelId,
-          voice_settings: {
-            stability: 0.5,
-            similarity_boost: 0.8,
-            style: 0.15,
-            use_speaker_boost: true,
-          },
-        }),
+        body: JSON.stringify({ text }),
       }
     );
 
     if (!response.ok) {
-      const message = await response.text();
-      return json(response.status, { error: "ElevenLabs request failed", detail: message.slice(0, 500) });
+      const raw = await response.text();
+      return json(response.status, {
+        error: "ElevenLabs request failed",
+        status: response.status,
+        detail: parseElevenLabsError(raw),
+      });
     }
 
     const audio = Buffer.from(await response.arrayBuffer());
