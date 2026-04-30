@@ -4,7 +4,6 @@ import crypto from "node:crypto";
 const DEFAULT_VOICE_ID = "1AKkSX7KMPHIWuz76m0n";
 const DEFAULT_BUCKET = "tts-cache";
 const MAX_TEXT_LENGTH = 900;
-const DEFAULT_TTS_SPEED = 0.9;
 
 function getSupabaseUrl() {
   return (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "").replace(/\/$/, "");
@@ -57,22 +56,13 @@ function clampNumber(value, min, max, fallback) {
   return Math.min(max, Math.max(min, n));
 }
 
-function getTtsSpeed(payload) {
-  return clampNumber(
-    payload.speed ?? process.env.ELEVENLABS_SPEED,
-    0.7,
-    1.2,
-    DEFAULT_TTS_SPEED
-  );
-}
-
-function makeCacheKey({ normalizedText, voiceId, speed }) {
+function makeCacheKey({ normalizedText, voiceId }) {
   const hash = crypto
     .createHash("sha256")
-    .update(JSON.stringify({ text: normalizedText, voiceId, speed, format: "mp3" }))
+    .update(JSON.stringify({ text: normalizedText, voiceId, format: "mp3" }))
     .digest("hex");
 
-  return `${voiceId}/s${String(speed).replace(".", "_")}/${hash}.mp3`;
+  return `${voiceId}/${hash}.mp3`;
 }
 
 async function streamToBuffer(stream) {
@@ -188,7 +178,7 @@ export async function handler(event) {
   const originalText = String(payload.text || "").trim();
   const normalizedText = normalizeTextForTts(originalText);
   const voiceId = process.env.ELEVENLABS_VOICE_ID || payload.voiceId || DEFAULT_VOICE_ID;
-  const speed = getTtsSpeed(payload);
+  const playbackSpeed = clampNumber(payload.speed ?? process.env.ELEVENLABS_SPEED, 0.7, 1.2, 1);
   const bucket = process.env.SUPABASE_TTS_BUCKET || DEFAULT_BUCKET;
   const hasSupabaseUrl = Boolean(getSupabaseUrl());
   const hasSupabaseKey = Boolean(getSupabaseKey());
@@ -201,13 +191,13 @@ export async function handler(event) {
     return jsonResponse(400, { error: `Text is too long. Max length is ${MAX_TEXT_LENGTH} characters.` });
   }
 
-  const cacheKey = makeCacheKey({ normalizedText, voiceId, speed });
+  const cacheKey = makeCacheKey({ normalizedText, voiceId });
   const debugHeaders = {
     "X-TTS-Bucket": safeHeaderValue(bucket),
     "X-TTS-Cache-Key": safeHeaderValue(cacheKey),
     "X-TTS-Normalized-Text": safeHeaderValue(normalizedText),
     "X-TTS-Voice-Id": safeHeaderValue(voiceId),
-    "X-TTS-Speed": safeHeaderValue(speed),
+    "X-TTS-Playback-Speed": safeHeaderValue(playbackSpeed),
     "X-TTS-Has-Supabase-Url": String(hasSupabaseUrl),
     "X-TTS-Has-Supabase-Key": String(hasSupabaseKey),
   };
@@ -226,7 +216,6 @@ export async function handler(event) {
     const response = await client.textToSpeech.convert(voiceId, {
       text: normalizedText,
       voiceSettings: {
-        speed,
         stability: clampNumber(process.env.ELEVENLABS_STABILITY, 0, 1, 0.55),
         similarityBoost: clampNumber(process.env.ELEVENLABS_SIMILARITY_BOOST, 0, 1, 0.85),
         style: clampNumber(process.env.ELEVENLABS_STYLE, 0, 1, 0),
