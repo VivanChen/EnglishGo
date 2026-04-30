@@ -125,7 +125,7 @@ async function tryUploadToSupabaseStorage({ bucket, cacheKey, audioBuffer }) {
     const res = await fetch(url, {
       method: "POST",
       headers: supabaseHeaders(supabaseKey, {
-        "Content-Type": "audio/mpeg",
+        "Content-Type": "audio/mp3",
         "Cache-Control": "86400",
         "x-upsert": "true",
       }),
