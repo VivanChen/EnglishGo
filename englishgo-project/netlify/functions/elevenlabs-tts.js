@@ -13,13 +13,18 @@ function getSupabaseKey() {
   return process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || "";
 }
 
-function audioResponse(audioBuffer, source = "elevenlabs") {
+function safeHeaderValue(value) {
+  return String(value ?? "").replace(/[\r\n]/g, " ").slice(0, 240);
+}
+
+function audioResponse(audioBuffer, source = "elevenlabs", extraHeaders = {}) {
   return {
     statusCode: 200,
     headers: {
       "Content-Type": "audio/mpeg",
       "Cache-Control": "public, max-age=86400",
       "X-TTS-Source": source,
+      ...extraHeaders,
     },
     body: audioBuffer.toString("base64"),
     isBase64Encoded: true,
@@ -84,7 +89,7 @@ async function tryReadFromSupabaseStorage({ bucket, cacheKey }) {
   const supabaseKey = getSupabaseKey();
 
   if (!supabaseUrl || !supabaseKey) {
-    return null;
+    return { ok: false, audioBuffer: null, reason: "missing_supabase_env" };
   }
 
   try {
@@ -94,12 +99,16 @@ async function tryReadFromSupabaseStorage({ bucket, cacheKey }) {
       headers: supabaseHeaders(supabaseKey),
     });
 
-    if (!res.ok) return null;
+    if (!res.ok) {
+      return { ok: false, audioBuffer: null, reason: `read_${res.status}` };
+    }
 
     const audioBuffer = Buffer.from(await res.arrayBuffer());
-    return audioBuffer.length ? audioBuffer : null;
-  } catch {
-    return null;
+    return audioBuffer.length
+      ? { ok: true, audioBuffer, reason: "hit" }
+      : { ok: false, audioBuffer: null, reason: "empty_cache_file" };
+  } catch (err) {
+    return { ok: false, audioBuffer: null, reason: `read_error_${err?.message || String(err)}` };
   }
 }
 
@@ -108,7 +117,7 @@ async function tryUploadToSupabaseStorage({ bucket, cacheKey, audioBuffer }) {
   const supabaseKey = getSupabaseKey();
 
   if (!supabaseUrl || !supabaseKey || !audioBuffer?.length) {
-    return false;
+    return { ok: false, reason: "missing_supabase_env_or_audio" };
   }
 
   try {
@@ -123,9 +132,12 @@ async function tryUploadToSupabaseStorage({ bucket, cacheKey, audioBuffer }) {
       body: audioBuffer,
     });
 
-    return res.ok;
-  } catch {
-    return false;
+    if (res.ok) return { ok: true, reason: "uploaded" };
+
+    const detail = await res.text().catch(() => "");
+    return { ok: false, reason: `upload_${res.status}_${detail.slice(0, 180)}` };
+  } catch (err) {
+    return { ok: false, reason: `upload_error_${err?.message || String(err)}` };
   }
 }
 
@@ -149,6 +161,8 @@ export async function handler(event) {
   const text = String(payload.text || "").trim();
   const voiceId = process.env.ELEVENLABS_VOICE_ID || payload.voiceId || DEFAULT_VOICE_ID;
   const bucket = process.env.SUPABASE_TTS_BUCKET || DEFAULT_BUCKET;
+  const hasSupabaseUrl = Boolean(getSupabaseUrl());
+  const hasSupabaseKey = Boolean(getSupabaseKey());
 
   if (!text) {
     return jsonResponse(400, { error: "Missing text" });
@@ -159,10 +173,20 @@ export async function handler(event) {
   }
 
   const cacheKey = makeCacheKey({ text, voiceId });
+  const debugHeaders = {
+    "X-TTS-Bucket": safeHeaderValue(bucket),
+    "X-TTS-Cache-Key": safeHeaderValue(cacheKey),
+    "X-TTS-Has-Supabase-Url": String(hasSupabaseUrl),
+    "X-TTS-Has-Supabase-Key": String(hasSupabaseKey),
+  };
 
-  const cachedAudio = await tryReadFromSupabaseStorage({ bucket, cacheKey });
-  if (cachedAudio) {
-    return audioResponse(cachedAudio, "supabase-cache");
+  const cached = await tryReadFromSupabaseStorage({ bucket, cacheKey });
+  if (cached.ok && cached.audioBuffer) {
+    return audioResponse(cached.audioBuffer, "supabase-cache", {
+      ...debugHeaders,
+      "X-TTS-Cache-Read": "hit",
+      "X-TTS-Cache-Upload": "skipped-hit",
+    });
   }
 
   try {
@@ -174,9 +198,14 @@ export async function handler(event) {
       return jsonResponse(502, { error: "ElevenLabs returned empty audio" });
     }
 
-    await tryUploadToSupabaseStorage({ bucket, cacheKey, audioBuffer });
+    const upload = await tryUploadToSupabaseStorage({ bucket, cacheKey, audioBuffer });
 
-    return audioResponse(audioBuffer, "elevenlabs");
+    return audioResponse(audioBuffer, "elevenlabs", {
+      ...debugHeaders,
+      "X-TTS-Cache-Read": safeHeaderValue(cached.reason),
+      "X-TTS-Cache-Upload": upload.ok ? "ok" : "failed",
+      "X-TTS-Cache-Upload-Detail": safeHeaderValue(upload.reason),
+    });
   } catch (err) {
     return jsonResponse(500, { error: err?.message || String(err) });
   }
