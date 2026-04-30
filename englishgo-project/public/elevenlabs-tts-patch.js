@@ -10,7 +10,6 @@
   const MAX_CHARS = 350;
   const LS_VOICE = "eg_tts_voice_id";
   const LS_SPEED = "eg_tts_speed";
-  const LS_AUTO_PRELOAD = "eg_tts_auto_preload";
   const DEFAULT_VOICE = "1AKkSX7KMPHIWuz76m0n";
   const DEFAULT_SPEED = 0.9;
   const VOICES = [
@@ -20,8 +19,6 @@
     { id: "ErXwobaYiN019PkySvjV", label: "英式 Antoni", accent: "UK" },
   ];
   let activeAudio = null;
-  let preloadTimer = null;
-  let lastPreloadSignature = "";
   let loadingToast = null;
   let loadingButton = null;
   let loadingCounter = 0;
@@ -46,17 +43,15 @@
   function getSettings() {
     let voiceId = DEFAULT_VOICE;
     let speed = DEFAULT_SPEED;
-    let autoPreload = true;
     try {
       voiceId = localStorage.getItem(LS_VOICE) || DEFAULT_VOICE;
       speed = clamp(localStorage.getItem(LS_SPEED), 0.7, 1.2, DEFAULT_SPEED);
-      autoPreload = localStorage.getItem(LS_AUTO_PRELOAD) !== "false";
     } catch {}
-    return { voiceId, speed, autoPreload };
+    return { voiceId, speed };
   }
 
   function makeCacheKey(text, settings) {
-    return `${settings.voiceId}|${settings.speed}|${normalizeText(text)}`;
+    return `${settings.voiceId}|${normalizeText(text)}`;
   }
 
   function stopActiveAudio() {
@@ -142,7 +137,7 @@
     const promise = fetch("/.netlify/functions/elevenlabs-tts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: normalized, voiceId: settings.voiceId, speed: settings.speed }),
+      body: JSON.stringify({ text: normalized, voiceId: settings.voiceId }),
     })
       .then(async (res) => {
         if (!res.ok) throw new Error(`ElevenLabs TTS failed: ${res.status}`);
@@ -163,50 +158,6 @@
     return promise;
   }
 
-  async function warmupTexts(texts, options = {}) {
-    const unique = [...new Set((texts || []).map(normalizeText).filter(t => /[a-z]/i.test(t) && t.length <= MAX_CHARS))].slice(0, 20);
-    for (const text of unique) {
-      getAudioUrl(text, options).catch(() => {});
-      await new Promise(r => setTimeout(r, 350));
-    }
-  }
-
-  function collectVisibleEnglishTexts() {
-    const root = document.querySelector("main") || document.body;
-    const items = [];
-    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
-      acceptNode(node) {
-        const parent = node.parentElement;
-        if (!parent) return NodeFilter.FILTER_REJECT;
-        const tag = parent.tagName;
-        if (["SCRIPT", "STYLE", "NOSCRIPT", "TEXTAREA", "INPUT", "SELECT", "OPTION"].includes(tag)) return NodeFilter.FILTER_REJECT;
-        const rect = parent.getBoundingClientRect();
-        if (rect.width <= 0 || rect.height <= 0) return NodeFilter.FILTER_REJECT;
-        if (rect.bottom < 0 || rect.top > window.innerHeight) return NodeFilter.FILTER_REJECT;
-        const text = normalizeText(node.textContent);
-        if (!/[a-z]/.test(text)) return NodeFilter.FILTER_REJECT;
-        if (text.length < 2 || text.length > 90) return NodeFilter.FILTER_REJECT;
-        if (text.split(" ").length > 10) return NodeFilter.FILTER_REJECT;
-        return NodeFilter.FILTER_ACCEPT;
-      }
-    });
-    while (walker.nextNode() && items.length < 40) items.push(walker.currentNode.textContent);
-    return [...new Set(items.map(normalizeText))].slice(0, 20);
-  }
-
-  function scheduleAutoPreload(delay = 1200) {
-    const settings = getSettings();
-    if (!settings.autoPreload) return;
-    clearTimeout(preloadTimer);
-    preloadTimer = setTimeout(() => {
-      const texts = collectVisibleEnglishTexts();
-      const signature = texts.join("|");
-      if (!signature || signature === lastPreloadSignature) return;
-      lastPreloadSignature = signature;
-      warmupTexts(texts).catch(() => {});
-    }, delay);
-  }
-
   function renderPanel() {
     if (document.getElementById("eg-tts-panel")) return;
     const style = document.createElement("style");
@@ -222,7 +173,6 @@
       #eg-tts-panel .eg-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
       #eg-tts-panel .eg-chip{font-size:12px;background:#eef8f4;border-radius:999px;padding:3px 8px;color:#087557;font-weight:700}
       #eg-tts-panel button{border:0;border-radius:10px;padding:7px 9px;background:#0f8f6f;color:#fff;font-weight:800;cursor:pointer}
-      #eg-tts-panel button.eg-light{background:#eef3f5;color:#234}
       #eg-tts-panel .eg-small{font-size:11px;color:#789;line-height:1.35}
       #eg-tts-loading-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(18px);display:flex;align-items:center;gap:9px;padding:10px 14px;border-radius:999px;background:rgba(15,143,111,.96);color:#fff;font:700 13px system-ui,-apple-system,'Segoe UI',sans-serif;box-shadow:0 10px 24px rgba(0,0,0,.22);z-index:2147483646;opacity:0;pointer-events:none;transition:opacity .18s ease,transform .18s ease;max-width:min(420px,calc(100vw - 32px))}
       #eg-tts-loading-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -247,12 +197,8 @@
           <input id="eg-tts-speed" type="range" min="0.7" max="1.2" step="0.05" />
         </div>
         <div class="eg-row">
-          <label style="margin:0"><input id="eg-tts-auto" type="checkbox" /> 自動預生成</label>
-          <button class="eg-light" id="eg-tts-preload" type="button">預生成目前頁</button>
-        </div>
-        <div class="eg-row">
           <button id="eg-tts-test" type="button">試聽</button>
-          <span class="eg-small">Help / help / HELP 會共用同一份音檔</span>
+          <span class="eg-small">語速只調整播放，不重產音檔</span>
         </div>
       </div>
     `;
@@ -261,7 +207,6 @@
     const voice = panel.querySelector("#eg-tts-voice");
     const speed = panel.querySelector("#eg-tts-speed");
     const speedLabel = panel.querySelector("#eg-tts-speed-label");
-    const auto = panel.querySelector("#eg-tts-auto");
     const head = panel.querySelector(".eg-head");
     const toggle = panel.querySelector("#eg-tts-toggle");
 
@@ -270,7 +215,6 @@
       voice.value = s.voiceId;
       speed.value = s.speed;
       speedLabel.textContent = `${s.speed.toFixed(2)}x`;
-      auto.checked = s.autoPreload;
     }
 
     voice.addEventListener("change", () => window.EnglishGoTTS.setSettings({ voiceId: voice.value }));
@@ -278,9 +222,7 @@
       speedLabel.textContent = `${Number(speed.value).toFixed(2)}x`;
       window.EnglishGoTTS.setSettings({ speed: Number(speed.value) });
     });
-    auto.addEventListener("change", () => window.EnglishGoTTS.setSettings({ autoPreload: auto.checked }));
     panel.querySelector("#eg-tts-test").addEventListener("click", () => window.EnglishGoTTS.speak("This is a clear English pronunciation test."));
-    panel.querySelector("#eg-tts-preload").addEventListener("click", () => warmupTexts(collectVisibleEnglishTexts()));
     head.addEventListener("click", () => {
       panel.classList.toggle("eg-mini");
       toggle.textContent = panel.classList.contains("eg-mini") ? "+" : "−";
@@ -295,18 +237,14 @@
       try {
         if (settings.voiceId) localStorage.setItem(LS_VOICE, settings.voiceId);
         if (settings.speed != null) localStorage.setItem(LS_SPEED, String(clamp(settings.speed, 0.7, 1.2, DEFAULT_SPEED)));
-        if (settings.autoPreload != null) localStorage.setItem(LS_AUTO_PRELOAD, settings.autoPreload ? "true" : "false");
       } catch {}
       window.dispatchEvent(new CustomEvent("englishgo:tts-settings-changed", { detail: getSettings() }));
-      scheduleAutoPreload(300);
     },
-    preload: warmupTexts,
     speak(text) {
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = "en-US";
       return synth.speak(utterance);
     },
-    collectVisibleTexts: collectVisibleEnglishTexts,
   };
 
   synth.cancel = function patchedCancel() {
@@ -333,7 +271,7 @@
         const audio = new Audio(url);
         activeAudio = audio;
         const settings = getSettings();
-        audio.playbackRate = clamp(utterance.rate || settings.speed, 0.7, 1.2, settings.speed);
+        audio.playbackRate = settings.speed;
         audio.volume = typeof utterance.volume === "number" ? utterance.volume : 1;
         audio.oncanplay = () => hideTtsLoading(loadingToken);
         audio.onplaying = () => hideTtsLoading(loadingToken);
@@ -362,12 +300,8 @@
   };
 
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", () => { renderPanel(); scheduleAutoPreload(); });
+    document.addEventListener("DOMContentLoaded", renderPanel);
   } else {
     renderPanel();
-    scheduleAutoPreload();
   }
-
-  const observer = new MutationObserver(() => scheduleAutoPreload(1600));
-  observer.observe(document.documentElement, { childList: true, subtree: true, characterData: true });
 })();
