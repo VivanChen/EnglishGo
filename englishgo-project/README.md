@@ -35,9 +35,14 @@ npm run build
 ### 環境變數（在 Netlify 設定）
 
 ```
-VITE_SUPABASE_URL=https://jbspxqebcrkilfcddluo.supabase.co
+VITE_SUPABASE_URL=<你的 Supabase Project URL>
 VITE_SUPABASE_ANON_KEY=<你的 anon key>
+ELEVENLABS_API_KEY=<你的 ElevenLabs API key>
+SUPABASE_SERVICE_ROLE_KEY=<你的 Supabase service_role key>
+SUPABASE_TTS_BUCKET=tts-cache
 ```
+
+> 注意：不要另外設定 `SUPABASE_URL`。此專案前端需要公開的 `VITE_SUPABASE_URL`，Netlify Secrets Scanning 可能會把相同值誤判為 `SUPABASE_URL` 外洩。
 
 ## 📋 專案結構
 
