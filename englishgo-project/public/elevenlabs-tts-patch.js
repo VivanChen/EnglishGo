@@ -22,6 +22,9 @@
   let activeAudio = null;
   let preloadTimer = null;
   let lastPreloadSignature = "";
+  let loadingToast = null;
+  let loadingButton = null;
+  let loadingCounter = 0;
 
   function clamp(n, min, max, fallback) {
     const v = Number(n);
@@ -86,6 +89,47 @@
     try {
       if (typeof utterance.onstart === "function") utterance.onstart(new Event("start"));
     } catch {}
+  }
+
+  function findLikelySpeakerButton() {
+    const candidates = Array.from(document.querySelectorAll("button,[role='button'],span,div,a"));
+    const visible = candidates.filter(el => {
+      const txt = (el.textContent || "").trim();
+      if (!/[🔊🔈🔉🔇]/.test(txt)) return false;
+      const rect = el.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0 && rect.top >= -20 && rect.bottom <= window.innerHeight + 20;
+    });
+    return visible.at(-1) || null;
+  }
+
+  function showTtsLoading(text) {
+    loadingCounter += 1;
+    const token = loadingCounter;
+    const shortText = normalizeText(text).slice(0, 28);
+    const button = findLikelySpeakerButton();
+    if (loadingButton && loadingButton !== button) loadingButton.classList.remove("eg-tts-loading-target");
+    loadingButton = button;
+    if (loadingButton) loadingButton.classList.add("eg-tts-loading-target");
+
+    if (!loadingToast) {
+      loadingToast = document.createElement("div");
+      loadingToast.id = "eg-tts-loading-toast";
+      loadingToast.innerHTML = `<span class="eg-tts-spinner"></span><span class="eg-tts-loading-text"></span>`;
+      document.body.appendChild(loadingToast);
+    }
+    const textEl = loadingToast.querySelector(".eg-tts-loading-text");
+    if (textEl) textEl.textContent = shortText ? `正在準備發音：${shortText}` : "正在準備發音…";
+    loadingToast.classList.add("show");
+    window.dispatchEvent(new CustomEvent("englishgo:tts-loading", { detail: { text: shortText } }));
+    return token;
+  }
+
+  function hideTtsLoading(token) {
+    if (token && token !== loadingCounter) return;
+    if (loadingToast) loadingToast.classList.remove("show");
+    if (loadingButton) loadingButton.classList.remove("eg-tts-loading-target");
+    loadingButton = null;
+    window.dispatchEvent(new CustomEvent("englishgo:tts-ready"));
   }
 
   async function getAudioUrl(text, options = {}) {
@@ -180,6 +224,12 @@
       #eg-tts-panel button{border:0;border-radius:10px;padding:7px 9px;background:#0f8f6f;color:#fff;font-weight:800;cursor:pointer}
       #eg-tts-panel button.eg-light{background:#eef3f5;color:#234}
       #eg-tts-panel .eg-small{font-size:11px;color:#789;line-height:1.35}
+      #eg-tts-loading-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(18px);display:flex;align-items:center;gap:9px;padding:10px 14px;border-radius:999px;background:rgba(15,143,111,.96);color:#fff;font:700 13px system-ui,-apple-system,'Segoe UI',sans-serif;box-shadow:0 10px 24px rgba(0,0,0,.22);z-index:2147483646;opacity:0;pointer-events:none;transition:opacity .18s ease,transform .18s ease;max-width:min(420px,calc(100vw - 32px))}
+      #eg-tts-loading-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+      .eg-tts-spinner{width:14px;height:14px;border-radius:999px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;animation:egTtsSpin .75s linear infinite;flex:0 0 auto}
+      .eg-tts-loading-target{position:relative;animation:egTtsPulse .9s ease-in-out infinite!important;filter:drop-shadow(0 0 8px rgba(15,143,111,.5))}
+      @keyframes egTtsSpin{to{transform:rotate(360deg)}}
+      @keyframes egTtsPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.18)}}
     `;
     document.head.appendChild(style);
 
@@ -261,12 +311,14 @@
 
   synth.cancel = function patchedCancel() {
     stopActiveAudio();
+    hideTtsLoading();
     return nativeCancel();
   };
 
   synth.speak = function patchedSpeak(utterance) {
     if (!shouldUseElevenLabs(utterance)) {
       stopActiveAudio();
+      hideTtsLoading();
       return nativeSpeak(utterance);
     }
 
@@ -274,6 +326,7 @@
 
     stopActiveAudio();
     nativeCancel();
+    const loadingToken = showTtsLoading(text);
 
     getAudioUrl(text)
       .then((url) => {
@@ -282,18 +335,26 @@
         const settings = getSettings();
         audio.playbackRate = clamp(utterance.rate || settings.speed, 0.7, 1.2, settings.speed);
         audio.volume = typeof utterance.volume === "number" ? utterance.volume : 1;
+        audio.oncanplay = () => hideTtsLoading(loadingToken);
+        audio.onplaying = () => hideTtsLoading(loadingToken);
         audio.onended = () => {
           if (activeAudio === audio) activeAudio = null;
+          hideTtsLoading(loadingToken);
           emitEnd(utterance);
         };
         audio.onerror = () => {
           if (activeAudio === audio) activeAudio = null;
+          hideTtsLoading(loadingToken);
           nativeSpeak(utterance);
         };
         emitStart(utterance);
-        return audio.play();
+        return audio.play().then(() => hideTtsLoading(loadingToken)).catch((err) => {
+          hideTtsLoading(loadingToken);
+          throw err;
+        });
       })
       .catch(() => {
+        hideTtsLoading(loadingToken);
         nativeSpeak(utterance);
       });
 
