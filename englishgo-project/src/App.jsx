@@ -716,6 +716,24 @@ function speak(t,l="en-US",r=0.9,opts={}){
   return u;
 }
 
+function preloadTts(texts,opts={}){
+  if(typeof window==="undefined")return;
+  const tts=window.EnglishGoTTS;
+  if(!tts)return;
+  const raw=Array.isArray(texts)?texts:[texts];
+  const limit=opts.limit||5;
+  const list=[];const seen=new Set();
+  raw.forEach(item=>{
+    const text=String(item||"").trim();
+    const key=text.toLowerCase();
+    if(!text||text.length>350||!/[A-Za-z]/.test(text)||seen.has(key))return;
+    seen.add(key);list.push(text);
+  });
+  if(!list.length)return;
+  if(typeof tts.preloadMany==="function"){tts.preloadMany(list,{...opts,limit});return}
+  list.slice(0,limit).forEach(text=>tts.preload?.(text,opts));
+}
+
 // Speak multiple sentences with natural pauses between them (story narration)
 // Returns a control handle with cancel() for cleanup
 function speakStory(sentences,opts={}){
@@ -1528,6 +1546,14 @@ function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,onSetGifKey,sharedWord,apiK
     }
     return()=>{active=false};
   },[cur?.w,apiKey]);
+  useEffect(()=>{
+    if(!cur||loading)return;
+    const upcoming=deck.queue.slice(0,5).map(i=>cards[i]?.w).filter(Boolean);
+    preloadTts([cur.w,...upcoming],{limit:5,concurrency:2});
+    if(!spokenExample)return;
+    const timer=window.setTimeout(()=>preloadTts(spokenExample,{limit:1,concurrency:1}),300);
+    return()=>window.clearTimeout(timer);
+  },[cur?.w,spokenExample,deck.queue,loading,cards]);
   useEffect(()=>{if(cur&&!flip&&!loading)speak(cur.w)},[cur?.w,flip,loading]);
   const rate=useCallback(a=>{if((a==="again"||a==="hard")&&cur)trackWeak(cur.w);if(a==="easy"||a==="good"){onXp();setMascotMood(a==="easy"?"great":"happy");setCombo(cb=>{const nc=cb+1;setMaxCombo(mc=>Math.max(mc,nc));if(nc>=3){playSound("combo");setComboAnim(true);setTimeout(()=>setComboAnim(false),600);if(typeof triggerRewardBurst==="function"){triggerRewardBurst({text:`COMBO ×${nc}！`,fromX:window.innerWidth/2,fromY:"35%",textColor:nc>=10?"#FF1493":nc>=5?"#FFD700":"#FFA500",textSize:nc>=10?42:nc>=5?38:32,duration:1300});if(nc%5===0){triggerRewardBurst({emoji:"⭐",count:6,fromX:window.innerWidth/2,fromY:window.innerHeight*0.4,size:24,duration:1200})}}}else playSound("good");return nc})}else if(a==="again"){setCombo(0);setMascotMood("sad");playSound("bad")}else{setMascotMood("think");playSound("flip")}setTimeout(()=>setMascotMood("idle"),1500);setDeck(d=>rateDeck(d,a));setFlip(false);setFlipAnim(false)},[onXp,cur,trackWeak]);
   useEffect(()=>{const h=e=>{if(done)return;if(e.code==="Space"){e.preventDefault();if(!flip){setFlip(true);setFlipAnim(true);playSound("flip");if(spokenExample)setTimeout(()=>speak(spokenExample),350)}else{setFlip(false);setFlipAnim(false)}}if(flip){if(e.key==="1")rate("again");if(e.key==="2")rate("hard");if(e.key==="3")rate("good");if(e.key==="4")rate("easy")}if(e.key==="Enter"){e.preventDefault();if(cur)speak(flip?(spokenExample||cur.w):cur.w)}};window.addEventListener("keydown",h);return()=>window.removeEventListener("keydown",h)},[flip,done,cur,rate,spokenExample]);

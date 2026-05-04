@@ -1,16 +1,33 @@
-import { ElevenLabsClient } from "@elevenlabs/elevenlabs-js";
 import crypto from "node:crypto";
 
 const DEFAULT_VOICE_ID = "1AKkSX7KMPHIWuz76m0n";
 const DEFAULT_BUCKET = "tts-cache";
+const DEFAULT_MODEL_ID = "eleven_flash_v2_5";
+const DEFAULT_OUTPUT_FORMAT = "mp3_44100_128";
 const MAX_TEXT_LENGTH = 900;
 
+function getEnv(name) {
+  try {
+    const value = globalThis.Netlify?.env?.get?.(name);
+    if (value) return value;
+  } catch {}
+  return process.env[name] || "";
+}
+
+function getFirstEnv(...names) {
+  for (const name of names) {
+    const value = getEnv(name);
+    if (value) return value;
+  }
+  return "";
+}
+
 function getSupabaseUrl() {
-  return (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "").replace(/\/$/, "");
+  return getFirstEnv("SUPABASE_URL", "VITE_SUPABASE_URL").replace(/\/$/, "");
 }
 
 function getSupabaseKey() {
-  return process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || "";
+  return getFirstEnv("SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_ANON_KEY", "VITE_SUPABASE_ANON_KEY");
 }
 
 function safeHeaderValue(value) {
@@ -18,25 +35,22 @@ function safeHeaderValue(value) {
 }
 
 function audioResponse(audioBuffer, source = "elevenlabs", extraHeaders = {}) {
-  return {
-    statusCode: 200,
+  return new Response(audioBuffer, {
+    status: 200,
     headers: {
       "Content-Type": "audio/mpeg",
       "Cache-Control": "public, max-age=86400",
       "X-TTS-Source": source,
       ...extraHeaders,
     },
-    body: audioBuffer.toString("base64"),
-    isBase64Encoded: true,
-  };
+  });
 }
 
 function jsonResponse(statusCode, payload) {
-  return {
-    statusCode,
+  return new Response(JSON.stringify(payload), {
+    status: statusCode,
     headers: { "Content-Type": "application/json; charset=utf-8" },
-    body: JSON.stringify(payload),
-  };
+  });
 }
 
 function normalizeTextForTts(rawText) {
@@ -56,41 +70,45 @@ function clampNumber(value, min, max, fallback) {
   return Math.min(max, Math.max(min, n));
 }
 
-function makeCacheKey({ normalizedText, voiceId }) {
+function getBooleanEnv(name, fallback) {
+  const value = getEnv(name);
+  if (!value) return fallback;
+  return /^(1|true|yes|on)$/i.test(value);
+}
+
+function makeCacheKey({ normalizedText, voiceId, modelId, outputFormat, voiceSettings }) {
   const hash = crypto
     .createHash("sha256")
-    .update(JSON.stringify({ text: normalizedText, voiceId, format: "mp3" }))
+    .update(JSON.stringify({ text: normalizedText, voiceId, modelId, outputFormat, voiceSettings, format: "mp3" }))
     .digest("hex");
 
   return `${voiceId}/${hash}.mp3`;
 }
 
-async function streamToBuffer(stream) {
-  if (!stream) return Buffer.alloc(0);
-  if (Buffer.isBuffer(stream)) return stream;
-  if (stream instanceof ArrayBuffer) return Buffer.from(stream);
-  if (stream instanceof Uint8Array) return Buffer.from(stream);
+async function convertTextToSpeech({ apiKey, voiceId, normalizedText, modelId, outputFormat, voiceSettings }) {
+  const url = new URL(`https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voiceId)}`);
+  if (outputFormat) url.searchParams.set("output_format", outputFormat);
 
-  const chunks = [];
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      Accept: "audio/mpeg",
+      "Content-Type": "application/json",
+      "xi-api-key": apiKey,
+    },
+    body: JSON.stringify({
+      text: normalizedText,
+      model_id: modelId,
+      voice_settings: voiceSettings,
+    }),
+  });
 
-  if (typeof stream.getReader === "function") {
-    const reader = stream.getReader();
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      if (value) chunks.push(Buffer.from(value));
-    }
-    return Buffer.concat(chunks);
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    throw new Error(`ElevenLabs TTS failed ${res.status}: ${detail.slice(0, 240)}`);
   }
 
-  if (stream[Symbol.asyncIterator]) {
-    for await (const chunk of stream) {
-      if (chunk) chunks.push(Buffer.from(chunk));
-    }
-    return Buffer.concat(chunks);
-  }
-
-  return Buffer.from(stream);
+  return Buffer.from(await res.arrayBuffer());
 }
 
 function supabaseHeaders(key, extra = {}) {
@@ -158,30 +176,39 @@ async function tryUploadToSupabaseStorage({ bucket, cacheKey, audioBuffer }) {
   }
 }
 
-export async function handler(event) {
-  if (event.httpMethod !== "POST") {
+export default async function handler(req, context = {}) {
+  if (req.method !== "POST") {
     return jsonResponse(405, { error: "Method not allowed" });
   }
 
-  const apiKey = process.env.ELEVENLABS_API_KEY;
+  const apiKey = getEnv("ELEVENLABS_API_KEY");
   if (!apiKey) {
     return jsonResponse(500, { error: "Missing ELEVENLABS_API_KEY" });
   }
 
   let payload;
   try {
-    payload = JSON.parse(event.body || "{}");
+    const body = await req.text();
+    payload = JSON.parse(body || "{}");
   } catch {
     return jsonResponse(400, { error: "Invalid JSON body" });
   }
 
   const originalText = String(payload.text || "").trim();
   const normalizedText = normalizeTextForTts(originalText);
-  const voiceId = process.env.ELEVENLABS_VOICE_ID || payload.voiceId || DEFAULT_VOICE_ID;
-  const playbackSpeed = clampNumber(payload.speed ?? process.env.ELEVENLABS_SPEED, 0.7, 1.2, 1);
-  const bucket = process.env.SUPABASE_TTS_BUCKET || DEFAULT_BUCKET;
+  const voiceId = getEnv("ELEVENLABS_VOICE_ID") || payload.voiceId || DEFAULT_VOICE_ID;
+  const modelId = getEnv("ELEVENLABS_MODEL_ID") || DEFAULT_MODEL_ID;
+  const outputFormat = getEnv("ELEVENLABS_OUTPUT_FORMAT") || DEFAULT_OUTPUT_FORMAT;
+  const playbackSpeed = clampNumber(payload.speed ?? getEnv("ELEVENLABS_SPEED"), 0.7, 1.2, 1);
+  const bucket = getEnv("SUPABASE_TTS_BUCKET") || DEFAULT_BUCKET;
   const hasSupabaseUrl = Boolean(getSupabaseUrl());
   const hasSupabaseKey = Boolean(getSupabaseKey());
+  const voiceSettings = {
+    stability: clampNumber(getEnv("ELEVENLABS_STABILITY"), 0, 1, 0.55),
+    similarity_boost: clampNumber(getEnv("ELEVENLABS_SIMILARITY_BOOST"), 0, 1, 0.85),
+    style: clampNumber(getEnv("ELEVENLABS_STYLE"), 0, 1, 0),
+    use_speaker_boost: getBooleanEnv("ELEVENLABS_USE_SPEAKER_BOOST", false),
+  };
 
   if (!normalizedText) {
     return jsonResponse(400, { error: "Missing text" });
@@ -191,12 +218,15 @@ export async function handler(event) {
     return jsonResponse(400, { error: `Text is too long. Max length is ${MAX_TEXT_LENGTH} characters.` });
   }
 
-  const cacheKey = makeCacheKey({ normalizedText, voiceId });
+  const cacheKey = makeCacheKey({ normalizedText, voiceId, modelId, outputFormat, voiceSettings });
   const debugHeaders = {
     "X-TTS-Bucket": safeHeaderValue(bucket),
     "X-TTS-Cache-Key": safeHeaderValue(cacheKey),
     "X-TTS-Normalized-Text": safeHeaderValue(normalizedText),
     "X-TTS-Voice-Id": safeHeaderValue(voiceId),
+    "X-TTS-Model-Id": safeHeaderValue(modelId),
+    "X-TTS-Output-Format": safeHeaderValue(outputFormat),
+    "X-TTS-Speaker-Boost": String(voiceSettings.use_speaker_boost),
     "X-TTS-Playback-Speed": safeHeaderValue(playbackSpeed),
     "X-TTS-Has-Supabase-Url": String(hasSupabaseUrl),
     "X-TTS-Has-Supabase-Key": String(hasSupabaseKey),
@@ -212,29 +242,48 @@ export async function handler(event) {
   }
 
   try {
-    const client = new ElevenLabsClient({ apiKey });
-    const response = await client.textToSpeech.convert(voiceId, {
-      text: normalizedText,
-      voiceSettings: {
-        stability: clampNumber(process.env.ELEVENLABS_STABILITY, 0, 1, 0.55),
-        similarityBoost: clampNumber(process.env.ELEVENLABS_SIMILARITY_BOOST, 0, 1, 0.85),
-        style: clampNumber(process.env.ELEVENLABS_STYLE, 0, 1, 0),
-        useSpeakerBoost: true,
-      },
+    const audioBuffer = await convertTextToSpeech({
+      apiKey,
+      voiceId,
+      normalizedText,
+      modelId,
+      outputFormat,
+      voiceSettings,
     });
-    const audioBuffer = await streamToBuffer(response);
 
     if (!audioBuffer.length) {
       return jsonResponse(502, { error: "ElevenLabs returned empty audio" });
     }
 
-    const upload = await tryUploadToSupabaseStorage({ bucket, cacheKey, audioBuffer });
+    const awaitUpload = getEnv("TTS_AWAIT_CACHE_UPLOAD") === "true";
+    if (awaitUpload) {
+      const upload = await tryUploadToSupabaseStorage({ bucket, cacheKey, audioBuffer });
+      return audioResponse(audioBuffer, "elevenlabs", {
+        ...debugHeaders,
+        "X-TTS-Cache-Read": safeHeaderValue(cached.reason),
+        "X-TTS-Cache-Upload": upload.ok ? "ok" : "failed",
+        "X-TTS-Cache-Upload-Detail": safeHeaderValue(upload.reason),
+      });
+    }
+
+    const uploadPromise = tryUploadToSupabaseStorage({ bucket, cacheKey, audioBuffer })
+      .then((upload) => {
+        if (!upload.ok) console.warn("TTS cache upload failed:", upload.reason);
+        return upload;
+      })
+      .catch((err) => {
+        console.warn("TTS cache upload error:", err?.message || String(err));
+      });
+
+    if (typeof context.waitUntil === "function") {
+      context.waitUntil(uploadPromise);
+    }
 
     return audioResponse(audioBuffer, "elevenlabs", {
       ...debugHeaders,
       "X-TTS-Cache-Read": safeHeaderValue(cached.reason),
-      "X-TTS-Cache-Upload": upload.ok ? "ok" : "failed",
-      "X-TTS-Cache-Upload-Detail": safeHeaderValue(upload.reason),
+      "X-TTS-Cache-Upload": "queued",
+      "X-TTS-Cache-Upload-Detail": typeof context.waitUntil === "function" ? "waitUntil" : "best-effort",
     });
   } catch (err) {
     return jsonResponse(500, { error: err?.message || String(err) });

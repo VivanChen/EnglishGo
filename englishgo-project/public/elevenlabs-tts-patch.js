@@ -40,6 +40,11 @@
       .toLowerCase();
   }
 
+  function isEligibleText(text) {
+    const normalized = normalizeText(text);
+    return Boolean(normalized && normalized.length <= MAX_CHARS && /[A-Za-z]/.test(normalized));
+  }
+
   function getSettings() {
     let voiceId = DEFAULT_VOICE;
     let speed = DEFAULT_SPEED;
@@ -130,6 +135,7 @@
   async function getAudioUrl(text, options = {}) {
     const settings = { ...getSettings(), ...options };
     const normalized = normalizeText(text);
+    if (!isEligibleText(normalized)) throw new Error("Text is not eligible for ElevenLabs TTS");
     const cacheKey = makeCacheKey(normalized, settings);
     if (audioCache.has(cacheKey)) return audioCache.get(cacheKey);
     if (inflight.has(cacheKey)) return inflight.get(cacheKey);
@@ -156,6 +162,37 @@
 
     inflight.set(cacheKey, promise);
     return promise;
+  }
+
+  function preload(text, options = {}) {
+    return getAudioUrl(text, options).catch(() => null);
+  }
+
+  async function preloadMany(texts, options = {}) {
+    const rawItems = Array.isArray(texts) ? texts : [texts];
+    const limit = clamp(options.limit, 1, 12, 5);
+    const concurrency = clamp(options.concurrency, 1, 3, 2);
+    const seen = new Set();
+    const items = [];
+
+    for (const item of rawItems) {
+      const normalized = normalizeText(item);
+      if (!isEligibleText(normalized) || seen.has(normalized)) continue;
+      seen.add(normalized);
+      items.push(normalized);
+      if (items.length >= limit) break;
+    }
+
+    let index = 0;
+    const workers = Array.from({ length: Math.min(concurrency, items.length) }, async () => {
+      while (index < items.length) {
+        const next = items[index++];
+        await preload(next, options);
+      }
+    });
+
+    await Promise.allSettled(workers);
+    return items.length;
   }
 
   function renderPanel() {
@@ -232,7 +269,10 @@
   }
 
   window.EnglishGoTTS = {
+    getAudioUrl,
     getSettings,
+    preload,
+    preloadMany,
     setSettings(settings = {}) {
       try {
         if (settings.voiceId) localStorage.setItem(LS_VOICE, settings.voiceId);
