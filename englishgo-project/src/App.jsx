@@ -101,16 +101,87 @@ function mapWord(r){
     ex:r.example||'',ez:r.example_zh||'',img:''}}catch{return null}
 }
 
+const WORD_SELECT="id,word,phonetic,pos,meaning,forms,collocations,example,example_zh,category,ceec_level";
+const VOCAB_POOL_TTL=5*60*1000;
+const _cloudCountCache={};
+const _cloudVocabPools={};
+const _cloudWordCache={};
+const _dailyWordCache={};
+
+function shuffleCopy(list){
+  const arr=[...(list||[])];
+  for(let i=arr.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]]=[arr[j],arr[i]];
+  }
+  return arr;
+}
+
+function sampleWords(words,count){
+  return shuffleCopy(words).slice(0,count).map(w=>({...w}));
+}
+
+function dateKey(){
+  const d=new Date();
+  return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+}
+
+function hashText(text){
+  let h=0;
+  for(let i=0;i<text.length;i++)h=((h<<5)-h+text.charCodeAt(i))|0;
+  return Math.abs(h);
+}
+
 async function fetchCloudVocab(level, count = 20) {
   const sb = await getSb();
   if (!sb) return null;
   try {
-    const { data: allIds } = await sb.from('word_bank').select('id').eq('level', level);
-    if (!allIds?.length) return null;
-    const ids = allIds.sort(() => Math.random() - 0.5).slice(0, count).map(r => r.id);
-    const { data } = await sb.from('word_bank').select('*').in('id', ids);
-    if (!data) return null;
-    return data.sort(() => Math.random() - 0.5).map(r => mapWord(r)).filter(Boolean);
+    const now=Date.now();
+    const cached=_cloudVocabPools[level];
+    if(cached&&now-cached.t<VOCAB_POOL_TTL&&cached.words?.length>=count){
+      return sampleWords(cached.words,count);
+    }
+
+    const total=await fetchCloudCount(level);
+    if(!total)return null;
+
+    const target=Math.min(total,Math.max(count*3,60));
+    const pageCount=total<=target?1:Math.min(4,Math.ceil(target/20));
+    const pageSize=Math.min(total,Math.ceil(target/pageCount));
+    const starts=[];
+    const maxStart=Math.max(0,total-pageSize);
+    for(let i=0;i<pageCount;i++){
+      const start=maxStart?Math.floor(Math.random()*(maxStart+1)):0;
+      starts.push(start);
+    }
+
+    const chunks=await Promise.all(starts.map(start=>
+      sb.from('word_bank')
+        .select(WORD_SELECT)
+        .eq('level',level)
+        .order('id',{ascending:true})
+        .range(start,start+pageSize-1)
+    ));
+    const byId=new Map();
+    chunks.forEach(({data,error})=>{
+      if(error||!data)return;
+      data.forEach(row=>{if(!byId.has(row.id))byId.set(row.id,row)});
+    });
+    let guard=0;
+    while(byId.size<count&&byId.size<total&&guard<4){
+      guard++;
+      const start=Math.floor(Math.random()*(Math.max(1,total-pageSize+1)));
+      const {data,error}=await sb.from('word_bank')
+        .select(WORD_SELECT)
+        .eq('level',level)
+        .order('id',{ascending:true})
+        .range(start,start+pageSize-1);
+      if(!error&&data)data.forEach(row=>{if(!byId.has(row.id))byId.set(row.id,row)});
+    }
+    const words=[...byId.values()].map(r=>mapWord(r)).filter(Boolean);
+    if(!words.length)return null;
+    _cloudVocabPools[level]={t:now,words};
+    return sampleWords(words,count);
   } catch { return null; }
 }
 
@@ -118,9 +189,55 @@ async function fetchCloudCount(level) {
   const sb = await getSb();
   if (!sb) return 0;
   try {
-    const { count } = await sb.from('word_bank').select('*', { count: 'exact', head: true }).eq('level', level);
+    const now=Date.now();
+    const cached=_cloudCountCache[level];
+    if(cached&&now-cached.t<VOCAB_POOL_TTL)return cached.count;
+    const { count } = await sb.from('word_bank').select('id', { count: 'exact', head: true }).eq('level', level);
+    _cloudCountCache[level]={t:now,count:count||0};
     return count || 0;
   } catch { return 0; }
+}
+
+async function fetchCloudWord(level, word) {
+  const sb = await getSb();
+  const key=`${level}:${String(word||"").toLowerCase()}`;
+  if(!sb||!word)return null;
+  try{
+    const cached=_cloudWordCache[key];
+    if(cached)return {...cached};
+    const pool=_cloudVocabPools[level]?.words||[];
+    const pooled=pool.find(w=>w.w.toLowerCase()===String(word).toLowerCase());
+    if(pooled){_cloudWordCache[key]=pooled;return {...pooled}}
+    const {data,error}=await sb.from('word_bank')
+      .select(WORD_SELECT)
+      .eq('level',level)
+      .ilike('word',String(word).trim())
+      .limit(1);
+    if(error||!data?.[0])return null;
+    const mapped=mapWord(data[0]);
+    if(mapped)_cloudWordCache[key]=mapped;
+    return mapped?{...mapped}:null;
+  }catch{return null}
+}
+
+async function fetchDailyCloudWord(level, fallback) {
+  const sb = await getSb();
+  if(!sb)return fallback;
+  const key=`${level}:${dateKey()}`;
+  try{
+    if(_dailyWordCache[key])return {..._dailyWordCache[key]};
+    const total=await fetchCloudCount(level);
+    if(!total)return fallback;
+    const index=hashText(key)%total;
+    const {data,error}=await sb.from('word_bank')
+      .select(WORD_SELECT)
+      .eq('level',level)
+      .order('id',{ascending:true})
+      .range(index,index);
+    const mapped=!error&&data?.[0]?mapWord(data[0]):null;
+    if(mapped){_dailyWordCache[key]=mapped;_cloudWordCache[`${level}:${mapped.w.toLowerCase()}`]=mapped;return {...mapped}}
+  }catch{}
+  return fallback;
 }
 
 // ═══ HOOK: localStorage ═════════════════════════════════════════════
@@ -1248,9 +1365,11 @@ function Landing({onSelect,dark,setDark}){
 // ═══ MENU ═══════════════════════════════════════════════════════════
 function Menu({lv,onSelect,daily,c,xp,coins,streak,achUnlocked,weakWords,isSponsor,pets,eggs}){
   const pct=Math.round((daily.done/daily.target)*100);
-  const todayWord=V[lv][new Date().getDate()%V[lv].length];
+  const todayKey=dateKey();
+  const fallbackToday=V[lv][hashText(`${todayKey}:${lv}:fallback`)%V[lv].length];
+  const[todayWord,setTodayWord]=useState(fallbackToday);
   const[cloudCount,setCloudCount]=useState(0);
-  useEffect(()=>{fetchCloudCount(lv).then(n=>setCloudCount(n||0))},[lv]);
+  useEffect(()=>{let active=true;setTodayWord(fallbackToday);setCloudCount(0);fetchCloudCount(lv).then(n=>{if(active)setCloudCount(n||0)});fetchDailyCloudWord(lv,fallbackToday).then(w=>{if(active&&w)setTodayWord(w)});return()=>{active=false}},[lv,todayKey]);
   return(<div>
     {/* Stats bar */}
     <div style={{display:"flex",gap:8,marginBottom:12,padding:"10px 14px",...S.card,flexWrap:"wrap"}}>
@@ -1269,7 +1388,7 @@ function Menu({lv,onSelect,daily,c,xp,coins,streak,achUnlocked,weakWords,isSpons
     {/* Weak words reminder */}
     {weakWords.length>0&&<div style={{...S.card,padding:"12px 16px",marginBottom:12,fontSize:14}}>
       <span style={{fontWeight:600,color:"#E24B4A"}}>需加強：</span>
-      {weakWords.sort((a,b)=>b.n-a.n).slice(0,5).map((w,i)=><span key={i} style={{marginLeft:6,color:S.t2}}>{w.w}({w.n})</span>)}
+      {[...weakWords].sort((a,b)=>b.n-a.n).slice(0,5).map((w,i)=><span key={i} style={{marginLeft:6,color:S.t2}}>{w.w}({w.n})</span>)}
     </div>}
     {/* Modules */}
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(150px,1fr))",gap:8}}>
@@ -1378,7 +1497,8 @@ function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,onSetGifKey,sharedWord,apiK
     let ordered=cloud;
     if(sharedWord){const si=cloud.findIndex(w=>w.w.toLowerCase()===sharedWord.toLowerCase());if(si>0){ordered=[cloud[si],...cloud.slice(0,si),...cloud.slice(si+1)]}else if(si<0){
       // Word not in cloud batch, try to fetch it specifically
-      try{const sb=await getSb();if(sb){const{data}=await sb.from('word_bank').select('*').ilike('word',sharedWord).limit(1);if(data?.[0]){const w=mapWord(data[0]);if(w)ordered=[w,...cloud.slice(0,19)]}}}catch{}
+      const w=await fetchCloudWord(lv,sharedWord);
+      if(w)ordered=[w,...cloud.slice(0,19)];
     }}
     ordered=sortCardsForStudy(ordered,weakWords,sharedWord);
     setCards(ordered);setDeck(createDeck(ordered));setSrc(`cloud (${ordered.length}字)`);
@@ -2889,7 +3009,18 @@ function WeakPage({onBack,weakWords,setWeakWords,c,lv}){
   const[ri,setRi]=useState(0);const[flip,setFlip]=useState(false);
   const[cloudData,setCloudData]=useState({});
   // Try to fetch full word data for weak words
-  useEffect(()=>{(async()=>{const sb=await getSb();if(!sb)return;for(const w of sorted.slice(0,20)){if(cloudData[w.w])continue;try{const{data}=await sb.from('word_bank').select('*').eq('word',w.w).limit(1);if(data?.[0])setCloudData(d=>({...d,[w.w]:{m:data[0].meaning,p:data[0].pos,ph:data[0].phonetic,ex:data[0].example,ez:data[0].example_zh}}))}catch{}}})()},[weakWords]);
+  useEffect(()=>{let active=true;(async()=>{
+    const sb=await getSb();if(!sb)return;
+    const wanted=sorted.slice(0,20).map(w=>w.w).filter(w=>w&&!cloudData[w]);
+    if(!wanted.length)return;
+    try{
+      const{data}=await sb.from('word_bank').select(WORD_SELECT).eq('level',lv).in('word',wanted);
+      if(!active||!data?.length)return;
+      const next={};
+      data.forEach(row=>{next[row.word]={m:row.meaning,p:row.pos,ph:row.phonetic,ex:row.example,ez:row.example_zh}});
+      setCloudData(d=>({...d,...next}));
+    }catch{}
+  })();return()=>{active=false}},[weakWords]);
 
   const removeWord=(w)=>setWeakWords(ws=>ws.filter(x=>x.w!==w));
   const[confirmClear,setConfirmClear]=useState(false);
