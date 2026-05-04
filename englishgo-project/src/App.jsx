@@ -352,6 +352,38 @@ const R = {
     {t:"Resilience in Failure",tx:"Failure is often viewed as a final result, but it can also be a source of feedback. People who develop resilience analyze what went wrong, adjust their strategies, and try again. This attitude does not make failure pleasant, but it makes failure useful for long-term growth.",qs:[{q:"How can failure be useful?",o:["As feedback","As a final stop","As a prize","As entertainment"],a:0},{q:"What do resilient people do?",o:["Avoid all goals","Adjust strategies","Blame others first","Stop trying"],a:1}]},
   ],
 };
+const R_ZH = {
+  "My Pet Cat":{tx:"我有一隻寵物貓。牠的名字叫 Mimi。牠又白又蓬鬆。Mimi 喜歡睡在沙發上。牠也喜歡玩球。每天早上，我都給牠牛奶。Mimi 是我最好的朋友。",qs:["這隻貓的名字是什麼？","Mimi 喜歡做什麼？"]},
+  "A Rainy Day":{tx:"今天是雨天。我不能去公園。我待在家裡畫圖。媽媽為我做熱巧克力。我畫了一道彩虹。我的妹妹想玩紙牌遊戲。我們一起玩得很開心。",qs:["為什麼這個孩子不能出去？","這個孩子畫了什麼？"]},
+  "My Family":{tx:"我家有五個人。我的爸爸是醫生。我的媽媽是老師。我有一個哥哥和一個妹妹。我的哥哥比我大。我的妹妹年紀最小。我們住在學校附近的一棟大房子裡。",qs:["家裡有幾個人？","爸爸的工作是什麼？"]},
+  "At the Zoo":{tx:"我們班星期五去動物園。我們看到猴子、大象和鳥。大象非常大，猴子很有趣。我最喜歡的動物是長頸鹿，因為牠有長長的脖子。我們在樹下吃午餐。",qs:["這個班級去了哪裡？","哪一種動物有長長的脖子？"]},
+  "Tom's New Bike":{tx:"Tom 有一台新的藍色腳踏車。他和妹妹一起騎車去學校。他總是戴安全帽，因為安全很重要。放學後，Tom 清潔腳踏車，並把它放進車庫。他以自己的腳踏車為傲。",qs:["Tom 的腳踏車是什麼顏色？","Tom 為什麼戴安全帽？"]},
+  "The School Garden":{tx:"我們學校後面有一個小花園。學生們在那裡種花和蔬菜。我們每天早上澆水。夏天時，我們可以看到番茄和蝴蝶。這座花園讓我們的學校變得美麗。",qs:["花園在哪裡？","學生每天早上做什麼？"]},
+  "A Birthday Party":{tx:"今天是 Lily 的生日。她的朋友們三點到她家。他們唱生日歌，吃巧克力蛋糕。Lily 從叔叔那裡收到一本故事書。大家玩遊戲並開心地笑。",qs:["今天是誰的生日？","Lily 收到什麼禮物？"]},
+  "Helping Grandma":{tx:"Ben 星期天去看奶奶。奶奶正在廚房煮湯。Ben 幫忙洗胡蘿蔔和擺餐桌。午餐後，他讀一本書給奶奶聽。奶奶微笑著說謝謝。",qs:["Ben 什麼時候去看奶奶？","Ben 讀了什麼？"]},
+  "The Lost Pencil":{tx:"Amy 找不到她最喜歡的鉛筆。她看了桌子底下，也找了書包裡面。她的朋友 Jack 在窗戶旁邊找到它。Amy 很開心並說謝謝。接著她用那支鉛筆畫了一顆星星。",qs:["Amy 正在找什麼？","是誰找到它的？"]},
+  "After School":{tx:"放學後，Ken 去操場。他和同學踢足球。他們跑得很快，開心地大叫。五點時，Ken 回家並喝水。他在晚餐前完成作業。",qs:["Ken 玩什麼運動？","Ken 晚餐前做了什麼？"]},
+  "The Power of Reading":{tx:"閱讀是學生可以培養的最重要技能之一。當你規律閱讀時，你會增加字彙量並強化批判性思考。研究顯示，為興趣而閱讀的學生在學校表現更好。",qs:["閱讀有助於提升什麼？","誰在學校表現更好？"]},
+  "Social Media and Teens":{tx:"社群媒體已成為青少年生活的重要部分。許多學生每天花超過三小時在 Instagram 和 YouTube 上。雖然社群媒體幫助人們保持聯繫，但過多螢幕時間可能導致睡眠問題。專家建議設定每日使用時間限制。",qs:["青少年花多少時間在社群媒體上？","專家建議什麼？"]},
+  "Bubble Tea History":{tx:"珍珠奶茶於 1980 年代在台灣被發明。一位茶館老闆把粉圓加入冰茶中。這種飲料很快在台灣流行起來，並傳到其他國家。今天，世界各地都可以找到珍珠奶茶店。",qs:["珍珠奶茶在哪裡被發明？","珍珠奶茶是什麼時候被發明的？"]},
+  "A Greener School":{tx:"Green Valley 國中的學生開始了一項回收計畫。每間教室都有放紙張、瓶子和罐子的箱子。每週結束時，志工會收集箱子並記錄數量。這項計畫幫助學生了解小習慣也能保護環境。",qs:["學生開始了什麼計畫？","志工記錄什麼？"]},
+  "Learning a New Skill":{tx:"Kevin 想學彈吉他。一開始，他的手指會痛，歌曲聽起來也很奇怪。然而，他每天練習二十分鐘。兩個月後，他可以為家人彈一首簡單的歌。他學到進步需要耐心。",qs:["Kevin 學了什麼技能？","他學到了什麼道理？"]},
+  "The Night Market":{tx:"台灣夜市以食物、遊戲和友善的人群聞名。遊客可以嘗試臭豆腐、炸雞和果汁。有些人去那裡買衣服或玩小遊戲。夜市不只是吃東西的地方，也是體驗在地文化的地方。",qs:["夜市以什麼聞名？","人們可以在那裡體驗什麼？"]},
+  "A Team Project":{tx:"Mia 的自然科學小組必須用紙和膠帶做一座小橋。一開始，大家有不同想法，並同時說話。老師請他們先聽別人說完再發言。當他們清楚分配工作後，小組做得更快，也做出一座堅固的橋。",qs:["這個小組做了什麼？","什麼幫助小組做得更快？"]},
+  "Public Transportation":{tx:"搭公車和火車可以減少交通和空氣污染。在忙碌的城市裡，大眾運輸也幫助人們節省時間，因為他們不需要找停車位。雖然尖峰時間可能很擁擠，但它仍然是許多通勤者的重要選擇。",qs:["大眾運輸可以減少什麼？","什麼時候可能會很擁擠？"]},
+  "Online Learning":{tx:"線上學習給學生更多彈性。他們可以複習影片、暫停課程，並在家學習。然而，學生也需要自制力，因為遊戲和訊息很容易讓他們分心。好的學習計畫可以幫助他們保持專注。",qs:["線上學習給學生什麼？","文中提到什麼問題？"]},
+  "The School Concert":{tx:"學校音樂會星期五晚上在禮堂舉行。學生們演奏鋼琴、小提琴和鼓。音樂社在表演前練習了三週。當最後一首歌結束時，家長和老師大聲鼓掌。表演者感到緊張但也很驕傲。",qs:["音樂會在哪裡舉行？","表演者感覺如何？"]},
+  "Ethics of AI":{tx:"隨著人工智慧融入日常生活，倫理問題也隨之出現。其中一個擔憂是演算法偏見，也就是人工智慧延續訓練資料中的偏見。此外，自動化系統造成的勞工取代，也帶來前所未有的經濟挑戰，需要審慎的政策回應。",qs:["什麼是演算法偏見？","自動化帶來的挑戰是什麼？"]},
+  "Procrastination Psychology":{tx:"拖延並不只是懶惰。研究指出，拖延是一種情緒調節問題。當任務引發負面情緒時，大腦會透過逃避來尋求舒緩。認知行為策略，例如把任務拆成較小的步驟，已被證實有效。",qs:["拖延主要是什麼問題？","什麼方法有幫助？"]},
+  "Renewable Energy Future":{tx:"轉向再生能源是現代歷史中最重要的轉變之一。太陽能和風力發電的成本已大幅下降。然而，它們間歇性的特質帶來電網穩定性的挑戰。能源儲存技術對解決這個限制至關重要。",qs:["太陽能和風力的成本如何變化？","什麼是至關重要的？"]},
+  "Digital Privacy":{tx:"隨著人們依賴線上服務，數位隱私變得越來越複雜。應用程式常收集位置資料、瀏覽行為和個人偏好。雖然這些資料能提升便利性，但如果公司缺乏透明度，也可能被濫用。使用者需要提高意識，也需要更強的法律保護。",qs:["為什麼資料收集可能有用？","文中提到什麼保護？"]},
+  "Urban Heat Islands":{tx:"大城市通常比附近鄉村地區更熱，因為混凝土、柏油和建築物會吸收熱量。這種現象稱為都市熱島效應。種樹、建造綠屋頂和使用反光材料都可以減少這個問題，讓城市更宜居。",qs:["為什麼城市比較熱？","什麼可以減少這個問題？"]},
+  "Media Literacy":{tx:"在資訊無窮無盡的時代，媒體識讀非常重要。讀者必須評估來源、檢查證據，並注意情緒化語言。假消息常常傳得很快，因為它們令人驚訝或害怕。謹慎的讀者在分享前會先停下來，並思考誰會從這則訊息中受益。",qs:["謹慎的讀者應該檢查什麼？","為什麼假消息傳得很快？"]},
+  "The Value of Sleep":{tx:"睡眠不只是活動的休息時間；它是一個支持記憶、情緒平衡和身體修復的生物過程。青少年常因作業、手機和過早的上學時間而睡眠不足。因此，改善睡眠習慣能同時提升學習與健康。",qs:["睡眠支持什麼？","為什麼青少年可能睡太少？"]},
+  "Cultural Preservation":{tx:"文化保存不只是保護老建築。它包含語言、節慶、工藝、歌曲和日常傳統。當社群保存文化時，年輕世代會獲得身分認同感。然而，保存不應讓文化停滯不前；活的傳統可以在保留意義的同時繼續調整。",qs:["文化保存包含什麼？","文化保存應避免什麼？"]},
+  "Ocean Plastic":{tx:"塑膠污染威脅海洋生態系，因為許多塑膠物品不容易分解。小塑膠碎片可能被魚吃下，並進入食物鏈。政府、企業和消費者都有角色要扮演，從禁止一次性產品到選擇可重複使用的容器都包括在內。",qs:["為什麼塑膠很危險？","文中建議的一項行動是什麼？"]},
+  "Resilience in Failure":{tx:"失敗常被視為最終結果，但它也可以是一種回饋來源。具有韌性的人會分析哪裡出錯、調整策略，然後再試一次。這種態度不會讓失敗變得愉快，但能讓失敗對長期成長有用。",qs:["失敗如何能有用？","有韌性的人會做什麼？"]},
+};
 // ═══ DICTATION SENTENCES ════════════════════════════════════════════
 const DICT = {
   elementary: ["I like to eat apples.","She is my best friend.","The dog is playing in the park.","We go to school every day.","My mother reads a book.","He runs very fast.","There are three cats.","I am happy today.","The sun is very big.","Please drink some water."],
@@ -2520,6 +2552,7 @@ function readingEvidence(text,q){
 }
 function ReadingM({lv,onBack,onXp}){
   const articles=R[lv];const[ai,setAi]=useState(0);const[answers,setAnswers]=useState({});const[focus,setFocus]=useState(-1);const[articlePlaying,setArticlePlaying]=useState(false);const rewarded=useRef({});const articleHandle=useRef(null);const c=LV[lv];const d=articles[ai];const ans=answers[ai]||{};
+  const zh=R_ZH[d.t]||{};
   useEffect(()=>{setAi(0);setAnswers({});setFocus(-1);rewarded.current={}},[lv]);
   const sentences=useMemo(()=>splitReadingSentences(d.tx),[d]);
   const keys=useMemo(()=>readingKeywords(d,lv),[d,lv]);
@@ -2548,13 +2581,17 @@ function ReadingM({lv,onBack,onXp}){
       <div style={{display:"grid",gap:7,marginBottom:12}}>
         {sentences.map((s,i)=><button key={i} onClick={()=>{stopArticle();setFocus(i);speak(s,"en-US",0.85)}} style={{textAlign:"left",fontSize:14,lineHeight:1.75,color:S.t1,padding:"9px 11px",background:focus===i?c.bg:S.bg2,border:`1px solid ${focus===i?c.cl:S.bd}`,borderRadius:10,cursor:"pointer",fontFamily:"inherit"}}>{s}</button>)}
       </div>
+      {done&&zh.tx&&<div style={{marginBottom:12,padding:"12px 14px",background:"#FFF7E6",border:"1px solid #F0D59A",borderRadius:12}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,marginBottom:6}}><div style={{fontSize:12,fontWeight:700,color:"#8A5A00"}}>中文翻譯</div><button onClick={()=>{stopArticle();speak(zh.tx,"zh-TW",1)}} style={{background:"none",border:`1px solid #E4C573`,borderRadius:10,padding:"4px 8px",fontSize:12,color:"#8A5A00",cursor:"pointer",fontFamily:"inherit"}}>🔊 中文</button></div>
+        <div style={{fontSize:13,lineHeight:1.8,color:S.t1,textAlign:"left"}}>{zh.tx}</div>
+      </div>}
       {keys.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:6}}>
         {keys.map(k=><button key={k.word} onClick={()=>speak(k.word)} style={{border:`1px solid ${S.bd}`,background:S.bg1,borderRadius:999,padding:"6px 10px",fontSize:12,color:S.t1,cursor:"pointer",fontFamily:"inherit"}}><b style={{color:c.cl}}>{k.word}</b>{k.info?.m?` · ${k.info.m}`:""}{k.count>1?` ×${k.count}`:""}</button>)}
       </div>}
     </div>
 
     {d.qs.map((q,qi)=>{const dn=ans[qi]!==undefined,correct=ans[qi]===q.a,evidence=readingEvidence(d.tx,q);return(<div key={qi} style={{...S.card,padding:"15px",marginBottom:8,borderLeft:`4px solid ${dn?(correct?"#1D9E75":"#E24B4A"):c.ac}`}}>
-      <div style={{display:"flex",gap:8,alignItems:"flex-start",marginBottom:10}}><div style={{width:26,height:26,borderRadius:"50%",background:dn?(correct?"#E1F5EE":"#FCEBEB"):c.bg,color:dn?(correct?"#1D9E75":"#E24B4A"):c.cl,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,flexShrink:0}}>{qi+1}</div><div style={{fontWeight:700,fontSize:14,color:S.t1,lineHeight:1.45}}>{q.q}</div></div>
+      <div style={{display:"flex",gap:8,alignItems:"flex-start",marginBottom:10}}><div style={{width:26,height:26,borderRadius:"50%",background:dn?(correct?"#E1F5EE":"#FCEBEB"):c.bg,color:dn?(correct?"#1D9E75":"#E24B4A"):c.cl,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,flexShrink:0}}>{qi+1}</div><div style={{flex:1}}><div style={{fontWeight:700,fontSize:14,color:S.t1,lineHeight:1.45}}>{q.q}</div>{done&&zh.qs?.[qi]&&<button onClick={()=>{stopArticle();speak(zh.qs[qi],"zh-TW",1)}} style={{marginTop:5,background:"#FFF7E6",border:"1px solid #F0D59A",borderRadius:10,padding:"5px 8px",fontSize:12,color:"#8A5A00",cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>🔊 {zh.qs[qi]}</button>}</div></div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:7}}>{q.o.map((o,oi)=>{const ok=oi===q.a,pk=ans[qi]===oi;let bg=S.bg2,bd=`1px solid ${S.bd}`,cl=S.t1;if(dn){if(ok){bg="#E1F5EE";bd="2px solid #1D9E75";cl="#146B45"}else if(pk){bg="#FCEBEB";bd="2px solid #E24B4A";cl="#A12F2F"}}return<button key={oi} onClick={()=>pick(qi,oi)} style={{padding:"11px 10px",borderRadius:10,background:bg,border:bd,cursor:dn?"default":"pointer",fontSize:13,fontFamily:"inherit",color:cl,textAlign:"left",fontWeight:dn&&ok?700:500,minHeight:44}}>{o}</button>})}</div>
       {dn&&<div style={{marginTop:10,padding:"10px 12px",borderRadius:10,background:correct?"#E1F5EE":"#FFF3CD",fontSize:12,color:S.t2,lineHeight:1.65}}>
         <div style={{fontSize:13,fontWeight:700,color:correct?"#1D9E75":"#E24B4A",marginBottom:3}}>{correct?"答對":"答錯"} · 正解：{q.o[q.a]}</div>
