@@ -93,6 +93,23 @@ async function petCloudSave(username,pinHash,payload){
   }catch{return false}
 }
 
+async function submitSponsorMessage(name,message){
+  const sb=await getSb();
+  if(!sb)return{ok:false,err:"目前無法連線到雲端資料庫，請稍後再試。"};
+  const n=(name||"").trim();
+  const m=(message||"").trim();
+  if(!n)return{ok:false,err:"請先填寫姓名。"};
+  if(n.length>60)return{ok:false,err:"姓名請控制在 60 字以內。"};
+  if(m.length>500)return{ok:false,err:"留言請控制在 500 字以內。"};
+  try{
+    const{error}=await sb.from("sponsor_messages").insert({name:n,message:m});
+    if(error)return{ok:false,err:"留言送出失敗："+error.message};
+    return{ok:true};
+  }catch{
+    return{ok:false,err:"留言送出失敗，請稍後再試。"};
+  }
+}
+
 
 function mapWord(r){
   try{return{w:r.word,ph:r.phonetic||'',p:r.pos||'',m:r.meaning,
@@ -396,32 +413,32 @@ const SONGS = {
       level:"小學",
       lines:[
         {sec:"Verse 1"},
-        {en:"Good morning, hello,",zh:"早安，你好。"},
-        {en:"I am ready, let's go.",zh:"我準備好了，我們出發吧。"},
-        {en:"I can read, I can write,",zh:"我會閱讀，我會書寫。"},
-        {en:"I can try with all my might.",zh:"我會盡全力嘗試。"},
+        {t:8.0,en:"Good morning, hello,",zh:"早安，你好。"},
+        {t:10.7,en:"I am ready, let's go.",zh:"我準備好了，我們出發吧。"},
+        {t:13.6,en:"I can read, I can write,",zh:"我會閱讀，我會書寫。"},
+        {t:16.3,en:"I can try with all my might.",zh:"我會盡全力嘗試。"},
         {sec:"Pre-Chorus"},
-        {en:"One word, two words,",zh:"一個單字，兩個單字。"},
-        {en:"Say them loud and clear.",zh:"大聲又清楚地說出來。"},
-        {en:"Every day I practice,",zh:"我每天練習。"},
-        {en:"English has no fear.",zh:"英文一點也不可怕。"},
+        {t:20.0,en:"One word, two words,",zh:"一個單字，兩個單字。"},
+        {t:22.8,en:"Say them loud and clear.",zh:"大聲又清楚地說出來。"},
+        {t:25.6,en:"Every day I practice,",zh:"我每天練習。"},
+        {t:28.5,en:"English has no fear.",zh:"英文一點也不可怕。"},
         {sec:"Chorus"},
-        {en:"Step by step, I learn today,",zh:"一步一步，我今天學習。"},
-        {en:"Sing with me, let's find our way.",zh:"和我一起唱，找到我們的方法。"},
-        {en:"Word by word, I grow so strong,",zh:"一字一句，我變得更強。"},
-        {en:"English learning all day long.",zh:"一整天都在學英文。"},
+        {t:31.0,en:"Step by step, I learn today,",zh:"一步一步，我今天學習。"},
+        {t:34.3,en:"Sing with me, let's find our way.",zh:"和我一起唱，找到我們的方法。"},
+        {t:37.8,en:"Word by word, I grow so strong,",zh:"一字一句，我變得更強。"},
+        {t:41.4,en:"English learning all day long.",zh:"一整天都在學英文。"},
         {sec:"Verse 2"},
-        {en:"I can listen, I can speak,",zh:"我會聽，我會說。"},
-        {en:"I get better every week.",zh:"我每週都變得更好。"},
-        {en:"If I make a small mistake,",zh:"如果我犯了一個小錯。"},
-        {en:"I just smile and try again.",zh:"我就微笑，然後再試一次。"},
+        {t:48.0,en:"I can listen, I can speak,",zh:"我會聽，我會說。"},
+        {t:50.8,en:"I get better every week.",zh:"我每週都變得更好。"},
+        {t:53.6,en:"If I make a small mistake,",zh:"如果我犯了一個小錯。"},
+        {t:56.5,en:"I just smile and try again.",zh:"我就微笑，然後再試一次。"},
         {sec:"Chorus"},
-        {en:"Step by step, I learn today,",zh:"一步一步，我今天學習。"},
-        {en:"Sing with me, let's find our way.",zh:"和我一起唱，找到我們的方法。"},
+        {t:60.3,en:"Step by step, I learn today,",zh:"一步一步，我今天學習。"},
+        {t:63.8,en:"Sing with me, let's find our way.",zh:"和我一起唱，找到我們的方法。"},
         {sec:"Outro"},
-        {en:"Read and write,",zh:"閱讀與書寫。"},
-        {en:"Speak and sing,",zh:"開口說，也開口唱。"},
-        {en:"English gives my heart new wings.",zh:"英文讓我的心長出新的翅膀。"},
+        {t:68.8,en:"Read and write,",zh:"閱讀與書寫。"},
+        {t:70.5,en:"Speak and sing,",zh:"開口說，也開口唱。"},
+        {t:72.2,en:"English gives my heart new wings.",zh:"英文讓我的心長出新的翅膀。"},
       ],
       vocab:["ready","read","write","practice","learn","strong","listen","speak","mistake","again"],
     },
@@ -1195,9 +1212,10 @@ export default function App(){
   // Deep link: detect ?word=xxx&lv=xxx from shared URL
   useEffect(()=>{
     const p=new URLSearchParams(window.location.search);
-    const w=p.get("word"),l=p.get("lv");
+    const w=p.get("word"),l=p.get("lv"),support=p.get("support");
     if(w&&l&&LV[l]){setLv(l);setMod("srs");setSharedWord(w)}
-    if(w)window.history.replaceState({},"",window.location.pathname);
+    if(support){setLv(LV[l]?l:"elementary");setMod("sponsor")}
+    if(w||support)window.history.replaceState({},"",window.location.pathname);
   },[]);
 
   // Check streak & daily reset + log history
@@ -1427,7 +1445,7 @@ export default function App(){
         <div style={{maxWidth:480,margin:"0 auto"}}>
           <div style={{fontWeight:600,fontSize:12,color:S.t2,marginBottom:6}}>📘 如何使用 EnglishGo</div>
           <div style={{marginBottom:8}}>選擇等級（小學／國中／高中）後，透過 SRS 單字卡記憶單字，搭配口說練習、打地鼠拼字、配對翻牌等遊戲強化學習。AI 家教可即時回答英文問題。每天練習 10 題即可累積經驗值與成就徽章！</div>
-          <div style={{marginBottom:8}}><a href="/learn/api-keys.html" style={{color:c.cl,textDecoration:"underline"}}>🔑 API Key 申請教學</a> · <a href="/learn/sponsor.html" style={{color:c.cl,textDecoration:"underline"}}>☕ 支持我們</a></div>
+          <div style={{marginBottom:8}}><a href="/learn/api-keys.html" style={{color:c.cl,textDecoration:"underline"}}>🔑 API Key 申請教學</a> · <button onClick={()=>setMod("sponsor")} style={{background:"none",border:"none",padding:0,color:c.cl,textDecoration:"underline",font:"inherit",cursor:"pointer"}}>☕ 支持我們</button></div>
           <div style={{display:"inline-block",fontSize:10,color:"#1D9E75",fontWeight:600,padding:"3px 10px",background:"#E1F5EE",borderRadius:10,marginBottom:6}}>✨ 100% 無廣告 · 純淨學習空間</div>
           <div>AI Tutor powered by <b>Gemini</b> · Speech by <b>Web Speech API</b></div>
           <div>© {new Date().getFullYear()} EnglishGo · 專為台灣學生設計</div>
@@ -1461,7 +1479,7 @@ function Landing({onSelect,dark,setDark}){
             {href:"/learn/speaking-tips.html",t:"如何提升英文口說能力？",d:"5 個不用出國也能練好的方法",ic:"🗣️"},
             {href:"/learn/vocabulary-guide.html",t:"國中會考單字準備攻略",d:"1,200 字怎麼背最有效？",ic:"📚"},
             {href:"/learn/api-keys.html",t:"API Key 申請教學",d:"解鎖 AI 家教 & 單字動圖",ic:"🔑"},
-            {href:"/learn/sponsor.html",t:"支持 EnglishGo",d:"請開發者喝杯咖啡，讓平台持續更新",ic:"☕"}
+            {href:"/?support=1",t:"支持 EnglishGo",d:"銀行轉帳與留言支持",ic:"☕"}
           ].map((a,i)=>(<a key={i} href={a.href} style={{display:"block",background:"rgba(255,255,255,.05)",border:"1px solid rgba(255,255,255,.08)",borderRadius:12,padding:"16px",textDecoration:"none",color:"#fff",transition:"all .2s"}} onMouseEnter={e=>e.currentTarget.style.background="rgba(255,255,255,.1)"} onMouseLeave={e=>e.currentTarget.style.background="rgba(255,255,255,.05)"}><div style={{fontSize:20,marginBottom:4}}>{a.ic}</div><div style={{fontSize:13,fontWeight:600,marginBottom:2}}>{a.t}</div><div style={{fontSize:11,color:"rgba(255,255,255,.4)"}}>{a.d}</div></a>))}
         </div>
       </div>
@@ -1528,7 +1546,7 @@ function Menu({lv,onSelect,daily,c,xp,coins,streak,achUnlocked,weakWords,isSpons
         {id:"dashboard",icon:"📊",t:"學習報告",d:"數據分析"},
         {id:"gacha",icon:"🎰",t:"扭蛋機",d:`🪙 ${coins} 金幣`},
         {id:"pets",icon:"🐾",t:"寵物圖鑑",d:`${pets.length} 隻 · ${eggs.length} 顆蛋`},
-        {id:"sponsor",icon:"☕",t:isSponsor?"支持者 ✓":"支持我們",d:isSponsor?"感謝您的支持！":"請開發者喝杯咖啡"},
+        {id:"sponsor",icon:"☕",t:isSponsor?"支持者 ✓":"支持我們",d:isSponsor?"感謝您的支持！":"銀行轉帳與留言"},
       ].map(m=>(<div key={m.id} onClick={()=>onSelect(m.id)} style={{cursor:"pointer",...S.card,padding:"20px 14px",transition:"all .12s",WebkitTapHighlightColor:"transparent"}}
         onTouchStart={e=>e.currentTarget.style.transform="scale(0.96)"}
         onTouchEnd={e=>e.currentTarget.style.transform="none"}
@@ -2658,39 +2676,33 @@ function ReadingM({lv,onBack,onXp}){
   </div>);
 }
 // ═══ SONGS (英文歌曲練習) ═════════════════════════════════════════════
-function songLineScore(target,heard){
-  const tw=readingWords(target).filter(w=>w.length>1);
-  const hw=new Set(readingWords(heard));
-  if(!tw.length)return 0;
-  const hit=tw.reduce((n,w)=>n+([w,...(HOMOPHONES[w]||[])].some(x=>hw.has(x))?1:0),0);
-  return Math.round((hit/tw.length)*100);
-}
 function SongsM({lv,onBack,onXp}){
-  const songs=SONGS[lv]||[];const c=LV[lv];const[si,setSi]=useState(0);const[time,setTime]=useState(0);const[dur,setDur]=useState(0);const[playing,setPlaying]=useState(false);const[showZh,setShowZh]=useState(true);const[sing,setSing]=useState({line:null,text:"",score:null,listening:false});const audioRef=useRef(null);const rewarded=useRef({});
+  const songs=SONGS[lv]||[];const c=LV[lv];const[si,setSi]=useState(0);const[time,setTime]=useState(0);const[dur,setDur]=useState(0);const[playing,setPlaying]=useState(false);const[showZh,setShowZh]=useState(true);const audioRef=useRef(null);const rewarded=useRef({});
   const song=songs[si];const lyricLines=useMemo(()=>song?song.lines.map((l,i)=>({...l,i})).filter(l=>l.en):[],[song]);
   const weights=useMemo(()=>lyricLines.map(l=>Math.max(1,readingWords(l.en).length)),[lyricLines]);
   const totalWeight=weights.reduce((a,b)=>a+b,0)||1;
-  const activeLine=useMemo(()=>{if(!dur||!lyricLines.length)return lyricLines[0]?.i??-1;let pos=(time/dur)*totalWeight,acc=0;for(let i=0;i<lyricLines.length;i++){acc+=weights[i];if(pos<=acc)return lyricLines[i].i}return lyricLines.at(-1)?.i??-1},[time,dur,totalWeight,weights,lyricLines]);
+  const hasTimedLyrics=lyricLines.length>0&&lyricLines.every(l=>Number.isFinite(Number(l.t)));
+  const activeLine=useMemo(()=>{
+    if(!lyricLines.length)return -1;
+    if(hasTimedLyrics){
+      if(time<Number(lyricLines[0].t)-0.15)return -1;
+      for(let i=lyricLines.length-1;i>=0;i--){if(time>=Number(lyricLines[i].t)-0.15)return lyricLines[i].i}
+      return -1;
+    }
+    if(!dur)return lyricLines[0]?.i??-1;
+    let pos=(time/dur)*totalWeight,acc=0;for(let i=0;i<lyricLines.length;i++){acc+=weights[i];if(pos<=acc)return lyricLines[i].i}return lyricLines.at(-1)?.i??-1
+  },[time,dur,totalWeight,weights,lyricLines,hasTimedLyrics]);
   useEffect(()=>{const a=audioRef.current;if(!a)return;const onTime=()=>setTime(a.currentTime||0);const onMeta=()=>setDur(a.duration||0);const onPlay=()=>setPlaying(true);const onPause=()=>setPlaying(false);const onEnd=()=>{setPlaying(false);if(song&&!rewarded.current[song.id]){rewarded.current[song.id]=true;onXp?.(10)}};a.addEventListener("timeupdate",onTime);a.addEventListener("loadedmetadata",onMeta);a.addEventListener("play",onPlay);a.addEventListener("pause",onPause);a.addEventListener("ended",onEnd);return()=>{a.pause();a.removeEventListener("timeupdate",onTime);a.removeEventListener("loadedmetadata",onMeta);a.removeEventListener("play",onPlay);a.removeEventListener("pause",onPause);a.removeEventListener("ended",onEnd)}},[song]);
   if(!song)return(<div><Hdr t="🎵 英文歌曲" onBack={onBack} cl={c.cl}/><div style={{...S.card,padding:"28px 18px",textAlign:"center"}}><div style={{fontSize:42,marginBottom:8}}>🎧</div><div style={{fontSize:16,fontWeight:700,color:S.t1}}>這個年級的歌曲準備中</div><div style={{fontSize:13,color:S.t2,marginTop:6}}>先從小學歌曲開始驗證流程，之後可逐步加入更多歌曲。</div></div></div>);
   const fmt=s=>`${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,"0")}`;
   const seekLine=(line)=>{
     const idx=lyricLines.findIndex(l=>l.i===line.i);if(idx<0||!audioRef.current)return;
-    const start=weights.slice(0,idx).reduce((a,b)=>a+b,0)/totalWeight*(dur||0);
-    if(dur)audioRef.current.currentTime=start;
-  };
-  const startSing=(line)=>{
-    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-    if(!SR){setSing({line:line.i,text:"此瀏覽器不支援語音辨識，請用 Chrome 或 Edge。",score:null,listening:false});return}
-    const r=new SR();r.lang="en-US";r.interimResults=false;r.maxAlternatives=3;r.continuous=false;
-    setSing({line:line.i,text:"正在聽你跟唱...",score:null,listening:true});
-    r.onresult=e=>{const text=Array.from(e.results?.[0]||[]).map(x=>x.transcript).join(" ")||"";setSing({line:line.i,text,score:songLineScore(line.en,text),listening:false})};
-    r.onerror=()=>setSing({line:line.i,text:"沒有聽清楚，再試一次。",score:null,listening:false});
-    r.onend=()=>setSing(s=>s.listening?{...s,listening:false}:s);
-    try{r.start()}catch{}
+    const timed=Number(line.t);
+    const start=Number.isFinite(timed)?timed:weights.slice(0,idx).reduce((a,b)=>a+b,0)/totalWeight*(dur||0);
+    if(Number.isFinite(start))audioRef.current.currentTime=start;
   };
   return(<div><Hdr t="🎵 英文歌曲" onBack={onBack} cl={c.cl} extra={<button onClick={()=>setShowZh(z=>!z)} style={{background:"none",border:`1px solid ${S.bd}`,borderRadius:8,padding:"4px 8px",fontSize:12,color:c.cl,cursor:"pointer",fontFamily:"inherit"}}>{showZh?"隱藏中文":"顯示中文"}</button>}/>
-    {songs.length>1&&<div style={{display:"flex",gap:6,marginBottom:10,overflowX:"auto"}}>{songs.map((s,i)=><button key={s.id} onClick={()=>{setSi(i);setTime(0);setDur(0);setSing({line:null,text:"",score:null,listening:false})}} style={{flexShrink:0,padding:"9px 13px",borderRadius:12,background:i===si?c.cl:S.bg2,color:i===si?"#fff":S.t1,border:"none",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{s.title}</button>)}</div>}
+    {songs.length>1&&<div style={{display:"flex",gap:6,marginBottom:10,overflowX:"auto"}}>{songs.map((s,i)=><button key={s.id} onClick={()=>{setSi(i);setTime(0);setDur(0)}} style={{flexShrink:0,padding:"9px 13px",borderRadius:12,background:i===si?c.cl:S.bg2,color:i===si?"#fff":S.t1,border:"none",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{s.title}</button>)}</div>}
     <div style={{...S.card,padding:"18px 16px",marginBottom:10,borderTop:`4px solid ${c.cl}`,background:`linear-gradient(135deg,${c.bg}55,var(--color-background-primary,#fff))`}}>
       <div style={{display:"flex",gap:12,alignItems:"center",marginBottom:12}}><div style={{width:54,height:54,borderRadius:14,background:`linear-gradient(135deg,${c.cl},${c.ac})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,color:"#fff",flexShrink:0}}>🎵</div><div style={{flex:1}}><div style={{fontSize:20,fontWeight:800,color:S.t1}}>{song.title}</div><div style={{fontSize:12,color:S.t2}}>{song.zhTitle} · {song.theme} · {song.level}</div></div></div>
       <audio ref={audioRef} src={song.audio} controls preload="metadata" style={{width:"100%",height:38}}/>
@@ -2698,8 +2710,7 @@ function SongsM({lv,onBack,onXp}){
     </div>
     <div style={{...S.card,padding:"14px 12px",marginBottom:10}}>
       {song.lines.map((line,i)=>line.sec?<div key={i} style={{fontSize:12,fontWeight:800,color:c.cl,margin:"14px 4px 6px"}}>{line.sec}</div>:<div key={i} onClick={()=>seekLine(line)} style={{padding:"10px 12px",borderRadius:12,background:activeLine===i?c.bg:S.bg2,border:`1px solid ${activeLine===i?c.cl:S.bd}`,marginBottom:6,cursor:"pointer",transition:"all .15s"}}>
-        <div style={{display:"flex",gap:8,alignItems:"flex-start"}}><div style={{flex:1}}><div style={{fontSize:15,lineHeight:1.5,fontWeight:activeLine===i?800:600,color:S.t1}}>{line.en}</div>{showZh&&<div style={{fontSize:12,color:S.t2,marginTop:3,lineHeight:1.5}}>{line.zh}</div>}</div><button onClick={e=>{e.stopPropagation();startSing(line)}} style={{border:`1px solid ${S.bd}`,background:S.bg1,borderRadius:10,padding:"5px 8px",fontSize:12,color:c.cl,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>跟唱</button></div>
-        {sing.line===i&&<div style={{marginTop:7,padding:"8px 10px",borderRadius:10,background:sing.score==null?S.bg1:sing.score>=70?"#E1F5EE":"#FFF3CD",fontSize:12,color:S.t2,lineHeight:1.5}}>{sing.text}{sing.score!=null&&<b style={{color:sing.score>=70?"#1D9E75":"#EF9F27"}}> · {sing.score}%</b>}</div>}
+        <div style={{fontSize:15,lineHeight:1.5,fontWeight:activeLine===i?800:600,color:S.t1}}>{line.en}</div>{showZh&&<div style={{fontSize:12,color:S.t2,marginTop:3,lineHeight:1.5}}>{line.zh}</div>}
       </div>)}
     </div>
     <div style={{...S.card,padding:"14px 16px",fontSize:12,color:S.t2,lineHeight:1.7}}><div style={{fontWeight:700,color:S.t1,marginBottom:6}}>重點單字</div><div style={{display:"flex",flexWrap:"wrap",gap:6}}>{song.vocab.map(w=><button key={w} onClick={()=>speak(w)} style={{border:`1px solid ${S.bd}`,background:S.bg1,borderRadius:999,padding:"6px 10px",fontSize:12,color:c.cl,cursor:"pointer",fontWeight:700,fontFamily:"inherit"}}>{w} 🔊</button>)}</div></div>
@@ -6840,79 +6851,76 @@ body.eg-anim-off [data-pet-card] { animation: none !important; }
   </div>);
 }
 
-// ═══ SPONSOR PAGE (支持頁面 - 純粹的小額贊助) ══════════════════════
-// Code validation: format EG-XXXX, sum of charCodes % 73 === 0
-function validateSponsorCode(code){
-  if(!code||code.length<6)return false;
-  const c=code.trim().toUpperCase();
-  if(!c.startsWith("EG-"))return false;
-  const payload=c.slice(3);
-  const sum=payload.split("").reduce((a,ch)=>a+ch.charCodeAt(0),0);
-  return sum%73===0;
-}
-
+// ═══ SPONSOR PAGE (支持頁面 - 銀行轉帳與留言) ══════════════════════
 function SponsorPage({onBack,c,sponsor,setSponsor}){
-  const[codeInp,setCodeInp]=useState("");
+  const[name,setName]=useState(sponsor.name&&sponsor.name!=="支持者"?sponsor.name:"");
+  const[note,setNote]=useState("");
   const[msg,setMsg]=useState("");
-  const[showInput,setShowInput]=useState(false);
-
-  const activate=()=>{
-    const code=codeInp.trim().toUpperCase();
-    if(validateSponsorCode(code)){
-      setSponsor({code,active:true,name:"支持者",date:new Date().toISOString()});
-      setMsg("✅ 感謝您！您的支持碼已啟用 ☕");
+  const[busy,setBusy]=useState(false);
+  const copyBank=async(text,label)=>{
+    try{
+      await navigator.clipboard.writeText(text);
+      setMsg(`已複製${label}`);
+      playSound("done");
+    }catch{
+      setMsg(`${label}：${text}`);
+    }
+  };
+  const submit=async(e)=>{
+    e?.preventDefault?.();
+    if(busy)return;
+    setBusy(true);setMsg("");
+    const r=await submitSponsorMessage(name,note);
+    setBusy(false);
+    if(r.ok){
+      setSponsor({active:true,name:name.trim(),date:new Date().toISOString()});
+      setNote("");
+      setMsg("已收到您的姓名與留言，謝謝支持。");
       playSound("done");
     }else{
-      setMsg("❌ 支持碼無效，請確認後再試");
+      setMsg(r.err);
       playSound("bad");
     }
   };
-
-  const deactivate=()=>{setSponsor({code:"",active:false,name:""});setMsg("已取消支持狀態");setCodeInp("")};
+  const resetSupporter=()=>{setSponsor({active:false,name:""});setMsg("");setName("");setNote("")};
 
   return(<div><Hdr t="☕ 支持我們" onBack={onBack} cl={c.cl}/>
-    {/* Hero - no ads pledge */}
     <div style={{...S.card,padding:"20px",marginBottom:12,background:`linear-gradient(135deg,${c.bg},var(--color-background-primary,#fff))`,border:`2px solid ${c.cl}33`,textAlign:"center"}}>
-      <div style={{fontSize:48,marginBottom:8}}>☕</div>
+      <div style={{fontSize:44,marginBottom:8}}>☕</div>
       <div style={{fontSize:18,fontWeight:700,color:S.t1}}>EnglishGo 永遠免費</div>
       <div style={{fontSize:13,color:S.t2,marginTop:4,lineHeight:1.7}}>
-        無廣告 · 無付費牆 · 無功能限制
+        無廣告 · 無付費牆 · 量力而為即可
       </div>
       <div style={{display:"inline-block",marginTop:10,padding:"6px 14px",background:"#E1F5EE",color:"#0F6E56",borderRadius:14,fontSize:11,fontWeight:600,border:"1px solid #1D9E75"}}>
         ✨ 100% 無廣告承諾
       </div>
     </div>
 
-    {/* Status: already a supporter */}
     {sponsor.active&&(<div style={{...S.card,padding:"20px",textAlign:"center",marginBottom:12,background:`linear-gradient(135deg,#FFF4D6,var(--color-background-primary,#fff))`,border:`2px solid #EF9F27`}}>
       <div style={{fontSize:36}}>💛</div>
       <div style={{fontSize:18,fontWeight:700,color:"#856404"}}>謝謝您的支持！</div>
-      <div style={{fontSize:13,color:"#856404",marginTop:4}}>您是 EnglishGo 持續成長的力量</div>
-      <div style={{fontSize:11,color:S.t3,marginTop:8,fontFamily:"monospace"}}>{sponsor.code}</div>
-      <button onClick={deactivate} style={{background:"none",border:"none",fontSize:11,color:S.t3,cursor:"pointer",marginTop:8,textDecoration:"underline"}}>取消支持狀態</button>
+      <div style={{fontSize:13,color:"#856404",marginTop:4}}>{sponsor.name?`${sponsor.name}，`:''}您的留言已記錄</div>
+      <button onClick={resetSupporter} style={{background:"none",border:"none",fontSize:11,color:S.t3,cursor:"pointer",marginTop:8,textDecoration:"underline"}}>重新填寫留言</button>
     </div>)}
 
-    {/* Why support */}
     <div style={{...S.card,padding:"18px 16px",marginBottom:12}}>
-      <div style={{fontSize:15,fontWeight:700,color:S.t1,marginBottom:10}}>🌱 您的支持會用在哪裡？</div>
-      <div style={{display:"grid",gap:10}}>
+      <div style={{fontSize:15,fontWeight:700,color:S.t1,marginBottom:10}}>🏦 銀行轉帳資訊</div>
+      <div style={{display:"grid",gap:8}}>
         {[
-          {icon:"🖥️",title:"伺服器費用",desc:"Supabase 資料庫 + Netlify 託管 (約 NT$500/月)"},
-          {icon:"📚",title:"擴充單字庫",desc:"持續新增到 6,000+ 高中單字"},
-          {icon:"🎨",title:"開發新功能",desc:"更多寵物、新遊戲、學習報告升級"},
-          {icon:"🤖",title:"AI 服務維運",desc:"Gemini API 使用額度"},
-          {icon:"☕",title:"開發者咖啡",desc:"半夜寫程式的燃料"},
-        ].map((item,i)=>(<div key={i} style={{display:"flex",gap:12,alignItems:"center",padding:"4px 0"}}>
-          <div style={{fontSize:24,flexShrink:0,width:32,textAlign:"center"}}>{item.icon}</div>
-          <div style={{flex:1}}>
-            <div style={{fontSize:13,fontWeight:600,color:S.t1}}>{item.title}</div>
-            <div style={{fontSize:11,color:S.t3,lineHeight:1.6}}>{item.desc}</div>
-          </div>
-        </div>))}
+          {label:"戶名",value:"陳韋安"},
+          {label:"銀行",value:"華南銀行（代號 008）"},
+          {label:"帳號",value:"113200968044"},
+        ].map(row=><div key={row.label} style={{display:"flex",gap:10,alignItems:"center",padding:"11px 12px",border:`1px solid ${S.bd}`,borderRadius:10,background:S.bg2}}>
+          <div style={{width:54,fontSize:12,color:S.t3,fontWeight:700}}>{row.label}</div>
+          <div style={{flex:1,fontSize:14,color:S.t1,fontWeight:700,wordBreak:"break-all"}}>{row.value}</div>
+          <button onClick={()=>copyBank(row.value,row.label)} style={{border:`1px solid ${S.bd}`,background:S.bg1,borderRadius:8,padding:"5px 8px",fontSize:11,color:c.cl,cursor:"pointer",fontFamily:"inherit"}}>複製</button>
+        </div>)}
+      </div>
+      <div style={{fontSize:11,color:S.t3,lineHeight:1.7,marginTop:10,padding:"10px 12px",background:S.bg2,borderRadius:8}}>
+        轉帳完成後不用寄信告知。若願意讓我知道是誰支持 EnglishGo，可以在下方留下姓名與想說的話。
       </div>
     </div>
 
-    {/* Suggested amounts */}
     <div style={{...S.card,padding:"18px 16px",marginBottom:12}}>
       <div style={{fontSize:15,fontWeight:700,color:S.t1,marginBottom:6}}>💰 隨意贊助金額</div>
       <div style={{fontSize:12,color:S.t2,marginBottom:12,lineHeight:1.7}}>沒有固定金額，量力而為就好！</div>
@@ -6929,82 +6937,23 @@ function SponsorPage({onBack,c,sponsor,setSponsor}){
       </div>
     </div>
 
-    {/* Payment methods */}
     <div style={{...S.card,padding:"18px 16px",marginBottom:12}}>
-      <div style={{fontSize:15,fontWeight:700,color:S.t1,marginBottom:10}}>💳 支付方式</div>
-
-      <div style={{display:"grid",gap:8}}>
-        {/* LINE Pay */}
-        <a href="/learn/sponsor.html" target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",background:"#06C755",color:"#fff",borderRadius:10,textDecoration:"none"}}>
-          <div style={{fontSize:24}}>💚</div>
-          <div style={{flex:1}}>
-            <div style={{fontSize:14,fontWeight:700}}>LINE Pay</div>
-            <div style={{fontSize:11,opacity:.85}}>掃描 QR Code 即可</div>
-          </div>
-          <div style={{fontSize:18}}>→</div>
-        </a>
-
-        {/* JKO Pay */}
-        <a href="/learn/sponsor.html" target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",background:"#EF8200",color:"#fff",borderRadius:10,textDecoration:"none"}}>
-          <div style={{fontSize:24}}>🟧</div>
-          <div style={{flex:1}}>
-            <div style={{fontSize:14,fontWeight:700}}>街口支付</div>
-            <div style={{fontSize:11,opacity:.85}}>JKOS QR Code</div>
-          </div>
-          <div style={{fontSize:18}}>→</div>
-        </a>
-
-        {/* Bank Transfer */}
-        <a href="/learn/sponsor.html" target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",background:S.bg2,color:S.t1,borderRadius:10,textDecoration:"none",border:`1px solid ${S.bd}`}}>
-          <div style={{fontSize:24}}>🏦</div>
-          <div style={{flex:1}}>
-            <div style={{fontSize:14,fontWeight:700,color:S.t1}}>銀行轉帳</div>
-            <div style={{fontSize:11,color:S.t3}}>傳統匯款（最低手續費）</div>
-          </div>
-          <div style={{fontSize:18,color:S.t2}}>→</div>
-        </a>
-
-        {/* Buy Me Coffee (international) */}
-        <a href="/learn/sponsor.html" target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",background:"#FFDD00",color:"#000",borderRadius:10,textDecoration:"none"}}>
-          <div style={{fontSize:24}}>☕</div>
-          <div style={{flex:1}}>
-            <div style={{fontSize:14,fontWeight:700}}>Buy Me a Coffee</div>
-            <div style={{fontSize:11,opacity:.7}}>國外信用卡支付</div>
-          </div>
-          <div style={{fontSize:18}}>→</div>
-        </a>
-      </div>
-
-      <div style={{fontSize:11,color:S.t3,lineHeight:1.7,marginTop:12,padding:"10px 12px",background:S.bg2,borderRadius:8}}>
-        💡 詳細的支付資訊（QR Code、銀行帳號）請點擊以上選項查看 <a href="/learn/sponsor.html" target="_blank" rel="noreferrer" style={{color:c.cl,fontWeight:600}}>支持頁面</a>
-      </div>
+      <div style={{fontSize:15,fontWeight:700,color:S.t1,marginBottom:10}}>💬 留下姓名與一句話</div>
+      <form onSubmit={submit} style={{display:"grid",gap:10}}>
+        <label style={{display:"grid",gap:5,fontSize:12,color:S.t2,fontWeight:700}}>姓名
+          <input value={name} onChange={e=>setName(e.target.value)} maxLength={60} placeholder="例如：王小明" style={{width:"100%",padding:"12px 14px",borderRadius:10,border:`1px solid ${S.bd}`,fontSize:14,fontFamily:"inherit",background:S.bg1,color:S.t1,outline:"none"}}/>
+        </label>
+        <label style={{display:"grid",gap:5,fontSize:12,color:S.t2,fontWeight:700}}>想對我說的話
+          <textarea value={note} onChange={e=>setNote(e.target.value)} maxLength={500} rows={4} placeholder="任何鼓勵、建議或想看的功能都可以寫在這裡。" style={{width:"100%",padding:"12px 14px",borderRadius:10,border:`1px solid ${S.bd}`,fontSize:14,fontFamily:"inherit",background:S.bg1,color:S.t1,outline:"none",resize:"vertical",lineHeight:1.6}}/>
+        </label>
+        <div style={{fontSize:11,color:S.t3,textAlign:"right"}}>{note.length}/500</div>
+        <button type="submit" disabled={busy||!name.trim()} style={{...S.btn,background:c.cl,color:"#fff",padding:"12px 20px",fontSize:14,width:"100%",opacity:(busy||!name.trim()) ? .5 : 1}}>{busy?"送出中...":"送出留言"}</button>
+      </form>
+      {msg&&<div style={{marginTop:10,fontSize:13,fontWeight:600,color:msg.includes("失敗")||msg.includes("請")?"#E24B4A":"#1D9E75",textAlign:"center",animation:"fadeUp .3s"}}>{msg}</div>}
     </div>
 
-    {/* Other ways to support */}
-    <div style={{...S.card,padding:"18px 16px",marginBottom:12}}>
-      <div style={{fontSize:15,fontWeight:700,color:S.t1,marginBottom:10}}>❤️ 其他支持方式（不用花錢！）</div>
-      <div style={{display:"grid",gap:8,fontSize:13,color:S.t2,lineHeight:1.8}}>
-        <div>📢 <b>分享給朋友</b> — 讓更多家長認識 EnglishGo</div>
-        <div>💬 <b>提供回饋</b> — 告訴我們希望加什麼功能</div>
-        <div>⭐ <b>留言鼓勵</b> — 開發者最需要的就是這個</div>
-        <div>🐛 <b>回報 Bug</b> — 幫忙找問題讓產品更穩定</div>
-      </div>
-    </div>
-
-    {/* Code input - smaller, less prominent */}
-    {!sponsor.active&&<div style={{...S.card,padding:"16px",marginBottom:12,background:S.bg2,border:`1px dashed ${S.bd}`}}>
-      <div style={{fontSize:12,fontWeight:600,color:S.t2,marginBottom:8}}>🔑 已支持過？輸入支持碼</div>
-      {!showInput?(<button onClick={()=>setShowInput(true)} style={{background:"none",border:`1px solid ${S.bd}`,color:S.t2,padding:"8px 14px",fontSize:12,fontFamily:"inherit",borderRadius:8,cursor:"pointer"}}>輸入支持碼</button>):(
-      <div>
-        <input value={codeInp} onChange={e=>setCodeInp(e.target.value.toUpperCase())} onKeyDown={e=>{if(e.key==="Enter")activate()}} placeholder="EG-XXXXXXXX" style={{width:"100%",padding:"12px 14px",borderRadius:10,border:`2px solid ${S.bd}`,fontSize:16,fontFamily:"monospace",background:"var(--color-background-primary,#fff)",color:S.t1,outline:"none",textAlign:"center",fontWeight:600,letterSpacing:2,boxSizing:"border-box"}}/>
-        <button onClick={activate} disabled={!codeInp.trim()} style={{...S.btn,background:c.cl,color:"#fff",padding:"10px 20px",fontSize:13,width:"100%",marginTop:8,opacity:codeInp.trim()?1:.4}}>啟用支持碼</button>
-      </div>)}
-      {msg&&<div style={{marginTop:10,fontSize:13,fontWeight:600,color:msg.startsWith("✅")?"#1D9E75":"#E24B4A",textAlign:"center",animation:"fadeUp .3s"}}>{msg}</div>}
-    </div>}
-
-    {/* Privacy note */}
     <div style={{...S.card,padding:"12px 14px",fontSize:11,color:S.t3,lineHeight:1.7}}>
-      🔒 <b>隱私說明</b>：支持碼只存在您的瀏覽器中（localStorage），不會上傳到任何伺服器。<br/>
+      🔒 <b>隱私說明</b>：留言表單只會記錄您填寫的姓名與留言內容，不需要 Email，也不會要求匯款證明。<br/>
       無論是否支持，所有功能都完全免費開放使用。
     </div>
   </div>);

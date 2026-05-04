@@ -3,188 +3,90 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <meta name="description" content="支持 EnglishGo - 一個由個人開發者維護的免費英語學習平台">
-  <title>支持 EnglishGo · 100% 無廣告純淨學習空間</title>
+  <meta name="description" content="支持 EnglishGo - 銀行轉帳資訊與留言方式">
+  <title>支持 EnglishGo · 銀行轉帳</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Noto Sans TC', 'Segoe UI', sans-serif; background: linear-gradient(150deg,#091825,#122a45 45%,#183a58 75%,#0d1f32); color: #fff; line-height: 1.7; min-height: 100vh; }
     .container { max-width: 720px; margin: 0 auto; padding: 32px 20px 80px; }
-    h1 { font-size: 32px; font-weight: 700; margin-bottom: 12px; background: linear-gradient(90deg,#7FD1AE,#85B7EB); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-    h2 { font-size: 22px; font-weight: 700; margin: 32px 0 14px; color: #fff; }
-    h3 { font-size: 16px; font-weight: 700; margin: 16px 0 8px; color: #FFE066; }
-    p { color: rgba(255,255,255,.85); margin-bottom: 12px; font-size: 15px; }
-    .lead { font-size: 18px; color: rgba(255,255,255,.7); margin-bottom: 24px; }
-    .card { background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); border-radius: 16px; padding: 20px; margin-bottom: 16px; }
-    .badge { display: inline-block; padding: 4px 12px; background: rgba(127,209,174,.15); border: 1px solid rgba(127,209,174,.4); border-radius: 12px; color: #7FD1AE; font-size: 12px; font-weight: 600; margin-bottom: 16px; }
-    .pay-method { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 12px; margin-bottom: 10px; text-decoration: none; transition: transform .15s; }
-    .pay-method:hover { transform: translateX(4px); }
-    .pay-method .icon { font-size: 28px; flex-shrink: 0; }
-    .pay-method .info { flex: 1; }
-    .pay-method .title { font-size: 15px; font-weight: 700; }
-    .pay-method .desc { font-size: 12px; opacity: .8; margin-top: 2px; }
-    .pay-line { background: #06C755; color: #fff; }
-    .pay-jko { background: #EF8200; color: #fff; }
-    .pay-bank { background: rgba(255,255,255,.08); color: #fff; border: 1px solid rgba(255,255,255,.15); }
-    .pay-bmc { background: #FFDD00; color: #000; }
-    .qr-section { background: rgba(255,255,255,.03); border: 2px dashed rgba(255,255,255,.2); border-radius: 12px; padding: 24px; text-align: center; margin: 16px 0; }
-    .qr-placeholder { width: 200px; height: 200px; background: rgba(255,255,255,.1); border-radius: 8px; display: inline-block; line-height: 200px; color: rgba(255,255,255,.5); }
-    .home-link { display: inline-block; padding: 12px 24px; background: linear-gradient(135deg,#185FA5,#85B7EB); border-radius: 12px; color: #fff; text-decoration: none; font-weight: 600; margin-top: 24px; }
-    .accent { color: #FFE066; font-weight: 600; }
-    .check { color: #7FD1AE; }
+    h1 { font-size: 32px; font-weight: 800; margin-bottom: 12px; color: #7FD1AE; }
+    h2 { font-size: 20px; font-weight: 800; margin: 26px 0 12px; color: #fff; }
+    p { color: rgba(255,255,255,.82); margin-bottom: 12px; font-size: 15px; }
+    .lead { font-size: 17px; color: rgba(255,255,255,.72); margin-bottom: 24px; }
+    .badge { display: inline-block; padding: 4px 12px; background: rgba(127,209,174,.15); border: 1px solid rgba(127,209,174,.4); border-radius: 12px; color: #7FD1AE; font-size: 12px; font-weight: 700; margin-bottom: 16px; }
+    .card { background: rgba(255,255,255,.055); border: 1px solid rgba(255,255,255,.12); border-radius: 14px; padding: 20px; margin-bottom: 16px; }
+    .bank-row { display: flex; gap: 12px; align-items: center; padding: 13px 0; border-bottom: 1px solid rgba(255,255,255,.09); }
+    .bank-row:last-child { border-bottom: none; }
+    .label { width: 86px; color: rgba(255,255,255,.55); font-size: 13px; font-weight: 700; }
+    .value { flex: 1; color: #fff; font-size: 17px; font-weight: 800; word-break: break-all; }
+    .note { color: rgba(255,255,255,.62); font-size: 13px; background: rgba(255,255,255,.05); border-radius: 10px; padding: 12px 14px; }
+    .amounts { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+    .amount { text-align: center; padding: 14px 8px; background: rgba(255,255,255,.055); border: 1px solid rgba(255,255,255,.1); border-radius: 10px; }
+    .amount strong { display: block; color: #7FD1AE; font-size: 18px; margin-top: 3px; }
+    .home-link, .app-link { display: inline-block; padding: 12px 22px; border-radius: 12px; color: #fff; text-decoration: none; font-weight: 700; margin-top: 10px; }
+    .home-link { background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14); }
+    .app-link { background: linear-gradient(135deg,#168E6D,#58B996); }
     ul { padding-left: 20px; margin-bottom: 12px; }
-    ul li { color: rgba(255,255,255,.8); margin-bottom: 6px; }
-    .placeholder { color: #FF9BB3; font-style: italic; padding: 8px 12px; background: rgba(255,155,179,.1); border-radius: 8px; font-size: 13px; }
-    @media(max-width:600px){ h1{font-size:26px} h2{font-size:18px} p{font-size:14px} }
+    li { color: rgba(255,255,255,.78); margin-bottom: 6px; }
+    @media(max-width:600px){ h1{font-size:26px}.amounts{grid-template-columns:1fr}.bank-row{align-items:flex-start}.label{width:72px}.value{font-size:15px} }
   </style>
 </head>
 <body>
-<div class="container">
+<main class="container">
+  <a href="/" style="color:#7FD1AE;text-decoration:none;font-size:14px;display:inline-block;margin-bottom:24px;">← 回首頁</a>
 
-<a href="/" style="color:#7FD1AE;text-decoration:none;font-size:14px;display:inline-block;margin-bottom:24px;">← 回首頁</a>
+  <div class="badge">100% 無廣告 · 永遠免費</div>
+  <h1>支持 EnglishGo</h1>
+  <p class="lead">EnglishGo 會維持免費、無廣告、無付費牆。如果這個平台對您或孩子有幫助，歡迎用銀行轉帳小額支持。</p>
 
-<div class="badge">✨ 100% 無廣告 · 永遠免費</div>
-<h1>☕ 請開發者喝杯咖啡</h1>
-<p class="lead">EnglishGo 是一個由個人開發者維護的英語學習平台。所有功能都免費開放，沒有廣告、沒有付費牆、沒有功能限制。如果這個平台對您的小朋友有幫助，您的小額支持就是最大的鼓勵！</p>
+  <section class="card">
+    <h2>銀行轉帳資訊</h2>
+    <div class="bank-row">
+      <div class="label">戶名</div>
+      <div class="value">陳韋安</div>
+    </div>
+    <div class="bank-row">
+      <div class="label">銀行</div>
+      <div class="value">華南銀行（代號 008）</div>
+    </div>
+    <div class="bank-row">
+      <div class="label">帳號</div>
+      <div class="value">113200968044</div>
+    </div>
+    <p class="note" style="margin-top:14px;">轉帳完成後不用寄信告知，也不用提供匯款證明。</p>
+  </section>
 
-<div class="card">
-<h2>🌱 為什麼需要您的支持？</h2>
-<p>EnglishGo 是由一位台灣的工程師獨立開發、自費維運的學習平台。每月維運成本約 NT$500-1500（伺服器、AI API、網域），全部由個人吸收。</p>
-<p>您的支持會用在：</p>
-<ul>
-<li>🖥️ <span class="accent">Supabase 資料庫</span>（雲端同步寵物、單字進度）</li>
-<li>🤖 <span class="accent">Gemini AI API</span>（AI 家教、AI 故事生成）</li>
-<li>🌐 <span class="accent">Netlify 託管</span>（PWA 部署、CDN 加速）</li>
-<li>📚 <span class="accent">擴充單字庫</span>（持續到 6,000+ 字）</li>
-<li>🎨 <span class="accent">開發新功能</span>（更多寵物、新遊戲、學習報告）</li>
-<li>☕ <span class="accent">開發者咖啡</span>（半夜寫程式的燃料！）</li>
-</ul>
-</div>
+  <section class="card">
+    <h2>隨意金額</h2>
+    <p>沒有固定金額，量力而為即可。</p>
+    <div class="amounts">
+      <div class="amount">請喝奶茶<strong>NT$50</strong></div>
+      <div class="amount">請喝咖啡<strong>NT$100</strong></div>
+      <div class="amount">請吃午餐<strong>NT$300</strong></div>
+    </div>
+  </section>
 
-<div class="card">
-<h2>💰 隨意支付，不勉強</h2>
-<p>沒有固定金額，<b>量力而為就好</b>！無論是 NT$50 還是 NT$1000，都是對 EnglishGo 莫大的鼓勵。</p>
-<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:16px 0;">
-  <div style="text-align:center;padding:14px;background:rgba(255,255,255,.05);border-radius:10px;">
-    <div style="font-size:28px;">🧋</div>
-    <div style="font-size:18px;font-weight:700;color:#7FD1AE;margin-top:4px;">NT$50</div>
-    <div style="font-size:11px;color:rgba(255,255,255,.6);">請喝奶茶</div>
-  </div>
-  <div style="text-align:center;padding:14px;background:rgba(255,255,255,.05);border-radius:10px;">
-    <div style="font-size:28px;">☕</div>
-    <div style="font-size:18px;font-weight:700;color:#85B7EB;margin-top:4px;">NT$100</div>
-    <div style="font-size:11px;color:rgba(255,255,255,.6);">請喝咖啡</div>
-  </div>
-  <div style="text-align:center;padding:14px;background:rgba(255,255,255,.05);border-radius:10px;">
-    <div style="font-size:28px;">🍱</div>
-    <div style="font-size:18px;font-weight:700;color:#FFE066;margin-top:4px;">NT$300</div>
-    <div style="font-size:11px;color:rgba(255,255,255,.6);">請吃午餐</div>
-  </div>
-</div>
-</div>
+  <section class="card">
+    <h2>留下姓名與留言</h2>
+    <p>若願意讓我知道是誰支持 EnglishGo，可以回到 App 內的「支持我們」頁面留下姓名與想說的話。留言會記錄在資料庫，不需要 Email。</p>
+    <a href="/?support=1" class="app-link">前往留言表單</a>
+  </section>
 
-<h2>💳 支付方式</h2>
+  <section class="card">
+    <h2>支持會用在哪裡</h2>
+    <ul>
+      <li>Supabase 資料庫與雲端同步</li>
+      <li>Netlify 託管與網站維運</li>
+      <li>AI 家教、TTS、閱讀與單字卡功能更新</li>
+      <li>持續擴充小學、國中、高中學習內容</li>
+    </ul>
+  </section>
 
-<div class="card">
-<h3>🇹🇼 台灣常用支付</h3>
-<a href="#linepay" class="pay-method pay-line">
-  <div class="icon">💚</div>
-  <div class="info">
-    <div class="title">LINE Pay</div>
-    <div class="desc">最方便，掃 QR Code 即可</div>
-  </div>
-</a>
+  <a href="/" class="home-link">← 回到 EnglishGo</a>
 
-<a href="#jkopay" class="pay-method pay-jko">
-  <div class="icon">🟧</div>
-  <div class="info">
-    <div class="title">街口支付 JKO Pay</div>
-    <div class="desc">點開 App 掃描下方 QR Code</div>
-  </div>
-</a>
-
-<a href="#bank" class="pay-method pay-bank">
-  <div class="icon">🏦</div>
-  <div class="info">
-    <div class="title">銀行轉帳</div>
-    <div class="desc">傳統匯款，最低手續費</div>
-  </div>
-</a>
-</div>
-
-<div class="card">
-<h3>🌍 國際支付</h3>
-<a href="#bmc" class="pay-method pay-bmc">
-  <div class="icon">☕</div>
-  <div class="info">
-    <div class="title">Buy Me a Coffee</div>
-    <div class="desc">支援 Visa / Mastercard / PayPal</div>
-  </div>
-</a>
-</div>
-
-<h2 id="linepay">💚 LINE Pay 收款資訊</h2>
-<div class="qr-section">
-  <div class="qr-placeholder">[ LINE Pay QR Code ]</div>
-  <p class="placeholder" style="margin-top:16px;display:inline-block;">⚠️ 請替換為實際 QR Code 圖片</p>
-</div>
-
-<h2 id="jkopay">🟧 街口支付收款資訊</h2>
-<div class="qr-section">
-  <div class="qr-placeholder">[ 街口 QR Code ]</div>
-  <p class="placeholder" style="margin-top:16px;display:inline-block;">⚠️ 請替換為實際 QR Code 圖片</p>
-</div>
-
-<h2 id="bank">🏦 銀行轉帳資訊</h2>
-<div class="card">
-<p><b>銀行：</b><span class="placeholder">[ 待填寫 - 例：玉山銀行 808 ]</span></p>
-<p><b>帳號：</b><span class="placeholder">[ 待填寫 ]</span></p>
-<p><b>戶名：</b><span class="placeholder">[ 待填寫 ]</span></p>
-<p style="margin-top:12px;font-size:13px;color:rgba(255,255,255,.6);">轉帳完成後，請傳送匯款後 5 碼到下方聯絡 Email，我會回覆專屬支持碼給您。</p>
-</div>
-
-<h2 id="bmc">☕ Buy Me a Coffee</h2>
-<div class="card">
-<p><b>連結：</b><span class="placeholder">[ 待填寫 - https://buymeacoffee.com/yourname ]</span></p>
-</div>
-
-<div class="card">
-<h2>🔑 取得支持碼</h2>
-<p>支付完成後，請聯絡開發者並提供您的支付證明，我會回覆一組專屬的<b>支持碼</b>（格式：<code style="background:rgba(255,255,255,.1);padding:2px 8px;border-radius:4px;">EG-XXXXXXXX</code>）。</p>
-<p><b>聯絡方式：</b></p>
-<ul>
-  <li>📧 Email：<span class="placeholder">[ 待填寫 ]</span></li>
-  <li>💬 LINE：<span class="placeholder">[ 待填寫 LINE ID ]</span></li>
-</ul>
-</div>
-
-<h2>❤️ 不用花錢的支持方式</h2>
-<div class="card">
-<ul>
-<li>📢 <b>分享給朋友</b> — 讓更多家長和學生認識 EnglishGo</li>
-<li>💬 <b>提供回饋</b> — 告訴我們希望加什麼功能</li>
-<li>⭐ <b>留言鼓勵</b> — 開發者最需要的就是這個</li>
-<li>🐛 <b>回報 Bug</b> — 幫忙找問題讓產品更穩定</li>
-<li>📱 <b>裝到主畫面</b> — 點瀏覽器選單的「加到主畫面」就有 PWA 體驗</li>
-</ul>
-</div>
-
-<div class="card" style="background:rgba(127,209,174,.08);border-color:rgba(127,209,174,.3);">
-<h2 style="color:#7FD1AE;">💡 我們的承諾</h2>
-<ul>
-<li><span class="check">✓</span> 永遠免費 — 所有功能對所有人開放</li>
-<li><span class="check">✓</span> 無廣告 — 不會放任何廣告打擾學習</li>
-<li><span class="check">✓</span> 無付費牆 — 不會有「付費才能用」的功能</li>
-<li><span class="check">✓</span> 透明開發 — 持續更新、誠實說明</li>
-<li><span class="check">✓</span> 隱私優先 — 不收集個人資料、不追蹤行為</li>
-</ul>
-</div>
-
-<a href="/" class="home-link">← 回到 EnglishGo</a>
-
-<footer style="margin-top:48px;padding-top:24px;border-top:1px solid rgba(255,255,255,.1);text-align:center;font-size:12px;color:rgba(255,255,255,.4);">
-  © 2026 EnglishGo · 專為台灣學生設計的免費英語學習平台
-</footer>
-
-</div>
+  <footer style="margin-top:48px;padding-top:24px;border-top:1px solid rgba(255,255,255,.1);text-align:center;font-size:12px;color:rgba(255,255,255,.4);">
+    © 2026 EnglishGo · 專為台灣學生設計的免費英語學習平台
+  </footer>
+</main>
 </body>
 </html>
