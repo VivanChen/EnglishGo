@@ -319,16 +319,37 @@ const R = {
     {t:"My Pet Cat",tx:"I have a pet cat. Her name is Mimi. She is white and fluffy. Mimi likes to sleep on the sofa. She also likes to play with a ball. Every morning, I give her milk. Mimi is my best friend.",qs:[{q:"What is the cat's name?",o:["Nini","Mimi","Kiki","Lili"],a:1},{q:"What does Mimi like?",o:["Swim","Fly","Sleep on sofa","Cook"],a:2}]},
     {t:"A Rainy Day",tx:"Today is a rainy day. I cannot go to the park. I stay at home and draw pictures. My mom makes hot chocolate for me. I draw a rainbow. My sister wants to play a card game. We play together and have fun.",qs:[{q:"Why can't the child go out?",o:["Too hot","It's raining","Park closed","Mom said no"],a:1},{q:"What does the child draw?",o:["A cat","A house","A rainbow","A car"],a:2}]},
     {t:"My Family",tx:"There are five people in my family. My father is a doctor. My mother is a teacher. I have one brother and one sister. My brother is older than me. My sister is the youngest. We live in a big house near the school.",qs:[{q:"How many people?",o:["Three","Four","Five","Six"],a:2},{q:"What does father do?",o:["Teacher","Doctor","Driver","Cook"],a:1}]},
+    {t:"At the Zoo",tx:"Our class goes to the zoo on Friday. We see monkeys, elephants, and birds. The elephants are very big, and the monkeys are funny. My favorite animal is the giraffe because it has a long neck. We eat lunch under a tree.",qs:[{q:"Where does the class go?",o:["Museum","Zoo","Library","Beach"],a:1},{q:"Which animal has a long neck?",o:["Monkey","Bird","Giraffe","Elephant"],a:2}]},
+    {t:"Tom's New Bike",tx:"Tom has a new blue bike. He rides it to school with his sister. He always wears a helmet because safety is important. After school, Tom cleans the bike and puts it in the garage. He is proud of his bike.",qs:[{q:"What color is Tom's bike?",o:["Red","Blue","Green","Yellow"],a:1},{q:"Why does Tom wear a helmet?",o:["It is cold","For safety","For school","It is new"],a:1}]},
+    {t:"The School Garden",tx:"There is a small garden behind our school. Students plant flowers and vegetables there. We water the plants every morning. In summer, we can see tomatoes and butterflies. The garden makes our school beautiful.",qs:[{q:"Where is the garden?",o:["Behind school","In the library","Near the bus","On the roof"],a:0},{q:"What do students do every morning?",o:["Pick tomatoes","Water plants","Catch butterflies","Paint flowers"],a:1}]},
+    {t:"A Birthday Party",tx:"Today is Lily's birthday. Her friends come to her house at three o'clock. They sing a birthday song and eat chocolate cake. Lily gets a storybook from her uncle. Everyone plays games and laughs.",qs:[{q:"Whose birthday is it?",o:["Mimi's","Tom's","Lily's","Uncle's"],a:2},{q:"What gift does Lily get?",o:["A ball","A storybook","A bike","A cake"],a:1}]},
+    {t:"Helping Grandma",tx:"Ben visits his grandma on Sunday. Grandma is cooking soup in the kitchen. Ben helps wash the carrots and set the table. After lunch, he reads a book to Grandma. Grandma smiles and says thank you.",qs:[{q:"When does Ben visit Grandma?",o:["Monday","Friday","Saturday","Sunday"],a:3},{q:"What does Ben read?",o:["A book","A letter","A menu","A map"],a:0}]},
+    {t:"The Lost Pencil",tx:"Amy cannot find her favorite pencil. She looks under her desk and inside her schoolbag. Her friend Jack finds it near the window. Amy is happy and says thank you. Then she uses the pencil to draw a star.",qs:[{q:"What is Amy looking for?",o:["A pencil","A bag","A star","A window"],a:0},{q:"Who finds it?",o:["Amy","Jack","Teacher","Mom"],a:1}]},
+    {t:"After School",tx:"After school, Ken goes to the playground. He plays soccer with his classmates. They run fast and shout happily. At five o'clock, Ken goes home and drinks water. He finishes his homework before dinner.",qs:[{q:"What does Ken play?",o:["Baseball","Basketball","Soccer","Cards"],a:2},{q:"What does Ken do before dinner?",o:["Sleeps","Finishes homework","Draws pictures","Watches TV"],a:1}]},
   ],
   junior: [
     {t:"The Power of Reading",tx:"Reading is one of the most important skills a student can develop. When you read regularly, you improve your vocabulary and strengthen critical thinking. Studies show that students who read for pleasure perform better in school.",qs:[{q:"Reading helps improve?",o:["Drawing","Vocabulary & thinking","Fitness","Cooking"],a:1},{q:"Who does better in school?",o:["Who exercise","Who read for fun","Who sleep more","Who watch TV"],a:1}]},
     {t:"Social Media and Teens",tx:"Social media has become a big part of teenagers' lives. Many students spend more than three hours a day on Instagram and YouTube. While social media helps people stay connected, too much screen time may lead to sleep problems. Experts suggest setting a daily time limit.",qs:[{q:"How much time on social media?",o:["30 min","1 hour","More than 3 hours","5 hours"],a:2},{q:"Experts suggest?",o:["Use more","Delete apps","Set time limit","Only use computers"],a:2}]},
     {t:"Bubble Tea History",tx:"Bubble tea was invented in Taiwan in the 1980s. A teahouse owner added tapioca balls to iced tea. The drink quickly became popular across Taiwan and spread to other countries. Today, bubble tea shops can be found all over the world.",qs:[{q:"Where was bubble tea invented?",o:["Japan","Korea","Taiwan","China"],a:2},{q:"When?",o:["1960s","1970s","1980s","1990s"],a:2}]},
+    {t:"A Greener School",tx:"Students at Green Valley Junior High started a recycling program. Each classroom has boxes for paper, bottles, and cans. At the end of every week, volunteers collect the boxes and record the amount. The project helps students understand that small habits can protect the environment.",qs:[{q:"What program did students start?",o:["Music club","Recycling program","Sports day","Book sale"],a:1},{q:"What do volunteers record?",o:["The weather","The amount collected","Students' names","Class scores"],a:1}]},
+    {t:"Learning a New Skill",tx:"Kevin wanted to learn how to play the guitar. At first, his fingers hurt and the songs sounded strange. However, he practiced for twenty minutes every day. After two months, he could play a simple song for his family. He learned that progress takes patience.",qs:[{q:"What skill did Kevin learn?",o:["Drawing","Cooking","Guitar","Swimming"],a:2},{q:"What lesson did he learn?",o:["Practice needs patience","Music is easy","Families are strict","Songs are strange"],a:0}]},
+    {t:"The Night Market",tx:"Taiwanese night markets are famous for food, games, and friendly crowds. Visitors can try stinky tofu, fried chicken, and fruit juice. Some people go there to shop for clothes or play small games. Night markets are not only places to eat but also places to experience local culture.",qs:[{q:"What are night markets famous for?",o:["Snow","Food and games","Libraries","Hospitals"],a:1},{q:"What can people experience there?",o:["Local culture","Space travel","Online classes","A quiet forest"],a:0}]},
+    {t:"A Team Project",tx:"Mia's science group had to build a small bridge with paper and tape. At first, everyone had different ideas and talked at the same time. Their teacher asked them to listen before speaking. After they shared jobs clearly, the group worked faster and built a strong bridge.",qs:[{q:"What did the group build?",o:["A tower","A bridge","A robot","A boat"],a:1},{q:"What helped the group work faster?",o:["Clear jobs","More tape","Talking loudly","Working alone"],a:0}]},
+    {t:"Public Transportation",tx:"Taking buses and trains can reduce traffic and air pollution. In busy cities, public transportation also helps people save time because they do not need to find parking spaces. Although it may be crowded during rush hour, it is still an important choice for many commuters.",qs:[{q:"What can public transportation reduce?",o:["Homework","Traffic and pollution","School time","Rain"],a:1},{q:"When may it be crowded?",o:["At midnight","During rush hour","On quiet days","After dinner only"],a:1}]},
+    {t:"Online Learning",tx:"Online learning gives students more flexibility. They can review videos, pause lessons, and study at home. However, students also need self-control because games and messages can easily distract them. A good learning plan can help them stay focused.",qs:[{q:"What does online learning give students?",o:["Flexibility","More buses","Free lunch","No homework"],a:0},{q:"What problem is mentioned?",o:["Heavy books","Easy distraction","No teachers anywhere","Too much rain"],a:1}]},
+    {t:"The School Concert",tx:"The school concert was held in the auditorium on Friday night. Students played the piano, violin, and drums. The music club practiced for three weeks before the show. When the final song ended, parents and teachers clapped loudly. The performers felt nervous but proud.",qs:[{q:"Where was the concert held?",o:["Gym","Auditorium","Library","Classroom"],a:1},{q:"How did performers feel?",o:["Angry but tired","Nervous but proud","Bored and sleepy","Quiet and sad"],a:1}]},
   ],
   senior: [
     {t:"Ethics of AI",tx:"As AI becomes integrated into daily life, ethical questions arise. One concern is algorithmic bias — when AI perpetuates prejudices from training data. Furthermore, worker displacement by automated systems presents unprecedented economic challenges requiring thoughtful policy responses.",qs:[{q:"What is algorithmic bias?",o:["A virus","AI perpetuating prejudices","A language","A product"],a:1},{q:"Automation challenge?",o:["Pollution","Worker displacement","Privacy","Energy"],a:1}]},
     {t:"Procrastination Psychology",tx:"Procrastination is not simply laziness. Research suggests it is an emotional regulation problem. When tasks trigger negative emotions, the brain seeks relief through avoidance. Cognitive behavioral strategies, such as breaking tasks into smaller steps, have proven effective.",qs:[{q:"Procrastination is primarily?",o:["Time management","Laziness","Emotional regulation","Genetics"],a:2},{q:"What helps?",o:["Work longer","Ignore deadlines","Break into small steps","Sleep more"],a:2}]},
     {t:"Renewable Energy Future",tx:"The transition to renewable energy is one of the most consequential shifts in modern history. Solar and wind power costs have dropped dramatically. However, intermittent nature presents grid stability challenges. Energy storage technologies are crucial for addressing this limitation.",qs:[{q:"Solar/wind cost?",o:["Increased","Same","Decreased dramatically","Unpredictable"],a:2},{q:"What's crucial?",o:["More fossil fuels","Energy storage","Reduce use","More plants"],a:1}]},
+    {t:"Digital Privacy",tx:"Digital privacy has become increasingly complicated as people depend on online services. Apps often collect location data, browsing behavior, and personal preferences. While such data can improve convenience, it may also be misused if companies lack transparency. Users need both awareness and stronger legal protection.",qs:[{q:"Why can data collection be useful?",o:["It improves convenience","It removes all ads","It stops learning","It blocks the internet"],a:0},{q:"What protection is mentioned?",o:["Longer passwords only","Stronger legal protection","More screen time","Fewer devices"],a:1}]},
+    {t:"Urban Heat Islands",tx:"Large cities are often warmer than nearby rural areas because concrete, asphalt, and buildings absorb heat. This phenomenon is called the urban heat island effect. Planting trees, creating green roofs, and using reflective materials can reduce the problem and make cities more livable.",qs:[{q:"Why are cities warmer?",o:["They absorb heat","They have fewer people","They receive less sun","They have more rivers"],a:0},{q:"What can reduce the problem?",o:["More asphalt","Green roofs","Fewer trees","Darker roads"],a:1}]},
+    {t:"Media Literacy",tx:"In an age of endless information, media literacy is essential. Readers must evaluate sources, check evidence, and notice emotional language. False stories often spread quickly because they are surprising or frightening. Careful readers pause before sharing and ask who benefits from the message.",qs:[{q:"What should careful readers check?",o:["Only pictures","Sources and evidence","Font size","Number of comments"],a:1},{q:"Why do false stories spread quickly?",o:["They are always true","They are surprising or frightening","They are very long","They use no emotion"],a:1}]},
+    {t:"The Value of Sleep",tx:"Sleep is not merely a break from activity; it is a biological process that supports memory, emotional balance, and physical repair. Teenagers often sleep too little because of homework, phones, and early school schedules. Improving sleep habits can therefore improve both learning and health.",qs:[{q:"What does sleep support?",o:["Memory and repair","Only sports","Louder music","More homework"],a:0},{q:"Why may teenagers sleep too little?",o:["No phones","Early school schedules","Too much sunlight","Too much exercise only"],a:1}]},
+    {t:"Cultural Preservation",tx:"Cultural preservation is more than protecting old buildings. It includes languages, festivals, crafts, songs, and everyday traditions. When communities preserve culture, younger generations gain a sense of identity. However, preservation should not freeze culture; living traditions can adapt while keeping their meaning.",qs:[{q:"What does cultural preservation include?",o:["Only old buildings","Languages and traditions","New phones","Sports scores"],a:1},{q:"What should preservation avoid?",o:["Any meaning","All learning","Freezing culture","Young people"],a:2}]},
+    {t:"Ocean Plastic",tx:"Plastic pollution threatens marine ecosystems because many plastic items do not break down easily. Small pieces can be eaten by fish and enter the food chain. Governments, businesses, and consumers all have roles to play, from banning single-use products to choosing reusable containers.",qs:[{q:"Why is plastic dangerous?",o:["It disappears quickly","It does not break down easily","It feeds all fish","It cleans oceans"],a:1},{q:"What is one suggested action?",o:["Use more plastic bags","Choose reusable containers","Throw plastic into rivers","Ignore businesses"],a:1}]},
+    {t:"Resilience in Failure",tx:"Failure is often viewed as a final result, but it can also be a source of feedback. People who develop resilience analyze what went wrong, adjust their strategies, and try again. This attitude does not make failure pleasant, but it makes failure useful for long-term growth.",qs:[{q:"How can failure be useful?",o:["As feedback","As a final stop","As a prize","As entertainment"],a:0},{q:"What do resilient people do?",o:["Avoid all goals","Adjust strategies","Blame others first","Stop trying"],a:1}]},
   ],
 };
 // ═══ DICTATION SENTENCES ════════════════════════════════════════════
@@ -1309,7 +1330,7 @@ export default function App(){
          mod==="match"?<MatchM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="bomb"?<BombM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="grammar"?<GrammarM lv={lv} onBack={back} onXp={addXp}/>:
-         mod==="reading"?<ReadingM lv={lv} onBack={back}/>:
+         mod==="reading"?<ReadingM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="dictation"?<DictM lv={lv} onBack={back} onXp={addXp} onDone={()=>setStats(s=>({...s,dictDone:s.dictDone+1}))}/>:
          mod==="scramble"?<ScramM lv={lv} onBack={back} onXp={addXp} onDone={()=>setStats(s=>({...s,scramDone:s.scramDone+1}))}/>:
          mod==="ai"?<AIT lv={lv} onBack={back} apiKey={gemKey} onSetKey={setGemKey}/>:
@@ -2475,11 +2496,79 @@ function GrammarM({lv,onBack,onXp}){
   </div>);
 }
 // ═══ READING ════════════════════════════════════════════════════════
-function ReadingM({lv,onBack}){
-  const articles=R[lv];const[ai,setAi]=useState(0);const[ans,setAns]=useState({});const c=LV[lv];const d=articles[ai];
-  return(<div><Hdr t="📖 閱讀理解" onBack={onBack} cl={c.cl}/><div style={{display:"flex",gap:5,marginBottom:10,overflowX:"auto"}}>{articles.map((a,i)=>(<button key={i} onClick={()=>{setAi(i);setAns({})}} style={{flexShrink:0,padding:"8px 14px",borderRadius:12,background:i===ai?c.cl:S.bg2,minHeight:36,color:i===ai?"#fff":S.t1,border:"none",fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>{a.t}</button>))}</div>
-    <div style={{...S.card,padding:"18px 16px",marginBottom:12}}><h3 style={{fontSize:18,fontWeight:700,color:S.t1,marginBottom:10}}>{d.t}</h3><div style={{fontSize:14,lineHeight:1.9,color:S.t1,padding:"10px 12px",background:S.bg2,borderRadius:10,borderLeft:`3px solid ${c.ac}`}}>{d.tx}</div><button onClick={()=>speak(d.tx)} style={{marginTop:6,background:"none",border:"none",fontSize:14,color:c.cl,cursor:"pointer",padding:"4px"}}>🔊 朗讀全文</button></div>
-    {d.qs.map((q,qi)=>(<div key={qi} style={{...S.card,padding:"14px",marginBottom:8}}><div style={{fontWeight:600,fontSize:13,color:S.t1,marginBottom:6}}>Q{qi+1}. {q.q}</div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4}}>{q.o.map((o,oi)=>{const dn=ans[qi]!==undefined,ok=oi===q.a,pk=ans[qi]===oi;let bg=S.bg2,bd=`1px solid ${S.bd}`;if(dn){if(ok){bg="#EAF3DE";bd="2px solid #639922"}else if(pk){bg="#FCEBEB";bd="2px solid #E24B4A"}}return<button key={oi} onClick={()=>{if(!dn)setAns(a=>({...a,[qi]:oi}))}} style={{padding:"8px 6px",borderRadius:8,background:bg,border:bd,cursor:dn?"default":"pointer",fontSize:12,fontFamily:"inherit",color:S.t1,textAlign:"left"}}>{o}</button>})}</div></div>))}
+const READING_STOP_WORDS=new Set("a an and are as at be by can for from has have he her his i in is it its me my of on one or our she that the their there they this to too was we when while who with you your what where why how many more most than into every today".split(" "));
+function splitReadingSentences(text){const m=String(text||"").match(/[^.!?]+[.!?]+/g);return(m?.length?m:[text]).map(s=>s.trim()).filter(Boolean)}
+function readingWords(text){return(String(text||"").toLowerCase().match(/[a-z][a-z'-]*/g)||[]).map(w=>w.replace(/^'+|'+$/g,"")).filter(Boolean)}
+function readingScore(qs,ans){return qs.reduce((n,q,i)=>n+(ans[i]===q.a?1:0),0)}
+function readingKeywords(article,lv){
+  const dict=new Map((V[lv]||[]).map(v=>[v.w.toLowerCase(),v]));
+  const counts={};
+  readingWords(article.tx).forEach(w=>{if(w.length<4||READING_STOP_WORDS.has(w))return;counts[w]=(counts[w]||0)+1});
+  return Object.entries(counts).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0])).slice(0,8).map(([word,count])=>({word,count,info:dict.get(word)}));
+}
+function readingEvidence(text,q){
+  const sentences=splitReadingSentences(text);
+  const target=readingWords(`${q.q} ${q.o[q.a]}`).filter(w=>w.length>2&&!READING_STOP_WORDS.has(w));
+  let best=sentences[0]||"",bestScore=-1;
+  sentences.forEach(s=>{
+    const low=s.toLowerCase();
+    let score=target.reduce((n,w)=>n+(low.includes(w)?1:0),0);
+    if(low.includes(String(q.o[q.a]).toLowerCase()))score+=3;
+    if(score>bestScore){best=s;bestScore=score}
+  });
+  return best;
+}
+function ReadingM({lv,onBack,onXp}){
+  const articles=R[lv];const[ai,setAi]=useState(0);const[answers,setAnswers]=useState({});const[focus,setFocus]=useState(-1);const rewarded=useRef({});const c=LV[lv];const d=articles[ai];const ans=answers[ai]||{};
+  useEffect(()=>{setAi(0);setAnswers({});setFocus(-1);rewarded.current={}},[lv]);
+  useEffect(()=>{setFocus(-1);preloadTts([d.tx,...d.qs.map(q=>q.q),...d.qs.map(q=>q.o[q.a])],{limit:6,concurrency:2})},[d]);
+  const sentences=useMemo(()=>splitReadingSentences(d.tx),[d]);
+  const keys=useMemo(()=>readingKeywords(d,lv),[d,lv]);
+  const wordCount=useMemo(()=>readingWords(d.tx).length,[d]);
+  const score=readingScore(d.qs,ans);const answered=Object.keys(ans).length;const done=answered===d.qs.length;const pct=Math.round((score/d.qs.length)*100);
+  const doneCount=articles.filter((a,i)=>Object.keys(answers[i]||{}).length===a.qs.length).length;
+  const setArticleAns=fn=>setAnswers(all=>({...all,[ai]:typeof fn==="function"?fn(all[ai]||{}):fn}));
+  const pick=(qi,oi)=>{if(ans[qi]!==undefined)return;setArticleAns(a=>({...a,[qi]:oi}));const ok=oi===d.qs[qi].a;playSound(ok?"good":"bad");const key=`${lv}:${ai}:${qi}`;if(ok&&!rewarded.current[key]){rewarded.current[key]=true;onXp?.(5)}};
+  const resetArticle=()=>{setArticleAns({});setFocus(-1)};
+  const goArticle=i=>{setAi(i);setFocus(-1);window.speechSynthesis?.cancel()};
+  return(<div><Hdr t="📖 閱讀理解" onBack={onBack} cl={c.cl} extra={<button onClick={()=>speak(d.tx)} style={{background:"none",border:`1px solid ${S.bd}`,borderRadius:8,padding:"4px 8px",fontSize:12,color:c.cl,cursor:"pointer",fontFamily:"inherit"}}>🔊 全文</button>}/>
+    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10,fontSize:12}}>
+      <div style={{flex:1,height:6,background:S.bg2,borderRadius:3}}><div style={{height:"100%",width:`${(doneCount/articles.length)*100}%`,background:`linear-gradient(90deg,${c.cl},${c.ac})`,borderRadius:3,transition:"width .3s"}}/></div>
+      <span style={{color:S.t3}}>完成 {doneCount}/{articles.length}</span>
+    </div>
+    <div style={{display:"flex",gap:6,marginBottom:10,overflowX:"auto",paddingBottom:2}}>{articles.map((a,i)=>{const aAns=answers[i]||{};const aDone=Object.keys(aAns).length===a.qs.length;return(<button key={i} onClick={()=>goArticle(i)} style={{flexShrink:0,padding:"9px 13px",borderRadius:12,background:i===ai?c.cl:aDone?"#E1F5EE":S.bg2,minHeight:38,color:i===ai?"#fff":aDone?"#1D9E75":S.t1,border:aDone&&i!==ai?"1px solid #1D9E75":"none",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{aDone?"✓ ":""}{a.t}</button>)})}</div>
+
+    <div style={{...S.card,padding:"18px 16px",marginBottom:10,borderTop:`4px solid ${c.cl}`}}>
+      <div style={{display:"flex",justifyContent:"space-between",gap:10,alignItems:"flex-start",marginBottom:10}}>
+        <div><h3 style={{fontSize:20,fontWeight:700,color:S.t1,margin:"0 0 3px"}}>{d.t}</h3><div style={{fontSize:12,color:S.t3}}>{wordCount} words · 約 {Math.max(1,Math.ceil(wordCount/120))} 分鐘</div></div>
+        <div style={{fontSize:12,fontWeight:700,color:c.cl,background:c.bg,borderRadius:12,padding:"5px 10px",whiteSpace:"nowrap"}}>{score}/{d.qs.length}</div>
+      </div>
+      <div style={{display:"grid",gap:7,marginBottom:12}}>
+        {sentences.map((s,i)=><button key={i} onClick={()=>{setFocus(i);speak(s,"en-US",0.85)}} style={{textAlign:"left",fontSize:14,lineHeight:1.75,color:S.t1,padding:"9px 11px",background:focus===i?c.bg:S.bg2,border:`1px solid ${focus===i?c.cl:S.bd}`,borderRadius:10,cursor:"pointer",fontFamily:"inherit"}}>{s}</button>)}
+      </div>
+      {keys.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+        {keys.map(k=><button key={k.word} onClick={()=>speak(k.word)} style={{border:`1px solid ${S.bd}`,background:S.bg1,borderRadius:999,padding:"6px 10px",fontSize:12,color:S.t1,cursor:"pointer",fontFamily:"inherit"}}><b style={{color:c.cl}}>{k.word}</b>{k.info?.m?` · ${k.info.m}`:""}{k.count>1?` ×${k.count}`:""}</button>)}
+      </div>}
+    </div>
+
+    {d.qs.map((q,qi)=>{const dn=ans[qi]!==undefined,correct=ans[qi]===q.a,evidence=readingEvidence(d.tx,q);return(<div key={qi} style={{...S.card,padding:"15px",marginBottom:8,borderLeft:`4px solid ${dn?(correct?"#1D9E75":"#E24B4A"):c.ac}`}}>
+      <div style={{display:"flex",gap:8,alignItems:"flex-start",marginBottom:10}}><div style={{width:26,height:26,borderRadius:"50%",background:dn?(correct?"#E1F5EE":"#FCEBEB"):c.bg,color:dn?(correct?"#1D9E75":"#E24B4A"):c.cl,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,flexShrink:0}}>{qi+1}</div><div style={{fontWeight:700,fontSize:14,color:S.t1,lineHeight:1.45}}>{q.q}</div></div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:7}}>{q.o.map((o,oi)=>{const ok=oi===q.a,pk=ans[qi]===oi;let bg=S.bg2,bd=`1px solid ${S.bd}`,cl=S.t1;if(dn){if(ok){bg="#E1F5EE";bd="2px solid #1D9E75";cl="#146B45"}else if(pk){bg="#FCEBEB";bd="2px solid #E24B4A";cl="#A12F2F"}}return<button key={oi} onClick={()=>pick(qi,oi)} style={{padding:"11px 10px",borderRadius:10,background:bg,border:bd,cursor:dn?"default":"pointer",fontSize:13,fontFamily:"inherit",color:cl,textAlign:"left",fontWeight:dn&&ok?700:500,minHeight:44}}>{o}</button>})}</div>
+      {dn&&<div style={{marginTop:10,padding:"10px 12px",borderRadius:10,background:correct?"#E1F5EE":"#FFF3CD",fontSize:12,color:S.t2,lineHeight:1.65}}>
+        <div style={{fontSize:13,fontWeight:700,color:correct?"#1D9E75":"#E24B4A",marginBottom:3}}>{correct?"答對":"答錯"} · 正解：{q.o[q.a]}</div>
+        <div style={{color:S.t1}}>定位：{evidence}</div>
+      </div>}
+    </div>)})}
+
+    {done&&<div style={{...S.card,padding:"18px 16px",textAlign:"center",marginTop:10,background:`linear-gradient(135deg,${pct>=80?"#E1F5EE":pct>=50?"#FFF3CD":"#FCEBEB"},var(--color-background-primary,#fff))`}}>
+      <div style={{fontSize:42,animation:"bounceIn .4s ease-out"}}>{pct>=80?"🏆":pct>=50?"🎉":"💪"}</div>
+      <div style={{fontSize:18,fontWeight:700,color:S.t1,marginTop:4}}>本篇完成</div>
+      <div style={{fontSize:13,color:c.cl,fontWeight:700,marginTop:3}}>答對 {score}/{d.qs.length} · {pct}%</div>
+      <div style={{display:"flex",gap:8,marginTop:14}}>
+        <button onClick={resetArticle} style={{...S.btn,background:S.bg2,color:S.t1,flex:1,padding:"11px",fontSize:13}}>重做本篇</button>
+        <button onClick={()=>goArticle((ai+1)%articles.length)} style={{...S.btn,background:c.cl,color:"#fff",flex:1,padding:"11px",fontSize:13}}>{ai+1>=articles.length?"回第一篇":"下一篇"}</button>
+      </div>
+    </div>}
   </div>);
 }
 // ═══ AI TUTOR ═══════════════════════════════════════════════════════
