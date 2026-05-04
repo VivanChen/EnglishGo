@@ -384,6 +384,51 @@ const R_ZH = {
   "Ocean Plastic":{tx:"塑膠污染威脅海洋生態系，因為許多塑膠物品不容易分解。小塑膠碎片可能被魚吃下，並進入食物鏈。政府、企業和消費者都有角色要扮演，從禁止一次性產品到選擇可重複使用的容器都包括在內。",qs:["為什麼塑膠很危險？","文中建議的一項行動是什麼？"]},
   "Resilience in Failure":{tx:"失敗常被視為最終結果，但它也可以是一種回饋來源。具有韌性的人會分析哪裡出錯、調整策略，然後再試一次。這種態度不會讓失敗變得愉快，但能讓失敗對長期成長有用。",qs:["失敗如何能有用？","有韌性的人會做什麼？"]},
 };
+// ═══ SONGS ═════════════════════════════════════════════════════════
+const SONGS = {
+  elementary: [
+    {
+      id:"elementary-step-by-step",
+      title:"Step by Step",
+      zhTitle:"一步一步來",
+      audio:"/audio/songs/elementary-step-by-step.mp3",
+      theme:"學英文信心",
+      level:"小學",
+      lines:[
+        {sec:"Verse 1"},
+        {en:"Good morning, hello,",zh:"早安，你好。"},
+        {en:"I am ready, let's go.",zh:"我準備好了，我們出發吧。"},
+        {en:"I can read, I can write,",zh:"我會閱讀，我會書寫。"},
+        {en:"I can try with all my might.",zh:"我會盡全力嘗試。"},
+        {sec:"Pre-Chorus"},
+        {en:"One word, two words,",zh:"一個單字，兩個單字。"},
+        {en:"Say them loud and clear.",zh:"大聲又清楚地說出來。"},
+        {en:"Every day I practice,",zh:"我每天練習。"},
+        {en:"English has no fear.",zh:"英文一點也不可怕。"},
+        {sec:"Chorus"},
+        {en:"Step by step, I learn today,",zh:"一步一步，我今天學習。"},
+        {en:"Sing with me, let's find our way.",zh:"和我一起唱，找到我們的方法。"},
+        {en:"Word by word, I grow so strong,",zh:"一字一句，我變得更強。"},
+        {en:"English learning all day long.",zh:"一整天都在學英文。"},
+        {sec:"Verse 2"},
+        {en:"I can listen, I can speak,",zh:"我會聽，我會說。"},
+        {en:"I get better every week.",zh:"我每週都變得更好。"},
+        {en:"If I make a small mistake,",zh:"如果我犯了一個小錯。"},
+        {en:"I just smile and try again.",zh:"我就微笑，然後再試一次。"},
+        {sec:"Chorus"},
+        {en:"Step by step, I learn today,",zh:"一步一步，我今天學習。"},
+        {en:"Sing with me, let's find our way.",zh:"和我一起唱，找到我們的方法。"},
+        {sec:"Outro"},
+        {en:"Read and write,",zh:"閱讀與書寫。"},
+        {en:"Speak and sing,",zh:"開口說，也開口唱。"},
+        {en:"English gives my heart new wings.",zh:"英文讓我的心長出新的翅膀。"},
+      ],
+      vocab:["ready","read","write","practice","learn","strong","listen","speak","mistake","again"],
+    },
+  ],
+  junior: [],
+  senior: [],
+};
 // ═══ DICTATION SENTENCES ════════════════════════════════════════════
 const DICT = {
   elementary: ["I like to eat apples.","She is my best friend.","The dog is playing in the park.","We go to school every day.","My mother reads a book.","He runs very fast.","There are three cats.","I am happy today.","The sun is very big.","Please drink some water."],
@@ -1363,6 +1408,7 @@ export default function App(){
          mod==="bomb"?<BombM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="grammar"?<GrammarM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="reading"?<ReadingM lv={lv} onBack={back} onXp={addXp}/>:
+         mod==="songs"?<SongsM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="dictation"?<DictM lv={lv} onBack={back} onXp={addXp} onDone={()=>setStats(s=>({...s,dictDone:s.dictDone+1}))}/>:
          mod==="scramble"?<ScramM lv={lv} onBack={back} onXp={addXp} onDone={()=>setStats(s=>({...s,scramDone:s.scramDone+1}))}/>:
          mod==="ai"?<AIT lv={lv} onBack={back} apiKey={gemKey} onSetKey={setGemKey}/>:
@@ -1474,6 +1520,7 @@ function Menu({lv,onSelect,daily,c,xp,coins,streak,achUnlocked,weakWords,isSpons
         {id:"scramble",icon:"🧩",t:"句子重組",d:"語序訓練"},
         {id:"grammar",icon:"🧠",t:"文法學堂",d:`${G[lv].length} 個重點`},
         {id:"reading",icon:"📖",t:"閱讀理解",d:`${R[lv].length} 篇文章`},
+        {id:"songs",icon:"🎵",t:"英文歌曲",d:(SONGS[lv]?.length||0)?`${SONGS[lv].length} 首歌`:"準備中"},
         {id:"ai",icon:"🤖",t:"AI 家教",d:"Gemini 對話"},
         {id:"story",icon:"📖",t:"AI 故事",d:"寵物英文故事"},
         {id:"achievements",icon:"🏆",t:"成就徽章",d:`${achUnlocked.length}/${ACH_DEFS.length} 已解鎖`},
@@ -2608,6 +2655,54 @@ function ReadingM({lv,onBack,onXp}){
         <button onClick={()=>goArticle((ai+1)%articles.length)} style={{...S.btn,background:c.cl,color:"#fff",flex:1,padding:"11px",fontSize:13}}>{ai+1>=articles.length?"回第一篇":"下一篇"}</button>
       </div>
     </div>}
+  </div>);
+}
+// ═══ SONGS (英文歌曲練習) ═════════════════════════════════════════════
+function songLineScore(target,heard){
+  const tw=readingWords(target).filter(w=>w.length>1);
+  const hw=new Set(readingWords(heard));
+  if(!tw.length)return 0;
+  const hit=tw.reduce((n,w)=>n+([w,...(HOMOPHONES[w]||[])].some(x=>hw.has(x))?1:0),0);
+  return Math.round((hit/tw.length)*100);
+}
+function SongsM({lv,onBack,onXp}){
+  const songs=SONGS[lv]||[];const c=LV[lv];const[si,setSi]=useState(0);const[time,setTime]=useState(0);const[dur,setDur]=useState(0);const[playing,setPlaying]=useState(false);const[showZh,setShowZh]=useState(true);const[sing,setSing]=useState({line:null,text:"",score:null,listening:false});const audioRef=useRef(null);const rewarded=useRef({});
+  const song=songs[si];const lyricLines=useMemo(()=>song?song.lines.map((l,i)=>({...l,i})).filter(l=>l.en):[],[song]);
+  const weights=useMemo(()=>lyricLines.map(l=>Math.max(1,readingWords(l.en).length)),[lyricLines]);
+  const totalWeight=weights.reduce((a,b)=>a+b,0)||1;
+  const activeLine=useMemo(()=>{if(!dur||!lyricLines.length)return lyricLines[0]?.i??-1;let pos=(time/dur)*totalWeight,acc=0;for(let i=0;i<lyricLines.length;i++){acc+=weights[i];if(pos<=acc)return lyricLines[i].i}return lyricLines.at(-1)?.i??-1},[time,dur,totalWeight,weights,lyricLines]);
+  useEffect(()=>{const a=audioRef.current;if(!a)return;const onTime=()=>setTime(a.currentTime||0);const onMeta=()=>setDur(a.duration||0);const onPlay=()=>setPlaying(true);const onPause=()=>setPlaying(false);const onEnd=()=>{setPlaying(false);if(song&&!rewarded.current[song.id]){rewarded.current[song.id]=true;onXp?.(10)}};a.addEventListener("timeupdate",onTime);a.addEventListener("loadedmetadata",onMeta);a.addEventListener("play",onPlay);a.addEventListener("pause",onPause);a.addEventListener("ended",onEnd);return()=>{a.pause();a.removeEventListener("timeupdate",onTime);a.removeEventListener("loadedmetadata",onMeta);a.removeEventListener("play",onPlay);a.removeEventListener("pause",onPause);a.removeEventListener("ended",onEnd)}},[song]);
+  if(!song)return(<div><Hdr t="🎵 英文歌曲" onBack={onBack} cl={c.cl}/><div style={{...S.card,padding:"28px 18px",textAlign:"center"}}><div style={{fontSize:42,marginBottom:8}}>🎧</div><div style={{fontSize:16,fontWeight:700,color:S.t1}}>這個年級的歌曲準備中</div><div style={{fontSize:13,color:S.t2,marginTop:6}}>先從小學歌曲開始驗證流程，之後可逐步加入更多歌曲。</div></div></div>);
+  const fmt=s=>`${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,"0")}`;
+  const seekLine=(line)=>{
+    const idx=lyricLines.findIndex(l=>l.i===line.i);if(idx<0||!audioRef.current)return;
+    const start=weights.slice(0,idx).reduce((a,b)=>a+b,0)/totalWeight*(dur||0);
+    if(dur)audioRef.current.currentTime=start;
+  };
+  const startSing=(line)=>{
+    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    if(!SR){setSing({line:line.i,text:"此瀏覽器不支援語音辨識，請用 Chrome 或 Edge。",score:null,listening:false});return}
+    const r=new SR();r.lang="en-US";r.interimResults=false;r.maxAlternatives=3;r.continuous=false;
+    setSing({line:line.i,text:"正在聽你跟唱...",score:null,listening:true});
+    r.onresult=e=>{const text=Array.from(e.results?.[0]||[]).map(x=>x.transcript).join(" ")||"";setSing({line:line.i,text,score:songLineScore(line.en,text),listening:false})};
+    r.onerror=()=>setSing({line:line.i,text:"沒有聽清楚，再試一次。",score:null,listening:false});
+    r.onend=()=>setSing(s=>s.listening?{...s,listening:false}:s);
+    try{r.start()}catch{}
+  };
+  return(<div><Hdr t="🎵 英文歌曲" onBack={onBack} cl={c.cl} extra={<button onClick={()=>setShowZh(z=>!z)} style={{background:"none",border:`1px solid ${S.bd}`,borderRadius:8,padding:"4px 8px",fontSize:12,color:c.cl,cursor:"pointer",fontFamily:"inherit"}}>{showZh?"隱藏中文":"顯示中文"}</button>}/>
+    {songs.length>1&&<div style={{display:"flex",gap:6,marginBottom:10,overflowX:"auto"}}>{songs.map((s,i)=><button key={s.id} onClick={()=>{setSi(i);setTime(0);setDur(0);setSing({line:null,text:"",score:null,listening:false})}} style={{flexShrink:0,padding:"9px 13px",borderRadius:12,background:i===si?c.cl:S.bg2,color:i===si?"#fff":S.t1,border:"none",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{s.title}</button>)}</div>}
+    <div style={{...S.card,padding:"18px 16px",marginBottom:10,borderTop:`4px solid ${c.cl}`,background:`linear-gradient(135deg,${c.bg}55,var(--color-background-primary,#fff))`}}>
+      <div style={{display:"flex",gap:12,alignItems:"center",marginBottom:12}}><div style={{width:54,height:54,borderRadius:14,background:`linear-gradient(135deg,${c.cl},${c.ac})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,color:"#fff",flexShrink:0}}>🎵</div><div style={{flex:1}}><div style={{fontSize:20,fontWeight:800,color:S.t1}}>{song.title}</div><div style={{fontSize:12,color:S.t2}}>{song.zhTitle} · {song.theme} · {song.level}</div></div></div>
+      <audio ref={audioRef} src={song.audio} controls preload="metadata" style={{width:"100%",height:38}}/>
+      <div style={{display:"flex",alignItems:"center",gap:8,marginTop:10,fontSize:12,color:S.t3}}><span>{fmt(time)}</span><div style={{flex:1,height:6,background:S.bg2,borderRadius:3,overflow:"hidden"}}><div style={{height:"100%",width:`${dur?Math.min(100,time/dur*100):0}%`,background:`linear-gradient(90deg,${c.cl},${c.ac})`,borderRadius:3}}/></div><span>{fmt(dur||0)}</span></div>
+    </div>
+    <div style={{...S.card,padding:"14px 12px",marginBottom:10}}>
+      {song.lines.map((line,i)=>line.sec?<div key={i} style={{fontSize:12,fontWeight:800,color:c.cl,margin:"14px 4px 6px"}}>{line.sec}</div>:<div key={i} onClick={()=>seekLine(line)} style={{padding:"10px 12px",borderRadius:12,background:activeLine===i?c.bg:S.bg2,border:`1px solid ${activeLine===i?c.cl:S.bd}`,marginBottom:6,cursor:"pointer",transition:"all .15s"}}>
+        <div style={{display:"flex",gap:8,alignItems:"flex-start"}}><div style={{flex:1}}><div style={{fontSize:15,lineHeight:1.5,fontWeight:activeLine===i?800:600,color:S.t1}}>{line.en}</div>{showZh&&<div style={{fontSize:12,color:S.t2,marginTop:3,lineHeight:1.5}}>{line.zh}</div>}</div><button onClick={e=>{e.stopPropagation();startSing(line)}} style={{border:`1px solid ${S.bd}`,background:S.bg1,borderRadius:10,padding:"5px 8px",fontSize:12,color:c.cl,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>跟唱</button></div>
+        {sing.line===i&&<div style={{marginTop:7,padding:"8px 10px",borderRadius:10,background:sing.score==null?S.bg1:sing.score>=70?"#E1F5EE":"#FFF3CD",fontSize:12,color:S.t2,lineHeight:1.5}}>{sing.text}{sing.score!=null&&<b style={{color:sing.score>=70?"#1D9E75":"#EF9F27"}}> · {sing.score}%</b>}</div>}
+      </div>)}
+    </div>
+    <div style={{...S.card,padding:"14px 16px",fontSize:12,color:S.t2,lineHeight:1.7}}><div style={{fontWeight:700,color:S.t1,marginBottom:6}}>重點單字</div><div style={{display:"flex",flexWrap:"wrap",gap:6}}>{song.vocab.map(w=><button key={w} onClick={()=>speak(w)} style={{border:`1px solid ${S.bd}`,background:S.bg1,borderRadius:999,padding:"6px 10px",fontSize:12,color:c.cl,cursor:"pointer",fontWeight:700,fontFamily:"inherit"}}>{w} 🔊</button>)}</div></div>
   </div>);
 }
 // ═══ AI TUTOR ═══════════════════════════════════════════════════════
