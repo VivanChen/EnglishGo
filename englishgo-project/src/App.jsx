@@ -2519,9 +2519,8 @@ function readingEvidence(text,q){
   return best;
 }
 function ReadingM({lv,onBack,onXp}){
-  const articles=R[lv];const[ai,setAi]=useState(0);const[answers,setAnswers]=useState({});const[focus,setFocus]=useState(-1);const rewarded=useRef({});const c=LV[lv];const d=articles[ai];const ans=answers[ai]||{};
+  const articles=R[lv];const[ai,setAi]=useState(0);const[answers,setAnswers]=useState({});const[focus,setFocus]=useState(-1);const[articlePlaying,setArticlePlaying]=useState(false);const rewarded=useRef({});const articleHandle=useRef(null);const c=LV[lv];const d=articles[ai];const ans=answers[ai]||{};
   useEffect(()=>{setAi(0);setAnswers({});setFocus(-1);rewarded.current={}},[lv]);
-  useEffect(()=>{setFocus(-1);preloadTts([d.tx,...d.qs.map(q=>q.q),...d.qs.map(q=>q.o[q.a])],{limit:6,concurrency:2})},[d]);
   const sentences=useMemo(()=>splitReadingSentences(d.tx),[d]);
   const keys=useMemo(()=>readingKeywords(d,lv),[d,lv]);
   const wordCount=useMemo(()=>readingWords(d.tx).length,[d]);
@@ -2529,9 +2528,12 @@ function ReadingM({lv,onBack,onXp}){
   const doneCount=articles.filter((a,i)=>Object.keys(answers[i]||{}).length===a.qs.length).length;
   const setArticleAns=fn=>setAnswers(all=>({...all,[ai]:typeof fn==="function"?fn(all[ai]||{}):fn}));
   const pick=(qi,oi)=>{if(ans[qi]!==undefined)return;setArticleAns(a=>({...a,[qi]:oi}));const ok=oi===d.qs[qi].a;playSound(ok?"good":"bad");const key=`${lv}:${ai}:${qi}`;if(ok&&!rewarded.current[key]){rewarded.current[key]=true;onXp?.(5)}};
+  const stopArticle=()=>{articleHandle.current?.cancel();articleHandle.current=null;setArticlePlaying(false);setFocus(-1)};
+  const playArticle=()=>{stopArticle();setArticlePlaying(true);articleHandle.current=speakStory(sentences,{rate:0.86,onSentence:i=>setFocus(i),onFinish:()=>{articleHandle.current=null;setArticlePlaying(false);setFocus(-1)}})};
+  useEffect(()=>{stopArticle();preloadTts([d.tx,...sentences,...d.qs.map(q=>q.q),...d.qs.map(q=>q.o[q.a])],{limit:8,concurrency:2});return()=>{articleHandle.current?.cancel()}},[d,sentences]);
   const resetArticle=()=>{setArticleAns({});setFocus(-1)};
-  const goArticle=i=>{setAi(i);setFocus(-1);window.speechSynthesis?.cancel()};
-  return(<div><Hdr t="📖 閱讀理解" onBack={onBack} cl={c.cl} extra={<button onClick={()=>speak(d.tx)} style={{background:"none",border:`1px solid ${S.bd}`,borderRadius:8,padding:"4px 8px",fontSize:12,color:c.cl,cursor:"pointer",fontFamily:"inherit"}}>🔊 全文</button>}/>
+  const goArticle=i=>{stopArticle();setAi(i)};
+  return(<div><Hdr t="📖 閱讀理解" onBack={onBack} cl={c.cl} extra={<button onClick={articlePlaying?stopArticle:playArticle} style={{background:"none",border:`1px solid ${S.bd}`,borderRadius:8,padding:"4px 8px",fontSize:12,color:c.cl,cursor:"pointer",fontFamily:"inherit"}}>{articlePlaying?"⏹ 停止":"🔊 全文"}</button>}/>
     <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10,fontSize:12}}>
       <div style={{flex:1,height:6,background:S.bg2,borderRadius:3}}><div style={{height:"100%",width:`${(doneCount/articles.length)*100}%`,background:`linear-gradient(90deg,${c.cl},${c.ac})`,borderRadius:3,transition:"width .3s"}}/></div>
       <span style={{color:S.t3}}>完成 {doneCount}/{articles.length}</span>
@@ -2541,10 +2543,10 @@ function ReadingM({lv,onBack,onXp}){
     <div style={{...S.card,padding:"18px 16px",marginBottom:10,borderTop:`4px solid ${c.cl}`}}>
       <div style={{display:"flex",justifyContent:"space-between",gap:10,alignItems:"flex-start",marginBottom:10}}>
         <div><h3 style={{fontSize:20,fontWeight:700,color:S.t1,margin:"0 0 3px"}}>{d.t}</h3><div style={{fontSize:12,color:S.t3}}>{wordCount} words · 約 {Math.max(1,Math.ceil(wordCount/120))} 分鐘</div></div>
-        <div style={{fontSize:12,fontWeight:700,color:c.cl,background:c.bg,borderRadius:12,padding:"5px 10px",whiteSpace:"nowrap"}}>{score}/{d.qs.length}</div>
+        <div style={{display:"flex",gap:7,alignItems:"center",flexShrink:0}}><button onClick={articlePlaying?stopArticle:playArticle} style={{border:`1px solid ${c.cl}`,background:articlePlaying?"#FCEBEB":c.bg,color:articlePlaying?"#E24B4A":c.cl,borderRadius:12,padding:"7px 11px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>{articlePlaying?"⏹ 停止":"🔊 朗讀全文"}</button><div style={{fontSize:12,fontWeight:700,color:c.cl,background:c.bg,borderRadius:12,padding:"5px 10px",whiteSpace:"nowrap"}}>{score}/{d.qs.length}</div></div>
       </div>
       <div style={{display:"grid",gap:7,marginBottom:12}}>
-        {sentences.map((s,i)=><button key={i} onClick={()=>{setFocus(i);speak(s,"en-US",0.85)}} style={{textAlign:"left",fontSize:14,lineHeight:1.75,color:S.t1,padding:"9px 11px",background:focus===i?c.bg:S.bg2,border:`1px solid ${focus===i?c.cl:S.bd}`,borderRadius:10,cursor:"pointer",fontFamily:"inherit"}}>{s}</button>)}
+        {sentences.map((s,i)=><button key={i} onClick={()=>{stopArticle();setFocus(i);speak(s,"en-US",0.85)}} style={{textAlign:"left",fontSize:14,lineHeight:1.75,color:S.t1,padding:"9px 11px",background:focus===i?c.bg:S.bg2,border:`1px solid ${focus===i?c.cl:S.bd}`,borderRadius:10,cursor:"pointer",fontFamily:"inherit"}}>{s}</button>)}
       </div>
       {keys.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:6}}>
         {keys.map(k=><button key={k.word} onClick={()=>speak(k.word)} style={{border:`1px solid ${S.bd}`,background:S.bg1,borderRadius:999,padding:"6px 10px",fontSize:12,color:S.t1,cursor:"pointer",fontFamily:"inherit"}}><b style={{color:c.cl}}>{k.word}</b>{k.info?.m?` · ${k.info.m}`:""}{k.count>1?` ×${k.count}`:""}</button>)}
