@@ -115,10 +115,10 @@ function mapWord(r){
   try{return{w:r.word,ph:r.phonetic||'',p:r.pos||'',m:r.meaning,
     f:typeof r.forms==='string'?JSON.parse(r.forms||'[]'):(r.forms||[]),
     c:typeof r.collocations==='string'?JSON.parse(r.collocations||'[]'):(r.collocations||[]),
-    ex:r.example||'',ez:r.example_zh||'',img:''}}catch{return null}
+    ex:r.example||'',ez:r.example_zh||'',img:'',level:r.level,category:r.category||'',ceecLevel:r.ceec_level}}catch{return null}
 }
 
-const WORD_SELECT="id,word,phonetic,pos,meaning,forms,collocations,example,example_zh,category,ceec_level";
+const WORD_SELECT="id,word,phonetic,pos,meaning,forms,collocations,example,example_zh,category,ceec_level,level";
 const VOCAB_POOL_TTL=5*60*1000;
 const _cloudCountCache={};
 const _cloudVocabPools={};
@@ -244,23 +244,37 @@ function cleanIlikeTerm(term){
 
 function cloneWordResult(w){return w?{...w}:w}
 
-function mergeWordResults(items,limit=18){
+function resultLevelBias(level,preferred){
+  if(!level)return 0.2;
+  if(level===preferred)return -0.04;
+  const i=["elementary","junior","senior"].indexOf(level);
+  return i>=0?i*0.04:0.16;
+}
+
+function mergeWordResults(items,limit=18,preferredLevel=null){
   const best=new Map();
   (items||[]).filter(Boolean).forEach(item=>{
-    const key=`${item.level||""}:${String(item.w||"").toLowerCase()}`;
+    const key=String(item.w||"").toLowerCase();
     const prev=best.get(key);
-    if(!prev||(item.score??9)<(prev.score??9)||((item.score??9)===(prev.score??9)&&item.source==="雲端字庫")){
+    const score=(item.score??9)+resultLevelBias(item.level,preferredLevel);
+    const prevScore=prev?(prev.score??9)+resultLevelBias(prev.level,preferredLevel):Infinity;
+    if(!prev||score<prevScore||(score===prevScore&&item.source==="雲端字庫")){
       best.set(key,item);
     }
   });
-  return[...best.values()].sort((a,b)=>(a.score??9)-(b.score??9)||String(a.w).localeCompare(String(b.w))).slice(0,limit);
+  return[...best.values()].sort((a,b)=>((a.score??9)+resultLevelBias(a.level,preferredLevel))-((b.score??9)+resultLevelBias(b.level,preferredLevel))||String(a.w).localeCompare(String(b.w))).slice(0,limit);
 }
 
-async function searchCloudWords(level,query,limit=14){
+function applyLevelSearch(query,levels){
+  return levels.length===1?query.eq('level',levels[0]):query.in('level',levels);
+}
+
+async function searchCloudWords(level,query,limit=14,scope="all"){
   const sb=await getSb();
   const raw=String(query||"").trim();
   if(!sb||!raw)return[];
-  const key=`${level}:${raw.toLowerCase()}:${limit}`;
+  const levels=searchLevels(level,scope);
+  const key=`${levels.join("|")}:${raw.toLowerCase()}:${limit}`;
   if(_cloudSearchCache[key])return _cloudSearchCache[key].map(cloneWordResult);
   try{
     const candidates=wordQueryCandidates(raw).slice(0,3);
@@ -269,11 +283,11 @@ async function searchCloudWords(level,query,limit=14){
     candidates.forEach(c=>{
       const term=cleanIlikeTerm(c);
       if(!term)return;
-      jobs.push(sb.from('word_bank').select(WORD_SELECT).eq('level',level).ilike('word',`${term}%`).order('word',{ascending:true}).limit(limit));
-      if(term.length>=3)jobs.push(sb.from('word_bank').select(WORD_SELECT).eq('level',level).ilike('word',`%${term}%`).order('word',{ascending:true}).limit(Math.max(5,Math.ceil(limit/2))));
+      jobs.push(applyLevelSearch(sb.from('word_bank').select(WORD_SELECT),levels).ilike('word',`${term}%`).order('word',{ascending:true}).limit(limit));
+      if(term.length>=3)jobs.push(applyLevelSearch(sb.from('word_bank').select(WORD_SELECT),levels).ilike('word',`%${term}%`).order('word',{ascending:true}).limit(Math.max(5,Math.ceil(limit/2))));
     });
     if(cleanMeaning){
-      jobs.push(sb.from('word_bank').select(WORD_SELECT).eq('level',level).ilike('meaning',`%${cleanMeaning}%`).order('word',{ascending:true}).limit(limit));
+      jobs.push(applyLevelSearch(sb.from('word_bank').select(WORD_SELECT),levels).ilike('meaning',`%${cleanMeaning}%`).order('word',{ascending:true}).limit(limit));
     }
     const chunks=await Promise.all(jobs);
     const out=[];
@@ -284,14 +298,16 @@ async function searchCloudWords(level,query,limit=14){
         const mapped=mapWord(row);
         if(!mapped)return;
         const rowKey=String(mapped.w||"").toLowerCase();
-        if(seen.has(rowKey))return;
-        seen.add(rowKey);
+        const rowLevel=mapped.level||row.level||level;
+        const seenKey=`${rowLevel}:${rowKey}`;
+        if(seen.has(seenKey))return;
+        seen.add(seenKey);
         let score=scoreWordMatch(mapped,raw,candidates);
         if(String(mapped.m||"").includes(raw))score=Math.min(score,0.15);
-        out.push({...mapped,level,source:"雲端字庫",score});
+        out.push({...mapped,level:rowLevel,source:"雲端字庫",score});
       });
     });
-    const merged=mergeWordResults(out,limit);
+    const merged=mergeWordResults(out,limit,level);
     _cloudSearchCache[key]=merged;
     return merged.map(cloneWordResult);
   }catch{return[]}
@@ -376,6 +392,7 @@ async function loadExtraWords(){
 }
 function normalizeWordQuery(q){return String(q||"").trim().toLowerCase().replace(/^[^a-z]+|[^a-z]+$/g,"")}
 function preferredLevels(level){return[level,...Object.keys(V).filter(k=>k!==level)]}
+function searchLevels(level,scope="all"){return scope==="current"?[level]:preferredLevels(level)}
 function wordQueryCandidates(query){
   const q=normalizeWordQuery(query);if(!q)return[];
   const set=new Set([q]);
@@ -394,10 +411,17 @@ function wordQueryCandidates(query){
 }
 function scoreWordMatch(word,raw,candidates){
   const key=String(word.w||"").toLowerCase();
+  const meaning=String(word.m||"");
   if(candidates.includes(key))return 0;
   if(candidates.some(q=>key.startsWith(q)))return 1;
   if(candidates.some(q=>key.includes(q)))return 2;
-  if(raw&&String(word.m||"").includes(raw))return 3;
+  if(raw&&meaning){
+    if(meaning===raw)return 0.05;
+    if(meaning.startsWith(`${raw}；`)||meaning.startsWith(`${raw}，`))return 0.1;
+    if(meaning.startsWith(`${raw}的`))return 0.2;
+    if(meaning.startsWith(raw))return 0.6;
+    if(meaning.includes(raw))return 3;
+  }
   return 9;
 }
 function findLocalWord(level,word){
@@ -405,15 +429,15 @@ function findLocalWord(level,word){
   for(const l of preferredLevels(level)){const hit=(V[l]||[]).find(w=>candidates.includes(String(w.w).toLowerCase()));if(hit)return{...hit,level:l,source:"本地單字卡"}}
   return null;
 }
-function searchLocalWords(level,query,limit=16){
+function searchLocalWords(level,query,limit=16,scope="all"){
   const raw=String(query||"").trim();const candidates=wordQueryCandidates(query);if(!candidates.length&&!raw)return[];
   const out=[];const seen=new Set();
-  preferredLevels(level).forEach(l=>(V[l]||[]).forEach(w=>{
+  searchLevels(level,scope).forEach(l=>(V[l]||[]).forEach(w=>{
     const key=String(w.w).toLowerCase();if(seen.has(`${l}:${key}`))return;
     const score=scoreWordMatch(w,raw,candidates);
     if(score<9){seen.add(`${l}:${key}`);out.push({...w,level:l,source:"本地單字卡",score})}
   }));
-  return out.sort((a,b)=>a.score-b.score||a.w.localeCompare(b.w)).slice(0,limit);
+  return mergeWordResults(out,limit,level);
 }
 async function findAnyWord(level,word){
   const local=findLocalWord(level,word);if(local)return local;
@@ -425,18 +449,18 @@ async function findAnyWord(level,word){
   }
   return null;
 }
-async function searchAnyWords(level,query,limit=16){
+async function searchAnyWords(level,query,limit=16,scope="all"){
   const raw=String(query||"").trim();const candidates=wordQueryCandidates(query);
-  const out=searchLocalWords(level,query,limit);
+  const out=searchLocalWords(level,query,limit,scope);
   const seen=new Set(out.map(w=>`${w.level}:${String(w.w).toLowerCase()}`));
   if(!candidates.length&&!raw)return out;
   const extra=await loadExtraWords();
-  preferredLevels(level).forEach(l=>(extra[l]||[]).forEach(w=>{
+  searchLevels(level,scope).forEach(l=>(extra[l]||[]).forEach(w=>{
     const key=String(w.w).toLowerCase();if(seen.has(`${l}:${key}`))return;
     const score=scoreWordMatch(w,raw,candidates);
     if(score<9){seen.add(`${l}:${key}`);out.push({...w,level:l,source:"補充重點單字",score:score+0.2})}
   }));
-  return out.sort((a,b)=>(a.score??0)-(b.score??0)||a.w.localeCompare(b.w)).slice(0,limit);
+  return mergeWordResults(out,limit,level);
 }
 // ═══ GRAMMAR ════════════════════════════════════════════════════════
 const G = {
@@ -1778,30 +1802,35 @@ function Menu({lv,onSelect,daily,c,xp,coins,streak,achUnlocked,weakWords,isSpons
 
 function WordSearchM({lv,onBack,onOpenCard}){
   const c=LV[lv];const[q,setQ]=useState("");const[results,setResults]=useState([]);const[loading,setLoading]=useState(false);const[searched,setSearched]=useState(false);
+  const[scope,setScope]=useState("all");
   const searchSeq=useRef(0);
   const doSearch=useCallback(async(term=q)=>{
     const raw=String(term||"").trim();
     if(!raw){searchSeq.current++;setResults([]);setSearched(false);setLoading(false);return}
     const seq=++searchSeq.current;
     setLoading(true);setSearched(true);
-    const[cloud,local]=await Promise.all([searchCloudWords(lv,raw,14),searchAnyWords(lv,raw,18)]);
+    const[cloud,local]=await Promise.all([searchCloudWords(lv,raw,22,scope),searchAnyWords(lv,raw,22,scope)]);
     if(seq!==searchSeq.current)return;
-    setResults(mergeWordResults([...cloud,...local],18));
+    setResults(mergeWordResults([...cloud,...local],22,lv));
     setLoading(false);
-  },[lv,q]);
+  },[lv,q,scope]);
   useEffect(()=>{const t=window.setTimeout(()=>doSearch(q),260);return()=>window.clearTimeout(t)},[q,doSearch]);
   const open=(item)=>onOpenCard?.(item.w,item.level||lv);
-  const examples=["mom","媽媽","crystal","practice","breakfast","rabbit"];
+  const examples=["little","小","媽媽","crystal","practice","responsible"];
   return(<div><Hdr t="🔎 單字查詢" onBack={onBack} cl={c.cl}/>
     <div style={{...S.card,padding:"14px 16px",marginBottom:10}}>
       <div style={{display:"flex",gap:8}}>
         <input value={q} onChange={e=>setQ(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")doSearch(q)}} placeholder="輸入英文或中文意思，例如 mom / 媽媽" autoFocus style={{flex:1,padding:"12px 13px",border:`1px solid ${S.bd}`,borderRadius:10,fontSize:16,fontFamily:"inherit",background:S.bg1,color:S.t1,outline:"none"}}/>
         <button onClick={()=>doSearch(q)} style={{...S.btn,background:c.cl,color:"#fff",padding:"0 15px",fontSize:14}}>搜尋</button>
       </div>
+      <div style={{display:"flex",gap:6,marginTop:10}}>
+        {[["all","全部年級"],["current",`${LV[lv]?.l||"本年級"}`]].map(([id,label])=><button key={id} onClick={()=>setScope(id)} style={{border:`1px solid ${scope===id?c.cl:S.bd}`,background:scope===id?c.bg:S.bg1,borderRadius:999,padding:"6px 11px",fontSize:12,color:scope===id?c.cl:S.t2,cursor:"pointer",fontWeight:800,fontFamily:"inherit"}}>{label}</button>)}
+      </div>
       <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:10}}>{examples.map(w=><button key={w} onClick={()=>setQ(w)} style={{border:`1px solid ${S.bd}`,background:S.bg2,borderRadius:999,padding:"5px 10px",fontSize:12,color:S.t2,cursor:"pointer",fontFamily:"inherit"}}>{w}</button>)}</div>
     </div>
     {loading&&<div style={{textAlign:"center",padding:"18px",color:S.t3,fontSize:13}}>查詢中...</div>}
     {!loading&&searched&&results.length===0&&<div style={{...S.card,padding:"24px 16px",textAlign:"center",color:S.t2}}><div style={{fontSize:34,marginBottom:6}}>🔍</div><div style={{fontWeight:800,color:S.t1}}>找不到這個單字</div><div style={{fontSize:12,marginTop:5,lineHeight:1.6}}>可以輸入英文、中文意思，或試試原形，例如用 <b>run</b> 查詢 <b>running</b>。</div></div>}
+    {!loading&&searched&&results.length>0&&<div style={{fontSize:12,color:S.t3,margin:"0 4px 8px"}}>找到 {results.length} 筆 · {scope==="all"?"全部年級":"本年級"}</div>}
     <div style={{display:"grid",gap:8}}>
       {!loading&&results.map(item=><div key={`${item.level}-${item.w}-${item.source}`} style={{...S.card,padding:"13px 14px",display:"flex",alignItems:"center",gap:12}}>
         <div onClick={()=>speak(item.w)} style={{width:44,height:44,borderRadius:12,background:c.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,cursor:"pointer",flexShrink:0}}>{getWordImg(item.w)?.type==="emoji"?getWordImg(item.w).value:"🔊"}</div>
