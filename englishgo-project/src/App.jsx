@@ -413,34 +413,111 @@ const SONGS = {
       level:"小學",
       lines:[
         {sec:"Verse 1"},
-        {t:8.0,en:"Good morning, hello,",zh:"早安，你好。"},
-        {t:10.7,en:"I am ready, let's go.",zh:"我準備好了，我們出發吧。"},
-        {t:13.6,en:"I can read, I can write,",zh:"我會閱讀，我會書寫。"},
-        {t:16.3,en:"I can try with all my might.",zh:"我會盡全力嘗試。"},
+        {t:9,en:"Good morning, hello,",zh:"早安，你好。"},
+        {t:10,en:"I am ready, let's go.",zh:"我準備好了，我們出發吧。"},
+        {t:13,en:"I can read, I can write,",zh:"我會閱讀，我會書寫。"},
+        {t:15,en:"I can try with all my might.",zh:"我會盡全力嘗試。"},
         {sec:"Pre-Chorus"},
-        {t:20.0,en:"One word, two words,",zh:"一個單字，兩個單字。"},
-        {t:22.8,en:"Say them loud and clear.",zh:"大聲又清楚地說出來。"},
-        {t:25.6,en:"Every day I practice,",zh:"我每天練習。"},
-        {t:28.5,en:"English has no fear.",zh:"英文一點也不可怕。"},
+        {t:17,en:"One word, two words,",zh:"一個單字，兩個單字。"},
+        {t:19,en:"Say them loud and clear.",zh:"大聲又清楚地說出來。"},
+        {t:22,en:"Every day I practice,",zh:"我每天練習。"},
+        {t:24,en:"English has no fear.",zh:"英文一點也不可怕。"},
         {sec:"Chorus"},
-        {t:31.0,en:"Step by step, I learn today,",zh:"一步一步，我今天學習。"},
-        {t:34.3,en:"Sing with me, let's find our way.",zh:"和我一起唱，找到我們的方法。"},
-        {t:37.8,en:"Word by word, I grow so strong,",zh:"一字一句，我變得更強。"},
-        {t:41.4,en:"English learning all day long.",zh:"一整天都在學英文。"},
+        {t:35,en:"Step by step, I learn today,",zh:"一步一步，我今天學習。"},
+        {t:37,en:"Sing with me, let's find our way.",zh:"和我一起唱，找到我們的方法。"},
+        {t:39,en:"Word by word, I grow so strong,",zh:"一字一句，我變得更強。"},
+        {t:41,en:"English learning all day long.",zh:"一整天都在學英文。"},
         {sec:"Verse 2"},
-        {t:48.0,en:"I can listen, I can speak,",zh:"我會聽，我會說。"},
-        {t:50.8,en:"I get better every week.",zh:"我每週都變得更好。"},
-        {t:53.6,en:"If I make a small mistake,",zh:"如果我犯了一個小錯。"},
-        {t:56.5,en:"I just smile and try again.",zh:"我就微笑，然後再試一次。"},
+        {t:48,en:"I can listen, I can speak,",zh:"我會聽，我會說。"},
+        {t:50,en:"I get better every week.",zh:"我每週都變得更好。"},
+        {t:52,en:"If I make a small mistake,",zh:"如果我犯了一個小錯。"},
+        {t:54,en:"I just smile and try again.",zh:"我就微笑，然後再試一次。"},
         {sec:"Chorus"},
-        {t:60.3,en:"Step by step, I learn today,",zh:"一步一步，我今天學習。"},
-        {t:63.8,en:"Sing with me, let's find our way.",zh:"和我一起唱，找到我們的方法。"},
+        {t:62,en:"Step by step, I learn today,",zh:"一步一步，我今天學習。"},
+        {t:63,en:"Sing with me, let's find our way.",zh:"和我一起唱，找到我們的方法。"},
         {sec:"Outro"},
-        {t:68.8,en:"Read and write,",zh:"閱讀與書寫。"},
-        {t:70.5,en:"Speak and sing,",zh:"開口說，也開口唱。"},
-        {t:72.2,en:"English gives my heart new wings.",zh:"英文讓我的心長出新的翅膀。"},
+        {t:66,en:"Read and write,",zh:"閱讀與書寫。"},
+        {t:68,en:"Speak and sing,",zh:"開口說，也開口唱。"},
+        {t:69,en:"English gives my heart new wings.",zh:"英文讓我的心長出新的翅膀。"},
       ],
       vocab:["ready","read","write","practice","learn","strong","listen","speak","mistake","again"],
+    },
+    {
+      id:"elementary-my-happy-day",
+      title:"My Happy Day",
+      zhTitle:"我的快樂一天",
+      audio:"/audio/songs/elementary-my-happy-day.mp3",
+      theme:"日常生活句型",
+      level:"小學",
+      lines:[
+        {sec:"Verse 1"},
+        {t:1,en:"I wake up in the morning,",zh:"我早上醒來。"},
+        {t:4,en:"I wash my face and smile.",zh:"我洗臉，然後微笑。"},
+        {t:7,en:"I eat my breakfast slowly,",zh:"我慢慢吃早餐。"},
+        {t:10,en:"Then I walk to school a while.",zh:"然後我走一段路去學校。"},
+        {sec:"Pre-Chorus"},
+        {t:14,en:"What do you do every day?",zh:"你每天做什麼？"},
+        {t:17,en:"I read, I write, I play.",zh:"我閱讀，我書寫，我玩耍。"},
+        {t:20,en:"Where do you go after class?",zh:"下課後你去哪裡？"},
+        {t:22,en:"I go home and say hooray.",zh:"我回家並開心歡呼。"},
+        {sec:"Chorus"},
+        {t:26,en:"This is my happy, happy day,",zh:"這是我快樂、快樂的一天。"},
+        {t:29,en:"I learn and laugh along the way.",zh:"我一路學習，也一路歡笑。"},
+        {t:32,en:"I can say, \"How are you?\"",zh:"我會說：「你好嗎？」"},
+        {t:35,en:"I am fine, and how about you?",zh:"我很好，那你呢？"},
+        {sec:"Verse 2"},
+        {t:40,en:"I help my mom after dinner,",zh:"晚餐後我幫媽媽。"},
+        {t:43,en:"I put my books away.",zh:"我把書收好。"},
+        {t:46,en:"I brush my teeth before I sleep,",zh:"睡覺前我刷牙。"},
+        {t:47,en:"Good night, see you another day.",zh:"晚安，明天再見。"},
+        {sec:"Chorus"},
+        {t:51,en:"This is my happy, happy day,",zh:"這是我快樂、快樂的一天。"},
+        {t:54,en:"I learn and laugh along the way.",zh:"我一路學習，也一路歡笑。"},
+        {t:58,en:"I can say, \"How are you?\"",zh:"我會說：「你好嗎？」"},
+        {t:60,en:"I am fine, and how about you?",zh:"我很好，那你呢？"},
+        {sec:"Outro"},
+        {t:64,en:"Morning, noon, and night,",zh:"早上、中午和晚上。"},
+        {t:66,en:"I try my best today.",zh:"今天我盡力做到最好。"},
+        {t:68,en:"Every little English word,",zh:"每一個小小的英文單字。"},
+        {t:70,en:"Helps me on my way.",zh:"都幫助我向前走。"},
+      ],
+      vocab:["wake","wash","breakfast","school","after","home","dinner","brush","sleep","night"],
+    },
+    {
+      id:"elementary-animal-friends",
+      title:"Animal Friends",
+      zhTitle:"動物朋友",
+      audio:"/audio/songs/elementary-animal-friends.mp3",
+      theme:"動物與動作單字",
+      level:"小學",
+      lines:[
+        {sec:"Verse 1"},
+        {t:4,en:"A cat can jump, jump, jump,",zh:"貓可以跳、跳、跳。"},
+        {t:7,en:"A dog can run with me.",zh:"狗可以和我一起跑。"},
+        {t:10,en:"A bird can fly up high,",zh:"鳥可以飛得高高的。"},
+        {t:13,en:"A fish can swim in the sea.",zh:"魚可以在海裡游泳。"},
+        {sec:"Pre-Chorus"},
+        {t:17,en:"What can the animals do?",zh:"動物們會做什麼？"},
+        {t:20,en:"Move your body, try it too.",zh:"動動你的身體，也試試看。"},
+        {t:23,en:"Jump and run, swim and fly,",zh:"跳和跑，游泳和飛翔。"},
+        {t:26,en:"Wave your hands up to the sky.",zh:"把手揮向天空。"},
+        {sec:"Chorus"},
+        {t:30,en:"Animal friends, come play with me,",zh:"動物朋友，來和我玩。"},
+        {t:33,en:"In the park and by the tree.",zh:"在公園裡，在樹旁邊。"},
+        {t:36,en:"Big or small, fast or slow,",zh:"不論大或小，快或慢。"},
+        {t:39,en:"English words help us grow.",zh:"英文單字幫助我們成長。"},
+        {sec:"Verse 2"},
+        {t:47,en:"A rabbit hops across the grass,",zh:"兔子跳過草地。"},
+        {t:50,en:"A monkey climbs the tree.",zh:"猴子爬上樹。"},
+        {t:52,en:"A horse can walk and gallop,",zh:"馬可以走路和奔跑。"},
+        {t:54,en:"A bee can buzz by me.",zh:"蜜蜂可以在我旁邊嗡嗡叫。"},
+        {sec:"Outro"},
+        {t:60,en:"Jump like a cat,",zh:"像貓一樣跳。"},
+        {t:62,en:"Run like a dog,",zh:"像狗一樣跑。"},
+        {t:64,en:"Fly like a bird,",zh:"像鳥一樣飛。"},
+        {t:66,en:"Sing this song with me.",zh:"和我一起唱這首歌。"},
+      ],
+      vocab:["cat","jump","dog","run","bird","fly","fish","swim","rabbit","monkey","horse","bee"],
     },
   ],
   junior: [],
@@ -2679,11 +2756,13 @@ function ReadingM({lv,onBack,onXp}){
 function SongsM({lv,onBack,onXp}){
   const songs=SONGS[lv]||[];const c=LV[lv];const[si,setSi]=useState(0);const[time,setTime]=useState(0);const[dur,setDur]=useState(0);const[playing,setPlaying]=useState(false);const[showZh,setShowZh]=useState(true);const audioRef=useRef(null);const rewarded=useRef({});
   const song=songs[si];const lyricLines=useMemo(()=>song?song.lines.map((l,i)=>({...l,i})).filter(l=>l.en):[],[song]);
+  const hasAudio=!!song?.audio;
   const weights=useMemo(()=>lyricLines.map(l=>Math.max(1,readingWords(l.en).length)),[lyricLines]);
   const totalWeight=weights.reduce((a,b)=>a+b,0)||1;
   const hasTimedLyrics=lyricLines.length>0&&lyricLines.every(l=>Number.isFinite(Number(l.t)));
   const activeLine=useMemo(()=>{
     if(!lyricLines.length)return -1;
+    if(!hasAudio)return -1;
     if(hasTimedLyrics){
       if(time<Number(lyricLines[0].t)-0.15)return -1;
       for(let i=lyricLines.length-1;i>=0;i--){if(time>=Number(lyricLines[i].t)-0.15)return lyricLines[i].i}
@@ -2691,7 +2770,7 @@ function SongsM({lv,onBack,onXp}){
     }
     if(!dur)return lyricLines[0]?.i??-1;
     let pos=(time/dur)*totalWeight,acc=0;for(let i=0;i<lyricLines.length;i++){acc+=weights[i];if(pos<=acc)return lyricLines[i].i}return lyricLines.at(-1)?.i??-1
-  },[time,dur,totalWeight,weights,lyricLines,hasTimedLyrics]);
+  },[time,dur,totalWeight,weights,lyricLines,hasTimedLyrics,hasAudio]);
   useEffect(()=>{const a=audioRef.current;if(!a)return;const onTime=()=>setTime(a.currentTime||0);const onMeta=()=>setDur(a.duration||0);const onPlay=()=>setPlaying(true);const onPause=()=>setPlaying(false);const onEnd=()=>{setPlaying(false);if(song&&!rewarded.current[song.id]){rewarded.current[song.id]=true;onXp?.(10)}};a.addEventListener("timeupdate",onTime);a.addEventListener("loadedmetadata",onMeta);a.addEventListener("play",onPlay);a.addEventListener("pause",onPause);a.addEventListener("ended",onEnd);return()=>{a.pause();a.removeEventListener("timeupdate",onTime);a.removeEventListener("loadedmetadata",onMeta);a.removeEventListener("play",onPlay);a.removeEventListener("pause",onPause);a.removeEventListener("ended",onEnd)}},[song]);
   if(!song)return(<div><Hdr t="🎵 英文歌曲" onBack={onBack} cl={c.cl}/><div style={{...S.card,padding:"28px 18px",textAlign:"center"}}><div style={{fontSize:42,marginBottom:8}}>🎧</div><div style={{fontSize:16,fontWeight:700,color:S.t1}}>這個年級的歌曲準備中</div><div style={{fontSize:13,color:S.t2,marginTop:6}}>先從小學歌曲開始驗證流程，之後可逐步加入更多歌曲。</div></div></div>);
   const fmt=s=>`${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,"0")}`;
@@ -2705,11 +2784,11 @@ function SongsM({lv,onBack,onXp}){
     {songs.length>1&&<div style={{display:"flex",gap:6,marginBottom:10,overflowX:"auto"}}>{songs.map((s,i)=><button key={s.id} onClick={()=>{setSi(i);setTime(0);setDur(0)}} style={{flexShrink:0,padding:"9px 13px",borderRadius:12,background:i===si?c.cl:S.bg2,color:i===si?"#fff":S.t1,border:"none",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{s.title}</button>)}</div>}
     <div style={{...S.card,padding:"18px 16px",marginBottom:10,borderTop:`4px solid ${c.cl}`,background:`linear-gradient(135deg,${c.bg}55,var(--color-background-primary,#fff))`}}>
       <div style={{display:"flex",gap:12,alignItems:"center",marginBottom:12}}><div style={{width:54,height:54,borderRadius:14,background:`linear-gradient(135deg,${c.cl},${c.ac})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,color:"#fff",flexShrink:0}}>🎵</div><div style={{flex:1}}><div style={{fontSize:20,fontWeight:800,color:S.t1}}>{song.title}</div><div style={{fontSize:12,color:S.t2}}>{song.zhTitle} · {song.theme} · {song.level}</div></div></div>
-      <audio ref={audioRef} src={song.audio} controls preload="metadata" style={{width:"100%",height:38}}/>
-      <div style={{display:"flex",alignItems:"center",gap:8,marginTop:10,fontSize:12,color:S.t3}}><span>{fmt(time)}</span><div style={{flex:1,height:6,background:S.bg2,borderRadius:3,overflow:"hidden"}}><div style={{height:"100%",width:`${dur?Math.min(100,time/dur*100):0}%`,background:`linear-gradient(90deg,${c.cl},${c.ac})`,borderRadius:3}}/></div><span>{fmt(dur||0)}</span></div>
+      {hasAudio?<><audio ref={audioRef} src={song.audio} controls preload="metadata" style={{width:"100%",height:38}}/>
+      <div style={{display:"flex",alignItems:"center",gap:8,marginTop:10,fontSize:12,color:S.t3}}><span>{fmt(time)}</span><div style={{flex:1,height:6,background:S.bg2,borderRadius:3,overflow:"hidden"}}><div style={{height:"100%",width:`${dur?Math.min(100,time/dur*100):0}%`,background:`linear-gradient(90deg,${c.cl},${c.ac})`,borderRadius:3}}/></div><span>{fmt(dur||0)}</span></div></>:<div style={{padding:"11px 12px",border:`1px dashed ${c.cl}66`,borderRadius:12,background:S.bg1,fontSize:12,color:S.t2,lineHeight:1.6}}>音檔準備中。可以先閱讀歌詞與重點單字，產出 mp3 後再補上同步時間。</div>}
     </div>
     <div style={{...S.card,padding:"14px 12px",marginBottom:10}}>
-      {song.lines.map((line,i)=>line.sec?<div key={i} style={{fontSize:12,fontWeight:800,color:c.cl,margin:"14px 4px 6px"}}>{line.sec}</div>:<div key={i} onClick={()=>seekLine(line)} style={{padding:"10px 12px",borderRadius:12,background:activeLine===i?c.bg:S.bg2,border:`1px solid ${activeLine===i?c.cl:S.bd}`,marginBottom:6,cursor:"pointer",transition:"all .15s"}}>
+      {song.lines.map((line,i)=>line.sec?<div key={i} style={{fontSize:12,fontWeight:800,color:c.cl,margin:"14px 4px 6px"}}>{line.sec}</div>:<div key={i} onClick={()=>hasAudio&&seekLine(line)} style={{padding:"10px 12px",borderRadius:12,background:activeLine===i?c.bg:S.bg2,border:`1px solid ${activeLine===i?c.cl:S.bd}`,marginBottom:6,cursor:hasAudio?"pointer":"default",transition:"all .15s"}}>
         <div style={{fontSize:15,lineHeight:1.5,fontWeight:activeLine===i?800:600,color:S.t1}}>{line.en}</div>{showZh&&<div style={{fontSize:12,color:S.t2,marginTop:3,lineHeight:1.5}}>{line.zh}</div>}
       </div>)}
     </div>
