@@ -2758,13 +2758,14 @@ function ReadingM({lv,onBack,onXp}){
 const NOVEL_COUNT=8;
 const NOVEL_PAGE_SIZE=5;
 const LazyNovelIllustration=lazy(()=>import("./components/NovelIllustration.jsx"));
-function NovelIllustration(props){return <Suspense fallback={<div style={{height:props.small?118:210,borderRadius:props.small?0:18,background:"linear-gradient(135deg,#0B3F35,#77C79D)"}}/>}><LazyNovelIllustration {...props}/></Suspense>}
+function NovelIllustration(props){return <Suspense fallback={<div style={{height:props.small?150:props.cover?240:360,borderRadius:props.small?0:18,background:"linear-gradient(135deg,#0B3F35,#77C79D)"}}/>}><LazyNovelIllustration {...props}/></Suspense>}
 function novelBlocks(text){return String(text||"").split(/\n\s*\n/).map(s=>s.trim()).filter(Boolean)}
 function NovelM({lv,onBack,onXp}){
   const c=LV[lv];const[novelData,setNovelData]=useState(null);const[ni,setNi]=useState(0);const[ci,setCi]=useState(null);const[page,setPage]=useState(0);const[activeBlock,setActiveBlock]=useState(-1);const[showZh,setShowZh]=useState(true);const[done,setDone]=useLS("novelDone",{});const[quizAns,setQuizAns]=useLS("novelQuiz",{});const rewarded=useRef({});const novelSpeechRef=useRef(null);
   useEffect(()=>{let active=true;import("./data/novels.js").then(m=>{if(active)setNovelData(m.NOVELS)}).catch(()=>{if(active)setNovelData({elementary:[]})});return()=>{active=false}},[]);
   useEffect(()=>()=>novelSpeechRef.current?.cancel?.(),[]);
   useEffect(()=>{setPage(0);setActiveBlock(-1)},[ci,ni]);
+  useEffect(()=>{if(typeof Image==="undefined")return;const nums=ci==null?[1,2,3,4]:[ci+1,ci+2].filter(n=>n>=1&&n<=NOVEL_COUNT);nums.forEach(n=>{const img=new Image();img.src=`/images/novels/secret-forest/chapter-${n}${ci==null?"-thumb":""}.jpg`})},[ci]);
   const novels=novelData?(novelData[lv]?.length?novelData[lv]:novelData.elementary):[];
   const novel=novels[ni];const completed=done[novel?.id]||[];const chapter=ci==null?null:novel.chapters[ci];const enBlocks=useMemo(()=>novelBlocks(chapter?.en),[chapter]);const zhBlocks=useMemo(()=>novelBlocks(chapter?.zh),[chapter]);const words=chapter?readingWords(chapter.en).length:0;const pct=novel?Math.round((completed.length/novel.chapters.length)*100):0;
   const pages=useMemo(()=>{const out=[];for(let i=0;i<enBlocks.length;i+=NOVEL_PAGE_SIZE)out.push(enBlocks.slice(i,i+NOVEL_PAGE_SIZE).map((en,j)=>({en,zh:zhBlocks[i+j],i:i+j})));return out},[enBlocks,zhBlocks]);
