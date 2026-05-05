@@ -1503,6 +1503,7 @@ export default function App(){
          mod==="bomb"?<BombM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="grammar"?<GrammarM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="reading"?<ReadingM lv={lv} onBack={back} onXp={addXp}/>:
+         mod==="novels"?<NovelM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="songs"?<SongsM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="dictation"?<DictM lv={lv} onBack={back} onXp={addXp} onDone={()=>setStats(s=>({...s,dictDone:s.dictDone+1}))}/>:
          mod==="scramble"?<ScramM lv={lv} onBack={back} onXp={addXp} onDone={()=>setStats(s=>({...s,scramDone:s.scramDone+1}))}/>:
@@ -1615,6 +1616,7 @@ function Menu({lv,onSelect,daily,c,xp,coins,streak,achUnlocked,weakWords,isSpons
         {id:"scramble",icon:"🧩",t:"句子重組",d:"語序訓練"},
         {id:"grammar",icon:"🧠",t:"文法學堂",d:`${G[lv].length} 個重點`},
         {id:"reading",icon:"📖",t:"閱讀理解",d:`${R[lv].length} 篇文章`},
+        {id:"novels",icon:"📘",t:"英文小說",d:`${NOVEL_COUNT} 章故事`},
         {id:"songs",icon:"🎵",t:"英文歌曲",d:(SONGS[lv]?.length||0)?`${SONGS[lv].length} 首歌`:"準備中"},
         {id:"ai",icon:"🤖",t:"AI 家教",d:"Gemini 對話"},
         {id:"story",icon:"📖",t:"AI 故事",d:"寵物英文故事"},
@@ -2750,6 +2752,73 @@ function ReadingM({lv,onBack,onXp}){
         <button onClick={()=>goArticle((ai+1)%articles.length)} style={{...S.btn,background:c.cl,color:"#fff",flex:1,padding:"11px",fontSize:13}}>{ai+1>=articles.length?"回第一篇":"下一篇"}</button>
       </div>
     </div>}
+  </div>);
+}
+// ═══ NOVELS (英文小說閱讀) ═════════════════════════════════════════════
+const NOVEL_CARD_BG=[
+  "linear-gradient(135deg,#0D5B44,#4DBB8F)",
+  "linear-gradient(135deg,#315A9D,#90C9FF)",
+  "linear-gradient(135deg,#146C94,#6BC4E8)",
+  "linear-gradient(135deg,#5B5F6B,#C7B98A)",
+  "linear-gradient(135deg,#173E67,#9BD3FF)",
+  "linear-gradient(135deg,#4F4B5F,#D4B25D)",
+  "linear-gradient(135deg,#2B124E,#9D65D0)",
+  "linear-gradient(135deg,#238C6A,#B9E68D)",
+];
+const NOVEL_COUNT=8;
+function novelBlocks(text){return String(text||"").split(/\n\s*\n/).map(s=>s.trim()).filter(Boolean)}
+function NovelM({lv,onBack,onXp}){
+  const c=LV[lv];const[novelData,setNovelData]=useState(null);const[ni,setNi]=useState(0);const[ci,setCi]=useState(null);const[showZh,setShowZh]=useState(true);const[done,setDone]=useLS("novelDone",{});const rewarded=useRef({});
+  useEffect(()=>{let active=true;import("./data/novels.js").then(m=>{if(active)setNovelData(m.NOVELS)}).catch(()=>{if(active)setNovelData({elementary:[]})});return()=>{active=false}},[]);
+  const novels=novelData?(novelData[lv]?.length?novelData[lv]:novelData.elementary):[];
+  const novel=novels[ni];const completed=done[novel?.id]||[];const chapter=ci==null?null:novel.chapters[ci];const enBlocks=useMemo(()=>novelBlocks(chapter?.en),[chapter]);const zhBlocks=useMemo(()=>novelBlocks(chapter?.zh),[chapter]);const words=chapter?readingWords(chapter.en).length:0;const pct=novel?Math.round((completed.length/novel.chapters.length)*100):0;
+  const completeChapter=()=>{if(!chapter)return;const key=`${novel.id}:${chapter.no}`;if(!completed.includes(chapter.no)){setDone(d=>({...d,[novel.id]:[...new Set([...(d[novel.id]||[]),chapter.no])]}));if(!rewarded.current[key]){rewarded.current[key]=true;onXp?.(15);playSound("done")}}};
+  const goChapter=i=>{window.speechSynthesis?.cancel?.();setCi(i);window.scrollTo({top:0,behavior:"smooth"})};
+  const backToList=()=>{window.speechSynthesis?.cancel?.();setCi(null)};
+  if(!novelData)return(<div><Hdr t="📘 英文小說" onBack={onBack} cl={c.cl}/><div style={{textAlign:"center",padding:"48px",color:S.t3}}>載入小說中...</div></div>);
+  if(!novel)return(<div><Hdr t="📘 英文小說" onBack={onBack} cl={c.cl}/><div style={{...S.card,padding:"28px 18px",textAlign:"center",color:S.t2}}>這個年級的小說準備中</div></div>);
+  if(ci==null)return(<div><Hdr t="📘 英文小說" onBack={onBack} cl={c.cl}/>
+    <div style={{...S.card,padding:0,overflow:"hidden",marginBottom:12,borderTop:`4px solid ${c.cl}`}}>
+      <div style={{minHeight:142,padding:"22px 18px",background:"linear-gradient(135deg,#0C382E,#175B48 48%,#7ECBA9)",color:"#fff",position:"relative"}}>
+        <div style={{position:"absolute",right:18,top:16,fontSize:58,opacity:.28}}>🌳</div>
+        <div style={{fontSize:12,fontWeight:700,opacity:.75,marginBottom:4}}>{novel.theme} · {novel.level}</div>
+        <div style={{fontSize:24,fontWeight:900,lineHeight:1.2,maxWidth:430}}>{novel.title}</div>
+        <div style={{fontSize:15,fontWeight:700,opacity:.9,marginTop:4}}>{novel.zhTitle}</div>
+        <div style={{display:"flex",gap:8,alignItems:"center",marginTop:16,fontSize:12}}><span>{completed.length}/{novel.chapters.length} 章完成</span><div style={{flex:1,maxWidth:180,height:6,background:"rgba(255,255,255,.22)",borderRadius:3,overflow:"hidden"}}><div style={{height:"100%",width:`${pct}%`,background:"#fff",borderRadius:3}}/></div><span>{pct}%</span></div>
+      </div>
+    </div>
+    {novels.length>1&&<div style={{display:"flex",gap:6,overflowX:"auto",marginBottom:10}}>{novels.map((n,i)=><button key={n.id} onClick={()=>{setNi(i);setCi(null)}} style={{flexShrink:0,padding:"8px 12px",border:"none",borderRadius:12,background:i===ni?c.cl:S.bg2,color:i===ni?"#fff":S.t1,fontWeight:700,fontSize:12,fontFamily:"inherit",cursor:"pointer"}}>{n.title}</button>)}</div>}
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(158px,1fr))",gap:10}}>
+      {novel.chapters.map((ch,i)=>{const isDone=completed.includes(ch.no);return(<div key={ch.no} onClick={()=>goChapter(i)} style={{...S.card,padding:0,overflow:"hidden",cursor:"pointer",border:`1px solid ${isDone?"#1D9E75":S.bd}`}}>
+        <div style={{height:120,background:NOVEL_CARD_BG[i%NOVEL_CARD_BG.length],display:"flex",alignItems:"center",justifyContent:"center",position:"relative",color:"#fff"}}>
+          <div style={{position:"absolute",inset:0,background:"radial-gradient(circle at 30% 20%,rgba(255,255,255,.28),transparent 34%)"}}/>
+          <div style={{fontSize:48,filter:"drop-shadow(0 5px 12px rgba(0,0,0,.22))"}}>{ch.scene}</div>
+          <div style={{position:"absolute",top:8,left:8,width:28,height:28,borderRadius:"50%",background:"rgba(255,255,255,.9)",color:c.cl,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:900}}>{ch.no}</div>
+          {isDone&&<div style={{position:"absolute",top:8,right:8,borderRadius:999,background:"#E1F5EE",color:"#1D9E75",padding:"3px 8px",fontSize:11,fontWeight:800}}>已讀</div>}
+        </div>
+        <div style={{padding:"12px 12px 13px"}}>
+          <div style={{fontSize:14,fontWeight:800,color:S.t1,lineHeight:1.35}}>{ch.title}</div>
+          <div style={{fontSize:12,color:S.t2,marginTop:4}}>{ch.zhTitle}</div>
+          <div style={{fontSize:11,color:S.t3,marginTop:8}}>{readingWords(ch.en).length} words · {ch.vocab.length} key words</div>
+        </div>
+      </div>)})}
+    </div>
+  </div>);
+  const next=ci+1<novel.chapters.length?ci+1:null;const prev=ci>0?ci-1:null;const isDone=completed.includes(chapter.no);
+  return(<div><Hdr t="📘 英文小說" onBack={backToList} cl={c.cl} extra={<button onClick={()=>setShowZh(z=>!z)} style={{background:"none",border:`1px solid ${S.bd}`,borderRadius:8,padding:"4px 8px",fontSize:12,color:c.cl,cursor:"pointer",fontFamily:"inherit"}}>{showZh?"隱藏中文":"顯示中文"}</button>}/>
+    <div style={{...S.card,padding:"16px",marginBottom:10,borderTop:`4px solid ${c.cl}`,background:`linear-gradient(135deg,${c.bg},var(--color-background-primary,#fff))`}}>
+      <div style={{display:"flex",gap:12,alignItems:"center"}}><div style={{width:58,height:58,borderRadius:16,background:NOVEL_CARD_BG[(chapter.no-1)%NOVEL_CARD_BG.length],display:"flex",alignItems:"center",justifyContent:"center",fontSize:30,flexShrink:0}}>{chapter.scene}</div><div style={{flex:1}}><div style={{fontSize:12,color:c.cl,fontWeight:800}}>Chapter {chapter.no}</div><div style={{fontSize:20,fontWeight:900,color:S.t1,lineHeight:1.25}}>{chapter.title}</div><div style={{fontSize:13,color:S.t2,marginTop:2}}>{chapter.zhTitle} · {words} words</div></div></div>
+      <div style={{display:"flex",gap:6,marginTop:12}}><button onClick={()=>speak(`${chapter.title}. ${enBlocks[0]||""}`,"en-US",0.78)} style={{...S.btn,background:S.bg2,color:S.t1,padding:"8px 12px",fontSize:12,flex:1}}>🔊 開頭</button><button onClick={completeChapter} disabled={isDone} style={{...S.btn,background:isDone?"#E1F5EE":c.cl,color:isDone?"#1D9E75":"#fff",padding:"8px 12px",fontSize:12,flex:1}}>{isDone?"已完成":"標記完成 +15XP"}</button></div>
+    </div>
+    <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:10,fontSize:12}}><button onClick={()=>prev!=null&&goChapter(prev)} disabled={prev==null} style={{...S.btn,background:S.bg2,color:S.t1,padding:"7px 10px",opacity:prev==null?0.35:1,fontSize:12}}>← 上一章</button><div style={{flex:1,height:6,background:S.bg2,borderRadius:3,overflow:"hidden"}}><div style={{height:"100%",width:`${(chapter.no/novel.chapters.length)*100}%`,background:`linear-gradient(90deg,${c.cl},${c.ac})`,borderRadius:3}}/></div><button onClick={()=>next!=null&&goChapter(next)} disabled={next==null} style={{...S.btn,background:S.bg2,color:S.t1,padding:"7px 10px",opacity:next==null?0.35:1,fontSize:12}}>下一章 →</button></div>
+    <div style={{display:"grid",gap:8}}>
+      {enBlocks.map((p,i)=><div key={i} style={{...S.card,padding:"13px 14px",borderLeft:`3px solid ${c.cl}`}}>
+        <div style={{display:"flex",gap:8,alignItems:"flex-start"}}><div style={{flex:1,fontSize:15,lineHeight:1.8,color:S.t1,fontWeight:/^“|^[A-Z][a-z]+[?!]?$/.test(p)?700:500,whiteSpace:"pre-line"}}>{p}</div><button onClick={()=>speak(p,"en-US",0.78)} style={{border:`1px solid ${S.bd}`,background:S.bg1,borderRadius:10,padding:"5px 8px",fontSize:12,cursor:"pointer",fontFamily:"inherit",color:c.cl,flexShrink:0}}>🔊</button></div>
+        {showZh&&zhBlocks[i]&&<div style={{marginTop:7,padding:"8px 10px",background:"#FFF7E6",border:"1px solid #F0D59A",borderRadius:10,fontSize:13,lineHeight:1.7,color:S.t2,whiteSpace:"pre-line"}}>{zhBlocks[i]} <button onClick={()=>speak(zhBlocks[i],"zh-TW",1)} style={{background:"none",border:"none",fontSize:16,cursor:"pointer",verticalAlign:"middle"}}>🔈</button></div>}
+      </div>)}
+    </div>
+    <div style={{...S.card,padding:"14px 16px",marginTop:10,fontSize:12,color:S.t2,lineHeight:1.7}}><div style={{fontWeight:800,color:S.t1,marginBottom:7}}>重點單字</div><div style={{display:"flex",flexWrap:"wrap",gap:6}}>{chapter.vocab.map(w=><button key={w} onClick={()=>speak(w)} style={{border:`1px solid ${S.bd}`,background:S.bg1,borderRadius:999,padding:"6px 10px",fontSize:12,color:c.cl,cursor:"pointer",fontWeight:800,fontFamily:"inherit"}}>{w} 🔊</button>)}</div></div>
+    <div style={{display:"flex",gap:8,marginTop:10}}><button onClick={backToList} style={{...S.btn,background:S.bg2,color:S.t1,flex:1,padding:"11px",fontSize:13}}>章節列表</button><button onClick={()=>{completeChapter();next!=null?goChapter(next):backToList()}} style={{...S.btn,background:c.cl,color:"#fff",flex:1,padding:"11px",fontSize:13}}>{next!=null?"完成並下一章":"完成並返回"}</button></div>
   </div>);
 }
 // ═══ SONGS (英文歌曲練習) ═════════════════════════════════════════════
