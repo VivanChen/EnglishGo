@@ -303,6 +303,81 @@ const V = {
     {w:"facilitate",ph:"/fəˈsɪl.ɪ.teɪt/",p:"v.",m:"促進",f:[{w:"facilitator",p:"n.",n:"引導者"}],c:["facilitate learning 促進學習"],ex:"Technology can facilitate learning.",ez:"科技可以促進學習。"},
   ],
 };
+
+let _extraWordsPromise=null;
+let _extraWordsCache=null;
+async function loadExtraWords(){
+  if(_extraWordsCache)return _extraWordsCache;
+  if(!_extraWordsPromise){
+    _extraWordsPromise=import("./data/extraWords.js").then(m=>m.EXTRA_WORDS||{}).catch(()=>({elementary:[],junior:[],senior:[]}));
+  }
+  _extraWordsCache=await _extraWordsPromise;
+  return _extraWordsCache;
+}
+function normalizeWordQuery(q){return String(q||"").trim().toLowerCase().replace(/^[^a-z]+|[^a-z]+$/g,"")}
+function preferredLevels(level){return[level,...Object.keys(V).filter(k=>k!==level)]}
+function wordQueryCandidates(query){
+  const q=normalizeWordQuery(query);if(!q)return[];
+  const set=new Set([q]);
+  if(q.endsWith("ies")&&q.length>4)set.add(q.slice(0,-3)+"y");
+  if(q.endsWith("es")&&q.length>3)set.add(q.slice(0,-2));
+  if(q.endsWith("s")&&q.length>3&&!q.endsWith("ss"))set.add(q.slice(0,-1));
+  if(q.endsWith("ing")&&q.length>5){
+    const stem=q.slice(0,-3);set.add(stem);set.add(stem+"e");
+    if(stem.length>2&&stem[stem.length-1]===stem[stem.length-2])set.add(stem.slice(0,-1));
+  }
+  if(q.endsWith("ed")&&q.length>4){
+    const stem=q.slice(0,-2);set.add(stem);set.add(stem+"e");
+    if(stem.length>2&&stem[stem.length-1]===stem[stem.length-2])set.add(stem.slice(0,-1));
+  }
+  return[...set];
+}
+function scoreWordMatch(word,raw,candidates){
+  const key=String(word.w||"").toLowerCase();
+  if(candidates.includes(key))return 0;
+  if(candidates.some(q=>key.startsWith(q)))return 1;
+  if(candidates.some(q=>key.includes(q)))return 2;
+  if(raw&&String(word.m||"").includes(raw))return 3;
+  return 9;
+}
+function findLocalWord(level,word){
+  const candidates=wordQueryCandidates(word);if(!candidates.length)return null;
+  for(const l of preferredLevels(level)){const hit=(V[l]||[]).find(w=>candidates.includes(String(w.w).toLowerCase()));if(hit)return{...hit,level:l,source:"本地單字卡"}}
+  return null;
+}
+function searchLocalWords(level,query,limit=16){
+  const raw=String(query||"").trim();const candidates=wordQueryCandidates(query);if(!candidates.length&&!raw)return[];
+  const out=[];const seen=new Set();
+  preferredLevels(level).forEach(l=>(V[l]||[]).forEach(w=>{
+    const key=String(w.w).toLowerCase();if(seen.has(`${l}:${key}`))return;
+    const score=scoreWordMatch(w,raw,candidates);
+    if(score<9){seen.add(`${l}:${key}`);out.push({...w,level:l,source:"本地單字卡",score})}
+  }));
+  return out.sort((a,b)=>a.score-b.score||a.w.localeCompare(b.w)).slice(0,limit);
+}
+async function findAnyWord(level,word){
+  const local=findLocalWord(level,word);if(local)return local;
+  const candidates=wordQueryCandidates(word);if(!candidates.length)return null;
+  const extra=await loadExtraWords();
+  for(const l of preferredLevels(level)){
+    const hit=(extra[l]||[]).find(w=>candidates.includes(String(w.w).toLowerCase()));
+    if(hit)return{...hit,level:l,source:"補充重點單字"};
+  }
+  return null;
+}
+async function searchAnyWords(level,query,limit=16){
+  const raw=String(query||"").trim();const candidates=wordQueryCandidates(query);
+  const out=searchLocalWords(level,query,limit);
+  const seen=new Set(out.map(w=>`${w.level}:${String(w.w).toLowerCase()}`));
+  if(!candidates.length&&!raw)return out;
+  const extra=await loadExtraWords();
+  preferredLevels(level).forEach(l=>(extra[l]||[]).forEach(w=>{
+    const key=String(w.w).toLowerCase();if(seen.has(`${l}:${key}`))return;
+    const score=scoreWordMatch(w,raw,candidates);
+    if(score<9){seen.add(`${l}:${key}`);out.push({...w,level:l,source:"補充重點單字",score:score+0.2})}
+  }));
+  return out.sort((a,b)=>(a.score??0)-(b.score??0)||a.w.localeCompare(b.w)).slice(0,limit);
+}
 // ═══ GRAMMAR ════════════════════════════════════════════════════════
 const G = {
   elementary: [
@@ -1494,7 +1569,8 @@ export default function App(){
         <button onClick={()=>setDark(!dark)} style={{background:"none",border:"none",fontSize:14,cursor:"pointer",minWidth:32,minHeight:32,display:"flex",alignItems:"center",justifyContent:"center"}}>{dark?"☀️":"🌙"}</button>
       </nav>
       <div style={{maxWidth:760,margin:"0 auto",padding:"12px 12px calc(16px + env(safe-area-inset-bottom, 0px))"}}>
-        {!mod?<Menu lv={lv} onSelect={setMod} daily={daily} c={c} xp={xp} coins={coins} streak={streak} achUnlocked={achUnlocked} weakWords={weakWords} isSponsor={isSponsor} pets={pets} eggs={eggs}/>:
+        {!mod?<Menu lv={lv} onSelect={m=>{setSharedWord(null);setMod(m)}} daily={daily} c={c} xp={xp} coins={coins} streak={streak} achUnlocked={achUnlocked} weakWords={weakWords} isSponsor={isSponsor} pets={pets} eggs={eggs}/>:
+         mod==="wordsearch"?<WordSearchM lv={lv} onBack={back} onOpenCard={(word,level)=>{setLv(level||lv);setSharedWord(word);setMod("srs")}}/>:
          mod==="srs"?<SRS lv={lv} onBack={back} onXp={n=>addXpWithTask(n,"srsToday")} onDone={()=>setStats(s=>({...s,srsRounds:s.srsRounds+1}))} trackWeak={trackWeak} gifKey={gifKey} onSetGifKey={setGifKey} sharedWord={sharedWord} apiKey={gemKey} onSetApiKey={setGemKey} weakWords={weakWords}/>:
          mod==="quiz"?<QuizM lv={lv} onBack={back} onXp={n=>addXpWithTask(n,"quizToday")} onPerfect={()=>setStats(s=>({...s,perfectQuiz:s.perfectQuiz+1}))} trackWeak={trackWeak}/>:
          mod==="speak"?<SpeakM lv={lv} onBack={back} onXp={n=>addXpWithTask(n,"speakToday")}/>:
@@ -1607,6 +1683,7 @@ function Menu({lv,onSelect,daily,c,xp,coins,streak,achUnlocked,weakWords,isSpons
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(150px,1fr))",gap:8}}>
       {[
         {id:"srs",icon:"🃏",t:"SRS 單字卡",d:cloudCount?`雲端 ${cloudCount} 字`:"間隔重複"},
+        {id:"wordsearch",icon:"🔎",t:"單字查詢",d:"搜尋並開卡"},
         {id:"quiz",icon:"📝",t:"單字測驗",d:"四選一"},
         {id:"speak",icon:"🗣️",t:"口說練習",d:"唸出來！"},
         {id:"whack",icon:"🔨",t:"打地鼠拼字",d:"限時拼字"},
@@ -1635,6 +1712,54 @@ function Menu({lv,onSelect,daily,c,xp,coins,streak,achUnlocked,weakWords,isSpons
         <div style={{fontWeight:600,fontSize:14,color:S.t1,marginBottom:2}}>{m.t}</div>
         <div style={{fontSize:11,color:S.t2}}>{m.d}</div>
       </div>))}
+    </div>
+  </div>);
+}
+
+function WordSearchM({lv,onBack,onOpenCard}){
+  const c=LV[lv];const[q,setQ]=useState("");const[results,setResults]=useState([]);const[loading,setLoading]=useState(false);const[searched,setSearched]=useState(false);
+  const doSearch=useCallback(async(term=q)=>{
+    const raw=String(term||"").trim();const clean=normalizeWordQuery(raw);
+    if(!raw){setResults([]);setSearched(false);return}
+    setLoading(true);setSearched(true);
+    const local=await searchAnyWords(lv,raw,18);
+    let all=[...local];
+    if(clean){
+      let cloud=null;
+      for(const cand of wordQueryCandidates(raw)){
+        cloud=await fetchCloudWord(lv,cand);
+        if(cloud)break;
+      }
+      if(cloud&&!all.some(x=>String(x.w).toLowerCase()===String(cloud.w).toLowerCase()&&x.level===lv)){
+        all=[{...cloud,level:lv,source:"雲端字庫",score:-1},...all];
+      }
+    }
+    setResults(all.sort((a,b)=>(a.score??0)-(b.score??0)||a.w.localeCompare(b.w)).slice(0,18));
+    setLoading(false);
+  },[lv,q]);
+  useEffect(()=>{const t=window.setTimeout(()=>doSearch(q),260);return()=>window.clearTimeout(t)},[q,doSearch]);
+  const open=(item)=>onOpenCard?.(item.w,item.level||lv);
+  const examples=["crystal","fairy","shadow","practice","breakfast","rabbit"];
+  return(<div><Hdr t="🔎 單字查詢" onBack={onBack} cl={c.cl}/>
+    <div style={{...S.card,padding:"14px 16px",marginBottom:10}}>
+      <div style={{display:"flex",gap:8}}>
+        <input value={q} onChange={e=>setQ(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")doSearch(q)}} placeholder="輸入英文單字或中文意思..." autoFocus style={{flex:1,padding:"12px 13px",border:`1px solid ${S.bd}`,borderRadius:10,fontSize:16,fontFamily:"inherit",background:S.bg1,color:S.t1,outline:"none"}}/>
+        <button onClick={()=>doSearch(q)} style={{...S.btn,background:c.cl,color:"#fff",padding:"0 15px",fontSize:14}}>搜尋</button>
+      </div>
+      <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:10}}>{examples.map(w=><button key={w} onClick={()=>setQ(w)} style={{border:`1px solid ${S.bd}`,background:S.bg2,borderRadius:999,padding:"5px 10px",fontSize:12,color:S.t2,cursor:"pointer",fontFamily:"inherit"}}>{w}</button>)}</div>
+    </div>
+    {loading&&<div style={{textAlign:"center",padding:"18px",color:S.t3,fontSize:13}}>查詢中...</div>}
+    {!loading&&searched&&results.length===0&&<div style={{...S.card,padding:"24px 16px",textAlign:"center",color:S.t2}}><div style={{fontSize:34,marginBottom:6}}>🔍</div><div style={{fontWeight:800,color:S.t1}}>找不到這個單字</div><div style={{fontSize:12,marginTop:5,lineHeight:1.6}}>可以試試原形，例如用 <b>run</b> 查詢 <b>running</b>。</div></div>}
+    <div style={{display:"grid",gap:8}}>
+      {!loading&&results.map(item=><div key={`${item.level}-${item.w}-${item.source}`} style={{...S.card,padding:"13px 14px",display:"flex",alignItems:"center",gap:12}}>
+        <div onClick={()=>speak(item.w)} style={{width:44,height:44,borderRadius:12,background:c.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,cursor:"pointer",flexShrink:0}}>{getWordImg(item.w)?.type==="emoji"?getWordImg(item.w).value:"🔊"}</div>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{display:"flex",gap:6,alignItems:"baseline",flexWrap:"wrap"}}><span style={{fontSize:18,fontWeight:900,color:S.t1}}>{item.w}</span>{item.ph&&<span style={{fontSize:12,color:S.t3}}>{item.ph}</span>}<span style={{fontSize:11,color:S.t3}}>{item.p}</span></div>
+          <div style={{fontSize:14,color:S.t2,lineHeight:1.5,marginTop:2}}>{item.m}</div>
+          <div style={{fontSize:11,color:S.t3,marginTop:4}}>{LV[item.level]?.l||item.level} · {item.source}</div>
+        </div>
+        <button onClick={()=>open(item)} style={{...S.btn,background:c.cl,color:"#fff",padding:"9px 10px",fontSize:12,flexShrink:0}}>到單字卡</button>
+      </div>)}
     </div>
   </div>);
 }
@@ -1713,11 +1838,13 @@ function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,onSetGifKey,sharedWord,apiK
     if(sharedWord){const si=cloud.findIndex(w=>w.w.toLowerCase()===sharedWord.toLowerCase());if(si>0){ordered=[cloud[si],...cloud.slice(0,si),...cloud.slice(si+1)]}else if(si<0){
       // Word not in cloud batch, try to fetch it specifically
       const w=await fetchCloudWord(lv,sharedWord);
+      if(!active)return;
       if(w)ordered=[w,...cloud.slice(0,19)];
+      else{const local=await findAnyWord(lv,sharedWord);if(!active)return;if(local)ordered=[local,...cloud.slice(0,19)]}
     }}
     ordered=sortCardsForStudy(ordered,weakWords,sharedWord);
     setCards(ordered);setDeck(createDeck(ordered));setSrc(`cloud (${ordered.length}字)`);
-  }else{const ordered=sortCardsForStudy(built,weakWords,sharedWord);setCards(ordered);setDeck(createDeck(ordered));setSrc("built-in ("+ordered.length+"字)")}setLoading(false)})();return()=>{active=false}},[lv,sharedWord]);
+  }else{let base=built;if(sharedWord){const target=await findAnyWord(lv,sharedWord);if(!active)return;if(target){const key=String(target.w).toLowerCase();base=[target,...built.filter(w=>String(w.w).toLowerCase()!==key)]}}const ordered=sortCardsForStudy(base,weakWords,sharedWord);setCards(ordered);setDeck(createDeck(ordered));setSrc("built-in ("+ordered.length+"字)")}setLoading(false)})();return()=>{active=false}},[lv,sharedWord]);
   const cur=deck.queue[0]!==undefined?cards[deck.queue[0]]:null;const left=deck.queue.length;const done=left===0;const spokenExample=cur?(aiExample?.en||(!isPlaceholderExample(cur.ex,cur.w)?cur.ex:"")):"";
   // Fetch GIF for current word
   useEffect(()=>{let active=true;setGifUrl(null);if(!cur||!gifKey){setGifLoading(false);return()=>{active=false}}setGifLoading(true);fetchGif(cur.w,gifKey).then(url=>{if(!active)return;setGifUrl(url);setGifLoading(false)}).catch(()=>{if(active)setGifLoading(false)});return()=>{active=false}},[cur?.w,gifKey]);
@@ -2761,10 +2888,10 @@ const LazyNovelIllustration=lazy(()=>import("./components/NovelIllustration.jsx"
 function NovelIllustration(props){return <Suspense fallback={<div style={{height:props.small?150:props.cover?240:360,borderRadius:props.small?0:18,background:"linear-gradient(135deg,#0B3F35,#77C79D)"}}/>}><LazyNovelIllustration {...props}/></Suspense>}
 function novelBlocks(text){return String(text||"").split(/\n\s*\n/).map(s=>s.trim()).filter(Boolean)}
 function NovelM({lv,onBack,onXp}){
-  const c=LV[lv];const[novelData,setNovelData]=useState(null);const[ni,setNi]=useState(0);const[ci,setCi]=useState(null);const[page,setPage]=useState(0);const[activeBlock,setActiveBlock]=useState(-1);const[showZh,setShowZh]=useState(true);const[done,setDone]=useLS("novelDone",{});const[quizAns,setQuizAns]=useLS("novelQuiz",{});const rewarded=useRef({});const novelSpeechRef=useRef(null);
+  const c=LV[lv];const[novelData,setNovelData]=useState(null);const[ni,setNi]=useState(0);const[ci,setCi]=useState(null);const[page,setPage]=useState(0);const[activeBlock,setActiveBlock]=useState(null);const[activeVocab,setActiveVocab]=useState(null);const[showZh,setShowZh]=useState(true);const[done,setDone]=useLS("novelDone",{});const[quizAns,setQuizAns]=useLS("novelQuiz",{});const rewarded=useRef({});const novelSpeechRef=useRef(null);
   useEffect(()=>{let active=true;import("./data/novels.js").then(m=>{if(active)setNovelData(m.NOVELS)}).catch(()=>{if(active)setNovelData({elementary:[]})});return()=>{active=false}},[]);
   useEffect(()=>()=>novelSpeechRef.current?.cancel?.(),[]);
-  useEffect(()=>{setPage(0);setActiveBlock(-1)},[ci,ni]);
+  useEffect(()=>{setPage(0);setActiveBlock(null);setActiveVocab(null)},[ci,ni]);
   useEffect(()=>{if(typeof Image==="undefined")return;const nums=ci==null?[1,2,3,4]:[ci+1,ci+2].filter(n=>n>=1&&n<=NOVEL_COUNT);nums.forEach(n=>{const img=new Image();img.src=`/images/novels/secret-forest/chapter-${n}${ci==null?"-thumb":""}.jpg`})},[ci]);
   const novels=novelData?(novelData[lv]?.length?novelData[lv]:novelData.elementary):[];
   const novel=novels[ni];const completed=done[novel?.id]||[];const chapter=ci==null?null:novel.chapters[ci];const enBlocks=useMemo(()=>novelBlocks(chapter?.en),[chapter]);const zhBlocks=useMemo(()=>novelBlocks(chapter?.zh),[chapter]);const words=chapter?readingWords(chapter.en).length:0;const pct=novel?Math.round((completed.length/novel.chapters.length)*100):0;
@@ -2773,10 +2900,11 @@ function NovelM({lv,onBack,onXp}){
   const quiz=chapter?chapter.quiz||[]:[];const quizKey=chapter?`${novel.id}:${chapter.no}`:"";const quizState=quizAns[quizKey]||{};const quizDone=!quiz.length||quiz.every((_,i)=>quizState[i]!=null);
   const chooseQuiz=(qi,oi)=>setQuizAns(d=>({...d,[quizKey]:{...(d[quizKey]||{}),[qi]:oi}}));
   const completeChapter=()=>{if(!chapter)return;if(!quizDone){playSound("wrong");return}const key=`${novel.id}:${chapter.no}`;if(!completed.includes(chapter.no)){setDone(d=>({...d,[novel.id]:[...new Set([...(d[novel.id]||[]),chapter.no])]}));if(!rewarded.current[key]){rewarded.current[key]=true;onXp?.(15);playSound("done")}}};
-  const stopNovelSpeech=()=>{novelSpeechRef.current?.cancel?.();novelSpeechRef.current=null;window.speechSynthesis?.cancel?.()};
-  const readChapter=()=>{if(!chapter||!enBlocks.length)return;stopNovelSpeech();novelSpeechRef.current=speakStory([chapter.title,...enBlocks],{rate:0.78,onSentence:i=>{const bi=i-1;if(bi>=0){setActiveBlock(bi);setPage(Math.floor(bi/NOVEL_PAGE_SIZE))}},onFinish:()=>{novelSpeechRef.current=null;setActiveBlock(-1)}})};
-  const readPage=()=>{if(!pageBlocks.length)return;stopNovelSpeech();novelSpeechRef.current=speakStory(pageBlocks.map(b=>b.en),{rate:0.78,onSentence:i=>setActiveBlock(pageStart+i),onFinish:()=>{novelSpeechRef.current=null;setActiveBlock(-1)}})};
-  const speakNovelText=(text,lang="en-US",rate=0.78,idx=-1)=>{stopNovelSpeech();setActiveBlock(idx);speak(text,lang,rate,{onend:()=>setActiveBlock(-1)})};
+  const stopNovelSpeech=()=>{novelSpeechRef.current?.cancel?.();novelSpeechRef.current=null;setActiveBlock(null);setActiveVocab(null);window.speechSynthesis?.cancel?.()};
+  const readChapter=()=>{if(!chapter||!enBlocks.length)return;stopNovelSpeech();novelSpeechRef.current=speakStory([chapter.title,...enBlocks],{rate:0.78,onSentence:i=>{const bi=i-1;if(bi>=0){setActiveBlock(bi);setPage(Math.floor(bi/NOVEL_PAGE_SIZE))}},onFinish:()=>{novelSpeechRef.current=null;setActiveBlock(null)}})};
+  const readPage=()=>{if(!pageBlocks.length)return;stopNovelSpeech();novelSpeechRef.current=speakStory(pageBlocks.map(b=>b.en),{rate:0.78,onSentence:i=>setActiveBlock(pageStart+i),onFinish:()=>{novelSpeechRef.current=null;setActiveBlock(null)}})};
+  const speakNovelText=(text,lang="en-US",rate=0.78,idx=null)=>{stopNovelSpeech();setActiveBlock(idx);speak(text,lang,rate,{onend:()=>setActiveBlock(null)})};
+  const speakNovelVocab=(word)=>{stopNovelSpeech();setActiveVocab(word);speak(word,"en-US",0.86,{onend:()=>setActiveVocab(null)})};
   const goChapter=i=>{stopNovelSpeech();setCi(i);window.scrollTo({top:0,behavior:"smooth"})};
   const backToList=()=>{stopNovelSpeech();setCi(null)};
   if(!novelData)return(<div><Hdr t="📘 英文小說" onBack={onBack} cl={c.cl}/><div style={{textAlign:"center",padding:"48px",color:S.t3}}>載入小說中...</div></div>);
@@ -2811,7 +2939,7 @@ function NovelM({lv,onBack,onXp}){
     </div>
   </div>);
   const next=ci+1<novel.chapters.length?ci+1:null;const prev=ci>0?ci-1:null;const isDone=completed.includes(chapter.no);const canPrevPage=pageNow>0;const canNextPage=pageNow+1<pages.length;const quizScore=quiz.reduce((n,q,i)=>n+(quizState[i]===q.a?1:0),0);
-  const turnPage=p=>{stopNovelSpeech();setActiveBlock(-1);setPage(Math.max(0,Math.min(p,pages.length-1)));window.scrollTo({top:0,behavior:"smooth"})};
+  const turnPage=p=>{stopNovelSpeech();setActiveBlock(null);setPage(Math.max(0,Math.min(p,pages.length-1)));window.scrollTo({top:0,behavior:"smooth"})};
   const finishAndGo=()=>{completeChapter();if(quizDone){next!=null?goChapter(next):backToList()}};
   return(<div><Hdr t="📘 英文小說" onBack={backToList} cl={c.cl} extra={<button onClick={()=>setShowZh(z=>!z)} style={{background:"none",border:`1px solid ${S.bd}`,borderRadius:8,padding:"4px 8px",fontSize:12,color:c.cl,cursor:"pointer",fontFamily:"inherit"}}>{showZh?"隱藏中文":"顯示中文"}</button>}/>
     <div style={{...S.card,padding:0,overflow:"hidden",marginBottom:10,borderTop:`4px solid ${c.cl}`,background:"#FFFDF7"}}>
@@ -2822,18 +2950,18 @@ function NovelM({lv,onBack,onXp}){
       </div>
     </div>
     <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:10,fontSize:12}}><button onClick={()=>prev!=null&&goChapter(prev)} disabled={prev==null} style={{...S.btn,background:S.bg2,color:S.t1,padding:"7px 10px",opacity:prev==null?0.35:1,fontSize:12}}>← 上一章</button><div style={{flex:1,height:6,background:S.bg2,borderRadius:3,overflow:"hidden"}}><div style={{height:"100%",width:`${((chapter.no-1)+(pageNow+1)/pages.length)/novel.chapters.length*100}%`,background:`linear-gradient(90deg,${c.cl},${c.ac})`,borderRadius:3}}/></div><button onClick={()=>next!=null&&goChapter(next)} disabled={next==null} style={{...S.btn,background:S.bg2,color:S.t1,padding:"7px 10px",opacity:next==null?0.35:1,fontSize:12}}>下一章 →</button></div>
-    <article style={{background:"#FFFDF7",border:`1px solid ${S.bd}`,borderRadius:8,padding:"18px 16px",boxShadow:"0 8px 22px rgba(64,43,20,.08)",position:"relative"}}>
-      <div style={{position:"absolute",left:0,top:0,bottom:0,width:7,background:"linear-gradient(180deg,#E8D9B7,#F8F0D6)"}}/>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,marginBottom:12,paddingLeft:4}}><div style={{fontSize:12,fontWeight:900,color:c.cl}}>Page {pageNow+1}</div><div style={{fontSize:12,color:S.t3}}>像翻書一樣慢慢讀</div></div>
-      <div style={{display:"grid",gap:11}}>
-        {pageBlocks.map(b=><section key={b.i} style={{padding:"11px 12px",borderRadius:8,background:activeBlock===b.i?"#E6F7F0":"transparent",border:`1px solid ${activeBlock===b.i?c.cl:"transparent"}`,transition:"all .18s"}}>
-          <div style={{display:"flex",gap:8,alignItems:"flex-start"}}><p style={{flex:1,margin:0,fontSize:17,lineHeight:1.85,color:S.t1,fontWeight:/^“|^[A-Z][a-z]+[?!]?$/.test(b.en)?800:600,whiteSpace:"pre-line"}}>{b.en}</p><button onClick={()=>speakNovelText(b.en,"en-US",0.78,b.i)} style={{border:`1px solid ${S.bd}`,background:S.bg1,borderRadius:10,padding:"5px 8px",fontSize:12,cursor:"pointer",fontFamily:"inherit",color:c.cl,flexShrink:0}}>🔊</button></div>
-          {showZh&&b.zh&&<div style={{marginTop:8,padding:"8px 10px",background:"#FFF7E6",border:"1px solid #F0D59A",borderRadius:8,fontSize:13,lineHeight:1.7,color:S.t2,whiteSpace:"pre-line"}}>{b.zh} <button onClick={()=>speakNovelText(b.zh,"zh-TW",1,b.i)} style={{background:"none",border:"none",fontSize:16,cursor:"pointer",verticalAlign:"middle"}}>🔈</button></div>}
+    <article style={{background:"#FFFDF7",border:`1px solid ${S.bd}`,borderRadius:8,padding:"14px 13px 16px",boxShadow:"0 8px 22px rgba(64,43,20,.08)",position:"relative"}}>
+      <div style={{position:"absolute",left:0,top:0,bottom:0,width:6,background:"linear-gradient(180deg,#E8D9B7,#F8F0D6)"}}/>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,marginBottom:10,paddingLeft:4}}><div style={{fontSize:12,fontWeight:900,color:c.cl}}>Page {pageNow+1}</div><div style={{display:"flex",gap:3,alignItems:"center"}}>{pages.map((_,i)=><span key={i} style={{width:i===pageNow?16:5,height:5,borderRadius:999,background:i===pageNow?c.cl:S.bd,display:"block",transition:"all .15s"}}/>)}</div></div>
+      <div style={{display:"grid",gap:6}}>
+        {pageBlocks.map(b=><section key={b.i} onClick={()=>speakNovelText(b.en,"en-US",0.78,b.i)} style={{padding:"9px 10px",borderRadius:8,background:activeBlock===b.i?"#E6F7F0":"transparent",border:`1px solid ${activeBlock===b.i?c.cl:"transparent"}`,transition:"all .18s",cursor:"pointer"}}>
+          <div style={{display:"flex",gap:8,alignItems:"flex-start"}}><p style={{flex:1,margin:0,fontSize:16,lineHeight:1.66,color:S.t1,fontWeight:/^“|^[A-Z][a-z]+[?!]?$/.test(b.en)?800:650,whiteSpace:"pre-line"}}>{b.en}</p><button onClick={e=>{e.stopPropagation();e.currentTarget.blur();speakNovelText(b.en,"en-US",0.78,b.i)}} style={{width:34,height:34,border:`1px solid ${S.bd}`,background:S.bg1,borderRadius:10,padding:0,fontSize:13,cursor:"pointer",fontFamily:"inherit",color:c.cl,flexShrink:0}}>🔊</button></div>
+          {showZh&&b.zh&&<div style={{marginTop:7,padding:"7px 9px",background:"#FFF7E6",border:"1px solid #F0D59A",borderRadius:8,fontSize:13,lineHeight:1.58,color:S.t2,whiteSpace:"pre-line"}}>{b.zh} <button onClick={e=>{e.stopPropagation();e.currentTarget.blur();speakNovelText(b.zh,"zh-TW",1,b.i)}} style={{background:"none",border:"none",fontSize:15,cursor:"pointer",verticalAlign:"middle"}}>🔈</button></div>}
         </section>)}
       </div>
       <div style={{display:"flex",gap:8,alignItems:"center",marginTop:14}}><button onClick={()=>turnPage(pageNow-1)} disabled={!canPrevPage} style={{...S.btn,background:S.bg2,color:S.t1,flex:1,padding:"10px",fontSize:13,opacity:canPrevPage?1:.4}}>上一頁</button><div style={{fontSize:12,color:S.t3,fontWeight:700}}>{pageNow+1}/{pages.length}</div><button onClick={()=>turnPage(pageNow+1)} disabled={!canNextPage} style={{...S.btn,background:c.cl,color:"#fff",flex:1,padding:"10px",fontSize:13,opacity:canNextPage?1:.4}}>下一頁</button></div>
     </article>
-    <div style={{...S.card,padding:"14px 16px",marginTop:10,fontSize:12,color:S.t2,lineHeight:1.7}}><div style={{fontWeight:800,color:S.t1,marginBottom:7}}>重點單字</div><div style={{display:"flex",flexWrap:"wrap",gap:6}}>{chapter.vocab.map(w=><button key={w} onClick={()=>speakNovelText(w)} style={{border:`1px solid ${S.bd}`,background:S.bg1,borderRadius:999,padding:"6px 10px",fontSize:12,color:c.cl,cursor:"pointer",fontWeight:800,fontFamily:"inherit"}}>{w} 🔊</button>)}</div></div>
+    <div style={{...S.card,padding:"14px 16px",marginTop:10,fontSize:12,color:S.t2,lineHeight:1.7}}><div style={{fontWeight:800,color:S.t1,marginBottom:7}}>重點單字</div><div style={{display:"flex",flexWrap:"wrap",gap:6}}>{chapter.vocab.map(w=>{const on=activeVocab===w;return <button key={w} onClick={e=>{e.currentTarget.blur();speakNovelVocab(w)}} style={{border:`1px solid ${on?c.cl:S.bd}`,background:on?"#E6F7F0":S.bg1,borderRadius:999,padding:"6px 10px",fontSize:12,color:c.cl,cursor:"pointer",fontWeight:800,fontFamily:"inherit",boxShadow:on?`0 0 0 2px ${c.cl}22`:"none"}}>{w} 🔊</button>})}</div></div>
     <div style={{...S.card,padding:"14px 16px",marginTop:10}}>
       <div style={{display:"flex",justifyContent:"space-between",gap:8,alignItems:"center",marginBottom:10}}><div style={{fontWeight:900,color:S.t1}}>章節小測驗</div><div style={{fontSize:12,color:quizDone?c.cl:S.t3,fontWeight:800}}>{quizDone?`已作答 · ${quizScore}/${quiz.length}`:`${Object.keys(quizState).length}/${quiz.length}`}</div></div>
       <div style={{display:"grid",gap:10}}>{quiz.map((q,qi)=>{const picked=quizState[qi];return(<div key={q.q} style={{border:`1px solid ${S.bd}`,borderRadius:8,padding:"11px",background:S.bg1}}><div style={{fontSize:14,fontWeight:800,color:S.t1,lineHeight:1.45}}>{qi+1}. {q.q}</div>{showZh&&<div style={{fontSize:12,color:S.t2,marginTop:2}}>{q.zh}</div>}<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(120px,1fr))",gap:6,marginTop:9}}>{q.o.map((o,oi)=>{const selected=picked===oi;const correct=oi===q.a;const answered=picked!=null;return <button key={o} onClick={()=>chooseQuiz(qi,oi)} style={{border:`1px solid ${answered&&correct?c.cl:selected?"#D45757":S.bd}`,background:answered&&correct?"#E6F7F0":selected?"#FFF0F0":S.bg2,color:answered&&correct?c.cl:S.t1,borderRadius:8,padding:"9px 8px",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>{o}</button>})}</div>{picked!=null&&<div style={{fontSize:12,color:picked===q.a?c.cl:"#B54848",fontWeight:800,marginTop:7}}>{picked===q.a?"答對了":"答錯了，正確答案已標示"}</div>}</div>)})}</div>
