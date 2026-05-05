@@ -3873,3 +3873,50 @@ the forest whispered softly.`,
   junior: [],
   senior: [],
 };
+
+const SECRET_FOREST_QUIZ = {
+  1: [
+    { q: "What did Lily find in the forest?", zh: "莉莉在森林裡發現了什麼？", o: ["A talking tree", "A new school", "A blue river"], a: 0 },
+    { q: "What did the Elder Tree give Lily?", zh: "長老樹給了莉莉什麼？", o: ["A Light Leaf", "A lunch box", "A red ribbon"], a: 0 },
+    { q: "What did the forest need?", zh: "森林需要什麼？", o: ["Lily's help", "More rain", "A new road"], a: 0 },
+  ],
+  2: [
+    { q: "Who was stuck under a twig?", zh: "誰被小樹枝壓住了？", o: ["Coco", "Lily", "Prince Pebble"], a: 0 },
+    { q: "What was the shadow looking for?", zh: "黑影正在尋找什麼？", o: ["The Star Crystal", "The Moon Lake", "A school bag"], a: 0 },
+    { q: "What did Coco say they needed first?", zh: "可可說她們首先需要找什麼？", o: ["The Moon Key", "A flower dress", "A bird"], a: 0 },
+  ],
+  3: [
+    { q: "What was wrong with the river?", zh: "河流出了什麼問題？", o: ["It was silent and gray", "It was too loud", "It was full of boats"], a: 0 },
+    { q: "What did Lily use to get the bell?", zh: "莉莉用什麼取回鈴鐺？", o: ["A ribbon and branch", "A big net", "Her shoes"], a: 0 },
+    { q: "What did Lily find after the river sang?", zh: "河流唱歌後莉莉找到什麼？", o: ["The first Moon Key piece", "A gold fish", "A blue wing"], a: 0 },
+  ],
+  4: [
+    { q: "What kind of stones did Lily find?", zh: "莉莉找到什麼石頭？", o: ["Memory stones", "Hot stones", "Rainbow stones"], a: 0 },
+    { q: "Which stone felt warm?", zh: "哪一顆石頭摸起來是溫暖的？", o: ["The moon stone", "The star stone", "The spiral stone"], a: 0 },
+    { q: "What hurt the shadow?", zh: "什麼東西會傷害黑影？", o: ["The light", "The rain", "The frog"], a: 0 },
+  ],
+  5: [
+    { q: "What was wrong with Moon Lake?", zh: "月亮湖出了什麼問題？", o: ["It was sleeping", "It was too noisy", "It was gone"], a: 0 },
+    { q: "What helped Lily see under the water?", zh: "什麼幫助莉莉看見水底？", o: ["A spoon", "A pencil", "A flower"], a: 0 },
+    { q: "What did the three pieces become?", zh: "三塊碎片變成了什麼？", o: ["The Moon Key", "The Star Crystal", "A small bell"], a: 0 },
+  ],
+  6: [
+    { q: "Where was the cave hidden?", zh: "洞穴藏在哪裡？", o: ["Behind a rock wall", "Under Lily's house", "Inside a tree"], a: 0 },
+    { q: "What opened the cave puzzle?", zh: "什麼打開了洞穴謎題？", o: ["The key, stone, and leaf", "A song", "A magic fish"], a: 0 },
+    { q: "What did Lily see at the end of the path?", zh: "莉莉在光路盡頭看到什麼？", o: ["The Star Crystal", "A school gate", "A red ribbon"], a: 0 },
+  ],
+  7: [
+    { q: "What did Lily see when she touched the crystal?", zh: "莉莉碰到水晶時看見什麼？", o: ["A memory", "A map", "A new fairy"], a: 0 },
+    { q: "Why was the shadow angry?", zh: "黑影為什麼生氣？", o: ["It felt rejected and lonely", "It lost a race", "It hated songs"], a: 0 },
+    { q: "How did Lily help the shadow?", zh: "莉莉如何幫助黑影？", o: ["She understood it", "She ran away", "She broke the crystal"], a: 0 },
+  ],
+  8: [
+    { q: "What returned to the forest?", zh: "什麼回到了森林？", o: ["Magic and light", "Snow", "A new school"], a: 0 },
+    { q: "What happened to the small shadow?", zh: "小影子發生了什麼事？", o: ["It found balance", "It became a tree", "It flew away"], a: 0 },
+    { q: "What did Lily keep in her hand?", zh: "莉莉手中留著什麼？", o: ["A leaf", "A key", "A bell"], a: 0 },
+  ],
+};
+
+NOVELS.elementary[0].chapters.forEach(chapter => {
+  chapter.quiz = SECRET_FOREST_QUIZ[chapter.no] || [];
+});
