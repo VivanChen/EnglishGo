@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense } from "react";
+import { getElementaryExample } from "./data/elementaryExamples.js";
 
 // ═══ SUPABASE CLIENT (lazy init, graceful fallback) ═════════════════
 let _sb = null;
@@ -112,10 +113,13 @@ async function submitSponsorMessage(name,message){
 
 
 function mapWord(r){
+  const localExample=r?.level==="elementary"&&r?.category==="Supplemental"
+    ?getElementaryExample(r.word,r.meaning,r.pos)
+    :null;
   try{return{w:r.word,ph:r.phonetic||'',p:r.pos||'',m:r.meaning,
     f:typeof r.forms==='string'?JSON.parse(r.forms||'[]'):(r.forms||[]),
     c:typeof r.collocations==='string'?JSON.parse(r.collocations||'[]'):(r.collocations||[]),
-    ex:r.example||'',ez:r.example_zh||'',img:'',level:r.level,category:r.category||'',ceecLevel:r.ceec_level}}catch{return null}
+    ex:localExample?.ex||r.example||'',ez:localExample?.ez||r.example_zh||'',img:'',level:r.level,category:r.category||'',ceecLevel:r.ceec_level}}catch{return null}
 }
 
 const WORD_SELECT="id,word,phonetic,pos,meaning,forms,collocations,example,example_zh,category,ceec_level,level";

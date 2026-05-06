@@ -1,3 +1,5 @@
+import { getElementaryExample } from "./elementaryExamples.js";
+
 const EXTRA_ELEMENTARY_WORDS = {
   curious:["好奇的","adj."], explore:["探索","v."], forest:["森林","n."], edge:["邊緣","n."], glow:["發光","v."], shadow:["影子","n."],
   magic:["魔法","n."], brave:["勇敢的","adj."], guide:["引導","v."], trust:["信任","v."], fairy:["小精靈","n."], wing:["翅膀","n."],
@@ -56,11 +58,50 @@ const BASIC_ELEMENTARY_WORDS = {
   there:["那裡","adv."], yes:["是；好的","adv."], no:["不；沒有","adv."],
 };
 
+const MORE_BASIC_ELEMENTARY_WORDS = {
+  zero:["零","n."], one:["一","n."], two:["二","n."], three:["三","n."], four:["四","n."], five:["五","n."],
+  six:["六","n."], seven:["七","n."], eight:["八","n."], nine:["九","n."], ten:["十","n."], eleven:["十一","n."],
+  twelve:["十二","n."], thirteen:["十三","n."], fourteen:["十四","n."], fifteen:["十五","n."], sixteen:["十六","n."], seventeen:["十七","n."],
+  eighteen:["十八","n."], nineteen:["十九","n."], twenty:["二十","n."], thirty:["三十","n."], forty:["四十","n."], fifty:["五十","n."],
+  hundred:["一百","n."], first:["第一；首先","adj./adv."], second:["第二","adj."], third:["第三","adj."], last:["最後的","adj."], next:["下一個；接著","adj./adv."],
+  monday:["星期一","n."], tuesday:["星期二","n."], wednesday:["星期三","n."], thursday:["星期四","n."], friday:["星期五","n."], saturday:["星期六","n."],
+  sunday:["星期日","n."], january:["一月","n."], february:["二月","n."], march:["三月；行進","n./v."], april:["四月","n."], may:["五月；可以","n./v."],
+  june:["六月","n."], july:["七月","n."], august:["八月","n."], september:["九月","n."], october:["十月","n."], november:["十一月","n."],
+  december:["十二月","n."], morning:["早上","n."], noon:["中午","n."], minute:["分鐘","n."], hour:["小時","n."], time:["時間","n."],
+  me:["我","pron."], my:["我的","pron."], mine:["我的東西","pron."], you:["你；你們","pron."], your:["你的；你們的","pron."], he:["他","pron."],
+  him:["他","pron."], his:["他的","pron."], she:["她","pron."], her:["她；她的","pron."], it:["它","pron."], its:["它的","pron."],
+  we:["我們","pron."], us:["我們","pron."], our:["我們的","pron."], they:["他們","pron."], them:["他們","pron."], their:["他們的","pron."],
+  this:["這個","pron."], that:["那個","pron."], these:["這些","pron."], those:["那些","pron."], everyone:["每個人","pron."], someone:["某人","pron."],
+  from:["從；來自","prep."], to:["到；給","prep."], for:["為了；給","prep."], with:["和...一起","prep."], without:["沒有","prep."], about:["關於","prep."],
+  before:["在...之前","prep."], behind:["在...後面","prep."], beside:["在...旁邊","prep."], between:["在...之間","prep."], inside:["在裡面","adv./prep."], outside:["在外面","adv./prep."],
+  into:["進入","prep."], out:["外出；出去","adv."], up:["向上","adv."], down:["向下","adv."], left:["左邊；左邊的","n./adj."], right:["右邊；正確的","n./adj."],
+  have:["有","v."], has:["有","v."], give:["給","v."], get:["得到；拿到","v."], put:["放","v."], move:["移動","v."],
+  turn:["轉動；輪到","v./n."], start:["開始","v."], stop:["停止","v."], wait:["等待","v."], work:["工作","v./n."], study:["讀書；學習","v."],
+  try:["嘗試","v."], live:["居住；生活","v."], visit:["拜訪；參觀","v."], meet:["遇見；見面","v."], call:["打電話；呼叫","v."], show:["展示","v."],
+  share:["分享","v."], keep:["保持","v."], begin:["開始","v."], finish:["完成；結束","v."], ride:["騎；搭乘","v."], drive:["開車","v."],
+  smile:["微笑","v./n."], cry:["哭","v."], laugh:["笑","v."], shout:["大叫","v."], touch:["觸摸","v."], point:["指；點","v./n."],
+  noodles:["麵","n."], pizza:["披薩","n."], hamburger:["漢堡","n."], sandwich:["三明治","n."], salad:["沙拉","n."], vegetable:["蔬菜","n."],
+  fruit:["水果","n."], tomato:["番茄","n."], potato:["馬鈴薯","n."], carrot:["紅蘿蔔","n."], corn:["玉米","n."], meat:["肉","n."],
+  beef:["牛肉","n."], pork:["豬肉","n."], snack:["點心","n."], sugar:["糖","n."], salt:["鹽","n."], chocolate:["巧克力","n."],
+  shirt:["襯衫","n."], tshirt:["T恤","n."], pants:["褲子","n."], shorts:["短褲","n."], skirt:["裙子","n."], dress:["洋裝；穿","n./v."],
+  shoes:["鞋子","n."], socks:["襪子","n."], hat:["帽子","n."], cap:["帽子","n."], coat:["外套","n."], jacket:["夾克","n."],
+  farm:["農場","n."], beach:["海灘","n."], mountain:["山","n."], sea:["海","n."], station:["車站","n."], museum:["博物館","n."],
+  office:["辦公室","n."], post:["郵件；張貼","n./v."], store:["商店","n."], supermarket:["超級市場","n."], library:["圖書館","n."], zoo:["動物園","n."],
+  leaf:["葉子","n."], rock:["岩石","n."], stone:["石頭","n."], sand:["沙","n."], cloud:["雲","n."], rainbow:["彩虹","n."],
+  homework:["家庭作業","n."], lesson:["課；課程","n."], test:["考試；測驗","n."], question:["問題","n."], story:["故事","n."], song:["歌曲","n."],
+  letter:["字母；信","n."], word:["單字","n."], sentence:["句子","n."], picture:["圖片；照片","n."], computer:["電腦","n."], phone:["電話","n."],
+  game:["遊戲","n."], toy:["玩具","n."], doll:["娃娃","n."], kite:["風箏","n."], soccer:["足球","n."], basketball:["籃球","n."],
+  baseball:["棒球","n."], music:["音樂","n."], art:["美術；藝術","n."], movie:["電影","n."], many:["許多","adj."], much:["許多；非常","adj./adv."],
+  more:["更多","adj./adv."], some:["一些","adj."], any:["任何；一些","adj."], every:["每一個","adj."], each:["每個","adj."], all:["全部","adj."],
+  both:["兩者都","adj./pron."], few:["少數的","adj."], same:["相同的","adj."], different:["不同的","adj."], wrong:["錯的","adj."], ok:["好的","adj."],
+};
+
 function extraWordCard(word,[meaning,pos]){
-  return{w:word,ph:"",p:pos,m:meaning,f:[],c:[],ex:`I can use the word "${word}".`,ez:`我會使用「${meaning}」這個單字。`,img:""};
+  const example = getElementaryExample(word, meaning, pos);
+  return{w:word,ph:"",p:pos,m:meaning,f:[],c:[],ex:example.ex,ez:example.ez,img:""};
 }
 
-const ELEMENTARY_WORDS = {...BASIC_ELEMENTARY_WORDS,...EXTRA_ELEMENTARY_WORDS};
+const ELEMENTARY_WORDS = {...BASIC_ELEMENTARY_WORDS,...MORE_BASIC_ELEMENTARY_WORDS,...EXTRA_ELEMENTARY_WORDS};
 
 export const EXTRA_WORDS = {
   elementary: Object.entries(ELEMENTARY_WORDS).map(([word,meta])=>extraWordCard(word,meta)),

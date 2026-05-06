@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { getElementaryExample } from '../data/elementaryExamples.js'
 
 const url = import.meta.env.VITE_SUPABASE_URL || ''
 const key = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
@@ -56,6 +57,9 @@ export async function fetchWordCounts() {
 
 // Convert Supabase row to app format
 export function toAppFormat(row) {
+  const localSupplementalExample = row.level === 'elementary'
+    && row.category === 'Supplemental'
+  const localExample = localSupplementalExample ? getElementaryExample(row.word, row.meaning, row.pos) : null
   return {
     w: row.word,
     ph: row.phonetic || '',
@@ -63,8 +67,8 @@ export function toAppFormat(row) {
     m: row.meaning,
     f: Array.isArray(row.forms) ? row.forms : JSON.parse(row.forms || '[]'),
     c: Array.isArray(row.collocations) ? row.collocations : JSON.parse(row.collocations || '[]'),
-    ex: row.example || '',
-    ez: row.example_zh || '',
+    ex: localExample?.ex || row.example || '',
+    ez: localExample?.ez || row.example_zh || '',
     img: '',
   }
 }
