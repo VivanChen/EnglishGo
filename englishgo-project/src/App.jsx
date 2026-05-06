@@ -604,6 +604,11 @@ const SONGS = {
         {t:69,en:"English gives my heart new wings.",zh:"英文讓我的心長出新的翅膀。"},
       ],
       vocab:["ready","read","write","practice","learn","strong","listen","speak","mistake","again"],
+      patterns:[
+        {p:"I can + V",ex:"I can read.",zh:"我可以閱讀。"},
+        {p:"try with all my might",ex:"I can try with all my might.",zh:"我會盡全力嘗試。"},
+        {p:"word by word",ex:"Word by word, I grow strong.",zh:"一字一句，我變得更強。"},
+      ],
     },
     {
       id:"elementary-my-happy-day",
@@ -645,6 +650,11 @@ const SONGS = {
         {t:70,en:"Helps me on my way.",zh:"都幫助我向前走。"},
       ],
       vocab:["wake","wash","breakfast","school","after","home","dinner","brush","sleep","night"],
+      patterns:[
+        {p:"I + V + every day",ex:"I read every day.",zh:"我每天閱讀。"},
+        {p:"What do you do...?",ex:"What do you do after class?",zh:"下課後你做什麼？"},
+        {p:"before + I + V",ex:"I brush my teeth before I sleep.",zh:"我睡前刷牙。"},
+      ],
     },
     {
       id:"elementary-animal-friends",
@@ -681,6 +691,11 @@ const SONGS = {
         {t:66,en:"Sing this song with me.",zh:"和我一起唱這首歌。"},
       ],
       vocab:["cat","jump","dog","run","bird","fly","fish","swim","rabbit","monkey","horse","bee"],
+      patterns:[
+        {p:"A/An + animal + can + V",ex:"A bird can fly.",zh:"一隻鳥會飛。"},
+        {p:"like a + animal",ex:"Jump like a cat.",zh:"像貓一樣跳。"},
+        {p:"Big or small",ex:"Big or small, we can learn.",zh:"不論大或小，我們都能學。"},
+      ],
     },
   ],
   junior: [],
@@ -749,6 +764,8 @@ const RARITY_INFO={
   SR:{rate:12,color:"#7B61FF",bg:"#EDE9FE",label:"超稀有",stars:"⭐⭐⭐"},
   SSR:{rate:3,color:"#EF9F27",bg:"#FFF3CD",label:"極稀有",stars:"⭐⭐⭐⭐"},
 };
+const RARITY_ORDER={N:0,R:1,SR:2,SSR:3};
+const GACHA_SR_PITY=20;
 
 const EGG_COST=50; // coins per gacha pull
 const EGG_HATCH_TASKS={N:10,R:15,SR:25,SSR:40}; // tasks needed to hatch
@@ -2186,12 +2203,14 @@ function compareWords(original,spoken){
   // Try to match each original word to any spoken word (fuzzy)
   const usedSpoken=new Set();
   const result=ow.map(w=>{
-    const found=sw.findIndex((s,i)=>!usedSpoken.has(i)&&wordMatches(w,s));
+    let found=sw.findIndex((s,i)=>!usedSpoken.has(i)&&s===w);
+    if(found<0)found=sw.findIndex((s,i)=>!usedSpoken.has(i)&&wordMatches(w,s));
     if(found>=0)usedSpoken.add(found);
-    return{word:w,ok:found>=0};
+    return{word:w,ok:found>=0,heard:found>=0?sw[found]:""};
   });
   const correct=result.filter(r=>r.ok).length;
-  return{result,correct,total:ow.length,pct:Math.round((correct/ow.length)*100)};
+  const extra=sw.filter((_,i)=>!usedSpoken.has(i));
+  return{result,correct,total:ow.length,pct:Math.round((correct/Math.max(ow.length,1))*100),extra};
 }
 
 // Fallback sentences for when cloud is unavailable
@@ -2214,151 +2233,137 @@ async function fetchSpeakItems(lv,count=10){
   return items.sort(()=>Math.random()-.5).slice(0,count);
 }
 
+function speakPassThreshold(item){return item?.type==="word"?80:70}
 function SpeakM({lv,onBack,onXp}){
   const c=LV[lv];
   const[items,setItems]=useState([]);const[loading,setLoading]=useState(true);
-  const[si,setSi]=useState(0);
-  const[phase,setPhase]=useState("ready"); // ready -> listen -> result
-  const[listening,setListening]=useState(false);
-  const[spoken,setSpoken]=useState("");
-  const[comparison,setComparison]=useState(null);
-  const[score,setScore]=useState(0);
+  const[si,setSi]=useState(0);const[phase,setPhase]=useState("ready");
+  const[listening,setListening]=useState(false);const[spoken,setSpoken]=useState("");const[interim,setInterim]=useState("");
+  const[comparison,setComparison]=useState(null);const[records,setRecords]=useState({});
   const[combo,setCombo]=useState(0);const[maxCombo,setMaxCombo]=useState(0);
-  const[showConfetti,setShowConfetti]=useState(false);
-  const[showSuccess,setShowSuccess]=useState(false);
-  const[noSupport,setNoSupport]=useState(false);
-  const recogRef=useRef(null);
+  const[showConfetti,setShowConfetti]=useState(false);const[showSuccess,setShowSuccess]=useState(false);
+  const[noSupport,setNoSupport]=useState(false);const[tip,setTip]=useState("");
+  const recogRef=useRef(null);const finalRef=useRef("");const interimRef=useRef("");const rewardedRef=useRef(new Set());
 
-  // Load items from cloud
-  useEffect(()=>{(async()=>{setLoading(true);const r=await fetchSpeakItems(lv,12);setItems(r);setLoading(false)})()},[lv]);
+  const loadItems=useCallback(async()=>{
+    setLoading(true);stopSpeech();
+    try{recogRef.current?.abort?.()}catch{}
+    const r=await fetchSpeakItems(lv,12);
+    setItems(r);setSi(0);setPhase("ready");setSpoken("");setInterim("");setComparison(null);setRecords({});setCombo(0);setMaxCombo(0);setTip("");rewardedRef.current=new Set();setLoading(false);
+  },[lv]);
+  useEffect(()=>{loadItems()},[loadItems]);
 
-  const cur=items[si];
+  const cur=items[si];const currentRecord=records[si];const score=Object.values(records).filter(r=>r.passed).length;const attemptsTotal=Object.values(records).reduce((n,r)=>n+(r.attempts||0),0);
 
-  // Speech recognition setup
   useEffect(()=>{
     const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
     if(!SR){setNoSupport(true);return}
-    const r=new SR();r.lang="en-US";r.interimResults=false;r.maxAlternatives=3;r.continuous=false;
+    const r=new SR();r.lang="en-US";r.interimResults=true;r.maxAlternatives=3;r.continuous=false;
     r.onresult=e=>{
-      let best="";let bestConf=0;
-      for(let i=0;i<e.results[0].length;i++){
-        if(e.results[0][i].confidence>bestConf){bestConf=e.results[0][i].confidence;best=e.results[0][i].transcript}
+      let final="",live="";
+      for(let i=e.resultIndex;i<e.results.length;i++){
+        let best="",bestConf=-1;
+        for(let j=0;j<e.results[i].length;j++){const alt=e.results[i][j];if((alt.confidence??0)>bestConf){bestConf=alt.confidence??0;best=alt.transcript}}
+        if(e.results[i].isFinal)final+=` ${best}`;else live+=` ${best}`;
       }
-      setSpoken(best);setListening(false);
+      if(final.trim())finalRef.current=`${finalRef.current} ${final}`.trim();
+      interimRef.current=live.trim();setInterim(interimRef.current||finalRef.current);
     };
-    r.onerror=()=>{setListening(false);setPhase("ready");setSpoken("[沒有聽到聲音，再試一次]")};
-    r.onend=()=>setListening(false);
+    r.onerror=e=>{setListening(false);setPhase("ready");setSpoken(e.error==="not-allowed"?"[請允許麥克風權限後再試一次]":"[沒有聽到聲音，再試一次]")};
+    r.onend=()=>{
+      setListening(false);
+      const heard=(finalRef.current||interimRef.current).trim();
+      finalRef.current="";interimRef.current="";
+      if(heard){setSpoken(heard);setInterim("")}
+    };
     recogRef.current=r;
     return()=>{try{r.abort()}catch{}};
   },[]);
 
-  // Auto-play on new item
-  useEffect(()=>{if(phase==="ready"&&cur&&!loading){const t=speechTimer(()=>speak(cur.en,"en-US",0.75),400);return()=>clearTimeout(t)}},[si,phase,loading]);
+  useEffect(()=>{if(phase==="ready"&&cur&&!loading){const t=speechTimer(()=>speak(cur.en,"en-US",0.75),400);return()=>clearTimeout(t)}},[si,phase,loading,cur?.en]);
 
-  // Compare when spoken
   useEffect(()=>{
     if(!spoken||spoken.startsWith("[")||!cur)return;
-    const comp=compareWords(cur.en,spoken);
-    setComparison(comp);
-    if(comp.pct>=60){
-      setScore(s=>s+1);onXp(comp.pct>=90?15:10);
+    const comp=compareWords(cur.en,spoken);const threshold=speakPassThreshold(cur);const passed=comp.pct>=threshold;
+    setComparison(comp);setPhase("result");setTip("");
+    setRecords(prev=>{
+      const old=prev[si]||{attempts:0,bestPct:0,passed:false};
+      return{...prev,[si]:{...old,attempts:(old.attempts||0)+1,bestPct:Math.max(old.bestPct||0,comp.pct),passed:old.passed||passed,lastPct:comp.pct,lastSpoken:spoken,comparison:comp,item:cur}};
+    });
+    if(passed){
       setCombo(cb=>{const nc=cb+1;setMaxCombo(mc=>Math.max(mc,nc));return nc});
-      setShowSuccess(true);
-      if(comp.pct>=90)playSound("combo");else playSound("good");
-      setTimeout(()=>setShowSuccess(false),1200);
-    }else{setCombo(0);playSound("bad")}
-    setPhase("result");
-  },[spoken]);
+      setShowSuccess(true);speechTimer(()=>setShowSuccess(false),1200);
+      if(!rewardedRef.current.has(si)){rewardedRef.current.add(si);onXp?.(comp.pct>=90?15:10)}
+      playSound(comp.pct>=90?"combo":"good");
+    }else{
+      setCombo(0);playSound("bad");
+      const miss=comp.result.filter(x=>!x.ok).map(x=>x.word).slice(0,3).join(", ");
+      setTip(miss?`先慢慢練這些字：${miss}`:"再聽一次示範，注意重音和節奏。");
+    }
+  },[spoken,cur,si,onXp]);
 
   const startListening=()=>{
     if(!recogRef.current||listening)return;
-    setSpoken("");setComparison(null);setPhase("listen");setListening(true);
-    try{recogRef.current.start()}catch{recogRef.current.stop();setTimeout(()=>{try{recogRef.current.start()}catch{}},200)}
+    stopSpeech();setSpoken("");setInterim("");setComparison(null);setTip("");setPhase("listen");setListening(true);finalRef.current="";interimRef.current="";
+    try{recogRef.current.abort?.()}catch{}
+    speechTimer(()=>{try{recogRef.current.start()}catch{}},80);
   };
   const stopListening=()=>{if(recogRef.current&&listening){try{recogRef.current.stop()}catch{}}};
   const nextItem=()=>{
     if(si+1>=items.length){playSound("done");setShowConfetti(true);setTimeout(()=>setShowConfetti(false),3500);setPhase("done");return}
-    setSi(s=>s+1);setPhase("ready");setSpoken("");setComparison(null);
+    setSi(s=>s+1);setPhase("ready");setSpoken("");setInterim("");setComparison(null);setTip("");
   };
-  const retry=()=>{setPhase("ready");setSpoken("");setComparison(null)};
-  const restart=async()=>{setLoading(true);setSi(0);setPhase("ready");setSpoken("");setComparison(null);setScore(0);setCombo(0);setMaxCombo(0);const r=await fetchSpeakItems(lv,12);setItems(r);setLoading(false)};
+  const retry=()=>{setPhase("ready");setSpoken("");setInterim("");setComparison(null);setTip("")};
+  const restart=()=>loadItems();
+  const retryWeak=()=>{
+    const weak=items.map((item,i)=>({item,i,record:records[i]})).filter(x=>!x.record?.passed);
+    if(!weak.length)return;
+    setItems(weak.map(x=>x.item));setSi(0);setPhase("ready");setSpoken("");setInterim("");setComparison(null);setRecords({});setCombo(0);setTip("");rewardedRef.current=new Set();
+  };
 
   const comboLabel=combo>=7?"🔥🔥 ON FIRE!":combo>=5?"🔥 COMBO x"+combo:combo>=3?"✨ "+combo+" 連擊！":"";
-
   if(noSupport)return(<div><Hdr t="🗣️ 口說練習" onBack={onBack} cl={c.cl}/><div style={{...S.card,padding:"24px 16px",textAlign:"center"}}><div style={{fontSize:40,marginBottom:10}}>😔</div><div style={{fontSize:14,color:S.t1,fontWeight:600}}>瀏覽器不支援語音辨識</div><div style={{fontSize:12,color:S.t2,marginTop:6}}>請使用 Chrome 或 Edge 瀏覽器</div></div></div>);
   if(loading||!cur)return(<div><Hdr t="🗣️ 口說練習" onBack={onBack} cl={c.cl}/><div style={{textAlign:"center",padding:"48px",color:S.t3}}>載入中...</div></div>);
 
-  if(phase==="done")return(<div>{showConfetti&&<Confetti/>}<Hdr t="🗣️ 口說練習" onBack={onBack} cl={c.cl}/><div style={{textAlign:"center",padding:"32px 16px"}}><div style={{fontSize:56,animation:"bounceIn .5s ease-out"}}>{score>=items.length*0.8?"🏆":score>=items.length*0.5?"🎉":"💪"}</div><h2 style={{fontSize:22,fontWeight:700,color:S.t1,marginTop:8}}>口說練習完成！</h2><div style={{fontSize:18,color:c.cl,fontWeight:600,marginTop:6}}>{score}/{items.length} 句通過</div>{maxCombo>=3&&<div style={{fontSize:13,color:"#EF9F27",fontWeight:600,marginTop:4}}>🔥 最高 {maxCombo} 連擊！</div>}<div style={{fontSize:14,color:S.t2,marginTop:8,marginBottom:16}}>{score>=items.length*0.8?"口說太棒了！🌟":"多說多練，越來越流利！💪"}</div><button onClick={restart} style={{...S.btn,background:c.cl,color:"#fff",marginRight:8,fontSize:14}}>🔄 換一批</button><button onClick={onBack} style={{...S.btn,background:S.bg2,color:S.t1,fontSize:14}}>返回</button></div></div>);
+  if(phase==="done"){const total=items.length;const finalPct=Math.round(score/Math.max(total,1)*100);const weak=items.map((item,i)=>({item,i,record:records[i]})).filter(x=>!x.record?.passed);return(<div>{showConfetti&&<Confetti/>}<Hdr t="🗣️ 口說練習" onBack={onBack} cl={c.cl}/><div style={{textAlign:"center",padding:"28px 12px"}}><div style={{fontSize:56,animation:"bounceIn .5s ease-out"}}>{finalPct>=80?"🏆":finalPct>=50?"🎉":"💪"}</div><h2 style={{fontSize:22,fontWeight:700,color:S.t1,marginTop:8}}>口說練習完成！</h2><div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,maxWidth:420,margin:"16px auto"}}>{[["通過",`${score}/${total}`,c.cl],["掌握率",`${finalPct}%`,finalPct>=80?"#1D9E75":"#EF9F27"],["嘗試",attemptsTotal,"#185FA5"]].map(([l,v,cl])=><div key={l} style={{...S.card,padding:"12px 8px",borderTop:`3px solid ${cl}`}}><div style={{fontSize:22,fontWeight:800,color:cl}}>{v}</div><div style={{fontSize:11,color:S.t3,marginTop:2}}>{l}</div></div>)}</div>{maxCombo>=3&&<div style={{fontSize:13,color:"#EF9F27",fontWeight:600,marginTop:4}}>🔥 最高 {maxCombo} 連擊！</div>}<div style={{fontSize:14,color:S.t2,margin:"8px 0 14px"}}>{finalPct>=80?"口說節奏很好，可以挑戰更長句子。":"建議把未通過項目慢速聽一次，再逐字跟讀。"}</div>{weak.length>0&&<div style={{...S.card,padding:"12px 14px",maxWidth:540,margin:"0 auto 14px",textAlign:"left"}}><div style={{fontSize:13,fontWeight:800,color:"#E24B4A",marginBottom:8}}>需要再練</div><div style={{display:"grid",gap:7}}>{weak.map(({item,i,record})=><button key={`${item.en}-${i}`} onClick={()=>speak(item.en,"en-US",0.72)} style={{border:`1px solid ${S.bd}`,background:S.bg1,borderRadius:12,padding:"9px 11px",textAlign:"left",cursor:"pointer",fontFamily:"inherit"}}><div style={{fontSize:14,fontWeight:800,color:S.t1}}>{item.en}</div><div style={{fontSize:12,color:S.t2,marginTop:2}}>{item.zh} · 最高 {record?.bestPct||0}%</div></button>)}</div></div>}<button onClick={weak.length?retryWeak:restart} style={{...S.btn,background:c.cl,color:"#fff",marginRight:8,fontSize:14}}>{weak.length?"只練未通過":"換一批"}</button><button onClick={onBack} style={{...S.btn,background:S.bg2,color:S.t1,fontSize:14}}>返回</button></div></div>)}
 
-  const pct=Math.round((si/items.length)*100);
+  const pct=Math.round((si/items.length)*100);const threshold=speakPassThreshold(cur);const best=currentRecord?.bestPct||0;const isSentence=cur.type==="sentence";
   return(<div><Hdr t="🗣️ 口說練習" onBack={onBack} cl={c.cl}/>
-    {/* Progress */}
-    <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:6,fontSize:12}}><div style={{flex:1,height:6,background:S.bg2,borderRadius:3}}><div style={{height:"100%",width:`${pct}%`,background:`linear-gradient(90deg,${c.cl},${c.ac})`,borderRadius:3,transition:"width .3s"}}/></div><span style={{color:S.t3}}>{si+1}/{items.length}</span><span style={{color:"#1D9E75",fontWeight:600}}>{score}✓</span></div>
+    <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:8,fontSize:12}}><div style={{flex:1,height:7,background:S.bg2,borderRadius:999,overflow:"hidden"}}><div style={{height:"100%",width:`${pct}%`,background:`linear-gradient(90deg,${c.cl},${c.ac})`,borderRadius:999,transition:"width .3s"}}/></div><span style={{color:S.t3,minWidth:44,textAlign:"right"}}>{si+1}/{items.length}</span><span style={{color:"#1D9E75",fontWeight:800,minWidth:32,textAlign:"right"}}>{score}✓</span></div>
     {comboLabel&&<div style={{textAlign:"center",fontSize:14,fontWeight:700,color:"#EF9F27",marginBottom:6,animation:"comboFlash .5s"}}>{comboLabel}</div>}
+    {showSuccess&&<div style={{background:"linear-gradient(90deg,#2ECC71,#27AE60)",borderRadius:12,padding:"10px 16px",marginBottom:8,textAlign:"center",animation:"bounceIn .3s ease-out"}}><span style={{color:"#fff",fontWeight:700,fontSize:16}}>通過了！🎉</span></div>}
 
-    {/* === MAIN CARD (BeeSpeaker style) === */}
-    {/* Success banner */}
-    {showSuccess&&<div style={{background:"linear-gradient(90deg,#2ECC71,#27AE60)",borderRadius:12,padding:"10px 16px",marginBottom:8,textAlign:"center",animation:"bounceIn .3s ease-out"}}><span style={{color:"#fff",fontWeight:700,fontSize:16}}>太棒了！🎉</span></div>}
-
-    <div style={{...S.card,padding:0,overflow:"hidden",marginBottom:12}}>
-      {/* Chinese meaning - prominent */}
-      <div style={{background:`linear-gradient(135deg,${c.bg},var(--color-background-primary,#fff))`,padding:"22px 18px",textAlign:"center",borderBottom:`1px solid ${S.bd}`}}>
-        <div style={{fontSize:15,color:S.t3,marginBottom:4}}>{cur.type==="word"?"唸出這個單字":"唸出這個句子"}</div>
-        <div style={{fontSize:32,fontWeight:700,color:S.t1,lineHeight:1.4}}>{cur.zh}</div>
-        {cur.pos&&<div style={{fontSize:11,color:S.t3,marginTop:2}}>({cur.pos})</div>}
+    <div style={{...S.card,padding:0,overflow:"hidden",marginBottom:12,borderTop:`4px solid ${c.cl}`}}>
+      <div style={{background:`linear-gradient(135deg,${c.bg},var(--color-background-primary,#fff))`,padding:"18px 16px",textAlign:"center",borderBottom:`1px solid ${S.bd}`}}>
+        <div style={{display:"flex",justifyContent:"center",gap:7,flexWrap:"wrap",marginBottom:8}}><span style={{fontSize:12,fontWeight:800,color:c.cl,background:"#fff",border:`1px solid ${c.cl}33`,borderRadius:999,padding:"5px 9px"}}>{isSentence?"句子":"單字"}</span><span style={{fontSize:12,fontWeight:800,color:best>=threshold?"#1D9E75":S.t3,background:best>=threshold?"#E1F5EE":S.bg2,borderRadius:999,padding:"5px 9px"}}>本題最高 {best}%</span><span style={{fontSize:12,fontWeight:800,color:S.t3,background:S.bg2,borderRadius:999,padding:"5px 9px"}}>通過 {threshold}%</span></div>
+        <div style={{fontSize:15,color:S.t3,marginBottom:4}}>{isSentence?"看中文，唸出完整英文句子":"看中文，唸出英文單字"}</div>
+        <div style={{fontSize:isSentence?23:32,fontWeight:800,color:S.t1,lineHeight:1.45}}>{cur.zh}</div>{cur.pos&&<div style={{fontSize:11,color:S.t3,marginTop:3}}>({cur.pos})</div>}
       </div>
-      {/* English - what to say */}
-      <div style={{padding:"22px 18px",textAlign:"center"}}>
-        <div style={{fontSize:cur.type==="word"?42:26,fontWeight:700,color:c.cl,lineHeight:1.5,letterSpacing:cur.type==="word"?1:0}}>{cur.en}</div>
-        {cur.keyword&&<div style={{fontSize:11,color:S.t3,marginTop:4}}>重點單字：<b style={{color:c.cl}}>{cur.keyword}</b></div>}
+      <div style={{padding:"20px 17px",textAlign:"center"}}>
+        <div style={{fontSize:isSentence?25:42,fontWeight:800,color:c.cl,lineHeight:1.55,letterSpacing:0}}>{cur.en}</div>
+        {cur.keyword&&<div style={{fontSize:11,color:S.t3,marginTop:5}}>重點單字：<b style={{color:c.cl}}>{cur.keyword}</b></div>}
+        {isSentence&&<div style={{display:"flex",gap:5,justifyContent:"center",flexWrap:"wrap",marginTop:10}}>{normalizeText(cur.en).split(" ").map(w=><span key={w} style={{fontSize:12,color:S.t2,background:S.bg2,borderRadius:999,padding:"4px 8px"}}>{w}</span>)}</div>}
       </div>
-      {/* Listen button */}
-      <div style={{padding:"0 16px 16px",textAlign:"center"}}>
-        <button onClick={()=>speak(cur.en,"en-US",0.75)} style={{...S.btn,background:S.bg2,color:S.t2,padding:"10px 20px",fontSize:14}}>🔊 聽示範</button>
-        <button onClick={()=>window.open(`https://youglish.com/pronounce/${encodeURIComponent(cur.en)}/english`,"_blank")} style={{...S.btn,background:`linear-gradient(135deg,${c.cl}22,${c.ac}22)`,color:c.cl,padding:"10px 20px",fontSize:14,border:`1px solid ${c.cl}44`,marginLeft:6}}>🎬 看真人</button>
-      </div>
+      <div style={{padding:"0 16px 16px",display:"flex",gap:8,justifyContent:"center",flexWrap:"wrap"}}><button onClick={()=>speak(cur.en,"en-US",0.62)} style={{...S.btn,background:S.bg2,color:S.t1,padding:"9px 14px",fontSize:13}}>🐢 慢速</button><button onClick={()=>speak(cur.en,"en-US",0.82)} style={{...S.btn,background:c.bg,color:c.cl,padding:"9px 14px",fontSize:13}}>🔊 示範</button><button onClick={()=>window.open(`https://youglish.com/pronounce/${encodeURIComponent(cur.en)}/english`,"_blank")} style={{...S.btn,background:`${c.cl}22`,color:c.cl,padding:"9px 14px",fontSize:13,border:`1px solid ${c.cl}44`}}>🎬 真人</button></div>
     </div>
 
-    {/* Mic button area */}
     {phase!=="result"&&<div style={{textAlign:"center",marginBottom:12}}>
-      {!listening?(<button onClick={startListening} style={{width:88,height:88,borderRadius:"50%",border:"none",background:`linear-gradient(135deg,${c.cl},${c.ac})`,color:"#fff",fontSize:36,cursor:"pointer",boxShadow:`0 6px 24px ${c.cl}50`,transition:"transform .15s",WebkitTapHighlightColor:"transparent"}} onTouchStart={e=>e.currentTarget.style.transform="scale(0.88)"} onTouchEnd={e=>e.currentTarget.style.transform="scale(1)"}>🎤</button>):
-      (<button onClick={stopListening} style={{width:88,height:88,borderRadius:"50%",border:"none",background:"#E24B4A",color:"#fff",fontSize:36,cursor:"pointer",animation:"micPulse 1.2s ease-in-out infinite"}}>⏹</button>)}
-      <div style={{fontSize:13,color:listening?"#E24B4A":S.t3,marginTop:8,fontWeight:listening?700:400}}>{listening?"🎙️ 正在聽...大聲說！":"👆 按下開始說"}</div>
+      {!listening?(
+        <button onClick={startListening} style={{width:92,height:92,borderRadius:"50%",border:"none",background:`linear-gradient(135deg,${c.cl},${c.ac})`,color:"#fff",fontSize:38,cursor:"pointer",boxShadow:`0 7px 24px ${c.cl}50`,transition:"transform .15s",WebkitTapHighlightColor:"transparent"}} onTouchStart={e=>{e.currentTarget.style.transform="scale(0.88)"}} onTouchEnd={e=>{e.currentTarget.style.transform="scale(1)"}}>🎤</button>
+      ):(
+        <button onClick={stopListening} style={{width:92,height:92,borderRadius:"50%",border:"none",background:"#E24B4A",color:"#fff",fontSize:36,cursor:"pointer",animation:"micPulse 1.2s ease-in-out infinite"}}>⏹</button>
+      )}
+      <div style={{fontSize:13,color:listening?"#E24B4A":S.t3,marginTop:8,fontWeight:listening?800:500}}>{listening?"正在聽，說完可按停止":"按下麥克風開始說"}</div>
+      {(interim||spoken.startsWith("["))&&<div style={{...S.card,padding:"10px 12px",marginTop:10,fontSize:12,color:spoken.startsWith("[")?"#EF9F27":S.t2,textAlign:"center"}}>{spoken.startsWith("[")?spoken:`聽到：${interim}`}</div>}
     </div>}
 
-    {/* Result */}
     {phase==="result"&&comparison&&<div style={{...S.card,padding:"16px",marginBottom:12}}>
-      {/* Score visualization */}
-      <div style={{textAlign:"center",marginBottom:10}}>
-        <div style={{fontSize:40}}>{comparison.pct>=90?"🌟":comparison.pct>=70?"👍":comparison.pct>=40?"🤔":"😅"}</div>
-        <div style={{fontSize:14,fontWeight:700,color:comparison.pct>=70?"#1D9E75":"#E24B4A",marginTop:4}}>
-          {comparison.pct>=90?"太棒了！":comparison.pct>=70?"不錯喔！":comparison.pct>=40?"再試一次！":"加油！"}
-        </div>
-        {/* Accuracy bar */}
-        <div style={{margin:"8px auto",maxWidth:180}}>
-          <div style={{height:8,background:S.bg2,borderRadius:4,overflow:"hidden"}}>
-            <div style={{height:"100%",width:`${comparison.pct}%`,background:comparison.pct>=70?"linear-gradient(90deg,#1D9E75,#5DCAA5)":"linear-gradient(90deg,#E24B4A,#EF9F27)",borderRadius:4,transition:"width .5s"}}/>
-          </div>
-          <div style={{fontSize:11,color:S.t2,marginTop:3}}>準確度 {comparison.pct}%</div>
-        </div>
-      </div>
-      {/* Word-by-word comparison */}
-      <div style={{fontSize:17,lineHeight:2.2,textAlign:"center",margin:"8px 0"}}>
-        {comparison.result.map((r,i)=><span key={i} style={{padding:"3px 5px",borderRadius:6,marginRight:3,fontWeight:600,background:r.ok?"#E1F5EE":"#FCEBEB",color:r.ok?"#1D9E75":"#E24B4A"}}>{r.word}</span>)}
-      </div>
-      {/* What was heard */}
-      <div style={{fontSize:11,color:S.t2,textAlign:"center",padding:"6px 10px",background:S.bg2,borderRadius:8}}>🎙️ {spoken}</div>
-      {/* Action buttons */}
-      <div style={{display:"flex",gap:8,justifyContent:"center",marginTop:12}}>
-        <button onClick={()=>speak(cur.en,"en-US",0.75)} style={{...S.btn,background:S.bg2,color:S.t1,padding:"10px 14px",fontSize:12,minHeight:44}}>🔊 再聽</button>
-        <button onClick={()=>window.open(`https://youglish.com/pronounce/${encodeURIComponent(cur.en)}/english`,"_blank")} style={{...S.btn,background:`${c.cl}22`,color:c.cl,padding:"10px 14px",fontSize:12,minHeight:44,border:`1px solid ${c.cl}44`}}>🎬 真人</button>
-        <button onClick={retry} style={{...S.btn,background:"#FAEEDA",color:"#BA7517",padding:"10px 14px",fontSize:12,minHeight:44}}>🔄 重試</button>
-        <button onClick={nextItem} style={{...S.btn,background:c.cl,color:"#fff",padding:"10px 14px",fontSize:12,minHeight:44}}>{si+1>=items.length?"🏁 完成":"▶ 下一個"}</button>
-      </div>
+      <div style={{textAlign:"center",marginBottom:10}}><div style={{fontSize:42}}>{comparison.pct>=90?"🌟":comparison.pct>=threshold?"👍":comparison.pct>=40?"🤔":"😅"}</div><div style={{fontSize:15,fontWeight:800,color:comparison.pct>=threshold?"#1D9E75":"#E24B4A",marginTop:4}}>{comparison.pct>=threshold?"通過":"再練一次"}</div><div style={{margin:"9px auto",maxWidth:210}}><div style={{height:9,background:S.bg2,borderRadius:999,overflow:"hidden"}}><div style={{height:"100%",width:`${comparison.pct}%`,background:comparison.pct>=threshold?"linear-gradient(90deg,#1D9E75,#5DCAA5)":"linear-gradient(90deg,#E24B4A,#EF9F27)",borderRadius:999,transition:"width .5s"}}/></div><div style={{fontSize:11,color:S.t2,marginTop:4}}>準確度 {comparison.pct}% · 門檻 {threshold}%</div></div></div>
+      <div style={{fontSize:17,lineHeight:2.25,textAlign:"center",margin:"8px 0"}}>{comparison.result.map((r,i)=><span key={i} title={r.heard?`聽到：${r.heard}`:"未聽到"} style={{display:"inline-block",padding:"3px 7px",borderRadius:8,margin:"2px",fontWeight:800,background:r.ok?"#E1F5EE":"#FCEBEB",color:r.ok?"#1D9E75":"#E24B4A"}}>{r.word}</span>)}</div>
+      {tip&&<div style={{fontSize:12,color:"#8A5A00",background:"#FFF7E6",border:"1px solid #F0D59A",borderRadius:10,padding:"8px 10px",marginBottom:8,textAlign:"center"}}>{tip}</div>}
+      <div style={{fontSize:12,color:S.t2,textAlign:"center",padding:"8px 10px",background:S.bg2,borderRadius:10}}>你說的是：{spoken}{comparison.extra?.length?` · 多聽到：${comparison.extra.join(", ")}`:""}</div>
+      <div style={{display:"flex",gap:8,justifyContent:"center",marginTop:12,flexWrap:"wrap"}}><button onClick={()=>speak(cur.en,"en-US",0.62)} style={{...S.btn,background:S.bg2,color:S.t1,padding:"10px 14px",fontSize:12,minHeight:42}}>🐢 慢速</button><button onClick={retry} style={{...S.btn,background:"#FAEEDA",color:"#8A5A00",padding:"10px 14px",fontSize:12,minHeight:42}}>重試</button><button onClick={nextItem} style={{...S.btn,background:c.cl,color:"#fff",padding:"10px 14px",fontSize:12,minHeight:42}}>{si+1>=items.length?"完成":"下一個"}</button></div>
     </div>}
-
-    {/* Error state */}
-    {spoken.startsWith("[")&&<div style={{...S.card,padding:"16px",textAlign:"center"}}><div style={{fontSize:13,color:"#EF9F27"}}>{spoken}</div><button onClick={retry} style={{...S.btn,background:c.bg,color:c.cl,padding:"8px 14px",fontSize:12,marginTop:8}}>🔄 再試一次</button></div>}
   </div>);
 }
 // ═══ WHACK-A-MOLE SPELLING (打地鼠拼字 v2) ══════════════════════════
@@ -3002,112 +3007,115 @@ function ScramM({lv,onBack,onXp,onDone}){
     </div>
   </div>);
 }
-// ═══ GRAMMAR (文法學堂 v2) ═══════════════════════════════════════════
+// ═══ GRAMMAR (文法學堂 v3) ═══════════════════════════════════════════
+const GRAMMAR_GUIDES={
+  "Be 動詞":{zh:"用 be 動詞說明身分、狀態或位置。重點是主詞要搭配正確的 am / are / is。",pattern:"I am · you/we/they are · he/she/it is",tips:["先找主詞","單數用 is","you 和複數用 are"],mistake:"不要看到中文「是」就選 be，句子裡通常要用 am / is / are。"},
+  "現在簡單式":{zh:"描述習慣、每天會做的事或一般事實。主詞是 he / she / it 時，動詞通常要加 s 或 es。",pattern:"I/You/We/They + V · He/She/It + Vs/Ves",tips:["找主詞","看是不是每天或習慣","第三人稱單數加 s/es"],mistake:"She / He 後面不要直接用原形動詞。"},
+  "現在進行式":{zh:"表示現在正在發生的動作，常和 now 搭配。",pattern:"am / is / are + V-ing",tips:["看到 now 先想進行式","先選對 be 動詞","動詞改成 V-ing"],mistake:"不能只寫 V-ing，前面還需要 be 動詞。"},
+  "There is / There are":{zh:"用來表示某個地方「有」什麼東西。後面的名詞決定 is 或 are。",pattern:"There is + 單數 · There are + 複數",tips:["看 There 後面的名詞","單數用 is","複數用 are"],mistake:"這個句型不是用 has / have 開頭。"},
+  "名詞單複數":{zh:"數量超過一個時，名詞通常要變複數。很多字加 s，但也有 es 或特殊變化。",pattern:"one box · three boxes · one child · two children",tips:["先看數量","大多數加 s","s/x/ch/sh 結尾常加 es"],mistake:"box 的複數是 boxes，不是 boxs。"},
+  "代名詞":{zh:"代名詞會因位置改變。當作主詞用 I/he/she；當作受詞用 me/him/her。",pattern:"主詞: I/he/she · 受詞: me/him/her",tips:["看空格在動詞前或後","動詞後常用受詞","所有格才用 my/his/her"],mistake:"Give 後面接人時要用 me，不是 I。"},
+  "現在完成式":{zh:"表示到現在為止的經驗、持續或剛完成的事情。",pattern:"have / has + p.p.",tips:["看到 for/since/twice/ever 可想完成式","he/she/it 用 has","動詞要改過去分詞"],mistake:"has 後面不是接過去式 went，而是 p.p. been/gone。"},
+  "被動語態":{zh:"當重點是東西被做了什麼，而不是誰做的，就常用被動語態。",pattern:"be + p.p. + by 人",tips:["找被做的主詞","看時態選 be 動詞","主要動詞用 p.p."],mistake:"The cake was baked 才是蛋糕被烤，不是 cake baked。"},
+  "關係代名詞":{zh:"用 who / which / that 連接名詞和補充說明。人常用 who，物常用 which。",pattern:"人 + who/that · 物 + which/that",tips:["先看前面的名詞","人用 who","物或事情用 which"],mistake:"what 不是用來直接修飾前面的名詞。"},
+  "不定詞 vs 動名詞":{zh:"有些動詞後面習慣接 to V，有些接 V-ing。enjoy 後面要接 V-ing。",pattern:"want to V · enjoy V-ing",tips:["先看前面的動詞","enjoy 後接 V-ing","want 後接 to V"],mistake:"enjoy to swim 不自然，應該說 enjoy swimming。"},
+  "連接詞":{zh:"連接詞表示兩個句子之間的關係。because 是原因，although 是雖然，if 是如果。",pattern:"Although + 讓步 · Because + 原因 · If + 條件",tips:["看前後句意思","相反轉折用 although","原因用 because"],mistake:"Although 已有雖然，不要再加 but。"},
+  "比較級與最高級":{zh:"比較兩個用比較級；三個以上或 ever 常用最高級。",pattern:"taller than · the best · the most important",tips:["看到 than 想比較級","看到 ever 或 the 想最高級","good 的最高級是 best"],mistake:"good 的最高級不是 most good。"},
+  "假設語氣（現在）":{zh:"描述和現在事實相反或不太可能的想像。be 動詞常用 were。",pattern:"If + 過去式, would + 原形動詞",tips:["看到 would 想假設語氣","If 子句用過去式","I/he/she 也常用 were"],mistake:"If I were you 是固定常見用法。"},
+  "假設語氣（過去）":{zh:"描述和過去事實相反的想像，表示如果當時怎樣，結果就會不同。",pattern:"If + had p.p., would have + p.p.",tips:["看是不是過去的後悔","If 子句用 had p.p.","主要子句用 would have p.p."],mistake:"過去假設不是 If she came，而是 If she had come。"},
+  "分詞構句":{zh:"把副詞子句簡化，當主詞相同時可用 V-ing 開頭。",pattern:"V-ing ..., S + V",tips:["確認前後主詞相同","主動動作用 V-ing","表示同時或原因"],mistake:"分詞構句的動作要能對應後面句子的主詞。"},
+  "倒裝句":{zh:"否定或限制副詞放句首時，後面常用助動詞倒裝。",pattern:"Never have I ... · Not only did he ...",tips:["看到否定語放句首","助動詞提前","主詞放助動詞後面"],mistake:"Not only he worked 應改成 Not only did he work。"},
+  "名詞子句":{zh:"把一整個問題或句子當名詞使用，可以放在 know、think、wonder 後面。",pattern:"I know that ... · I wonder whether ... · What he said ...",tips:["看動詞後面缺一個內容","是否用 whether","疑問詞可引導名詞子句"],mistake:"間接問句通常不用疑問句倒裝。"},
+  "強調句型":{zh:"用 It is/was ... that 來強調句子中的某個部分。",pattern:"It is/was + 被強調部分 + that + 其餘句子",tips:["找被強調的資訊","過去事件用 was","後面常接 that"],mistake:"It was in Tokyo that I met her，不要再加 where。"},
+};
+function grammarGuide(rule){return GRAMMAR_GUIDES[rule?.t]||{zh:rule?.d||"",pattern:rule?.d||"",tips:["先找主詞和時間","再看句型","最後檢查答案是否自然"],mistake:"選完後把句子完整讀一次，通常能發現不自然的地方。"}}
+function grammarCloze(sentence,fill,cl){
+  const parts=String(sentence||"").split("___");
+  return parts.map((p,i)=><span key={i}>{p}{i<parts.length-1&&<span style={{display:"inline-block",minWidth:76,borderBottom:`3px solid ${cl}`,textAlign:"center",fontWeight:800,color:cl,padding:"0 6px",margin:"0 2px"}}>{fill||"？"}</span>}</span>);
+}
 function GrammarM({lv,onBack,onXp}){
-  const rules=G[lv];const[sel,setSel]=useState(null);const[ans,setAns]=useState(null);const c=LV[lv];
-  const[score,setScore]=useState(0);const[completed,setCompleted]=useState([]);
-  const[showResult,setShowResult]=useState(false);
-
-  const handleAns=(i)=>{
-    if(ans!==null)return;
-    setAns(i);
-    const r=rules[sel];
-    if(i===r.q.a){setScore(s=>s+1);playSound("good");if(onXp)onXp(5)}
-    else playSound("bad");
-    if(!completed.includes(sel))setCompleted(c=>[...c,sel]);
+  const rules=G[lv];const c=LV[lv];
+  const[sel,setSel]=useState(null);const[answers,setAnswers]=useState({});const[showResult,setShowResult]=useState(false);const[showHint,setShowHint]=useState(false);
+  const rewarded=useRef(new Set());
+  useEffect(()=>{setSel(null);setAnswers({});setShowResult(false);setShowHint(false);rewarded.current=new Set()},[lv]);
+  const completed=Object.keys(answers).length;
+  const score=Object.values(answers).filter(a=>a?.correct).length;
+  const pct=rules.length?Math.round(score/rules.length*100):0;
+  const wrongIdx=rules.map((_,i)=>i).filter(i=>answers[i]&&!answers[i].correct);
+  const openTopic=i=>{setSel(i);setShowResult(false);setShowHint(false)};
+  const resetAll=()=>{setSel(null);setAnswers({});setShowResult(false);setShowHint(false);rewarded.current=new Set()};
+  const startPractice=()=>openTopic(rules.findIndex((_,i)=>!answers[i])>=0?rules.findIndex((_,i)=>!answers[i]):0);
+  const retryWrong=()=>{if(!wrongIdx.length)return;setAnswers(a=>{const next={...a};wrongIdx.forEach(i=>delete next[i]);return next});setShowResult(false);setShowHint(true);setSel(wrongIdx[0])};
+  const handleAns=i=>{
+    if(sel==null||answers[sel])return;
+    const r=rules[sel];const correct=i===r.q.a;
+    setAnswers(a=>({...a,[sel]:{choice:i,correct}}));
+    if(correct){playSound("good");if(!rewarded.current.has(sel)){rewarded.current.add(sel);onXp?.(5)}}else playSound("bad");
   };
+  const clearCurrentAnswer=()=>{setAnswers(a=>{const next={...a};delete next[sel];return next});setShowHint(true)};
+  const goNext=()=>{setShowHint(false);if(sel<rules.length-1)setSel(sel+1);else setShowResult(true)};
+  const goPrev=()=>{setShowHint(false);if(sel>0)setSel(sel-1)};
 
-  const goNext=()=>{
-    if(sel<rules.length-1){setSel(sel+1);setAns(null)}
-    else setShowResult(true);
-  };
-  const goPrev=()=>{if(sel>0){setSel(sel-1);setAns(null)}};
+  if(showResult){return(<div><Hdr t="🧠 文法學堂" onBack={onBack} cl={c.cl}/><div style={{textAlign:"center",padding:"28px 12px"}}><div style={{fontSize:56,animation:"bounceIn .5s ease-out"}}>{pct>=80?"🏆":pct>=60?"🎉":"💪"}</div><h2 style={{fontSize:22,fontWeight:700,color:S.t1,marginTop:8}}>文法學習完成！</h2><div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,maxWidth:420,margin:"16px auto"}}>{[["答對",`${score}/${rules.length}`,c.cl],["掌握率",`${pct}%`,pct>=80?"#1D9E75":"#EF9F27"],["待複習",wrongIdx.length,"#E24B4A"]].map(([l,v,cl])=><div key={l} style={{...S.card,padding:"12px 8px",borderTop:`3px solid ${cl}`}}><div style={{fontSize:22,fontWeight:800,color:cl}}>{v}</div><div style={{fontSize:11,color:S.t3,marginTop:2}}>{l}</div></div>)}</div><div style={{fontSize:14,color:S.t2,margin:"8px 0 14px"}}>{pct>=80?"規則掌握得很好，可以進入閱讀或造句練習。":pct>=60?"基本概念不錯，建議把錯題再跑一輪。":"先看提示與範例，再慢慢重做錯題。"}</div>{wrongIdx.length>0&&<div style={{...S.card,padding:"12px 14px",maxWidth:520,margin:"0 auto 14px",textAlign:"left"}}><div style={{fontSize:13,fontWeight:800,color:"#E24B4A",marginBottom:8}}>錯題複習</div><div style={{display:"grid",gap:7}}>{wrongIdx.map(i=><button key={i} onClick={()=>openTopic(i)} style={{border:`1px solid ${S.bd}`,background:S.bg1,borderRadius:12,padding:"9px 11px",textAlign:"left",cursor:"pointer",fontFamily:"inherit"}}><div style={{fontSize:14,fontWeight:800,color:S.t1}}>{rules[i].t}</div><div style={{fontSize:12,color:S.t2,marginTop:2}}>正解：{rules[i].q.o[rules[i].q.a]} · 你的答案：{rules[i].q.o[answers[i].choice]}</div></button>)}</div></div>}<button onClick={wrongIdx.length?retryWrong:resetAll} style={{...S.btn,background:c.cl,color:"#fff",marginRight:8,fontSize:14}}>{wrongIdx.length?"只練錯題":"重新學習"}</button><button onClick={onBack} style={{...S.btn,background:S.bg2,color:S.t1,fontSize:14}}>返回</button></div></div>)}
 
-  // Result screen
-  if(showResult){const pct=Math.round((score/rules.length)*100);return(<div><Hdr t="🧠 文法學堂" onBack={onBack} cl={c.cl}/><div style={{textAlign:"center",padding:"32px 16px"}}><div style={{fontSize:56,animation:"bounceIn .5s ease-out"}}>{pct>=80?"🏆":pct>=60?"🎉":"💪"}</div><h2 style={{fontSize:22,fontWeight:700,color:S.t1,marginTop:8}}>文法學習完成！</h2><div style={{fontSize:18,color:c.cl,fontWeight:600,marginTop:6}}>{score}/{rules.length} 答對 ({pct}%)</div><div style={{fontSize:14,color:S.t2,marginTop:8,marginBottom:16}}>{pct>=80?"文法小天才！🌟":pct>=60?"不錯！回去複習錯的題目 💪":"多看幾次會更熟！📖"}</div><button onClick={()=>{setSel(null);setScore(0);setAns(null);setCompleted([]);setShowResult(false)}} style={{...S.btn,background:c.cl,color:"#fff",marginRight:8,fontSize:14}}>🔄 重新學習</button><button onClick={onBack} style={{...S.btn,background:S.bg2,color:S.t1,fontSize:14}}>返回</button></div></div>)}
-
-  // Topic list
   if(sel===null)return(<div><Hdr t="🧠 文法學堂" onBack={onBack} cl={c.cl}/>
-    {/* Progress summary */}
-    {completed.length>0&&<div style={{...S.card,padding:"12px 16px",marginBottom:12,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-      <div style={{fontSize:13,color:S.t2}}>已學 {completed.length}/{rules.length} · 答對 {score}</div>
-      <div style={{height:6,flex:1,maxWidth:120,background:S.bg2,borderRadius:3,marginLeft:12}}><div style={{height:"100%",width:`${(completed.length/rules.length)*100}%`,background:c.cl,borderRadius:3,transition:"width .3s"}}/></div>
-    </div>}
+    <div style={{...S.card,padding:"14px 16px",marginBottom:12,borderTop:`4px solid ${c.cl}`}}>
+      <div style={{display:"flex",justifyContent:"space-between",gap:10,alignItems:"center",marginBottom:10}}>
+        <div><div style={{fontSize:14,fontWeight:800,color:S.t1}}>學習進度</div><div style={{fontSize:12,color:S.t2,marginTop:2}}>先看規則，再完成每個主題的小測驗。</div></div>
+        <button onClick={startPractice} style={{...S.btn,background:c.cl,color:"#fff",fontSize:13,padding:"9px 14px",whiteSpace:"nowrap"}}>{completed?"繼續":"開始"}</button>
+      </div>
+      <div style={{height:8,background:S.bg2,borderRadius:999,overflow:"hidden"}}><div style={{height:"100%",width:`${(completed/rules.length)*100}%`,background:`linear-gradient(90deg,${c.cl},${c.ac})`,borderRadius:999,transition:"width .25s"}}/></div>
+      <div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:S.t3,marginTop:7}}><span>已完成 {completed}/{rules.length}</span><span>答對 {score}</span></div>
+    </div>
     <div style={{display:"grid",gap:8}}>
-      {rules.map((r,i)=>{const done=completed.includes(i);return(<div key={i} onClick={()=>{setSel(i);setAns(null)}} style={{cursor:"pointer",...S.card,padding:"16px 18px",display:"flex",gap:12,alignItems:"center",borderLeft:`4px solid ${done?"#1D9E75":c.cl}`,transition:"all .15s"}} onTouchStart={e=>e.currentTarget.style.transform="scale(0.98)"} onTouchEnd={e=>e.currentTarget.style.transform="scale(1)"}>
-        <div style={{width:36,height:36,borderRadius:"50%",background:done?"#E1F5EE":c.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:done?16:14,fontWeight:700,color:done?"#1D9E75":c.cl,flexShrink:0}}>{done?"✓":i+1}</div>
-        <div style={{flex:1}}>
-          <div style={{fontWeight:600,fontSize:15,color:S.t1}}>{r.t}</div>
-          <div style={{fontSize:12,color:S.t2,marginTop:2}}>{r.d}</div>
-        </div>
-        <div style={{fontSize:18,opacity:.4}}>›</div>
-      </div>)})}
+      {rules.map((r,i)=>{const a=answers[i];const guide=grammarGuide(r);const done=!!a;return(<button key={i} onClick={()=>openTopic(i)} style={{cursor:"pointer",...S.card,padding:"15px 16px",display:"flex",gap:12,alignItems:"center",border:"none",borderLeft:`4px solid ${done?(a.correct?"#1D9E75":"#E24B4A"):c.cl}`,transition:"all .15s",fontFamily:"inherit",textAlign:"left"}} onTouchStart={e=>e.currentTarget.style.transform="scale(0.98)"} onTouchEnd={e=>e.currentTarget.style.transform="scale(1)"}>
+        <div style={{width:38,height:38,borderRadius:"50%",background:done?(a.correct?"#E1F5EE":"#FCEBEB"):c.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:done?17:14,fontWeight:800,color:done?(a.correct?"#1D9E75":"#E24B4A"):c.cl,flexShrink:0}}>{done?(a.correct?"✓":"!"):(i+1)}</div>
+        <div style={{flex:1,minWidth:0}}><div style={{fontWeight:800,fontSize:15,color:S.t1}}>{r.t}</div><div style={{fontSize:12,color:S.t2,marginTop:3,lineHeight:1.45}}>{guide.zh}</div><div style={{fontSize:11,color:c.cl,marginTop:5,fontWeight:700}}>{guide.pattern}</div></div>
+        <div style={{fontSize:18,opacity:.35}}>›</div>
+      </button>)})}
     </div>
   </div>);
 
-  // Detail view
-  const r=rules[sel];
-  const progress=(sel+1)/rules.length*100;
+  const r=rules[sel];const guide=grammarGuide(r);const current=answers[sel];const progress=(sel+1)/rules.length*100;const fill=current?r.q.o[current.choice]:"";const fillColor=current?(current.correct?"#1D9E75":"#E24B4A"):c.cl;
   return(<div><Hdr t="🧠 文法學堂" onBack={onBack} cl={c.cl}/>
-    {/* Progress bar */}
-    <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:8,fontSize:12}}>
-      <button onClick={()=>{setSel(null);setAns(null)}} style={{background:"none",border:`1px solid ${S.bd}`,borderRadius:8,padding:"4px 10px",fontSize:11,cursor:"pointer",color:S.t2,fontFamily:"inherit"}}>📋 列表</button>
-      <div style={{flex:1,height:6,background:S.bg2,borderRadius:3}}><div style={{height:"100%",width:`${progress}%`,background:`linear-gradient(90deg,${c.cl},${c.ac})`,borderRadius:3,transition:"width .3s"}}/></div>
-      <span style={{color:S.t3}}>{sel+1}/{rules.length}</span>
+    <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:10,fontSize:12}}>
+      <button onClick={()=>{setSel(null);setShowHint(false)}} style={{background:"none",border:`1px solid ${S.bd}`,borderRadius:8,padding:"4px 10px",fontSize:11,cursor:"pointer",color:S.t2,fontFamily:"inherit"}}>列表</button>
+      <div style={{flex:1,height:7,background:S.bg2,borderRadius:999,overflow:"hidden"}}><div style={{height:"100%",width:`${progress}%`,background:`linear-gradient(90deg,${c.cl},${c.ac})`,borderRadius:999,transition:"width .3s"}}/></div>
+      <span style={{color:S.t3,minWidth:38,textAlign:"right"}}>{sel+1}/{rules.length}</span>
     </div>
 
-    {/* Topic card */}
-    <div style={{...S.card,padding:"24px 20px",marginBottom:10}}>
-      {/* Title */}
-      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
-        <div style={{width:40,height:40,borderRadius:"50%",background:c.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,fontWeight:700,color:c.cl,flexShrink:0}}>{sel+1}</div>
-        <div>
-          <h3 style={{fontSize:20,fontWeight:700,color:S.t1,margin:0}}>{r.t}</h3>
-          <div style={{fontSize:13,color:c.cl,fontWeight:600,marginTop:2}}>{r.d}</div>
+    <div style={{...S.card,padding:"18px 16px",marginBottom:10,borderTop:`4px solid ${c.cl}`}}>
+      <div style={{display:"flex",alignItems:"flex-start",gap:10,marginBottom:13}}>
+        <div style={{width:42,height:42,borderRadius:"50%",background:c.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,fontWeight:800,color:c.cl,flexShrink:0}}>{sel+1}</div>
+        <div style={{flex:1}}><h3 style={{fontSize:20,fontWeight:800,color:S.t1,margin:"0 0 4px"}}>{r.t}</h3><div style={{fontSize:13,color:c.cl,fontWeight:800}}>{guide.pattern}</div></div>
+        {current&&<div style={{fontSize:12,fontWeight:800,color:current.correct?"#1D9E75":"#E24B4A",background:current.correct?"#E1F5EE":"#FCEBEB",borderRadius:999,padding:"5px 9px",whiteSpace:"nowrap"}}>{current.correct?"已答對":"待複習"}</div>}
+      </div>
+
+      <div style={{display:"grid",gap:10,marginBottom:14}}>
+        <div style={{background:`linear-gradient(135deg,${c.bg}55,${S.bg2})`,borderRadius:14,padding:"14px 15px",borderLeft:`4px solid ${c.cl}`}}><div style={{fontSize:12,fontWeight:800,color:c.cl,marginBottom:6}}>規則怎麼看</div><div style={{fontSize:14,color:S.t1,lineHeight:1.7,fontWeight:600}}>{guide.zh}</div></div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:8}}>{guide.tips.map((t,i)=><div key={i} style={{padding:"10px 11px",borderRadius:12,background:S.bg2,border:`1px solid ${S.bd}`}}><div style={{fontSize:11,color:S.t3,fontWeight:800}}>STEP {i+1}</div><div style={{fontSize:13,color:S.t1,fontWeight:700,marginTop:3,lineHeight:1.45}}>{t}</div></div>)}</div>
+      </div>
+
+      <div style={{background:S.bg2,borderRadius:14,padding:"13px 14px",marginBottom:15}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,marginBottom:5}}><div style={{fontSize:12,fontWeight:800,color:S.t2}}>範例</div><button onClick={()=>speak(r.ex)} style={{background:S.bg1,border:`1px solid ${S.bd}`,borderRadius:10,padding:"4px 8px",fontSize:12,cursor:"pointer",color:c.cl,fontFamily:"inherit"}}>🔊 發音</button></div>
+        <div style={{fontSize:16,color:S.t1,fontStyle:"italic",lineHeight:1.65}}>"{r.ex}"</div>
+      </div>
+
+      <div style={{borderTop:`2px solid ${S.bd}`,paddingTop:15}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,marginBottom:10}}><div style={{fontSize:14,fontWeight:800,color:S.t1}}>小測驗</div>{!current&&<button onClick={()=>setShowHint(v=>!v)} style={{background:showHint?"#FFF3CD":S.bg2,border:`1px solid ${S.bd}`,borderRadius:10,padding:"5px 9px",fontSize:12,cursor:"pointer",color:showHint?"#8A5A00":S.t2,fontFamily:"inherit"}}>提示</button>}</div>
+        <button onClick={()=>speak(r.q.s.replace("___",current?r.q.o[current.choice]:"blank"))} style={{width:"100%",textAlign:"left",border:"none",background:S.bg2,borderRadius:13,padding:"12px 13px",fontSize:16,color:S.t1,lineHeight:1.75,fontWeight:650,fontFamily:"inherit",cursor:"pointer",marginBottom:10}}>{grammarCloze(r.q.s,fill,fillColor)} <span style={{fontSize:18}}>🔊</span></button>
+        {showHint&&!current&&<div style={{fontSize:12,color:"#8A5A00",background:"#FFF7E6",border:"1px solid #F0D59A",borderRadius:12,padding:"9px 11px",marginBottom:10,lineHeight:1.6}}>提示：{guide.tips.join(" → ")}。正確答案通常符合「{guide.pattern}」。</div>}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))",gap:8}}>
+          {r.q.o.map((o,i)=>{const ok=i===r.q.a,pk=current?.choice===i;let bg=S.bg2,bd=`1px solid ${S.bd}`,cl=S.t1,anim="";if(current){if(ok){bg="#E1F5EE";bd="2px solid #1D9E75";cl="#146B45";anim="bounceIn .3s"}else if(pk){bg="#FCEBEB";bd="2px solid #E24B4A";cl="#A12F2F";anim="moleShake .3s"}}return<button key={i} onClick={()=>handleAns(i)} disabled={!!current} style={{padding:"13px 10px",borderRadius:13,background:bg,border:bd,cursor:current?"default":"pointer",fontSize:15,fontFamily:"inherit",color:cl,fontWeight:current&&ok?800:650,transition:"all .15s",animation:anim,minHeight:48,WebkitTapHighlightColor:"transparent"}} onTouchStart={e=>{if(!current)e.currentTarget.style.transform="scale(0.96)"}} onTouchEnd={e=>e.currentTarget.style.transform="scale(1)"}>{o}</button>})}
         </div>
-      </div>
-
-      {/* Rule explanation card */}
-      <div style={{background:`linear-gradient(135deg,${c.bg}44,${S.bg2})`,borderRadius:14,padding:"16px",marginBottom:14,borderLeft:`4px solid ${c.cl}`}}>
-        <div style={{fontSize:12,fontWeight:600,color:c.cl,marginBottom:6}}>📝 公式</div>
-        <div style={{fontSize:15,fontWeight:600,color:S.t1,lineHeight:1.6}}>{r.d}</div>
-      </div>
-
-      {/* Example */}
-      <div style={{background:S.bg2,borderRadius:14,padding:"14px 16px",marginBottom:16}}>
-        <div style={{fontSize:12,fontWeight:600,color:S.t2,marginBottom:6}}>📖 範例</div>
-        <div style={{fontSize:16,color:S.t1,fontStyle:"italic",lineHeight:1.6}}>"{r.ex}"</div>
-        <button onClick={()=>speak(r.ex)} style={{background:"none",border:"none",fontSize:24,cursor:"pointer",marginTop:4}}>🔊</button>
-      </div>
-
-      {/* Quiz */}
-      <div style={{borderTop:`2px solid ${S.bd}`,paddingTop:16}}>
-        <div style={{fontSize:14,fontWeight:700,color:S.t1,marginBottom:10}}>🎯 小測驗</div>
-        <div style={{fontSize:16,color:S.t1,marginBottom:12,lineHeight:1.6,fontWeight:500}}>{r.q.s.split("___").map((part,pi,arr)=>(<span key={pi}>{part}{pi<arr.length-1&&<span style={{display:"inline-block",minWidth:60,borderBottom:`3px solid ${ans===null?c.cl:ans===r.q.a?"#1D9E75":"#E24B4A"}`,textAlign:"center",fontWeight:700,color:ans!==null?(ans===r.q.a?"#1D9E75":"#E24B4A"):c.cl,padding:"0 4px",transition:"all .2s"}}>{ans!==null?r.q.o[r.q.a]:"？"}</span>}</span>))}</div>
-
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-          {r.q.o.map((o,i)=>{const ok=i===r.q.a,pk=ans===i;
-            let bg=S.bg2,bd=`1px solid ${S.bd}`,anim="";
-            if(ans!==null){
-              if(ok){bg="#E1F5EE";bd="2px solid #1D9E75";anim="bounceIn .3s"}
-              else if(pk){bg="#FCEBEB";bd="2px solid #E24B4A";anim="moleShake .3s"}
-            }
-            return<button key={i} onClick={()=>handleAns(i)} style={{padding:"14px 10px",borderRadius:14,background:bg,border:bd,cursor:ans!==null?"default":"pointer",fontSize:15,fontFamily:"inherit",color:S.t1,fontWeight:ans!==null&&ok?700:400,transition:"all .15s",animation:anim,minHeight:48,WebkitTapHighlightColor:"transparent"}} onTouchStart={e=>{if(ans===null)e.currentTarget.style.transform="scale(0.95)"}} onTouchEnd={e=>e.currentTarget.style.transform="scale(1)"}>{o}</button>})}
-        </div>
-
-        {ans!==null&&<div style={{marginTop:12,padding:"12px 16px",borderRadius:12,background:ans===r.q.a?"#E1F5EE":"#FFF3CD",animation:"fadeUp .3s"}}>
-          <div style={{fontSize:15,fontWeight:700,color:ans===r.q.a?"#1D9E75":"#E24B4A"}}>{ans===r.q.a?"✅ 正確！":"❌ 答錯了"}</div>
-          {ans!==r.q.a&&<div style={{fontSize:13,color:S.t1,marginTop:4}}>正確答案：<b style={{color:"#1D9E75"}}>{r.q.o[r.q.a]}</b></div>}
-          <div style={{fontSize:12,color:S.t2,marginTop:4}}>💡 {r.d}</div>
-        </div>}
+        {current&&<div style={{marginTop:12,padding:"12px 14px",borderRadius:12,background:current.correct?"#E1F5EE":"#FFF3CD",animation:"fadeUp .3s",lineHeight:1.65}}><div style={{fontSize:15,fontWeight:800,color:current.correct?"#1D9E75":"#E24B4A"}}>{current.correct?"答對了":"還不對"}</div>{!current.correct&&<div style={{fontSize:13,color:S.t1,marginTop:4}}>正確答案：<b style={{color:"#1D9E75"}}>{r.q.o[r.q.a]}</b></div>}<div style={{fontSize:12,color:S.t2,marginTop:4}}>解析：{guide.mistake}</div></div>}
       </div>
     </div>
 
-    {/* Navigation */}
-    <div style={{display:"flex",gap:8}}>
-      <button onClick={goPrev} disabled={sel===0} style={{...S.btn,background:S.bg2,color:S.t1,flex:1,opacity:sel===0?.3:1,fontSize:14,padding:"12px"}}>← 上一題</button>
-      {ans!==null?<button onClick={goNext} style={{...S.btn,background:c.cl,color:"#fff",flex:1,fontSize:14,padding:"12px"}}>{sel>=rules.length-1?"🏁 看成績":"下一題 →"}</button>
-      :<div style={{flex:1}}/>}
+    <div style={{display:"flex",gap:8,alignItems:"center"}}>
+      <button onClick={goPrev} disabled={sel===0} style={{...S.btn,background:S.bg2,color:S.t1,flex:1,opacity:sel===0?.35:1,fontSize:14,padding:"12px"}}>← 上一題</button>
+      {current&&!current.correct&&<button onClick={clearCurrentAnswer} style={{...S.btn,background:"#FFF3CD",color:"#8A5A00",fontSize:14,padding:"12px 14px"}}>再試</button>}
+      {current?<button onClick={goNext} style={{...S.btn,background:c.cl,color:"#fff",flex:1,fontSize:14,padding:"12px"}}>{sel>=rules.length-1?"看成績":"下一題 →"}</button>:<button onClick={()=>setShowHint(true)} style={{...S.btn,background:S.bg2,color:S.t2,flex:1,fontSize:14,padding:"12px"}}>先看提示</button>}
     </div>
   </div>);
 }
@@ -3284,7 +3292,7 @@ function NovelM({lv,onBack,onXp}){
 }
 // ═══ SONGS (英文歌曲練習) ═════════════════════════════════════════════
 function SongsM({lv,onBack,onXp}){
-  const songs=SONGS[lv]||[];const c=LV[lv];const[si,setSi]=useState(0);const[time,setTime]=useState(0);const[dur,setDur]=useState(0);const[playing,setPlaying]=useState(false);const[showZh,setShowZh]=useState(true);const audioRef=useRef(null);const rewarded=useRef({});
+  const songs=SONGS[lv]||[];const c=LV[lv];const[si,setSi]=useState(0);const[time,setTime]=useState(0);const[dur,setDur]=useState(0);const[playing,setPlaying]=useState(false);const[showZh,setShowZh]=useState(true);const[view,setView]=useState("lyrics");const[speed,setSpeed]=useState(1);const[practice,setPractice]=useState({idx:0,pick:null,score:0,done:false});const audioRef=useRef(null);const lineRefs=useRef({});const rewarded=useRef({});
   const song=songs[si];const lyricLines=useMemo(()=>song?song.lines.map((l,i)=>({...l,i})).filter(l=>l.en):[],[song]);
   const hasAudio=!!song?.audio;
   const weights=useMemo(()=>lyricLines.map(l=>Math.max(1,readingWords(l.en).length)),[lyricLines]);
@@ -3301,50 +3309,187 @@ function SongsM({lv,onBack,onXp}){
     if(!dur)return lyricLines[0]?.i??-1;
     let pos=(time/dur)*totalWeight,acc=0;for(let i=0;i<lyricLines.length;i++){acc+=weights[i];if(pos<=acc)return lyricLines[i].i}return lyricLines.at(-1)?.i??-1
   },[time,dur,totalWeight,weights,lyricLines,hasTimedLyrics,hasAudio]);
-  useEffect(()=>{const a=audioRef.current;if(!a)return;const onTime=()=>setTime(a.currentTime||0);const onMeta=()=>setDur(a.duration||0);const onPlay=()=>setPlaying(true);const onPause=()=>setPlaying(false);const onEnd=()=>{setPlaying(false);if(song&&!rewarded.current[song.id]){rewarded.current[song.id]=true;onXp?.(10)}};a.addEventListener("timeupdate",onTime);a.addEventListener("loadedmetadata",onMeta);a.addEventListener("play",onPlay);a.addEventListener("pause",onPause);a.addEventListener("ended",onEnd);return()=>{a.pause();a.removeEventListener("timeupdate",onTime);a.removeEventListener("loadedmetadata",onMeta);a.removeEventListener("play",onPlay);a.removeEventListener("pause",onPause);a.removeEventListener("ended",onEnd)}},[song]);
+  const activeLyricIdx=useMemo(()=>lyricLines.findIndex(l=>l.i===activeLine),[lyricLines,activeLine]);
+  const activeLyric=activeLyricIdx>=0?lyricLines[activeLyricIdx]:null;
+  const linePct=useMemo(()=>{if(activeLyricIdx<0||!dur)return 0;const cur=Number(lyricLines[activeLyricIdx].t);const nxt=Number(lyricLines[activeLyricIdx+1]?.t||dur);if(!Number.isFinite(cur)||!Number.isFinite(nxt)||nxt<=cur)return 0;return Math.max(0,Math.min(100,((time-cur)/(nxt-cur))*100))},[activeLyricIdx,lyricLines,time,dur]);
+  const practiceItems=useMemo(()=>{
+    if(!song)return[];
+    const esc=s=>String(s).replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+    const vocab=(song.vocab||[]).filter(Boolean);
+    return lyricLines.map((line,idx)=>{
+      const word=vocab.find(w=>new RegExp(`\\b${esc(w)}\\b`,"i").test(line.en));
+      if(!word)return null;
+      const blank=line.en.replace(new RegExp(`\\b${esc(word)}\\b`,"i"),"____");
+      const distractors=shuffleCopy(vocab.filter(w=>w!==word)).slice(0,3);
+      return{line,idx,word,blank,options:shuffleCopy([word,...distractors])};
+    }).filter(Boolean).slice(0,8);
+  },[song,lyricLines]);
+  const currentPractice=practiceItems[practice.idx];
+  useEffect(()=>{setPractice({idx:0,pick:null,score:0,done:false});lineRefs.current={};setView("lyrics")},[song?.id]);
+  useEffect(()=>{const a=audioRef.current;if(a)a.playbackRate=speed},[speed,song?.id]);
+  useEffect(()=>{const a=audioRef.current;if(!a)return;const onTime=()=>setTime(a.currentTime||0);const onMeta=()=>setDur(a.duration||0);const onPlay=()=>setPlaying(true);const onPause=()=>setPlaying(false);const onEnd=()=>{setPlaying(false);if(song&&!rewarded.current[song.id]){rewarded.current[song.id]=true;onXp?.(10)}};a.addEventListener("timeupdate",onTime);a.addEventListener("loadedmetadata",onMeta);a.addEventListener("play",onPlay);a.addEventListener("pause",onPause);a.addEventListener("ended",onEnd);return()=>{a.pause();a.removeEventListener("timeupdate",onTime);a.removeEventListener("loadedmetadata",onMeta);a.removeEventListener("play",onPlay);a.removeEventListener("pause",onPause);a.removeEventListener("ended",onEnd)}},[song?.id]);
+  useEffect(()=>{if(activeLine>=0)lineRefs.current[activeLine]?.scrollIntoView({behavior:"smooth",block:"center"})},[activeLine]);
   if(!song)return(<div><Hdr t="🎵 英文歌曲" onBack={onBack} cl={c.cl}/><div style={{...S.card,padding:"28px 18px",textAlign:"center"}}><div style={{fontSize:42,marginBottom:8}}>🎧</div><div style={{fontSize:16,fontWeight:700,color:S.t1}}>這個年級的歌曲準備中</div><div style={{fontSize:13,color:S.t2,marginTop:6}}>先從小學歌曲開始驗證流程，之後可逐步加入更多歌曲。</div></div></div>);
-  const fmt=s=>`${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,"0")}`;
-  const seekLine=(line)=>{
-    const idx=lyricLines.findIndex(l=>l.i===line.i);if(idx<0||!audioRef.current)return;
+  const fmt=s=>`${Math.floor((s||0)/60)}:${String(Math.floor((s||0)%60)).padStart(2,"0")}`;
+  const calcStart=(line)=>{
+    const idx=lyricLines.findIndex(l=>l.i===line?.i);if(idx<0)return 0;
     const timed=Number(line.t);
-    const start=Number.isFinite(timed)?timed:weights.slice(0,idx).reduce((a,b)=>a+b,0)/totalWeight*(dur||0);
-    if(Number.isFinite(start))audioRef.current.currentTime=start;
+    return Number.isFinite(timed)?timed:weights.slice(0,idx).reduce((a,b)=>a+b,0)/totalWeight*(dur||0);
   };
-  return(<div><Hdr t="🎵 英文歌曲" onBack={onBack} cl={c.cl} extra={<button onClick={()=>setShowZh(z=>!z)} style={{background:"none",border:`1px solid ${S.bd}`,borderRadius:8,padding:"4px 8px",fontSize:12,color:c.cl,cursor:"pointer",fontFamily:"inherit"}}>{showZh?"隱藏中文":"顯示中文"}</button>}/>
-    {songs.length>1&&<div style={{display:"flex",gap:6,marginBottom:10,overflowX:"auto"}}>{songs.map((s,i)=><button key={s.id} onClick={()=>{setSi(i);setTime(0);setDur(0)}} style={{flexShrink:0,padding:"9px 13px",borderRadius:12,background:i===si?c.cl:S.bg2,color:i===si?"#fff":S.t1,border:"none",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{s.title}</button>)}</div>}
+  const play=()=>{const a=audioRef.current;if(!a)return;a.playbackRate=speed;a.play().catch(()=>{})};
+  const toggle=()=>{const a=audioRef.current;if(!a)return;if(a.paused)play();else a.pause()};
+  const seekTo=(sec,auto=false)=>{const a=audioRef.current;if(!a)return;a.currentTime=Math.max(0,Math.min(sec,dur||sec));if(auto)play()};
+  const seekLine=(line,auto=true)=>seekTo(calcStart(line),auto);
+  const jumpLine=(delta)=>{if(!lyricLines.length)return;const base=activeLyricIdx>=0?activeLyricIdx:0;const next=Math.max(0,Math.min(lyricLines.length-1,base+delta));seekLine(lyricLines[next],true)};
+  const choosePractice=(opt)=>{if(!currentPractice||practice.pick)return;const ok=opt===currentPractice.word;setPractice(p=>({...p,pick:opt,score:p.score+(ok?1:0)}));if(ok&&!rewarded.current[`${song.id}:practice:${practice.idx}`]){rewarded.current[`${song.id}:practice:${practice.idx}`]=true;onXp?.(2)}};
+  const nextPractice=()=>setPractice(p=>p.idx>=practiceItems.length-1?{...p,done:true,pick:null}:{...p,idx:p.idx+1,pick:null});
+  const resetPractice=()=>setPractice({idx:0,pick:null,score:0,done:false});
+  const tabStyle=k=>({padding:"8px 12px",borderRadius:999,border:"none",background:view===k?c.cl:S.bg2,color:view===k?"#fff":S.t2,fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit"});
+  return(<div><Hdr t="🎵 英文歌曲" onBack={onBack} cl={c.cl} extra={<button onClick={()=>setShowZh(z=>!z)} style={{background:S.bg1,border:`1px solid ${S.bd}`,borderRadius:8,padding:"5px 9px",fontSize:12,color:c.cl,cursor:"pointer",fontFamily:"inherit",fontWeight:700}}>{showZh?"隱藏中文":"顯示中文"}</button>}/>
+    {songs.length>1&&<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:7,marginBottom:10}}>{songs.map((s,i)=><button key={s.id} onClick={()=>{setSi(i);setTime(0);setDur(0);setPlaying(false)}} style={{padding:"10px 11px",borderRadius:12,background:i===si?c.cl:S.bg1,color:i===si?"#fff":S.t1,border:`1px solid ${i===si?c.cl:S.bd}`,fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit",textAlign:"left",boxShadow:i===si?"0 8px 18px rgba(15,110,86,.18)":"none"}}><div>{s.title}</div><div style={{fontSize:11,fontWeight:600,opacity:.72,marginTop:2}}>{s.theme}</div></button>)}</div>}
     <div style={{...S.card,padding:"18px 16px",marginBottom:10,borderTop:`4px solid ${c.cl}`,background:`linear-gradient(135deg,${c.bg}55,var(--color-background-primary,#fff))`}}>
-      <div style={{display:"flex",gap:12,alignItems:"center",marginBottom:12}}><div style={{width:54,height:54,borderRadius:14,background:`linear-gradient(135deg,${c.cl},${c.ac})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,color:"#fff",flexShrink:0}}>🎵</div><div style={{flex:1}}><div style={{fontSize:20,fontWeight:800,color:S.t1}}>{song.title}</div><div style={{fontSize:12,color:S.t2}}>{song.zhTitle} · {song.theme} · {song.level}</div></div></div>
-      {hasAudio?<><audio ref={audioRef} src={song.audio} controls preload="metadata" style={{width:"100%",height:38}}/>
-      <div style={{display:"flex",alignItems:"center",gap:8,marginTop:10,fontSize:12,color:S.t3}}><span>{fmt(time)}</span><div style={{flex:1,height:6,background:S.bg2,borderRadius:3,overflow:"hidden"}}><div style={{height:"100%",width:`${dur?Math.min(100,time/dur*100):0}%`,background:`linear-gradient(90deg,${c.cl},${c.ac})`,borderRadius:3}}/></div><span>{fmt(dur||0)}</span></div></>:<div style={{padding:"11px 12px",border:`1px dashed ${c.cl}66`,borderRadius:12,background:S.bg1,fontSize:12,color:S.t2,lineHeight:1.6}}>音檔準備中。可以先閱讀歌詞與重點單字，產出 mp3 後再補上同步時間。</div>}
+      <div style={{display:"flex",gap:12,alignItems:"center",marginBottom:12}}><div style={{width:58,height:58,borderRadius:14,background:`linear-gradient(135deg,${c.cl},${c.ac})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:30,color:"#fff",flexShrink:0}}>🎵</div><div style={{flex:1,minWidth:0}}><div style={{fontSize:21,fontWeight:900,color:S.t1,lineHeight:1.2}}>{song.title}</div><div style={{fontSize:12,color:S.t2,marginTop:3}}>{song.zhTitle} · {song.theme} · {song.level}</div></div></div>
+      {hasAudio?<><audio ref={audioRef} src={song.audio} preload="metadata"/>
+      <div style={{padding:"12px",borderRadius:14,background:S.bg1,border:`1px solid ${S.bd}`,marginBottom:10}}><div style={{fontSize:11,fontWeight:800,color:c.cl,marginBottom:5}}>現在播放</div><div style={{fontSize:16,fontWeight:900,color:S.t1,lineHeight:1.45,minHeight:24}}>{activeLyric?.en||"點播放開始，或點任一句歌詞重播。"}</div>{showZh&&activeLyric?.zh&&<div style={{fontSize:12,color:S.t2,lineHeight:1.5,marginTop:2}}>{activeLyric.zh}</div>}<div style={{height:4,background:S.bg2,borderRadius:999,overflow:"hidden",marginTop:9}}><div style={{height:"100%",width:`${linePct}%`,background:c.cl,borderRadius:999}}/></div></div>
+      <div onClick={e=>{const r=e.currentTarget.getBoundingClientRect();seekTo((e.clientX-r.left)/Math.max(1,r.width)*(dur||0),false)}} style={{height:10,background:S.bg2,borderRadius:999,overflow:"hidden",cursor:"pointer",marginBottom:8}}><div style={{height:"100%",width:`${dur?Math.min(100,time/dur*100):0}%`,background:`linear-gradient(90deg,${c.cl},${c.ac})`,borderRadius:999}}/></div>
+      <div style={{display:"flex",alignItems:"center",gap:7,fontSize:12,color:S.t3,marginBottom:10}}><span>{fmt(time)}</span><span style={{flex:1,textAlign:"center"}}>{playing?"播放中":"已暫停"}</span><span>{fmt(dur||0)}</span></div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:6,marginBottom:8}}><button onClick={()=>jumpLine(-1)} style={{...S.btn,padding:"9px 0",fontSize:12,background:S.bg2,color:S.t1}}>上一句</button><button onClick={()=>seekTo(time-5)} style={{...S.btn,padding:"9px 0",fontSize:12,background:S.bg2,color:S.t1}}>-5秒</button><button onClick={toggle} style={{...S.btn,padding:"9px 0",fontSize:13,background:c.cl,color:"#fff"}}>{playing?"暫停":"播放"}</button><button onClick={()=>seekTo(time+5)} style={{...S.btn,padding:"9px 0",fontSize:12,background:S.bg2,color:S.t1}}>+5秒</button><button onClick={()=>jumpLine(1)} style={{...S.btn,padding:"9px 0",fontSize:12,background:S.bg2,color:S.t1}}>下一句</button></div>
+      <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{[.85,1,1.15].map(v=><button key={v} onClick={()=>setSpeed(v)} style={{border:`1px solid ${speed===v?c.cl:S.bd}`,background:speed===v?c.bg:S.bg1,color:speed===v?c.cl:S.t2,borderRadius:999,padding:"6px 10px",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>{v===.85?"慢聽":v===1?"原速":"快聽"} {v}x</button>)}<button onClick={()=>activeLyric&&seekLine(activeLyric,true)} disabled={!activeLyric} style={{border:`1px solid ${S.bd}`,background:S.bg1,color:S.t2,borderRadius:999,padding:"6px 10px",fontSize:12,fontWeight:800,cursor:activeLyric?"pointer":"default",fontFamily:"inherit",opacity:activeLyric?1:.5}}>重播本句</button></div>
+      </>:<div style={{padding:"11px 12px",border:`1px dashed ${c.cl}66`,borderRadius:12,background:S.bg1,fontSize:12,color:S.t2,lineHeight:1.6}}>音檔準備中。可以先閱讀歌詞與重點單字，產出 mp3 後再補上同步時間。</div>}
     </div>
-    <div style={{...S.card,padding:"14px 12px",marginBottom:10}}>
-      {song.lines.map((line,i)=>line.sec?<div key={i} style={{fontSize:12,fontWeight:800,color:c.cl,margin:"14px 4px 6px"}}>{line.sec}</div>:<div key={i} onClick={()=>hasAudio&&seekLine(line)} style={{padding:"10px 12px",borderRadius:12,background:activeLine===i?c.bg:S.bg2,border:`1px solid ${activeLine===i?c.cl:S.bd}`,marginBottom:6,cursor:hasAudio?"pointer":"default",transition:"all .15s"}}>
-        <div style={{fontSize:15,lineHeight:1.5,fontWeight:activeLine===i?800:600,color:S.t1}}>{line.en}</div>{showZh&&<div style={{fontSize:12,color:S.t2,marginTop:3,lineHeight:1.5}}>{line.zh}</div>}
+    <div style={{display:"flex",gap:6,marginBottom:10}}><button onClick={()=>setView("lyrics")} style={tabStyle("lyrics")}>歌詞同步</button><button onClick={()=>setView("practice")} style={tabStyle("practice")}>歌詞填空</button></div>
+    {view==="lyrics"?<div style={{...S.card,padding:"14px 12px",marginBottom:10}}>
+      {song.lines.map((line,i)=>line.sec?<div key={i} style={{fontSize:12,fontWeight:900,color:c.cl,margin:"16px 4px 7px",letterSpacing:0}}>{line.sec}</div>:<div ref={el=>{if(el)lineRefs.current[i]=el}} key={i} onClick={()=>hasAudio&&seekLine({...line,i},true)} style={{padding:"11px 12px",borderRadius:12,background:activeLine===i?c.bg:S.bg2,border:`1px solid ${activeLine===i?c.cl:S.bd}`,marginBottom:7,cursor:hasAudio?"pointer":"default",transition:"all .15s",boxShadow:activeLine===i?"0 8px 20px rgba(15,110,86,.12)":"none"}}>
+        <div style={{display:"flex",gap:8,alignItems:"flex-start"}}><div style={{fontSize:11,color:activeLine===i?c.cl:S.t3,fontWeight:800,minWidth:34,paddingTop:3}}>{Number.isFinite(Number(line.t))?fmt(line.t):""}</div><div style={{flex:1,minWidth:0}}><div style={{fontSize:15,lineHeight:1.5,fontWeight:activeLine===i?900:700,color:S.t1}}>{line.en}</div>{showZh&&<div style={{fontSize:12,color:S.t2,marginTop:3,lineHeight:1.5}}>{line.zh}</div>}</div><button onClick={e=>{e.stopPropagation();seekLine({...line,i},true)}} style={{border:`1px solid ${S.bd}`,background:S.bg1,borderRadius:999,padding:"5px 8px",fontSize:11,color:c.cl,cursor:"pointer",fontFamily:"inherit",fontWeight:800,flexShrink:0}}>重播</button></div>
       </div>)}
+    </div>:<div style={{...S.card,padding:"16px",marginBottom:10}}>
+      {!practiceItems.length?<div style={{fontSize:13,color:S.t2}}>這首歌還沒有可練習的填空題。</div>:practice.done?<div style={{textAlign:"center",padding:"18px 8px"}}><div style={{fontSize:42}}>🎉</div><div style={{fontSize:17,fontWeight:900,color:S.t1,marginTop:4}}>練習完成</div><div style={{fontSize:13,color:S.t2,marginTop:4}}>答對 {practice.score}/{practiceItems.length} 題</div><button onClick={resetPractice} style={{...S.btn,background:c.cl,color:"#fff",padding:"10px 18px",fontSize:13,marginTop:12}}>再練一次</button></div>:<><div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}><div style={{fontSize:12,fontWeight:900,color:c.cl}}>Question {practice.idx+1}/{practiceItems.length}</div><div style={{flex:1,height:6,background:S.bg2,borderRadius:999,overflow:"hidden"}}><div style={{height:"100%",width:`${((practice.idx+1)/practiceItems.length)*100}%`,background:c.cl}}/></div></div>
+        <div style={{padding:"14px",borderRadius:12,background:S.bg2,border:`1px solid ${S.bd}`,marginBottom:10}}><div style={{fontSize:16,fontWeight:900,color:S.t1,lineHeight:1.5}}>{currentPractice.blank}</div>{showZh&&<div style={{fontSize:12,color:S.t2,marginTop:5}}>{currentPractice.line.zh}</div>}</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(120px,1fr))",gap:7}}>{currentPractice.options.map(opt=>{const picked=practice.pick===opt;const answered=!!practice.pick;const ok=opt===currentPractice.word;return <button key={opt} onClick={()=>choosePractice(opt)} disabled={answered} style={{border:`1px solid ${answered&&ok?c.cl:picked?"#D45757":S.bd}`,background:answered&&ok?c.bg:picked?"#FFF0F0":S.bg1,color:answered&&ok?c.cl:S.t1,borderRadius:10,padding:"10px 9px",fontSize:14,fontWeight:900,cursor:answered?"default":"pointer",fontFamily:"inherit"}}>{opt}</button>})}</div>
+        {practice.pick&&<div style={{marginTop:10,padding:"10px 12px",borderRadius:10,background:practice.pick===currentPractice.word?c.bg:"#FFF0F0",color:practice.pick===currentPractice.word?c.cl:"#B54848",fontSize:13,fontWeight:900}}>{practice.pick===currentPractice.word?"答對了！":"答錯了"} 正確答案：{currentPractice.word}</div>}
+        <div style={{display:"flex",gap:8,marginTop:10}}><button onClick={()=>seekLine(currentPractice.line,true)} style={{...S.btn,background:S.bg2,color:S.t1,flex:1,padding:"10px",fontSize:13}}>聽這一句</button><button onClick={nextPractice} disabled={!practice.pick} style={{...S.btn,background:c.cl,color:"#fff",flex:1,padding:"10px",fontSize:13,opacity:practice.pick?1:.5}}>{practice.idx>=practiceItems.length-1?"完成":"下一題"}</button></div></>}
+    </div>}
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(220px,1fr))",gap:10}}>
+      <div style={{...S.card,padding:"14px 16px",fontSize:12,color:S.t2,lineHeight:1.7}}><div style={{fontWeight:900,color:S.t1,marginBottom:7}}>重點句型</div><div style={{display:"grid",gap:7}}>{(song.patterns||[]).map(p=><div key={p.p} style={{padding:"10px",border:`1px solid ${S.bd}`,borderRadius:10,background:S.bg1}}><div style={{fontSize:13,fontWeight:900,color:c.cl}}>{p.p}</div><button onClick={()=>speak(p.ex)} style={{border:"none",background:"none",padding:0,marginTop:4,fontSize:13,fontWeight:800,color:S.t1,cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>{p.ex} 🔊</button>{showZh&&<div style={{fontSize:12,color:S.t2,marginTop:2}}>{p.zh}</div>}</div>)}</div></div>
+      <div style={{...S.card,padding:"14px 16px",fontSize:12,color:S.t2,lineHeight:1.7}}><div style={{fontWeight:900,color:S.t1,marginBottom:7}}>重點單字</div><div style={{display:"flex",flexWrap:"wrap",gap:6}}>{song.vocab.map(w=><button key={w} onClick={()=>speak(w)} style={{border:`1px solid ${S.bd}`,background:S.bg1,borderRadius:999,padding:"7px 10px",fontSize:12,color:c.cl,cursor:"pointer",fontWeight:800,fontFamily:"inherit"}}>{w} 🔊</button>)}</div></div>
     </div>
-    <div style={{...S.card,padding:"14px 16px",fontSize:12,color:S.t2,lineHeight:1.7}}><div style={{fontWeight:700,color:S.t1,marginBottom:6}}>重點單字</div><div style={{display:"flex",flexWrap:"wrap",gap:6}}>{song.vocab.map(w=><button key={w} onClick={()=>speak(w)} style={{border:`1px solid ${S.bd}`,background:S.bg1,borderRadius:999,padding:"6px 10px",fontSize:12,color:c.cl,cursor:"pointer",fontWeight:700,fontFamily:"inherit"}}>{w} 🔊</button>)}</div></div>
   </div>);
 }
 // ═══ AI TUTOR ═══════════════════════════════════════════════════════
 function AIT({lv,onBack,apiKey,onSetKey}){
   const c=LV[lv];const RATES=[{l:"慢速",i:"🐢",v:0.6},{l:"正常",i:"🎯",v:0.85},{l:"快速",i:"🐇",v:1.15}];
-  const[msgs,setMsgs]=useState([{role:"a",content:`哈囉！我是你的 AI 英語家教 🤖\n\n• 點擊 **粗體英文字** 可以聽發音\n• 每則回覆旁有 🔊 **朗讀按鈕**\n• 右上角可調 **語速**\n\n試試問我：「教我一個新單字」`}]);
-  const[inp,setInp]=useState("");const[busy,setBusy]=useState(false);const[showKey,setShowKey]=useState(!apiKey);const[keyInp,setKeyInp]=useState(apiKey);const[ri,setRi]=useState(1);const[pi,setPi]=useState(-1);const[pt,setPt]=useState(0);const btm=useRef(null);
-  useEffect(()=>{btm.current?.scrollIntoView({behavior:"smooth"})},[msgs]);
-  const pgs=[{l:"學習",items:["教我一個新單字","解釋文法重點","翻譯練習","每日一句"]},{l:"情境",items:["練習餐廳點餐","練習問路","練習自我介紹","練習電話英語"]},{l:"批改",items:["幫我批改英文","中翻英練習","用單字造句","寫英文日記"]}];
-  const send=async(ov)=>{const txt=(ov||inp).trim();if(!txt||busy)return;if(!apiKey){setShowKey(true);return}if(!ov)setInp("");setMsgs(m=>[...m,{role:"u",content:txt}]);setBusy(true);
-    try{const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({systemInstruction:{parts:[{text:`You are a friendly English tutor for a Taiwanese ${LV[lv].l} student. Reply in Traditional Chinese mixed with English. Use **bold** for English words. Include pronunciation, meaning, examples. Be concise.`}]},contents:[{parts:[{text:txt}]}],generationConfig:{maxOutputTokens:1000,temperature:0.7}})});const data=await res.json();setMsgs(m=>[...m,{role:"a",content:data?.candidates?.[0]?.content?.parts?.[0]?.text||data?.error?.message||"抱歉，暫時無法回答。"}])}catch(e){setMsgs(m=>[...m,{role:"a",content:`⚠️ 連線失敗\n請確認 API Key 是否正確`}])}setBusy(false)};
-  const doSpeak=(text,idx)=>{if(pi===idx){stopSpeech();setPi(-1);return}setPi(idx);speakMx(text,RATES[ri].v);const ck=setInterval(()=>{if(!window.speechSynthesis.speaking){setPi(-1);clearInterval(ck)}},300)};
+  const initialMsg=useMemo(()=>({role:"a",content:`哈囉！我是你的 AI 英語家教。\n\n我可以陪你練 **vocabulary**、**grammar**、**translation** 和英文造句。\n\n你可以直接問問題，也可以點下面的練習按鈕開始。`}),[]);
+  const[msgs,setMsgs]=useState(()=>[initialMsg]);
+  const[inp,setInp]=useState("");const[busy,setBusy]=useState(false);const[showKey,setShowKey]=useState(!apiKey);const[keyInp,setKeyInp]=useState(apiKey);const[ri,setRi]=useState(1);const[pi,setPi]=useState(-1);const[pt,setPt]=useState(0);const[copied,setCopied]=useState(-1);const btm=useRef(null);const reqRef=useRef(null);const speakPollRef=useRef(null);
+  useEffect(()=>{btm.current?.scrollIntoView({behavior:"smooth"})},[msgs,busy]);
+  useEffect(()=>{setKeyInp(apiKey)},[apiKey]);
+  useEffect(()=>()=>{reqRef.current?.abort();if(speakPollRef.current)clearInterval(speakPollRef.current);stopSpeech()},[]);
+  const promptGroups=[
+    {l:"學習",items:[
+      {label:"新單字",prompt:`請依照${c.l}程度，教我 3 個今天可以用的英文單字。每個單字要有中文意思、自然例句、中文翻譯和一題小練習。`},
+      {label:"文法",prompt:`請用${c.l}學生聽得懂的方式，教我一個常用英文文法。請給公式、例句、常見錯誤和一題練習。`},
+      {label:"每日一句",prompt:`請給我一句適合${c.l}學生的每日英文句子，包含中文意思、發音提醒、替換練習。`},
+      {label:"小測驗",prompt:`請出 5 題${c.l}程度英文小測驗，題型混合單字、文法和翻譯。請先不要公布答案，等我回答後再批改。`}
+    ]},
+    {l:"情境",items:[
+      {label:"自我介紹",prompt:"請陪我練習英文自我介紹。先給我範例，再一步一步問我問題，最後幫我整理成一段自然英文。"},
+      {label:"餐廳點餐",prompt:"請陪我練習在餐廳用英文點餐。你扮演店員，我扮演客人。每次只問一句，並在我回答後給修正。"},
+      {label:"問路",prompt:"請陪我練習英文問路。用簡單對話，一次一句，回答後幫我修正。"},
+      {label:"學校生活",prompt:"請陪我練習學校生活英文對話，例如借鉛筆、問功課、和同學打招呼。"}
+    ]},
+    {l:"批改",items:[
+      {label:"批改句子",prompt:"我會輸入英文句子，請幫我批改。請用：原句、修正版、為什麼、再練一句 的格式回答。"},
+      {label:"中翻英",prompt:"請出一句中文讓我翻成英文。等我回答後，請幫我批改並給更自然的說法。"},
+      {label:"造句",prompt:"請給我一個英文單字，讓我造句。等我回答後，請幫我批改。"},
+      {label:"日記",prompt:"請教我寫一篇 4 句英文小日記。先給架構，再讓我自己試寫，最後幫我修正。"}
+    ]}
+  ];
+  const systemText=`You are EnglishGo AI Tutor for a Taiwanese ${c.l} student.
+Reply mainly in Traditional Chinese, with target English words or phrases in **bold**.
+Keep answers short, warm, accurate, and age-appropriate.
+Adjust difficulty to ${c.en}: use simple words for elementary, add grammar detail for older students.
+When teaching, prefer this structure:
+重點:
+例句:
+小練習:
+Use natural English examples with Traditional Chinese translation.
+For correction requests, show 原句, 修正版, 原因, 再練一句.
+Ask only one follow-up question at a time.
+Do not imitate copyrighted songs, books, or specific artists.`;
+  const errText=(e)=>{
+    const msg=String(e?.message||e||"");
+    if(e?.name==="AbortError")return null;
+    if(/403|API key|API_KEY|permission|invalid/i.test(msg))return "⚠️ API Key 可能無效，請重新檢查 Gemini API Key。";
+    if(/429|quota|rate/i.test(msg))return "⚠️ API 額度或頻率已達上限，請稍後再試。";
+    if(/503|overloaded|demand|busy/i.test(msg))return "⚠️ AI 目前忙碌，已嘗試切換模型，請稍後再試。";
+    return `⚠️ AI 家教暫時無法回答\n${msg||"請稍後再試一次。"}`;
+  };
+  const buildContents=(userMsg)=>{
+    const recent=[...msgs,userMsg].filter((m,i)=>i>0||m.role==="u").slice(-12);
+    while(recent[0]?.role==="a")recent.shift();
+    return recent.map(m=>({role:m.role==="u"?"user":"model",parts:[{text:m.content}]}));
+  };
+  const callGemini=async(contents,signal)=>{
+    const models=["gemini-2.5-flash","gemini-2.5-flash-lite","gemini-2.0-flash"];
+    let lastErr=null;
+    for(const model of models){
+      const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent((apiKey||"").trim())}`,{
+        method:"POST",headers:{"Content-Type":"application/json"},signal,
+        body:JSON.stringify({systemInstruction:{parts:[{text:systemText}]},contents,generationConfig:{maxOutputTokens:900,temperature:0.65,topP:0.9}})
+      });
+      const data=await res.json().catch(()=>({}));
+      if(!res.ok||data?.error){
+        const code=data?.error?.code||res.status;const msg=data?.error?.message||res.statusText||"request failed";
+        lastErr=new Error(`${code} ${msg}`);
+        if(code===429||code===503)continue;
+        throw lastErr;
+      }
+      const text=data?.candidates?.[0]?.content?.parts?.map(p=>p.text||"").join("").trim();
+      if(text)return text;
+      lastErr=new Error("AI 沒有回傳內容");
+    }
+    throw lastErr||new Error("AI 暫時無法回答");
+  };
+  const send=async(ov)=>{
+    const txt=(typeof ov==="string"?ov:inp).trim();
+    if(!txt||busy)return;
+    if(!apiKey?.trim()){setShowKey(true);return}
+    if(!ov)setInp("");
+    const userMsg={role:"u",content:txt};
+    const contents=buildContents(userMsg);
+    const ctl=new AbortController();
+    reqRef.current=ctl;
+    setMsgs(m=>[...m,userMsg]);
+    setBusy(true);
+    try{
+      const ans=await callGemini(contents,ctl.signal);
+      setMsgs(m=>[...m,{role:"a",content:ans}]);
+    }catch(e){
+      const text=errText(e);
+      if(text)setMsgs(m=>[...m,{role:"a",content:text}]);
+    }finally{
+      if(reqRef.current===ctl){reqRef.current=null;setBusy(false)}
+    }
+  };
+  const cancelSend=()=>{reqRef.current?.abort();reqRef.current=null;setBusy(false);setMsgs(m=>[...m,{role:"a",content:"已停止本次回答。"}])};
+  const doSpeak=(text,idx)=>{
+    if(pi===idx){stopSpeech();setPi(-1);if(speakPollRef.current)clearInterval(speakPollRef.current);return}
+    if(speakPollRef.current)clearInterval(speakPollRef.current);
+    setPi(idx);speakMx(text,RATES[ri].v);
+    speakPollRef.current=setInterval(()=>{if(!window.speechSynthesis.speaking){setPi(-1);clearInterval(speakPollRef.current);speakPollRef.current=null}},300);
+  };
+  const copyMsg=async(text,idx)=>{try{await navigator.clipboard?.writeText(text)}catch{}setCopied(idx);setTimeout(()=>setCopied(-1),900)};
+  const resetChat=()=>{reqRef.current?.abort();stopSpeech();setPi(-1);setBusy(false);setMsgs([initialMsg])};
   return(<div style={{display:"flex",flexDirection:"column",height:"calc(100vh - 110px)"}}>
-    <Hdr t="AI 英語家教" onBack={onBack} cl={c.cl} extra={<div style={{display:"flex",gap:3}}><button onClick={()=>setRi(r=>(r+1)%3)} style={{background:"none",border:`1px solid ${S.bd}`,borderRadius:8,padding:"2px 6px",fontSize:12,cursor:"pointer",color:S.t2}}>{RATES[ri].i}{RATES[ri].l}</button><button onClick={()=>setShowKey(!showKey)} style={{background:"none",border:`1px solid ${S.bd}`,borderRadius:8,padding:"2px 6px",fontSize:12,cursor:"pointer",color:S.t2}}>{apiKey?"🔑":"⚙️"}</button></div>}/>
-    {showKey&&<div style={{...S.card,padding:"12px 14px",marginBottom:8,fontSize:11}}><div style={{fontWeight:600,color:S.t1,marginBottom:4}}>Gemini API Key</div><div style={{color:S.t2,marginBottom:6,lineHeight:1.5}}>1. <b>aistudio.google.com</b> 登入<br/>2. Get API key → 建立<br/>3. 貼到下方（免費）</div><div style={{display:"flex",gap:5}}><input value={keyInp} onChange={e=>setKeyInp(e.target.value)} placeholder="API Key..." type="password" style={{flex:1,padding:"6px 8px",borderRadius:6,border:`1px solid ${S.bd}`,fontSize:11,fontFamily:"inherit",background:S.bg1,color:S.t1,outline:"none"}}/><button onClick={()=>{onSetKey(keyInp);setShowKey(false)}} style={{...S.btn,background:c.cl,color:"#fff",padding:"6px 12px",fontSize:11}}>存</button></div></div>}
-    <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:7,padding:"2px 0"}}>
-      {msgs.map((m,i)=>(<div key={i} style={{display:"flex",justifyContent:m.role==="u"?"flex-end":"flex-start",gap:3,alignItems:"flex-end"}}><div style={{maxWidth:"82%",padding:"9px 12px",borderRadius:14,background:m.role==="u"?c.cl:S.bg1,color:m.role==="u"?"#fff":S.t1,border:m.role==="u"?"none":`1px solid ${S.bd}`,fontSize:12,lineHeight:1.7}}>{m.role==="u"?m.content:<Md text={m.content} color={c.cl}/>}</div>{m.role==="a"&&i>0&&<button onClick={()=>doSpeak(m.content,i)} style={{background:"none",border:"none",fontSize:22,cursor:"pointer",padding:"2px",flexShrink:0,opacity:pi===i?1:.4}}>{pi===i?"⏹":"🔊"}</button>}</div>))}
-      {busy&&<div style={{padding:"8px 12px",borderRadius:14,background:S.bg1,border:`1px solid ${S.bd}`,fontSize:11,color:S.t3,alignSelf:"flex-start"}}><span style={{animation:"pulse 1.2s ease-in-out infinite"}}>思考中...</span></div>}
+    <Hdr t="AI 英語家教" onBack={onBack} cl={c.cl} extra={<div style={{display:"flex",gap:4,alignItems:"center"}}><button onClick={()=>setRi(r=>(r+1)%3)} title="調整朗讀速度" style={{background:S.bg1,border:`1px solid ${S.bd}`,borderRadius:8,padding:"5px 8px",fontSize:12,cursor:"pointer",color:S.t2,fontFamily:"inherit"}}>{RATES[ri].i}{RATES[ri].l}</button><button onClick={resetChat} title="清空對話" style={{background:S.bg1,border:`1px solid ${S.bd}`,borderRadius:8,padding:"5px 8px",fontSize:12,cursor:"pointer",color:S.t2,fontFamily:"inherit"}}>清空</button><button onClick={()=>setShowKey(!showKey)} title="設定 API Key" style={{background:S.bg1,border:`1px solid ${S.bd}`,borderRadius:8,padding:"5px 8px",fontSize:12,cursor:"pointer",color:S.t2,fontFamily:"inherit"}}>{apiKey?"🔑":"⚙️"}</button></div>}/>
+    {showKey&&<div style={{...S.card,padding:"12px 14px",marginBottom:8,fontSize:12,boxShadow:"0 8px 22px rgba(15,110,86,.06)"}}><div style={{fontWeight:700,color:S.t1,marginBottom:4}}>Gemini API Key</div><div style={{color:S.t2,marginBottom:8,lineHeight:1.6}}>到 <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" style={{color:c.cl,fontWeight:700}}>Google AI Studio</a> 建立 API Key，貼上後會儲存在本機瀏覽器。</div><div style={{display:"flex",gap:6}}><input value={keyInp} onChange={e=>setKeyInp(e.target.value)} placeholder="API Key..." type="password" style={{flex:1,padding:"9px 10px",borderRadius:8,border:`1px solid ${S.bd}`,fontSize:12,fontFamily:"inherit",background:S.bg1,color:S.t1,outline:"none",minWidth:0}}/><button onClick={()=>{const k=keyInp.trim();onSetKey(k);setShowKey(!k)}} style={{...S.btn,background:c.cl,color:"#fff",padding:"8px 14px",fontSize:12}}>儲存</button></div></div>}
+    <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:9,padding:"2px 0 6px"}}>
+      {msgs.map((m,i)=>(<div key={i} style={{display:"flex",justifyContent:m.role==="u"?"flex-end":"flex-start",gap:6,alignItems:"flex-start"}}><div style={{maxWidth:"86%",padding:"10px 12px",borderRadius:m.role==="u"?"14px 14px 4px 14px":"14px 14px 14px 4px",background:m.role==="u"?c.cl:S.bg1,color:m.role==="u"?"#fff":S.t1,border:m.role==="u"?"none":`1px solid ${S.bd}`,fontSize:13,lineHeight:1.75,whiteSpace:"pre-wrap",boxShadow:m.role==="u"?"none":"0 6px 18px rgba(0,0,0,.04)"}}>{m.role==="u"?m.content:<><Md text={m.content} color={c.cl}/><div style={{display:"flex",gap:5,marginTop:8,justifyContent:"flex-end"}}><button onClick={()=>doSpeak(m.content,i)} style={{border:`1px solid ${S.bd}`,background:pi===i?c.bg:S.bg2,color:pi===i?c.cl:S.t2,borderRadius:999,padding:"4px 8px",fontSize:11,cursor:"pointer",fontFamily:"inherit",fontWeight:700}}>{pi===i?"停止":"朗讀"}</button><button onClick={()=>copyMsg(m.content,i)} style={{border:`1px solid ${S.bd}`,background:S.bg2,color:S.t2,borderRadius:999,padding:"4px 8px",fontSize:11,cursor:"pointer",fontFamily:"inherit",fontWeight:700}}>{copied===i?"已複製":"複製"}</button></div></>}</div></div>))}
+      {busy&&<div style={{padding:"10px 12px",borderRadius:14,background:S.bg1,border:`1px solid ${S.bd}`,fontSize:12,color:S.t2,alignSelf:"flex-start",display:"flex",alignItems:"center",gap:8}}><span style={{animation:"pulse 1.2s ease-in-out infinite"}}>AI 家教思考中...</span><button onClick={cancelSend} style={{border:`1px solid ${S.bd}`,background:S.bg2,color:S.t2,borderRadius:999,padding:"4px 8px",fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>停止</button></div>}
       <div ref={btm}/>
     </div>
-    <div style={{flexShrink:0,padding:"3px 0 0"}}><div style={{display:"flex",gap:3,marginBottom:3}}>{pgs.map((g,i)=>(<button key={i} onClick={()=>setPt(i)} style={{padding:"2px 8px",borderRadius:8,background:pt===i?c.cl:S.bg2,color:pt===i?"#fff":S.t2,border:"none",fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>{g.l}</button>))}</div><div style={{display:"flex",gap:3,overflowX:"auto",paddingBottom:3}}>{pgs[pt].items.map((p,i)=>(<button key={i} onClick={()=>send(p)} style={{flexShrink:0,padding:"3px 8px",borderRadius:12,background:S.bg2,border:`1px solid ${S.bd}`,fontSize:11,cursor:"pointer",color:S.t2,fontFamily:"inherit"}}>{p}</button>))}</div></div>
-    <div style={{display:"flex",gap:5,padding:"3px 0 1px",flexShrink:0}}><input value={inp} onChange={e=>setInp(e.target.value)} onKeyDown={e=>e.key==="Enter"&&send()} placeholder={apiKey?"輸入訊息...":"設定 API Key ↑"} style={{flex:1,padding:"8px 10px",borderRadius:10,border:`1px solid ${S.bd}`,fontSize:12,outline:"none",fontFamily:"inherit",background:S.bg1,color:S.t1}}/><button onClick={()=>send()} disabled={busy||!inp.trim()} style={{...S.btn,background:c.cl,color:"#fff",padding:"8px 12px",opacity:(busy||!inp.trim())?0.5:1,fontSize:12}}>發送</button></div>
+    <div style={{flexShrink:0,padding:"4px 0 0",borderTop:`1px solid ${S.bd}`}}><div style={{display:"flex",gap:4,marginBottom:5,paddingTop:6}}>{promptGroups.map((g,i)=>(<button key={i} onClick={()=>setPt(i)} style={{padding:"5px 10px",borderRadius:999,background:pt===i?c.cl:S.bg2,color:pt===i?"#fff":S.t2,border:"none",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{g.l}</button>))}</div><div style={{display:"flex",gap:5,overflowX:"auto",paddingBottom:5}}>{promptGroups[pt].items.map((p,i)=>(<button key={i} onClick={()=>send(p.prompt)} disabled={busy} style={{flexShrink:0,padding:"6px 10px",borderRadius:999,background:S.bg2,border:`1px solid ${S.bd}`,fontSize:12,cursor:busy?"default":"pointer",color:S.t2,fontFamily:"inherit",opacity:busy?0.55:1}}>{p.label}</button>))}</div></div>
+    <div style={{display:"flex",gap:6,padding:"4px 0 1px",flexShrink:0,alignItems:"flex-end"}}><textarea value={inp} onChange={e=>setInp(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send()}}} rows={1} placeholder={apiKey?"輸入英文問題、句子或想練習的主題...":"先設定 API Key ↑"} style={{flex:1,padding:"10px 11px",borderRadius:12,border:`1px solid ${S.bd}`,fontSize:13,outline:"none",fontFamily:"inherit",background:S.bg1,color:S.t1,resize:"none",minHeight:42,maxHeight:100,lineHeight:1.5,boxSizing:"border-box"}}/><button onClick={()=>send()} disabled={busy||!inp.trim()} style={{...S.btn,background:c.cl,color:"#fff",padding:"11px 16px",opacity:(busy||!inp.trim())?0.5:1,fontSize:13,borderRadius:12}}>發送</button></div>
   </div>);
 }
 // ═══ ACHIEVEMENTS PAGE ══════════════════════════════════════════════
@@ -4165,16 +4310,51 @@ function GachaPage({onBack,c,coins,setCoins,eggs,setEggs,pets}){
   const[rollingMode,setRollingMode]=useState(null);// (P0-3) 'single' | 'multi'，給動畫文字用
   const[result,setResult]=useState(null);
   const[showResult,setShowResult]=useState(false);
+  const[pity,setPity]=useLS("gachaPity",{sinceSR:0,total:0});
+  const countByRarity=list=>Object.keys(RARITY_INFO).reduce((acc,k)=>({...acc,[k]:list.filter(x=>x.rarity===k).length}),{});
+  const buildPulls=(count,guaranteeR=false)=>{
+    let since=Number(pity?.sinceSR||0);
+    const seenIds=new Set([...pets.map(p=>p.petId),...eggs.map(e=>e.petId)]);
+    const pulls=[];
+    for(let i=0;i<count;i++){
+      let rarity=rollRarity();
+      const pityHit=since>=GACHA_SR_PITY-1;
+      if(pityHit&&RARITY_ORDER[rarity]<RARITY_ORDER.SR)rarity="SR";
+      const pet=randomPet(rarity);
+      const isNew=!seenIds.has(pet.id);
+      seenIds.add(pet.id);
+      pulls.push({rarity,pet,i,pityHit,isNew});
+      since=RARITY_ORDER[rarity]>=RARITY_ORDER.SR?0:since+1;
+    }
+    if(guaranteeR&&!pulls.some(p=>RARITY_ORDER[p.rarity]>=RARITY_ORDER.R)){
+      const last=pulls[pulls.length-1];
+      const pet=randomPet("R");
+      pulls[pulls.length-1]={...last,rarity:"R",pet,isNew:!seenIds.has(pet.id),guarantee:true};
+    }
+    return{pulls,nextPity:{sinceSR:since,total:Number(pity?.total||0)+count}};
+  };
+  const runCelebration=(items)=>{
+    const hasSSR=items.some(r=>r.rarity==="SSR");
+    const hasSR=items.some(r=>r.rarity==="SR");
+    if(hasSSR&&typeof triggerRewardBurst==="function"){
+      triggerRewardBurst({emoji:"✨",count:14,fromX:window.innerWidth/2,fromY:window.innerHeight*0.4,size:30,duration:1700});
+      triggerRewardBurst({emoji:"🌟",count:10,fromX:window.innerWidth/2,fromY:window.innerHeight*0.4,size:26,duration:1900});
+      triggerRewardBurst({text:items.length>1?"出 SSR！":"傳說稀有！",fromX:window.innerWidth/2,fromY:"38%",textColor:"#FFD700",textSize:items.length>1?44:40,duration:1800});
+    }else if(hasSR&&typeof triggerRewardBurst==="function"){
+      triggerRewardBurst({emoji:"✨",count:6,fromX:window.innerWidth/2,fromY:window.innerHeight*0.4,size:22,duration:1300});
+    }
+  };
 
   const roll=()=>{
     if(coins<EGG_COST||rolling)return;
     // (P0-3) 提早決定稀有度，讓動畫可以根據結果秀對應光柱
-    const rarity=rollRarity();
-    const pet=randomPet(rarity);
+    const{pulls,nextPity}=buildPulls(1,false);
+    const{rarity,pet,isNew,pityHit}=pulls[0];
     setRolling(true);
     setRollingRarity(rarity);
     setRollingMode("single");
     setCoins(co=>co-EGG_COST);
+    setPity(nextPity);
     playSound("flip");
     setTimeout(()=>{
       const egg={
@@ -4185,44 +4365,32 @@ function GachaPage({onBack,c,coins,setCoins,eggs,setEggs,pets}){
         date:new Date().toISOString(),
       };
       setEggs(es=>[...es,egg]);
-      setResult({pet,rarity,egg});
+      setResult({pet,rarity,egg,isNew,pityHit});
       setShowResult(true);
       setRolling(false);
       setRollingRarity(null);
       setRollingMode(null);
       if(rarity==="SSR"||rarity==="SR")playSound("combo");else playSound("good");
-      // (V20) SSR 抽到時全螢幕金粉慶祝
-      if(rarity==="SSR"&&typeof triggerRewardBurst==="function"){
-        triggerRewardBurst({emoji:"✨",count:12,fromX:window.innerWidth/2,fromY:window.innerHeight*0.4,size:28,duration:1500});
-        triggerRewardBurst({emoji:"🌟",count:8,fromX:window.innerWidth/2,fromY:window.innerHeight*0.4,size:24,duration:1700});
-        triggerRewardBurst({text:"傳說稀有！",fromX:window.innerWidth/2,fromY:"38%",textColor:"#FFD700",textSize:40,duration:1800});
-      }else if(rarity==="SR"&&typeof triggerRewardBurst==="function"){
-        triggerRewardBurst({emoji:"✨",count:6,fromX:window.innerWidth/2,fromY:window.innerHeight*0.4,size:22,duration:1300});
-      }
+      runCelebration([{rarity}]);
     },1800);
   };
 
   const roll10=()=>{
     if(coins<EGG_COST*10||rolling)return;
     // (P0-3) 提早決定 10 個稀有度，動畫顯示最高的那個
-    const preResults=[];
-    for(let i=0;i<10;i++){
-      const rarity=rollRarity();
-      const pet=randomPet(rarity);
-      preResults.push({rarity,pet,i});
-    }
+    const{pulls:preResults,nextPity}=buildPulls(10,true);
     // 找到最高稀有度作為動畫顯示
-    const rarityOrder={N:0,R:1,SR:2,SSR:3};
-    const highest=preResults.reduce((a,b)=>rarityOrder[b.rarity]>rarityOrder[a.rarity]?b:a);
+    const highest=preResults.reduce((a,b)=>RARITY_ORDER[b.rarity]>RARITY_ORDER[a.rarity]?b:a);
     setRolling(true);
     setRollingRarity(highest.rarity);
     setRollingMode("multi");
     setCoins(co=>co-EGG_COST*10);
+    setPity(nextPity);
     playSound("flip");
     setTimeout(()=>{
-      const results=preResults.map(({rarity,pet},i)=>({
+      const results=preResults.map(({rarity,pet,isNew,pityHit,guarantee},i)=>({
         id:"egg_"+Date.now()+"_"+i,
-        rarity,petId:pet.id,progress:0,date:new Date().toISOString(),pet
+        rarity,petId:pet.id,progress:0,date:new Date().toISOString(),pet,isNew,pityHit,guarantee
       }));
       setEggs(es=>[...es,...results]);
       setResult({multi:results});
@@ -4231,30 +4399,34 @@ function GachaPage({onBack,c,coins,setCoins,eggs,setEggs,pets}){
       setRollingRarity(null);
       setRollingMode(null);
       const hasRare=results.some(r=>r.rarity==="SSR"||r.rarity==="SR");
-      const hasSSR=results.some(r=>r.rarity==="SSR");
       if(hasRare)playSound("combo");else playSound("good");
-      // (V20) 十連抽到 SSR 時超盛大慶祝
-      if(hasSSR&&typeof triggerRewardBurst==="function"){
-        triggerRewardBurst({emoji:"✨",count:14,fromX:window.innerWidth/2,fromY:window.innerHeight*0.4,size:30,duration:1700});
-        triggerRewardBurst({emoji:"🌟",count:10,fromX:window.innerWidth/2,fromY:window.innerHeight*0.4,size:26,duration:1900});
-        triggerRewardBurst({text:"出 SSR！",fromX:window.innerWidth/2,fromY:"38%",textColor:"#FFD700",textSize:44,duration:1800});
-      }
+      runCelebration(results);
     },1800);
   };
 
   if(showResult&&result){
     if(result.multi){
+      const summary=countByRarity(result.multi);
+      const best=result.multi.reduce((a,b)=>RARITY_ORDER[b.rarity]>RARITY_ORDER[a.rarity]?b:a,result.multi[0]);
+      const newCount=result.multi.filter(r=>r.isNew).length;
       return(<div><Hdr t="🎰 扭蛋結果" onBack={()=>{setShowResult(false);setResult(null)}} cl={c.cl}/>
-        <div style={{textAlign:"center",padding:"16px 0"}}><div style={{fontSize:18,fontWeight:700,color:S.t1}}>🎉 十連抽結果！</div></div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(100px,1fr))",gap:8}}>
+        <div style={{...S.card,padding:"16px",marginBottom:12,borderTop:`4px solid ${RARITY_INFO[best.rarity].color}`,background:`linear-gradient(135deg,${RARITY_INFO[best.rarity].bg},var(--color-background-primary,#fff))`}}>
+          <div style={{fontSize:18,fontWeight:900,color:S.t1}}>🎉 十連抽結果</div>
+          <div style={{fontSize:12,color:S.t2,marginTop:4,lineHeight:1.7}}>最高稀有度：<b style={{color:RARITY_INFO[best.rarity].color}}>{RARITY_INFO[best.rarity].label}</b> · 新蛋 {newCount} 顆 · 十連至少保底稀有以上</div>
+          <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:10}}>{Object.entries(RARITY_INFO).map(([k,v])=><div key={k} style={{padding:"5px 9px",borderRadius:999,background:v.bg,border:`1px solid ${v.color}33`,fontSize:11,fontWeight:800,color:v.color}}>{v.label} × {summary[k]||0}</div>)}</div>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(108px,1fr))",gap:8}}>
           {result.multi.map((r,i)=>{const ri=RARITY_INFO[r.rarity];return(<div key={r.id} style={{...S.card,padding:"14px 8px",textAlign:"center",background:ri.bg,border:`2px solid ${ri.color}`,animation:`bounceIn .4s ${i*0.08}s both`}}>
-            <div style={{fontSize:10,fontWeight:700,color:ri.color}}>{ri.label}</div>
+            <div style={{display:"flex",justifyContent:"center",gap:4,alignItems:"center",minHeight:18}}><span style={{fontSize:10,fontWeight:800,color:ri.color}}>{ri.stars} {ri.label}</span></div>
             <div style={{display:"flex",justifyContent:"center",margin:"4px auto"}}><PixelPet petId={r.petId} stage="egg" size={48} animate={false}/></div>
-            <div style={{fontSize:11,color:S.t2}}>{r.pet.name}</div>
+            <div style={{fontSize:12,fontWeight:800,color:S.t1}}>{r.pet.name}</div>
+            <div style={{fontSize:10,color:r.isNew?c.cl:S.t3,fontWeight:800,marginTop:3}}>{r.isNew?"NEW":"已獲得過"}</div>
+            {(r.pityHit||r.guarantee)&&<div style={{fontSize:9,color:ri.color,fontWeight:800,marginTop:2}}>{r.pityHit?"SR 保底":"十連保底"}</div>}
           </div>)})}
         </div>
-        <div style={{textAlign:"center",marginTop:16}}>
-          <button onClick={()=>{setShowResult(false);setResult(null)}} style={{...S.btn,background:c.cl,color:"#fff",fontSize:14}}>✨ 太棒了！</button>
+        <div style={{display:"flex",gap:8,marginTop:16}}>
+          <button onClick={()=>{setShowResult(false);setResult(null)}} style={{...S.btn,background:c.cl,color:"#fff",fontSize:14,flex:1}}>收下蛋</button>
+          <button onClick={()=>{setShowResult(false);setResult(null);setTimeout(roll10,200)}} disabled={coins<EGG_COST*10} style={{...S.btn,background:S.bg2,color:S.t1,fontSize:14,flex:1,opacity:coins<EGG_COST*10?0.45:1}}>再十連</button>
         </div>
       </div>);
     }
@@ -4262,35 +4434,56 @@ function GachaPage({onBack,c,coins,setCoins,eggs,setEggs,pets}){
     return(<div><Hdr t="🎰 扭蛋結果" onBack={()=>{setShowResult(false);setResult(null)}} cl={c.cl}/>
       <div style={{...S.card,padding:"32px 20px",textAlign:"center",background:`linear-gradient(135deg,${ri.bg},var(--color-background-primary,#fff))`,border:`3px solid ${ri.color}`,animation:"bounceIn .5s ease-out"}}>
         <div style={{fontSize:14,fontWeight:700,color:ri.color,marginBottom:8}}>{ri.stars} {ri.label}</div>
-        <div style={{display:"flex",justifyContent:"center",marginBottom:12,animation:"emojiBounce 1.5s ease-in-out infinite"}}><PixelPet petId={result.petId} stage="egg" size={128}/></div>
+        <div style={{display:"flex",justifyContent:"center",marginBottom:12,animation:"emojiBounce 1.5s ease-in-out infinite"}}><PixelPet petId={result.pet.id} stage="egg" size={128}/></div>
         <div style={{fontSize:22,fontWeight:700,color:S.t1}}>獲得 {result.pet.name} 蛋！</div>
-        <div style={{fontSize:13,color:S.t2,marginTop:4}}>預覽：{result.pet.emoji} {result.pet.name}</div>
+        <div style={{fontSize:12,color:result.isNew?c.cl:S.t3,fontWeight:900,marginTop:4}}>{result.isNew?"NEW · 新寵物蛋":"已獲得過 · 孵化後會轉成經驗"}</div>
+        <div style={{fontSize:13,color:S.t2,marginTop:6}}>預覽：{result.pet.emoji} {result.pet.name}</div>
         <div style={{fontSize:12,color:S.t3,marginTop:8,fontStyle:"italic"}}>{result.pet.story}</div>
+        {result.pityHit&&<div style={{marginTop:12,padding:"8px 12px",background:"#FFF3CD",border:"1px solid #EF9F27",borderRadius:10,fontSize:12,color:"#856404",fontWeight:800}}>SR 保底觸發，這次至少超稀有！</div>}
         <div style={{marginTop:16,padding:"10px 14px",background:S.bg2,borderRadius:10,fontSize:13,color:S.t2}}>
           💡 繼續學習 {EGG_HATCH_TASKS[result.rarity]} 題英文來孵化這顆蛋！
         </div>
       </div>
-      <div style={{textAlign:"center",marginTop:14}}>
-        <button onClick={()=>{setShowResult(false);setResult(null)}} style={{...S.btn,background:c.cl,color:"#fff",fontSize:14,marginRight:8}}>✨ 太棒了！</button>
-        <button onClick={()=>{setShowResult(false);setResult(null);setTimeout(roll,200)}} disabled={coins<EGG_COST} style={{...S.btn,background:S.bg2,color:S.t1,fontSize:14,opacity:coins<EGG_COST?.4:1}}>🎰 再抽一次</button>
+      <div style={{display:"flex",gap:8,marginTop:14}}>
+        <button onClick={()=>{setShowResult(false);setResult(null)}} style={{...S.btn,background:c.cl,color:"#fff",fontSize:14,flex:1}}>收下蛋</button>
+        <button onClick={()=>{setShowResult(false);setResult(null);setTimeout(roll,200)}} disabled={coins<EGG_COST} style={{...S.btn,background:S.bg2,color:S.t1,fontSize:14,flex:1,opacity:coins<EGG_COST?0.45:1}}>再抽一次</button>
       </div>
     </div>);
   }
 
-  const collectedRarities={};pets.forEach(p=>{collectedRarities[p.rarity]=(collectedRarities[p.rarity]||0)+1});
+  const totalPets=Object.values(PETS).reduce((a,list)=>a+list.length,0);
+  const collectedIds=new Set(pets.map(p=>p.petId));
+  const collectedPct=Math.round((collectedIds.size/totalPets)*100);
+  const singlePulls=Math.floor(coins/EGG_COST);
+  const tenReady=coins>=EGG_COST*10;
+  const readyEggs=eggs.filter(e=>e.progress>=EGG_HATCH_TASKS[e.rarity]).length;
+  const eggCounts=countByRarity(eggs);
+  const srPityLeft=Math.max(1,GACHA_SR_PITY-Number(pity?.sinceSR||0));
+  const coinNeed=coins<EGG_COST?EGG_COST-coins:coins<EGG_COST*10?EGG_COST*10-coins:0;
 
   return(<div><Hdr t="🎰 扭蛋機" onBack={onBack} cl={c.cl}/>
     {/* Coins display */}
-    <div style={{...S.card,padding:"16px 20px",marginBottom:12,textAlign:"center",background:`linear-gradient(135deg,#FFF3CD,#FFE066)`,border:"2px solid #EF9F27"}}>
-      <div style={{fontSize:32,fontWeight:700,color:"#EF9F27"}}>🪙 {coins}</div>
-      <div style={{fontSize:12,color:"#856404",marginTop:2}}>我的金幣</div>
-      <div style={{fontSize:11,color:"#856404",marginTop:4,opacity:.8}}>💡 答對題目可獲得金幣</div>
+    <div style={{...S.card,padding:"16px",marginBottom:12,background:`linear-gradient(135deg,#FFF3CD,#FFE066)`,border:"2px solid #EF9F27"}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap"}}>
+        <div><div style={{fontSize:32,fontWeight:900,color:"#EF9F27",lineHeight:1}}>🪙 {coins}</div><div style={{fontSize:12,color:"#856404",marginTop:4}}>可抽 {singlePulls} 次 · 答題可獲得金幣</div></div>
+        <div style={{minWidth:150,flex:"1 1 180px"}}>
+          <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#856404",fontWeight:800,marginBottom:4}}><span>十連進度</span><span>{Math.min(100,Math.floor(coins/(EGG_COST*10)*100))}%</span></div>
+          <div style={{height:8,background:"rgba(255,255,255,.55)",borderRadius:999,overflow:"hidden"}}><div style={{height:"100%",width:`${Math.min(100,coins/(EGG_COST*10)*100)}%`,background:"#EF9F27",borderRadius:999}}/></div>
+          <div style={{fontSize:11,color:"#856404",marginTop:4}}>{tenReady?"可以十連抽了":`再 ${coinNeed} 金幣可${coins<EGG_COST?"單抽":"十連抽"}`}</div>
+        </div>
+      </div>
+    </div>
+
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:8,marginBottom:12}}>
+      <div style={{...S.card,padding:"12px",background:`linear-gradient(135deg,${c.bg},var(--color-background-primary,#fff))`}}><div style={{fontSize:12,color:S.t2,fontWeight:700}}>收藏進度</div><div style={{fontSize:20,fontWeight:900,color:c.cl,marginTop:2}}>{collectedIds.size}/{totalPets}</div><div style={{height:6,background:S.bg2,borderRadius:999,overflow:"hidden",marginTop:7}}><div style={{height:"100%",width:`${collectedPct}%`,background:c.cl}}/></div></div>
+      <div style={{...S.card,padding:"12px"}}><div style={{fontSize:12,color:S.t2,fontWeight:700}}>蛋倉狀態</div><div style={{fontSize:20,fontWeight:900,color:S.t1,marginTop:2}}>🥚 {eggs.length}</div><div style={{fontSize:11,color:readyEggs?c.cl:S.t3,marginTop:4,fontWeight:800}}>{readyEggs?`${readyEggs} 顆可以孵化`:"完成學習任務來孵蛋"}</div></div>
+      <div style={{...S.card,padding:"12px",border:`1px solid ${srPityLeft<=3?"#EF9F27":S.bd}`}}><div style={{fontSize:12,color:S.t2,fontWeight:700}}>SR 保底</div><div style={{fontSize:20,fontWeight:900,color:srPityLeft<=3?"#EF9F27":S.t1,marginTop:2}}>最多 {srPityLeft} 抽</div><div style={{fontSize:11,color:S.t3,marginTop:4}}>沒有 SR/SSR 時會累積</div></div>
     </div>
 
     {/* Rarity rates */}
     <div style={{...S.card,padding:"14px 16px",marginBottom:12}}>
-      <div style={{fontSize:13,fontWeight:600,color:S.t1,marginBottom:8}}>🎲 抽獎機率</div>
-      <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+      <div style={{display:"flex",justifyContent:"space-between",gap:8,alignItems:"center",marginBottom:8}}><div style={{fontSize:13,fontWeight:800,color:S.t1}}>🎲 抽獎機率</div><div style={{fontSize:11,color:c.cl,fontWeight:800}}>十連至少 1 顆稀有以上</div></div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(76px,1fr))",gap:6}}>
         {Object.entries(RARITY_INFO).map(([k,v])=>(<div key={k} style={{flex:"1 1 60px",textAlign:"center",padding:"6px 8px",background:v.bg,borderRadius:8,border:`1px solid ${v.color}33`}}>
           <div style={{fontSize:10,fontWeight:700,color:v.color}}>{v.stars}</div>
           <div style={{fontSize:14,fontWeight:700,color:v.color}}>{v.rate}%</div>
@@ -4301,15 +4494,15 @@ function GachaPage({onBack,c,coins,setCoins,eggs,setEggs,pets}){
 
     {/* Roll buttons */}
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
-      <button onClick={roll} disabled={coins<EGG_COST||rolling} style={{...S.btn,background:`linear-gradient(135deg,${c.cl},${c.ac})`,color:"#fff",padding:"18px 12px",fontSize:15,opacity:coins<EGG_COST?.4:1,boxShadow:`0 4px 12px ${c.cl}40`,display:"flex",flexDirection:"column",gap:2,animation:rolling?"emojiPulse .5s infinite":"none"}}>
+      <button onClick={roll} disabled={coins<EGG_COST||rolling} style={{...S.btn,background:`linear-gradient(135deg,${c.cl},${c.ac})`,color:"#fff",padding:"18px 12px",fontSize:15,opacity:coins<EGG_COST||rolling?0.45:1,boxShadow:`0 4px 12px ${c.cl}40`,display:"flex",flexDirection:"column",gap:3,animation:rolling?"emojiPulse .5s infinite":"none"}}>
         <span style={{fontSize:24}}>🎰</span>
         <span>單抽</span>
         <span style={{fontSize:11,opacity:.9}}>🪙 {EGG_COST}</span>
       </button>
-      <button onClick={roll10} disabled={coins<EGG_COST*10||rolling} style={{...S.btn,background:`linear-gradient(135deg,#7B61FF,#9F8FFF)`,color:"#fff",padding:"18px 12px",fontSize:15,opacity:coins<EGG_COST*10?.4:1,boxShadow:"0 4px 12px #7B61FF40",display:"flex",flexDirection:"column",gap:2,animation:rolling?"emojiPulse .5s infinite":"none"}}>
+      <button onClick={roll10} disabled={coins<EGG_COST*10||rolling} style={{...S.btn,background:`linear-gradient(135deg,#7B61FF,#9F8FFF)`,color:"#fff",padding:"18px 12px",fontSize:15,opacity:coins<EGG_COST*10||rolling?0.45:1,boxShadow:"0 4px 12px #7B61FF40",display:"flex",flexDirection:"column",gap:3,animation:rolling?"emojiPulse .5s infinite":"none"}}>
         <span style={{fontSize:24}}>✨</span>
         <span>十連抽</span>
-        <span style={{fontSize:11,opacity:.9}}>🪙 {EGG_COST*10}</span>
+        <span style={{fontSize:11,opacity:.9}}>🪙 {EGG_COST*10} · R+ 保底</span>
       </button>
     </div>
 
@@ -4318,23 +4511,25 @@ function GachaPage({onBack,c,coins,setCoins,eggs,setEggs,pets}){
 
     {/* Collection stats */}
     <div style={{...S.card,padding:"14px 16px",marginBottom:12}}>
-      <div style={{fontSize:13,fontWeight:600,color:S.t1,marginBottom:8}}>📚 我的收藏</div>
-      <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+      <div style={{fontSize:13,fontWeight:800,color:S.t1,marginBottom:8}}>📚 我的收藏與蛋倉</div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(76px,1fr))",gap:6}}>
         {Object.entries(RARITY_INFO).map(([k,v])=>{const total=PETS[k].length;const got=pets.filter(p=>p.rarity===k).length;return(<div key={k} style={{flex:"1 1 60px",textAlign:"center",padding:"6px",background:S.bg2,borderRadius:8}}>
           <div style={{fontSize:10,color:v.color,fontWeight:600}}>{v.label}</div>
           <div style={{fontSize:14,fontWeight:700,color:S.t1}}>{got}/{total}</div>
+          <div style={{fontSize:10,color:S.t3,marginTop:1}}>蛋 {eggCounts[k]||0}</div>
         </div>)})}
       </div>
     </div>
 
     {/* How to earn coins */}
     <div style={{...S.card,padding:"14px 16px"}}>
-      <div style={{fontSize:13,fontWeight:600,color:S.t1,marginBottom:6}}>💰 如何獲得金幣</div>
+      <div style={{fontSize:13,fontWeight:800,color:S.t1,marginBottom:6}}>💰 如何獲得金幣</div>
       <div style={{fontSize:12,color:S.t2,lineHeight:1.8}}>
         • 每答對 1 題 → 獲得 1-5 🪙<br/>
         • 完成 SRS 輪次 → 額外獎勵<br/>
         • Combo 連擊 → 額外獎勵<br/>
-        • 每日目標達成 → 大量金幣
+        • 每日目標達成 → 大量金幣<br/>
+        <span style={{color:c.cl,fontWeight:800}}>這裡只使用學習金幣，不需要任何付費抽蛋。</span>
       </div>
     </div>
   </div>);
@@ -6547,6 +6742,13 @@ function PetsPage({onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,s
   const[animLevel,setAnimLevel]=useLS("eg_animLevel","full");// (P2-3) "full" | "lite" | "off"
   const[playgroundOpen,setPlaygroundOpen]=useState(false);// (P3-1 寵物玩耍場)
   const[hatchAnim,setHatchAnim]=useState(null);// (V19 孵化動畫) {pet, petDef, ri}
+  const[petQuery,setPetQuery]=useState("");
+  const[petRarity,setPetRarity]=useState("all");
+  const[petSort,setPetSort]=useState("need");
+  const[eggSort,setEggSort]=useState("ready");
+  const[dexQuery,setDexQuery]=useState("");
+  const[dexMode,setDexMode]=useState("all");
+  const[dexRarity,setDexRarity]=useState("all");
 
   // (P2-3) 把動畫強度套用到 body class，全域 CSS 控制
   useEffect(()=>{
@@ -6565,6 +6767,36 @@ function PetsPage({onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,s
   const taskCounts=petTasks?.date===today?(petTasks.counts||{}):{};
   const[claimedTasks,setClaimedTasks]=useLS("claimedTasks",{date:"",ids:[]});
   const claimedToday=claimedTasks?.date===today?(claimedTasks.ids||[]):[];
+  const getPetDef=pet=>PETS[pet.rarity]?.find(p=>p.id===pet.petId);
+  const totalPetKinds=Object.values(PETS).reduce((a,list)=>a+list.length,0);
+  const ownedIds=useMemo(()=>new Set(pets.map(p=>p.petId)),[pets]);
+  const readyEggCount=eggs.filter(e=>e.progress>=EGG_HATCH_TASKS[e.rarity]).length;
+  const careNeedCount=pets.reduce((sum,p)=>sum+getCareCount(p),0);
+  const bestBond=Math.max(0,...pets.map(p=>p.bond||0));
+  const visiblePets=useMemo(()=>{
+    const q=petQuery.trim().toLowerCase();
+    const rows=pets.map((pet,idx)=>({pet,idx,def:PETS[pet.rarity]?.find(p=>p.id===pet.petId)})).filter(x=>x.def);
+    return rows.filter(({pet,def})=>{
+      if(petRarity!=="all"&&pet.rarity!==petRarity)return false;
+      if(!q)return true;
+      return [def.name,def.id,def.story,pet.rarity,...(def.words||[])].some(v=>String(v||"").toLowerCase().includes(q));
+    }).sort((a,b)=>{
+      if(petSort==="need")return getCareCount(b.pet)-getCareCount(a.pet)||RARITY_ORDER[b.pet.rarity]-RARITY_ORDER[a.pet.rarity]||b.pet.level-a.pet.level;
+      if(petSort==="level")return (b.pet.level||1)-(a.pet.level||1)||RARITY_ORDER[b.pet.rarity]-RARITY_ORDER[a.pet.rarity];
+      if(petSort==="bond")return (b.pet.bond||0)-(a.pet.bond||0);
+      if(petSort==="rarity")return RARITY_ORDER[b.pet.rarity]-RARITY_ORDER[a.pet.rarity]||a.def.name.localeCompare(b.def.name,"zh-Hant");
+      return a.idx-b.idx;
+    });
+  },[pets,petQuery,petRarity,petSort]);
+  const visibleEggs=useMemo(()=>{
+    return eggs.map((egg,idx)=>({egg,idx,def:PETS[egg.rarity]?.find(p=>p.id===egg.petId)})).filter(x=>x.def).sort((a,b)=>{
+      const an=EGG_HATCH_TASKS[a.egg.rarity],bn=EGG_HATCH_TASKS[b.egg.rarity];
+      const ar=a.egg.progress>=an,br=b.egg.progress>=bn;
+      if(eggSort==="ready")return Number(br)-Number(ar)||RARITY_ORDER[b.egg.rarity]-RARITY_ORDER[a.egg.rarity]||(b.egg.progress/bn)-(a.egg.progress/an);
+      if(eggSort==="rarity")return RARITY_ORDER[b.egg.rarity]-RARITY_ORDER[a.egg.rarity]||Number(br)-Number(ar);
+      return new Date(b.egg.date||0)-new Date(a.egg.date||0);
+    });
+  },[eggs,eggSort]);
 
   const claimTask=(task,event)=>{
     if(claimedToday.includes(task.id))return;
@@ -7128,6 +7360,23 @@ body.eg-anim-off [data-pet-card] { animation: none !important; }
       <div style={{fontSize:12,color:S.t2}}>👤 <b style={{color:c.cl}}>{petAccount.username}</b> <span style={{color:S.t3,marginLeft:4}}>· 已同步雲端 ☁️</span></div>
       <button onClick={()=>setConfirmModal({msg:"登出帳號？\n\n本地寵物資料將保留，但不會再同步到雲端。",icon:"👋",onConfirm:()=>setPetAccount(null)})} style={{background:"none",border:"none",fontSize:11,color:S.t3,cursor:"pointer",padding:"4px 8px",textDecoration:"underline"}}>登出</button>
     </div>}
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))",gap:8,marginBottom:12}}>
+      <button onClick={()=>setTab("dex")} style={{...S.card,padding:"12px",textAlign:"left",cursor:"pointer",fontFamily:"inherit",background:`linear-gradient(135deg,${c.bg},var(--color-background-primary,#fff))`}}>
+        <div style={{fontSize:11,color:S.t2,fontWeight:800}}>收藏完成度</div>
+        <div style={{fontSize:20,fontWeight:900,color:c.cl,marginTop:2}}>{ownedIds.size}/{totalPetKinds}</div>
+        <div style={{height:6,background:S.bg2,borderRadius:999,overflow:"hidden",marginTop:7}}><div style={{height:"100%",width:`${Math.round(ownedIds.size/totalPetKinds*100)}%`,background:c.cl,borderRadius:999}}/></div>
+      </button>
+      <button onClick={()=>setTab("eggs")} style={{...S.card,padding:"12px",textAlign:"left",cursor:"pointer",fontFamily:"inherit",background:S.bg1}}>
+        <div style={{fontSize:11,color:S.t2,fontWeight:800}}>蛋倉</div>
+        <div style={{fontSize:20,fontWeight:900,color:S.t1,marginTop:2}}>🥚 {eggs.length}</div>
+        <div style={{fontSize:11,color:readyEggCount?c.cl:S.t3,fontWeight:800,marginTop:3}}>{readyEggCount?`${readyEggCount} 顆可孵化`:"完成學習來孵蛋"}</div>
+      </button>
+      <button onClick={()=>setTab("pets")} style={{...S.card,padding:"12px",textAlign:"left",cursor:"pointer",fontFamily:"inherit",background:S.bg1,border:careNeedCount?`1px solid #EF9F27`:`1px solid ${S.bd}`}}>
+        <div style={{fontSize:11,color:S.t2,fontWeight:800}}>照顧提醒</div>
+        <div style={{fontSize:20,fontWeight:900,color:careNeedCount?"#EF9F27":S.t1,marginTop:2}}>{careNeedCount}</div>
+        <div style={{fontSize:11,color:S.t3,fontWeight:800,marginTop:3}}>最高羈絆 {bestBond}</div>
+      </button>
+    </div>
     <div style={{display:"flex",gap:6,marginBottom:12,overflowX:"auto"}}>
       <button onClick={()=>setTab("tasks")} style={{flex:"1 1 auto",padding:"10px 6px",borderRadius:12,background:tab==="tasks"?c.cl:S.bg2,color:tab==="tasks"?"#fff":S.t1,border:tab==="tasks"?"none":`1px solid ${S.bd}`,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>📋 任務 ({DAILY_TASK_DEFS.filter(t=>!claimedToday.includes(t.id)&&(taskCounts[t.statKey]||0)>=t.target).length})</button>
       <button onClick={()=>setTab("eggs")} style={{flex:"1 1 auto",padding:"10px 6px",borderRadius:12,background:tab==="eggs"?c.cl:S.bg2,color:tab==="eggs"?"#fff":S.t1,border:tab==="eggs"?"none":`1px solid ${S.bd}`,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>🥚 蛋 ({eggs.length})</button>
@@ -7200,8 +7449,15 @@ body.eg-anim-off [data-pet-card] { animation: none !important; }
       <div style={{fontSize:16,fontWeight:600,color:S.t1}}>還沒有蛋！</div>
       <div style={{fontSize:13,color:S.t2,marginTop:4}}>去扭蛋機抽一顆吧！</div>
     </div>):(
+    <>
+    <div style={{...S.card,padding:"10px 12px",marginBottom:10,display:"flex",gap:8,alignItems:"center",justifyContent:"space-between",flexWrap:"wrap"}}>
+      <div style={{fontSize:12,color:S.t2,fontWeight:800}}>蛋倉排序</div>
+      <div style={{display:"flex",gap:5}}>
+        {[{k:"ready",l:"可孵化優先"},{k:"rarity",l:"稀有度"},{k:"new",l:"最新"}].map(o=><button key={o.k} onClick={()=>setEggSort(o.k)} style={{border:`1px solid ${eggSort===o.k?c.cl:S.bd}`,background:eggSort===o.k?c.bg:S.bg1,color:eggSort===o.k?c.cl:S.t2,borderRadius:999,padding:"6px 9px",fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>{o.l}</button>)}
+      </div>
+    </div>
     <div style={{display:"grid",gap:10}}>
-      {eggs.map(egg=>{
+      {visibleEggs.map(({egg})=>{
         const petDef=PETS[egg.rarity].find(p=>p.id===egg.petId);
         if(!petDef)return null;
         const ri=RARITY_INFO[egg.rarity];
@@ -7226,7 +7482,8 @@ body.eg-anim-off [data-pet-card] { animation: none !important; }
           {!ready&&<div style={{marginTop:10,fontSize:12,color:S.t3,textAlign:"center"}}>💪 再答對 {needed-egg.progress} 題就能孵化！</div>}
         </div>);
       })}
-    </div>)):tab==="pets"?(
+    </div>
+    </>)):tab==="pets"?(
     pets.length===0?(<div style={{textAlign:"center",padding:"48px 16px"}}>
       <div style={{fontSize:48,marginBottom:8}}>🐣</div>
       <div style={{fontSize:16,fontWeight:600,color:S.t1}}>還沒有寵物！</div>
@@ -7244,6 +7501,22 @@ body.eg-anim-off [data-pet-card] { animation: none !important; }
 @keyframes pet_breatheSleep { 0%,100%{transform:scaleY(1) translateY(0)} 50%{transform:scaleY(1.06) translateY(-1px)} }
 @media (prefers-reduced-motion: reduce) { [data-pet-card] *{animation:none !important} }
 `}</style>
+    <div style={{...S.card,padding:"12px",marginBottom:10,display:"grid",gap:8}}>
+      <input value={petQuery} onChange={e=>setPetQuery(e.target.value)} placeholder="搜尋寵物、單字、故事..." style={{width:"100%",boxSizing:"border-box",padding:"10px 12px",borderRadius:10,border:`1px solid ${S.bd}`,background:S.bg1,color:S.t1,fontSize:13,fontFamily:"inherit",outline:"none"}}/>
+      <div style={{display:"flex",gap:6,overflowX:"auto",paddingBottom:2}}>
+        {[{k:"all",l:"全部"},{k:"N",l:"普通"},{k:"R",l:"稀有"},{k:"SR",l:"超稀有"},{k:"SSR",l:"極稀有"}].map(o=><button key={o.k} onClick={()=>setPetRarity(o.k)} style={{flexShrink:0,border:`1px solid ${petRarity===o.k?c.cl:S.bd}`,background:petRarity===o.k?c.bg:S.bg1,color:petRarity===o.k?c.cl:S.t2,borderRadius:999,padding:"6px 10px",fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>{o.l}</button>)}
+      </div>
+      <div style={{display:"flex",gap:6,alignItems:"center",justifyContent:"space-between",flexWrap:"wrap"}}>
+        <div style={{fontSize:11,color:S.t3,fontWeight:800}}>顯示 {visiblePets.length}/{pets.length} 隻</div>
+        <select value={petSort} onChange={e=>setPetSort(e.target.value)} style={{padding:"7px 10px",borderRadius:9,border:`1px solid ${S.bd}`,background:S.bg1,color:S.t1,fontSize:12,fontFamily:"inherit",fontWeight:700}}>
+          <option value="need">最需要照顧</option>
+          <option value="level">等級高到低</option>
+          <option value="bond">親密度高到低</option>
+          <option value="rarity">稀有度高到低</option>
+          <option value="new">取得順序</option>
+        </select>
+      </div>
+    </div>
     {/* (P3-1) 玩耍場入口（多隻寵物時才顯示） */}
     {pets.length>=2&&<button onClick={()=>setPlaygroundOpen(true)} style={{
       width:"100%",
@@ -7265,9 +7538,9 @@ body.eg-anim-off [data-pet-card] { animation: none !important; }
       </div>
       <span style={{fontSize:18,color:"#C2185B"}}>→</span>
     </button>}
+    {visiblePets.length===0&&<div style={{...S.card,padding:"26px 16px",textAlign:"center",fontSize:13,color:S.t2,marginBottom:10}}>找不到符合條件的寵物。</div>}
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(120px,1fr))",gap:10}}>
-      {pets.map((pet,i)=>{
-        const petDef=PETS[pet.rarity].find(p=>p.id===pet.petId);
+      {visiblePets.map(({pet,def:petDef},i)=>{
         if(!petDef)return null;
         const ri=RARITY_INFO[pet.rarity];
         const need=getPetUrgentNeed(pet);
@@ -7394,13 +7667,31 @@ body.eg-anim-off [data-pet-card] { animation: none !important; }
               {allPct===100?"🏆 大師！全部寵物都收齊了！":allPct>=75?"✨ 快收齊了！繼續加油！":allPct>=50?"🌱 收藏一半囉！":"💪 繼續抽蛋探索吧！"}
             </div>
           </div>
+          <div style={{...S.card,padding:"12px",marginBottom:12,display:"grid",gap:8}}>
+            <input value={dexQuery} onChange={e=>setDexQuery(e.target.value)} placeholder="搜尋圖鑑：名稱、英文單字、故事..." style={{width:"100%",boxSizing:"border-box",padding:"10px 12px",borderRadius:10,border:`1px solid ${S.bd}`,background:S.bg1,color:S.t1,fontSize:13,fontFamily:"inherit",outline:"none"}}/>
+            <div style={{display:"flex",gap:6,overflowX:"auto",paddingBottom:2}}>
+              {[{k:"all",l:"全部"},{k:"owned",l:"已收集"},{k:"missing",l:"未收集"}].map(o=><button key={o.k} onClick={()=>setDexMode(o.k)} style={{flexShrink:0,border:`1px solid ${dexMode===o.k?c.cl:S.bd}`,background:dexMode===o.k?c.bg:S.bg1,color:dexMode===o.k?c.cl:S.t2,borderRadius:999,padding:"6px 10px",fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>{o.l}</button>)}
+              <span style={{width:1,background:S.bd,margin:"2px 2px",flexShrink:0}}/>
+              {[{k:"all",l:"全部稀有度"},{k:"N",l:"普通"},{k:"R",l:"稀有"},{k:"SR",l:"超稀有"},{k:"SSR",l:"極稀有"}].map(o=><button key={o.k} onClick={()=>setDexRarity(o.k)} style={{flexShrink:0,border:`1px solid ${dexRarity===o.k?c.cl:S.bd}`,background:dexRarity===o.k?c.bg:S.bg1,color:dexRarity===o.k?c.cl:S.t2,borderRadius:999,padding:"6px 10px",fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>{o.l}</button>)}
+            </div>
+          </div>
 
           {/* 各稀有度區塊 */}
           {allRarities.map(rarity=>{
+            if(dexRarity!=="all"&&dexRarity!==rarity)return null;
             const ri=RARITY_INFO[rarity];
             const list=PETS[rarity];
             const got=list.filter(petDef=>pets.some(p=>p.petId===petDef.id));
             const pct=Math.round((got.length/list.length)*100);
+            const q=dexQuery.trim().toLowerCase();
+            const filteredList=list.filter(petDef=>{
+              const owned=pets.some(p=>p.petId===petDef.id);
+              if(dexMode==="owned"&&!owned)return false;
+              if(dexMode==="missing"&&owned)return false;
+              if(!q)return true;
+              return [petDef.name,petDef.id,petDef.story,...(petDef.words||[])].some(v=>String(v||"").toLowerCase().includes(q));
+            });
+            if(filteredList.length===0)return null;
             return(<div key={rarity} style={{...S.card,padding:"14px 16px",marginBottom:12,background:ri.bg,border:`2px solid ${ri.color}`}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
                 <div>
@@ -7413,9 +7704,10 @@ body.eg-anim-off [data-pet-card] { animation: none !important; }
                 <div style={{height:"100%",width:`${pct}%`,background:ri.color,transition:"width .5s",borderRadius:3}}/>
               </div>
               <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(72px,1fr))",gap:6}}>
-                {list.map(petDef=>{
+                {filteredList.map(petDef=>{
                   const myPet=pets.find(p=>p.petId===petDef.id);
                   const owned=!!myPet;
+                  const eggOwned=eggs.some(e=>e.petId===petDef.id);
                   return(<div key={petDef.id}
                     onClick={()=>{if(owned){setSelectedPet(myPet);triggerEvent(myPet)}}}
                     style={{
@@ -7449,6 +7741,7 @@ body.eg-anim-off [data-pet-card] { animation: none !important; }
                       {owned?petDef.name:"???"}
                     </div>
                     {owned&&<div style={{fontSize:8,color:c.cl,fontWeight:600}}>Lv.{myPet.level||1}</div>}
+                    {!owned&&eggOwned&&<div style={{fontSize:8,color:ri.color,fontWeight:700}}>蛋中</div>}
                   </div>);
                 })}
               </div>
