@@ -769,6 +769,10 @@ const GACHA_SR_PITY=20;
 
 const EGG_COST=50; // coins per gacha pull
 const EGG_HATCH_TASKS={N:10,R:15,SR:25,SSR:40}; // tasks needed to hatch
+const DUPLICATE_EGG_PROGRESS={N:4,R:6,SR:10,SSR:16}; // duplicate egg merges into hatch progress
+const DUPLICATE_PET_REWARD={
+  N:{exp:40,bond:4},R:{exp:70,bond:7},SR:{exp:120,bond:12},SSR:{exp:220,bond:22},
+};
 
 function rollRarity(){
   const r=Math.random()*100;
@@ -1764,7 +1768,7 @@ export default function App(){
          mod==="achievements"?<AchPage onBack={back} unlocked={achUnlocked} c={c}/>:
          mod==="weak"?<WeakPage onBack={back} weakWords={weakWords} setWeakWords={setWeakWords} c={c} lv={lv}/>:
          mod==="dashboard"?<Dashboard onBack={back} c={c} xp={xp} streak={streak} stats={stats} daily={daily} weakWords={weakWords} history={history} achUnlocked={achUnlocked} lv={lv} isSponsor={isSponsor}/>:
-         mod==="gacha"?<GachaPage onBack={back} c={c} coins={coins} setCoins={setCoins} eggs={eggs} setEggs={setEggs} pets={pets}/>:
+         mod==="gacha"?<GachaPage onBack={back} c={c} coins={coins} setCoins={setCoins} eggs={eggs} setEggs={setEggs} pets={pets} setPets={setPets}/>:
          mod==="pets"?<PetsGuard onBack={back} c={c} pets={pets} setPets={setPets} eggs={eggs} setEggs={setEggs} coins={coins} setCoins={setCoins} inventory={inventory} setInventory={setInventory} petAccount={petAccount} setPetAccount={setPetAccount} petTasks={petTasks} setPetTasks={setPetTasks} incrTask={incrTask}/>:
          mod==="sponsor"?<SponsorPage onBack={back} c={c} sponsor={sponsor} setSponsor={setSponsor}/>:null}
         {/* Ad Banner — hidden for sponsors */}
@@ -3208,16 +3212,22 @@ const NOVEL_PAGE_SIZE=5;
 const LazyNovelIllustration=lazy(()=>import("./components/NovelIllustration.jsx"));
 function NovelIllustration(props){return <Suspense fallback={<div style={{height:props.small?150:props.cover?240:360,borderRadius:props.small?0:18,background:"linear-gradient(135deg,#0B3F35,#77C79D)"}}/>}><LazyNovelIllustration {...props}/></Suspense>}
 function novelBlocks(text){return String(text||"").split(/\n\s*\n/).map(s=>s.trim()).filter(Boolean)}
+function scrollChildIntoPanel(panel,el){
+  if(!panel||!el)return;
+  const top=el.offsetTop-panel.offsetTop-(panel.clientHeight/2)+(el.clientHeight/2);
+  panel.scrollTo({top:Math.max(0,top),behavior:"smooth"});
+}
 function NovelM({lv,onBack,onXp}){
-  const c=LV[lv];const[novelData,setNovelData]=useState(null);const[ni,setNi]=useState(0);const[ci,setCi]=useState(null);const[page,setPage]=useState(0);const[activeBlock,setActiveBlock]=useState(null);const[activeVocab,setActiveVocab]=useState(null);const[showZh,setShowZh]=useState(true);const[done,setDone]=useLS("novelDone",{});const[quizAns,setQuizAns]=useLS("novelQuiz",{});const rewarded=useRef({});const novelSpeechRef=useRef(null);
+  const c=LV[lv];const[novelData,setNovelData]=useState(null);const[ni,setNi]=useState(0);const[ci,setCi]=useState(null);const[page,setPage]=useState(0);const[activeBlock,setActiveBlock]=useState(null);const[activeVocab,setActiveVocab]=useState(null);const[showZh,setShowZh]=useState(true);const[done,setDone]=useLS("novelDone",{});const[quizAns,setQuizAns]=useLS("novelQuiz",{});const rewarded=useRef({});const novelSpeechRef=useRef(null);const novelPanelRef=useRef(null);const novelBlockRefs=useRef({});
   useEffect(()=>{let active=true;import("./data/novels.js").then(m=>{if(active)setNovelData(m.NOVELS)}).catch(()=>{if(active)setNovelData({elementary:[]})});return()=>{active=false}},[]);
   useEffect(()=>()=>novelSpeechRef.current?.cancel?.(),[]);
-  useEffect(()=>{setPage(0);setActiveBlock(null);setActiveVocab(null)},[ci,ni]);
+  useEffect(()=>{setPage(0);setActiveBlock(null);setActiveVocab(null);novelBlockRefs.current={};novelPanelRef.current?.scrollTo({top:0})},[ci,ni]);
   useEffect(()=>{if(typeof Image==="undefined")return;const nums=ci==null?[1,2,3,4]:[ci+1,ci+2].filter(n=>n>=1&&n<=NOVEL_COUNT);nums.forEach(n=>{const img=new Image();img.src=`/images/novels/secret-forest/chapter-${n}${ci==null?"-thumb":""}.jpg`})},[ci]);
   const novels=novelData?(novelData[lv]?.length?novelData[lv]:novelData.elementary):[];
   const novel=novels[ni];const completed=done[novel?.id]||[];const chapter=ci==null?null:novel.chapters[ci];const enBlocks=useMemo(()=>novelBlocks(chapter?.en),[chapter]);const zhBlocks=useMemo(()=>novelBlocks(chapter?.zh),[chapter]);const words=chapter?readingWords(chapter.en).length:0;const pct=novel?Math.round((completed.length/novel.chapters.length)*100):0;
   const pages=useMemo(()=>{const out=[];for(let i=0;i<enBlocks.length;i+=NOVEL_PAGE_SIZE)out.push(enBlocks.slice(i,i+NOVEL_PAGE_SIZE).map((en,j)=>({en,zh:zhBlocks[i+j],i:i+j})));return out},[enBlocks,zhBlocks]);
   const pageNow=Math.min(page,Math.max(0,pages.length-1));const pageBlocks=pages[pageNow]||[];const pageStart=pageNow*NOVEL_PAGE_SIZE;
+  useEffect(()=>{if(activeBlock!=null)scrollChildIntoPanel(novelPanelRef.current,novelBlockRefs.current[activeBlock])},[activeBlock,pageNow]);
   const quiz=chapter?chapter.quiz||[]:[];const quizKey=chapter?`${novel.id}:${chapter.no}`:"";const quizState=quizAns[quizKey]||{};const quizDone=!quiz.length||quiz.every((_,i)=>quizState[i]!=null);
   const chooseQuiz=(qi,oi)=>setQuizAns(d=>({...d,[quizKey]:{...(d[quizKey]||{}),[qi]:oi}}));
   const completeChapter=()=>{if(!chapter)return;if(!quizDone){playSound("wrong");return}const key=`${novel.id}:${chapter.no}`;if(!completed.includes(chapter.no)){setDone(d=>({...d,[novel.id]:[...new Set([...(d[novel.id]||[]),chapter.no])]}));if(!rewarded.current[key]){rewarded.current[key]=true;onXp?.(15);playSound("done")}}};
@@ -3260,7 +3270,7 @@ function NovelM({lv,onBack,onXp}){
     </div>
   </div>);
   const next=ci+1<novel.chapters.length?ci+1:null;const prev=ci>0?ci-1:null;const isDone=completed.includes(chapter.no);const canPrevPage=pageNow>0;const canNextPage=pageNow+1<pages.length;const quizScore=quiz.reduce((n,q,i)=>n+(quizState[i]===q.a?1:0),0);
-  const turnPage=p=>{stopNovelSpeech();setActiveBlock(null);setPage(Math.max(0,Math.min(p,pages.length-1)));window.scrollTo({top:0,behavior:"smooth"})};
+  const turnPage=p=>{stopNovelSpeech();setActiveBlock(null);setPage(Math.max(0,Math.min(p,pages.length-1)));novelPanelRef.current?.scrollTo({top:0,behavior:"smooth"})};
   const finishAndGo=()=>{completeChapter();if(quizDone){next!=null?goChapter(next):backToList()}};
   return(<div><Hdr t="📘 英文小說" onBack={backToList} cl={c.cl} extra={<button onClick={()=>setShowZh(z=>!z)} style={{background:"none",border:`1px solid ${S.bd}`,borderRadius:8,padding:"4px 8px",fontSize:12,color:c.cl,cursor:"pointer",fontFamily:"inherit"}}>{showZh?"隱藏中文":"顯示中文"}</button>}/>
     <div style={{...S.card,padding:0,overflow:"hidden",marginBottom:10,borderTop:`4px solid ${c.cl}`,background:"#FFFDF7"}}>
@@ -3271,11 +3281,12 @@ function NovelM({lv,onBack,onXp}){
       </div>
     </div>
     <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:10,fontSize:12}}><button onClick={()=>prev!=null&&goChapter(prev)} disabled={prev==null} style={{...S.btn,background:S.bg2,color:S.t1,padding:"7px 10px",opacity:prev==null?0.35:1,fontSize:12}}>← 上一章</button><div style={{flex:1,height:6,background:S.bg2,borderRadius:3,overflow:"hidden"}}><div style={{height:"100%",width:`${((chapter.no-1)+(pageNow+1)/pages.length)/novel.chapters.length*100}%`,background:`linear-gradient(90deg,${c.cl},${c.ac})`,borderRadius:3}}/></div><button onClick={()=>next!=null&&goChapter(next)} disabled={next==null} style={{...S.btn,background:S.bg2,color:S.t1,padding:"7px 10px",opacity:next==null?0.35:1,fontSize:12}}>下一章 →</button></div>
+    <div ref={novelPanelRef} style={{height:"clamp(360px, calc(100vh - 430px), 680px)",minHeight:0,overflowY:"auto",overscrollBehavior:"contain",scrollBehavior:"smooth",padding:"0 4px 12px",border:`1px solid ${S.bd}`,borderRadius:12,background:"rgba(255,255,255,.42)"}}>
     <article style={{background:"#FFFDF7",border:`1px solid ${S.bd}`,borderRadius:8,padding:"14px 13px 16px",boxShadow:"0 8px 22px rgba(64,43,20,.08)",position:"relative"}}>
       <div style={{position:"absolute",left:0,top:0,bottom:0,width:6,background:"linear-gradient(180deg,#E8D9B7,#F8F0D6)"}}/>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,marginBottom:10,paddingLeft:4}}><div style={{fontSize:12,fontWeight:900,color:c.cl}}>Page {pageNow+1}</div><div style={{display:"flex",gap:3,alignItems:"center"}}>{pages.map((_,i)=><span key={i} style={{width:i===pageNow?16:5,height:5,borderRadius:999,background:i===pageNow?c.cl:S.bd,display:"block",transition:"all .15s"}}/>)}</div></div>
       <div style={{display:"grid",gap:6}}>
-        {pageBlocks.map(b=><section key={b.i} onClick={()=>speakNovelText(b.en,"en-US",0.78,b.i)} style={{padding:"9px 10px",borderRadius:8,background:activeBlock===b.i?"#E6F7F0":"transparent",border:`1px solid ${activeBlock===b.i?c.cl:"transparent"}`,transition:"all .18s",cursor:"pointer"}}>
+        {pageBlocks.map(b=><section key={b.i} ref={el=>{if(el)novelBlockRefs.current[b.i]=el}} onClick={()=>speakNovelText(b.en,"en-US",0.78,b.i)} style={{padding:"9px 10px",borderRadius:8,background:activeBlock===b.i?"#E6F7F0":"transparent",border:`1px solid ${activeBlock===b.i?c.cl:"transparent"}`,transition:"all .18s",cursor:"pointer"}}>
           <div style={{display:"flex",gap:8,alignItems:"flex-start"}}><p style={{flex:1,margin:0,fontSize:16,lineHeight:1.66,color:S.t1,fontWeight:/^“|^[A-Z][a-z]+[?!]?$/.test(b.en)?800:650,whiteSpace:"pre-line"}}>{b.en}</p><button onClick={e=>{e.stopPropagation();e.currentTarget.blur();speakNovelText(b.en,"en-US",0.78,b.i)}} style={{width:34,height:34,border:`1px solid ${S.bd}`,background:S.bg1,borderRadius:10,padding:0,fontSize:13,cursor:"pointer",fontFamily:"inherit",color:c.cl,flexShrink:0}}>🔊</button></div>
           {showZh&&b.zh&&<div style={{marginTop:7,padding:"7px 9px",background:"#FFF7E6",border:"1px solid #F0D59A",borderRadius:8,fontSize:13,lineHeight:1.58,color:S.t2,whiteSpace:"pre-line"}}>{b.zh} <button onClick={e=>{e.stopPropagation();e.currentTarget.blur();speakNovelText(b.zh,"zh-TW",1,b.i)}} style={{background:"none",border:"none",fontSize:15,cursor:"pointer",verticalAlign:"middle"}}>🔈</button></div>}
         </section>)}
@@ -3288,11 +3299,12 @@ function NovelM({lv,onBack,onXp}){
       <div style={{display:"grid",gap:10}}>{quiz.map((q,qi)=>{const picked=quizState[qi];return(<div key={q.q} style={{border:`1px solid ${S.bd}`,borderRadius:8,padding:"11px",background:S.bg1}}><div style={{fontSize:14,fontWeight:800,color:S.t1,lineHeight:1.45}}>{qi+1}. {q.q}</div>{showZh&&<div style={{fontSize:12,color:S.t2,marginTop:2}}>{q.zh}</div>}<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(120px,1fr))",gap:6,marginTop:9}}>{q.o.map((o,oi)=>{const selected=picked===oi;const correct=oi===q.a;const answered=picked!=null;return <button key={o} onClick={()=>chooseQuiz(qi,oi)} style={{border:`1px solid ${answered&&correct?c.cl:selected?"#D45757":S.bd}`,background:answered&&correct?"#E6F7F0":selected?"#FFF0F0":S.bg2,color:answered&&correct?c.cl:S.t1,borderRadius:8,padding:"9px 8px",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>{o}</button>})}</div>{picked!=null&&<div style={{fontSize:12,color:picked===q.a?c.cl:"#B54848",fontWeight:800,marginTop:7}}>{picked===q.a?"答對了":"答錯了，正確答案已標示"}</div>}</div>)})}</div>
     </div>
     <div style={{display:"flex",gap:8,marginTop:10}}><button onClick={backToList} style={{...S.btn,background:S.bg2,color:S.t1,flex:1,padding:"11px",fontSize:13}}>章節列表</button><button onClick={finishAndGo} disabled={!quizDone} style={{...S.btn,background:c.cl,color:"#fff",flex:1,padding:"11px",fontSize:13,opacity:quizDone?1:.45}}>{next!=null?"完成並下一章":"完成並返回"}</button></div>
+    </div>
   </div>);
 }
 // ═══ SONGS (英文歌曲練習) ═════════════════════════════════════════════
 function SongsM({lv,onBack,onXp}){
-  const songs=SONGS[lv]||[];const c=LV[lv];const[si,setSi]=useState(0);const[time,setTime]=useState(0);const[dur,setDur]=useState(0);const[playing,setPlaying]=useState(false);const[showZh,setShowZh]=useState(true);const[view,setView]=useState("lyrics");const[speed,setSpeed]=useState(1);const[practice,setPractice]=useState({idx:0,pick:null,score:0,done:false});const audioRef=useRef(null);const lineRefs=useRef({});const rewarded=useRef({});
+  const songs=SONGS[lv]||[];const c=LV[lv];const[si,setSi]=useState(0);const[time,setTime]=useState(0);const[dur,setDur]=useState(0);const[playing,setPlaying]=useState(false);const[showZh,setShowZh]=useState(true);const[view,setView]=useState("lyrics");const[speed,setSpeed]=useState(1);const[practice,setPractice]=useState({idx:0,pick:null,score:0,done:false});const audioRef=useRef(null);const lineRefs=useRef({});const songPanelRef=useRef(null);const rewarded=useRef({});
   const song=songs[si];const lyricLines=useMemo(()=>song?song.lines.map((l,i)=>({...l,i})).filter(l=>l.en):[],[song]);
   const hasAudio=!!song?.audio;
   const weights=useMemo(()=>lyricLines.map(l=>Math.max(1,readingWords(l.en).length)),[lyricLines]);
@@ -3325,10 +3337,11 @@ function SongsM({lv,onBack,onXp}){
     }).filter(Boolean).slice(0,8);
   },[song,lyricLines]);
   const currentPractice=practiceItems[practice.idx];
-  useEffect(()=>{setPractice({idx:0,pick:null,score:0,done:false});lineRefs.current={};setView("lyrics")},[song?.id]);
+  useEffect(()=>{setPractice({idx:0,pick:null,score:0,done:false});lineRefs.current={};setView("lyrics");songPanelRef.current?.scrollTo({top:0})},[song?.id]);
+  useEffect(()=>{songPanelRef.current?.scrollTo({top:0})},[view]);
   useEffect(()=>{const a=audioRef.current;if(a)a.playbackRate=speed},[speed,song?.id]);
   useEffect(()=>{const a=audioRef.current;if(!a)return;const onTime=()=>setTime(a.currentTime||0);const onMeta=()=>setDur(a.duration||0);const onPlay=()=>setPlaying(true);const onPause=()=>setPlaying(false);const onEnd=()=>{setPlaying(false);if(song&&!rewarded.current[song.id]){rewarded.current[song.id]=true;onXp?.(10)}};a.addEventListener("timeupdate",onTime);a.addEventListener("loadedmetadata",onMeta);a.addEventListener("play",onPlay);a.addEventListener("pause",onPause);a.addEventListener("ended",onEnd);return()=>{a.pause();a.removeEventListener("timeupdate",onTime);a.removeEventListener("loadedmetadata",onMeta);a.removeEventListener("play",onPlay);a.removeEventListener("pause",onPause);a.removeEventListener("ended",onEnd)}},[song?.id]);
-  useEffect(()=>{if(activeLine>=0)lineRefs.current[activeLine]?.scrollIntoView({behavior:"smooth",block:"center"})},[activeLine]);
+  useEffect(()=>{if(activeLine>=0)scrollChildIntoPanel(songPanelRef.current,lineRefs.current[activeLine])},[activeLine]);
   if(!song)return(<div><Hdr t="🎵 英文歌曲" onBack={onBack} cl={c.cl}/><div style={{...S.card,padding:"28px 18px",textAlign:"center"}}><div style={{fontSize:42,marginBottom:8}}>🎧</div><div style={{fontSize:16,fontWeight:700,color:S.t1}}>這個年級的歌曲準備中</div><div style={{fontSize:13,color:S.t2,marginTop:6}}>先從小學歌曲開始驗證流程，之後可逐步加入更多歌曲。</div></div></div>);
   const fmt=s=>`${Math.floor((s||0)/60)}:${String(Math.floor((s||0)%60)).padStart(2,"0")}`;
   const calcStart=(line)=>{
@@ -3358,6 +3371,7 @@ function SongsM({lv,onBack,onXp}){
       </>:<div style={{padding:"11px 12px",border:`1px dashed ${c.cl}66`,borderRadius:12,background:S.bg1,fontSize:12,color:S.t2,lineHeight:1.6}}>音檔準備中。可以先閱讀歌詞與重點單字，產出 mp3 後再補上同步時間。</div>}
     </div>
     <div style={{display:"flex",gap:6,marginBottom:10}}><button onClick={()=>setView("lyrics")} style={tabStyle("lyrics")}>歌詞同步</button><button onClick={()=>setView("practice")} style={tabStyle("practice")}>歌詞填空</button></div>
+    <div ref={songPanelRef} style={{height:"clamp(340px, calc(100vh - 430px), 680px)",minHeight:0,overflowY:"auto",overscrollBehavior:"contain",scrollBehavior:"smooth",padding:"0 4px 12px",border:`1px solid ${S.bd}`,borderRadius:12,background:"rgba(255,255,255,.42)"}}>
     {view==="lyrics"?<div style={{...S.card,padding:"14px 12px",marginBottom:10}}>
       {song.lines.map((line,i)=>line.sec?<div key={i} style={{fontSize:12,fontWeight:900,color:c.cl,margin:"16px 4px 7px",letterSpacing:0}}>{line.sec}</div>:<div ref={el=>{if(el)lineRefs.current[i]=el}} key={i} onClick={()=>hasAudio&&seekLine({...line,i},true)} style={{padding:"11px 12px",borderRadius:12,background:activeLine===i?c.bg:S.bg2,border:`1px solid ${activeLine===i?c.cl:S.bd}`,marginBottom:7,cursor:hasAudio?"pointer":"default",transition:"all .15s",boxShadow:activeLine===i?"0 8px 20px rgba(15,110,86,.12)":"none"}}>
         <div style={{display:"flex",gap:8,alignItems:"flex-start"}}><div style={{fontSize:11,color:activeLine===i?c.cl:S.t3,fontWeight:800,minWidth:34,paddingTop:3}}>{Number.isFinite(Number(line.t))?fmt(line.t):""}</div><div style={{flex:1,minWidth:0}}><div style={{fontSize:15,lineHeight:1.5,fontWeight:activeLine===i?900:700,color:S.t1}}>{line.en}</div>{showZh&&<div style={{fontSize:12,color:S.t2,marginTop:3,lineHeight:1.5}}>{line.zh}</div>}</div><button onClick={e=>{e.stopPropagation();seekLine({...line,i},true)}} style={{border:`1px solid ${S.bd}`,background:S.bg1,borderRadius:999,padding:"5px 8px",fontSize:11,color:c.cl,cursor:"pointer",fontFamily:"inherit",fontWeight:800,flexShrink:0}}>重播</button></div>
@@ -3372,6 +3386,7 @@ function SongsM({lv,onBack,onXp}){
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(220px,1fr))",gap:10}}>
       <div style={{...S.card,padding:"14px 16px",fontSize:12,color:S.t2,lineHeight:1.7}}><div style={{fontWeight:900,color:S.t1,marginBottom:7}}>重點句型</div><div style={{display:"grid",gap:7}}>{(song.patterns||[]).map(p=><div key={p.p} style={{padding:"10px",border:`1px solid ${S.bd}`,borderRadius:10,background:S.bg1}}><div style={{fontSize:13,fontWeight:900,color:c.cl}}>{p.p}</div><button onClick={()=>speak(p.ex)} style={{border:"none",background:"none",padding:0,marginTop:4,fontSize:13,fontWeight:800,color:S.t1,cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>{p.ex} 🔊</button>{showZh&&<div style={{fontSize:12,color:S.t2,marginTop:2}}>{p.zh}</div>}</div>)}</div></div>
       <div style={{...S.card,padding:"14px 16px",fontSize:12,color:S.t2,lineHeight:1.7}}><div style={{fontWeight:900,color:S.t1,marginBottom:7}}>重點單字</div><div style={{display:"flex",flexWrap:"wrap",gap:6}}>{song.vocab.map(w=><button key={w} onClick={()=>speak(w)} style={{border:`1px solid ${S.bd}`,background:S.bg1,borderRadius:999,padding:"7px 10px",fontSize:12,color:c.cl,cursor:"pointer",fontWeight:800,fontFamily:"inherit"}}>{w} 🔊</button>)}</div></div>
+    </div>
     </div>
   </div>);
 }
@@ -4304,7 +4319,7 @@ function GachaCeremony({rarity,mode}){
 }
 
 // ═══ GACHA MACHINE (扭蛋機) ═══════════════════════════════════════
-function GachaPage({onBack,c,coins,setCoins,eggs,setEggs,pets}){
+function GachaPage({onBack,c,coins,setCoins,eggs,setEggs,pets,setPets}){
   const[rolling,setRolling]=useState(false);
   const[rollingRarity,setRollingRarity]=useState(null);// (P0-3) 抽蛋動畫期間的稀有度，給光柱動畫用
   const[rollingMode,setRollingMode]=useState(null);// (P0-3) 'single' | 'multi'，給動畫文字用
@@ -4314,24 +4329,74 @@ function GachaPage({onBack,c,coins,setCoins,eggs,setEggs,pets}){
   const countByRarity=list=>Object.keys(RARITY_INFO).reduce((acc,k)=>({...acc,[k]:list.filter(x=>x.rarity===k).length}),{});
   const buildPulls=(count,guaranteeR=false)=>{
     let since=Number(pity?.sinceSR||0);
-    const seenIds=new Set([...pets.map(p=>p.petId),...eggs.map(e=>e.petId)]);
     const pulls=[];
     for(let i=0;i<count;i++){
       let rarity=rollRarity();
       const pityHit=since>=GACHA_SR_PITY-1;
       if(pityHit&&RARITY_ORDER[rarity]<RARITY_ORDER.SR)rarity="SR";
       const pet=randomPet(rarity);
-      const isNew=!seenIds.has(pet.id);
-      seenIds.add(pet.id);
-      pulls.push({rarity,pet,i,pityHit,isNew});
+      pulls.push({rarity,pet,i,pityHit});
       since=RARITY_ORDER[rarity]>=RARITY_ORDER.SR?0:since+1;
     }
     if(guaranteeR&&!pulls.some(p=>RARITY_ORDER[p.rarity]>=RARITY_ORDER.R)){
       const last=pulls[pulls.length-1];
       const pet=randomPet("R");
-      pulls[pulls.length-1]={...last,rarity:"R",pet,isNew:!seenIds.has(pet.id),guarantee:true};
+      pulls[pulls.length-1]={...last,rarity:"R",pet,guarantee:true};
     }
     return{pulls,nextPity:{sinceSR:since,total:Number(pity?.total||0)+count}};
+  };
+  const boostPetWithDuplicate=(pet,reward,now)=>{
+    let updated={...pet,dupes:(pet.dupes||0)+(reward.dupes||1),exp:(pet.exp||0)+(reward.exp||0),bond:(pet.bond||0)+(reward.bond||0),lastUpdate:now};
+    let guard=0;
+    while(updated.exp>=(updated.level||1)*100&&guard<8){
+      const before=updated.level;
+      updated=levelUpPet(updated);
+      if(updated.level===before)break;
+      guard++;
+    }
+    return updated;
+  };
+  const settlePulls=(pulls)=>{
+    const now=new Date().toISOString();
+    const ownedPetIds=new Set(pets.map(p=>p.petId));
+    const virtualEggs=new Map(eggs.map(e=>[e.petId,{...e,existing:true}]));
+    const eggProgress=new Map();
+    const newEggs=[];
+    const petRewards={};
+    const resolved=pulls.map((pull,i)=>{
+      const petId=pull.pet.id;
+      if(ownedPetIds.has(petId)){
+        const reward={...(DUPLICATE_PET_REWARD[pull.rarity]||DUPLICATE_PET_REWARD.N),dupes:1};
+        petRewards[petId]=petRewards[petId]?{exp:petRewards[petId].exp+reward.exp,bond:petRewards[petId].bond+reward.bond,dupes:petRewards[petId].dupes+1}:reward;
+        return{...pull,id:`dupe_${Date.now()}_${i}`,petId,resultType:"petBoost",isNew:false,dupeExp:reward.exp,dupeBond:reward.bond};
+      }
+      const target=virtualEggs.get(petId);
+      if(target){
+        const gain=DUPLICATE_EGG_PROGRESS[pull.rarity]||DUPLICATE_EGG_PROGRESS.N;
+        const needed=EGG_HATCH_TASKS[target.rarity]||EGG_HATCH_TASKS[pull.rarity];
+        target.progress=Math.min(needed,(target.progress||0)+gain);
+        if(target.existing)eggProgress.set(target.id,target.progress);
+        else{
+          const newEgg=newEggs.find(e=>e.id===target.id);
+          if(newEgg)newEgg.progress=target.progress;
+        }
+        return{...pull,id:`merge_${Date.now()}_${i}`,petId,resultType:"eggMerge",isNew:false,progressGain:gain,targetEggId:target.id,targetProgress:target.progress,targetNeeded:needed};
+      }
+      const egg={id:`egg_${Date.now()}_${i}`,rarity:pull.rarity,petId,progress:0,date:now};
+      virtualEggs.set(petId,{...egg,existing:false});
+      newEggs.push(egg);
+      return{...pull,id:egg.id,petId,resultType:"newEgg",egg,isNew:true};
+    });
+    if(Object.keys(petRewards).length&&setPets){
+      setPets(ps=>ps.map(p=>petRewards[p.petId]?boostPetWithDuplicate(p,petRewards[p.petId],now):p));
+    }
+    if(eggProgress.size||newEggs.length){
+      setEggs(es=>[
+        ...es.map(e=>eggProgress.has(e.id)?{...e,progress:eggProgress.get(e.id),date:e.date||now,updatedAt:now}:e),
+        ...newEggs,
+      ]);
+    }
+    return resolved;
   };
   const runCelebration=(items)=>{
     const hasSSR=items.some(r=>r.rarity==="SSR");
@@ -4349,7 +4414,7 @@ function GachaPage({onBack,c,coins,setCoins,eggs,setEggs,pets}){
     if(coins<EGG_COST||rolling)return;
     // (P0-3) 提早決定稀有度，讓動畫可以根據結果秀對應光柱
     const{pulls,nextPity}=buildPulls(1,false);
-    const{rarity,pet,isNew,pityHit}=pulls[0];
+    const{rarity}=pulls[0];
     setRolling(true);
     setRollingRarity(rarity);
     setRollingMode("single");
@@ -4357,21 +4422,14 @@ function GachaPage({onBack,c,coins,setCoins,eggs,setEggs,pets}){
     setPity(nextPity);
     playSound("flip");
     setTimeout(()=>{
-      const egg={
-        id:"egg_"+Date.now(),
-        rarity,
-        petId:pet.id,
-        progress:0,
-        date:new Date().toISOString(),
-      };
-      setEggs(es=>[...es,egg]);
-      setResult({pet,rarity,egg,isNew,pityHit});
+      const settled=settlePulls(pulls);
+      setResult(settled[0]);
       setShowResult(true);
       setRolling(false);
       setRollingRarity(null);
       setRollingMode(null);
       if(rarity==="SSR"||rarity==="SR")playSound("combo");else playSound("good");
-      runCelebration([{rarity}]);
+      runCelebration(settled);
     },1800);
   };
 
@@ -4388,11 +4446,7 @@ function GachaPage({onBack,c,coins,setCoins,eggs,setEggs,pets}){
     setPity(nextPity);
     playSound("flip");
     setTimeout(()=>{
-      const results=preResults.map(({rarity,pet,isNew,pityHit,guarantee},i)=>({
-        id:"egg_"+Date.now()+"_"+i,
-        rarity,petId:pet.id,progress:0,date:new Date().toISOString(),pet,isNew,pityHit,guarantee
-      }));
-      setEggs(es=>[...es,...results]);
+      const results=settlePulls(preResults);
       setResult({multi:results});
       setShowResult(true);
       setRolling(false);
@@ -4409,18 +4463,21 @@ function GachaPage({onBack,c,coins,setCoins,eggs,setEggs,pets}){
       const summary=countByRarity(result.multi);
       const best=result.multi.reduce((a,b)=>RARITY_ORDER[b.rarity]>RARITY_ORDER[a.rarity]?b:a,result.multi[0]);
       const newCount=result.multi.filter(r=>r.isNew).length;
+      const mergedCount=result.multi.filter(r=>r.resultType==="eggMerge").length;
+      const boostedCount=result.multi.filter(r=>r.resultType==="petBoost").length;
       return(<div><Hdr t="🎰 扭蛋結果" onBack={()=>{setShowResult(false);setResult(null)}} cl={c.cl}/>
         <div style={{...S.card,padding:"16px",marginBottom:12,borderTop:`4px solid ${RARITY_INFO[best.rarity].color}`,background:`linear-gradient(135deg,${RARITY_INFO[best.rarity].bg},var(--color-background-primary,#fff))`}}>
           <div style={{fontSize:18,fontWeight:900,color:S.t1}}>🎉 十連抽結果</div>
-          <div style={{fontSize:12,color:S.t2,marginTop:4,lineHeight:1.7}}>最高稀有度：<b style={{color:RARITY_INFO[best.rarity].color}}>{RARITY_INFO[best.rarity].label}</b> · 新蛋 {newCount} 顆 · 十連至少保底稀有以上</div>
+          <div style={{fontSize:12,color:S.t2,marginTop:4,lineHeight:1.7}}>最高稀有度：<b style={{color:RARITY_INFO[best.rarity].color}}>{RARITY_INFO[best.rarity].label}</b> · 新蛋 {newCount} 顆 · 融合 {mergedCount} 顆 · 成長能量 {boostedCount} 次</div>
           <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:10}}>{Object.entries(RARITY_INFO).map(([k,v])=><div key={k} style={{padding:"5px 9px",borderRadius:999,background:v.bg,border:`1px solid ${v.color}33`,fontSize:11,fontWeight:800,color:v.color}}>{v.label} × {summary[k]||0}</div>)}</div>
         </div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(108px,1fr))",gap:8}}>
           {result.multi.map((r,i)=>{const ri=RARITY_INFO[r.rarity];return(<div key={r.id} style={{...S.card,padding:"14px 8px",textAlign:"center",background:ri.bg,border:`2px solid ${ri.color}`,animation:`bounceIn .4s ${i*0.08}s both`}}>
             <div style={{display:"flex",justifyContent:"center",gap:4,alignItems:"center",minHeight:18}}><span style={{fontSize:10,fontWeight:800,color:ri.color}}>{ri.stars} {ri.label}</span></div>
-            <div style={{display:"flex",justifyContent:"center",margin:"4px auto"}}><PixelPet petId={r.petId} stage="egg" size={48} animate={false}/></div>
+            <div style={{display:"flex",justifyContent:"center",margin:"4px auto"}}><PixelPet petId={r.petId} stage={r.resultType==="petBoost"?"adult":"egg"} size={48} animate={false}/></div>
             <div style={{fontSize:12,fontWeight:800,color:S.t1}}>{r.pet.name}</div>
-            <div style={{fontSize:10,color:r.isNew?c.cl:S.t3,fontWeight:800,marginTop:3}}>{r.isNew?"NEW":"已獲得過"}</div>
+            <div style={{fontSize:10,color:r.isNew?c.cl:r.resultType==="eggMerge"?ri.color:S.t3,fontWeight:800,marginTop:3}}>{r.resultType==="newEgg"?"NEW":r.resultType==="eggMerge"?`融合 +${r.progressGain}`:`XP +${r.dupeExp}`}</div>
+            {r.resultType==="petBoost"&&<div style={{fontSize:9,color:S.t3,fontWeight:800,marginTop:2}}>親密度 +{r.dupeBond}</div>}
             {(r.pityHit||r.guarantee)&&<div style={{fontSize:9,color:ri.color,fontWeight:800,marginTop:2}}>{r.pityHit?"SR 保底":"十連保底"}</div>}
           </div>)})}
         </div>
@@ -4431,21 +4488,22 @@ function GachaPage({onBack,c,coins,setCoins,eggs,setEggs,pets}){
       </div>);
     }
     const ri=RARITY_INFO[result.rarity];
+    const title=result.resultType==="newEgg"?`獲得 ${result.pet.name} 蛋！`:result.resultType==="eggMerge"?`${result.pet.name} 蛋已融合！`:`${result.pet.name} 轉成成長能量！`;
     return(<div><Hdr t="🎰 扭蛋結果" onBack={()=>{setShowResult(false);setResult(null)}} cl={c.cl}/>
       <div style={{...S.card,padding:"32px 20px",textAlign:"center",background:`linear-gradient(135deg,${ri.bg},var(--color-background-primary,#fff))`,border:`3px solid ${ri.color}`,animation:"bounceIn .5s ease-out"}}>
         <div style={{fontSize:14,fontWeight:700,color:ri.color,marginBottom:8}}>{ri.stars} {ri.label}</div>
-        <div style={{display:"flex",justifyContent:"center",marginBottom:12,animation:"emojiBounce 1.5s ease-in-out infinite"}}><PixelPet petId={result.pet.id} stage="egg" size={128}/></div>
-        <div style={{fontSize:22,fontWeight:700,color:S.t1}}>獲得 {result.pet.name} 蛋！</div>
-        <div style={{fontSize:12,color:result.isNew?c.cl:S.t3,fontWeight:900,marginTop:4}}>{result.isNew?"NEW · 新寵物蛋":"已獲得過 · 孵化後會轉成經驗"}</div>
+        <div style={{display:"flex",justifyContent:"center",marginBottom:12,animation:"emojiBounce 1.5s ease-in-out infinite"}}><PixelPet petId={result.pet.id} stage={result.resultType==="petBoost"?"adult":"egg"} size={128}/></div>
+        <div style={{fontSize:22,fontWeight:700,color:S.t1}}>{title}</div>
+        <div style={{fontSize:12,color:result.resultType==="newEgg"?c.cl:ri.color,fontWeight:900,marginTop:4}}>{result.resultType==="newEgg"?"NEW · 已放入蛋倉":result.resultType==="eggMerge"?`重複蛋自動融合 · 孵化進度 +${result.progressGain}`:`已擁有寵物 · XP +${result.dupeExp} · 親密度 +${result.dupeBond}`}</div>
         <div style={{fontSize:13,color:S.t2,marginTop:6}}>預覽：{result.pet.emoji} {result.pet.name}</div>
         <div style={{fontSize:12,color:S.t3,marginTop:8,fontStyle:"italic"}}>{result.pet.story}</div>
         {result.pityHit&&<div style={{marginTop:12,padding:"8px 12px",background:"#FFF3CD",border:"1px solid #EF9F27",borderRadius:10,fontSize:12,color:"#856404",fontWeight:800}}>SR 保底觸發，這次至少超稀有！</div>}
         <div style={{marginTop:16,padding:"10px 14px",background:S.bg2,borderRadius:10,fontSize:13,color:S.t2}}>
-          💡 繼續學習 {EGG_HATCH_TASKS[result.rarity]} 題英文來孵化這顆蛋！
+          {result.resultType==="newEgg"?`💡 繼續學習 ${EGG_HATCH_TASKS[result.rarity]} 題英文來孵化這顆蛋！`:result.resultType==="eggMerge"?`💡 到蛋倉查看進度：${result.targetProgress}/${result.targetNeeded}`:"💡 到寵物圖鑑查看寵物成長。"}
         </div>
       </div>
       <div style={{display:"flex",gap:8,marginTop:14}}>
-        <button onClick={()=>{setShowResult(false);setResult(null)}} style={{...S.btn,background:c.cl,color:"#fff",fontSize:14,flex:1}}>收下蛋</button>
+        <button onClick={()=>{setShowResult(false);setResult(null)}} style={{...S.btn,background:c.cl,color:"#fff",fontSize:14,flex:1}}>收下結果</button>
         <button onClick={()=>{setShowResult(false);setResult(null);setTimeout(roll,200)}} disabled={coins<EGG_COST} style={{...S.btn,background:S.bg2,color:S.t1,fontSize:14,flex:1,opacity:coins<EGG_COST?0.45:1}}>再抽一次</button>
       </div>
     </div>);
@@ -4529,6 +4587,8 @@ function GachaPage({onBack,c,coins,setCoins,eggs,setEggs,pets}){
         • 完成 SRS 輪次 → 額外獎勵<br/>
         • Combo 連擊 → 額外獎勵<br/>
         • 每日目標達成 → 大量金幣<br/>
+        • 抽到重複蛋 → 自動融合成孵化進度<br/>
+        • 抽到已擁有寵物 → 轉成 XP 與親密度<br/>
         <span style={{color:c.cl,fontWeight:800}}>這裡只使用學習金幣，不需要任何付費抽蛋。</span>
       </div>
     </div>
@@ -6797,6 +6857,53 @@ function PetsPage({onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,s
       return new Date(b.egg.date||0)-new Date(a.egg.date||0);
     });
   },[eggs,eggSort]);
+  const duplicateEggIssueCount=useMemo(()=>{
+    const seen=new Set();
+    return eggs.reduce((count,egg)=>{
+      if(ownedIds.has(egg.petId)||seen.has(egg.petId))return count+1;
+      seen.add(egg.petId);
+      return count;
+    },0);
+  },[eggs,ownedIds]);
+  const mergeDuplicateEggs=()=>{
+    if(!duplicateEggIssueCount)return;
+    const now=new Date().toISOString();
+    const kept=new Map();
+    const rewards={};
+    let merged=0,boosted=0;
+    eggs.forEach(egg=>{
+      if(ownedIds.has(egg.petId)){
+        const r=DUPLICATE_PET_REWARD[egg.rarity]||DUPLICATE_PET_REWARD.N;
+        rewards[egg.petId]=rewards[egg.petId]?{exp:rewards[egg.petId].exp+r.exp,bond:rewards[egg.petId].bond+r.bond,dupes:rewards[egg.petId].dupes+1}:{exp:r.exp,bond:r.bond,dupes:1};
+        boosted++;
+        return;
+      }
+      const old=kept.get(egg.petId);
+      if(!old){kept.set(egg.petId,{...egg});return}
+      const gain=Math.max(DUPLICATE_EGG_PROGRESS[egg.rarity]||DUPLICATE_EGG_PROGRESS.N,egg.progress||0);
+      const needed=EGG_HATCH_TASKS[old.rarity]||EGG_HATCH_TASKS[egg.rarity];
+      old.progress=Math.min(needed,(old.progress||0)+gain);
+      old.updatedAt=now;
+      merged++;
+    });
+    if(Object.keys(rewards).length){
+      setPets(ps=>ps.map(p=>{
+        const r=rewards[p.petId];if(!r)return p;
+        let updated={...p,dupes:(p.dupes||0)+r.dupes,exp:(p.exp||0)+r.exp,bond:(p.bond||0)+r.bond,lastUpdate:now};
+        let guard=0;
+        while(updated.exp>=(updated.level||1)*100&&guard<8){
+          const before=updated.level;
+          updated=levelUpPet(updated);
+          if(updated.level===before)break;
+          guard++;
+        }
+        return updated;
+      }));
+    }
+    setEggs([...kept.values()]);
+    playSound("combo");
+    showToast(`已整理重複蛋：融合 ${merged} 顆，轉成成長能量 ${boosted} 顆`,"✨","info");
+  };
 
   const claimTask=(task,event)=>{
     if(claimedToday.includes(task.id))return;
@@ -7456,6 +7563,10 @@ body.eg-anim-off [data-pet-card] { animation: none !important; }
         {[{k:"ready",l:"可孵化優先"},{k:"rarity",l:"稀有度"},{k:"new",l:"最新"}].map(o=><button key={o.k} onClick={()=>setEggSort(o.k)} style={{border:`1px solid ${eggSort===o.k?c.cl:S.bd}`,background:eggSort===o.k?c.bg:S.bg1,color:eggSort===o.k?c.cl:S.t2,borderRadius:999,padding:"6px 9px",fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>{o.l}</button>)}
       </div>
     </div>
+    {duplicateEggIssueCount>0&&<div style={{...S.card,padding:"12px",marginBottom:10,border:"1px solid #EF9F27",background:"#FFF3CD",display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}>
+      <div style={{flex:1,minWidth:180}}><div style={{fontSize:13,fontWeight:900,color:"#856404"}}>偵測到 {duplicateEggIssueCount} 顆重複蛋</div><div style={{fontSize:11,color:"#856404",marginTop:2}}>重複蛋可融合成孵化進度；已擁有寵物的蛋會轉成 XP 與親密度。</div></div>
+      <button onClick={mergeDuplicateEggs} style={{...S.btn,background:"#EF9F27",color:"#fff",padding:"9px 12px",fontSize:12}}>整理重複蛋</button>
+    </div>}
     <div style={{display:"grid",gap:10}}>
       {visibleEggs.map(({egg})=>{
         const petDef=PETS[egg.rarity].find(p=>p.id===egg.petId);
