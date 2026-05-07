@@ -1178,7 +1178,7 @@ function speakStory(sentences,opts={}){
     const isLast=i===sentences.length-1;
     i++;
     opts.onSentence?.(i-1,text);
-    const u=makeUtterance(text,"en-US",opts.rate||0.88,{
+    const u=makeUtterance(text,opts.lang||"en-US",opts.rate||0.88,{
       pitch:opts.pitch||1.08,
       onend:()=>{
         if(cancelled||token!==_speechToken)return;
@@ -2284,7 +2284,7 @@ function SpeakM({lv,onBack,onXp}){
     return()=>{try{r.abort()}catch{}};
   },[]);
 
-  useEffect(()=>{if(phase==="ready"&&cur&&!loading){const t=speechTimer(()=>speak(cur.en,"en-US",0.75),400);return()=>clearTimeout(t)}},[si,phase,loading,cur?.en]);
+  useEffect(()=>{if(phase==="ready"&&cur&&!loading){const t=speechTimer(()=>speak(cur.en,"en-US",0.85),400);return()=>clearTimeout(t)}},[si,phase,loading,cur?.en]);
 
   useEffect(()=>{
     if(!spoken||spoken.startsWith("[")||!cur)return;
@@ -2302,7 +2302,7 @@ function SpeakM({lv,onBack,onXp}){
     }else{
       setCombo(0);playSound("bad");
       const miss=comp.result.filter(x=>!x.ok).map(x=>x.word).slice(0,3).join(", ");
-      setTip(miss?`先慢慢練這些字：${miss}`:"再聽一次示範，注意重音和節奏。");
+      setTip(miss?`先練這些字：${miss}`:"再聽一次示範，注意重音和節奏。");
     }
   },[spoken,cur,si,onXp]);
 
@@ -2313,6 +2313,8 @@ function SpeakM({lv,onBack,onXp}){
     speechTimer(()=>{try{recogRef.current.start()}catch{}},80);
   };
   const stopListening=()=>{if(recogRef.current&&listening){try{recogRef.current.stop()}catch{}}};
+  const demo=()=>cur&&speak(cur.en,"en-US",0.85);
+  const retryAndListen=()=>{retry();speechTimer(startListening,120)};
   const nextItem=()=>{
     if(si+1>=items.length){playSound("done");setShowConfetti(true);setTimeout(()=>setShowConfetti(false),3500);setPhase("done");return}
     setSi(s=>s+1);setPhase("ready");setSpoken("");setInterim("");setComparison(null);setTip("");
@@ -2329,9 +2331,9 @@ function SpeakM({lv,onBack,onXp}){
   if(noSupport)return(<div><Hdr t="🗣️ 口說練習" onBack={onBack} cl={c.cl}/><div style={{...S.card,padding:"24px 16px",textAlign:"center"}}><div style={{fontSize:40,marginBottom:10}}>😔</div><div style={{fontSize:14,color:S.t1,fontWeight:600}}>瀏覽器不支援語音辨識</div><div style={{fontSize:12,color:S.t2,marginTop:6}}>請使用 Chrome 或 Edge 瀏覽器</div></div></div>);
   if(loading||!cur)return(<div><Hdr t="🗣️ 口說練習" onBack={onBack} cl={c.cl}/><div style={{textAlign:"center",padding:"48px",color:S.t3}}>載入中...</div></div>);
 
-  if(phase==="done"){const total=items.length;const finalPct=Math.round(score/Math.max(total,1)*100);const weak=items.map((item,i)=>({item,i,record:records[i]})).filter(x=>!x.record?.passed);return(<div>{showConfetti&&<Confetti/>}<Hdr t="🗣️ 口說練習" onBack={onBack} cl={c.cl}/><div style={{textAlign:"center",padding:"28px 12px"}}><div style={{fontSize:56,animation:"bounceIn .5s ease-out"}}>{finalPct>=80?"🏆":finalPct>=50?"🎉":"💪"}</div><h2 style={{fontSize:22,fontWeight:700,color:S.t1,marginTop:8}}>口說練習完成！</h2><div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,maxWidth:420,margin:"16px auto"}}>{[["通過",`${score}/${total}`,c.cl],["掌握率",`${finalPct}%`,finalPct>=80?"#1D9E75":"#EF9F27"],["嘗試",attemptsTotal,"#185FA5"]].map(([l,v,cl])=><div key={l} style={{...S.card,padding:"12px 8px",borderTop:`3px solid ${cl}`}}><div style={{fontSize:22,fontWeight:800,color:cl}}>{v}</div><div style={{fontSize:11,color:S.t3,marginTop:2}}>{l}</div></div>)}</div>{maxCombo>=3&&<div style={{fontSize:13,color:"#EF9F27",fontWeight:600,marginTop:4}}>🔥 最高 {maxCombo} 連擊！</div>}<div style={{fontSize:14,color:S.t2,margin:"8px 0 14px"}}>{finalPct>=80?"口說節奏很好，可以挑戰更長句子。":"建議把未通過項目慢速聽一次，再逐字跟讀。"}</div>{weak.length>0&&<div style={{...S.card,padding:"12px 14px",maxWidth:540,margin:"0 auto 14px",textAlign:"left"}}><div style={{fontSize:13,fontWeight:800,color:"#E24B4A",marginBottom:8}}>需要再練</div><div style={{display:"grid",gap:7}}>{weak.map(({item,i,record})=><button key={`${item.en}-${i}`} onClick={()=>speak(item.en,"en-US",0.72)} style={{border:`1px solid ${S.bd}`,background:S.bg1,borderRadius:12,padding:"9px 11px",textAlign:"left",cursor:"pointer",fontFamily:"inherit"}}><div style={{fontSize:14,fontWeight:800,color:S.t1}}>{item.en}</div><div style={{fontSize:12,color:S.t2,marginTop:2}}>{item.zh} · 最高 {record?.bestPct||0}%</div></button>)}</div></div>}<button onClick={weak.length?retryWeak:restart} style={{...S.btn,background:c.cl,color:"#fff",marginRight:8,fontSize:14}}>{weak.length?"只練未通過":"換一批"}</button><button onClick={onBack} style={{...S.btn,background:S.bg2,color:S.t1,fontSize:14}}>返回</button></div></div>)}
+  if(phase==="done"){const total=items.length;const finalPct=Math.round(score/Math.max(total,1)*100);const weak=items.map((item,i)=>({item,i,record:records[i]})).filter(x=>!x.record?.passed);return(<div>{showConfetti&&<Confetti/>}<Hdr t="🗣️ 口說練習" onBack={onBack} cl={c.cl}/><div style={{textAlign:"center",padding:"28px 12px"}}><div style={{fontSize:56,animation:"bounceIn .5s ease-out"}}>{finalPct>=80?"🏆":finalPct>=50?"🎉":"💪"}</div><h2 style={{fontSize:22,fontWeight:700,color:S.t1,marginTop:8}}>口說練習完成！</h2><div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,maxWidth:420,margin:"16px auto"}}>{[["通過",`${score}/${total}`,c.cl],["掌握率",`${finalPct}%`,finalPct>=80?"#1D9E75":"#EF9F27"],["嘗試",attemptsTotal,"#185FA5"]].map(([l,v,cl])=><div key={l} style={{...S.card,padding:"12px 8px",borderTop:`3px solid ${cl}`}}><div style={{fontSize:22,fontWeight:800,color:cl}}>{v}</div><div style={{fontSize:11,color:S.t3,marginTop:2}}>{l}</div></div>)}</div>{maxCombo>=3&&<div style={{fontSize:13,color:"#EF9F27",fontWeight:600,marginTop:4}}>🔥 最高 {maxCombo} 連擊！</div>}<div style={{fontSize:14,color:S.t2,margin:"8px 0 14px"}}>{finalPct>=80?"口說節奏很好，可以挑戰更長句子。":"建議聽示範後，把未通過項目逐字跟讀。"}</div>{weak.length>0&&<div style={{...S.card,padding:"12px 14px",maxWidth:540,margin:"0 auto 14px",textAlign:"left"}}><div style={{fontSize:13,fontWeight:800,color:"#E24B4A",marginBottom:8}}>需要再練</div><div style={{display:"grid",gap:7}}>{weak.map(({item,i,record})=><button key={`${item.en}-${i}`} onClick={()=>speak(item.en,"en-US",0.85)} style={{border:`1px solid ${S.bd}`,background:S.bg1,borderRadius:12,padding:"9px 11px",textAlign:"left",cursor:"pointer",fontFamily:"inherit"}}><div style={{fontSize:14,fontWeight:800,color:S.t1}}>{item.en}</div><div style={{fontSize:12,color:S.t2,marginTop:2}}>{item.zh} · 最高 {record?.bestPct||0}%</div></button>)}</div></div>}<button onClick={weak.length?retryWeak:restart} style={{...S.btn,background:c.cl,color:"#fff",marginRight:8,fontSize:14}}>{weak.length?"只練未通過":"換一批"}</button><button onClick={onBack} style={{...S.btn,background:S.bg2,color:S.t1,fontSize:14}}>返回</button></div></div>)}
 
-  const pct=Math.round((si/items.length)*100);const threshold=speakPassThreshold(cur);const best=currentRecord?.bestPct||0;const isSentence=cur.type==="sentence";
+  const pct=Math.round((si/items.length)*100);const threshold=speakPassThreshold(cur);const best=currentRecord?.bestPct||0;const attempts=currentRecord?.attempts||0;const isSentence=cur.type==="sentence";
   return(<div><Hdr t="🗣️ 口說練習" onBack={onBack} cl={c.cl}/>
     <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:8,fontSize:12}}><div style={{flex:1,height:7,background:S.bg2,borderRadius:999,overflow:"hidden"}}><div style={{height:"100%",width:`${pct}%`,background:`linear-gradient(90deg,${c.cl},${c.ac})`,borderRadius:999,transition:"width .3s"}}/></div><span style={{color:S.t3,minWidth:44,textAlign:"right"}}>{si+1}/{items.length}</span><span style={{color:"#1D9E75",fontWeight:800,minWidth:32,textAlign:"right"}}>{score}✓</span></div>
     {comboLabel&&<div style={{textAlign:"center",fontSize:14,fontWeight:700,color:"#EF9F27",marginBottom:6,animation:"comboFlash .5s"}}>{comboLabel}</div>}
@@ -2339,7 +2341,7 @@ function SpeakM({lv,onBack,onXp}){
 
     <div style={{...S.card,padding:0,overflow:"hidden",marginBottom:12,borderTop:`4px solid ${c.cl}`}}>
       <div style={{background:`linear-gradient(135deg,${c.bg},var(--color-background-primary,#fff))`,padding:"18px 16px",textAlign:"center",borderBottom:`1px solid ${S.bd}`}}>
-        <div style={{display:"flex",justifyContent:"center",gap:7,flexWrap:"wrap",marginBottom:8}}><span style={{fontSize:12,fontWeight:800,color:c.cl,background:"#fff",border:`1px solid ${c.cl}33`,borderRadius:999,padding:"5px 9px"}}>{isSentence?"句子":"單字"}</span><span style={{fontSize:12,fontWeight:800,color:best>=threshold?"#1D9E75":S.t3,background:best>=threshold?"#E1F5EE":S.bg2,borderRadius:999,padding:"5px 9px"}}>本題最高 {best}%</span><span style={{fontSize:12,fontWeight:800,color:S.t3,background:S.bg2,borderRadius:999,padding:"5px 9px"}}>通過 {threshold}%</span></div>
+        <div style={{display:"flex",justifyContent:"center",gap:7,flexWrap:"wrap",marginBottom:8}}><span style={{fontSize:12,fontWeight:800,color:c.cl,background:"#fff",border:`1px solid ${c.cl}33`,borderRadius:999,padding:"5px 9px"}}>{isSentence?"句子":"單字"}</span><span style={{fontSize:12,fontWeight:800,color:best>=threshold?"#1D9E75":S.t3,background:best>=threshold?"#E1F5EE":S.bg2,borderRadius:999,padding:"5px 9px"}}>本題最高 {best}%</span><span style={{fontSize:12,fontWeight:800,color:S.t3,background:S.bg2,borderRadius:999,padding:"5px 9px"}}>已試 {attempts} 次</span><span style={{fontSize:12,fontWeight:800,color:S.t3,background:S.bg2,borderRadius:999,padding:"5px 9px"}}>通過 {threshold}%</span></div>
         <div style={{fontSize:15,color:S.t3,marginBottom:4}}>{isSentence?"看中文，唸出完整英文句子":"看中文，唸出英文單字"}</div>
         <div style={{fontSize:isSentence?23:32,fontWeight:800,color:S.t1,lineHeight:1.45}}>{cur.zh}</div>{cur.pos&&<div style={{fontSize:11,color:S.t3,marginTop:3}}>({cur.pos})</div>}
       </div>
@@ -2348,7 +2350,7 @@ function SpeakM({lv,onBack,onXp}){
         {cur.keyword&&<div style={{fontSize:11,color:S.t3,marginTop:5}}>重點單字：<b style={{color:c.cl}}>{cur.keyword}</b></div>}
         {isSentence&&<div style={{display:"flex",gap:5,justifyContent:"center",flexWrap:"wrap",marginTop:10}}>{normalizeText(cur.en).split(" ").map(w=><span key={w} style={{fontSize:12,color:S.t2,background:S.bg2,borderRadius:999,padding:"4px 8px"}}>{w}</span>)}</div>}
       </div>
-      <div style={{padding:"0 16px 16px",display:"flex",gap:8,justifyContent:"center",flexWrap:"wrap"}}><button onClick={()=>speak(cur.en,"en-US",0.62)} style={{...S.btn,background:S.bg2,color:S.t1,padding:"9px 14px",fontSize:13}}>🐢 慢速</button><button onClick={()=>speak(cur.en,"en-US",0.82)} style={{...S.btn,background:c.bg,color:c.cl,padding:"9px 14px",fontSize:13}}>🔊 示範</button><button onClick={()=>window.open(`https://youglish.com/pronounce/${encodeURIComponent(cur.en)}/english`,"_blank")} style={{...S.btn,background:`${c.cl}22`,color:c.cl,padding:"9px 14px",fontSize:13,border:`1px solid ${c.cl}44`}}>🎬 真人</button></div>
+      <div style={{padding:"0 16px 16px",display:"flex",gap:8,justifyContent:"center",flexWrap:"wrap"}}><button onClick={demo} style={{...S.btn,background:c.bg,color:c.cl,padding:"9px 14px",fontSize:13}}>🔊 聽示範</button><button onClick={startListening} disabled={listening} style={{...S.btn,background:c.cl,color:"#fff",padding:"9px 14px",fontSize:13,opacity:listening?0.55:1}}>🎤 直接開說</button><button onClick={()=>window.open(`https://youglish.com/pronounce/${encodeURIComponent(cur.en)}/english`,"_blank")} style={{...S.btn,background:`${c.cl}22`,color:c.cl,padding:"9px 14px",fontSize:13,border:`1px solid ${c.cl}44`}}>🎬 真人發音</button></div>
     </div>
 
     {phase!=="result"&&<div style={{textAlign:"center",marginBottom:12}}>
@@ -2364,9 +2366,10 @@ function SpeakM({lv,onBack,onXp}){
     {phase==="result"&&comparison&&<div style={{...S.card,padding:"16px",marginBottom:12}}>
       <div style={{textAlign:"center",marginBottom:10}}><div style={{fontSize:42}}>{comparison.pct>=90?"🌟":comparison.pct>=threshold?"👍":comparison.pct>=40?"🤔":"😅"}</div><div style={{fontSize:15,fontWeight:800,color:comparison.pct>=threshold?"#1D9E75":"#E24B4A",marginTop:4}}>{comparison.pct>=threshold?"通過":"再練一次"}</div><div style={{margin:"9px auto",maxWidth:210}}><div style={{height:9,background:S.bg2,borderRadius:999,overflow:"hidden"}}><div style={{height:"100%",width:`${comparison.pct}%`,background:comparison.pct>=threshold?"linear-gradient(90deg,#1D9E75,#5DCAA5)":"linear-gradient(90deg,#E24B4A,#EF9F27)",borderRadius:999,transition:"width .5s"}}/></div><div style={{fontSize:11,color:S.t2,marginTop:4}}>準確度 {comparison.pct}% · 門檻 {threshold}%</div></div></div>
       <div style={{fontSize:17,lineHeight:2.25,textAlign:"center",margin:"8px 0"}}>{comparison.result.map((r,i)=><span key={i} title={r.heard?`聽到：${r.heard}`:"未聽到"} style={{display:"inline-block",padding:"3px 7px",borderRadius:8,margin:"2px",fontWeight:800,background:r.ok?"#E1F5EE":"#FCEBEB",color:r.ok?"#1D9E75":"#E24B4A"}}>{r.word}</span>)}</div>
+      {comparison.result.some(r=>!r.ok)&&<div style={{display:"flex",gap:6,justifyContent:"center",flexWrap:"wrap",margin:"2px 0 10px"}}>{comparison.result.filter(r=>!r.ok).map(r=><button key={r.word} onClick={()=>speak(r.word,"en-US",0.85)} style={{border:"1px solid #F0D59A",background:"#FFF7E6",color:"#8A5A00",borderRadius:999,padding:"6px 10px",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>練 {r.word} 🔊</button>)}</div>}
       {tip&&<div style={{fontSize:12,color:"#8A5A00",background:"#FFF7E6",border:"1px solid #F0D59A",borderRadius:10,padding:"8px 10px",marginBottom:8,textAlign:"center"}}>{tip}</div>}
       <div style={{fontSize:12,color:S.t2,textAlign:"center",padding:"8px 10px",background:S.bg2,borderRadius:10}}>你說的是：{spoken}{comparison.extra?.length?` · 多聽到：${comparison.extra.join(", ")}`:""}</div>
-      <div style={{display:"flex",gap:8,justifyContent:"center",marginTop:12,flexWrap:"wrap"}}><button onClick={()=>speak(cur.en,"en-US",0.62)} style={{...S.btn,background:S.bg2,color:S.t1,padding:"10px 14px",fontSize:12,minHeight:42}}>🐢 慢速</button><button onClick={retry} style={{...S.btn,background:"#FAEEDA",color:"#8A5A00",padding:"10px 14px",fontSize:12,minHeight:42}}>重試</button><button onClick={nextItem} style={{...S.btn,background:c.cl,color:"#fff",padding:"10px 14px",fontSize:12,minHeight:42}}>{si+1>=items.length?"完成":"下一個"}</button></div>
+      <div style={{display:"flex",gap:8,justifyContent:"center",marginTop:12,flexWrap:"wrap"}}><button onClick={demo} style={{...S.btn,background:S.bg2,color:S.t1,padding:"10px 14px",fontSize:12,minHeight:42}}>聽示範</button><button onClick={retryAndListen} style={{...S.btn,background:"#FAEEDA",color:"#8A5A00",padding:"10px 14px",fontSize:12,minHeight:42}}>重說一次</button><button onClick={nextItem} style={{...S.btn,background:c.cl,color:"#fff",padding:"10px 14px",fontSize:12,minHeight:42}}>{si+1>=items.length?"完成":"下一個"}</button></div>
     </div>}
   </div>);
 }
@@ -2859,26 +2862,49 @@ function BombM({lv,onBack,onXp}){
 
 // ═══ QUIZ ═══════════════════════════════════════════════════════════
 function QuizM({lv,onBack,onXp,onPerfect,trackWeak}){
-  const built=V[lv];const[words,setWords]=useState(built);const[loading,setLoading]=useState(true);const[qi,setQi]=useState(0);const[score,setScore]=useState(0);const[sel,setSel]=useState(null);const[done,setDone]=useState(false);const c=LV[lv];
-  const[combo,setCombo]=useState(0);const[maxCombo,setMaxCombo]=useState(0);const[showConfetti,setShowConfetti]=useState(false);
-  useEffect(()=>{(async()=>{const cloud=await fetchCloudVocab(lv,20);if(cloud?.length)setWords(cloud);setLoading(false)})()},[lv]);
-  const qs=useMemo(()=>words.map((w,i)=>{const wr=words.filter((_,j)=>j!==i).sort(()=>Math.random()-.5).slice(0,3);return{word:w.w,ph:w.ph,correct:w.m,opts:[...wr.map(x=>x.m),w.m].sort(()=>Math.random()-.5)}}).sort(()=>Math.random()-.5),[words]);
-  const pick=o=>{if(sel!==null)return;setSel(o);const ok=o===qs[qi].correct;
-    if(ok){setScore(s=>s+1);onXp();playSound("good");setCombo(cb=>{const nc=cb+1;setMaxCombo(mc=>Math.max(mc,nc));return nc})}
-    else{trackWeak(qs[qi].word);playSound("bad");setCombo(0)}
-    setTimeout(()=>{setSel(null);if(qi+1>=qs.length){setDone(true);if(score+(ok?1:0)>=qs.length)onPerfect();playSound("done");setShowConfetti(true);setTimeout(()=>setShowConfetti(false),3500)}else setQi(qi+1)},900)};
+  const built=V[lv];const c=LV[lv];const QUIZ_SIZE=10;
+  const[words,setWords]=useState(built);const[loading,setLoading]=useState(true);const[mode,setMode]=useState("en2zh");
+  const[session,setSession]=useState(0);const[qi,setQi]=useState(0);const[score,setScore]=useState(0);const[sel,setSel]=useState(null);const[done,setDone]=useState(false);
+  const[combo,setCombo]=useState(0);const[maxCombo,setMaxCombo]=useState(0);const[showConfetti,setShowConfetti]=useState(false);const[review,setReview]=useState([]);
+  useEffect(()=>{let active=true;setLoading(true);setWords(built);setQi(0);setScore(0);setSel(null);setDone(false);setReview([]);setCombo(0);setMaxCombo(0);(async()=>{const cloud=await fetchCloudVocab(lv,30);if(active&&cloud?.length)setWords(cloud);if(active)setLoading(false)})();return()=>{active=false}},[lv,built]);
+  const buildQuestion=(w,i,kind)=>{
+    const askEn=kind==="en2zh";
+    const others=shuffleCopy(words.filter((_,j)=>j!==i)).slice(0,3);
+    return{item:w,kind,prompt:askEn?w.w:w.m,answer:askEn?w.m:w.w,opts:shuffleCopy([...others.map(x=>askEn?x.m:x.w),askEn?w.m:w.w])};
+  };
+  const qs=useMemo(()=>{
+    const usable=words.filter(w=>w?.w&&w?.m);
+    return shuffleCopy(usable).slice(0,Math.min(QUIZ_SIZE,usable.length)).map((w,i)=>{
+      const realIdx=words.indexOf(w);
+      const kind=mode==="mix"?(i%2===0?"en2zh":"zh2en"):mode;
+      return buildQuestion(w,realIdx>=0?realIdx:i,kind);
+    });
+  },[words,mode,session]);
+  const resetQuiz=(nextMode=mode)=>{setMode(nextMode);setSession(s=>s+1);setQi(0);setScore(0);setSel(null);setDone(false);setCombo(0);setMaxCombo(0);setReview([]);setShowConfetti(false)};
+  const finish=(finalScore)=>{setDone(true);if(finalScore>=qs.length)onPerfect?.();playSound("done");setShowConfetti(true);setTimeout(()=>setShowConfetti(false),3500)};
+  const pick=o=>{if(sel!==null||!qs.length)return;const q=qs[qi];setSel(o);const ok=o===q.answer;const nextScore=score+(ok?1:0);
+    if(ok){setScore(nextScore);onXp?.(10);playSound("good");setCombo(cb=>{const nc=cb+1;setMaxCombo(mc=>Math.max(mc,nc));return nc})}
+    else{trackWeak?.(q.item.w);setReview(r=>r.some(x=>x.item.w===q.item.w)?r:[...r,{...q,picked:o}]);playSound("bad");setCombo(0)}
+  };
+  const next=()=>{setSel(null);if(qi+1>=qs.length)finish(score);else setQi(q=>q+1)};
   const comboLabel=combo>=7?"🔥🔥 ON FIRE!":combo>=5?"🔥 COMBO x"+combo:combo>=3?"✨ "+combo+" 連擊！":"";
   if(loading)return(<div><Hdr t="📝 單字測驗" onBack={onBack} cl={c.cl}/><div style={{textAlign:"center",padding:"48px 16px",color:S.t3,fontSize:14}}>載入中...</div></div>);
-  if(done){const pct=Math.round((score/qs.length)*100);return(<div>{showConfetti&&<Confetti/>}<Hdr t="📝 單字測驗" onBack={onBack} cl={c.cl}/><div style={{textAlign:"center",padding:"32px 16px"}}><div style={{fontSize:56,animation:"bounceIn .5s ease-out"}}>{pct>=90?"🏆":pct>=70?"🎉":pct>=50?"👏":"💪"}</div><h2 style={{fontSize:22,fontWeight:700,color:S.t1,marginTop:8}}>測驗完成！</h2><div style={{fontSize:18,color:c.cl,fontWeight:600,marginTop:6}}>{score}/{qs.length} 答對 ({pct}%)</div>{maxCombo>=3&&<div style={{fontSize:13,color:"#EF9F27",fontWeight:600,marginTop:4}}>🔥 最高 {maxCombo} 連擊！</div>}<div style={{fontSize:14,color:S.t2,marginTop:8,marginBottom:16}}>{pct>=90?"太厲害了！🌟":pct>=70?"不錯！繼續加油 💪":"多複習再來挑戰！📖"}</div><button onClick={()=>{setQi(0);setScore(0);setSel(null);setDone(false);setCombo(0);setMaxCombo(0)}} style={{...S.btn,background:c.cl,color:"#fff",marginRight:8,fontSize:14}}>🔄 再測一次</button><button onClick={onBack} style={{...S.btn,background:S.bg2,color:S.t1,fontSize:14}}>返回</button></div></div>)}
+  if(!qs.length)return(<div><Hdr t="📝 單字測驗" onBack={onBack} cl={c.cl}/><div style={{...S.card,padding:"28px 18px",textAlign:"center",color:S.t2}}>目前沒有可測驗的單字</div></div>);
+  if(done){const pct=Math.round((score/qs.length)*100);return(<div>{showConfetti&&<Confetti/>}<Hdr t="📝 單字測驗" onBack={onBack} cl={c.cl}/><div style={{textAlign:"center",padding:"30px 14px"}}><div style={{fontSize:56,animation:"bounceIn .5s ease-out"}}>{pct>=90?"🏆":pct>=70?"🎉":pct>=50?"👏":"💪"}</div><h2 style={{fontSize:22,fontWeight:700,color:S.t1,marginTop:8}}>測驗完成！</h2><div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,maxWidth:420,margin:"16px auto"}}>{[["答對",`${score}/${qs.length}`,c.cl],["掌握率",`${pct}%`,pct>=80?"#1D9E75":"#EF9F27"],["待複習",review.length,"#E24B4A"]].map(([l,v,cl])=><div key={l} style={{...S.card,padding:"12px 8px",borderTop:`3px solid ${cl}`}}><div style={{fontSize:22,fontWeight:800,color:cl}}>{v}</div><div style={{fontSize:11,color:S.t3,marginTop:2}}>{l}</div></div>)}</div>{maxCombo>=3&&<div style={{fontSize:13,color:"#EF9F27",fontWeight:600,marginTop:4}}>🔥 最高 {maxCombo} 連擊！</div>}<div style={{fontSize:14,color:S.t2,margin:"8px 0 14px"}}>{pct>=90?"單字掌握度很好，可以挑戰反向測驗。":pct>=70?"不錯，建議把錯題再聽一次。":"先從錯題複習開始，再測一輪。"}</div>{review.length>0&&<div style={{...S.card,padding:"12px 14px",maxWidth:560,margin:"0 auto 14px",textAlign:"left"}}><div style={{fontSize:13,fontWeight:800,color:"#E24B4A",marginBottom:8}}>錯題複習</div><div style={{display:"grid",gap:7}}>{review.map(r=><button key={`${r.item.w}-${r.kind}`} onClick={()=>speak(r.item.w)} style={{border:`1px solid ${S.bd}`,background:S.bg1,borderRadius:12,padding:"9px 11px",textAlign:"left",cursor:"pointer",fontFamily:"inherit"}}><div style={{fontSize:15,fontWeight:900,color:S.t1}}>{r.item.w} <span style={{fontSize:12,color:S.t3,fontWeight:600}}>{r.item.ph||""}</span></div><div style={{fontSize:12,color:S.t2,marginTop:2}}>正解：{r.item.m} · 你的答案：{r.picked}</div></button>)}</div></div>}<button onClick={()=>resetQuiz(mode)} style={{...S.btn,background:c.cl,color:"#fff",marginRight:8,fontSize:14}}>再測一次</button><button onClick={()=>resetQuiz(mode==="en2zh"?"zh2en":"en2zh")} style={{...S.btn,background:S.bg2,color:S.t1,marginRight:8,fontSize:14}}>切換方向</button><button onClick={onBack} style={{...S.btn,background:S.bg2,color:S.t1,fontSize:14}}>返回</button></div></div>)}
   const q=qs[qi];
+  const progressPct=((qi+(sel!==null?1:0))/qs.length)*100;
   return(<div><Hdr t="📝 單字測驗" onBack={onBack} cl={c.cl}/>
-    <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:6,fontSize:12}}><div style={{flex:1,height:6,background:S.bg2,borderRadius:3}}><div style={{height:"100%",width:`${(qi/qs.length)*100}%`,background:`linear-gradient(90deg,${c.cl},${c.ac})`,borderRadius:3,transition:"width .3s"}}/></div><span style={{color:S.t3}}>{qi+1}/{qs.length}</span><span style={{color:"#1D9E75",fontWeight:600}}>{score}✓</span></div>
+    <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8,fontSize:12}}><div style={{flex:1,height:7,background:S.bg2,borderRadius:999,overflow:"hidden"}}><div style={{height:"100%",width:`${progressPct}%`,background:`linear-gradient(90deg,${c.cl},${c.ac})`,borderRadius:999,transition:"width .3s"}}/></div><span style={{color:S.t3,minWidth:44,textAlign:"right"}}>{qi+1}/{qs.length}</span><span style={{color:"#1D9E75",fontWeight:800,minWidth:32,textAlign:"right"}}>{score}✓</span></div>
+    <div style={{display:"flex",gap:6,marginBottom:8,overflowX:"auto",paddingBottom:2}}>{[{k:"en2zh",l:"英選中"},{k:"zh2en",l:"中選英"},{k:"mix",l:"混合"}].map(m=><button key={m.k} onClick={()=>resetQuiz(m.k)} style={{flexShrink:0,padding:"7px 11px",borderRadius:999,border:"none",background:mode===m.k?c.cl:S.bg2,color:mode===m.k?"#fff":S.t2,fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>{m.l}</button>)}</div>
     {comboLabel&&<div style={{textAlign:"center",fontSize:14,fontWeight:700,color:"#EF9F27",marginBottom:4,animation:"comboFlash .5s"}}>{comboLabel}</div>}
-    <div style={{...S.card,padding:"28px 20px",textAlign:"center"}}>
-      <div style={{fontSize:34,fontWeight:700,color:S.t1,animation:"fadeUp .3s"}}>{q.word}</div>
-      <div style={{fontSize:13,color:S.t3,marginTop:4,marginBottom:8}}>{q.ph}</div>
-      <button onClick={()=>speak(q.word)} style={{background:"none",border:"none",fontSize:26,cursor:"pointer",marginBottom:14,padding:"4px"}}>🔊</button>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>{q.opts.map((o,i)=>{const ok=o===q.correct,pk=sel===o;let bg=S.bg2,bd=`1px solid ${S.bd}`,anim="";if(sel!==null){if(ok){bg="#E1F5EE";bd="2px solid #1D9E75";anim="bounceIn .3s"}else if(pk){bg="#FCEBEB";bd="2px solid #E24B4A";anim="moleShake .3s"}}return<button key={i} onClick={()=>pick(o)} style={{padding:"16px 10px",borderRadius:14,background:bg,border:bd,cursor:sel?"default":"pointer",fontSize:14,fontFamily:"inherit",color:S.t1,fontWeight:sel&&ok?700:400,transition:"all .15s",animation:anim,minHeight:52,WebkitTapHighlightColor:"transparent"}} onTouchStart={e=>{if(!sel)e.currentTarget.style.transform="scale(0.95)"}} onTouchEnd={e=>e.currentTarget.style.transform="scale(1)"}>{o}</button>})}</div>
+    <div style={{...S.card,padding:"22px 18px",textAlign:"center",borderTop:`4px solid ${c.cl}`}}>
+      <div style={{fontSize:12,color:S.t3,marginBottom:6}}>{q.kind==="en2zh"?"選出正確中文意思":"選出正確英文單字"}</div>
+      <div style={{fontSize:q.kind==="en2zh"?36:24,fontWeight:900,color:S.t1,lineHeight:1.35,animation:"fadeUp .3s"}}>{q.prompt}</div>
+      <div style={{fontSize:13,color:S.t3,marginTop:5,minHeight:18}}>{q.kind==="en2zh"?q.item.ph:""}</div>
+      <button onClick={()=>speak(q.item.w)} style={{background:S.bg2,border:`1px solid ${S.bd}`,borderRadius:999,fontSize:13,cursor:"pointer",margin:"10px 0 14px",padding:"7px 12px",fontFamily:"inherit",color:S.t2}}>🔊 {q.kind==="en2zh"?"聽單字":"聽正解"}</button>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:8}}>{q.opts.map((o,i)=>{const ok=o===q.answer,pk=sel===o;let bg=S.bg2,bd=`1px solid ${S.bd}`,cl=S.t1,anim="";if(sel!==null){if(ok){bg="#E1F5EE";bd="2px solid #1D9E75";cl="#146B45";anim="bounceIn .3s"}else if(pk){bg="#FCEBEB";bd="2px solid #E24B4A";cl="#A12F2F";anim="moleShake .3s"}}return<button key={i} onClick={()=>pick(o)} disabled={sel!==null} style={{padding:"14px 12px",borderRadius:14,background:bg,border:bd,cursor:sel!==null?"default":"pointer",fontSize:14,fontFamily:"inherit",color:cl,fontWeight:sel!==null&&ok?900:700,transition:"all .15s",animation:anim,minHeight:54,WebkitTapHighlightColor:"transparent",textAlign:"left",display:"flex",gap:9,alignItems:"center"}} onTouchStart={e=>{if(sel===null)e.currentTarget.style.transform="scale(0.95)"}} onTouchEnd={e=>e.currentTarget.style.transform="scale(1)"}><span style={{width:24,height:24,borderRadius:"50%",background:sel!==null&&ok?"#1D9E75":S.bg1,color:sel!==null&&ok?"#fff":S.t3,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:900,flexShrink:0}}>{String.fromCharCode(65+i)}</span><span>{o}</span></button>})}</div>
+      {sel!==null&&<div style={{marginTop:12,padding:"11px 12px",borderRadius:12,background:sel===q.answer?"#E1F5EE":"#FFF3CD",fontSize:13,color:S.t2,lineHeight:1.65,textAlign:"left"}}><div style={{fontWeight:900,color:sel===q.answer?"#1D9E75":"#E24B4A",marginBottom:3}}>{sel===q.answer?"答對了":"答錯了"}</div><div><b style={{color:S.t1}}>{q.item.w}</b>{q.item.ph?` ${q.item.ph}`:""} · {q.item.m}</div>{q.item.ex&&<div style={{marginTop:4,color:S.t2}}>例句：{q.item.ex}</div>}</div>}
+      {sel!==null&&<button onClick={next} style={{...S.btn,background:c.cl,color:"#fff",width:"100%",padding:"12px",fontSize:14,marginTop:12}}>{qi+1>=qs.length?"看成績":"下一題"}</button>}
     </div>
   </div>);
 }
@@ -2917,96 +2943,115 @@ function ScramM({lv,onBack,onXp,onDone}){
   const[qi,setQi]=useState(0);const[selected,setSelected]=useState([]);const[pool,setPool]=useState([]);
   const[result,setResult]=useState(null);const[score,setScore]=useState(0);const[done,setDone]=useState(false);
   const[combo,setCombo]=useState(0);const[maxCombo,setMaxCombo]=useState(0);
-  const[showConfetti,setShowConfetti]=useState(false);const[hintUsed,setHintUsed]=useState(false);
+  const[showConfetti,setShowConfetti]=useState(false);const[hintCount,setHintCount]=useState(0);
+  const[attempts,setAttempts]=useState(0);const[wrongReview,setWrongReview]=useState([]);
 
-  useEffect(()=>{if(qi<data.length){const words=data[qi].s.split(" ");setPool(words.map((w,i)=>({w,id:i})).sort(()=>Math.random()-.5));setSelected([]);setResult(null);setHintUsed(false)}},[qi]);
+  const current=data[qi]||data[0];
+  const correctWords=useMemo(()=>String(current?.s||"").split(" ").filter(Boolean),[current]);
+  const shuffleItems=useCallback((words)=>{
+    const base=words.map((w,i)=>({w,id:`${i}-${w}`}));
+    let out=shuffleCopy(base);
+    if(out.map(x=>x.w).join(" ")===words.join(" ")&&out.length>1)out=[...out.slice(1),out[0]];
+    return out;
+  },[]);
+  const setupQuestion=useCallback((idx)=>{
+    const words=String(data[idx]?.s||"").split(" ").filter(Boolean);
+    setPool(shuffleItems(words));setSelected([]);setResult(null);setHintCount(0);setAttempts(0);
+  },[data,shuffleItems]);
+  useEffect(()=>{if(qi<data.length)setupQuestion(qi)},[qi,setupQuestion,data.length]);
 
-  const tapPool=(item)=>{if(result!==null)return;playSound("flip");setPool(p=>p.filter(x=>x.id!==item.id));setSelected(s=>[...s,item])};
-  const tapSel=(item)=>{if(result!==null)return;setSelected(s=>s.filter(x=>x.id!==item.id));setPool(p=>[...p,item])};
-  const clearAll=()=>{if(result!==null)return;setPool(p=>[...p,...selected]);setSelected([])};
+  const selectedText=selected.map(x=>x.w).join(" ");
+  const positionRows=correctWords.map((word,i)=>({word,got:selected[i]?.w||"",ok:selected[i]?.w?.toLowerCase()===word.toLowerCase()}));
+  const nextSlot=selected.length;
+  const canEdit=result!==true;
+  const tapPool=(item)=>{if(!canEdit)return;playSound("flip");setResult(null);setPool(p=>p.filter(x=>x.id!==item.id));setSelected(s=>[...s,item])};
+  const tapSel=(item)=>{if(!canEdit)return;playSound("flip");setResult(null);setSelected(s=>s.filter(x=>x.id!==item.id));setPool(p=>[...p,item])};
+  const undoLast=()=>{if(!canEdit||!selected.length)return;const last=selected[selected.length-1];setResult(null);setSelected(s=>s.slice(0,-1));setPool(p=>[last,...p]);playSound("flip")};
+  const clearAll=()=>{if(!canEdit||!selected.length)return;setResult(null);setPool(p=>[...p,...selected]);setSelected([]);playSound("flip")};
   const showHint=()=>{
-    if(hintUsed||result!==null)return;
-    setHintUsed(true);
-    // Show first word hint
-    const firstWord=data[qi].s.split(" ")[0];
-    const inPool=pool.find(x=>x.w===firstWord);
-    if(inPool&&selected.length===0){tapPool(inPool)}
-    speak(data[qi].s,"en-US",0.7);
+    if(!canEdit||selected.length>=correctWords.length)return;
+    const target=correctWords[selected.length];
+    const inPool=pool.find(x=>x.w.toLowerCase()===target.toLowerCase());
+    setHintCount(n=>n+1);
+    if(inPool){tapPool(inPool);speak(target,"en-US",0.85)}
+    else speak(current.s,"en-US",0.85);
   };
+  const revise=()=>{setResult(null);playSound("flip")};
 
   const check=()=>{
-    const ans=selected.map(x=>x.w).join(" ");
-    const ok=ans.toLowerCase()===data[qi].s.toLowerCase();
+    if(selected.length<correctWords.length)return;
+    const ok=selectedText.toLowerCase()===current.s.toLowerCase();
+    setAttempts(n=>n+1);setResult(ok);
     if(ok){
-      setScore(s=>s+1);onXp(hintUsed?5:10);playSound("good");
+      if(attempts===0)setScore(s=>s+1);
+      onXp(hintCount?5:10);playSound("good");
       setCombo(cb=>{const nc=cb+1;setMaxCombo(mc=>Math.max(mc,nc));if(nc>=3)playSound("combo");return nc});
-      speak(data[qi].s);
+      speak(current.s,"en-US",0.88);
     }else{
+      setWrongReview(r=>r.some(x=>x.s===current.s)?r:[...r,current]);
       playSound("bad");setCombo(0);
     }
-    setResult(ok);
   };
 
   const next=()=>{
     if(qi+1>=data.length){
-      setDone(true);onDone();playSound("done");
+      setDone(true);onDone?.();playSound("done");
       setShowConfetti(true);setTimeout(()=>setShowConfetti(false),3500);
-    }else setQi(qi+1)};
+    }else setQi(qi+1)
+  };
+  const restart=()=>{setQi(0);setScore(0);setDone(false);setCombo(0);setMaxCombo(0);setWrongReview([]);setShowConfetti(false);setupQuestion(0)};
 
-  if(done){const pct=Math.round((score/data.length)*100);return(<div>{showConfetti&&<Confetti/>}<Hdr t="🧩 句子重組" onBack={onBack} cl={c.cl}/><div style={{textAlign:"center",padding:"32px 16px"}}><div style={{fontSize:56,animation:"bounceIn .5s ease-out"}}>{pct>=80?"🏆":pct>=60?"🎉":"💪"}</div><h2 style={{fontSize:22,fontWeight:700,color:S.t1,marginTop:8}}>重組完成！</h2><div style={{fontSize:18,color:c.cl,fontWeight:600,marginTop:6}}>{score}/{data.length} 正確 ({pct}%)</div>{maxCombo>=3&&<div style={{fontSize:13,color:"#EF9F27",fontWeight:600,marginTop:4}}>🔥 最高 {maxCombo} 連擊！</div>}<div style={{fontSize:14,color:S.t2,marginTop:8,marginBottom:16}}>{pct>=80?"語感很好！🌟":"多練幾次語序會更熟！💪"}</div><button onClick={()=>{setQi(0);setScore(0);setDone(false);setCombo(0);setMaxCombo(0)}} style={{...S.btn,background:c.cl,color:"#fff",marginRight:8,fontSize:14}}>🔄 再練</button><button onClick={onBack} style={{...S.btn,background:S.bg2,color:S.t1,fontSize:14}}>返回</button></div></div>)}
+  if(done){const pct=Math.round((score/data.length)*100);return(<div>{showConfetti&&<Confetti/>}<Hdr t="🧩 句子重組" onBack={onBack} cl={c.cl}/><div style={{textAlign:"center",padding:"30px 14px"}}><div style={{fontSize:56,animation:"bounceIn .5s ease-out"}}>{pct>=80?"🏆":pct>=60?"🎉":"💪"}</div><h2 style={{fontSize:22,fontWeight:700,color:S.t1,marginTop:8}}>重組完成！</h2><div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,maxWidth:420,margin:"16px auto"}}>{[["正確",`${score}/${data.length}`,c.cl],["掌握率",`${pct}%`,pct>=80?"#1D9E75":"#EF9F27"],["待複習",wrongReview.length,"#E24B4A"]].map(([l,v,cl])=><div key={l} style={{...S.card,padding:"12px 8px",borderTop:`3px solid ${cl}`}}><div style={{fontSize:22,fontWeight:800,color:cl}}>{v}</div><div style={{fontSize:11,color:S.t3,marginTop:2}}>{l}</div></div>)}</div>{maxCombo>=3&&<div style={{fontSize:13,color:"#EF9F27",fontWeight:600,marginTop:4}}>🔥 最高 {maxCombo} 連擊！</div>}<div style={{fontSize:14,color:S.t2,margin:"8px 0 14px"}}>{pct>=80?"語序感很好，可以進入閱讀或造句練習。":"建議先看中文意思，再找主詞、動詞、地點或時間。"}</div>{wrongReview.length>0&&<div style={{...S.card,padding:"12px 14px",maxWidth:560,margin:"0 auto 14px",textAlign:"left"}}><div style={{fontSize:13,fontWeight:800,color:"#E24B4A",marginBottom:8}}>錯句複習</div><div style={{display:"grid",gap:7}}>{wrongReview.map(x=><button key={x.s} onClick={()=>speak(x.s,"en-US",0.88)} style={{border:`1px solid ${S.bd}`,background:S.bg1,borderRadius:12,padding:"9px 11px",textAlign:"left",cursor:"pointer",fontFamily:"inherit"}}><div style={{fontSize:14,fontWeight:800,color:S.t1}}>{x.s}</div><div style={{fontSize:12,color:S.t2,marginTop:2}}>{x.h} · 點擊聽發音</div></button>)}</div></div>}<button onClick={restart} style={{...S.btn,background:c.cl,color:"#fff",marginRight:8,fontSize:14}}>🔄 再練</button><button onClick={onBack} style={{...S.btn,background:S.bg2,color:S.t1,fontSize:14}}>返回</button></div></div>)}
 
   const comboLabel=combo>=7?"🔥🔥 ON FIRE!":combo>=5?"🔥 COMBO x"+combo:combo>=3?"✨ "+combo+" 連擊！":"";
-  const wordCount=data[qi].s.split(" ").length;
+  const wordCount=correctWords.length;
+  const progressPct=((qi+(result===true?1:0))/data.length)*100;
 
   return(<div><Hdr t="🧩 句子重組" onBack={onBack} cl={c.cl}/>
-    {/* Progress */}
-    <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:6,fontSize:12}}>
-      <div style={{flex:1,height:6,background:S.bg2,borderRadius:3}}><div style={{height:"100%",width:`${(qi/data.length)*100}%`,background:`linear-gradient(90deg,${c.cl},${c.ac})`,borderRadius:3,transition:"width .3s"}}/></div>
-      <span style={{color:S.t3}}>{qi+1}/{data.length}</span>
-      <span style={{color:"#1D9E75",fontWeight:600}}>{score}✓</span>
+    <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8,fontSize:12}}>
+      <div style={{flex:1,height:7,background:S.bg2,borderRadius:999,overflow:"hidden"}}><div style={{height:"100%",width:`${progressPct}%`,background:`linear-gradient(90deg,${c.cl},${c.ac})`,borderRadius:999,transition:"width .3s"}}/></div>
+      <span style={{color:S.t3,minWidth:44,textAlign:"right"}}>{qi+1}/{data.length}</span>
+      <span style={{color:"#1D9E75",fontWeight:800,minWidth:32,textAlign:"right"}}>{score}✓</span>
     </div>
-    {comboLabel&&<div style={{textAlign:"center",fontSize:14,fontWeight:700,color:"#EF9F27",marginBottom:4,animation:"comboFlash .5s"}}>{comboLabel}</div>}
+    {comboLabel&&<div style={{textAlign:"center",fontSize:14,fontWeight:700,color:"#EF9F27",marginBottom:6,animation:"comboFlash .5s"}}>{comboLabel}</div>}
 
-    <div style={{...S.card,padding:"22px 18px"}}>
-      {/* Chinese hint */}
-      <div style={{textAlign:"center",marginBottom:14}}>
-        <div style={{fontSize:12,color:S.t3,marginBottom:4}}>把單字排成正確的英文句子</div>
-        <div style={{fontSize:18,fontWeight:700,color:S.t1}}>💡 {data[qi].h}</div>
-        <div style={{fontSize:12,color:S.t3,marginTop:4}}>共 {wordCount} 個單字</div>
+    <div style={{...S.card,padding:"18px 16px",borderTop:`4px solid ${c.cl}`}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10,marginBottom:13}}>
+        <div style={{minWidth:0}}><div style={{fontSize:12,color:S.t3,marginBottom:4}}>把單字排成自然英文句子</div><div style={{fontSize:19,fontWeight:800,color:S.t1,lineHeight:1.45}}>💡 {current.h}</div></div>
+        <div style={{display:"flex",gap:5,flexShrink:0,flexWrap:"wrap",justifyContent:"flex-end"}}><span style={{fontSize:11,color:S.t3,background:S.bg2,borderRadius:999,padding:"5px 8px"}}>{wordCount} words</span><span style={{fontSize:11,color:S.t3,background:S.bg2,borderRadius:999,padding:"5px 8px"}}>提示 {hintCount}</span></div>
       </div>
 
-      {/* Sentence assembly area */}
-      <div style={{minHeight:56,padding:"12px 10px",background:result===null?"linear-gradient(135deg,"+S.bg2+","+c.bg+"11)":result?"linear-gradient(135deg,#E1F5EE,#E8F5E9)":"linear-gradient(135deg,#FCEBEB,#FFF3CD)",borderRadius:16,display:"flex",flexWrap:"wrap",gap:6,marginBottom:4,border:`2px ${result===null?"dashed":"solid"} ${result===null?c.cl+"44":result?"#1D9E75":"#E24B4A"}`,transition:"all .3s",alignItems:"center",justifyContent:selected.length===0?"center":"flex-start"}}>
-        {selected.length===0&&<span style={{color:S.t3,fontSize:13}}>👆 點擊下方單字開始組句</span>}
-        {selected.map((item,i)=>(<button key={item.id} onClick={()=>tapSel(item)} style={{padding:"10px 16px",borderRadius:12,background:result===null?c.cl:result?"#1D9E75":"#E24B4A",color:"#fff",border:"none",fontSize:16,cursor:result?"default":"pointer",fontFamily:"inherit",fontWeight:600,animation:"fadeUp .2s",animationDelay:`${i*0.03}s`,animationFillMode:"both",boxShadow:`0 2px 6px ${c.cl}30`,WebkitTapHighlightColor:"transparent"}}>{item.w}</button>))}
+      <div style={{display:"grid",gridTemplateColumns:`repeat(${Math.min(wordCount,6)}, minmax(38px,1fr))`,gap:5,marginBottom:8}}>
+        {correctWords.map((_,i)=><div key={i} style={{height:6,borderRadius:999,background:i<selected.length?c.cl:i===nextSlot?`${c.cl}66`:S.bd,transition:"background .15s"}}/> )}
       </div>
 
-      {/* Clear button */}
-      {selected.length>0&&result===null&&<div style={{textAlign:"right",marginBottom:8}}>
-        <button onClick={clearAll} style={{background:"none",border:"none",fontSize:12,color:S.t3,cursor:"pointer",padding:"4px 8px"}}>🗑️ 清空重排</button>
+      <div style={{minHeight:72,padding:"12px 10px",background:result===null?"linear-gradient(135deg,"+S.bg2+","+c.bg+"11)":result?"linear-gradient(135deg,#E1F5EE,#E8F5E9)":"linear-gradient(135deg,#FCEBEB,#FFF3CD)",borderRadius:14,display:"flex",flexWrap:"wrap",gap:7,marginBottom:8,border:`2px ${result===null?"dashed":"solid"} ${result===null?c.cl+"44":result?"#1D9E75":"#E24B4A"}`,transition:"all .3s",alignItems:"center",justifyContent:selected.length===0?"center":"flex-start"}}>
+        {selected.length===0&&<span style={{color:S.t3,fontSize:13}}>點下面單字，依序放到這裡</span>}
+        {selected.map((item,i)=>{const ok=result===false?item.w.toLowerCase()===correctWords[i]?.toLowerCase():null;return <button key={item.id} onClick={()=>tapSel(item)} style={{padding:"10px 14px",borderRadius:11,background:result===true?"#1D9E75":result===false?(ok?"#1D9E75":"#E24B4A"):c.cl,color:"#fff",border:"none",fontSize:15,cursor:canEdit?"pointer":"default",fontFamily:"inherit",fontWeight:800,animation:"fadeUp .2s",animationDelay:`${i*0.03}s`,animationFillMode:"both",boxShadow:`0 2px 6px ${c.cl}25`,WebkitTapHighlightColor:"transparent"}}>{item.w}</button>})}
+      </div>
+
+      {selected.length>0&&result!==true&&<div style={{display:"flex",gap:7,justifyContent:"flex-end",marginBottom:10,flexWrap:"wrap"}}>
+        <button onClick={undoLast} style={{background:S.bg2,border:`1px solid ${S.bd}`,borderRadius:999,fontSize:12,color:S.t2,cursor:"pointer",padding:"6px 10px",fontFamily:"inherit"}}>↶ 撤銷</button>
+        <button onClick={clearAll} style={{background:S.bg2,border:`1px solid ${S.bd}`,borderRadius:999,fontSize:12,color:S.t2,cursor:"pointer",padding:"6px 10px",fontFamily:"inherit"}}>清空</button>
       </div>}
 
-      {/* Word pool */}
-      <div style={{display:"flex",flexWrap:"wrap",gap:8,justifyContent:"center",marginBottom:14,minHeight:pool.length>0?48:0,transition:"min-height .3s"}}>
-        {pool.map(item=>(<button key={item.id} onClick={()=>tapPool(item)} style={{padding:"11px 18px",borderRadius:12,background:S.bg1,color:S.t1,border:`2px solid ${S.bd}`,fontSize:16,cursor:"pointer",fontFamily:"inherit",fontWeight:500,transition:"all .15s",boxShadow:"0 2px 4px rgba(0,0,0,.04)",WebkitTapHighlightColor:"transparent"}} onTouchStart={e=>e.currentTarget.style.transform="scale(0.92)"} onTouchEnd={e=>e.currentTarget.style.transform="scale(1)"}>{item.w}</button>))}
+      <div style={{display:"flex",flexWrap:"wrap",gap:8,justifyContent:"center",marginBottom:14,minHeight:pool.length>0?52:0,transition:"min-height .3s"}}>
+        {pool.map(item=>(<button key={item.id} onClick={()=>tapPool(item)} style={{padding:"11px 16px",borderRadius:12,background:S.bg1,color:S.t1,border:`2px solid ${S.bd}`,fontSize:15,cursor:canEdit?"pointer":"default",fontFamily:"inherit",fontWeight:700,transition:"all .15s",boxShadow:"0 2px 4px rgba(0,0,0,.04)",WebkitTapHighlightColor:"transparent"}} onTouchStart={e=>{if(canEdit)e.currentTarget.style.transform="scale(0.92)"}} onTouchEnd={e=>e.currentTarget.style.transform="scale(1)"}>{item.w}</button>))}
       </div>
 
-      {/* Action buttons */}
-      {result===null?(<div style={{display:"flex",gap:8,justifyContent:"center"}}>
-        {!hintUsed&&<button onClick={showHint} style={{...S.btn,background:S.bg2,color:S.t2,padding:"10px 16px",fontSize:13,borderRadius:14}}>💡 提示</button>}
-        <button onClick={check} disabled={pool.length>0} style={{...S.btn,background:c.cl,color:"#fff",padding:"10px 24px",fontSize:14,opacity:pool.length>0?.4:1,borderRadius:14}}>✅ 檢查答案</button>
+      {selected.length>0&&<div style={{display:"grid",gap:5,marginBottom:14}}>
+        {positionRows.slice(0,selected.length).map((r,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:7,fontSize:12,color:S.t2,background:S.bg2,borderRadius:10,padding:"6px 9px"}}><span style={{width:22,height:22,borderRadius:"50%",background:result===false?(r.ok?"#E1F5EE":"#FCEBEB"):c.bg,color:result===false?(r.ok?"#1D9E75":"#E24B4A"):c.cl,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,flexShrink:0}}>{i+1}</span><span style={{fontWeight:800,color:S.t1}}>{r.got}</span>{result===false&&<span style={{marginLeft:"auto",color:r.ok?"#1D9E75":"#E24B4A",fontWeight:800}}>{r.ok?"正確":`應為 ${r.word}`}</span>}</div>)}
+      </div>}
+
+      {result===null?(<div style={{display:"flex",gap:8,justifyContent:"center",flexWrap:"wrap"}}>
+        <button onClick={showHint} disabled={selected.length>=wordCount} style={{...S.btn,background:S.bg2,color:S.t2,padding:"10px 16px",fontSize:13,borderRadius:14,opacity:selected.length>=wordCount?0.45:1}}>💡 補下一格</button>
+        <button onClick={()=>speak(current.s,"en-US",0.88)} style={{...S.btn,background:S.bg2,color:S.t1,padding:"10px 16px",fontSize:13,borderRadius:14}}>🔊 聽整句</button>
+        <button onClick={check} disabled={pool.length>0} style={{...S.btn,background:c.cl,color:"#fff",padding:"10px 24px",fontSize:14,opacity:pool.length>0?0.4:1,borderRadius:14}}>檢查答案</button>
       </div>):(
       <div style={{textAlign:"center",animation:"fadeUp .3s"}}>
-        <div style={{fontSize:18,fontWeight:700,color:result?"#1D9E75":"#E24B4A",marginBottom:6,animation:result?"bounceIn .3s":"moleShake .3s"}}>{result?"✅ 完美！":"❌ 順序不對"}</div>
-        {!result&&<div style={{marginBottom:8}}>
-          <div style={{fontSize:12,color:S.t3,marginBottom:4}}>正確語序：</div>
-          <div style={{fontSize:15,color:S.t1,padding:"10px 14px",background:"#E1F5EE",borderRadius:12,display:"inline-block",fontWeight:600}}>{data[qi].s}</div>
-          <button onClick={()=>speak(data[qi].s)} style={{background:"none",border:"none",fontSize:22,cursor:"pointer",marginLeft:4,verticalAlign:"middle"}}>🔊</button>
-        </div>}
-        {result&&<div style={{marginBottom:8}}>
-          <button onClick={()=>speak(data[qi].s)} style={{background:S.bg2,border:`1px solid ${S.bd}`,borderRadius:12,padding:"6px 16px",fontSize:13,cursor:"pointer",color:S.t2,fontFamily:"inherit"}}>🔊 聽整句發音</button>
-        </div>}
-        <button onClick={next} style={{...S.btn,background:c.cl,color:"#fff",fontSize:14,padding:"12px 28px",borderRadius:14}}>{qi+1>=data.length?"🏁 看成績":"▶ 下一題"}</button>
+        <div style={{fontSize:18,fontWeight:800,color:result?"#1D9E75":"#E24B4A",marginBottom:7,animation:result?"bounceIn .3s":"moleShake .3s"}}>{result?"語序正確":"順序還可以調整"}</div>
+        {!result&&<div style={{marginBottom:10}}><div style={{fontSize:12,color:S.t3,marginBottom:4}}>正確語序：</div><div style={{fontSize:15,color:S.t1,padding:"10px 14px",background:"#E1F5EE",borderRadius:12,display:"inline-block",fontWeight:800,lineHeight:1.5}}>{current.s}</div></div>}
+        <div style={{display:"flex",gap:8,justifyContent:"center",flexWrap:"wrap"}}>{!result&&<button onClick={revise} style={{...S.btn,background:"#FAEEDA",color:"#8A5A00",fontSize:13,padding:"10px 16px",borderRadius:14}}>修改答案</button>}<button onClick={()=>speak(current.s,"en-US",0.88)} style={{...S.btn,background:S.bg2,color:S.t1,fontSize:13,padding:"10px 16px",borderRadius:14}}>聽整句</button><button onClick={next} style={{...S.btn,background:c.cl,color:"#fff",fontSize:14,padding:"10px 22px",borderRadius:14}}>{qi+1>=data.length?"看成績":"下一題"}</button></div>
       </div>)}
     </div>
   </div>);
@@ -3234,6 +3279,8 @@ function NovelM({lv,onBack,onXp}){
   const stopNovelSpeech=()=>{novelSpeechRef.current?.cancel?.();novelSpeechRef.current=null;setActiveBlock(null);setActiveVocab(null);stopSpeech()};
   const readChapter=()=>{if(!chapter||!enBlocks.length)return;stopNovelSpeech();novelSpeechRef.current=speakStory([chapter.title,...enBlocks],{rate:0.78,onSentence:i=>{const bi=i-1;if(bi>=0){setActiveBlock(bi);setPage(Math.floor(bi/NOVEL_PAGE_SIZE))}},onFinish:()=>{novelSpeechRef.current=null;setActiveBlock(null)},oncancel:()=>{novelSpeechRef.current=null;setActiveBlock(null)}})};
   const readPage=()=>{if(!pageBlocks.length)return;stopNovelSpeech();novelSpeechRef.current=speakStory(pageBlocks.map(b=>b.en),{rate:0.78,onSentence:i=>setActiveBlock(pageStart+i),onFinish:()=>{novelSpeechRef.current=null;setActiveBlock(null)},oncancel:()=>{novelSpeechRef.current=null;setActiveBlock(null)}})};
+  const readChapterZh=()=>{if(!chapter||!zhBlocks.length)return;stopNovelSpeech();novelSpeechRef.current=speakStory([chapter.zhTitle,...zhBlocks],{lang:"zh-TW",rate:1,onSentence:i=>{const bi=i-1;if(bi>=0){setActiveBlock(bi);setPage(Math.floor(bi/NOVEL_PAGE_SIZE))}},onFinish:()=>{novelSpeechRef.current=null;setActiveBlock(null)},oncancel:()=>{novelSpeechRef.current=null;setActiveBlock(null)}})};
+  const readPageZh=()=>{const items=pageBlocks.filter(b=>b.zh);if(!items.length)return;stopNovelSpeech();novelSpeechRef.current=speakStory(items.map(b=>b.zh),{lang:"zh-TW",rate:1,onSentence:i=>setActiveBlock(items[i]?.i),onFinish:()=>{novelSpeechRef.current=null;setActiveBlock(null)},oncancel:()=>{novelSpeechRef.current=null;setActiveBlock(null)}})};
   const speakNovelText=(text,lang="en-US",rate=0.78,idx=null)=>{stopNovelSpeech();setActiveBlock(idx);speak(text,lang,rate,{onend:()=>setActiveBlock(null)})};
   const speakNovelVocab=(word)=>{stopNovelSpeech();setActiveVocab(word);speak(word,"en-US",0.86,{onend:()=>setActiveVocab(null)})};
   const goChapter=i=>{stopNovelSpeech();setCi(i);window.scrollTo({top:0,behavior:"smooth"})};
@@ -3277,7 +3324,7 @@ function NovelM({lv,onBack,onXp}){
       <NovelIllustration chapter={chapter.no}/>
       <div style={{padding:"15px 16px 16px"}}>
         <div style={{display:"flex",gap:12,alignItems:"flex-start"}}><div style={{width:42,height:42,borderRadius:"50%",background:c.cl,color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,flexShrink:0}}> {chapter.no}</div><div style={{flex:1}}><div style={{fontSize:12,color:c.cl,fontWeight:900}}>Chapter {chapter.no}</div><div style={{fontSize:22,fontWeight:900,color:S.t1,lineHeight:1.2}}>{chapter.title}</div><div style={{fontSize:13,color:S.t2,marginTop:3}}>{chapter.zhTitle} · {words} words · Page {pageNow+1}/{pages.length}</div></div></div>
-        <div style={{display:"flex",gap:6,marginTop:13,flexWrap:"wrap"}}><button onClick={readChapter} style={{...S.btn,background:S.bg2,color:S.t1,padding:"8px 12px",fontSize:12,flex:"1 1 120px"}}>🔊 朗讀整章</button><button onClick={readPage} style={{...S.btn,background:S.bg2,color:S.t1,padding:"8px 12px",fontSize:12,flex:"1 1 110px"}}>🔊 朗讀本頁</button><button onClick={completeChapter} disabled={isDone||!quizDone} style={{...S.btn,background:isDone?"#E1F5EE":quizDone?c.cl:S.bg2,color:isDone?"#1D9E75":quizDone?"#fff":S.t3,padding:"8px 12px",fontSize:12,flex:"1 1 130px",opacity:(!quizDone&&!isDone)?0.62:1}}>{isDone?"已完成":quizDone?"完成 +15XP":"先完成測驗"}</button></div>
+        <div style={{display:"flex",gap:6,marginTop:13,flexWrap:"wrap"}}><button onClick={readChapter} style={{...S.btn,background:S.bg2,color:S.t1,padding:"8px 12px",fontSize:12,flex:"1 1 112px"}}>🔊 英文整章</button><button onClick={readPage} style={{...S.btn,background:S.bg2,color:S.t1,padding:"8px 12px",fontSize:12,flex:"1 1 104px"}}>🔊 英文本頁</button><button onClick={readChapterZh} disabled={!zhBlocks.length} style={{...S.btn,background:S.bg2,color:S.t1,padding:"8px 12px",fontSize:12,flex:"1 1 112px",opacity:zhBlocks.length?1:.45}}>🔈 中文整章</button><button onClick={readPageZh} disabled={!pageBlocks.some(b=>b.zh)} style={{...S.btn,background:S.bg2,color:S.t1,padding:"8px 12px",fontSize:12,flex:"1 1 104px",opacity:pageBlocks.some(b=>b.zh)?1:.45}}>🔈 中文本頁</button><button onClick={completeChapter} disabled={isDone||!quizDone} style={{...S.btn,background:isDone?"#E1F5EE":quizDone?c.cl:S.bg2,color:isDone?"#1D9E75":quizDone?"#fff":S.t3,padding:"8px 12px",fontSize:12,flex:"1 1 130px",opacity:(!quizDone&&!isDone)?0.62:1}}>{isDone?"已完成":quizDone?"完成 +15XP":"先完成測驗"}</button></div>
       </div>
     </div>
     <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:10,fontSize:12}}><button onClick={()=>prev!=null&&goChapter(prev)} disabled={prev==null} style={{...S.btn,background:S.bg2,color:S.t1,padding:"7px 10px",opacity:prev==null?0.35:1,fontSize:12}}>← 上一章</button><div style={{flex:1,height:6,background:S.bg2,borderRadius:3,overflow:"hidden"}}><div style={{height:"100%",width:`${((chapter.no-1)+(pageNow+1)/pages.length)/novel.chapters.length*100}%`,background:`linear-gradient(90deg,${c.cl},${c.ac})`,borderRadius:3}}/></div><button onClick={()=>next!=null&&goChapter(next)} disabled={next==null} style={{...S.btn,background:S.bg2,color:S.t1,padding:"7px 10px",opacity:next==null?0.35:1,fontSize:12}}>下一章 →</button></div>
@@ -3288,7 +3335,7 @@ function NovelM({lv,onBack,onXp}){
       <div style={{display:"grid",gap:6}}>
         {pageBlocks.map(b=><section key={b.i} ref={el=>{if(el)novelBlockRefs.current[b.i]=el}} onClick={()=>speakNovelText(b.en,"en-US",0.78,b.i)} style={{padding:"9px 10px",borderRadius:8,background:activeBlock===b.i?"#E6F7F0":"transparent",border:`1px solid ${activeBlock===b.i?c.cl:"transparent"}`,transition:"all .18s",cursor:"pointer"}}>
           <div style={{display:"flex",gap:8,alignItems:"flex-start"}}><p style={{flex:1,margin:0,fontSize:16,lineHeight:1.66,color:S.t1,fontWeight:/^“|^[A-Z][a-z]+[?!]?$/.test(b.en)?800:650,whiteSpace:"pre-line"}}>{b.en}</p><button onClick={e=>{e.stopPropagation();e.currentTarget.blur();speakNovelText(b.en,"en-US",0.78,b.i)}} style={{width:34,height:34,border:`1px solid ${S.bd}`,background:S.bg1,borderRadius:10,padding:0,fontSize:13,cursor:"pointer",fontFamily:"inherit",color:c.cl,flexShrink:0}}>🔊</button></div>
-          {showZh&&b.zh&&<div style={{marginTop:7,padding:"7px 9px",background:"#FFF7E6",border:"1px solid #F0D59A",borderRadius:8,fontSize:13,lineHeight:1.58,color:S.t2,whiteSpace:"pre-line"}}>{b.zh} <button onClick={e=>{e.stopPropagation();e.currentTarget.blur();speakNovelText(b.zh,"zh-TW",1,b.i)}} style={{background:"none",border:"none",fontSize:15,cursor:"pointer",verticalAlign:"middle"}}>🔈</button></div>}
+          {showZh&&b.zh&&<div style={{marginTop:7,padding:"7px 9px",background:"#FFF7E6",border:"1px solid #F0D59A",borderRadius:8,fontSize:13,lineHeight:1.58,color:S.t2,whiteSpace:"pre-line",display:"flex",gap:8,alignItems:"flex-start"}}><span style={{flex:1}}>{b.zh}</span><button onClick={e=>{e.stopPropagation();e.currentTarget.blur();speakNovelText(b.zh,"zh-TW",1,b.i)}} title="朗讀中文" style={{width:30,height:30,background:"#fff",border:"1px solid #F0D59A",borderRadius:9,fontSize:14,cursor:"pointer",flexShrink:0}}>🔈</button></div>}
         </section>)}
       </div>
       <div style={{display:"flex",gap:8,alignItems:"center",marginTop:14}}><button onClick={()=>turnPage(pageNow-1)} disabled={!canPrevPage} style={{...S.btn,background:S.bg2,color:S.t1,flex:1,padding:"10px",fontSize:13,opacity:canPrevPage?1:.4}}>上一頁</button><div style={{fontSize:12,color:S.t3,fontWeight:700}}>{pageNow+1}/{pages.length}</div><button onClick={()=>turnPage(pageNow+1)} disabled={!canNextPage} style={{...S.btn,background:c.cl,color:"#fff",flex:1,padding:"10px",fontSize:13,opacity:canNextPage?1:.4}}>下一頁</button></div>
