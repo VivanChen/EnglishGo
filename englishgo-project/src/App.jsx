@@ -1174,12 +1174,13 @@ function speakStory(sentences,opts={}){
   const playNext=()=>{
     if(cancelled||token!==_speechToken)return;
     if(i>=sentences.length){unregisterCancel();opts.onFinish?.();return}
-    const text=sentences[i];
+    const item=sentences[i];
+    const text=typeof item==="string"?item:item?.text;
     const isLast=i===sentences.length-1;
     i++;
-    opts.onSentence?.(i-1,text);
-    const u=makeUtterance(text,opts.lang||"en-US",opts.rate||0.88,{
-      pitch:opts.pitch||1.08,
+    opts.onSentence?.(i-1,text,item);
+    const u=makeUtterance(text,item?.lang||opts.lang||"en-US",item?.rate||opts.rate||0.88,{
+      pitch:item?.pitch||opts.pitch||1.08,
       onend:()=>{
         if(cancelled||token!==_speechToken)return;
         if(isLast){unregisterCancel();opts.onFinish?.()}
@@ -3257,10 +3258,19 @@ const NOVEL_PAGE_SIZE=5;
 const LazyNovelIllustration=lazy(()=>import("./components/NovelIllustration.jsx"));
 function NovelIllustration(props){return <Suspense fallback={<div style={{height:props.small?150:props.cover?240:360,borderRadius:props.small?0:18,background:"linear-gradient(135deg,#0B3F35,#77C79D)"}}/>}><LazyNovelIllustration {...props}/></Suspense>}
 function novelBlocks(text){return String(text||"").split(/\n\s*\n/).map(s=>s.trim()).filter(Boolean)}
-function scrollChildIntoPanel(panel,el){
+function scrollChildIntoPanel(panel,el,opts={}){
   if(!panel||!el)return;
-  const top=el.offsetTop-panel.offsetTop-(panel.clientHeight/2)+(el.clientHeight/2);
-  panel.scrollTo({top:Math.max(0,top),behavior:"smooth"});
+  const align=opts.align??0.38;
+  const behavior=opts.behavior||"smooth";
+  const raf=typeof requestAnimationFrame==="function"?requestAnimationFrame:(fn)=>setTimeout(fn,16);
+  raf(()=>raf(()=>{
+    if(!panel||!el)return;
+    const panelRect=panel.getBoundingClientRect();
+    const elRect=el.getBoundingClientRect();
+    const max=Math.max(0,panel.scrollHeight-panel.clientHeight);
+    const target=panel.scrollTop+(elRect.top-panelRect.top)-(panel.clientHeight*align)+(elRect.height/2);
+    panel.scrollTo({top:Math.max(0,Math.min(max,target)),behavior});
+  }));
 }
 function NovelM({lv,onBack,onXp}){
   const c=LV[lv];const[novelData,setNovelData]=useState(null);const[ni,setNi]=useState(0);const[ci,setCi]=useState(null);const[page,setPage]=useState(0);const[activeBlock,setActiveBlock]=useState(null);const[activeVocab,setActiveVocab]=useState(null);const[showZh,setShowZh]=useState(true);const[done,setDone]=useLS("novelDone",{});const[quizAns,setQuizAns]=useLS("novelQuiz",{});const rewarded=useRef({});const novelSpeechRef=useRef(null);const novelPanelRef=useRef(null);const novelBlockRefs=useRef({});
@@ -3272,7 +3282,7 @@ function NovelM({lv,onBack,onXp}){
   const novel=novels[ni];const completed=done[novel?.id]||[];const chapter=ci==null?null:novel.chapters[ci];const enBlocks=useMemo(()=>novelBlocks(chapter?.en),[chapter]);const zhBlocks=useMemo(()=>novelBlocks(chapter?.zh),[chapter]);const words=chapter?readingWords(chapter.en).length:0;const pct=novel?Math.round((completed.length/novel.chapters.length)*100):0;
   const pages=useMemo(()=>{const out=[];for(let i=0;i<enBlocks.length;i+=NOVEL_PAGE_SIZE)out.push(enBlocks.slice(i,i+NOVEL_PAGE_SIZE).map((en,j)=>({en,zh:zhBlocks[i+j],i:i+j})));return out},[enBlocks,zhBlocks]);
   const pageNow=Math.min(page,Math.max(0,pages.length-1));const pageBlocks=pages[pageNow]||[];const pageStart=pageNow*NOVEL_PAGE_SIZE;
-  useEffect(()=>{if(activeBlock!=null)scrollChildIntoPanel(novelPanelRef.current,novelBlockRefs.current[activeBlock])},[activeBlock,pageNow]);
+  useEffect(()=>{if(activeBlock!=null)scrollChildIntoPanel(novelPanelRef.current,novelBlockRefs.current[activeBlock],{align:.36})},[activeBlock,pageNow,showZh]);
   const quiz=chapter?chapter.quiz||[]:[];const quizKey=chapter?`${novel.id}:${chapter.no}`:"";const quizState=quizAns[quizKey]||{};const quizDone=!quiz.length||quiz.every((_,i)=>quizState[i]!=null);
   const chooseQuiz=(qi,oi)=>setQuizAns(d=>({...d,[quizKey]:{...(d[quizKey]||{}),[qi]:oi}}));
   const completeChapter=()=>{if(!chapter)return;if(!quizDone){playSound("wrong");return}const key=`${novel.id}:${chapter.no}`;if(!completed.includes(chapter.no)){setDone(d=>({...d,[novel.id]:[...new Set([...(d[novel.id]||[]),chapter.no])]}));if(!rewarded.current[key]){rewarded.current[key]=true;onXp?.(15);playSound("done")}}};
@@ -3281,6 +3291,10 @@ function NovelM({lv,onBack,onXp}){
   const readPage=()=>{if(!pageBlocks.length)return;stopNovelSpeech();novelSpeechRef.current=speakStory(pageBlocks.map(b=>b.en),{rate:0.78,onSentence:i=>setActiveBlock(pageStart+i),onFinish:()=>{novelSpeechRef.current=null;setActiveBlock(null)},oncancel:()=>{novelSpeechRef.current=null;setActiveBlock(null)}})};
   const readChapterZh=()=>{if(!chapter||!zhBlocks.length)return;stopNovelSpeech();novelSpeechRef.current=speakStory([chapter.zhTitle,...zhBlocks],{lang:"zh-TW",rate:1,onSentence:i=>{const bi=i-1;if(bi>=0){setActiveBlock(bi);setPage(Math.floor(bi/NOVEL_PAGE_SIZE))}},onFinish:()=>{novelSpeechRef.current=null;setActiveBlock(null)},oncancel:()=>{novelSpeechRef.current=null;setActiveBlock(null)}})};
   const readPageZh=()=>{const items=pageBlocks.filter(b=>b.zh);if(!items.length)return;stopNovelSpeech();novelSpeechRef.current=speakStory(items.map(b=>b.zh),{lang:"zh-TW",rate:1,onSentence:i=>setActiveBlock(items[i]?.i),onFinish:()=>{novelSpeechRef.current=null;setActiveBlock(null)},oncancel:()=>{novelSpeechRef.current=null;setActiveBlock(null)}})};
+  const bilingualChapterItems=()=>[{text:chapter.title,lang:"en-US",rate:0.78},{text:chapter.zhTitle,lang:"zh-TW",rate:1},...enBlocks.flatMap((en,i)=>[{text:en,lang:"en-US",rate:0.78,blockIndex:i},{text:zhBlocks[i],lang:"zh-TW",rate:1,blockIndex:i}].filter(x=>x.text))];
+  const bilingualPageItems=()=>pageBlocks.flatMap(b=>[{text:b.en,lang:"en-US",rate:0.78,blockIndex:b.i},{text:b.zh,lang:"zh-TW",rate:1,blockIndex:b.i}].filter(x=>x.text));
+  const readBilingualChapter=()=>{if(!chapter||!enBlocks.length)return;stopNovelSpeech();novelSpeechRef.current=speakStory(bilingualChapterItems(),{onSentence:(_,__,item)=>{const bi=item?.blockIndex;if(bi!=null){setActiveBlock(bi);setPage(Math.floor(bi/NOVEL_PAGE_SIZE))}},onFinish:()=>{novelSpeechRef.current=null;setActiveBlock(null)},oncancel:()=>{novelSpeechRef.current=null;setActiveBlock(null)}})};
+  const readBilingualPage=()=>{const items=bilingualPageItems();if(!items.length)return;stopNovelSpeech();novelSpeechRef.current=speakStory(items,{onSentence:(_,__,item)=>{if(item?.blockIndex!=null)setActiveBlock(item.blockIndex)},onFinish:()=>{novelSpeechRef.current=null;setActiveBlock(null)},oncancel:()=>{novelSpeechRef.current=null;setActiveBlock(null)}})};
   const speakNovelText=(text,lang="en-US",rate=0.78,idx=null)=>{stopNovelSpeech();setActiveBlock(idx);speak(text,lang,rate,{onend:()=>setActiveBlock(null)})};
   const speakNovelVocab=(word)=>{stopNovelSpeech();setActiveVocab(word);speak(word,"en-US",0.86,{onend:()=>setActiveVocab(null)})};
   const goChapter=i=>{stopNovelSpeech();setCi(i);window.scrollTo({top:0,behavior:"smooth"})};
@@ -3324,7 +3338,7 @@ function NovelM({lv,onBack,onXp}){
       <NovelIllustration chapter={chapter.no}/>
       <div style={{padding:"15px 16px 16px"}}>
         <div style={{display:"flex",gap:12,alignItems:"flex-start"}}><div style={{width:42,height:42,borderRadius:"50%",background:c.cl,color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,flexShrink:0}}> {chapter.no}</div><div style={{flex:1}}><div style={{fontSize:12,color:c.cl,fontWeight:900}}>Chapter {chapter.no}</div><div style={{fontSize:22,fontWeight:900,color:S.t1,lineHeight:1.2}}>{chapter.title}</div><div style={{fontSize:13,color:S.t2,marginTop:3}}>{chapter.zhTitle} · {words} words · Page {pageNow+1}/{pages.length}</div></div></div>
-        <div style={{display:"flex",gap:6,marginTop:13,flexWrap:"wrap"}}><button onClick={readChapter} style={{...S.btn,background:S.bg2,color:S.t1,padding:"8px 12px",fontSize:12,flex:"1 1 112px"}}>🔊 英文整章</button><button onClick={readPage} style={{...S.btn,background:S.bg2,color:S.t1,padding:"8px 12px",fontSize:12,flex:"1 1 104px"}}>🔊 英文本頁</button><button onClick={readChapterZh} disabled={!zhBlocks.length} style={{...S.btn,background:S.bg2,color:S.t1,padding:"8px 12px",fontSize:12,flex:"1 1 112px",opacity:zhBlocks.length?1:.45}}>🔈 中文整章</button><button onClick={readPageZh} disabled={!pageBlocks.some(b=>b.zh)} style={{...S.btn,background:S.bg2,color:S.t1,padding:"8px 12px",fontSize:12,flex:"1 1 104px",opacity:pageBlocks.some(b=>b.zh)?1:.45}}>🔈 中文本頁</button><button onClick={completeChapter} disabled={isDone||!quizDone} style={{...S.btn,background:isDone?"#E1F5EE":quizDone?c.cl:S.bg2,color:isDone?"#1D9E75":quizDone?"#fff":S.t3,padding:"8px 12px",fontSize:12,flex:"1 1 130px",opacity:(!quizDone&&!isDone)?0.62:1}}>{isDone?"已完成":quizDone?"完成 +15XP":"先完成測驗"}</button></div>
+        <div style={{display:"flex",gap:6,marginTop:13,flexWrap:"wrap"}}><button onClick={readBilingualChapter} disabled={!zhBlocks.length} style={{...S.btn,background:c.cl,color:"#fff",padding:"8px 12px",fontSize:12,flex:"1 1 132px",opacity:zhBlocks.length?1:.45}}>🎧 英中整章</button><button onClick={readBilingualPage} disabled={!pageBlocks.some(b=>b.zh)} style={{...S.btn,background:c.bg,color:c.cl,padding:"8px 12px",fontSize:12,flex:"1 1 120px",opacity:pageBlocks.some(b=>b.zh)?1:.45}}>🎧 英中本頁</button><button onClick={readChapter} style={{...S.btn,background:S.bg2,color:S.t1,padding:"8px 12px",fontSize:12,flex:"1 1 112px"}}>🔊 英文整章</button><button onClick={readPage} style={{...S.btn,background:S.bg2,color:S.t1,padding:"8px 12px",fontSize:12,flex:"1 1 104px"}}>🔊 英文本頁</button><button onClick={readChapterZh} disabled={!zhBlocks.length} style={{...S.btn,background:S.bg2,color:S.t1,padding:"8px 12px",fontSize:12,flex:"1 1 112px",opacity:zhBlocks.length?1:.45}}>🔈 中文整章</button><button onClick={readPageZh} disabled={!pageBlocks.some(b=>b.zh)} style={{...S.btn,background:S.bg2,color:S.t1,padding:"8px 12px",fontSize:12,flex:"1 1 104px",opacity:pageBlocks.some(b=>b.zh)?1:.45}}>🔈 中文本頁</button><button onClick={completeChapter} disabled={isDone||!quizDone} style={{...S.btn,background:isDone?"#E1F5EE":quizDone?c.cl:S.bg2,color:isDone?"#1D9E75":quizDone?"#fff":S.t3,padding:"8px 12px",fontSize:12,flex:"1 1 130px",opacity:(!quizDone&&!isDone)?0.62:1}}>{isDone?"已完成":quizDone?"完成 +15XP":"先完成測驗"}</button></div>
       </div>
     </div>
     <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:10,fontSize:12}}><button onClick={()=>prev!=null&&goChapter(prev)} disabled={prev==null} style={{...S.btn,background:S.bg2,color:S.t1,padding:"7px 10px",opacity:prev==null?0.35:1,fontSize:12}}>← 上一章</button><div style={{flex:1,height:6,background:S.bg2,borderRadius:3,overflow:"hidden"}}><div style={{height:"100%",width:`${((chapter.no-1)+(pageNow+1)/pages.length)/novel.chapters.length*100}%`,background:`linear-gradient(90deg,${c.cl},${c.ac})`,borderRadius:3}}/></div><button onClick={()=>next!=null&&goChapter(next)} disabled={next==null} style={{...S.btn,background:S.bg2,color:S.t1,padding:"7px 10px",opacity:next==null?0.35:1,fontSize:12}}>下一章 →</button></div>
@@ -3385,10 +3399,10 @@ function SongsM({lv,onBack,onXp}){
   },[song,lyricLines]);
   const currentPractice=practiceItems[practice.idx];
   useEffect(()=>{setPractice({idx:0,pick:null,score:0,done:false});lineRefs.current={};setView("lyrics");songPanelRef.current?.scrollTo({top:0})},[song?.id]);
-  useEffect(()=>{songPanelRef.current?.scrollTo({top:0})},[view]);
+  useEffect(()=>{if(view!=="lyrics")songPanelRef.current?.scrollTo({top:0})},[view]);
   useEffect(()=>{const a=audioRef.current;if(a)a.playbackRate=speed},[speed,song?.id]);
   useEffect(()=>{const a=audioRef.current;if(!a)return;const onTime=()=>setTime(a.currentTime||0);const onMeta=()=>setDur(a.duration||0);const onPlay=()=>setPlaying(true);const onPause=()=>setPlaying(false);const onEnd=()=>{setPlaying(false);if(song&&!rewarded.current[song.id]){rewarded.current[song.id]=true;onXp?.(10)}};a.addEventListener("timeupdate",onTime);a.addEventListener("loadedmetadata",onMeta);a.addEventListener("play",onPlay);a.addEventListener("pause",onPause);a.addEventListener("ended",onEnd);return()=>{a.pause();a.removeEventListener("timeupdate",onTime);a.removeEventListener("loadedmetadata",onMeta);a.removeEventListener("play",onPlay);a.removeEventListener("pause",onPause);a.removeEventListener("ended",onEnd)}},[song?.id]);
-  useEffect(()=>{if(activeLine>=0)scrollChildIntoPanel(songPanelRef.current,lineRefs.current[activeLine])},[activeLine]);
+  useEffect(()=>{if(view==="lyrics"&&activeLine>=0)scrollChildIntoPanel(songPanelRef.current,lineRefs.current[activeLine],{align:.42})},[activeLine,view,showZh,song?.id]);
   if(!song)return(<div><Hdr t="🎵 英文歌曲" onBack={onBack} cl={c.cl}/><div style={{...S.card,padding:"28px 18px",textAlign:"center"}}><div style={{fontSize:42,marginBottom:8}}>🎧</div><div style={{fontSize:16,fontWeight:700,color:S.t1}}>這個年級的歌曲準備中</div><div style={{fontSize:13,color:S.t2,marginTop:6}}>先從小學歌曲開始驗證流程，之後可逐步加入更多歌曲。</div></div></div>);
   const fmt=s=>`${Math.floor((s||0)/60)}:${String(Math.floor((s||0)%60)).padStart(2,"0")}`;
   const calcStart=(line)=>{
