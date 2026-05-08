@@ -1,4 +1,5 @@
 import { getElementaryExample } from "./elementaryExamples.js";
+import { JUNIOR_NOVEL_WORDS } from "./juniorNovelWords.js";
 
 const EXTRA_ELEMENTARY_WORDS = {
   curious:["好奇的","adj."], explore:["探索","v."], forest:["森林","n."], edge:["邊緣","n."], glow:["發光","v."], shadow:["影子","n."],
@@ -105,6 +106,6 @@ const ELEMENTARY_WORDS = {...BASIC_ELEMENTARY_WORDS,...MORE_BASIC_ELEMENTARY_WOR
 
 export const EXTRA_WORDS = {
   elementary: Object.entries(ELEMENTARY_WORDS).map(([word,meta])=>extraWordCard(word,meta)),
-  junior: [],
+  junior: JUNIOR_NOVEL_WORDS,
   senior: [],
 };
