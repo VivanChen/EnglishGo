@@ -3266,7 +3266,10 @@ function novelBlocks(text){
 }
 function compactNovelBlocks(blocks,target){
   const out=[...blocks];
+  const mergeAt=idx=>{out[idx]=`${out[idx]}\n${out[idx+1]}`;out.splice(idx+1,1)};
   while(out.length>target&&out.length>1){
+    const halfSentence=out.findIndex((b,i)=>i<out.length-1&&/[\uFF0C,]$/.test(String(b).trim()));
+    if(halfSentence>=0){mergeAt(halfSentence);continue}
     let idx=0,best=Infinity;
     out.forEach((b,i)=>{const score=String(b).replace(/\s+/g,"").length;if(score<best){best=score;idx=i}});
     if(idx===0){out[1]=`${out[0]}\n${out[1]}`;out.splice(0,1)}
