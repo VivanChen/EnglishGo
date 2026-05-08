@@ -1,11 +1,17 @@
-const SECRET_FOREST_IMAGE_BASE = "/images/novels/secret-forest";
+const DEFAULT_IMAGE_BASE = "/images/novels/secret-forest";
 
-export default function NovelIllustration({ chapter = 1, cover = false, small = false }) {
+export default function NovelIllustration({
+  chapter = 1,
+  cover = false,
+  small = false,
+  imageBase = DEFAULT_IMAGE_BASE,
+  title = "The Secret Forest Adventure",
+}) {
   const src = cover
-    ? `${SECRET_FOREST_IMAGE_BASE}/cover.jpg`
+    ? `${imageBase}/cover.jpg`
     : small
-      ? `${SECRET_FOREST_IMAGE_BASE}/chapter-${chapter}-thumb.jpg`
-    : `${SECRET_FOREST_IMAGE_BASE}/chapter-${chapter}.jpg`;
+      ? `${imageBase}/chapter-${chapter}-thumb.jpg`
+    : `${imageBase}/chapter-${chapter}.jpg`;
   const height = small ? 150 : cover ? 240 : 360;
   const fit = small || cover ? "cover" : "contain";
   const radius = small ? 0 : 18;
@@ -41,7 +47,7 @@ export default function NovelIllustration({ chapter = 1, cover = false, small = 
       )}
       <img
         src={src}
-        alt={cover ? "The Secret Forest Adventure cover" : `Chapter ${chapter} illustration`}
+        alt={cover ? `${title} cover` : `Chapter ${chapter} illustration`}
         loading="lazy"
         style={{
           position: "relative",

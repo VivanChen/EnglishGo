@@ -1,3 +1,5 @@
+import { CLOCK_TOWER_NOVEL } from "./clockTowerNovel.js";
+
 export const NOVELS = {
   elementary: [
     {
@@ -3870,7 +3872,7 @@ the forest whispered softly.`,
       ],
     },
   ],
-  junior: [],
+  junior: [CLOCK_TOWER_NOVEL],
   senior: [],
 };
 

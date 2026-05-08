@@ -1874,7 +1874,7 @@ function Menu({lv,onSelect,daily,c,xp,coins,streak,achUnlocked,weakWords,isSpons
         {id:"scramble",icon:"🧩",t:"句子重組",d:"語序訓練"},
         {id:"grammar",icon:"🧠",t:"文法學堂",d:`${G[lv].length} 個重點`},
         {id:"reading",icon:"📖",t:"閱讀理解",d:`${R[lv].length} 篇文章`},
-        {id:"novels",icon:"📘",t:"英文小說",d:`${NOVEL_COUNT} 章故事`},
+        {id:"novels",icon:"📘",t:"英文小說",d:lv==="junior"?"16 章故事":`${NOVEL_COUNT} 章故事`},
         {id:"songs",icon:"🎵",t:"英文歌曲",d:(SONGS[lv]?.length||0)?`${SONGS[lv].length} 首歌`:"準備中"},
         {id:"ai",icon:"🤖",t:"AI 家教",d:"Gemini 對話"},
         {id:"story",icon:"📖",t:"AI 故事",d:"寵物英文故事"},
@@ -3257,7 +3257,37 @@ const NOVEL_COUNT=8;
 const NOVEL_PAGE_SIZE=5;
 const LazyNovelIllustration=lazy(()=>import("./components/NovelIllustration.jsx"));
 function NovelIllustration(props){return <Suspense fallback={<div style={{height:props.small?150:props.cover?240:360,borderRadius:props.small?0:18,background:"linear-gradient(135deg,#0B3F35,#77C79D)"}}/>}><LazyNovelIllustration {...props}/></Suspense>}
-function novelBlocks(text){return String(text||"").split(/\n\s*\n/).map(s=>s.trim()).filter(Boolean)}
+function novelBlocks(text){
+  const raw=String(text||"").trim();
+  if(!raw)return[];
+  const blankBlocks=raw.split(/\n\s*\n/).map(s=>s.trim()).filter(Boolean);
+  const lineBlocks=raw.split(/\n+/).map(s=>s.trim()).filter(Boolean);
+  return blankBlocks.length<=1&&lineBlocks.length>1?lineBlocks:blankBlocks;
+}
+function compactNovelBlocks(blocks,target){
+  const out=[...blocks];
+  while(out.length>target&&out.length>1){
+    let idx=0,best=Infinity;
+    out.forEach((b,i)=>{const score=String(b).replace(/\s+/g,"").length;if(score<best){best=score;idx=i}});
+    if(idx===0){out[1]=`${out[0]}\n${out[1]}`;out.splice(0,1)}
+    else if(idx===out.length-1){out[idx-1]=`${out[idx-1]}\n${out[idx]}`;out.splice(idx,1)}
+    else{
+      const prev=String(out[idx-1]).length,next=String(out[idx+1]).length;
+      if(prev<=next){out[idx-1]=`${out[idx-1]}\n${out[idx]}`;out.splice(idx,1)}
+      else{out[idx+1]=`${out[idx]}\n${out[idx+1]}`;out.splice(idx,1)}
+    }
+  }
+  return out;
+}
+function novelBlockPairs(enText,zhText){
+  let en=novelBlocks(enText),zh=novelBlocks(zhText);
+  if(en.length&&zh.length&&en.length!==zh.length){
+    if(en.length>zh.length)en=compactNovelBlocks(en,zh.length);
+    else zh=compactNovelBlocks(zh,en.length);
+  }
+  const len=Math.max(en.length,zh.length);
+  return Array.from({length:len},(_,i)=>({en:en[i]||"",zh:zh[i]||"",i}));
+}
 function scrollChildIntoPanel(panel,el,opts={}){
   if(!panel||!el)return;
   const align=opts.align??0.38;
@@ -3277,10 +3307,11 @@ function NovelM({lv,onBack,onXp}){
   useEffect(()=>{let active=true;import("./data/novels.js").then(m=>{if(active)setNovelData(m.NOVELS)}).catch(()=>{if(active)setNovelData({elementary:[]})});return()=>{active=false}},[]);
   useEffect(()=>()=>novelSpeechRef.current?.cancel?.(),[]);
   useEffect(()=>{setPage(0);setActiveBlock(null);setActiveVocab(null);novelBlockRefs.current={};novelPanelRef.current?.scrollTo({top:0})},[ci,ni]);
-  useEffect(()=>{if(typeof Image==="undefined")return;const nums=ci==null?[1,2,3,4]:[ci+1,ci+2].filter(n=>n>=1&&n<=NOVEL_COUNT);nums.forEach(n=>{const img=new Image();img.src=`/images/novels/secret-forest/chapter-${n}${ci==null?"-thumb":""}.jpg`})},[ci]);
   const novels=novelData?(novelData[lv]?.length?novelData[lv]:novelData.elementary):[];
-  const novel=novels[ni];const completed=done[novel?.id]||[];const chapter=ci==null?null:novel.chapters[ci];const enBlocks=useMemo(()=>novelBlocks(chapter?.en),[chapter]);const zhBlocks=useMemo(()=>novelBlocks(chapter?.zh),[chapter]);const words=chapter?readingWords(chapter.en).length:0;const pct=novel?Math.round((completed.length/novel.chapters.length)*100):0;
-  const pages=useMemo(()=>{const out=[];for(let i=0;i<enBlocks.length;i+=NOVEL_PAGE_SIZE)out.push(enBlocks.slice(i,i+NOVEL_PAGE_SIZE).map((en,j)=>({en,zh:zhBlocks[i+j],i:i+j})));return out},[enBlocks,zhBlocks]);
+  const novel=novels[ni];const completed=done[novel?.id]||[];const chapter=ci==null?null:novel.chapters[ci];const blockPairs=useMemo(()=>novelBlockPairs(chapter?.en,chapter?.zh),[chapter]);const enBlocks=useMemo(()=>blockPairs.map(b=>b.en),[blockPairs]);const zhBlocks=useMemo(()=>blockPairs.map(b=>b.zh),[blockPairs]);const words=chapter?readingWords(chapter.en).length:0;const pct=novel?Math.round((completed.length/novel.chapters.length)*100):0;
+  const novelImageBase=novel?.imageBase||"/images/novels/secret-forest";
+  useEffect(()=>{if(typeof Image==="undefined"||!novel)return;const max=novel.chapters.length;const nums=ci==null?[1,2,3,4].filter(n=>n<=max):[ci+1,ci+2].filter(n=>n>=1&&n<=max);if(ci==null){const cover=new Image();cover.src=`${novelImageBase}/cover.jpg`}nums.forEach(n=>{const img=new Image();img.src=`${novelImageBase}/chapter-${n}${ci==null?"-thumb":""}.jpg`})},[ci,novel,novelImageBase]);
+  const pages=useMemo(()=>{const out=[];for(let i=0;i<blockPairs.length;i+=NOVEL_PAGE_SIZE)out.push(blockPairs.slice(i,i+NOVEL_PAGE_SIZE).map((b,j)=>({...b,i:i+j})));return out},[blockPairs]);
   const pageNow=Math.min(page,Math.max(0,pages.length-1));const pageBlocks=pages[pageNow]||[];const pageStart=pageNow*NOVEL_PAGE_SIZE;
   useEffect(()=>{if(activeBlock!=null)scrollChildIntoPanel(novelPanelRef.current,novelBlockRefs.current[activeBlock],{align:.36})},[activeBlock,pageNow,showZh]);
   const quiz=chapter?chapter.quiz||[]:[];const quizKey=chapter?`${novel.id}:${chapter.no}`:"";const quizState=quizAns[quizKey]||{};const quizDone=!quiz.length||quiz.every((_,i)=>quizState[i]!=null);
@@ -3305,20 +3336,20 @@ function NovelM({lv,onBack,onXp}){
     <div style={{...S.card,padding:0,overflow:"hidden",marginBottom:12,borderTop:`4px solid ${c.cl}`}}>
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(240px,1fr))",gap:0,background:"linear-gradient(135deg,#0C382E,#175B48 48%,#7ECBA9)",color:"#fff"}}>
         <div style={{padding:"22px 18px",display:"flex",flexDirection:"column",justifyContent:"center",minHeight:210}}>
-          <div style={{fontSize:12,fontWeight:800,opacity:.78,marginBottom:6,letterSpacing:.2}}>{novel.theme} · {novel.level} · 有聲童書</div>
+          <div style={{fontSize:12,fontWeight:800,opacity:.78,marginBottom:6,letterSpacing:.2}}>{novel.theme} · {novel.level} · 有聲讀本</div>
           <div style={{fontSize:29,fontWeight:900,lineHeight:1.12,maxWidth:430}}>{novel.title}</div>
           <div style={{fontSize:16,fontWeight:800,opacity:.92,marginTop:7}}>{novel.zhTitle}</div>
-          <div style={{fontSize:13,lineHeight:1.6,opacity:.86,marginTop:12,maxWidth:390}}>跟著 Lily 走進神祕森林，一章一章閱讀、聆聽、回答問題。</div>
+          <div style={{fontSize:13,lineHeight:1.6,opacity:.86,marginTop:12,maxWidth:390}}>一章一章閱讀、聆聽、回答問題，練習長篇英文理解。</div>
           <div style={{display:"flex",gap:8,alignItems:"center",marginTop:18,fontSize:12}}><span>{completed.length}/{novel.chapters.length} 章完成</span><div style={{flex:1,maxWidth:190,height:7,background:"rgba(255,255,255,.22)",borderRadius:4,overflow:"hidden"}}><div style={{height:"100%",width:`${pct}%`,background:"#fff",borderRadius:4}}/></div><span>{pct}%</span></div>
         </div>
-        <NovelIllustration cover chapter={1}/>
+        <NovelIllustration cover chapter={1} imageBase={novelImageBase} title={novel.title}/>
       </div>
     </div>
     {novels.length>1&&<div style={{display:"flex",gap:6,overflowX:"auto",marginBottom:10}}>{novels.map((n,i)=><button key={n.id} onClick={()=>{setNi(i);setCi(null)}} style={{flexShrink:0,padding:"8px 12px",border:"none",borderRadius:12,background:i===ni?c.cl:S.bg2,color:i===ni?"#fff":S.t1,fontWeight:700,fontSize:12,fontFamily:"inherit",cursor:"pointer"}}>{n.title}</button>)}</div>}
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(158px,1fr))",gap:10}}>
       {novel.chapters.map((ch,i)=>{const isDone=completed.includes(ch.no);return(<div key={ch.no} onClick={()=>goChapter(i)} style={{...S.card,padding:0,overflow:"hidden",cursor:"pointer",border:`1px solid ${isDone?"#1D9E75":S.bd}`}}>
         <div style={{position:"relative",color:"#fff"}}>
-          <NovelIllustration chapter={ch.no} small/>
+          <NovelIllustration chapter={ch.no} small imageBase={novelImageBase} title={novel.title}/>
           <div style={{position:"absolute",top:8,left:8,width:28,height:28,borderRadius:"50%",background:"rgba(255,255,255,.9)",color:c.cl,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:900}}>{ch.no}</div>
           {isDone&&<div style={{position:"absolute",top:8,right:8,borderRadius:999,background:"#E1F5EE",color:"#1D9E75",padding:"3px 8px",fontSize:11,fontWeight:800}}>已讀</div>}
         </div>
@@ -3335,7 +3366,7 @@ function NovelM({lv,onBack,onXp}){
   const finishAndGo=()=>{completeChapter();if(quizDone){next!=null?goChapter(next):backToList()}};
   return(<div><Hdr t="📘 英文小說" onBack={backToList} cl={c.cl} extra={<button onClick={()=>setShowZh(z=>!z)} style={{background:"none",border:`1px solid ${S.bd}`,borderRadius:8,padding:"4px 8px",fontSize:12,color:c.cl,cursor:"pointer",fontFamily:"inherit"}}>{showZh?"隱藏中文":"顯示中文"}</button>}/>
     <div style={{...S.card,padding:0,overflow:"hidden",marginBottom:10,borderTop:`4px solid ${c.cl}`,background:"#FFFDF7"}}>
-      <NovelIllustration chapter={chapter.no}/>
+      <NovelIllustration chapter={chapter.no} imageBase={novelImageBase} title={novel.title}/>
       <div style={{padding:"15px 16px 16px"}}>
         <div style={{display:"flex",gap:12,alignItems:"flex-start"}}><div style={{width:42,height:42,borderRadius:"50%",background:c.cl,color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,flexShrink:0}}> {chapter.no}</div><div style={{flex:1}}><div style={{fontSize:12,color:c.cl,fontWeight:900}}>Chapter {chapter.no}</div><div style={{fontSize:22,fontWeight:900,color:S.t1,lineHeight:1.2}}>{chapter.title}</div><div style={{fontSize:13,color:S.t2,marginTop:3}}>{chapter.zhTitle} · {words} words · Page {pageNow+1}/{pages.length}</div></div></div>
         <div style={{display:"flex",gap:6,marginTop:13,flexWrap:"wrap"}}><button onClick={readBilingualChapter} disabled={!zhBlocks.length} style={{...S.btn,background:c.cl,color:"#fff",padding:"8px 12px",fontSize:12,flex:"1 1 132px",opacity:zhBlocks.length?1:.45}}>🎧 英中整章</button><button onClick={readBilingualPage} disabled={!pageBlocks.some(b=>b.zh)} style={{...S.btn,background:c.bg,color:c.cl,padding:"8px 12px",fontSize:12,flex:"1 1 120px",opacity:pageBlocks.some(b=>b.zh)?1:.45}}>🎧 英中本頁</button><button onClick={readChapter} style={{...S.btn,background:S.bg2,color:S.t1,padding:"8px 12px",fontSize:12,flex:"1 1 112px"}}>🔊 英文整章</button><button onClick={readPage} style={{...S.btn,background:S.bg2,color:S.t1,padding:"8px 12px",fontSize:12,flex:"1 1 104px"}}>🔊 英文本頁</button><button onClick={readChapterZh} disabled={!zhBlocks.length} style={{...S.btn,background:S.bg2,color:S.t1,padding:"8px 12px",fontSize:12,flex:"1 1 112px",opacity:zhBlocks.length?1:.45}}>🔈 中文整章</button><button onClick={readPageZh} disabled={!pageBlocks.some(b=>b.zh)} style={{...S.btn,background:S.bg2,color:S.t1,padding:"8px 12px",fontSize:12,flex:"1 1 104px",opacity:pageBlocks.some(b=>b.zh)?1:.45}}>🔈 中文本頁</button><button onClick={completeChapter} disabled={isDone||!quizDone} style={{...S.btn,background:isDone?"#E1F5EE":quizDone?c.cl:S.bg2,color:isDone?"#1D9E75":quizDone?"#fff":S.t3,padding:"8px 12px",fontSize:12,flex:"1 1 130px",opacity:(!quizDone&&!isDone)?0.62:1}}>{isDone?"已完成":quizDone?"完成 +15XP":"先完成測驗"}</button></div>
