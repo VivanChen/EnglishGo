@@ -886,6 +886,141 @@ const PET_EVENTS=[
 ];
 
 // ═══ BOND REWARDS (親密度獎勵 - 羈絆系統) ══════════════════════════
+const PET_ADVENTURE_SKILLS={
+  wordSpark:{id:"wordSpark",emoji:"✨",name:"Word Spark",zh:"單字火花",desc:"答對單字題時提高攻擊力。",power:10,words:["word","read","study","wise","book"]},
+  braveGuard:{id:"braveGuard",emoji:"🛡️",name:"Brave Guard",zh:"勇氣守護",desc:"答錯時降低受到的傷害。",power:8,words:["brave","strong","panda","dog","horse"]},
+  quickStep:{id:"quickStep",emoji:"⚡",name:"Quick Step",zh:"快速步伐",desc:"每一關開始時提高先攻傷害。",power:9,words:["run","jump","fast","rabbit","fox"]},
+  melodyHeal:{id:"melodyHeal",emoji:"🎵",name:"Melody Heal",zh:"旋律治癒",desc:"過關後幫隊伍回復生命。",power:7,words:["sing","bird","song","river","whale"]},
+  magicLeaf:{id:"magicLeaf",emoji:"🌿",name:"Magic Leaf",zh:"魔法之葉",desc:"高階寵物的穩定魔法攻擊。",power:13,words:["magic","forest","dragon","unicorn","phoenix","celestial"]},
+};
+
+const PET_ADVENTURE_SKILL_VISUALS={
+  wordSpark:{color:"#7C3AED",bg:"#F3E8FF",effect:"✨",line:"released a Word Spark!"},
+  braveGuard:{color:"#2563EB",bg:"#DBEAFE",effect:"🛡️",line:"raised Brave Guard!"},
+  quickStep:{color:"#D97706",bg:"#FEF3C7",effect:"⚡",line:"dashed with Quick Step!"},
+  melodyHeal:{color:"#DB2777",bg:"#FCE7F3",effect:"🎵",line:"sang Melody Heal!"},
+  magicLeaf:{color:"#0F766E",bg:"#CCFBF1",effect:"🌿",line:"cast Magic Leaf!"},
+};
+
+const PET_ADVENTURE_STAGES=[
+  {id:"forest",emoji:"🌲",name:"Forest Path",zh:"森林小徑",enemy:"Shadow Vine",enemyZh:"影藤",hint:"Read the question before you attack."},
+  {id:"river",emoji:"💧",name:"River Bridge",zh:"河流木橋",enemy:"Mist Crab",enemyZh:"迷霧蟹",hint:"Choose the sentence that sounds natural."},
+  {id:"cave",emoji:"🪨",name:"Echo Cave",zh:"回音洞穴",enemy:"Echo Bat",enemyZh:"回音蝙蝠",hint:"Grammar helps your pets hit harder."},
+  {id:"tower",emoji:"🕯️",name:"Old Tower",zh:"古老高塔",enemy:"Clock Guard",enemyZh:"時鐘守衛",hint:"Look for time words and verbs."},
+  {id:"garden",emoji:"🌼",name:"Moon Garden",zh:"月光花園",enemy:"Sleepy Thorn",enemyZh:"睡眠荊棘",hint:"Meaning matters more than speed."},
+  {id:"sky",emoji:"⭐",name:"Star Gate",zh:"星光之門",enemy:"Night Sprite",enemyZh:"夜光精靈",hint:"Use your team skills together."},
+];
+
+const PET_ADVENTURE_ENEMY_ICONS={
+  forest:"🌿",
+  river:"🦀",
+  cave:"🦇",
+  tower:"🕰️",
+  garden:"🌵",
+  sky:"🌌",
+};
+
+const PET_ADVENTURE_QUESTIONS={
+  elementary:[
+    {q:"Which word means 「小的」?",zh:"哪一個單字是「小的」？",choices:["little","loud","late","long"],answer:0,tip:"little = 小的"},
+    {q:"Choose the best sentence.",zh:"選出最自然的句子。",choices:["I am happy today.","I happy today.","I is happy today.","Me am happy today."],answer:0,tip:"I am + adjective."},
+    {q:"What can a bird do?",zh:"鳥會做什麼？",choices:["fly","swim in a cup","drive","cook"],answer:0,tip:"A bird can fly."},
+    {q:"Which one is food?",zh:"哪一個是食物？",choices:["bread","chair","river","clock"],answer:0,tip:"bread = 麵包"},
+    {q:"Complete: I ___ my face in the morning.",zh:"完成句子：早上我洗臉。",choices:["wash","jump","open","sleep"],answer:0,tip:"wash my face = 洗臉"},
+    {q:"Which answer fits: How are you?",zh:"哪個回答適合 How are you?",choices:["I am fine.","It is a cat.","At school.","Blue."],answer:0,tip:"I am fine. = 我很好。"},
+    {q:"Choose the action word.",zh:"選出動作單字。",choices:["run","green","small","happy"],answer:0,tip:"run 是動詞。"},
+    {q:"Complete: She ___ a book.",zh:"完成句子：她讀一本書。",choices:["reads","read","reading","to read"],answer:0,tip:"She reads..."},
+    {q:"Which word means 「朋友」?",zh:"哪一個單字是「朋友」？",choices:["friend","flower","forest","food"],answer:0,tip:"friend = 朋友"},
+  ],
+  junior:[
+    {q:"Choose the correct sentence.",zh:"選出正確句子。",choices:["He has already finished his homework.","He already finish his homework.","He has already finish his homework.","He is already finished homework."],answer:0,tip:"has + past participle"},
+    {q:"Which word is closest to 'brave'?",zh:"哪個字最接近 brave？",choices:["courageous","careless","silent","ordinary"],answer:0,tip:"brave = courageous"},
+    {q:"Complete: If it rains, we ___ inside.",zh:"完成條件句。",choices:["will stay","stayed","staying","stay will"],answer:0,tip:"If + present, will + V."},
+    {q:"Which sentence uses an adverb correctly?",zh:"哪句副詞用法正確？",choices:["She speaks clearly.","She speaks clear.","She clear speaks.","Clearly she speaks English good."],answer:0,tip:"clearly 修飾 speaks"},
+    {q:"What does 'discover' mean?",zh:"discover 是什麼意思？",choices:["find something new","hide something","forget a plan","break a rule"],answer:0,tip:"discover = 發現"},
+    {q:"Choose the best question.",zh:"選出最自然的問句。",choices:["How long have you lived here?","How long you have lived here?","How long do you lived here?","How long did you living here?"],answer:0,tip:"How long have you + p.p.?"},
+    {q:"Which word means 「責任」?",zh:"哪個字是「責任」？",choices:["responsibility","reflection","repetition","reduction"],answer:0,tip:"responsibility = 責任"},
+    {q:"Complete: The story was ___ interesting that I read it twice.",zh:"完成 so...that 句型。",choices:["so","too","very","such"],answer:0,tip:"so + adj. + that"},
+    {q:"Which word is a noun?",zh:"哪個字是名詞？",choices:["decision","decide","quickly","careful"],answer:0,tip:"decision 是名詞。"},
+  ],
+  senior:[
+    {q:"Choose the best transition.",zh:"選出最合適的轉折語。",choices:["However","Therefore","For example","In addition"],answer:0,tip:"However 表示轉折。"},
+    {q:"Which sentence is grammatically correct?",zh:"哪句文法正確？",choices:["Had I known the truth, I would have acted differently.","Had I knew the truth, I would act differently.","If I had know the truth, I will act differently.","Knowing the truth, I would have differently acted."],answer:0,tip:"倒裝假設語氣：Had I known..."},
+    {q:"What does 'inevitable' mean?",zh:"inevitable 是什麼意思？",choices:["impossible to avoid","easy to forget","hard to explain","ready to use"],answer:0,tip:"inevitable = 無法避免的"},
+    {q:"Choose the more academic word for 'show'.",zh:"show 較正式的同義字是？",choices:["demonstrate","hide","guess","repeat"],answer:0,tip:"demonstrate = 展示、證明"},
+    {q:"Complete: The result depends ___ several factors.",zh:"完成片語。",choices:["on","in","at","for"],answer:0,tip:"depend on"},
+    {q:"Which sentence has a reduced relative clause?",zh:"哪句有關係子句簡化？",choices:["The book written by Mina won a prize.","The book which Mina wrote it won a prize.","Mina written the book won a prize.","The written by Mina book won a prize."],answer:0,tip:"written by Mina = which was written by Mina"},
+  ],
+};
+
+function getAdventurePetDef(pet){
+  return PETS[pet?.rarity]?.find(p=>p.id===pet?.petId)||null;
+}
+
+function getPetAdventureSkill(pet){
+  const manualSkill=(pet?.skills||[]).find(id=>PET_ADVENTURE_SKILLS[id]);
+  if(manualSkill)return PET_ADVENTURE_SKILLS[manualSkill];
+  const def=getAdventurePetDef(pet);
+  const words=(def?.words||[]).map(w=>String(w).toLowerCase());
+  const found=Object.values(PET_ADVENTURE_SKILLS).find(skill=>skill.words.some(w=>words.includes(w)));
+  if(found)return found;
+  if((pet?.level||1)>=10||RARITY_ORDER[pet?.rarity]>=RARITY_ORDER.SR)return PET_ADVENTURE_SKILLS.magicLeaf;
+  return PET_ADVENTURE_SKILLS.wordSpark;
+}
+
+function getPetAdventurePower(pet){
+  const rarityBonus={N:0,R:8,SR:18,SSR:32}[pet?.rarity]||0;
+  const careAvg=((pet?.hunger??80)+(pet?.clean??80)+(pet?.energy??80))/3;
+  const skillBonus=(pet?.skills?.length||0)*7;
+  return Math.max(18,Math.round(18+(pet?.level||1)*7+rarityBonus+(pet?.bond||0)/18+careAvg/7+(pet?.dupes||0)*3+skillBonus));
+}
+
+function shuffleAdventureQuestion(q){
+  const rows=q.choices.map((choice,i)=>({choice,correct:i===q.answer})).sort(()=>Math.random()-.5);
+  return {...q,choices:rows.map(r=>r.choice),answer:rows.findIndex(r=>r.correct)};
+}
+
+function drawAdventureQuestions(lv,count){
+  const source=PET_ADVENTURE_QUESTIONS[lv]||PET_ADVENTURE_QUESTIONS.elementary;
+  const pool=[...source].sort(()=>Math.random()-.5);
+  const picked=[];
+  for(let i=0;i<count;i++){
+    picked.push(shuffleAdventureQuestion(pool[i%pool.length]));
+  }
+  return picked;
+}
+
+function buildPetAdventureStages(teamPets,lv){
+  const teamPower=teamPets.reduce((sum,p)=>sum+getPetAdventurePower(p),0);
+  const stages=[...PET_ADVENTURE_STAGES].sort(()=>Math.random()-.5).slice(0,3);
+  return stages.map((stage,i)=>{
+    const maxHp=Math.round(82+i*34+teamPower*.22);
+    return {
+      ...stage,
+      questions:drawAdventureQuestions(lv,3),
+      maxHp,
+      attack:Math.round(14+i*7+teamPower*.035),
+    };
+  });
+}
+
+function improvePetAfterAdventure(pet,{exp,bond,skillId}){
+  let updated={...pet,exp:(pet.exp||0)+exp,bond:(pet.bond||0)+bond,lastUpdate:new Date().toISOString()};
+  if(skillId){
+    const skills=new Set(updated.skills||[]);
+    skills.add(skillId);
+    updated.skills=[...skills];
+  }
+  let guard=0;
+  while(updated.exp>=(updated.level||1)*100&&guard<20){
+    const before=updated.level;
+    updated=levelUpPet(updated);
+    if(updated.level===before)break;
+    guard++;
+  }
+  return updated;
+}
+
 const BOND_MILESTONES=[
   {bond:50,title:"初識夥伴",desc:"解鎖專屬暱稱欄位",icon:"🤝",color:"#9c9a92"},
   {bond:150,title:"好朋友",desc:"每日任務獎勵 +20%",icon:"💛",color:"#EF9F27"},
@@ -1771,6 +1906,7 @@ export default function App(){
          mod==="dashboard"?<Dashboard onBack={back} c={c} xp={xp} streak={streak} stats={stats} daily={daily} weakWords={weakWords} history={history} achUnlocked={achUnlocked} lv={lv} isSponsor={isSponsor}/>:
          mod==="gacha"?<GachaPage onBack={back} c={c} coins={coins} setCoins={setCoins} eggs={eggs} setEggs={setEggs} pets={pets} setPets={setPets}/>:
          mod==="pets"?<PetsGuard onBack={back} c={c} pets={pets} setPets={setPets} eggs={eggs} setEggs={setEggs} coins={coins} setCoins={setCoins} inventory={inventory} setInventory={setInventory} petAccount={petAccount} setPetAccount={setPetAccount} petTasks={petTasks} setPetTasks={setPetTasks} incrTask={incrTask}/>:
+         mod==="petAdventure"?<PetAdventurePage lv={lv} onBack={back} c={c} pets={pets} setPets={setPets} coins={coins} setCoins={setCoins} inventory={inventory} setInventory={setInventory}/>:
          mod==="sponsor"?<SponsorPage onBack={back} c={c} sponsor={sponsor} setSponsor={setSponsor}/>:null}
         {/* Ad Banner — hidden for sponsors */}
         {/* No ads — pure learning experience */}
@@ -1884,6 +2020,7 @@ function Menu({lv,onSelect,daily,c,xp,coins,streak,achUnlocked,weakWords,isSpons
         {id:"dashboard",icon:"📊",t:"學習報告",d:"數據分析"},
         {id:"gacha",icon:"🎰",t:"扭蛋機",d:`🪙 ${coins} 金幣`},
         {id:"pets",icon:"🐾",t:"寵物圖鑑",d:`${pets.length} 隻 · ${eggs.length} 顆蛋`},
+        {id:"petAdventure",icon:"🗺️",t:"寵物冒險",d:pets.length?`${pets.length} 隻可組隊`:"先取得寵物"},
         {id:"sponsor",icon:"☕",t:isSponsor?"支持者 ✓":"支持我們",d:isSponsor?"感謝您的支持！":"銀行轉帳與留言"},
       ].map(m=>(<div key={m.id} onClick={()=>onSelect(m.id)} style={{cursor:"pointer",...S.card,padding:"20px 14px",transition:"all .12s",WebkitTapHighlightColor:"transparent"}}
         onTouchStart={e=>e.currentTarget.style.transform="scale(0.96)"}
@@ -4423,6 +4560,310 @@ function GachaCeremony({rarity,mode}){
 }
 
 // ═══ GACHA MACHINE (扭蛋機) ═══════════════════════════════════════
+function PetAdventurePage({lv,onBack,c,pets,setPets,coins,setCoins,inventory,setInventory}){
+  const[selectedIds,setSelectedIds]=useState([]);
+  const[run,setRun]=useState(null);
+  const[battle,setBattle]=useState(null);
+  const[feedback,setFeedback]=useState(null);
+  const[outcome,setOutcome]=useState(null);
+  const availablePets=useMemo(()=>pets.map(p=>({pet:p,def:getAdventurePetDef(p),power:getPetAdventurePower(p),skill:getPetAdventureSkill(p)})).filter(x=>x.def),[pets]);
+  const selectedPets=availablePets.filter(x=>selectedIds.includes(x.pet.petId)).map(x=>x.pet);
+  const teamPower=selectedPets.reduce((sum,p)=>sum+getPetAdventurePower(p),0);
+  const bestTeamIds=useMemo(()=>[...availablePets].sort((a,b)=>b.power-a.power).slice(0,3).map(x=>x.pet.petId),[availablePets]);
+  const lowCareCount=selectedPets.filter(p=>(((p.hunger??80)+(p.clean??80)+(p.energy??80))/3)<55).length;
+  const togglePet=(petId)=>{
+    setOutcome(null);
+    setSelectedIds(ids=>{
+      if(ids.includes(petId))return ids.filter(id=>id!==petId);
+      if(ids.length>=3)return ids;
+      return [...ids,petId];
+    });
+  };
+  const startAdventure=()=>{
+    const team=availablePets.filter(x=>selectedIds.includes(x.pet.petId)).map(x=>x.pet);
+    if(!team.length)return;
+    const stages=buildPetAdventureStages(team,lv);
+    const power=team.reduce((sum,p)=>sum+getPetAdventurePower(p),0);
+    const maxTeamHp=Math.round(150+power*.85);
+    setRun({stages,teamIds:selectedIds,teamPower:power});
+    setBattle({stageIndex:0,questionIndex:0,teamHp:maxTeamHp,maxTeamHp,enemyHp:stages[0].maxHp,answered:0,correct:0,miss:0});
+    setFeedback(null);
+    setOutcome(null);
+    playSound?.("flip");
+  };
+  const finishAdventure=(won,finalHp)=>{
+    const rewardFood=PET_FOODS[Math.floor(Math.random()*PET_FOODS.length)];
+    const unlockedSkill=won?Object.values(PET_ADVENTURE_SKILLS)[Math.floor(Math.random()*Object.values(PET_ADVENTURE_SKILLS).length)]:null;
+    const reward={
+      won,
+      coins:won?70+selectedIds.length*12:18,
+      food:rewardFood,
+      foodCount:won?2:1,
+      exp:won?80:25,
+      bond:won?14:4,
+      skill:unlockedSkill,
+      finalHp,
+    };
+    setCoins(co=>co+reward.coins);
+    setInventory(inv=>({...inv,[rewardFood.id]:(inv[rewardFood.id]||0)+reward.foodCount}));
+    setPets(ps=>{
+      let skillGiven=false;
+      return ps.map(p=>{
+        if(!selectedIds.includes(p.petId))return p;
+        const shouldGiveSkill=won&&unlockedSkill&&!skillGiven&&!(p.skills||[]).includes(unlockedSkill.id);
+        if(shouldGiveSkill)skillGiven=true;
+        return improvePetAfterAdventure(p,{exp:reward.exp,bond:reward.bond,skillId:shouldGiveSkill?unlockedSkill.id:null});
+      });
+    });
+    setOutcome(reward);
+    setRun(null);
+    setBattle(null);
+    setFeedback(null);
+    playSound?.(won?"combo":"good");
+  };
+  const answerQuestion=(choiceIndex)=>{
+    if(!run||!battle||feedback)return;
+    const stage=run.stages[battle.stageIndex];
+    const q=stage.questions[battle.questionIndex%stage.questions.length];
+    const correct=choiceIndex===q.answer;
+    const attacker=selectedPets[(battle.answered||0)%Math.max(1,selectedPets.length)]||selectedPets[0];
+    const attackerDef=getAdventurePetDef(attacker);
+    const activeSkill=getPetAdventureSkill(attacker);
+    const skillVisual=PET_ADVENTURE_SKILL_VISUALS[activeSkill.id]||PET_ADVENTURE_SKILL_VISUALS.wordSpark;
+    const skills=selectedPets.map(getPetAdventureSkill);
+    const skillPower=skills.reduce((sum,s)=>sum+(s?.power||0),0);
+    if(correct){
+      const openingBonus=activeSkill.id==="quickStep"&&battle.questionIndex===0?14:0;
+      const wordBonus=activeSkill.id==="wordSpark"&&/word|means|單字|意思/i.test(`${q.q} ${q.zh}`)?12:0;
+      const magicBonus=activeSkill.id==="magicLeaf"?8:0;
+      const damage=Math.round(30+run.teamPower*.18+skillPower*.45+activeSkill.power*1.7+openingBonus+wordBonus+magicBonus+Math.random()*10);
+      const heal=skills.some(s=>s?.id==="melodyHeal")?18:10;
+      const nextEnemyHp=Math.max(0,battle.enemyHp-damage);
+      const nextHp=Math.min(battle.maxTeamHp,battle.teamHp+heal);
+      const stageClear=nextEnemyHp<=0;
+      const last=battle.stageIndex>=run.stages.length-1;
+      setFeedback({
+        correct:true,choiceIndex,stageClear,last,damage,heal,tip:q.tip,nextQuestionIndex:battle.questionIndex+1,
+        attackerId:attacker?.petId,attackerName:attackerDef?.name||attacker?.petId||"Pet",
+        skill:activeSkill,skillVisual,
+        message:`${attackerDef?.name||"Pet"} used ${activeSkill.name}! ${stage.enemy} took ${damage} damage.`,
+        effectKey:Date.now(),
+      });
+      setBattle(b=>({...b,teamHp:nextHp,enemyHp:nextEnemyHp,answered:b.answered+1,correct:b.correct+1}));
+      speak?.(q.choices[q.answer]);
+      if(stageClear&&last){
+        window.setTimeout(()=>finishAdventure(true,nextHp),900);
+      }
+      return;
+    }
+    const guard=skills.some(s=>s?.id==="braveGuard")?8:0;
+    const damage=Math.max(6,stage.attack-guard);
+    const nextHp=Math.max(0,battle.teamHp-damage);
+    setBattle(b=>({...b,teamHp:nextHp,answered:b.answered+1,miss:b.miss+1}));
+    setFeedback({
+      correct:false,choiceIndex,stageClear:false,last:false,damage,tip:q.tip,nextQuestionIndex:battle.questionIndex+1,
+      attackerId:attacker?.petId,attackerName:attackerDef?.name||attacker?.petId||"Pet",
+      skill:activeSkill,skillVisual,
+      message:`${stage.enemy} counterattacked! Team took ${damage} damage.${guard?" Brave Guard reduced the hit.":""}`,
+      effectKey:Date.now(),
+    });
+    playSound?.("bad");
+    if(nextHp<=0){
+      window.setTimeout(()=>finishAdventure(false,0),900);
+    }
+  };
+  const continueBattle=()=>{
+    if(!battle||!feedback)return;
+    setBattle(b=>({...b,questionIndex:feedback.nextQuestionIndex||b.questionIndex+1}));
+    setFeedback(null);
+  };
+  const nextStage=()=>{
+    if(!run||!battle)return;
+    const nextIndex=battle.stageIndex+1;
+    const next=run.stages[nextIndex];
+    setBattle(b=>({...b,stageIndex:nextIndex,questionIndex:0,enemyHp:next.maxHp}));
+    setFeedback(null);
+    playSound?.("good");
+  };
+  const resetAdventure=()=>{
+    setRun(null);setBattle(null);setFeedback(null);setOutcome(null);
+  };
+  const hpBar=(value,max,color)=>(
+    <div style={{height:10,background:S.bg2,borderRadius:999,overflow:"hidden"}}>
+      <div style={{height:"100%",width:`${Math.max(0,Math.min(100,(value/max)*100))}%`,background:color,borderRadius:999,transition:"width .25s"}}/>
+    </div>
+  );
+  if(!availablePets.length){
+    return(<div><Hdr t="🗺️ 寵物冒險" onBack={onBack} cl={c.cl}/>
+      <div style={{...S.card,padding:"28px 20px",textAlign:"center"}}>
+        <div style={{fontSize:46,marginBottom:8}}>🥚</div>
+        <div style={{fontSize:20,fontWeight:900,color:S.t1}}>還沒有可出戰的寵物</div>
+        <div style={{fontSize:13,color:S.t2,lineHeight:1.7,marginTop:8}}>先到扭蛋機取得寵物，再帶牠們挑戰英文冒險。</div>
+      </div>
+    </div>);
+  }
+  if(outcome){
+    return(<div><Hdr t="🗺️ 冒險結果" onBack={onBack} cl={c.cl}/>
+      <div style={{...S.card,padding:"24px 18px",textAlign:"center",background:`linear-gradient(135deg,${outcome.won?c.bg:"#FFF3CD"},var(--color-background-primary,#fff))`,border:`2px solid ${outcome.won?c.cl:"#EF9F27"}`}}>
+        <div style={{fontSize:50,marginBottom:6}}>{outcome.won?"🏆":"🌤️"}</div>
+        <div style={{fontSize:24,fontWeight:900,color:S.t1}}>{outcome.won?"冒險勝利！":"這次先撤退"}</div>
+        <div style={{fontSize:13,color:S.t2,marginTop:6,lineHeight:1.7}}>{outcome.won?"寵物隊伍完成 3 關英文戰鬥，獲得更多培養資源。":"隊伍仍然獲得練習獎勵，下次可以帶等級更高或照顧狀態更好的寵物。"}</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(120px,1fr))",gap:8,marginTop:16,textAlign:"left"}}>
+          <div style={{...S.card,padding:"12px",background:S.bg1}}><div style={{fontSize:12,color:S.t3}}>金幣</div><div style={{fontSize:20,fontWeight:900,color:"#EF9F27"}}>+{outcome.coins}</div></div>
+          <div style={{...S.card,padding:"12px",background:S.bg1}}><div style={{fontSize:12,color:S.t3}}>道具</div><div style={{fontSize:18,fontWeight:900,color:S.t1}}>{outcome.food.emoji} {outcome.food.name} ×{outcome.foodCount}</div></div>
+          <div style={{...S.card,padding:"12px",background:S.bg1}}><div style={{fontSize:12,color:S.t3}}>寵物成長</div><div style={{fontSize:18,fontWeight:900,color:c.cl}}>XP +{outcome.exp} · 親密 +{outcome.bond}</div></div>
+          {outcome.won&&outcome.skill&&<div style={{...S.card,padding:"12px",background:S.bg1}}><div style={{fontSize:12,color:S.t3}}>可能解鎖技能</div><div style={{fontSize:17,fontWeight:900,color:c.cl}}>{outcome.skill.emoji} {outcome.skill.zh}</div></div>}
+        </div>
+        <div style={{display:"flex",gap:8,marginTop:18}}>
+          <button onClick={resetAdventure} style={{...S.btn,background:S.bg2,color:S.t1,flex:1}}>重新組隊</button>
+          <button onClick={startAdventure} style={{...S.btn,background:c.cl,color:"#fff",flex:1}}>再冒險</button>
+        </div>
+      </div>
+    </div>);
+  }
+  if(run&&battle){
+    const stage=run.stages[battle.stageIndex];
+    const q=stage.questions[battle.questionIndex%stage.questions.length];
+    const activePet=feedback?.attackerId?selectedPets.find(p=>p.petId===feedback.attackerId):(selectedPets[(battle.answered||0)%Math.max(1,selectedPets.length)]||selectedPets[0]);
+    const activeDef=getAdventurePetDef(activePet);
+    const activeSkill=feedback?.skill||getPetAdventureSkill(activePet);
+    const activeVisual=feedback?.skillVisual||PET_ADVENTURE_SKILL_VISUALS[activeSkill.id]||PET_ADVENTURE_SKILL_VISUALS.wordSpark;
+    const enemyIcon=PET_ADVENTURE_ENEMY_ICONS[stage.id]||"🌑";
+    return(<div><Hdr t="🗺️ 寵物冒險" onBack={()=>{setRun(null);setBattle(null);setFeedback(null)}} cl={c.cl}/>
+      <style>{`
+@keyframes advPetReady {0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+@keyframes advSkillFly {0%{transform:translate(-80px,42px) scale(.4) rotate(-12deg);opacity:0}25%{opacity:1}70%{transform:translate(34px,-16px) scale(1.35) rotate(8deg);opacity:1}100%{transform:translate(74px,-36px) scale(.6) rotate(18deg);opacity:0}}
+@keyframes advEnemyHit {0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(7px)}60%{transform:translateX(-4px)}}
+@keyframes advDamagePop {0%{transform:translateY(10px) scale(.85);opacity:0}35%{opacity:1}100%{transform:translateY(-18px) scale(1.05);opacity:0}}
+@keyframes advDialog {0%{transform:translateY(6px);opacity:.4}100%{transform:translateY(0);opacity:1}}
+@media (prefers-reduced-motion: reduce) { [data-pet-adventure-battle] *{animation:none !important} }
+`}</style>
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+        {run.stages.map((s,i)=><div key={s.id} style={{flex:1,height:8,borderRadius:999,background:i<=battle.stageIndex?c.cl:S.bg2,opacity:i===battle.stageIndex?1:.55}}/> )}
+      </div>
+      <div data-pet-adventure-battle style={{position:"relative",minHeight:276,borderRadius:18,overflow:"hidden",marginBottom:10,border:`1px solid ${S.bd}`,background:`linear-gradient(160deg,${c.bg} 0%,var(--color-background-primary,#fff) 42%,#E1F5EE 100%)`,boxShadow:"0 12px 28px rgba(15,110,86,.10)"}}>
+        <div style={{position:"absolute",inset:0,background:"radial-gradient(circle at 74% 24%, rgba(255,255,255,.85), transparent 28%), radial-gradient(circle at 20% 76%, rgba(15,110,86,.12), transparent 32%)"}}/>
+        <div style={{position:"absolute",right:18,top:18,width:"42%",maxWidth:260}}>
+          <div style={{...S.card,padding:"10px 12px",background:"rgba(255,255,255,.88)",border:`1px solid ${S.bd}`}}>
+            <div style={{display:"flex",justifyContent:"space-between",gap:8,alignItems:"center",fontSize:12,fontWeight:900,color:S.t1}}>
+              <span>{stage.enemy}</span><span>Lv.{Math.max(5,8+battle.stageIndex*7)}</span>
+            </div>
+            <div style={{marginTop:6}}>{hpBar(battle.enemyHp,stage.maxHp,"#E24B4A")}</div>
+          </div>
+          <div key={`enemy-${feedback?.effectKey||battle.stageIndex}`} style={{fontSize:70,textAlign:"center",marginTop:8,filter:"drop-shadow(0 12px 10px rgba(0,0,0,.16))",animation:feedback?.correct?"advEnemyHit .38s ease-in-out":"none"}}>{enemyIcon}</div>
+          {feedback?.correct&&<div key={`dmg-${feedback.effectKey}`} style={{position:"absolute",right:"38%",top:82,fontSize:20,fontWeight:1000,color:"#E24B4A",textShadow:"0 2px 0 #fff",animation:"advDamagePop .8s ease-out forwards"}}>-{feedback.damage}</div>}
+        </div>
+        <div style={{position:"absolute",left:14,bottom:74,width:"50%",maxWidth:320}}>
+          <div style={{display:"flex",alignItems:"flex-end",gap:4,minHeight:100}}>
+            {selectedPets.map((p,i)=>{
+              const isActive=p.petId===activePet?.petId;
+              return(<div key={p.petId} style={{flex:"0 1 82px",textAlign:"center",opacity:isActive?1:.65,transform:isActive?"scale(1.08)":"scale(.92)",transition:"all .2s",animation:isActive&&!feedback?"advPetReady 1.2s ease-in-out infinite":"none"}}>
+                <PixelPet petId={p.petId} stage={getPetStage(p)} size={isActive?74:56} animate={false}/>
+                {isActive&&<div style={{height:5,margin:"2px auto 0",width:42,borderRadius:999,background:activeVisual.color}}/>}
+              </div>);
+            })}
+          </div>
+          <div style={{...S.card,padding:"10px 12px",background:"rgba(255,255,255,.9)",border:`1px solid ${S.bd}`}}>
+            <div style={{display:"flex",justifyContent:"space-between",gap:8,alignItems:"center",fontSize:12,fontWeight:900,color:S.t1}}>
+              <span>{activeDef?.name||"Team"}</span><span>Team HP</span>
+            </div>
+            <div style={{marginTop:6}}>{hpBar(battle.teamHp,battle.maxTeamHp,c.cl)}</div>
+          </div>
+        </div>
+        {feedback&&<div key={`skill-${feedback.effectKey}`} style={{position:"absolute",left:"46%",top:"42%",fontSize:52,color:activeVisual.color,filter:"drop-shadow(0 8px 10px rgba(0,0,0,.2))",animation:"advSkillFly .75s ease-out forwards",pointerEvents:"none"}}>{feedback.correct?activeVisual.effect:"💥"}</div>}
+        <div style={{position:"absolute",left:12,right:12,bottom:10,padding:"12px 14px",borderRadius:14,background:"#123047",color:"#fff",border:"3px solid rgba(255,255,255,.9)",boxShadow:"0 6px 16px rgba(0,0,0,.18)",fontSize:14,fontWeight:900,lineHeight:1.5,animation:"advDialog .2s ease-out"}}>
+          {feedback?feedback.message:`${activeDef?.name||"Your pet"} is ready. Choose the best English answer.`}
+          {!feedback&&<div style={{fontSize:11,fontWeight:700,color:"rgba(255,255,255,.72)",marginTop:3}}>{activeVisual.effect} Skill ready: {activeSkill.name} · {activeSkill.zh}</div>}
+        </div>
+      </div>
+      <div style={{...S.card,padding:"16px",marginBottom:10,background:`linear-gradient(135deg,${c.bg},var(--color-background-primary,#fff))`,borderTop:`4px solid ${c.cl}`}}>
+        <div style={{display:"flex",justifyContent:"space-between",gap:12,alignItems:"center",flexWrap:"wrap"}}>
+          <div>
+            <div style={{fontSize:12,color:c.cl,fontWeight:900}}>Stage {battle.stageIndex+1}/3 · Turn {battle.questionIndex+1} · {stage.zh}</div>
+            <div style={{fontSize:22,fontWeight:900,color:S.t1}}>{stage.emoji} {stage.name}</div>
+            <div style={{fontSize:12,color:S.t2,marginTop:3}}>Enemy: {stage.enemy}（{stage.enemyZh}）</div>
+          </div>
+          <button onClick={()=>speak(stage.hint)} style={{...S.btn,background:S.bg1,color:c.cl,fontSize:12}}>朗讀提示</button>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginTop:14}}>
+          <div><div style={{fontSize:12,fontWeight:900,color:S.t2,marginBottom:4}}>Team HP {battle.teamHp}/{battle.maxTeamHp}</div>{hpBar(battle.teamHp,battle.maxTeamHp,c.cl)}</div>
+          <div><div style={{fontSize:12,fontWeight:900,color:S.t2,marginBottom:4}}>Enemy HP {battle.enemyHp}/{stage.maxHp}</div>{hpBar(battle.enemyHp,stage.maxHp,"#E24B4A")}</div>
+        </div>
+        <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:10,fontSize:11,fontWeight:900}}>
+          <span style={{padding:"4px 8px",borderRadius:999,background:S.bg1,color:S.t2}}>已答 {battle.answered}</span>
+          <span style={{padding:"4px 8px",borderRadius:999,background:"#E1F5EE",color:"#0F6E56"}}>答對 {battle.correct}</span>
+          <span style={{padding:"4px 8px",borderRadius:999,background:"#FCEBEB",color:"#B42318"}}>失誤 {battle.miss}</span>
+        </div>
+      </div>
+      <div style={{...S.card,padding:"18px 16px",marginBottom:10}}>
+        <div style={{fontSize:12,color:c.cl,fontWeight:900,marginBottom:6}}>English Challenge</div>
+        <div style={{fontSize:21,fontWeight:900,color:S.t1,lineHeight:1.45}}>{q.q}</div>
+        <div style={{fontSize:13,color:S.t2,marginTop:5}}>{q.zh}</div>
+        <button onClick={()=>speak(q.q)} style={{marginTop:10,border:`1px solid ${S.bd}`,background:S.bg1,borderRadius:999,padding:"7px 12px",fontSize:12,color:S.t2,cursor:"pointer",fontFamily:"inherit"}}>🔊 朗讀題目</button>
+        <div style={{display:"grid",gap:8,marginTop:14}}>
+          {q.choices.map((choice,i)=>{
+            const locked=!!feedback;
+            const isCorrect=i===q.answer;
+            const isPicked=feedback?.choiceIndex===i;
+            const bg=locked&&isCorrect?"#E1F5EE":locked&&isPicked&&!isCorrect?"#FCEBEB":S.bg2;
+            const border=locked&&isCorrect?"2px solid #1D9E75":locked&&isPicked&&!isCorrect?"2px solid #E24B4A":`1px solid ${S.bd}`;
+            return(<button key={choice} onClick={()=>answerQuestion(i)} disabled={locked} style={{padding:"13px 14px",borderRadius:12,border,background:bg,textAlign:"left",fontSize:15,fontWeight:800,color:S.t1,cursor:locked?"default":"pointer",fontFamily:"inherit"}}>{choice}</button>);
+          })}
+        </div>
+        {feedback&&<div style={{marginTop:14,padding:"13px 14px",borderRadius:12,background:feedback.correct?"#E1F5EE":"#FFF3CD",border:`1px solid ${feedback.correct?"#1D9E75":"#EF9F27"}55`}}>
+          <div style={{fontSize:15,fontWeight:900,color:feedback.correct?"#0F6E56":"#856404"}}>{feedback.correct?`答對！造成 ${feedback.damage} 傷害，隊伍回復 ${feedback.heal} HP。`:`答錯了，敵人反擊造成 ${feedback.damage} 傷害。`}</div>
+          <div style={{fontSize:12,color:S.t2,marginTop:5}}>重點：{feedback.tip}</div>
+          {!feedback.stageClear&&battle.teamHp>0&&<button onClick={continueBattle} style={{...S.btn,background:c.cl,color:"#fff",marginTop:10,fontSize:13}}>下一題</button>}
+          {feedback.stageClear&&!feedback.last&&<button onClick={nextStage} style={{...S.btn,background:c.cl,color:"#fff",marginTop:10,fontSize:13}}>前往下一關</button>}
+        </div>}
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(120px,1fr))",gap:8}}>
+        {selectedPets.map(p=>{const def=getAdventurePetDef(p);const skill=getPetAdventureSkill(p);return(<div key={p.petId} style={{...S.card,padding:"10px",display:"flex",alignItems:"center",gap:8}}>
+          <PixelPet petId={p.petId} stage={getPetStage(p)} size={48} animate={false}/>
+          <div style={{minWidth:0}}><div style={{fontSize:12,fontWeight:900,color:S.t1}}>{def?.name||p.petId}</div><div style={{fontSize:11,color:S.t3}}>Lv.{p.level||1} · {skill.emoji} {skill.zh}</div></div>
+        </div>)})}
+      </div>
+    </div>);
+  }
+  return(<div><Hdr t="🗺️ 寵物冒險" onBack={onBack} cl={c.cl}/>
+    <div style={{...S.card,padding:"16px",marginBottom:12,background:`linear-gradient(135deg,${c.bg},var(--color-background-primary,#fff))`,borderTop:`4px solid ${c.cl}`}}>
+      <div style={{fontSize:24,fontWeight:900,color:S.t1}}>帶 3 隻寵物挑戰英文關卡</div>
+      <div style={{fontSize:13,color:S.t2,lineHeight:1.7,marginTop:6}}>寵物的等級、親密度、照顧狀態與技能會影響戰力。每次冒險隨機生成 3 個關卡，答對英文題目就能擊敗敵人，勝利後取得培養道具與技能。</div>
+      <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:12}}>
+        <button onClick={()=>setSelectedIds(bestTeamIds)} style={{...S.btn,background:c.cl,color:"#fff",fontSize:13}}>推薦隊伍</button>
+        <button onClick={()=>setSelectedIds([])} style={{...S.btn,background:S.bg1,color:S.t2,fontSize:13}}>清空選擇</button>
+        {lowCareCount>0&&<span style={{alignSelf:"center",fontSize:12,fontWeight:800,color:"#B42318",background:"#FCEBEB",borderRadius:999,padding:"6px 10px"}}>{lowCareCount} 隻狀態偏低，戰力會受影響</span>}
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(110px,1fr))",gap:8,marginTop:14}}>
+        <div style={{...S.card,padding:"10px",background:S.bg1}}><div style={{fontSize:11,color:S.t3}}>隊伍</div><div style={{fontSize:18,fontWeight:900,color:c.cl}}>{selectedIds.length}/3</div></div>
+        <div style={{...S.card,padding:"10px",background:S.bg1}}><div style={{fontSize:11,color:S.t3}}>總戰力</div><div style={{fontSize:18,fontWeight:900,color:S.t1}}>{teamPower}</div></div>
+        <div style={{...S.card,padding:"10px",background:S.bg1}}><div style={{fontSize:11,color:S.t3}}>持有金幣</div><div style={{fontSize:18,fontWeight:900,color:"#EF9F27"}}>{coins}</div></div>
+      </div>
+    </div>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(170px,1fr))",gap:10,marginBottom:14}}>
+      {availablePets.map(({pet,def,power,skill})=>{
+        const selected=selectedIds.includes(pet.petId);
+        const ri=RARITY_INFO[pet.rarity]||RARITY_INFO.N;
+        const careAvg=Math.round(((pet.hunger??80)+(pet.clean??80)+(pet.energy??80))/3);
+        return(<button key={pet.petId} onClick={()=>togglePet(pet.petId)} style={{...S.card,padding:"13px",textAlign:"left",border:`2px solid ${selected?c.cl:S.bd}`,background:selected?c.bg:S.bg1,cursor:"pointer",fontFamily:"inherit",color:S.t1}}>
+          <div style={{display:"flex",gap:10,alignItems:"center"}}>
+            <PixelPet petId={pet.petId} stage={getPetStage(pet)} size={62} animate={false}/>
+            <div style={{minWidth:0,flex:1}}>
+              <div style={{fontSize:15,fontWeight:900,color:S.t1}}>{def.name}</div>
+              <div style={{fontSize:11,color:ri.color,fontWeight:900}}>{ri.label} · Lv.{pet.level||1}</div>
+              <div style={{fontSize:11,color:S.t3,marginTop:3}}>親密 {pet.bond||0} · 狀態 {careAvg}% · 戰力 {power}</div>
+            </div>
+          </div>
+          <div style={{marginTop:10,padding:"8px 9px",borderRadius:10,background:S.bg2,fontSize:12,color:S.t2,lineHeight:1.45}}>
+            <b style={{color:c.cl}}>{skill.emoji} {skill.zh}</b><br/>{skill.name}: {skill.desc}
+          </div>
+        </button>);
+      })}
+    </div>
+    <button onClick={startAdventure} disabled={!selectedIds.length} style={{...S.btn,background:selectedIds.length?c.cl:S.bg2,color:selectedIds.length?"#fff":S.t3,width:"100%",padding:"15px",fontSize:16,cursor:selectedIds.length?"pointer":"not-allowed"}}>開始冒險</button>
+  </div>);
+}
+
 function GachaPage({onBack,c,coins,setCoins,eggs,setEggs,pets,setPets}){
   const[rolling,setRolling]=useState(false);
   const[rollingRarity,setRollingRarity]=useState(null);// (P0-3) 抽蛋動畫期間的稀有度，給光柱動畫用
