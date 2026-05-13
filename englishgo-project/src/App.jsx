@@ -1173,9 +1173,21 @@ function getSelectedPetAdventureSkill(pet,loadout={}){
 
 function getPetAdventurePower(pet){
   const rarityBonus={N:0,R:8,SR:18,SSR:32}[pet?.rarity]||0;
-  const careAvg=((pet?.hunger??80)+(pet?.clean??80)+(pet?.energy??80))/3;
+  const careAvg=getPetCareAverage(pet);
   const skillBonus=(pet?.skills?.length||0)*7;
   return Math.max(18,Math.round(18+(pet?.level||1)*7+rarityBonus+(pet?.bond||0)/18+careAvg/7+(pet?.dupes||0)*3+skillBonus));
+}
+
+function getPetAdventureScore(pet){
+  const readiness=getPetReadiness(pet);
+  const carePenalty=getCareCount(pet)*10;
+  return Math.max(1,Math.round(getPetAdventurePower(pet)+readiness.avg*.22-carePenalty));
+}
+
+function getNextPetAdventureSkillCard(pet){
+  return getPetAdventureSkillCards(pet)
+    .filter(card=>!card.unlocked)
+    .sort((a,b)=>(a.rule.level||0)-(b.rule.level||0))[0]||null;
 }
 
 function shuffleAdventureQuestion(q){
@@ -1233,8 +1245,19 @@ function buildPetAdventureStages(teamPets,lv,{bossReady=false,difficultyLevel=1}
   return adventureStages;
 }
 
-function improvePetAfterAdventure(pet,{exp,bond,skillId}){
+function getPetAdventureFatigue({won=false,bossWin=false}={}){
+  if(bossWin)return{hunger:14,clean:10,energy:18,label:"魔王戰消耗"};
+  if(won)return{hunger:8,clean:6,energy:12,label:"冒險消耗"};
+  return{hunger:5,clean:4,energy:8,label:"撤退消耗"};
+}
+
+function improvePetAfterAdventure(pet,{exp,bond,skillId,fatigue=null}){
   let updated={...pet,exp:(pet.exp||0)+exp,bond:(pet.bond||0)+bond,lastUpdate:new Date().toISOString()};
+  if(fatigue){
+    updated.hunger=Math.max(0,Math.min(MAX_STAT,(updated.hunger??80)-fatigue.hunger));
+    updated.clean=Math.max(0,Math.min(MAX_STAT,(updated.clean??80)-fatigue.clean));
+    updated.energy=Math.max(0,Math.min(MAX_STAT,(updated.energy??80)-fatigue.energy));
+  }
   if(skillId){
     const skills=new Set(updated.skills||[]);
     skills.add(skillId);
@@ -1360,6 +1383,156 @@ function getCareCount(pet){
   if((pet.energy??80)<30)n++;
   if((pet.poops||[]).length>0)n++;
   return n;
+}
+
+function getPetCareAverage(pet){
+  return Math.round(((pet?.hunger??80)+(pet?.clean??80)+(pet?.energy??80))/3);
+}
+
+function getPetReadiness(pet){
+  const avg=getPetCareAverage(pet);
+  const needs=getCareCount(pet);
+  if(needs>0||avg<45)return{avg,label:"需要照顧",emoji:"⚠️",color:"#E24B4A",tone:"先照顧再出戰會更穩"};
+  if(avg>=85)return{avg,label:"最佳狀態",emoji:"✨",color:"#1D9E75",tone:"冒險時傷害、HP、獎勵提升"};
+  if(avg>=65)return{avg,label:"狀態穩定",emoji:"👍",color:"#0F6E56",tone:"可安心冒險"};
+  return{avg,label:"有點疲倦",emoji:"😐",color:"#EF9F27",tone:"建議先補充體力或清潔"};
+}
+
+function getTeamAdventureMorale(teamPets=[]){
+  const avg=teamPets.length?Math.round(teamPets.reduce((sum,p)=>sum+getPetCareAverage(p),0)/teamPets.length):80;
+  const needs=teamPets.reduce((sum,p)=>sum+getCareCount(p),0);
+  if(needs>0||avg<45)return{avg,needs,label:"低士氣",emoji:"⚠️",color:"#E24B4A",hpMult:.9,damageBonus:-8,rewardMult:1,battleText:"照顧不足，戰鬥力下降"};
+  if(avg>=85)return{avg,needs,label:"高士氣",emoji:"✨",color:"#1D9E75",hpMult:1.12,damageBonus:14,rewardMult:1.15,battleText:"HP、傷害、獎勵提升"};
+  if(avg>=65)return{avg,needs,label:"穩定",emoji:"👍",color:"#0F6E56",hpMult:1.04,damageBonus:6,rewardMult:1.05,battleText:"小幅提升戰鬥表現"};
+  return{avg,needs,label:"普通",emoji:"🙂",color:"#EF9F27",hpMult:1,damageBonus:0,rewardMult:1,battleText:"正常出戰"};
+}
+
+function choosePetFoodForNeed(pet,inventory={}){
+  const hunger=pet?.hunger??80;
+  const foods=PET_FOODS.filter(f=>(inventory[f.id]||0)>0);
+  if(!foods.length)return null;
+  const need=Math.max(1,MAX_STAT-hunger);
+  return [...foods].sort((a,b)=>Math.abs(a.feed-need)-Math.abs(b.feed-need)||a.feed-b.feed)[0];
+}
+
+function getPetCareSuggestion(pet,inventory={}){
+  if(!pet)return null;
+  const food=choosePetFoodForNeed(pet,inventory);
+  const hunger=pet.hunger??80, clean=pet.clean??80, energy=pet.energy??80, poops=(pet.poops||[]).length;
+  if(hunger<75&&food)return{actionKey:"feed",foodId:food.id,label:`餵 ${food.name}`,reason:`飢餓度 ${Math.round(hunger)}/100，建議補充 ${food.word}。`,emoji:food.emoji};
+  if(hunger<75&&!food)return{shop:true,label:"補充食物",reason:"食物庫存不足，先到商店買一點食物。",emoji:"🏪"};
+  if(poops>0||clean<70)return{actionKey:"clean",label:"洗澡清潔",reason:poops>0?"房間需要整理，清潔會提升冒險狀態。":"乾淨度偏低，洗澡後比較適合出戰。",emoji:"🛁"};
+  if(energy<65)return{actionKey:"sleep",label:"休息一下",reason:`體力 ${Math.round(energy)}/100，休息後冒險更穩。`,emoji:"😴"};
+  if(energy>=45)return{actionKey:"play",label:"一起玩",reason:"狀態不錯，可以透過遊戲增加親密度。",emoji:"🎮"};
+  return{actionKey:"study",label:"一起學習",reason:"用短句練習維持親密度與經驗。",emoji:"📚"};
+}
+
+const PET_CULTIVATION_ACTIONS=[
+  {key:"feed",label:"餵食",emoji:"🍖",short:"食"},
+  {key:"clean",label:"清潔",emoji:"🛁",short:"潔"},
+  {key:"play",label:"玩耍",emoji:"🎮",short:"玩"},
+  {key:"sleep",label:"休息",emoji:"😴",short:"休"},
+  {key:"study",label:"學習",emoji:"📚",short:"學"},
+];
+
+function getPetDailyCultivation(pet){
+  const today=new Date().toDateString();
+  const raw=pet?.careLog?.date===today?pet.careLog:{date:today,actions:[],comboClaimed:false};
+  const actions=[...new Set((raw.actions||[]).filter(k=>PET_CULTIVATION_ACTIONS.some(a=>a.key===k)))];
+  return{date:today,actions,comboClaimed:!!raw.comboClaimed,count:actions.length,target:3,complete:actions.length>=3};
+}
+
+function getPetExpToLevel(pet,targetLevel){
+  const level=pet?.level||1;
+  const exp=pet?.exp||0;
+  if(!targetLevel||level>=targetLevel)return 0;
+  let left=0;
+  for(let lv=level;lv<targetLevel;lv++){
+    left+=lv*100;
+    if(lv===level)left-=Math.min(exp,lv*100);
+  }
+  return Math.max(0,left);
+}
+
+function getPetEvolutionProgress(pet){
+  const level=pet?.level||1;
+  const exp=pet?.exp||0;
+  const stage=getPetStage(pet);
+  const currentLabel={baby:"幼寵",adult:"成寵",evolved:"進化形態"}[stage]||"幼寵";
+  const targetLevel=level<4?4:level<10?10:null;
+  if(!targetLevel)return{currentLabel,nextLabel:"已完成進化",targetLevel:null,expLeft:0,pct:100};
+  const startLevel=targetLevel===4?1:4;
+  let total=0,gained=0;
+  for(let lv=startLevel;lv<targetLevel;lv++){
+    const need=lv*100;
+    total+=need;
+    if(lv<level)gained+=need;
+    if(lv===level)gained+=Math.min(exp,need);
+  }
+  return{
+    currentLabel,
+    nextLabel:targetLevel===4?"成寵":"進化形態",
+    targetLevel,
+    expLeft:getPetExpToLevel(pet,targetLevel),
+    pct:total?Math.round(Math.min(100,gained/total*100)):100,
+  };
+}
+
+function getPetNextBondMilestone(pet){
+  const bond=pet?.bond||0;
+  const next=BOND_MILESTONES.find(m=>bond<m.bond);
+  if(!next)return{next:null,left:0,pct:100};
+  const prev=[...BOND_MILESTONES].reverse().find(m=>bond>=m.bond)?.bond||0;
+  const pct=Math.round(Math.max(0,Math.min(100,((bond-prev)/(next.bond-prev))*100)));
+  return{next,left:next.bond-bond,pct};
+}
+
+function getPetGrowthScore(pet){
+  const readiness=getPetReadiness(pet);
+  return Math.round((pet?.level||1)*14+(pet?.bond||0)/10+readiness.avg*.45+(pet?.skills?.length||0)*18+(pet?.dupes||0)*10);
+}
+
+function getPetCultivationPlan(pet,inventory={}){
+  const daily=getPetDailyCultivation(pet);
+  const readiness=getPetReadiness(pet);
+  const care=getPetCareSuggestion(pet,inventory);
+  const evolution=getPetEvolutionProgress(pet);
+  const bond=getPetNextBondMilestone(pet);
+  const nextSkill=getNextPetAdventureSkillCard(pet);
+  const energy=pet?.energy??80;
+  const suggestedFood=choosePetFoodForNeed(pet,inventory);
+  const actionMap={
+    feed:{key:"feed",label:suggestedFood?"餵食":"補食物",emoji:suggestedFood?.emoji||"🍖",actionKey:"feed",foodId:suggestedFood?.id||null,shop:!suggestedFood},
+    clean:{key:"clean",label:"清潔",emoji:"🛁",actionKey:"clean"},
+    play:{key:"play",label:"玩耍",emoji:"🎮",actionKey:"play"},
+    sleep:{key:"sleep",label:"休息",emoji:"😴",actionKey:"sleep"},
+    study:{key:"study",label:"學習",emoji:"📚",actionKey:"study"},
+  };
+  const actions=[];
+  const addAction=a=>{
+    if(!a||actions.some(x=>x.key===a.key))return;
+    actions.push(a);
+  };
+  if(care){
+    addAction(care.shop?{...actionMap.feed,shop:true,label:"補食物"}:{key:care.actionKey,label:care.label,emoji:care.emoji,actionKey:care.actionKey,foodId:care.foodId});
+  }
+  if(nextSkill||evolution.targetLevel)addAction(actionMap.study);
+  if(bond.next&&energy>=35)addAction(actionMap.play);
+  if(energy<55)addAction(actionMap.sleep);
+  PET_CULTIVATION_ACTIONS.filter(a=>!daily.actions.includes(a.key)).forEach(a=>addAction(actionMap[a.key]));
+  let primary;
+  if(care&&(care.shop||readiness.avg<75||getCareCount(pet)>0)){
+    primary={title:"先把狀態補穩",desc:care.reason,action:actions[0]};
+  }else if(nextSkill){
+    primary={title:`下一個技能：${nextSkill.skill.zh}`,desc:`距離 ${nextSkill.rule.label} 更近；學習與冒險都能累積經驗。`,action:actionMap.study};
+  }else if(evolution.targetLevel){
+    primary={title:`朝 ${evolution.nextLabel} 培養`,desc:`還差約 ${evolution.expLeft} XP 到 Lv.${evolution.targetLevel}。`,action:actionMap.study};
+  }else if(bond.next){
+    primary={title:`羈絆目標：${bond.next.title}`,desc:`親密度還差 ${bond.left}，玩耍或學習都能提升。`,action:energy>=35?actionMap.play:actionMap.sleep};
+  }else{
+    primary={title:"穩定培養完成",desc:"可以用學習或冒險維持成長，準備挑戰更高難度。",action:actionMap.study};
+  }
+  return{daily,readiness,care,evolution,bond,nextSkill,score:getPetGrowthScore(pet),primary,actions:actions.slice(0,4)};
 }
 
 function levelUpPet(pet){
@@ -2367,6 +2540,118 @@ function Mascot({mood}){
 
 // ═══ SRS FLASHCARD (Gamified) ═══════════════════════════════════
 function playSound(type){try{const ac=new(window.AudioContext||window.webkitAudioContext)();const o=ac.createOscillator();const g=ac.createGain();o.connect(g);g.connect(ac.destination);g.gain.value=0.15;if(type==="flip"){o.frequency.value=520;o.type="sine";g.gain.exponentialRampToValueAtTime(.01,ac.currentTime+.15);o.start();o.stop(ac.currentTime+.15)}else if(type==="good"){o.frequency.value=660;o.type="sine";o.start();setTimeout(()=>{o.frequency.value=880},80);g.gain.exponentialRampToValueAtTime(.01,ac.currentTime+.25);o.stop(ac.currentTime+.25)}else if(type==="bad"){o.frequency.value=300;o.type="triangle";g.gain.exponentialRampToValueAtTime(.01,ac.currentTime+.3);o.start();o.stop(ac.currentTime+.3)}else if(type==="combo"){o.frequency.value=780;o.type="sine";o.start();setTimeout(()=>{const o2=ac.createOscillator();const g2=ac.createGain();o2.connect(g2);g2.connect(ac.destination);g2.gain.value=0.12;o2.frequency.value=1040;o2.type="sine";g2.gain.exponentialRampToValueAtTime(.01,ac.currentTime+.2);o2.start();o2.stop(ac.currentTime+.2)},100);g.gain.exponentialRampToValueAtTime(.01,ac.currentTime+.15);o.stop(ac.currentTime+.15)}else if(type==="done"){[523,659,784,1047].forEach((f,i)=>{const oo=ac.createOscillator();const gg=ac.createGain();oo.connect(gg);gg.connect(ac.destination);gg.gain.value=0.1;oo.frequency.value=f;oo.type="sine";gg.gain.exponentialRampToValueAtTime(.01,ac.currentTime+i*.12+.3);oo.start(ac.currentTime+i*.12);oo.stop(ac.currentTime+i*.12+.3)})}}catch{}}
+
+let _battleAudioCtx=null;
+function getBattleAudioCtx(){
+  if(typeof window==="undefined"||(!window.AudioContext&&!window.webkitAudioContext))return null;
+  try{
+    if(!_battleAudioCtx||_battleAudioCtx.state==="closed")_battleAudioCtx=new(window.AudioContext||window.webkitAudioContext)();
+    _battleAudioCtx.resume?.();
+    return _battleAudioCtx;
+  }catch{return null}
+}
+function battleTone(ctx,{freq=440,endFreq=null,start=0,dur=.18,type="sine",volume=.08,destination=null,attack=.01,filterFreq=null}={}){
+  if(!ctx)return;
+  const when=ctx.currentTime+start;
+  const osc=ctx.createOscillator();
+  const gain=ctx.createGain();
+  let node=gain;
+  osc.type=type;
+  osc.frequency.setValueAtTime(freq,when);
+  if(endFreq)osc.frequency.exponentialRampToValueAtTime(Math.max(1,endFreq),when+dur);
+  gain.gain.setValueAtTime(.0001,when);
+  gain.gain.linearRampToValueAtTime(volume,when+attack);
+  gain.gain.exponentialRampToValueAtTime(.0001,when+dur);
+  if(filterFreq){
+    const filter=ctx.createBiquadFilter();
+    filter.type="lowpass";
+    filter.frequency.value=filterFreq;
+    gain.connect(filter);
+    node=filter;
+  }
+  osc.connect(gain);
+  node.connect(destination||ctx.destination);
+  osc.start(when);
+  osc.stop(when+dur+.03);
+}
+function battleNoise(ctx,{start=0,dur=.12,volume=.05,filterType="bandpass",filterFreq=1800,destination=null}={}){
+  if(!ctx)return;
+  const buffer=ctx.createBuffer(1,Math.max(1,Math.floor(ctx.sampleRate*dur)),ctx.sampleRate);
+  const data=buffer.getChannelData(0);
+  for(let i=0;i<data.length;i++)data[i]=Math.random()*2-1;
+  const src=ctx.createBufferSource();
+  const filter=ctx.createBiquadFilter();
+  const gain=ctx.createGain();
+  const when=ctx.currentTime+start;
+  src.buffer=buffer;
+  filter.type=filterType;
+  filter.frequency.value=filterFreq;
+  filter.Q.value=5;
+  gain.gain.setValueAtTime(.0001,when);
+  gain.gain.linearRampToValueAtTime(volume,when+.008);
+  gain.gain.exponentialRampToValueAtTime(.0001,when+dur);
+  src.connect(filter);
+  filter.connect(gain);
+  gain.connect(destination||ctx.destination);
+  src.start(when);
+  src.stop(when+dur+.02);
+}
+function playPetAdventureSkillSound(skillId,correct=true){
+  const ctx=getBattleAudioCtx();
+  if(!ctx)return;
+  if(!correct){
+    battleNoise(ctx,{dur:.18,volume:.07,filterType:"lowpass",filterFreq:700});
+    battleTone(ctx,{freq:220,endFreq:110,dur:.28,type:"sawtooth",volume:.08});
+    return;
+  }
+  const recipes={
+    wordSpark:()=>{[880,1175,1568].forEach((f,i)=>battleTone(ctx,{freq:f,dur:.11,start:i*.06,type:"sine",volume:.07,filterFreq:3600}));battleNoise(ctx,{start:.08,dur:.12,volume:.035,filterFreq:4200});},
+    braveGuard:()=>{battleTone(ctx,{freq:196,dur:.22,type:"triangle",volume:.08});battleTone(ctx,{freq:392,dur:.18,start:.06,type:"square",volume:.045,filterFreq:1100});battleNoise(ctx,{start:.03,dur:.16,volume:.035,filterType:"highpass",filterFreq:2600});},
+    quickStep:()=>{[520,780,1040].forEach((f,i)=>battleTone(ctx,{freq:f,endFreq:f*1.18,dur:.07,start:i*.055,type:"triangle",volume:.065,filterFreq:3200}));},
+    melodyHeal:()=>{[523,659,784,1047].forEach((f,i)=>battleTone(ctx,{freq:f,dur:.18,start:i*.09,type:"sine",volume:.055,filterFreq:2600}));},
+    magicLeaf:()=>{battleNoise(ctx,{dur:.34,volume:.035,filterFreq:1200});[330,495,742,990].forEach((f,i)=>battleTone(ctx,{freq:f,endFreq:f*1.35,dur:.24,start:i*.045,type:"triangle",volume:.05,filterFreq:3000}));},
+  };
+  (recipes[skillId]||recipes.wordSpark)();
+}
+function createPetAdventureBgm({boss=false,difficulty=1}={}){
+  const ctx=getBattleAudioCtx();
+  if(!ctx)return{stop:()=>{}};
+  const master=ctx.createGain();
+  master.gain.value=0.0001;
+  master.connect(ctx.destination);
+  const volume=boss?0.065:0.045;
+  master.gain.linearRampToValueAtTime(volume,ctx.currentTime+.35);
+  const base=boss?[98,116.5,130.8,87.3]:[130.8,146.8,164.8,196];
+  const melody=boss?[196,233,261,174]:[523,659,587,784];
+  const tempo=Math.max(.42,.62-Math.min(8,difficulty)*.018);
+  let step=0;
+  let stopped=false;
+  const schedule=()=>{
+    if(stopped)return;
+    const s=step%8;
+    const root=base[Math.floor(s/2)%base.length];
+    battleTone(ctx,{freq:root,dur:tempo*.72,type:boss?"sawtooth":"triangle",volume:boss?0.042:0.03,destination:master,filterFreq:boss?620:900});
+    if(s%2===0)battleTone(ctx,{freq:melody[(s/2)%melody.length],start:tempo*.35,dur:tempo*.34,type:"sine",volume:boss?0.024:0.018,destination:master,filterFreq:2400});
+    if(s%2===1)battleNoise(ctx,{start:tempo*.2,dur:.035,volume:boss?0.018:0.012,filterType:"highpass",filterFreq:3600,destination:master});
+    step++;
+  };
+  schedule();
+  const timer=window.setInterval(schedule,tempo*1000);
+  return{
+    boss,
+    stop:()=>{
+      if(stopped)return;
+      stopped=true;
+      window.clearInterval(timer);
+      try{
+        master.gain.cancelScheduledValues(ctx.currentTime);
+        master.gain.setValueAtTime(master.gain.value,ctx.currentTime);
+        master.gain.exponentialRampToValueAtTime(.0001,ctx.currentTime+.35);
+        window.setTimeout(()=>master.disconnect(),450);
+      }catch{}
+    }
+  };
+}
 
 function Confetti(){const ps=useMemo(()=>Array.from({length:40},(_,i)=>({id:i,x:Math.random()*100,d:Math.random()*3+2,c:["#E24B4A","#EF9F27","#1D9E75","#185FA5","#D85A30","#7F77DD","#FF69B4","#FFD700"][i%8],s:Math.random()*.4+.3,r:Math.random()*360})),[]);return(<div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:9999,overflow:"hidden"}}>{ps.map(p=><div key={p.id} style={{position:"absolute",left:`${p.x}%`,top:0,width:8,height:8,background:p.c,borderRadius:p.id%3===0?"50%":"2px",animation:`confDrop ${p.d}s ${p.s}s ease-in forwards`,transform:`rotate(${p.r}deg)`}}/>)}</div>)}
 
@@ -4798,22 +5083,107 @@ function PetAdventurePage({lv,onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,
   const[skillLoadout,setSkillLoadout]=useState({});
   const[battleSkillId,setBattleSkillId]=useState(null);
   const[adventureProgress,setAdventureProgress]=useState(()=>getPetAdventureProgress(lv));
+  const[prepNotice,setPrepNotice]=useState(null);
+  const bgmRef=useRef(null);
+  const[battleAudioOn,setBattleAudioOn]=useState(()=>{try{return localStorage.getItem("englishgo_pet_adventure_audio")!=="off"}catch{return true}});
+  const stopBattleBgm=useCallback(()=>{
+    bgmRef.current?.stop?.();
+    bgmRef.current=null;
+  },[]);
+  const startBattleBgm=useCallback((boss=false,difficulty=1)=>{
+    stopBattleBgm();
+    if(!battleAudioOn)return;
+    bgmRef.current=createPetAdventureBgm({boss,difficulty});
+  },[battleAudioOn,stopBattleBgm]);
   useEffect(()=>setAdventureProgress(getPetAdventureProgress(lv)),[lv]);
+  useEffect(()=>{
+    try{localStorage.setItem("englishgo_pet_adventure_audio",battleAudioOn?"on":"off")}catch{}
+    if(!battleAudioOn)stopBattleBgm();
+  },[battleAudioOn,stopBattleBgm]);
+  useEffect(()=>()=>stopBattleBgm(),[stopBattleBgm]);
+  useEffect(()=>{
+    if(!run||!battle||!battleAudioOn)return;
+    const stage=run.stages[battle.stageIndex];
+    const boss=!!stage?.boss;
+    if(bgmRef.current?.boss!==boss)startBattleBgm(boss,run.difficultyLevel||1);
+  },[run,battle?.stageIndex,battleAudioOn,startBattleBgm]);
   const availablePets=useMemo(()=>pets.map(p=>({pet:p,def:getAdventurePetDef(p),power:getPetAdventurePower(p),skill:getPetAdventureSkill(p)})).filter(x=>x.def),[pets]);
   const selectedPets=availablePets.filter(x=>selectedIds.includes(x.pet.petId)).map(x=>x.pet);
   const teamPower=selectedPets.reduce((sum,p)=>sum+getPetAdventurePower(p),0);
-  const bestTeamIds=useMemo(()=>[...availablePets].sort((a,b)=>b.power-a.power).slice(0,3).map(x=>x.pet.petId),[availablePets]);
+  const teamMoralePreview=getTeamAdventureMorale(selectedPets);
+  const teamPrepPlan=useMemo(()=>{
+    const inv={...inventory};
+    let feed=0,clean=0,rest=0,needsFood=0;
+    selectedPets.forEach(p=>{
+      const food=choosePetFoodForNeed(p,inv);
+      if((p.hunger??80)<80){
+        if(food){inv[food.id]=Math.max(0,(inv[food.id]||0)-1);feed++}
+        else needsFood++;
+      }
+      if((p.poops||[]).length>0||(p.clean??80)<75)clean++;
+      if((p.energy??80)<65)rest++;
+    });
+    return{feed,clean,rest,needsFood,total:feed+clean+rest};
+  },[selectedPets,inventory]);
+  const bestTeamIds=useMemo(()=>[...availablePets].sort((a,b)=>getPetAdventureScore(b.pet)-getPetAdventureScore(a.pet)).slice(0,3).map(x=>x.pet.petId),[availablePets]);
   const lowCareCount=selectedPets.filter(p=>(((p.hunger??80)+(p.clean??80)+(p.energy??80))/3)<55).length;
   const bossReady=isPetAdventureBossReady(adventureProgress);
   const difficultyLevel=getPetAdventureDifficulty(adventureProgress,bossReady);
   const clearsToBoss=Math.max(0,PET_ADVENTURE_BOSS_REQUIRED_CLEARS-(adventureProgress.bossCharge||0));
   const togglePet=(petId)=>{
     setOutcome(null);
+    setPrepNotice(null);
     setSelectedIds(ids=>{
       if(ids.includes(petId))return ids.filter(id=>id!==petId);
       if(ids.length>=3)return ids;
       return [...ids,petId];
     });
+  };
+  const prepareSelectedTeam=()=>{
+    if(!selectedPets.length)return;
+    const inv={...inventory};
+    const selected=new Set(selectedIds);
+    const now=new Date().toISOString();
+    let fed=0,cleaned=0,rested=0,needsFood=0,changed=0;
+    const nextPets=pets.map(p=>{
+      if(!selected.has(p.petId))return p;
+      let updated={...p};
+      let touched=false;
+      const food=choosePetFoodForNeed(updated,inv);
+      if((updated.hunger??80)<80){
+        if(food){
+          inv[food.id]=Math.max(0,(inv[food.id]||0)-1);
+          updated.hunger=Math.min(MAX_STAT,(updated.hunger??80)+food.feed);
+          updated.bond=(updated.bond||0)+1;
+          fed++;
+          touched=true;
+        }else needsFood++;
+      }
+      if((updated.poops||[]).length>0||(updated.clean??80)<75){
+        updated.poops=[];
+        updated.clean=MAX_STAT;
+        updated.bond=(updated.bond||0)+2;
+        cleaned++;
+        touched=true;
+      }
+      if((updated.energy??80)<65){
+        updated.energy=MAX_STAT;
+        rested++;
+        touched=true;
+      }
+      if(!touched)return p;
+      changed++;
+      return{...updated,lastUpdate:now};
+    });
+    if(changed){
+      setPets(nextPets);
+      setInventory(inv);
+      playSound?.("combo");
+      setPrepNotice({ok:true,text:`整備完成：餵食 ${fed}、清潔 ${cleaned}、休息 ${rested}${needsFood?`；${needsFood} 隻仍缺食物`:""}`});
+    }else{
+      playSound?.("good");
+      setPrepNotice({ok:needsFood===0,text:needsFood?`${needsFood} 隻寵物需要食物，食物庫存不足。`:"隊伍狀態良好，可以出戰。"});
+    }
   };
   const startAdventure=()=>{
     const team=availablePets.filter(x=>selectedIds.includes(x.pet.petId)).map(x=>x.pet);
@@ -4823,36 +5193,68 @@ function PetAdventurePage({lv,onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,
     const difficulty=getPetAdventureDifficulty(progress,ready);
     const stages=buildPetAdventureStages(team,lv,{bossReady:ready,difficultyLevel:difficulty});
     const power=team.reduce((sum,p)=>sum+getPetAdventurePower(p),0);
-    const maxTeamHp=Math.round(150+power*.85);
+    const morale=getTeamAdventureMorale(team);
+    const maxTeamHp=Math.round((150+power*.85)*morale.hpMult);
     const loadout=Object.fromEntries(team.map(p=>[p.petId,getSelectedPetAdventureSkill(p,skillLoadout).id]));
-    setRun({stages,teamIds:selectedIds,teamPower:power,skillLoadout:loadout,hasBoss:ready,difficultyLevel:difficulty,progress});
+    setRun({stages,teamIds:selectedIds,teamPower:power,skillLoadout:loadout,hasBoss:ready,difficultyLevel:difficulty,progress,morale});
     setBattle({stageIndex:0,questionIndex:0,teamHp:maxTeamHp,maxTeamHp,enemyHp:stages[0].maxHp,answered:0,correct:0,miss:0});
     setFeedback(null);
     setOutcome(null);
     setBattleSkillId(null);
+    startBattleBgm(!!stages[0]?.boss,difficulty);
     playSound?.("flip");
   };
   const finishAdventure=(won,finalHp)=>{
+    stopBattleBgm();
     const hadBoss=!!run?.hasBoss;
     const runDifficulty=run?.difficultyLevel||difficultyLevel||1;
     const bossWin=won&&hadBoss;
+    const rewardMult=won?(run?.morale?.rewardMult||1):1;
+    const baseCoins=won?(bossWin?260+runDifficulty*45+selectedIds.length*25:90+runDifficulty*18+selectedIds.length*12):18;
+    const baseExp=won?(bossWin?170:105):25;
     const rewardFood=PET_FOODS[Math.floor(Math.random()*PET_FOODS.length)];
     const bonusFood=bossWin?PET_FOODS.filter(f=>f.id!==rewardFood.id)[Math.floor(Math.random()*Math.max(1,PET_FOODS.length-1))]:null;
     const unlockedSkill=won&&!bossWin&&Math.random()<0.35?Object.values(PET_ADVENTURE_SKILLS)[Math.floor(Math.random()*Object.values(PET_ADVENTURE_SKILLS).length)]:null;
+    const fatigue=getPetAdventureFatigue({won,bossWin});
+    const skillReceiver=won&&unlockedSkill?pets.find(p=>selectedIds.includes(p.petId)&&!(p.skills||[]).includes(unlockedSkill.id)):null;
     const reward={
       won,
       bossWin,
       difficultyLevel:runDifficulty,
-      coins:won?(bossWin?260+runDifficulty*45+selectedIds.length*25:90+runDifficulty*18+selectedIds.length*12):18,
+      coins:Math.round(baseCoins*rewardMult),
       food:rewardFood,
       foodCount:won?(bossWin?6+Math.min(4,Math.floor(runDifficulty/2)):3):1,
       bonusFood,
       bonusFoodCount:bossWin?3+Math.min(3,Math.floor(runDifficulty/3)):0,
-      exp:won?(bossWin?170:105):25,
+      exp:Math.round(baseExp*rewardMult),
       bond:won?(bossWin?32:18):4,
       skill:unlockedSkill,
+      skillReceiverName:skillReceiver?(getAdventurePetDef(skillReceiver)?.name||skillReceiver.petId):null,
+      fatigue,
       finalHp,
     };
+    const updateAdventurePet=p=>improvePetAfterAdventure(p,{
+      exp:reward.exp,
+      bond:reward.bond,
+      skillId:skillReceiver&&p.petId===skillReceiver.petId?unlockedSkill.id:null,
+      fatigue,
+    });
+    reward.growth=pets
+      .filter(p=>selectedIds.includes(p.petId))
+      .map(p=>{
+        const next=updateAdventurePet(p);
+        const readiness=getPetReadiness(next);
+        return{
+          petId:p.petId,
+          name:getAdventurePetDef(p)?.name||p.petId,
+          fromLevel:p.level||1,
+          toLevel:next.level||1,
+          exp:reward.exp,
+          bond:reward.bond,
+          skill:skillReceiver&&p.petId===skillReceiver.petId?unlockedSkill:null,
+          readiness,
+        };
+      });
     setCoins(co=>co+reward.coins);
     setInventory(inv=>{
       const next={...inv,[rewardFood.id]:(inv[rewardFood.id]||0)+reward.foodCount};
@@ -4862,15 +5264,7 @@ function PetAdventurePage({lv,onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,
     const nextProgress=completePetAdventureProgress(run?.progress||getPetAdventureProgress(lv),won,hadBoss);
     savePetAdventureProgress(lv,nextProgress);
     setAdventureProgress(nextProgress);
-    setPets(ps=>{
-      let skillGiven=false;
-      return ps.map(p=>{
-        if(!selectedIds.includes(p.petId))return p;
-        const shouldGiveSkill=won&&unlockedSkill&&!skillGiven&&!(p.skills||[]).includes(unlockedSkill.id);
-        if(shouldGiveSkill)skillGiven=true;
-        return improvePetAfterAdventure(p,{exp:reward.exp,bond:reward.bond,skillId:shouldGiveSkill?unlockedSkill.id:null});
-      });
-    });
+    setPets(ps=>ps.map(p=>selectedIds.includes(p.petId)?updateAdventurePet(p):p));
     setOutcome(reward);
     setRun(null);
     setBattle(null);
@@ -4913,7 +5307,8 @@ function PetAdventurePage({lv,onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,
       const openingBonus=activeSkill.id==="quickStep"&&battle.questionIndex===0?14:0;
       const wordBonus=activeSkill.id==="wordSpark"&&/word|means|單字|意思/i.test(`${q.q} ${q.zh}`)?12:0;
       const magicBonus=activeSkill.id==="magicLeaf"?8:0;
-      const damage=Math.round(30+run.teamPower*.18+skillPower*.45+activeSkill.power*1.7+openingBonus+wordBonus+magicBonus+Math.random()*10);
+      const moraleBonus=run.morale?.damageBonus||0;
+      const damage=Math.max(12,Math.round(30+run.teamPower*.18+skillPower*.45+activeSkill.power*1.7+openingBonus+wordBonus+magicBonus+moraleBonus+Math.random()*10));
       const heal=skills.some(s=>s?.id==="melodyHeal")?18:10;
       const nextEnemyHp=Math.max(0,battle.enemyHp-damage);
       const nextHp=Math.min(battle.maxTeamHp,battle.teamHp+heal);
@@ -4927,8 +5322,8 @@ function PetAdventurePage({lv,onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,
         effectKey:Date.now(),
       });
       setBattle(b=>({...b,teamHp:nextHp,enemyHp:nextEnemyHp,answered:b.answered+1,correct:b.correct+1}));
-      playSound?.("combo");
-      speak?.(q.choices[q.answer]);
+      playPetAdventureSkillSound(activeSkill.id,true);
+      window.setTimeout(()=>speak?.(q.choices[q.answer]),420);
       if(stageClear&&last){
         window.setTimeout(()=>finishAdventure(true,nextHp),900);
       }
@@ -4945,7 +5340,7 @@ function PetAdventurePage({lv,onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,
       message:`${stage.enemy} counterattacked! Team took ${damage} damage.${guard?" Brave Guard reduced the hit.":""}`,
       effectKey:Date.now(),
     });
-    playSound?.("bad");
+    playPetAdventureSkillSound(activeSkill.id,false);
     if(nextHp<=0){
       window.setTimeout(()=>finishAdventure(false,0),900);
     }
@@ -4966,6 +5361,7 @@ function PetAdventurePage({lv,onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,
     playSound?.("good");
   };
   const resetAdventure=()=>{
+    stopBattleBgm();
     setRun(null);setBattle(null);setFeedback(null);setOutcome(null);
     setBattleSkillId(null);
   };
@@ -4994,9 +5390,25 @@ function PetAdventurePage({lv,onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,
           <div style={{...S.card,padding:"12px",background:S.bg1}}><div style={{fontSize:12,color:S.t3}}>道具</div><div style={{fontSize:18,fontWeight:900,color:S.t1}}>{outcome.food.emoji} {outcome.food.name} ×{outcome.foodCount}</div></div>
           {outcome.bonusFood&&<div style={{...S.card,padding:"12px",background:"linear-gradient(135deg,#FFF3CD,var(--color-background-primary,#fff))",border:"2px solid #EF9F27"}}><div style={{fontSize:12,color:S.t3}}>Boss Bonus</div><div style={{fontSize:17,fontWeight:1000,color:"#A05A00"}}>{outcome.bonusFood.emoji} {outcome.bonusFood.name} ×{outcome.bonusFoodCount}</div><div style={{fontSize:11,color:S.t2,marginTop:4}}>魔王獎勵改為金幣與培養道具。</div></div>}
           <div style={{...S.card,padding:"12px",background:S.bg1}}><div style={{fontSize:12,color:S.t3}}>寵物成長</div><div style={{fontSize:18,fontWeight:900,color:c.cl}}>XP +{outcome.exp} · 親密 +{outcome.bond}</div></div>
-          {outcome.won&&outcome.skill&&<div style={{...S.card,padding:"12px",background:S.bg1}}><div style={{fontSize:12,color:S.t3}}>可能解鎖技能</div><div style={{fontSize:17,fontWeight:900,color:c.cl}}>{outcome.skill.emoji} {outcome.skill.zh}</div></div>}
+          {outcome.won&&outcome.skill&&<div style={{...S.card,padding:"12px",background:S.bg1}}><div style={{fontSize:12,color:S.t3}}>可能解鎖技能</div><div style={{fontSize:17,fontWeight:900,color:c.cl}}>{outcome.skill.emoji} {outcome.skill.zh}</div><div style={{fontSize:11,color:S.t2,marginTop:4}}>{outcome.skillReceiverName?`${outcome.skillReceiverName} 已學會。`:"隊伍已會此技能時，保留原有技能。"}</div></div>}
           {outcome.won&&!outcome.bossWin&&<div style={{...S.card,padding:"12px",background:S.bg1}}><div style={{fontSize:12,color:S.t3}}>Boss Progress</div><div style={{fontSize:18,fontWeight:900,color:c.cl}}>{Math.min(PET_ADVENTURE_BOSS_REQUIRED_CLEARS,adventureProgress.bossCharge||0)}/{PET_ADVENTURE_BOSS_REQUIRED_CLEARS}</div><div style={{fontSize:11,color:S.t2,marginTop:4}}>{isPetAdventureBossReady(adventureProgress)?"下一輪會出現魔王。":"繼續完成冒險來累積魔王挑戰。"}</div></div>}
         </div>
+        {outcome.growth?.length>0&&<div style={{border:`1px solid ${S.bd}`,borderRadius:14,padding:"12px",marginTop:14,textAlign:"left",background:"rgba(255,255,255,.72)"}}>
+          <div style={{display:"flex",justifyContent:"space-between",gap:10,alignItems:"center",flexWrap:"wrap",marginBottom:10}}>
+            <div style={{fontSize:16,fontWeight:900,color:S.t1}}>戰後狀態</div>
+            <div style={{fontSize:12,fontWeight:800,color:S.t2}}>{outcome.fatigue?.label||"冒險消耗"}：飽食 -{outcome.fatigue?.hunger||0}、清潔 -{outcome.fatigue?.clean||0}、體力 -{outcome.fatigue?.energy||0}</div>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(170px,1fr))",gap:8}}>
+            {outcome.growth.map((g,i)=><div key={`${g.petId}-${i}`} style={{border:`1px solid ${S.bd}`,borderRadius:12,padding:"10px",background:S.bg1}}>
+              <div style={{display:"flex",justifyContent:"space-between",gap:8,alignItems:"center"}}>
+                <div style={{fontWeight:900,color:S.t1}}>{g.name}</div>
+                <div style={{fontSize:12,fontWeight:900,color:g.readiness.color}}>{g.readiness.emoji} {g.readiness.label}</div>
+              </div>
+              <div style={{fontSize:12,color:S.t2,marginTop:5}}>Lv.{g.fromLevel}{g.toLevel>g.fromLevel?` → Lv.${g.toLevel}`:""} · XP +{g.exp} · 親密 +{g.bond}</div>
+              {g.skill&&<div style={{fontSize:12,color:c.cl,fontWeight:900,marginTop:5}}>新技能：{g.skill.emoji} {g.skill.zh}</div>}
+            </div>)}
+          </div>
+        </div>}
         <div style={{display:"flex",gap:8,marginTop:18}}>
           <button onClick={resetAdventure} style={{...S.btn,background:S.bg2,color:S.t1,flex:1}}>重新組隊</button>
           <button onClick={startAdventure} style={{...S.btn,background:c.cl,color:"#fff",flex:1}}>再冒險</button>
@@ -5014,7 +5426,7 @@ function PetAdventurePage({lv,onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,
     const activeVisual=feedback?.skillVisual||PET_ADVENTURE_SKILL_VISUALS[activeSkill.id]||PET_ADVENTURE_SKILL_VISUALS.wordSpark;
     const enemyIcon=PET_ADVENTURE_ENEMY_ICONS[stage.id]||"🌑";
     const activeSkillCards=getPetAdventureSkillCards(activePet);
-    return(<div><Hdr t="🗺️ 寵物冒險" onBack={()=>{setRun(null);setBattle(null);setFeedback(null)}} cl={c.cl}/>
+    return(<div><Hdr t="🗺️ 寵物冒險" onBack={()=>{stopBattleBgm();setRun(null);setBattle(null);setFeedback(null);setBattleSkillId(null)}} cl={c.cl}/>
       <style>{`
 @keyframes advPetReady {0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
 @keyframes advSkillFly {0%{transform:translate(-80px,42px) scale(.4) rotate(-12deg);opacity:0}25%{opacity:1}70%{transform:translate(34px,-16px) scale(1.35) rotate(8deg);opacity:1}100%{transform:translate(74px,-36px) scale(.6) rotate(18deg);opacity:0}}
@@ -5163,8 +5575,12 @@ function PetAdventurePage({lv,onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,marginBottom:9}}>
           <div>
             <div style={{fontSize:13,fontWeight:1000,color:S.t1}}>技能</div>
+            {run.morale&&<div style={{fontSize:10,color:run.morale.color,fontWeight:900,marginTop:2}}>{run.morale.emoji} {run.morale.label} · {run.morale.battleText}</div>}
           </div>
-          <div style={{fontSize:12,fontWeight:1000,color:activeVisual.color,whiteSpace:"nowrap"}}>{activeSkill.emoji} {activeSkill.zh}</div>
+          <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",justifyContent:"flex-end"}}>
+            <button onClick={()=>setBattleAudioOn(v=>!v)} title={battleAudioOn?"關閉戰鬥音樂":"開啟戰鬥音樂"} style={{border:`1px solid ${battleAudioOn?activeVisual.color:S.bd}`,background:battleAudioOn?activeVisual.bg:S.bg2,borderRadius:999,padding:"5px 8px",fontSize:11,fontWeight:1000,color:battleAudioOn?activeVisual.color:S.t3,cursor:"pointer",fontFamily:"inherit",lineHeight:1}}>♪ {battleAudioOn?"ON":"OFF"}</button>
+            <div style={{fontSize:12,fontWeight:1000,color:activeVisual.color,whiteSpace:"nowrap"}}>{activeSkill.emoji} {activeSkill.zh}</div>
+          </div>
         </div>
         <div data-adventure-skill-grid style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(138px,1fr))",gap:8}}>
           {activeSkillCards.map(card=>{
@@ -5245,6 +5661,24 @@ function PetAdventurePage({lv,onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,
         {Object.values(PET_ADVENTURE_SKILLS).map(skill=>{const visual=PET_ADVENTURE_SKILL_VISUALS[skill.id]||PET_ADVENTURE_SKILL_VISUALS.wordSpark;const rule=PET_ADVENTURE_SKILL_UNLOCKS[skill.id];return(<span key={skill.id} style={{fontSize:11,fontWeight:900,color:visual.color,background:visual.bg,border:`1px solid ${visual.color}33`,borderRadius:999,padding:"5px 8px"}}>{skill.emoji} {skill.zh} · {rule.label}</span>)})}
       </div>
     </div>
+    {selectedPets.length>0&&<div style={{...S.card,padding:"11px 14px",marginBottom:10,border:`1px solid ${teamMoralePreview.color}55`,background:`linear-gradient(135deg,${teamMoralePreview.color}12,var(--color-background-primary,#fff))`,display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+      <div style={{fontSize:24}}>{teamMoralePreview.emoji}</div>
+      <div style={{flex:1,minWidth:190}}>
+        <div style={{fontSize:13,fontWeight:1000,color:teamMoralePreview.color}}>隊伍士氣：{teamMoralePreview.label} · 平均照顧 {teamMoralePreview.avg}/100</div>
+        <div style={{fontSize:11,color:S.t2,marginTop:2}}>{teamMoralePreview.battleText}</div>
+      </div>
+    </div>}
+    {selectedPets.length>0&&<div style={{...S.card,padding:"11px 14px",marginBottom:10,border:`1px solid ${(teamPrepPlan.total||teamPrepPlan.needsFood)?"#EF9F27":S.bd}`,background:(teamPrepPlan.total||teamPrepPlan.needsFood)?"linear-gradient(135deg,#FFF3CD,var(--color-background-primary,#fff))":S.bg1,display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+      <div style={{fontSize:23}}>🎒</div>
+      <div style={{flex:1,minWidth:190}}>
+        <div style={{fontSize:13,fontWeight:1000,color:(teamPrepPlan.total||teamPrepPlan.needsFood)?"#856404":S.t1}}>出戰整備</div>
+        <div style={{fontSize:11,color:S.t2,lineHeight:1.5,marginTop:2}}>
+          {(teamPrepPlan.total||teamPrepPlan.needsFood)?`建議處理：餵食 ${teamPrepPlan.feed}、清潔 ${teamPrepPlan.clean}、休息 ${teamPrepPlan.rest}${teamPrepPlan.needsFood?`；缺食物 ${teamPrepPlan.needsFood}`:""}。`:"隊伍照顧狀態良好。"}
+        </div>
+        {prepNotice&&<div style={{fontSize:11,fontWeight:900,color:prepNotice.ok?"#0F6E56":"#B42318",marginTop:4}}>{prepNotice.text}</div>}
+      </div>
+      <button onClick={prepareSelectedTeam} style={{...S.btn,background:(teamPrepPlan.total||teamPrepPlan.needsFood)?"#EF9F27":S.bg2,color:(teamPrepPlan.total||teamPrepPlan.needsFood)?"#fff":S.t1,fontSize:12,padding:"9px 12px"}}>{teamPrepPlan.total?"整備隊伍":teamPrepPlan.needsFood?"檢查庫存":"再次檢查"}</button>
+    </div>}
     {selectedPets.length>0&&<div style={{...S.card,padding:"14px 16px",marginBottom:12}}>
       <div style={{display:"flex",justifyContent:"space-between",gap:8,alignItems:"center",marginBottom:10}}>
         <div><div style={{fontSize:14,fontWeight:900,color:S.t1}}>出戰卡牌與技能</div><div style={{fontSize:12,color:S.t3,marginTop:2}}>點技能卡可指定這隻寵物在戰鬥中使用的技能。</div></div>
@@ -5281,7 +5715,9 @@ function PetAdventurePage({lv,onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,
       {availablePets.map(({pet,def,power,skill})=>{
         const selected=selectedIds.includes(pet.petId);
         const ri=RARITY_INFO[pet.rarity]||RARITY_INFO.N;
-        const careAvg=Math.round(((pet.hunger??80)+(pet.clean??80)+(pet.energy??80))/3);
+        const careAvg=getPetCareAverage(pet);
+        const readiness=getPetReadiness(pet);
+        const adventureScore=getPetAdventureScore(pet);
         const equipped=getSelectedPetAdventureSkill(pet,skillLoadout);
         const equippedVisual=PET_ADVENTURE_SKILL_VISUALS[equipped.id]||PET_ADVENTURE_SKILL_VISUALS.wordSpark;
         return(<button key={pet.petId} onClick={()=>togglePet(pet.petId)} style={{...S.card,padding:"13px",textAlign:"left",border:`2px solid ${selected?equippedVisual.color:S.bd}`,background:selected?`linear-gradient(145deg,${equippedVisual.bg},var(--color-background-primary,#fff))`:S.bg1,cursor:"pointer",fontFamily:"inherit",color:S.t1,position:"relative",overflow:"hidden",boxShadow:selected?`0 10px 24px ${equippedVisual.glow}`:"none"}}>
@@ -5292,6 +5728,7 @@ function PetAdventurePage({lv,onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,
               <div style={{fontSize:15,fontWeight:900,color:S.t1}}>{def.name}</div>
               <div style={{fontSize:11,color:ri.color,fontWeight:900}}>{ri.label} · Lv.{pet.level||1}</div>
               <div style={{fontSize:11,color:S.t3,marginTop:3}}>親密 {pet.bond||0} · 狀態 {careAvg}% · 戰力 {power}</div>
+              <div style={{fontSize:11,color:readiness.color,fontWeight:900,marginTop:3}}>{readiness.emoji} {readiness.label} · 推薦 {adventureScore}</div>
               <div style={{fontSize:11,color:equippedVisual.color,fontWeight:1000,marginTop:4}}>{equipped.emoji} {equipped.zh}</div>
             </div>
           </div>
@@ -7207,7 +7644,7 @@ function PetHomeScene({pet,petDef,ri,mood,c,onCleanPoop}){
 // 在寵物詳情頁的 PetHomeScene 上方覆蓋一層粒子動畫
 // 餵食/洗澡/玩耍/睡覺/讀書 各有獨特粒子效果 + 數值跳動
 function ActionCelebration({data}){
-  const{actionKey,statText,statColor,foodEmoji}=data;
+  const{actionKey,statText,statColor,foodEmoji,bonusText}=data;
   // 為了給 inline style 用 CSS variable，每個粒子放在獨立 div 裡
   const styleSheet=`
 @keyframes ac_dropIn { 0%{transform:translate(-50%,-200px) rotate(0deg);opacity:0} 30%{opacity:1} 80%{transform:translate(-50%,40px) rotate(360deg);opacity:1} 100%{transform:translate(-50%,40px) rotate(360deg);opacity:0} }
@@ -7279,6 +7716,7 @@ function ActionCelebration({data}){
     <style>{styleSheet}</style>
     {renderParticles()}
     {statText&&<div style={{position:"absolute",top:"38%",left:"50%",fontSize:16,fontWeight:700,color:"#fff",background:statColor,padding:"6px 14px",borderRadius:14,boxShadow:"0 3px 10px rgba(0,0,0,.25)",animation:"ac_statPop 1.4s ease-out forwards",whiteSpace:"nowrap"}}>{statText}</div>}
+    {bonusText&&<div style={{position:"absolute",top:"52%",left:"50%",transform:"translateX(-50%)",fontSize:12,fontWeight:900,color:"#856404",background:"#FFF3CD",border:"1px solid #EF9F27",padding:"7px 12px",borderRadius:12,boxShadow:"0 3px 10px rgba(0,0,0,.18)",animation:"ac_statPop 1.4s .08s ease-out forwards",whiteSpace:"nowrap"}}>{bonusText}</div>}
   </div>);
 }
 
@@ -7555,8 +7993,8 @@ function HatchAnimation({data,onClose}){
 }
 
 // ═══ PLAYGROUND VIEW (寵物玩耍場 - P3-1) ════════════════════════════
-// 兩隻寵物在草地上互動、英文對話，每次互動 +5 親密度
-function PlaygroundView({pets,setPets,c,onBack}){
+// 兩隻寵物在草地上互動、英文對話，答對任務後才給獎勵
+function PlaygroundView({pets,setPets,setCoins,c,onBack,incrTask}){
   // 隨機選兩隻寵物（不同的）
   const[selected,setSelected]=useState(()=>{
     if(pets.length<2)return[null,null];
@@ -7567,6 +8005,7 @@ function PlaygroundView({pets,setPets,c,onBack}){
   });
   const[bubbleIdx,setBubbleIdx]=useState(0);
   const[played,setPlayed]=useState(false);
+  const[answer,setAnswer]=useState(null);
 
   const PLAY_DIALOGUES=[
     {a:"Hi!",b:"Hello!",tip:"打招呼"},
@@ -7579,29 +8018,45 @@ function PlaygroundView({pets,setPets,c,onBack}){
     {a:"I love you!",b:"Love you too!",tip:"我愛你"},
   ];
   const dialogue=PLAY_DIALOGUES[bubbleIdx%PLAY_DIALOGUES.length];
+  const PLAY_CHALLENGES=[
+    {q:"Which sentence means「我們是好朋友」?",choices:["We are best friends!","I am hungry.","Good night."],answer:0,speak:"We are best friends!"},
+    {q:"Choose the friendly answer to 'Let's play!'",choices:["OK!","No food.","Sleep tight."],answer:0,speak:"OK!"},
+    {q:"Which word means「可愛的」?",choices:["cute","tired","dirty"],answer:0,speak:"cute"},
+    {q:"Complete: My pet is ___.",choices:["happy","book","run"],answer:0,speak:"My pet is happy."},
+  ];
+  const challenge=PLAY_CHALLENGES[bubbleIdx%PLAY_CHALLENGES.length];
 
   useEffect(()=>{
     if(selected[0]===null)return;
-    const t=setInterval(()=>setBubbleIdx(i=>i+1),3000);
+    if(played||answer===challenge.answer)return;
+    const t=setInterval(()=>{setBubbleIdx(i=>i+1);setAnswer(null)},5000);
     return()=>clearInterval(t);
-  },[selected]);
+  },[selected,played,answer,challenge.answer]);
 
   const playTogether=()=>{
     if(played||selected[0]===null)return;
+    if(answer!==challenge.answer){
+      setAnswer(answer===null?-1:answer);
+      playSound("bad");
+      return;
+    }
     setPets(ps=>ps.map((p,i)=>{
       if(i===selected[0]||i===selected[1]){
-        return{
+        return levelUpPet({
           ...p,
-          bond:(p.bond||0)+5,
-          energy:Math.max(0,(p.energy||0)-3),
+          bond:(p.bond||0)+8,
+          exp:(p.exp||0)+12,
+          energy:Math.max(0,(p.energy||0)-4),
           lastUpdate:new Date().toISOString(),
-        };
+        });
       }
       return p;
     }));
+    setCoins?.(co=>co+8);
+    incrTask?.("playToday");
     setPlayed(true);
     playSound("combo");
-    if(typeof speak==="function")speak("We are best friends!");
+    if(typeof speak==="function")speak(challenge.speak);
   };
 
   const reroll=()=>{
@@ -7612,6 +8067,7 @@ function PlaygroundView({pets,setPets,c,onBack}){
     setSelected([idx1,idx2]);
     setBubbleIdx(0);
     setPlayed(false);
+    setAnswer(null);
   };
 
   if(selected[0]===null)return(<div><Hdr t="🎪 玩耍場" onBack={onBack} cl={c.cl}/>
@@ -7741,12 +8197,30 @@ function PlaygroundView({pets,setPets,c,onBack}){
       <div style={{fontSize:12,color:S.t2}}>意思：{dialogue.tip}</div>
     </div>
 
+    <div style={{...S.card,padding:"14px 16px",marginBottom:12,border:"1px solid #E91E6355",background:"linear-gradient(135deg,#FFF7FB,var(--color-background-primary,#fff))"}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,marginBottom:8}}>
+        <div style={{fontSize:12,fontWeight:1000,color:"#C2185B"}}>English Play Mission</div>
+        <button onClick={()=>speak(challenge.q)} style={{border:`1px solid ${S.bd}`,background:S.bg1,borderRadius:999,padding:"5px 9px",fontSize:11,color:S.t2,cursor:"pointer",fontFamily:"inherit"}}>🔊</button>
+      </div>
+      <div style={{fontSize:15,fontWeight:900,color:S.t1,lineHeight:1.45,marginBottom:9}}>{challenge.q}</div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(110px,1fr))",gap:7}}>
+        {challenge.choices.map((choice,i)=>{
+          const picked=answer===i;
+          const wrong=picked&&i!==challenge.answer;
+          const correct=picked&&i===challenge.answer;
+          return(<button key={choice} onClick={()=>{setAnswer(i);playSound(i===challenge.answer?"good":"bad");if(i===challenge.answer)speak(challenge.speak)}} disabled={played} style={{padding:"10px 11px",borderRadius:12,border:`2px solid ${correct?"#1D9E75":wrong?"#E24B4A":S.bd}`,background:correct?"#E1F5EE":wrong?"#FCEBEB":S.bg1,color:S.t1,fontSize:13,fontWeight:900,textAlign:"left",cursor:played?"default":"pointer",fontFamily:"inherit"}}>{choice}</button>);
+        })}
+      </div>
+      {answer!==null&&answer!==challenge.answer&&<div style={{fontSize:11,color:"#B42318",fontWeight:800,marginTop:7}}>先選出正確英文，再讓寵物一起玩。</div>}
+      {answer===challenge.answer&&<div style={{fontSize:11,color:"#0F6E56",fontWeight:900,marginTop:7}}>答對了，可以開始遊戲獎勵。</div>}
+    </div>
+
     {/* 寵物資訊 */}
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
       {[{p:p1,def:def1,ri:ri1},{p:p2,def:def2,ri:ri2}].map(({p,def,ri},i)=>(
         <div key={i} style={{...S.card,padding:"10px 12px",textAlign:"center",background:ri.bg,border:`2px solid ${ri.color}`}}>
           <div style={{fontSize:13,fontWeight:700,color:S.t1}}>{def.name}</div>
-          <div style={{fontSize:10,color:S.t3,marginTop:2}}>Lv.{p.level} · 💖{p.bond||0}{played?<span style={{color:"#E91E63",fontWeight:700}}> +5</span>:""}</div>
+          <div style={{fontSize:10,color:S.t3,marginTop:2}}>Lv.{p.level} · 💖{p.bond||0}{played?<span style={{color:"#E91E63",fontWeight:700}}> +8 · XP +12</span>:""}</div>
         </div>
       ))}
     </div>
@@ -7760,9 +8234,9 @@ function PlaygroundView({pets,setPets,c,onBack}){
       background:"linear-gradient(135deg,#E91E63,#F06292)",
       color:"#fff",
       boxShadow:"0 4px 12px rgba(233,30,99,0.3)",
-    }}>🎉 一起玩耍！(+5 親密度)</button>:
+    }}>{answer===challenge.answer?"🎉 一起玩耍！(+8 親密度 / XP +12 / 金幣 +8)":"先完成英文任務"}</button>:
     <div style={{textAlign:"center",padding:"14px",background:"#FFE0F0",borderRadius:14,fontSize:14,color:"#C2185B",fontWeight:700,border:"2px solid #E91E63"}}>
-      ✨ 玩得很開心！親密度 +5
+      ✨ 玩得很開心！親密度 +8、XP +12、金幣 +8
     </div>}
 
     <div style={{...S.card,padding:"12px 16px",marginTop:12,background:S.bg2,fontSize:11,color:S.t3,textAlign:"center",lineHeight:1.7}}>
@@ -7851,6 +8325,20 @@ function PetsPage({onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,s
       return count;
     },0);
   },[eggs,ownedIds]);
+  const quickCarePlan=useMemo(()=>{
+    const inv={...inventory};
+    let feed=0,clean=0,sleep=0,needsFood=0;
+    pets.forEach(p=>{
+      const food=choosePetFoodForNeed(p,inv);
+      if((p.hunger??80)<75){
+        if(food){inv[food.id]=Math.max(0,(inv[food.id]||0)-1);feed++}
+        else needsFood++;
+      }
+      if((p.poops||[]).length>0||(p.clean??80)<70)clean++;
+      if((p.energy??80)<55)sleep++;
+    });
+    return{feed,clean,sleep,needsFood,total:feed+clean+sleep};
+  },[pets,inventory]);
   const mergeDuplicateEggs=()=>{
     if(!duplicateEggIssueCount)return;
     const now=new Date().toISOString();
@@ -7889,6 +8377,59 @@ function PetsPage({onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,s
     setEggs([...kept.values()]);
     playSound("combo");
     showToast(`已整理重複蛋：融合 ${merged} 顆，轉成成長能量 ${boosted} 顆`,"✨","info");
+  };
+
+  const quickCareAll=()=>{
+    const inv={...inventory};
+    const now=new Date().toISOString();
+    let fed=0,cleaned=0,rested=0,changed=0,needsFood=0;
+    const nextPets=pets.map(p=>{
+      let updated={...p};
+      let touched=false;
+      const food=choosePetFoodForNeed(updated,inv);
+      if((updated.hunger??80)<75){
+        if(food){
+          inv[food.id]=Math.max(0,(inv[food.id]||0)-1);
+          updated.hunger=Math.min(MAX_STAT,(updated.hunger??80)+food.feed);
+          updated.bond=(updated.bond||0)+1;
+          fed++;
+          touched=true;
+        }else{
+          needsFood++;
+        }
+      }
+      if((updated.poops||[]).length>0||(updated.clean??80)<70){
+        updated.poops=[];
+        updated.clean=MAX_STAT;
+        updated.bond=(updated.bond||0)+2;
+        cleaned++;
+        touched=true;
+      }
+      if((updated.energy??80)<55){
+        updated.energy=MAX_STAT;
+        rested++;
+        touched=true;
+      }
+      if(!touched)return p;
+      changed++;
+      return{...updated,lastUpdate:now};
+    });
+    if(!changed){
+      if(needsFood){setShopOpen(true);showToast("有寵物想吃東西，但食物不夠。","🏪","info")}
+      else showToast("目前沒有需要快速照顧的寵物。","👍","info");
+      return;
+    }
+    setPets(nextPets);
+    setInventory(inv);
+    if(selectedPet){
+      const refreshed=nextPets.find(p=>p.petId===selectedPet.petId);
+      if(refreshed)setSelectedPet(refreshed);
+    }
+    if(fed)incrTask?.("feedToday",fed);
+    if(cleaned)incrTask?.("cleanToday",cleaned);
+    playSound("combo");
+    showToast(`快速照顧完成：餵食 ${fed}、清潔 ${cleaned}、休息 ${rested}`,"✨","info");
+    if(needsFood>0)window.setTimeout(()=>showToast(`${needsFood} 隻寵物還需要食物，記得補貨。`,"🏪","info"),900);
   };
 
   const claimTask=(task,event)=>{
@@ -8024,6 +8565,14 @@ function PetsPage({onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,s
       statText="XP +30";statColor="#1D9E75";
     }
 
+    const dailyBefore=getPetDailyCultivation(updated);
+    const dailyActions=[...new Set([...dailyBefore.actions,actionKey])];
+    const cultivationBonus=dailyActions.length>=3&&!dailyBefore.comboClaimed?{exp:30,bond:10,coins:20}:null;
+    if(cultivationBonus){
+      updated.exp=(updated.exp||0)+cultivationBonus.exp;
+      updated.bond=(updated.bond||0)+cultivationBonus.bond;
+    }
+    updated.careLog={date:dailyBefore.date,actions:dailyActions,comboClaimed:dailyBefore.comboClaimed||!!cultivationBonus};
     updated.exp=(updated.exp||0)+10;
     updated.lastUpdate=new Date().toISOString();
     const prevPetLevel=updated.level;// (P1-3 升級偵測)
@@ -8039,7 +8588,7 @@ function PetsPage({onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,s
     }
 
     setPets(ps=>ps.map((p,i)=>i===petIdx?updated:p));
-    setCoins(co=>co+5);// reward for caring
+    setCoins(co=>co+5+(cultivationBonus?.coins||0));// reward for caring
     // Play action sound + pet's own voice for personality
     playActionSound(actionKey);
     setTimeout(()=>playPetSound(pet.petId),400);// pet reacts happily after action
@@ -8047,7 +8596,7 @@ function PetsPage({onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,s
     // 觸發粒子慶祝動畫 (P0-2 視覺優化)
     setActionModal(null);
     if(selectedPet&&selectedPet.petId===pet.petId)setSelectedPet(updated);
-    setActionCelebration({actionKey,statText,statColor,foodEmoji:foodId?(PET_FOODS.find(f=>f.id===foodId)?.emoji||"🍖"):null});
+    setActionCelebration({actionKey,statText,statColor,bonusText:cultivationBonus?`今日培養完成：XP +${cultivationBonus.exp}、親密 +${cultivationBonus.bond}、金幣 +${cultivationBonus.coins}`:null,foodEmoji:foodId?(PET_FOODS.find(f=>f.id===foodId)?.emoji||"🍖"):null});
     setTimeout(()=>setActionCelebration(null),1400);
 
     // (P1-3) 升級慶祝：在動作粒子之後顯示
@@ -8153,7 +8702,7 @@ function PetsPage({onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,s
 
   // (P3-1) Playground Modal - 兩隻寵物互動
   if(playgroundOpen){
-    return(<PlaygroundView pets={pets} setPets={setPets} c={c} onBack={()=>setPlaygroundOpen(false)}/>);
+    return(<PlaygroundView pets={pets} setPets={setPets} setCoins={setCoins} c={c} onBack={()=>setPlaygroundOpen(false)} incrTask={incrTask}/>);
   }
 
   // (P2-3) Settings Modal - 無障礙與省電設定
@@ -8254,6 +8803,24 @@ function PetsPage({onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,s
     const mood=getPetMood(selectedPet);
     const expNeeded=selectedPet.level*100;
     const foodsOwned=PET_FOODS.filter(f=>(inventory[f.id]||0)>0);
+    const suggestedFood=choosePetFoodForNeed(selectedPet,inventory);
+    const careSuggestion=getPetCareSuggestion(selectedPet,inventory);
+    const cultivationPlan=getPetCultivationPlan(selectedPet,inventory);
+    const readiness=getPetReadiness(selectedPet);
+    const adventureSkill=getPetAdventureSkill(selectedPet);
+    const adventureSkillVisual=PET_ADVENTURE_SKILL_VISUALS[adventureSkill.id]||PET_ADVENTURE_SKILL_VISUALS.wordSpark;
+    const adventureSkillCards=getPetAdventureSkillCards(selectedPet);
+    const nextAdventureSkill=getNextPetAdventureSkillCard(selectedPet);
+    const startSuggestedCare=()=>{
+      if(!careSuggestion)return;
+      if(careSuggestion.shop){setShopOpen(true);return}
+      performAction(selectedPet,careSuggestion.actionKey,careSuggestion.foodId||null);
+    };
+    const runCultivationAction=action=>{
+      if(!action)return;
+      if(action.shop){setShopOpen(true);return}
+      performAction(selectedPet,action.actionKey,action.foodId||null);
+    };
 
     return(<div>
       {levelUpOverlay}
@@ -8282,6 +8849,68 @@ function PetsPage({onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,s
           <span style={{fontSize:11,color:S.t3}}>{selectedPet.exp}/{expNeeded}</span>
         </div>
       </div>
+
+      <div style={{...S.card,padding:"14px 16px",marginBottom:12,border:`1px solid ${c.cl}33`,background:`linear-gradient(135deg,${c.bg},var(--color-background-primary,#fff))`}}>
+        <div style={{display:"flex",justifyContent:"space-between",gap:10,alignItems:"flex-start",flexWrap:"wrap",marginBottom:10}}>
+          <div>
+            <div style={{fontSize:14,fontWeight:1000,color:S.t1}}>今日培養計畫</div>
+            <div style={{fontSize:11,color:S.t2,marginTop:2,lineHeight:1.5}}>{cultivationPlan.primary.desc}</div>
+          </div>
+          <div style={{textAlign:"right"}}>
+            <div style={{fontSize:10,color:S.t3,fontWeight:800}}>成長力</div>
+            <div style={{fontSize:22,fontWeight:1000,color:c.cl}}>{cultivationPlan.score}</div>
+          </div>
+        </div>
+        <div style={{padding:"10px 11px",borderRadius:12,background:S.bg1,border:`1px solid ${c.cl}22`,display:"flex",gap:10,alignItems:"center",flexWrap:"wrap",marginBottom:10}}>
+          <div style={{flex:1,minWidth:170}}>
+            <div style={{fontSize:13,fontWeight:1000,color:c.cl}}>{cultivationPlan.primary.title}</div>
+            <div style={{display:"flex",gap:5,marginTop:7,alignItems:"center",flexWrap:"wrap"}}>
+              {PET_CULTIVATION_ACTIONS.map(a=>{
+                const done=cultivationPlan.daily.actions.includes(a.key);
+                return(<span key={a.key} title={a.label} style={{width:26,height:26,borderRadius:999,display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:900,border:`1px solid ${done?c.cl:S.bd}`,background:done?c.cl:S.bg2,color:done?"#fff":S.t3}}>{done?"✓":a.short}</span>);
+              })}
+              <span style={{fontSize:11,color:S.t2,fontWeight:900,marginLeft:2}}>{cultivationPlan.daily.count}/{cultivationPlan.daily.target} 種培養</span>
+            </div>
+          </div>
+          <button onClick={()=>runCultivationAction(cultivationPlan.primary.action)} style={{...S.btn,background:c.cl,color:"#fff",fontSize:12,padding:"10px 13px"}}>{cultivationPlan.primary.action?.label||"開始培養"}</button>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))",gap:8,marginBottom:10}}>
+          <div style={{padding:"9px 10px",borderRadius:12,background:S.bg1,border:`1px solid ${S.bd}`}}>
+            <div style={{fontSize:11,color:S.t3,fontWeight:800}}>進化</div>
+            <div style={{fontSize:13,fontWeight:900,color:S.t1,marginTop:3}}>{cultivationPlan.evolution.currentLabel} → {cultivationPlan.evolution.nextLabel}</div>
+            <div style={{height:6,background:S.bg2,borderRadius:999,overflow:"hidden",marginTop:7}}><div style={{height:"100%",width:`${cultivationPlan.evolution.pct}%`,background:c.cl,borderRadius:999}}/></div>
+            <div style={{fontSize:10,color:S.t3,marginTop:4}}>{cultivationPlan.evolution.targetLevel?`還差約 ${cultivationPlan.evolution.expLeft} XP`:"已達最終型態"}</div>
+          </div>
+          <div style={{padding:"9px 10px",borderRadius:12,background:S.bg1,border:`1px solid ${S.bd}`}}>
+            <div style={{fontSize:11,color:S.t3,fontWeight:800}}>羈絆</div>
+            <div style={{fontSize:13,fontWeight:900,color:S.t1,marginTop:3}}>{cultivationPlan.bond.next?cultivationPlan.bond.next.title:"羈絆滿級"}</div>
+            <div style={{height:6,background:S.bg2,borderRadius:999,overflow:"hidden",marginTop:7}}><div style={{height:"100%",width:`${cultivationPlan.bond.pct}%`,background:"#E91E63",borderRadius:999}}/></div>
+            <div style={{fontSize:10,color:S.t3,marginTop:4}}>{cultivationPlan.bond.next?`還差 ${cultivationPlan.bond.left} 親密度`: "已解鎖全部里程碑"}</div>
+          </div>
+          <div style={{padding:"9px 10px",borderRadius:12,background:S.bg1,border:`1px solid ${S.bd}`}}>
+            <div style={{fontSize:11,color:S.t3,fontWeight:800}}>技能</div>
+            <div style={{fontSize:13,fontWeight:900,color:S.t1,marginTop:3}}>{cultivationPlan.nextSkill?`${cultivationPlan.nextSkill.skill.emoji} ${cultivationPlan.nextSkill.skill.zh}`:"技能已完整"}</div>
+            <div style={{height:6,background:S.bg2,borderRadius:999,overflow:"hidden",marginTop:7}}><div style={{height:"100%",width:`${cultivationPlan.nextSkill?Math.min(100,((selectedPet.level||1)/(cultivationPlan.nextSkill.rule.level||1))*100):100}%`,background:adventureSkillVisual.color,borderRadius:999}}/></div>
+            <div style={{fontSize:10,color:S.t3,marginTop:4}}>{cultivationPlan.nextSkill?cultivationPlan.nextSkill.rule.label:"可專心提升等級與羈絆"}</div>
+          </div>
+        </div>
+        {!cultivationPlan.daily.comboClaimed&&<div style={{fontSize:11,color:"#856404",background:"#FFF3CD",border:"1px solid #EF9F2744",borderRadius:10,padding:"7px 9px",lineHeight:1.5,marginBottom:9}}>一天完成 3 種不同培養可得額外 XP +30、親密 +10、金幣 +20。</div>}
+        {cultivationPlan.daily.comboClaimed&&<div style={{fontSize:11,color:"#0F6E56",background:"#E1F5EE",border:"1px solid #1D9E7544",borderRadius:10,padding:"7px 9px",lineHeight:1.5,marginBottom:9}}>今日培養獎勵已完成，明天可再次累積。</div>}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(92px,1fr))",gap:7}}>
+          {cultivationPlan.actions.map(action=><button key={action.key} onClick={()=>runCultivationAction(action)} style={{border:`1px solid ${S.bd}`,background:S.bg1,borderRadius:12,padding:"9px 8px",fontSize:12,fontWeight:900,color:S.t1,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>
+            <span>{action.emoji}</span><span>{action.label}</span>
+          </button>)}
+        </div>
+      </div>
+
+      {careSuggestion&&<div style={{...S.card,padding:"12px 14px",marginBottom:12,border:`1px solid ${readiness.color}55`,background:`linear-gradient(135deg,${readiness.color}12,var(--color-background-primary,#fff))`,display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}>
+        <div style={{fontSize:24}}>{careSuggestion.emoji}</div>
+        <div style={{flex:1,minWidth:180}}>
+          <div style={{fontSize:13,fontWeight:900,color:readiness.color}}>冒險狀態：{readiness.label} · {readiness.avg}/100</div>
+          <div style={{fontSize:11,color:S.t2,lineHeight:1.5,marginTop:2}}>{careSuggestion.reason}</div>
+        </div>
+        <button onClick={startSuggestedCare} style={{...S.btn,background:readiness.color,color:"#fff",fontSize:12,padding:"9px 12px"}}>{careSuggestion.label}</button>
+      </div>}
 
       {/* Status bars (P1-2 液體感狀態條) */}
       <div style={{...S.card,padding:"14px 16px",marginBottom:12}}>
@@ -8365,10 +8994,10 @@ function PetsPage({onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,s
         <div style={{fontSize:13,fontWeight:600,color:S.t1,marginBottom:10}}>🎮 互動（每次獲得 🪙 5）</div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(80px,1fr))",gap:8}}>
           {/* Feed — needs food */}
-          <button onClick={()=>{if(foodsOwned.length===0){setShopOpen(true)}else{performAction(selectedPet,"feed",foodsOwned[0].id)}}} style={{...S.btn,background:foodsOwned.length>0?"#FFF3CD":S.bg2,color:foodsOwned.length>0?"#856404":S.t3,padding:"14px 6px",fontSize:12,display:"flex",flexDirection:"column",gap:2,border:`1px solid ${foodsOwned.length>0?"#EF9F27":S.bd}`}}>
+          <button onClick={()=>{if(!suggestedFood){setShopOpen(true)}else{performAction(selectedPet,"feed",suggestedFood.id)}}} style={{...S.btn,background:suggestedFood?"#FFF3CD":S.bg2,color:suggestedFood?"#856404":S.t3,padding:"14px 6px",fontSize:12,display:"flex",flexDirection:"column",gap:2,border:`1px solid ${suggestedFood?"#EF9F27":S.bd}`}}>
             <span style={{fontSize:24}}>🍖</span>
             <span>餵食</span>
-            <span style={{fontSize:9,opacity:.7}}>{foodsOwned.length>0?`${foodsOwned.length} 種食物`:"去商店買"}</span>
+            <span style={{fontSize:9,opacity:.7}}>{suggestedFood?`${suggestedFood.word} +${suggestedFood.feed}`:"去商店買"}</span>
           </button>
           <button onClick={()=>performAction(selectedPet,"clean")} style={{...S.btn,background:"#E6F1FB",color:"#185FA5",padding:"14px 6px",fontSize:12,display:"flex",flexDirection:"column",gap:2,border:"1px solid #4A90E2"}}>
             <span style={{fontSize:24}}>🛁</span>
@@ -8390,6 +9019,47 @@ function PetsPage({onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,s
             <span>讀書</span>
             <span style={{fontSize:9,opacity:.7}}>study</span>
           </button>
+        </div>
+      </div>
+
+      <div style={{...S.card,padding:"14px 16px",marginBottom:12,border:`1px solid ${adventureSkillVisual.color}44`,background:`linear-gradient(135deg,${adventureSkillVisual.bg},var(--color-background-primary,#fff))`}}>
+        <div style={{display:"flex",justifyContent:"space-between",gap:10,alignItems:"center",marginBottom:10}}>
+          <div>
+            <div style={{fontSize:13,fontWeight:900,color:S.t1}}>冒險技能</div>
+            <div style={{fontSize:11,color:S.t2,marginTop:2}}>照顧、學習與冒險勝利會讓寵物更快解鎖技能。</div>
+          </div>
+          <button onClick={()=>speak(adventureSkill.words.join(", "))} style={{border:`1px solid ${adventureSkillVisual.color}55`,background:S.bg1,borderRadius:999,padding:"6px 10px",fontSize:11,fontWeight:900,color:adventureSkillVisual.color,cursor:"pointer",fontFamily:"inherit"}}>朗讀技能字</button>
+        </div>
+        <div style={{display:"flex",gap:10,alignItems:"center",padding:"10px 11px",borderRadius:12,background:S.bg1,border:`1px solid ${adventureSkillVisual.color}33`,marginBottom:10}}>
+          <div style={{fontSize:28}}>{adventureSkill.emoji}</div>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:14,fontWeight:1000,color:adventureSkillVisual.color}}>{adventureSkill.name} · {adventureSkill.zh}</div>
+            <div style={{fontSize:11,color:S.t2,lineHeight:1.5,marginTop:2}}>{adventureSkill.desc}</div>
+          </div>
+          <div style={{fontSize:12,fontWeight:1000,color:adventureSkillVisual.color}}>Power {adventureSkill.power}</div>
+        </div>
+        {nextAdventureSkill?<div style={{padding:"9px 10px",borderRadius:12,background:"#FFF3CD",border:"1px solid #EF9F2744",marginBottom:10}}>
+          <div style={{fontSize:12,fontWeight:900,color:"#856404"}}>下一個技能：{nextAdventureSkill.skill.emoji} {nextAdventureSkill.skill.zh}</div>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginTop:6}}>
+            <div style={{flex:1,height:7,background:"rgba(0,0,0,.08)",borderRadius:999,overflow:"hidden"}}>
+              <div style={{height:"100%",width:`${Math.min(100,((selectedPet.level||1)/(nextAdventureSkill.rule.level||1))*100)}%`,background:"#EF9F27",borderRadius:999}}/>
+            </div>
+            <span style={{fontSize:11,color:"#856404",fontWeight:900}}>Lv.{selectedPet.level||1}/{nextAdventureSkill.rule.level}</span>
+          </div>
+          <div style={{fontSize:11,color:"#856404",marginTop:5,lineHeight:1.5}}>{nextAdventureSkill.rule.learn}</div>
+        </div>:<div style={{padding:"9px 10px",borderRadius:12,background:"#E1F5EE",border:"1px solid #1D9E7544",fontSize:12,fontWeight:900,color:"#0F6E56",marginBottom:10}}>已開放目前所有技能，之後可透過冒險勝利繼續累積成長。</div>}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(112px,1fr))",gap:7}}>
+          {adventureSkillCards.map(card=>{
+            const visual=PET_ADVENTURE_SKILL_VISUALS[card.skill.id]||PET_ADVENTURE_SKILL_VISUALS.wordSpark;
+            const pct=card.unlocked?100:Math.min(100,((selectedPet.level||1)/(card.rule.level||1))*100);
+            return(<div key={card.skill.id} style={{padding:"8px 9px",borderRadius:11,border:`1px solid ${card.unlocked?visual.color:S.bd}`,background:card.unlocked?visual.bg:S.bg2,opacity:card.unlocked?1:.72}}>
+              <div style={{fontSize:12,fontWeight:1000,color:card.unlocked?visual.color:S.t3}}>{card.skill.emoji} {card.skill.zh}</div>
+              <div style={{fontSize:10,color:S.t3,marginTop:3}}>{card.unlocked?card.source:`Lv.${card.rule.level}`}</div>
+              <div style={{height:5,background:"rgba(0,0,0,.08)",borderRadius:999,overflow:"hidden",marginTop:6}}>
+                <div style={{height:"100%",width:`${pct}%`,background:card.unlocked?visual.color:S.t3,borderRadius:999}}/>
+              </div>
+            </div>);
+          })}
         </div>
       </div>
 
@@ -8598,6 +9268,14 @@ body.eg-anim-off [data-pet-card] { animation: none !important; }
 @keyframes pet_breatheSleep { 0%,100%{transform:scaleY(1) translateY(0)} 50%{transform:scaleY(1.06) translateY(-1px)} }
 @media (prefers-reduced-motion: reduce) { [data-pet-card] *{animation:none !important} }
 `}</style>
+    {(quickCarePlan.total>0||quickCarePlan.needsFood>0)&&<div style={{...S.card,padding:"12px 14px",marginBottom:10,border:"1px solid #EF9F27",background:"linear-gradient(135deg,#FFF3CD,var(--color-background-primary,#fff))",display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}>
+      <div style={{fontSize:25}}>🧺</div>
+      <div style={{flex:1,minWidth:190}}>
+        <div style={{fontSize:13,fontWeight:900,color:"#856404"}}>照顧提醒</div>
+        <div style={{fontSize:11,color:"#856404",lineHeight:1.5,marginTop:2}}>可快速處理：餵食 {quickCarePlan.feed}、清潔 {quickCarePlan.clean}、休息 {quickCarePlan.sleep}{quickCarePlan.needsFood?`；另有 ${quickCarePlan.needsFood} 隻缺食物`:""}。</div>
+      </div>
+      <button onClick={quickCareAll} style={{...S.btn,background:"#EF9F27",color:"#fff",fontSize:12,padding:"9px 12px"}}>{quickCarePlan.total>0?"一鍵照顧":"去補食物"}</button>
+    </div>}
     <div style={{...S.card,padding:"12px",marginBottom:10,display:"grid",gap:8}}>
       <input value={petQuery} onChange={e=>setPetQuery(e.target.value)} placeholder="搜尋寵物、單字、故事..." style={{width:"100%",boxSizing:"border-box",padding:"10px 12px",borderRadius:10,border:`1px solid ${S.bd}`,background:S.bg1,color:S.t1,fontSize:13,fontFamily:"inherit",outline:"none"}}/>
       <div style={{display:"flex",gap:6,overflowX:"auto",paddingBottom:2}}>
@@ -8631,7 +9309,7 @@ body.eg-anim-off [data-pet-card] { animation: none !important; }
       <span style={{fontSize:24}}>🎪</span>
       <div style={{textAlign:"left",flex:1}}>
         <div style={{fontSize:14,fontWeight:700,color:"#C2185B"}}>一起玩耍場</div>
-        <div style={{fontSize:11,color:"#AD1457",marginTop:2}}>讓兩隻寵物在一起，互相增加親密度！</div>
+        <div style={{fontSize:11,color:"#AD1457",marginTop:2}}>完成英文小任務，再讓兩隻寵物一起玩並拿獎勵。</div>
       </div>
       <span style={{fontSize:18,color:"#C2185B"}}>→</span>
     </button>}
