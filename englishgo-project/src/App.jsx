@@ -2378,61 +2378,146 @@ function Menu({lv,onSelect,daily,c,xp,coins,streak,achUnlocked,weakWords,isSpons
   const fallbackToday=V[lv][hashText(`${todayKey}:${lv}:fallback`)%V[lv].length];
   const[todayWord,setTodayWord]=useState(fallbackToday);
   const[cloudCount,setCloudCount]=useState(0);
+  const[activeGroup,setActiveGroup]=useState("learn");
   useEffect(()=>{let active=true;setTodayWord(fallbackToday);setCloudCount(0);fetchCloudCount(lv).then(n=>{if(active)setCloudCount(n||0)});fetchDailyCloudWord(lv,fallbackToday).then(w=>{if(active&&w)setTodayWord(w)});return()=>{active=false}},[lv,todayKey]);
+  const modules=[
+    {id:"srs",group:"learn",icon:"🃏",t:"SRS 單字卡",d:cloudCount?`雲端 ${cloudCount} 字`:"間隔重複",tag:"每日核心"},
+    {id:"wordsearch",group:"learn",icon:"🔎",t:"單字查詢",d:"搜尋並開卡",tag:"快速查字"},
+    {id:"quiz",group:"learn",icon:"📝",t:"單字測驗",d:"四選一",tag:"檢查記憶"},
+    {id:"grammar",group:"learn",icon:"🧠",t:"文法學堂",d:`${G[lv].length} 個重點`,tag:"句型觀念"},
+    {id:"speak",group:"learn",icon:"🗣️",t:"口說練習",d:"唸出來！",tag:"開口訓練"},
+    {id:"ai",group:"learn",icon:"🤖",t:"AI 家教",d:"Gemini 對話",tag:"問問題"},
+    {id:"reading",group:"read",icon:"📖",t:"閱讀理解",d:`${R[lv].length} 篇文章`,tag:"短文測驗"},
+    {id:"novels",group:"read",icon:"📘",t:"英文小說",d:lv==="junior"?"16 章故事":`${NOVEL_COUNT} 章故事`,tag:"長篇閱讀"},
+    {id:"songs",group:"read",icon:"🎵",t:"英文歌曲",d:(SONGS[lv]?.length||0)?`${SONGS[lv].length} 首歌`:"準備中",tag:"聽歌學英文"},
+    {id:"dictation",group:"read",icon:"🎧",t:"聽寫訓練",d:"聽力養成",tag:"聽力"},
+    {id:"story",group:"read",icon:"📖",t:"AI 故事",d:"寵物英文故事",tag:"AI 閱讀"},
+    {id:"whack",group:"game",icon:"🔨",t:"打地鼠拼字",d:"限時拼字",tag:"拼字反應"},
+    {id:"match",group:"game",icon:"🎴",t:"配對翻牌",d:"記憶遊戲",tag:"記憶配對"},
+    {id:"bomb",group:"game",icon:"💣",t:"拆彈拼字",d:"限時拆彈！",tag:"拼字挑戰"},
+    {id:"scramble",group:"game",icon:"🧩",t:"句子重組",d:"語序訓練",tag:"句子遊戲"},
+    {id:"gacha",group:"pet",icon:"🎰",t:"扭蛋機",d:`🪙 ${coins} 金幣`,tag:"取得寵物"},
+    {id:"pets",group:"pet",icon:"🐾",t:"寵物圖鑑",d:`${pets.length} 隻 · ${eggs.length} 顆蛋`,tag:"培養照顧"},
+    {id:"petAdventure",group:"pet",icon:"🗺️",t:"寵物冒險",d:pets.length?`${pets.length} 隻可組隊`:"先取得寵物",tag:"英文戰鬥"},
+    {id:"achievements",group:"tools",icon:"🏆",t:"成就徽章",d:`${achUnlocked.length}/${ACH_DEFS.length} 已解鎖`,tag:"收集"},
+    {id:"weak",group:"tools",icon:"📕",t:"錯題本",d:weakWords.length?`${weakWords.length} 字需加強`:"還沒有錯題",tag:"複習"},
+    {id:"dashboard",group:"tools",icon:"📊",t:"學習報告",d:"數據分析",tag:"進度"},
+    {id:"sponsor",group:"tools",icon:"☕",t:isSponsor?"支持者 ✓":"支持我們",d:isSponsor?"感謝您的支持！":"銀行轉帳與留言",tag:"支持"},
+  ];
+  const groups=[
+    {id:"learn",icon:"📚",t:"學習",d:"單字、文法、口說",color:c.cl},
+    {id:"read",icon:"🎧",t:"閱讀聽力",d:"文章、小說、歌曲",color:"#185FA5"},
+    {id:"game",icon:"🎮",t:"遊戲",d:"拼字與記憶",color:"#D97706"},
+    {id:"pet",icon:"🐾",t:"寵物",d:"扭蛋、培養、冒險",color:"#DB2777"},
+    {id:"tools",icon:"🧰",t:"工具",d:"錯題、報告、支援",color:"#7C3AED"},
+  ];
+  const activeGroupData=groups.find(g=>g.id===activeGroup)||groups[0];
+  const activeModules=modules.filter(m=>m.group===activeGroup);
+  const featuredIds=["srs",weakWords.length?"weak":"quiz",pets.length?"petAdventure":"gacha"];
+  const featuredModules=featuredIds.map(id=>modules.find(m=>m.id===id)).filter(Boolean);
+  const metricItems=[
+    {icon:"🔥",label:"連續",value:streak,color:"#E24B4A"},
+    {icon:"⭐",label:"XP",value:xp,color:"#D97706"},
+    {icon:"🪙",label:"金幣",value:coins,color:"#EF9F27",onClick:()=>onSelect("gacha")},
+    {icon:"🐾",label:"寵物",value:pets.length+(eggs.length?` +${eggs.length}🥚`:""),color:c.cl,onClick:()=>onSelect("pets")},
+  ];
+  const ModuleCard=({m,featured=false})=>{
+    const group=groups.find(g=>g.id===m.group)||groups[0];
+    return(<button onClick={()=>onSelect(m.id)} style={{textAlign:"left",cursor:"pointer",...S.card,padding:featured?"16px 16px 15px":"14px 13px",transition:"transform .14s, box-shadow .14s, border-color .14s",WebkitTapHighlightColor:"transparent",border:`1px solid ${featured?group.color:S.bd}`,background:featured?`linear-gradient(135deg,${group.color}14,var(--color-background-primary,#fff))`:S.bg1,fontFamily:"inherit",minHeight:featured?112:98,position:"relative",overflow:"hidden",boxShadow:featured?`0 10px 26px ${group.color}10`:"none"}}
+      onTouchStart={e=>e.currentTarget.style.transform="scale(0.98)"}
+      onTouchEnd={e=>e.currentTarget.style.transform="none"}
+      onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow=`0 8px 22px ${group.color}18`}}
+      onMouseLeave={e=>{e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow="none"}}>
+      <div style={{position:"absolute",left:0,top:0,bottom:0,width:4,background:group.color,opacity:featured?1:.45}}/>
+      <div style={{position:"absolute",right:-18,top:-22,fontSize:72,opacity:.055,pointerEvents:"none"}}>{m.icon}</div>
+      <div style={{display:"flex",alignItems:"flex-start",gap:10,position:"relative"}}>
+        <div style={{width:featured?44:38,height:featured?44:38,borderRadius:12,background:`${group.color}16`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:featured?25:22,flexShrink:0,boxShadow:`inset 0 0 0 1px ${group.color}12`}}>{m.icon}</div>
+        <div style={{minWidth:0,flex:1}}>
+          <div style={{fontSize:featured?15:14,fontWeight:900,color:S.t1,lineHeight:1.25}}>{m.t}</div>
+          <div style={{fontSize:11,color:S.t2,lineHeight:1.45,marginTop:4}}>{m.d}</div>
+          <div style={{display:"inline-block",marginTop:8,fontSize:10,fontWeight:900,color:group.color,background:`${group.color}12`,border:`1px solid ${group.color}22`,borderRadius:999,padding:"3px 8px"}}>{m.tag}</div>
+        </div>
+      </div>
+    </button>);
+  };
   return(<div>
-    {/* Stats bar */}
-    <div style={{display:"flex",gap:8,marginBottom:12,padding:"10px 14px",...S.card,flexWrap:"wrap"}}>
-      <div style={{flex:"1 1 60px",textAlign:"center",minWidth:60}}><div style={{fontSize:20,fontWeight:700,color:S.t1}}>🔥 {streak}</div><div style={{fontSize:11,color:S.t3}}>連續</div></div>
-      <div style={{flex:"1 1 60px",textAlign:"center",minWidth:60}}><div style={{fontSize:20,fontWeight:700,color:S.t1}}>⭐ {xp}</div><div style={{fontSize:11,color:S.t3}}>XP</div></div>
-      <div style={{flex:"1 1 60px",textAlign:"center",minWidth:60,background:"#FFF3CD22",borderRadius:8,cursor:"pointer"}} onClick={()=>onSelect("gacha")}><div style={{fontSize:20,fontWeight:700,color:"#EF9F27"}}>🪙 {coins}</div><div style={{fontSize:11,color:S.t3}}>金幣</div></div>
-      <div style={{flex:"1 1 60px",textAlign:"center",minWidth:60,background:`${c.cl}11`,borderRadius:8,cursor:"pointer"}} onClick={()=>onSelect("pets")}><div style={{fontSize:20,fontWeight:700,color:c.cl}}>🐾 {pets.length}{eggs.length>0&&<span style={{fontSize:13}}> +{eggs.length}🥚</span>}</div><div style={{fontSize:11,color:S.t3}}>寵物</div></div>
-      <div style={{flex:"1 1 60px",textAlign:"center",minWidth:60}}><div style={{fontSize:20,fontWeight:700,color:S.t1}}>📊 {pct}%</div><div style={{fontSize:11,color:S.t3}}>今日</div></div>
-    </div>
-    {/* Daily word card */}
-    <div style={{...S.card,padding:"16px 18px",marginBottom:12,background:`linear-gradient(135deg,${c.bg},var(--color-background-primary,#fff))`}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-        <div><div style={{fontSize:12,color:c.cl,fontWeight:600,marginBottom:4}}>今日推薦單字</div><div style={{fontSize:28,fontWeight:700,color:S.t1}}>{todayWord.w} <button onClick={()=>speak(todayWord.w)} style={{background:"none",border:"none",fontSize:24,cursor:"pointer",verticalAlign:"middle",padding:"4px"}}>🔊</button></div><div style={{fontSize:14,color:S.t2}}>{todayWord.m} · {todayWord.p}</div></div>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(240px,1fr))",gap:12,marginBottom:12}}>
+      <div style={{...S.card,padding:"18px",border:`1px solid ${c.cl}33`,background:`radial-gradient(circle at 92% 10%,${c.cl}22,transparent 28%),linear-gradient(135deg,${c.bg},var(--color-background-primary,#fff) 62%)`,position:"relative",overflow:"hidden"}}>
+        <div style={{position:"absolute",right:-18,bottom:-24,fontSize:116,opacity:.055,pointerEvents:"none"}}>{c.ic}</div>
+        <div style={{position:"relative"}}>
+          <div style={{display:"inline-flex",alignItems:"center",gap:6,fontSize:11,fontWeight:900,color:c.cl,background:`${c.cl}12`,border:`1px solid ${c.cl}22`,borderRadius:999,padding:"5px 9px",marginBottom:12}}>
+            <span>{c.ic}</span><span>{c.l}學習首頁</span>
+          </div>
+          <div style={{fontSize:13,color:S.t2,fontWeight:800}}>今日推薦單字</div>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginTop:3,flexWrap:"wrap"}}>
+            <div style={{fontSize:"clamp(26px,6vw,38px)",fontWeight:1000,color:S.t1,lineHeight:1.05}}>{todayWord.w}</div>
+            <button onClick={()=>speak(todayWord.w)} aria-label="朗讀今日單字" style={{border:`1px solid ${c.cl}33`,background:S.bg1,borderRadius:999,width:40,height:40,fontSize:20,cursor:"pointer",display:"inline-flex",alignItems:"center",justifyContent:"center"}}>🔊</button>
+          </div>
+          <div style={{fontSize:14,color:S.t2,marginTop:6,lineHeight:1.5}}>{todayWord.m} · {todayWord.p}</div>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginTop:16}}>
+            <div style={{flex:1,height:10,background:"rgba(0,0,0,.06)",borderRadius:999,overflow:"hidden"}}>
+              <div style={{height:"100%",width:`${Math.min(100,pct)}%`,background:`linear-gradient(90deg,${c.cl},${c.ac})`,borderRadius:999,transition:"width .3s"}}/>
+            </div>
+            <div style={{fontSize:12,fontWeight:1000,color:c.cl,minWidth:46,textAlign:"right"}}>{pct}%</div>
+          </div>
+          <div style={{fontSize:11,color:S.t3,marginTop:6}}>今日進度 · 完成練習會累積 XP、金幣與寵物孵化進度</div>
+        </div>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(2,minmax(0,1fr))",gap:8}}>
+        {metricItems.map(item=><button key={item.label} onClick={item.onClick} disabled={!item.onClick} style={{...S.card,padding:"13px 12px",border:`1px solid ${item.color}22`,background:`linear-gradient(135deg,${item.color}10,var(--color-background-primary,#fff))`,textAlign:"left",fontFamily:"inherit",cursor:item.onClick?"pointer":"default",minHeight:78}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
+            <span style={{fontSize:22}}>{item.icon}</span>
+            <span style={{fontSize:10,color:item.color,fontWeight:1000,background:`${item.color}12`,borderRadius:999,padding:"2px 7px"}}>{item.label}</span>
+          </div>
+          <div style={{fontSize:22,fontWeight:1000,color:S.t1,marginTop:7,lineHeight:1}}>{item.value}</div>
+        </button>)}
       </div>
     </div>
     {/* Weak words reminder */}
-    {weakWords.length>0&&<div style={{...S.card,padding:"12px 16px",marginBottom:12,fontSize:14}}>
-      <span style={{fontWeight:600,color:"#E24B4A"}}>需加強：</span>
-      {[...weakWords].sort((a,b)=>b.n-a.n).slice(0,5).map((w,i)=><span key={i} style={{marginLeft:6,color:S.t2}}>{w.w}({w.n})</span>)}
+    {weakWords.length>0&&<div style={{...S.card,padding:"12px 14px",marginBottom:12,fontSize:14,border:"1px solid #E24B4A33",background:"linear-gradient(135deg,#FCEBEB,var(--color-background-primary,#fff))",display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+      <div style={{fontSize:24}}>📕</div>
+      <div style={{flex:1,minWidth:190}}>
+        <div style={{fontWeight:900,color:"#B42318",fontSize:13}}>需加強單字</div>
+        <div style={{fontSize:12,color:S.t2,marginTop:3,lineHeight:1.5}}>{[...weakWords].sort((a,b)=>b.n-a.n).slice(0,5).map(w=>`${w.w}(${w.n})`).join(" · ")}</div>
+      </div>
+      <button onClick={()=>onSelect("weak")} style={{border:"none",background:"#E24B4A",color:"#fff",borderRadius:999,padding:"8px 12px",fontSize:12,fontWeight:900,cursor:"pointer",fontFamily:"inherit"}}>去複習</button>
     </div>}
-    {/* Modules */}
-    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(150px,1fr))",gap:8}}>
-      {[
-        {id:"srs",icon:"🃏",t:"SRS 單字卡",d:cloudCount?`雲端 ${cloudCount} 字`:"間隔重複"},
-        {id:"wordsearch",icon:"🔎",t:"單字查詢",d:"搜尋並開卡"},
-        {id:"quiz",icon:"📝",t:"單字測驗",d:"四選一"},
-        {id:"speak",icon:"🗣️",t:"口說練習",d:"唸出來！"},
-        {id:"whack",icon:"🔨",t:"打地鼠拼字",d:"限時拼字"},
-        {id:"match",icon:"🎴",t:"配對翻牌",d:"記憶遊戲"},
-        {id:"bomb",icon:"💣",t:"拆彈拼字",d:"限時拆彈！"},
-        {id:"dictation",icon:"🎧",t:"聽寫訓練",d:"聽力養成"},
-        {id:"scramble",icon:"🧩",t:"句子重組",d:"語序訓練"},
-        {id:"grammar",icon:"🧠",t:"文法學堂",d:`${G[lv].length} 個重點`},
-        {id:"reading",icon:"📖",t:"閱讀理解",d:`${R[lv].length} 篇文章`},
-        {id:"novels",icon:"📘",t:"英文小說",d:lv==="junior"?"16 章故事":`${NOVEL_COUNT} 章故事`},
-        {id:"songs",icon:"🎵",t:"英文歌曲",d:(SONGS[lv]?.length||0)?`${SONGS[lv].length} 首歌`:"準備中"},
-        {id:"ai",icon:"🤖",t:"AI 家教",d:"Gemini 對話"},
-        {id:"story",icon:"📖",t:"AI 故事",d:"寵物英文故事"},
-        {id:"achievements",icon:"🏆",t:"成就徽章",d:`${achUnlocked.length}/${ACH_DEFS.length} 已解鎖`},
-        {id:"weak",icon:"📕",t:"錯題本",d:weakWords.length?`${weakWords.length} 字需加強`:"還沒有錯題"},
-        {id:"dashboard",icon:"📊",t:"學習報告",d:"數據分析"},
-        {id:"gacha",icon:"🎰",t:"扭蛋機",d:`🪙 ${coins} 金幣`},
-        {id:"pets",icon:"🐾",t:"寵物圖鑑",d:`${pets.length} 隻 · ${eggs.length} 顆蛋`},
-        {id:"petAdventure",icon:"🗺️",t:"寵物冒險",d:pets.length?`${pets.length} 隻可組隊`:"先取得寵物"},
-        {id:"sponsor",icon:"☕",t:isSponsor?"支持者 ✓":"支持我們",d:isSponsor?"感謝您的支持！":"銀行轉帳與留言"},
-      ].map(m=>(<div key={m.id} onClick={()=>onSelect(m.id)} style={{cursor:"pointer",...S.card,padding:"20px 14px",transition:"all .12s",WebkitTapHighlightColor:"transparent"}}
-        onTouchStart={e=>e.currentTarget.style.transform="scale(0.96)"}
-        onTouchEnd={e=>e.currentTarget.style.transform="none"}
-        onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow=`0 4px 14px ${c.cl}10`}}
-        onMouseLeave={e=>{e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow="none"}}>
-        <div style={{fontSize:26,marginBottom:4}}>{m.icon}</div>
-        <div style={{fontWeight:600,fontSize:14,color:S.t1,marginBottom:2}}>{m.t}</div>
-        <div style={{fontSize:11,color:S.t2}}>{m.d}</div>
-      </div>))}
+    <div style={{marginBottom:12}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,margin:"2px 2px 8px"}}>
+        <div>
+          <div style={{fontSize:15,fontWeight:1000,color:S.t1}}>推薦開始</div>
+          <div style={{fontSize:11,color:S.t3,marginTop:2}}>每天先完成核心練習，再依需要切換分類。</div>
+        </div>
+        <button onClick={()=>setActiveGroup("learn")} style={{border:`1px solid ${c.cl}44`,background:c.bg,color:c.cl,borderRadius:999,padding:"6px 10px",fontSize:11,fontWeight:900,cursor:"pointer",fontFamily:"inherit"}}>看學習</button>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:9}}>
+        {featuredModules.map(m=><ModuleCard key={`featured-${m.id}`} m={m} featured/>)}
+      </div>
+    </div>
+    <div style={{...S.card,padding:"8px",marginBottom:12,display:"flex",gap:7,overflowX:"auto",border:`1px solid ${S.bd}`,background:S.bg1}}>
+      {groups.map(g=>{
+        const active=g.id===activeGroup;
+        const count=modules.filter(m=>m.group===g.id).length;
+        return(<button key={g.id} onClick={()=>setActiveGroup(g.id)} style={{border:`1px solid ${active?g.color:"transparent"}`,background:active?`linear-gradient(135deg,${g.color}18,var(--color-background-primary,#fff))`:S.bg2,borderRadius:13,padding:"10px 11px",cursor:"pointer",fontFamily:"inherit",textAlign:"left",boxShadow:active?`0 6px 16px ${g.color}12`:"none",flex:"0 0 auto",minWidth:116}}>
+          <div style={{display:"flex",alignItems:"center",gap:7,whiteSpace:"nowrap"}}>
+            <span style={{fontSize:20}}>{g.icon}</span>
+            <span style={{fontSize:13,fontWeight:1000,color:active?g.color:S.t1}}>{g.t}</span>
+            <span style={{marginLeft:"auto",fontSize:10,fontWeight:900,color:active?g.color:S.t3,background:active?`${g.color}13`:S.bg2,borderRadius:999,padding:"2px 6px"}}>{count}</span>
+          </div>
+        </button>);
+      })}
+    </div>
+    <div style={{...S.card,padding:"14px",border:`1px solid ${activeGroupData.color}22`,background:`linear-gradient(135deg,${activeGroupData.color}08,var(--color-background-primary,#fff))`}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,marginBottom:10}}>
+        <div>
+          <div style={{fontSize:15,fontWeight:1000,color:activeGroupData.color}}>{activeGroupData.icon} {activeGroupData.t}</div>
+          <div style={{fontSize:11,color:S.t3,marginTop:2}}>{activeGroupData.d}</div>
+        </div>
+        <div style={{fontSize:11,color:activeGroupData.color,fontWeight:900,background:`${activeGroupData.color}12`,borderRadius:999,padding:"5px 9px"}}>{activeModules.length} 個功能</div>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(168px,1fr))",gap:9}}>
+        {activeModules.map(m=><ModuleCard key={m.id} m={m}/>)}
+      </div>
     </div>
   </div>);
 }
