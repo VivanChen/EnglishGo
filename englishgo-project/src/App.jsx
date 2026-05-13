@@ -1032,6 +1032,8 @@ const PET_ADVENTURE_EXTRA_QUESTIONS={
 };
 
 const PET_ADVENTURE_RECENT_QUESTION_KEY="englishgo_pet_adventure_recent_questions";
+const PET_ADVENTURE_PROGRESS_KEY="englishgo_pet_adventure_progress";
+const PET_ADVENTURE_BOSS_REQUIRED_CLEARS=3;
 
 function getAdventureQuestionSource(lv){
   return [
@@ -1082,6 +1084,54 @@ function saveRecentAdventureQuestionKeys(keys){
     if(typeof localStorage==="undefined")return;
     localStorage.setItem(PET_ADVENTURE_RECENT_QUESTION_KEY,JSON.stringify(keepLatestAdventureQuestionKeys(keys)));
   }catch{}
+}
+
+function getPetAdventureProgress(lv){
+  try{
+    if(typeof localStorage==="undefined")return{clears:0,bossCharge:0,bossesDefeated:0};
+    const all=JSON.parse(localStorage.getItem(PET_ADVENTURE_PROGRESS_KEY)||"{}");
+    const key=lv||"elementary";
+    const progress=all?.[key]||{};
+    return{
+      clears:Number(progress.clears)||0,
+      bossCharge:Math.max(0,Math.min(PET_ADVENTURE_BOSS_REQUIRED_CLEARS,Number(progress.bossCharge)||0)),
+      bossesDefeated:Number(progress.bossesDefeated)||0,
+    };
+  }catch{
+    return{clears:0,bossCharge:0,bossesDefeated:0};
+  }
+}
+
+function savePetAdventureProgress(lv,progress){
+  try{
+    if(typeof localStorage==="undefined")return;
+    const all=JSON.parse(localStorage.getItem(PET_ADVENTURE_PROGRESS_KEY)||"{}");
+    all[lv||"elementary"]=progress;
+    localStorage.setItem(PET_ADVENTURE_PROGRESS_KEY,JSON.stringify(all));
+  }catch{}
+}
+
+function isPetAdventureBossReady(progress){
+  return (progress?.bossCharge||0)>=PET_ADVENTURE_BOSS_REQUIRED_CLEARS;
+}
+
+function getPetAdventureDifficulty(progress,bossReady=false){
+  const clears=Number(progress?.clears)||0;
+  const bosses=Number(progress?.bossesDefeated)||0;
+  return Math.min(12,1+Math.floor(clears/2)+bosses+(bossReady?1:0));
+}
+
+function completePetAdventureProgress(progress,won,hadBoss){
+  if(!won)return progress;
+  const clears=(progress?.clears||0)+1;
+  if(hadBoss){
+    return{clears,bossCharge:0,bossesDefeated:(progress?.bossesDefeated||0)+1};
+  }
+  return{
+    clears,
+    bossCharge:Math.min(PET_ADVENTURE_BOSS_REQUIRED_CLEARS,(progress?.bossCharge||0)+1),
+    bossesDefeated:progress?.bossesDefeated||0,
+  };
 }
 
 function getAdventurePetDef(pet){
@@ -1151,47 +1201,36 @@ function drawAdventureQuestions(lv,count,usedKeys=new Set(),pickedKeys=[]){
   return picked;
 }
 
-function buildPetAdventureStages(teamPets,lv){
+function buildPetAdventureStages(teamPets,lv,{bossReady=false,difficultyLevel=1}={}){
   const teamPower=teamPets.reduce((sum,p)=>sum+getPetAdventurePower(p),0);
+  const hpScale=1+(Math.max(1,difficultyLevel)-1)*.14;
+  const attackScale=1+(Math.max(1,difficultyLevel)-1)*.1;
   const stages=[...PET_ADVENTURE_STAGES].sort(()=>Math.random()-.5).slice(0,3);
   const recentQuestionKeys=getRecentAdventureQuestionKeys();
   const usedQuestions=new Set(recentQuestionKeys);
   const pickedQuestionKeys=[];
   const normalStages=stages.map((stage,i)=>{
-    const maxHp=Math.round(82+i*34+teamPower*.22);
+    const maxHp=Math.round((82+i*34+teamPower*.22)*hpScale);
     return {
       ...stage,
       questions:drawAdventureQuestions(lv,6,usedQuestions,pickedQuestionKeys),
       maxHp,
-      attack:Math.round(14+i*7+teamPower*.035),
+      attack:Math.round((14+i*7+teamPower*.035)*attackScale),
+      difficultyLevel,
     };
   });
-  const adventureStages=[
+  const adventureStages=bossReady?[
     ...normalStages,
     {
       ...PET_ADVENTURE_BOSS,
       questions:drawAdventureQuestions(lv,10,usedQuestions,pickedQuestionKeys),
-      maxHp:Math.round(220+teamPower*.52),
-      attack:Math.round(34+teamPower*.07),
+      maxHp:Math.round((220+teamPower*.52)*hpScale),
+      attack:Math.round((34+teamPower*.07)*attackScale),
+      difficultyLevel:Math.min(12,difficultyLevel+1),
     },
-  ];
+  ]:normalStages;
   saveRecentAdventureQuestionKeys([...recentQuestionKeys,...pickedQuestionKeys]);
   return adventureStages;
-}
-
-function createSpecialAdventureEgg(){
-  const rarity=Math.random()<0.72?"SR":"SSR";
-  const pool=PETS[rarity]||PETS.SR;
-  const pet=pool[Math.floor(Math.random()*pool.length)];
-  return {
-    id:`boss_egg_${Date.now()}_${Math.floor(Math.random()*9999)}`,
-    rarity,
-    petId:pet.id,
-    progress:0,
-    date:new Date().toISOString(),
-    special:true,
-    source:"petAdventureBoss",
-  };
 }
 
 function improvePetAfterAdventure(pet,{exp,bond,skillId}){
@@ -4758,11 +4797,16 @@ function PetAdventurePage({lv,onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,
   const[outcome,setOutcome]=useState(null);
   const[skillLoadout,setSkillLoadout]=useState({});
   const[battleSkillId,setBattleSkillId]=useState(null);
+  const[adventureProgress,setAdventureProgress]=useState(()=>getPetAdventureProgress(lv));
+  useEffect(()=>setAdventureProgress(getPetAdventureProgress(lv)),[lv]);
   const availablePets=useMemo(()=>pets.map(p=>({pet:p,def:getAdventurePetDef(p),power:getPetAdventurePower(p),skill:getPetAdventureSkill(p)})).filter(x=>x.def),[pets]);
   const selectedPets=availablePets.filter(x=>selectedIds.includes(x.pet.petId)).map(x=>x.pet);
   const teamPower=selectedPets.reduce((sum,p)=>sum+getPetAdventurePower(p),0);
   const bestTeamIds=useMemo(()=>[...availablePets].sort((a,b)=>b.power-a.power).slice(0,3).map(x=>x.pet.petId),[availablePets]);
   const lowCareCount=selectedPets.filter(p=>(((p.hunger??80)+(p.clean??80)+(p.energy??80))/3)<55).length;
+  const bossReady=isPetAdventureBossReady(adventureProgress);
+  const difficultyLevel=getPetAdventureDifficulty(adventureProgress,bossReady);
+  const clearsToBoss=Math.max(0,PET_ADVENTURE_BOSS_REQUIRED_CLEARS-(adventureProgress.bossCharge||0));
   const togglePet=(petId)=>{
     setOutcome(null);
     setSelectedIds(ids=>{
@@ -4774,11 +4818,14 @@ function PetAdventurePage({lv,onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,
   const startAdventure=()=>{
     const team=availablePets.filter(x=>selectedIds.includes(x.pet.petId)).map(x=>x.pet);
     if(!team.length)return;
-    const stages=buildPetAdventureStages(team,lv);
+    const progress=getPetAdventureProgress(lv);
+    const ready=isPetAdventureBossReady(progress);
+    const difficulty=getPetAdventureDifficulty(progress,ready);
+    const stages=buildPetAdventureStages(team,lv,{bossReady:ready,difficultyLevel:difficulty});
     const power=team.reduce((sum,p)=>sum+getPetAdventurePower(p),0);
     const maxTeamHp=Math.round(150+power*.85);
     const loadout=Object.fromEntries(team.map(p=>[p.petId,getSelectedPetAdventureSkill(p,skillLoadout).id]));
-    setRun({stages,teamIds:selectedIds,teamPower:power,skillLoadout:loadout});
+    setRun({stages,teamIds:selectedIds,teamPower:power,skillLoadout:loadout,hasBoss:ready,difficultyLevel:difficulty,progress});
     setBattle({stageIndex:0,questionIndex:0,teamHp:maxTeamHp,maxTeamHp,enemyHp:stages[0].maxHp,answered:0,correct:0,miss:0});
     setFeedback(null);
     setOutcome(null);
@@ -4786,23 +4833,35 @@ function PetAdventurePage({lv,onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,
     playSound?.("flip");
   };
   const finishAdventure=(won,finalHp)=>{
+    const hadBoss=!!run?.hasBoss;
+    const runDifficulty=run?.difficultyLevel||difficultyLevel||1;
+    const bossWin=won&&hadBoss;
     const rewardFood=PET_FOODS[Math.floor(Math.random()*PET_FOODS.length)];
-    const unlockedSkill=won?Object.values(PET_ADVENTURE_SKILLS)[Math.floor(Math.random()*Object.values(PET_ADVENTURE_SKILLS).length)]:null;
-    const specialEgg=won?createSpecialAdventureEgg():null;
+    const bonusFood=bossWin?PET_FOODS.filter(f=>f.id!==rewardFood.id)[Math.floor(Math.random()*Math.max(1,PET_FOODS.length-1))]:null;
+    const unlockedSkill=won&&!bossWin&&Math.random()<0.35?Object.values(PET_ADVENTURE_SKILLS)[Math.floor(Math.random()*Object.values(PET_ADVENTURE_SKILLS).length)]:null;
     const reward={
       won,
-      coins:won?120+selectedIds.length*18:18,
+      bossWin,
+      difficultyLevel:runDifficulty,
+      coins:won?(bossWin?260+runDifficulty*45+selectedIds.length*25:90+runDifficulty*18+selectedIds.length*12):18,
       food:rewardFood,
-      foodCount:won?3:1,
-      exp:won?120:25,
-      bond:won?22:4,
+      foodCount:won?(bossWin?6+Math.min(4,Math.floor(runDifficulty/2)):3):1,
+      bonusFood,
+      bonusFoodCount:bossWin?3+Math.min(3,Math.floor(runDifficulty/3)):0,
+      exp:won?(bossWin?170:105):25,
+      bond:won?(bossWin?32:18):4,
       skill:unlockedSkill,
-      specialEgg,
       finalHp,
     };
     setCoins(co=>co+reward.coins);
-    setInventory(inv=>({...inv,[rewardFood.id]:(inv[rewardFood.id]||0)+reward.foodCount}));
-    if(specialEgg&&setEggs)setEggs(es=>[...es,specialEgg]);
+    setInventory(inv=>{
+      const next={...inv,[rewardFood.id]:(inv[rewardFood.id]||0)+reward.foodCount};
+      if(bonusFood&&reward.bonusFoodCount)next[bonusFood.id]=(next[bonusFood.id]||0)+reward.bonusFoodCount;
+      return next;
+    });
+    const nextProgress=completePetAdventureProgress(run?.progress||getPetAdventureProgress(lv),won,hadBoss);
+    savePetAdventureProgress(lv,nextProgress);
+    setAdventureProgress(nextProgress);
     setPets(ps=>{
       let skillGiven=false;
       return ps.map(p=>{
@@ -4933,9 +4992,10 @@ function PetAdventurePage({lv,onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(120px,1fr))",gap:8,marginTop:16,textAlign:"left"}}>
           <div style={{...S.card,padding:"12px",background:S.bg1}}><div style={{fontSize:12,color:S.t3}}>金幣</div><div style={{fontSize:20,fontWeight:900,color:"#EF9F27"}}>+{outcome.coins}</div></div>
           <div style={{...S.card,padding:"12px",background:S.bg1}}><div style={{fontSize:12,color:S.t3}}>道具</div><div style={{fontSize:18,fontWeight:900,color:S.t1}}>{outcome.food.emoji} {outcome.food.name} ×{outcome.foodCount}</div></div>
+          {outcome.bonusFood&&<div style={{...S.card,padding:"12px",background:"linear-gradient(135deg,#FFF3CD,var(--color-background-primary,#fff))",border:"2px solid #EF9F27"}}><div style={{fontSize:12,color:S.t3}}>Boss Bonus</div><div style={{fontSize:17,fontWeight:1000,color:"#A05A00"}}>{outcome.bonusFood.emoji} {outcome.bonusFood.name} ×{outcome.bonusFoodCount}</div><div style={{fontSize:11,color:S.t2,marginTop:4}}>魔王獎勵改為金幣與培養道具。</div></div>}
           <div style={{...S.card,padding:"12px",background:S.bg1}}><div style={{fontSize:12,color:S.t3}}>寵物成長</div><div style={{fontSize:18,fontWeight:900,color:c.cl}}>XP +{outcome.exp} · 親密 +{outcome.bond}</div></div>
           {outcome.won&&outcome.skill&&<div style={{...S.card,padding:"12px",background:S.bg1}}><div style={{fontSize:12,color:S.t3}}>可能解鎖技能</div><div style={{fontSize:17,fontWeight:900,color:c.cl}}>{outcome.skill.emoji} {outcome.skill.zh}</div></div>}
-          {outcome.won&&outcome.specialEgg&&<div style={{...S.card,padding:"12px",background:"linear-gradient(135deg,#FFF3CD,#F3E8FF)",border:"2px solid #7C3AED"}}><div style={{fontSize:12,color:S.t3}}>Boss 特殊蛋</div><div style={{fontSize:17,fontWeight:1000,color:"#7C3AED"}}>🥚 {RARITY_INFO[outcome.specialEgg.rarity]?.label||outcome.specialEgg.rarity} 特殊寵物蛋</div><div style={{fontSize:11,color:S.t2,marginTop:4}}>已加入寵物圖鑑的蛋清單，可用學習任務孵化。</div></div>}
+          {outcome.won&&!outcome.bossWin&&<div style={{...S.card,padding:"12px",background:S.bg1}}><div style={{fontSize:12,color:S.t3}}>Boss Progress</div><div style={{fontSize:18,fontWeight:900,color:c.cl}}>{Math.min(PET_ADVENTURE_BOSS_REQUIRED_CLEARS,adventureProgress.bossCharge||0)}/{PET_ADVENTURE_BOSS_REQUIRED_CLEARS}</div><div style={{fontSize:11,color:S.t2,marginTop:4}}>{isPetAdventureBossReady(adventureProgress)?"下一輪會出現魔王。":"繼續完成冒險來累積魔王挑戰。"}</div></div>}
         </div>
         <div style={{display:"flex",gap:8,marginTop:18}}>
           <button onClick={resetAdventure} style={{...S.btn,background:S.bg2,color:S.t1,flex:1}}>重新組隊</button>
@@ -4971,14 +5031,17 @@ function PetAdventurePage({lv,onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,
 [data-adventure-skill-hand],[data-adventure-status],[data-adventure-question]{margin-bottom:0 !important}
 [data-adventure-status]{display:none!important}
 [data-adventure-question]{position:absolute;left:18px;right:auto;top:64px;width:min(390px,42%);z-index:7;background:rgba(255,255,255,.76)!important;backdrop-filter:blur(14px);box-shadow:0 14px 34px rgba(0,0,0,.18)}
-[data-adventure-question]{max-height:240px;overflow:auto;border:1px solid rgba(255,255,255,.72)!important}
+[data-adventure-question]{max-height:none;overflow:visible;border:1px solid rgba(255,255,255,.72)!important}
 [data-adventure-question-title]{display:none!important}
 [data-adventure-question-prompt]{font-size:16px!important;line-height:1.28!important}
 [data-adventure-question-zh]{font-size:11px!important;margin-top:3px!important;opacity:.72}
 [data-adventure-question-audio]{position:absolute;top:8px;right:8px;margin-top:0!important;min-height:30px!important;width:32px!important;padding:0!important;font-size:14px!important;background:rgba(255,255,255,.82)!important}
 [data-adventure-answers]{display:grid!important;grid-template-columns:1fr 1fr;gap:6px!important;margin-top:8px!important}
 [data-adventure-answers] button{min-height:36px!important;padding:8px 10px!important;font-size:13px!important}
-[data-adventure-feedback]{margin-top:8px!important;padding:9px 10px!important}
+[data-adventure-feedback]{margin-top:8px!important;padding:8px 9px!important;display:grid!important;grid-template-columns:minmax(0,1fr) auto;gap:7px;align-items:center}
+[data-adventure-feedback] > div:first-child{font-size:13px!important;line-height:1.25!important}
+[data-adventure-feedback] > div:nth-child(2){display:none!important}
+[data-adventure-feedback] button{margin-top:0!important;min-height:34px!important;padding:8px 13px!important;font-size:12px!important;white-space:nowrap}
 [data-adventure-skill-hand] button{min-height:72px!important;padding:9px 10px!important}
 [data-adventure-skill-hand] button div:first-of-type{font-size:16px!important;margin-bottom:2px!important}
 [data-adventure-skill-hand] button div:nth-of-type(3){display:none!important}
@@ -5004,19 +5067,21 @@ function PetAdventurePage({lv,onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,
   [data-adventure-skill-hand] button{flex:0 0 116px;min-height:54px!important;padding:7px 8px!important;scroll-snap-align:start}
   [data-adventure-skill-hand] button div:first-of-type{font-size:15px!important;margin-bottom:1px!important}
   [data-adventure-skill-hand] button div:nth-of-type(3){display:none}
-  [data-adventure-question]{left:8px!important;right:8px!important;top:124px!important;bottom:auto!important;width:auto!important;max-height:26dvh!important;transform:none!important;padding:9px 10px!important;background:rgba(255,255,255,.88)!important;backdrop-filter:blur(14px);box-shadow:0 10px 28px rgba(0,0,0,.18)}
+  [data-adventure-question]{left:8px!important;right:8px!important;top:124px!important;bottom:auto!important;width:auto!important;max-height:none!important;overflow:visible!important;transform:none!important;padding:9px 10px!important;background:rgba(255,255,255,.88)!important;backdrop-filter:blur(14px);box-shadow:0 10px 28px rgba(0,0,0,.18)}
   [data-adventure-question-title]{font-size:11px!important;margin-bottom:3px!important}
   [data-adventure-question-prompt]{font-size:14px!important;line-height:1.24!important;padding-right:40px!important}
   [data-adventure-question-zh]{font-size:11px!important;margin-top:2px!important}
   [data-adventure-question-audio]{top:8px!important;right:8px!important;padding:0!important;font-size:13px!important;min-height:28px!important;width:30px!important}
   [data-adventure-answers]{gap:5px!important;margin-top:7px!important}
   [data-adventure-answers] button{min-height:34px!important;padding:7px 8px!important;font-size:12px!important}
-  [data-adventure-feedback]{margin-top:7px!important;padding:8px 9px!important}
+  [data-adventure-feedback]{margin-top:7px!important;padding:7px 8px!important;grid-template-columns:minmax(0,1fr) auto!important}
+  [data-adventure-feedback] > div:first-child{font-size:12px!important}
+  [data-adventure-feedback] button{min-height:31px!important;padding:7px 10px!important;font-size:11px!important}
 }
 @media (max-width: 520px){
   [data-pet-adventure-arena]{min-height:calc(100dvh - 108px) !important}
   [data-pet-adventure-controls]{gap:8px}
-  [data-adventure-question]{top:118px!important;max-height:25dvh!important}
+  [data-adventure-question]{top:118px!important}
   [data-adventure-enemy]{width:44%!important;max-width:168px!important}
   [data-adventure-enemy] > div:nth-child(2){font-size:48px!important}
   [data-adventure-team]{bottom:126px!important;width:48%!important}
@@ -5236,7 +5301,7 @@ function PetAdventurePage({lv,onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,
         </button>);
       })}
     </div>
-    <button onClick={startAdventure} disabled={!selectedIds.length} style={{...S.btn,background:selectedIds.length?c.cl:S.bg2,color:selectedIds.length?"#fff":S.t3,width:"100%",padding:"15px",fontSize:16,cursor:selectedIds.length?"pointer":"not-allowed"}}>開始冒險</button>
+    <button onClick={startAdventure} disabled={!selectedIds.length} style={{...S.btn,background:selectedIds.length?(bossReady?"#7C2D12":c.cl):S.bg2,color:selectedIds.length?"#fff":S.t3,width:"100%",padding:"15px",fontSize:16,cursor:selectedIds.length?"pointer":"not-allowed"}}>{bossReady?"挑戰魔王":"開始冒險"} · Lv.{difficultyLevel}{!bossReady?` · 魔王還差 ${clearsToBoss} 輪`:""}</button>
   </div>);
 }
 
