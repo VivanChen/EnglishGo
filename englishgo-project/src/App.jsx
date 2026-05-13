@@ -4837,7 +4837,9 @@ function PetAdventurePage({lv,onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,
 [data-pet-adventure-layout]{display:grid;grid-template-columns:minmax(560px,1fr) minmax(320px,390px);gap:14px;align-items:start}
 [data-pet-adventure-arena]{min-height:520px !important;margin-bottom:0 !important}
 [data-pet-adventure-controls]{display:grid;gap:10px}
+[data-adventure-party]{margin-top:10px!important}
 [data-adventure-skill-hand],[data-adventure-status],[data-adventure-question]{margin-bottom:0 !important}
+[data-adventure-question]{position:absolute;left:18px;right:18px;bottom:92px;z-index:7;background:rgba(255,255,255,.72)!important;backdrop-filter:blur(12px);box-shadow:0 14px 34px rgba(0,0,0,.18)}
 [data-adventure-question]{max-height:440px;overflow:auto}
 [data-adventure-question] button{min-height:42px}
 @media (max-width: 820px){
@@ -4854,7 +4856,7 @@ function PetAdventurePage({lv,onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,
   [data-adventure-skill-hand] button{flex:0 0 116px;min-height:54px!important;padding:7px 8px!important;scroll-snap-align:start}
   [data-adventure-skill-hand] button div:first-of-type{font-size:15px!important;margin-bottom:1px!important}
   [data-adventure-skill-hand] button div:nth-of-type(3){display:none}
-  [data-adventure-question]{max-height:none;padding:10px 11px!important;background:rgba(255,255,255,.95)!important;backdrop-filter:blur(12px);box-shadow:0 10px 28px rgba(0,0,0,.18)}
+  [data-adventure-question]{left:8px!important;right:8px!important;bottom:132px!important;max-height:42dvh!important;padding:10px 11px!important;background:rgba(255,255,255,.86)!important;backdrop-filter:blur(14px);box-shadow:0 10px 28px rgba(0,0,0,.18)}
   [data-adventure-question] > div:first-child{font-size:11px!important;margin-bottom:3px!important}
   [data-adventure-question] > div:nth-of-type(2){font-size:15px!important;line-height:1.28!important}
   [data-adventure-question] > div:nth-of-type(3){font-size:11px!important;margin-top:3px!important}
@@ -4866,6 +4868,7 @@ function PetAdventurePage({lv,onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,
 @media (max-width: 520px){
   [data-pet-adventure-arena]{min-height:calc(100dvh - 108px) !important}
   [data-pet-adventure-controls]{gap:8px}
+  [data-adventure-party]{margin-top:8px!important}
 }
 @media (prefers-reduced-motion: reduce) { [data-pet-adventure-battle] *{animation:none !important} }
 `}</style>
@@ -4911,6 +4914,28 @@ function PetAdventurePage({lv,onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,
         <div data-adventure-dialog style={{position:"absolute",left:12,right:12,bottom:10,padding:"12px 14px",borderRadius:14,background:isBoss?"#3B0A16":"#123047",color:"#fff",border:`3px solid ${isBoss?"#FDE68A":"rgba(255,255,255,.9)"}`,boxShadow:"0 6px 16px rgba(0,0,0,.18)",fontSize:14,fontWeight:900,lineHeight:1.5,animation:"advDialog .2s ease-out"}}>
           {feedback?feedback.message:`${activeDef?.name||"Your pet"} is ready. Pick a skill card, then choose the best English answer.`}
           {!feedback&&<div style={{fontSize:11,fontWeight:700,color:"rgba(255,255,255,.72)",marginTop:3}}>{activeVisual.effect} Skill ready: {activeSkill.name} · {activeSkill.zh}</div>}
+        </div>
+        <div data-adventure-question style={{...S.card,padding:"13px 14px",marginBottom:10}}>
+          <div style={{fontSize:12,color:c.cl,fontWeight:900,marginBottom:6}}>English Challenge</div>
+          <div style={{fontSize:17,fontWeight:900,color:S.t1,lineHeight:1.4}}>{q.q}</div>
+          <div style={{fontSize:13,color:S.t2,marginTop:5}}>{q.zh}</div>
+          <button onClick={()=>speak(q.q)} style={{marginTop:10,border:`1px solid ${S.bd}`,background:S.bg1,borderRadius:999,padding:"7px 12px",fontSize:12,color:S.t2,cursor:"pointer",fontFamily:"inherit"}}>🔊 朗讀題目</button>
+          <div style={{display:"grid",gap:7,marginTop:10}}>
+            {q.choices.map((choice,i)=>{
+              const locked=!!feedback;
+              const isCorrect=i===q.answer;
+              const isPicked=feedback?.choiceIndex===i;
+              const bg=locked&&isCorrect?"#E1F5EE":locked&&isPicked&&!isCorrect?"#FCEBEB":S.bg2;
+              const border=locked&&isCorrect?"2px solid #1D9E75":locked&&isPicked&&!isCorrect?"2px solid #E24B4A":`1px solid ${S.bd}`;
+              return(<button key={choice} onClick={()=>answerQuestion(i)} disabled={locked} style={{padding:"10px 12px",borderRadius:12,border,background:bg,textAlign:"left",fontSize:14,fontWeight:800,color:S.t1,cursor:locked?"default":"pointer",fontFamily:"inherit"}}>{choice}</button>);
+            })}
+          </div>
+          {feedback&&<div style={{marginTop:14,padding:"13px 14px",borderRadius:12,background:feedback.correct?"#E1F5EE":"#FFF3CD",border:`1px solid ${feedback.correct?"#1D9E75":"#EF9F27"}55`}}>
+            <div style={{fontSize:15,fontWeight:900,color:feedback.correct?"#0F6E56":"#856404"}}>{feedback.correct?`答對！造成 ${feedback.damage} 傷害，隊伍回復 ${feedback.heal} HP。`:`答錯了，敵人反擊造成 ${feedback.damage} 傷害。`}</div>
+            <div style={{fontSize:12,color:S.t2,marginTop:5}}>重點：{feedback.tip}</div>
+            {!feedback.stageClear&&battle.teamHp>0&&<button onClick={continueBattle} style={{...S.btn,background:c.cl,color:"#fff",marginTop:10,fontSize:13}}>下一題</button>}
+            {feedback.stageClear&&!feedback.last&&<button onClick={nextStage} style={{...S.btn,background:c.cl,color:"#fff",marginTop:10,fontSize:13}}>前往下一關</button>}
+          </div>}
         </div>
       </div>
       <div data-pet-adventure-controls>
@@ -4969,31 +4994,9 @@ function PetAdventurePage({lv,onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,
           <span style={{padding:"4px 8px",borderRadius:999,background:"#FCEBEB",color:"#B42318"}}>失誤 {battle.miss}</span>
         </div>
       </div>
-      <div data-adventure-question style={{...S.card,padding:"13px 14px",marginBottom:10}}>
-        <div style={{fontSize:12,color:c.cl,fontWeight:900,marginBottom:6}}>English Challenge</div>
-        <div style={{fontSize:17,fontWeight:900,color:S.t1,lineHeight:1.4}}>{q.q}</div>
-        <div style={{fontSize:13,color:S.t2,marginTop:5}}>{q.zh}</div>
-        <button onClick={()=>speak(q.q)} style={{marginTop:10,border:`1px solid ${S.bd}`,background:S.bg1,borderRadius:999,padding:"7px 12px",fontSize:12,color:S.t2,cursor:"pointer",fontFamily:"inherit"}}>🔊 朗讀題目</button>
-        <div style={{display:"grid",gap:7,marginTop:10}}>
-          {q.choices.map((choice,i)=>{
-            const locked=!!feedback;
-            const isCorrect=i===q.answer;
-            const isPicked=feedback?.choiceIndex===i;
-            const bg=locked&&isCorrect?"#E1F5EE":locked&&isPicked&&!isCorrect?"#FCEBEB":S.bg2;
-            const border=locked&&isCorrect?"2px solid #1D9E75":locked&&isPicked&&!isCorrect?"2px solid #E24B4A":`1px solid ${S.bd}`;
-            return(<button key={choice} onClick={()=>answerQuestion(i)} disabled={locked} style={{padding:"10px 12px",borderRadius:12,border,background:bg,textAlign:"left",fontSize:14,fontWeight:800,color:S.t1,cursor:locked?"default":"pointer",fontFamily:"inherit"}}>{choice}</button>);
-          })}
-        </div>
-        {feedback&&<div style={{marginTop:14,padding:"13px 14px",borderRadius:12,background:feedback.correct?"#E1F5EE":"#FFF3CD",border:`1px solid ${feedback.correct?"#1D9E75":"#EF9F27"}55`}}>
-          <div style={{fontSize:15,fontWeight:900,color:feedback.correct?"#0F6E56":"#856404"}}>{feedback.correct?`答對！造成 ${feedback.damage} 傷害，隊伍回復 ${feedback.heal} HP。`:`答錯了，敵人反擊造成 ${feedback.damage} 傷害。`}</div>
-          <div style={{fontSize:12,color:S.t2,marginTop:5}}>重點：{feedback.tip}</div>
-          {!feedback.stageClear&&battle.teamHp>0&&<button onClick={continueBattle} style={{...S.btn,background:c.cl,color:"#fff",marginTop:10,fontSize:13}}>下一題</button>}
-          {feedback.stageClear&&!feedback.last&&<button onClick={nextStage} style={{...S.btn,background:c.cl,color:"#fff",marginTop:10,fontSize:13}}>前往下一關</button>}
-        </div>}
       </div>
       </div>
-      </div>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(120px,1fr))",gap:8}}>
+      <div data-adventure-party style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(120px,1fr))",gap:8,marginTop:10}}>
         {selectedPets.map(p=>{const def=getAdventurePetDef(p);const skill=getSelectedPetAdventureSkill(p,run.skillLoadout);const visual=PET_ADVENTURE_SKILL_VISUALS[skill.id]||PET_ADVENTURE_SKILL_VISUALS.wordSpark;const active=p.petId===activePet?.petId;return(<div key={p.petId} style={{...S.card,padding:"10px",display:"flex",alignItems:"center",gap:8,border:`2px solid ${active?visual.color:S.bd}`,background:active?visual.bg:S.bg1,animation:active&&!feedback?"advCardPulse 1.1s ease-in-out infinite":"none"}}>
           <PixelPet petId={p.petId} stage={getPetStage(p)} size={48} animate={false}/>
           <div style={{minWidth:0}}><div style={{fontSize:12,fontWeight:900,color:S.t1}}>{def?.name||p.petId}</div><div style={{fontSize:11,color:visual.color,fontWeight:900}}>{skill.emoji} {skill.name}</div></div>
