@@ -967,6 +967,123 @@ const PET_ADVENTURE_QUESTIONS={
   ],
 };
 
+const PET_ADVENTURE_EXTRA_QUESTIONS={
+  elementary:[
+    {id:"el-go-school",q:"Complete: I ___ to school every day.",zh:"完成句子：我每天去上學。",choices:["go","goes","going","went"],answer:0,tip:"I go to school."},
+    {id:"el-big",q:"Which word means big?",zh:"哪一個字是「大的」？",choices:["big","thin","short","cold"],answer:0,tip:"big = 大的"},
+    {id:"el-hot-opposite",q:"What is the opposite of hot?",zh:"hot 的相反詞是什麼？",choices:["cold","warm","sunny","dry"],answer:0,tip:"hot / cold"},
+    {id:"el-pencil",q:"Choose the correct sentence.",zh:"選出正確句子。",choices:["This is my pencil.","This my pencil.","This are my pencil.","This is I pencil."],answer:0,tip:"This is my..."},
+    {id:"el-has-dog",q:"Complete: He ___ a dog.",zh:"完成句子：他有一隻狗。",choices:["has","have","having","to have"],answer:0,tip:"He has..."},
+    {id:"el-animal",q:"Which word is an animal?",zh:"哪一個字是動物？",choices:["rabbit","window","breakfast","pencil"],answer:0,tip:"rabbit = 兔子"},
+    {id:"el-eat-apples",q:"Complete: I like to ___ apples.",zh:"完成句子：我喜歡吃蘋果。",choices:["eat","sleep","open","write"],answer:0,tip:"eat apples"},
+    {id:"el-morning",q:"Which word means morning?",zh:"哪一個字是「早上」？",choices:["morning","evening","winter","minute"],answer:0,tip:"morning = 早上"},
+    {id:"el-there-are",q:"Complete: There ___ three books.",zh:"完成句子：有三本書。",choices:["are","is","am","be"],answer:0,tip:"There are + plural noun."},
+    {id:"el-good-night",q:"What do you say before sleep?",zh:"睡覺前可以說什麼？",choices:["Good night.","Good morning.","Thank you.","See you at school."],answer:0,tip:"Good night. = 晚安。"},
+    {id:"el-listen",q:"Which word means listen?",zh:"哪一個字是「聽」？",choices:["listen","draw","climb","carry"],answer:0,tip:"listen = 聽"},
+    {id:"el-can-run",q:"Complete: She can ___ fast.",zh:"完成句子：她可以跑很快。",choices:["run","runs","running","ran"],answer:0,tip:"can + base verb"},
+    {id:"el-they-are",q:"Choose the correct sentence.",zh:"選出正確句子。",choices:["They are my friends.","They is my friends.","They my friends are.","They am my friends."],answer:0,tip:"They are..."},
+    {id:"el-color",q:"Which word is a color?",zh:"哪一個字是顏色？",choices:["yellow","family","music","river"],answer:0,tip:"yellow = 黃色"},
+    {id:"el-under",q:"Complete: The cat is ___ the chair.",zh:"完成句子：貓在椅子下面。",choices:["under","sing","hungry","teacher"],answer:0,tip:"under = 在下面"},
+    {id:"el-family",q:"Which word means family?",zh:"哪一個字是「家庭」？",choices:["family","forest","flower","fairy"],answer:0,tip:"family = 家庭"},
+    {id:"el-water",q:"What can you drink?",zh:"哪一個可以喝？",choices:["water","chair","stone","clock"],answer:0,tip:"drink water"},
+    {id:"el-study",q:"Complete: I ___ English after school.",zh:"完成句子：我放學後學英文。",choices:["study","studies","studying","student"],answer:0,tip:"I study English."},
+    {id:"el-teacher",q:"Which word means teacher?",zh:"哪一個字是「老師」？",choices:["teacher","kitchen","garden","shadow"],answer:0,tip:"teacher = 老師"},
+    {id:"el-name-question",q:"Which is a question?",zh:"哪一句是問句？",choices:["What is your name?","My name is Lily.","I am fine.","This is a book."],answer:0,tip:"Question sentences often use ?"},
+    {id:"el-place",q:"Which one is a place?",zh:"哪一個是地點？",choices:["school","happy","slowly","blue"],answer:0,tip:"school = 學校"},
+    {id:"el-tall",q:"Complete: My brother is ___.",zh:"完成句子：我的哥哥很高。",choices:["tall","table","run","eat"],answer:0,tip:"tall = 高的"},
+    {id:"el-small",q:"Which word means small?",zh:"哪一個字是「小的」？",choices:["small","strong","sunny","sweet"],answer:0,tip:"small = 小的"},
+    {id:"el-we-are",q:"Complete: We ___ happy.",zh:"完成句子：我們很開心。",choices:["are","is","am","be"],answer:0,tip:"We are..."},
+    {id:"el-every-day",q:"Which phrase means every day?",zh:"哪個片語是「每天」？",choices:["every day","last night","next year","one time"],answer:0,tip:"every day = 每天"},
+  ],
+  junior:[
+    {id:"jr-while-reading",q:"Choose the correct sentence.",zh:"選出正確句子。",choices:["I was reading when he called.","I read when he was called.","I was read when he called.","I reading when he called."],answer:0,tip:"was/were + V-ing"},
+    {id:"jr-because",q:"Complete: I stayed home ___ I was sick.",zh:"完成句子：我待在家，因為我生病了。",choices:["because","but","although","before"],answer:0,tip:"because gives a reason."},
+    {id:"jr-passive",q:"Choose the passive sentence.",zh:"選出被動語態句子。",choices:["The window was broken by the wind.","The wind broke the window.","The window breaks the wind.","The wind was window broken."],answer:0,tip:"be + past participle"},
+    {id:"jr-relative",q:"Complete: The boy ___ sits near me is Tom.",zh:"完成句子：坐在我附近的男孩是 Tom。",choices:["who","where","when","what"],answer:0,tip:"who describes a person."},
+    {id:"jr-used-to",q:"Complete: I ___ play soccer after school.",zh:"完成句子：我以前放學後常踢足球。",choices:["used to","use to","am used","was used"],answer:0,tip:"used to + base verb"},
+    {id:"jr-have-to",q:"Which sentence means a rule or duty?",zh:"哪一句表示規定或責任？",choices:["We have to wear uniforms.","We can wear uniforms.","We like uniforms.","We wore uniforms yesterday."],answer:0,tip:"have to = 必須"},
+    {id:"jr-enough",q:"Complete: The box is light ___ to carry.",zh:"完成句子：這箱子夠輕，可以搬。",choices:["enough","too","very","so"],answer:0,tip:"adjective + enough"},
+    {id:"jr-too-to",q:"Complete: The tea is too hot ___ drink.",zh:"完成句子：茶太燙，不能喝。",choices:["to","for","with","at"],answer:0,tip:"too + adj. + to"},
+    {id:"jr-since",q:"Complete: I have known her ___ 2024.",zh:"完成句子：我從 2024 年就認識她。",choices:["since","for","during","until"],answer:0,tip:"since + starting point"},
+    {id:"jr-for-two-years",q:"Complete: They have lived here ___ two years.",zh:"完成句子：他們住在這裡兩年了。",choices:["for","since","ago","during"],answer:0,tip:"for + length of time"},
+    {id:"jr-adjective",q:"Which word is an adjective?",zh:"哪一個字是形容詞？",choices:["careful","carefully","care","caringly"],answer:0,tip:"careful describes a noun."},
+    {id:"jr-comparative",q:"Complete: This road is ___ than that one.",zh:"完成句子：這條路比那條路長。",choices:["longer","long","longest","more long"],answer:0,tip:"longer than"},
+    {id:"jr-superlative",q:"Complete: Mina is the ___ student in class.",zh:"完成句子：Mina 是班上最高的學生。",choices:["tallest","taller","tall","more tall"],answer:0,tip:"the + superlative"},
+    {id:"jr-although",q:"Complete: ___ it was raining, we went out.",zh:"完成句子：雖然下雨，我們還是出門。",choices:["Although","Because","So","When"],answer:0,tip:"Although shows contrast."},
+    {id:"jr-vocab-whisper",q:"What does whisper mean?",zh:"whisper 是什麼意思？",choices:["speak very quietly","run very quickly","look very angry","sleep very late"],answer:0,tip:"whisper = 低聲說"},
+    {id:"jr-vocab-shadow",q:"Which word is closest to shadow?",zh:"哪個字最接近 shadow？",choices:["dark shape","bright light","loud voice","warm fire"],answer:0,tip:"shadow = 影子"},
+    {id:"jr-vocab-ancient",q:"What does ancient mean?",zh:"ancient 是什麼意思？",choices:["very old","very fast","very clean","very simple"],answer:0,tip:"ancient = 古老的"},
+    {id:"jr-vocab-guide",q:"Complete: A map can ___ travelers.",zh:"完成句子：地圖可以引導旅人。",choices:["guide","borrow","hide","drop"],answer:0,tip:"guide = 引導"},
+    {id:"jr-gerund",q:"Complete: She enjoys ___ stories.",zh:"完成句子：她喜歡讀故事。",choices:["reading","read","to reads","reads"],answer:0,tip:"enjoy + V-ing"},
+    {id:"jr-infinitive",q:"Complete: I want ___ English songs.",zh:"完成句子：我想唱英文歌。",choices:["to sing","singing","sang","sings"],answer:0,tip:"want + to V"},
+  ],
+  senior:[
+    {id:"sr-despite",q:"Choose the best connector.",zh:"選出最適合的連接詞。",choices:["Despite the rain, the game continued.","Because the rain, the game continued.","Although the rain, the game continued.","However the rain, the game continued."],answer:0,tip:"Despite + noun phrase"},
+    {id:"sr-emphasis",q:"Which phrase means especially important?",zh:"哪個片語表示特別重要？",choices:["of great importance","out of place","in a hurry","by mistake"],answer:0,tip:"of great importance = very important"},
+    {id:"sr-causative",q:"Complete: The teacher had us ___ the essay again.",zh:"完成句子：老師要我們再寫一次作文。",choices:["write","wrote","writing","to write"],answer:0,tip:"have + object + base verb"},
+    {id:"sr-participle",q:"Choose the correct sentence.",zh:"選出正確句子。",choices:["Feeling tired, Kevin went home early.","Felt tired, Kevin went home early.","Feel tired, Kevin went home early.","To feeling tired, Kevin went home early."],answer:0,tip:"V-ing phrase can show reason."},
+    {id:"sr-inference",q:"What does infer mean?",zh:"infer 是什麼意思？",choices:["guess from evidence","copy every word","refuse an idea","repeat loudly"],answer:0,tip:"infer = 推論"},
+    {id:"sr-contrast",q:"Choose a word that shows contrast.",zh:"選出表示對比的字。",choices:["nevertheless","therefore","similarly","meanwhile"],answer:0,tip:"nevertheless = 然而"},
+    {id:"sr-condition",q:"Complete: Unless you practice, you ___ improve.",zh:"完成句子：除非你練習，否則不會進步。",choices:["will not","would not have","did not","are not"],answer:0,tip:"Unless + present, will..."},
+    {id:"sr-noun-clause",q:"Choose the correct sentence.",zh:"選出正確句子。",choices:["I do not know what he wants.","I do not know what does he want.","I do not know what wants he.","I do not know he what wants."],answer:0,tip:"Noun clause uses statement word order."},
+    {id:"sr-concise",q:"Which word is closest to concise?",zh:"哪個字最接近 concise？",choices:["brief and clear","long and confusing","loud and funny","slow and careful"],answer:0,tip:"concise = 簡潔的"},
+    {id:"sr-assumption",q:"What does assumption mean?",zh:"assumption 是什麼意思？",choices:["something believed without proof","a finished project","a kind answer","a public event"],answer:0,tip:"assumption = 假設"},
+  ],
+};
+
+const PET_ADVENTURE_RECENT_QUESTION_KEY="englishgo_pet_adventure_recent_questions";
+
+function getAdventureQuestionSource(lv){
+  return [
+    ...(PET_ADVENTURE_QUESTIONS[lv]||PET_ADVENTURE_QUESTIONS.elementary),
+    ...(PET_ADVENTURE_EXTRA_QUESTIONS[lv]||PET_ADVENTURE_EXTRA_QUESTIONS.elementary||[]),
+  ];
+}
+
+function getAdventureQuestionKey(q){
+  return String(q?.id||q?.q||"").toLowerCase().replace(/\s+/g," ").trim();
+}
+
+function uniqueAdventureQuestions(questions){
+  const seen=new Set();
+  return questions.filter(q=>{
+    const key=getAdventureQuestionKey(q);
+    if(!key||seen.has(key))return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function keepLatestAdventureQuestionKeys(keys,limit=18){
+  const seen=new Set();
+  const result=[];
+  for(let i=keys.length-1;i>=0;i--){
+    const key=String(keys[i]||"").trim();
+    if(!key||seen.has(key))continue;
+    seen.add(key);
+    result.unshift(key);
+    if(result.length>=limit)break;
+  }
+  return result;
+}
+
+function getRecentAdventureQuestionKeys(){
+  try{
+    if(typeof localStorage==="undefined")return[];
+    const raw=JSON.parse(localStorage.getItem(PET_ADVENTURE_RECENT_QUESTION_KEY)||"[]");
+    return Array.isArray(raw)?keepLatestAdventureQuestionKeys(raw):[];
+  }catch{
+    return[];
+  }
+}
+
+function saveRecentAdventureQuestionKeys(keys){
+  try{
+    if(typeof localStorage==="undefined")return;
+    localStorage.setItem(PET_ADVENTURE_RECENT_QUESTION_KEY,JSON.stringify(keepLatestAdventureQuestionKeys(keys)));
+  }catch{}
+}
+
 function getAdventurePetDef(pet){
   return PETS[pet?.rarity]?.find(p=>p.id===pet?.petId)||null;
 }
@@ -1016,12 +1133,20 @@ function shuffleAdventureQuestion(q){
   return {...q,choices:rows.map(r=>r.choice),answer:rows.findIndex(r=>r.correct)};
 }
 
-function drawAdventureQuestions(lv,count){
-  const source=PET_ADVENTURE_QUESTIONS[lv]||PET_ADVENTURE_QUESTIONS.elementary;
-  const pool=[...source].sort(()=>Math.random()-.5);
+function drawAdventureQuestions(lv,count,usedKeys=new Set(),pickedKeys=[]){
+  const source=uniqueAdventureQuestions(getAdventureQuestionSource(lv));
+  const fresh=source.filter(q=>!usedKeys.has(getAdventureQuestionKey(q)));
+  const fallback=source.filter(q=>fresh.every(item=>getAdventureQuestionKey(item)!==getAdventureQuestionKey(q)));
+  const pool=[...fresh].sort(()=>Math.random()-.5);
+  if(pool.length<count)pool.push(...fallback.sort(()=>Math.random()-.5));
   const picked=[];
-  for(let i=0;i<count;i++){
-    picked.push(shuffleAdventureQuestion(pool[i%pool.length]));
+  for(let i=0;i<Math.min(count,pool.length);i++){
+    const raw=pool[i];
+    if(!raw)break;
+    const key=getAdventureQuestionKey(raw);
+    usedKeys.add(key);
+    pickedKeys.push(key);
+    picked.push(shuffleAdventureQuestion(raw));
   }
   return picked;
 }
@@ -1029,24 +1154,29 @@ function drawAdventureQuestions(lv,count){
 function buildPetAdventureStages(teamPets,lv){
   const teamPower=teamPets.reduce((sum,p)=>sum+getPetAdventurePower(p),0);
   const stages=[...PET_ADVENTURE_STAGES].sort(()=>Math.random()-.5).slice(0,3);
+  const recentQuestionKeys=getRecentAdventureQuestionKeys();
+  const usedQuestions=new Set(recentQuestionKeys);
+  const pickedQuestionKeys=[];
   const normalStages=stages.map((stage,i)=>{
     const maxHp=Math.round(82+i*34+teamPower*.22);
     return {
       ...stage,
-      questions:drawAdventureQuestions(lv,3),
+      questions:drawAdventureQuestions(lv,6,usedQuestions,pickedQuestionKeys),
       maxHp,
       attack:Math.round(14+i*7+teamPower*.035),
     };
   });
-  return [
+  const adventureStages=[
     ...normalStages,
     {
       ...PET_ADVENTURE_BOSS,
-      questions:drawAdventureQuestions(lv,5),
+      questions:drawAdventureQuestions(lv,10,usedQuestions,pickedQuestionKeys),
       maxHp:Math.round(220+teamPower*.52),
       attack:Math.round(34+teamPower*.07),
     },
   ];
+  saveRecentAdventureQuestionKeys([...recentQuestionKeys,...pickedQuestionKeys]);
+  return adventureStages;
 }
 
 function createSpecialAdventureEgg(){
@@ -4834,41 +4964,67 @@ function PetAdventurePage({lv,onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,
 @keyframes advSkillAura {0%{transform:scale(.7);opacity:.15}55%{transform:scale(1.18);opacity:.65}100%{transform:scale(1.45);opacity:0}}
 @keyframes advScreenFlash {0%{opacity:0}20%{opacity:.62}100%{opacity:0}}
 @keyframes advCardPulse {0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
-[data-pet-adventure-layout]{display:grid;grid-template-columns:minmax(560px,1fr) minmax(320px,390px);gap:14px;align-items:start}
+[data-pet-adventure-layout]{display:grid;grid-template-columns:minmax(640px,1fr) minmax(300px,360px);gap:14px;align-items:start}
 [data-pet-adventure-arena]{min-height:520px !important;margin-bottom:0 !important}
 [data-pet-adventure-controls]{display:grid;gap:10px}
-[data-adventure-party]{margin-top:10px!important}
+[data-adventure-party]{margin-top:6px!important}
 [data-adventure-skill-hand],[data-adventure-status],[data-adventure-question]{margin-bottom:0 !important}
-[data-adventure-question]{position:absolute;left:18px;right:18px;bottom:92px;z-index:7;background:rgba(255,255,255,.72)!important;backdrop-filter:blur(12px);box-shadow:0 14px 34px rgba(0,0,0,.18)}
-[data-adventure-question]{max-height:440px;overflow:auto}
-[data-adventure-question] button{min-height:42px}
+[data-adventure-status]{display:none!important}
+[data-adventure-question]{position:absolute;left:18px;right:auto;top:64px;width:min(390px,42%);z-index:7;background:rgba(255,255,255,.76)!important;backdrop-filter:blur(14px);box-shadow:0 14px 34px rgba(0,0,0,.18)}
+[data-adventure-question]{max-height:240px;overflow:auto;border:1px solid rgba(255,255,255,.72)!important}
+[data-adventure-question-title]{display:none!important}
+[data-adventure-question-prompt]{font-size:16px!important;line-height:1.28!important}
+[data-adventure-question-zh]{font-size:11px!important;margin-top:3px!important;opacity:.72}
+[data-adventure-question-audio]{position:absolute;top:8px;right:8px;margin-top:0!important;min-height:30px!important;width:32px!important;padding:0!important;font-size:14px!important;background:rgba(255,255,255,.82)!important}
+[data-adventure-answers]{display:grid!important;grid-template-columns:1fr 1fr;gap:6px!important;margin-top:8px!important}
+[data-adventure-answers] button{min-height:36px!important;padding:8px 10px!important;font-size:13px!important}
+[data-adventure-feedback]{margin-top:8px!important;padding:9px 10px!important}
+[data-adventure-skill-hand] button{min-height:72px!important;padding:9px 10px!important}
+[data-adventure-skill-hand] button div:first-of-type{font-size:16px!important;margin-bottom:2px!important}
+[data-adventure-skill-hand] button div:nth-of-type(3){display:none!important}
+[data-adventure-skill-hand] > div:first-child{margin-bottom:8px!important}
+[data-adventure-skill-hand] > div:first-child > div:first-child > div:first-child{font-size:14px!important}
+[data-pet-adventure-controls]{position:sticky;top:10px}
 @media (max-width: 820px){
   [data-pet-adventure-layout]{display:grid;grid-template-columns:1fr;grid-template-rows:1fr;position:relative}
   [data-pet-adventure-arena]{grid-area:1/1;min-height:calc(100dvh - 118px) !important;margin-bottom:0 !important}
-  [data-pet-adventure-controls]{grid-area:1/1;align-self:end;z-index:8;padding:8px;gap:6px;max-height:58dvh;overflow:auto;overscroll-behavior:contain}
-  [data-adventure-dialog]{top:48px!important;bottom:auto!important;left:10px!important;right:10px!important;padding:8px 10px!important;font-size:12px!important;border-width:2px!important}
+  [data-pet-adventure-controls]{position:relative;top:auto;grid-area:1/1;align-self:end;z-index:8;padding:8px;gap:6px;max-height:44dvh;overflow:auto;overscroll-behavior:contain}
+  [data-adventure-enemy]{right:10px!important;top:12px!important;width:46%!important;max-width:188px!important}
+  [data-adventure-enemy] > div:first-child{padding:7px 9px!important}
+  [data-adventure-enemy] > div:nth-child(2){font-size:52px!important;margin-top:3px!important}
+  [data-adventure-team]{left:10px!important;bottom:132px!important;width:47%!important;max-width:190px!important}
+  [data-adventure-team] > div:first-child{min-height:72px!important}
+  [data-adventure-team] > div:first-child > div{flex-basis:54px!important}
+  [data-adventure-team] > div:nth-child(2){padding:7px 9px!important}
+  [data-adventure-dialog]{left:8px!important;right:8px!important;bottom:80px!important;padding:7px 9px!important;font-size:11px!important;border-width:2px!important;opacity:.92}
   [data-adventure-dialog] div{display:none}
-  [data-adventure-status]{display:none}
   [data-adventure-skill-hand]{padding:8px!important;background:rgba(255,255,255,.92)!important;backdrop-filter:blur(10px);box-shadow:0 8px 24px rgba(0,0,0,.12)}
   [data-adventure-skill-hand] > div:first-child{margin-bottom:6px!important}
-  [data-adventure-skill-hand] > div:first-child > div:first-child > div:last-child{display:none}
   [data-adventure-skill-hand] > div:last-child{display:flex!important;gap:7px!important;overflow-x:auto;padding-bottom:2px;scroll-snap-type:x mandatory}
   [data-adventure-skill-hand] button{flex:0 0 116px;min-height:54px!important;padding:7px 8px!important;scroll-snap-align:start}
   [data-adventure-skill-hand] button div:first-of-type{font-size:15px!important;margin-bottom:1px!important}
   [data-adventure-skill-hand] button div:nth-of-type(3){display:none}
-  [data-adventure-question]{left:8px!important;right:8px!important;bottom:132px!important;max-height:42dvh!important;padding:10px 11px!important;background:rgba(255,255,255,.86)!important;backdrop-filter:blur(14px);box-shadow:0 10px 28px rgba(0,0,0,.18)}
-  [data-adventure-question] > div:first-child{font-size:11px!important;margin-bottom:3px!important}
-  [data-adventure-question] > div:nth-of-type(2){font-size:15px!important;line-height:1.28!important}
-  [data-adventure-question] > div:nth-of-type(3){font-size:11px!important;margin-top:3px!important}
-  [data-adventure-question] > button{margin-top:6px!important;padding:5px 9px!important;font-size:11px!important;min-height:30px!important}
-  [data-adventure-question] > div:nth-of-type(4){display:grid!important;grid-template-columns:1fr 1fr;gap:6px!important;margin-top:7px!important}
-  [data-adventure-question] > div:nth-of-type(4) button{min-height:38px!important;padding:8px 9px!important;font-size:12px!important}
-  [data-adventure-question] > div:last-child{margin-top:8px!important;padding:9px 10px!important}
+  [data-adventure-question]{left:8px!important;right:8px!important;top:124px!important;bottom:auto!important;width:auto!important;max-height:26dvh!important;transform:none!important;padding:9px 10px!important;background:rgba(255,255,255,.88)!important;backdrop-filter:blur(14px);box-shadow:0 10px 28px rgba(0,0,0,.18)}
+  [data-adventure-question-title]{font-size:11px!important;margin-bottom:3px!important}
+  [data-adventure-question-prompt]{font-size:14px!important;line-height:1.24!important;padding-right:40px!important}
+  [data-adventure-question-zh]{font-size:11px!important;margin-top:2px!important}
+  [data-adventure-question-audio]{top:8px!important;right:8px!important;padding:0!important;font-size:13px!important;min-height:28px!important;width:30px!important}
+  [data-adventure-answers]{gap:5px!important;margin-top:7px!important}
+  [data-adventure-answers] button{min-height:34px!important;padding:7px 8px!important;font-size:12px!important}
+  [data-adventure-feedback]{margin-top:7px!important;padding:8px 9px!important}
 }
 @media (max-width: 520px){
   [data-pet-adventure-arena]{min-height:calc(100dvh - 108px) !important}
   [data-pet-adventure-controls]{gap:8px}
-  [data-adventure-party]{margin-top:8px!important}
+  [data-adventure-question]{top:118px!important;max-height:25dvh!important}
+  [data-adventure-enemy]{width:44%!important;max-width:168px!important}
+  [data-adventure-enemy] > div:nth-child(2){font-size:48px!important}
+  [data-adventure-team]{bottom:126px!important;width:48%!important}
+  [data-adventure-party]{margin-top:6px!important;grid-template-columns:repeat(3,minmax(0,1fr))!important}
+  [data-adventure-party] > div{padding:7px!important;gap:5px!important}
+  [data-adventure-party] > div > div:first-child{transform:scale(.78);transform-origin:left center}
+  [data-adventure-party] > div > div:last-child div:first-child{font-size:10px!important}
+  [data-adventure-party] > div > div:last-child div:last-child{font-size:9px!important}
 }
 @media (prefers-reduced-motion: reduce) { [data-pet-adventure-battle] *{animation:none !important} }
 `}</style>
@@ -4880,7 +5036,7 @@ function PetAdventurePage({lv,onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,
         <div style={{position:"absolute",inset:0,background:isBoss?"radial-gradient(circle at 72% 24%, rgba(248,113,113,.35), transparent 30%), radial-gradient(circle at 22% 78%, rgba(124,58,237,.22), transparent 36%)":"radial-gradient(circle at 74% 24%, rgba(255,255,255,.85), transparent 28%), radial-gradient(circle at 20% 76%, rgba(15,110,86,.12), transparent 32%)"}}/>
         {isBoss&&<div style={{position:"absolute",left:14,top:12,zIndex:1,display:"flex",gap:7,alignItems:"center",fontSize:12,fontWeight:1000,color:"#FDE68A",background:"rgba(127,29,29,.78)",border:"1px solid rgba(253,230,138,.45)",borderRadius:999,padding:"6px 10px",boxShadow:"0 0 18px rgba(220,38,38,.35)"}}>👑 BOSS APPEARED · 連勝 3 關後出現</div>}
         {feedback&&<div key={`flash-${feedback.effectKey}`} style={{position:"absolute",inset:0,background:`radial-gradient(circle at 60% 42%, ${activeVisual.glow}, transparent 42%)`,animation:"advScreenFlash .5s ease-out forwards",pointerEvents:"none"}}/>}
-        <div style={{position:"absolute",right:18,top:18,width:"42%",maxWidth:260}}>
+        <div data-adventure-enemy style={{position:"absolute",right:18,top:18,width:"42%",maxWidth:260}}>
           <div style={{...S.card,padding:"10px 12px",background:isBoss?"rgba(254,242,242,.94)":"rgba(255,255,255,.88)",border:`2px solid ${isBoss?"#DC2626":S.bd}`}}>
             <div style={{display:"flex",justifyContent:"space-between",gap:8,alignItems:"center",fontSize:12,fontWeight:900,color:S.t1}}>
               <span>{stage.enemy}</span><span>Lv.{Math.max(5,8+battle.stageIndex*7)}</span>
@@ -4890,7 +5046,7 @@ function PetAdventurePage({lv,onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,
           <div key={`enemy-${feedback?.effectKey||battle.stageIndex}`} style={{fontSize:isBoss?96:70,textAlign:"center",marginTop:isBoss?14:8,filter:isBoss?"drop-shadow(0 0 20px rgba(248,113,113,.72)) drop-shadow(0 16px 14px rgba(0,0,0,.38))":"drop-shadow(0 12px 10px rgba(0,0,0,.16))",animation:feedback?.correct?"advEnemyHit .38s ease-in-out":"none"}}>{enemyIcon}</div>
           {feedback?.correct&&<div key={`dmg-${feedback.effectKey}`} style={{position:"absolute",right:"38%",top:82,fontSize:20,fontWeight:1000,color:"#E24B4A",textShadow:"0 2px 0 #fff",animation:"advDamagePop .8s ease-out forwards"}}>-{feedback.damage}</div>}
         </div>
-        <div style={{position:"absolute",left:14,bottom:74,width:"50%",maxWidth:320}}>
+        <div data-adventure-team style={{position:"absolute",left:14,bottom:74,width:"50%",maxWidth:320}}>
           <div style={{display:"flex",alignItems:"flex-end",gap:4,minHeight:100}}>
             {selectedPets.map((p,i)=>{
               const isActive=p.petId===activePet?.petId;
@@ -4912,15 +5068,14 @@ function PetAdventurePage({lv,onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,
           <div key={`skill-${feedback.effectKey}`} style={{position:"absolute",left:"46%",top:"42%",fontSize:58,color:activeVisual.color,filter:"drop-shadow(0 8px 10px rgba(0,0,0,.2))",animation:"advSkillFly .75s ease-out forwards",pointerEvents:"none"}}>{feedback.correct?activeVisual.effect:"💥"}</div>
         </>}
         <div data-adventure-dialog style={{position:"absolute",left:12,right:12,bottom:10,padding:"12px 14px",borderRadius:14,background:isBoss?"#3B0A16":"#123047",color:"#fff",border:`3px solid ${isBoss?"#FDE68A":"rgba(255,255,255,.9)"}`,boxShadow:"0 6px 16px rgba(0,0,0,.18)",fontSize:14,fontWeight:900,lineHeight:1.5,animation:"advDialog .2s ease-out"}}>
-          {feedback?feedback.message:`${activeDef?.name||"Your pet"} is ready. Pick a skill card, then choose the best English answer.`}
-          {!feedback&&<div style={{fontSize:11,fontWeight:700,color:"rgba(255,255,255,.72)",marginTop:3}}>{activeVisual.effect} Skill ready: {activeSkill.name} · {activeSkill.zh}</div>}
+          {feedback?feedback.message:"選技能，答題攻擊。"}
         </div>
-        <div data-adventure-question style={{...S.card,padding:"13px 14px",marginBottom:10}}>
-          <div style={{fontSize:12,color:c.cl,fontWeight:900,marginBottom:6}}>English Challenge</div>
-          <div style={{fontSize:17,fontWeight:900,color:S.t1,lineHeight:1.4}}>{q.q}</div>
-          <div style={{fontSize:13,color:S.t2,marginTop:5}}>{q.zh}</div>
-          <button onClick={()=>speak(q.q)} style={{marginTop:10,border:`1px solid ${S.bd}`,background:S.bg1,borderRadius:999,padding:"7px 12px",fontSize:12,color:S.t2,cursor:"pointer",fontFamily:"inherit"}}>🔊 朗讀題目</button>
-          <div style={{display:"grid",gap:7,marginTop:10}}>
+        <div data-adventure-question style={{...S.card,padding:"12px 13px",marginBottom:10}}>
+          <div data-adventure-question-title style={{fontSize:12,color:c.cl,fontWeight:900,marginBottom:6}}>English Challenge</div>
+          <div data-adventure-question-prompt style={{fontSize:17,fontWeight:900,color:S.t1,lineHeight:1.4}}>{q.q}</div>
+          <div data-adventure-question-zh style={{fontSize:13,color:S.t2,marginTop:5}}>{q.zh}</div>
+          <button data-adventure-question-audio aria-label="朗讀題目" title="朗讀題目" onClick={()=>speak(q.q)} style={{marginTop:10,border:`1px solid ${S.bd}`,background:S.bg1,borderRadius:999,padding:"7px 12px",fontSize:12,color:S.t2,cursor:"pointer",fontFamily:"inherit"}}>🔊</button>
+          <div data-adventure-answers style={{display:"grid",gap:7,marginTop:10}}>
             {q.choices.map((choice,i)=>{
               const locked=!!feedback;
               const isCorrect=i===q.answer;
@@ -4930,7 +5085,7 @@ function PetAdventurePage({lv,onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,
               return(<button key={choice} onClick={()=>answerQuestion(i)} disabled={locked} style={{padding:"10px 12px",borderRadius:12,border,background:bg,textAlign:"left",fontSize:14,fontWeight:800,color:S.t1,cursor:locked?"default":"pointer",fontFamily:"inherit"}}>{choice}</button>);
             })}
           </div>
-          {feedback&&<div style={{marginTop:14,padding:"13px 14px",borderRadius:12,background:feedback.correct?"#E1F5EE":"#FFF3CD",border:`1px solid ${feedback.correct?"#1D9E75":"#EF9F27"}55`}}>
+          {feedback&&<div data-adventure-feedback style={{marginTop:14,padding:"13px 14px",borderRadius:12,background:feedback.correct?"#E1F5EE":"#FFF3CD",border:`1px solid ${feedback.correct?"#1D9E75":"#EF9F27"}55`}}>
             <div style={{fontSize:15,fontWeight:900,color:feedback.correct?"#0F6E56":"#856404"}}>{feedback.correct?`答對！造成 ${feedback.damage} 傷害，隊伍回復 ${feedback.heal} HP。`:`答錯了，敵人反擊造成 ${feedback.damage} 傷害。`}</div>
             <div style={{fontSize:12,color:S.t2,marginTop:5}}>重點：{feedback.tip}</div>
             {!feedback.stageClear&&battle.teamHp>0&&<button onClick={continueBattle} style={{...S.btn,background:c.cl,color:"#fff",marginTop:10,fontSize:13}}>下一題</button>}
@@ -4942,12 +5097,11 @@ function PetAdventurePage({lv,onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,
       <div data-adventure-skill-hand style={{...S.card,padding:"12px 14px",marginBottom:10,border:`1px solid ${activeVisual.color}33`,background:`linear-gradient(135deg,${activeVisual.bg},var(--color-background-primary,#fff))`}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,marginBottom:9}}>
           <div>
-            <div style={{fontSize:13,fontWeight:1000,color:S.t1}}>技能手牌</div>
-            <div style={{fontSize:11,color:S.t3,marginTop:2}}>{activeDef?.name||"Pet"} 本回合出手。先選技能，再回答英文題目。</div>
+            <div style={{fontSize:13,fontWeight:1000,color:S.t1}}>技能</div>
           </div>
           <div style={{fontSize:12,fontWeight:1000,color:activeVisual.color,whiteSpace:"nowrap"}}>{activeSkill.emoji} {activeSkill.zh}</div>
         </div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(138px,1fr))",gap:8}}>
+        <div data-adventure-skill-grid style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(138px,1fr))",gap:8}}>
           {activeSkillCards.map(card=>{
             const visual=PET_ADVENTURE_SKILL_VISUALS[card.skill.id]||PET_ADVENTURE_SKILL_VISUALS.wordSpark;
             const chosen=activeSkill.id===card.skill.id;
