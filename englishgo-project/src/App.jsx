@@ -1944,7 +1944,7 @@ export default function App(){
         <VoicePicker/>
         <button onClick={()=>setDark(!dark)} style={{background:"none",border:"none",fontSize:14,cursor:"pointer",minWidth:32,minHeight:32,display:"flex",alignItems:"center",justifyContent:"center"}}>{dark?"☀️":"🌙"}</button>
       </nav>
-      <div style={{maxWidth:760,margin:"0 auto",padding:"12px 12px calc(16px + env(safe-area-inset-bottom, 0px))"}}>
+      <div style={{maxWidth:mod==="petAdventure"?1280:760,margin:"0 auto",padding:mod==="petAdventure"?"14px 18px calc(20px + env(safe-area-inset-bottom, 0px))":"12px 12px calc(16px + env(safe-area-inset-bottom, 0px))"}}>
         {!mod?<Menu lv={lv} onSelect={m=>{setSharedWord(null);setMod(m)}} daily={daily} c={c} xp={xp} coins={coins} streak={streak} achUnlocked={achUnlocked} weakWords={weakWords} isSponsor={isSponsor} pets={pets} eggs={eggs}/>:
          mod==="wordsearch"?<WordSearchM lv={lv} onBack={back} onOpenCard={(word,level)=>{setLv(level||lv);setSharedWord(word);setMod("srs")}}/>:
          mod==="srs"?<SRS lv={lv} onBack={back} onXp={n=>addXpWithTask(n,"srsToday")} onDone={()=>setStats(s=>({...s,srsRounds:s.srsRounds+1}))} trackWeak={trackWeak} gifKey={gifKey} onSetGifKey={setGifKey} sharedWord={sharedWord} apiKey={gemKey} onSetApiKey={setGemKey} weakWords={weakWords}/>:
@@ -4834,19 +4834,37 @@ function PetAdventurePage({lv,onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,
 @keyframes advSkillAura {0%{transform:scale(.7);opacity:.15}55%{transform:scale(1.18);opacity:.65}100%{transform:scale(1.45);opacity:0}}
 @keyframes advScreenFlash {0%{opacity:0}20%{opacity:.62}100%{opacity:0}}
 @keyframes advCardPulse {0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
-[data-pet-adventure-layout]{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(300px,.82fr);gap:12px;align-items:start}
-[data-pet-adventure-arena]{min-height:440px !important;margin-bottom:0 !important}
+[data-pet-adventure-layout]{display:grid;grid-template-columns:minmax(560px,1fr) minmax(320px,390px);gap:14px;align-items:start}
+[data-pet-adventure-arena]{min-height:520px !important;margin-bottom:0 !important}
 [data-pet-adventure-controls]{display:grid;gap:10px}
 [data-adventure-skill-hand],[data-adventure-status],[data-adventure-question]{margin-bottom:0 !important}
 [data-adventure-question]{max-height:440px;overflow:auto}
 [data-adventure-question] button{min-height:42px}
 @media (max-width: 820px){
-  [data-pet-adventure-layout]{display:block}
-  [data-pet-adventure-arena]{min-height:360px !important;margin-bottom:10px !important}
-  [data-adventure-question]{max-height:none}
+  [data-pet-adventure-layout]{display:grid;grid-template-columns:1fr;grid-template-rows:1fr;position:relative}
+  [data-pet-adventure-arena]{grid-area:1/1;min-height:calc(100dvh - 118px) !important;margin-bottom:0 !important}
+  [data-pet-adventure-controls]{grid-area:1/1;align-self:end;z-index:8;padding:8px;gap:6px;max-height:58dvh;overflow:auto;overscroll-behavior:contain}
+  [data-adventure-dialog]{top:48px!important;bottom:auto!important;left:10px!important;right:10px!important;padding:8px 10px!important;font-size:12px!important;border-width:2px!important}
+  [data-adventure-dialog] div{display:none}
+  [data-adventure-status]{display:none}
+  [data-adventure-skill-hand]{padding:8px!important;background:rgba(255,255,255,.92)!important;backdrop-filter:blur(10px);box-shadow:0 8px 24px rgba(0,0,0,.12)}
+  [data-adventure-skill-hand] > div:first-child{margin-bottom:6px!important}
+  [data-adventure-skill-hand] > div:first-child > div:first-child > div:last-child{display:none}
+  [data-adventure-skill-hand] > div:last-child{display:flex!important;gap:7px!important;overflow-x:auto;padding-bottom:2px;scroll-snap-type:x mandatory}
+  [data-adventure-skill-hand] button{flex:0 0 116px;min-height:54px!important;padding:7px 8px!important;scroll-snap-align:start}
+  [data-adventure-skill-hand] button div:first-of-type{font-size:15px!important;margin-bottom:1px!important}
+  [data-adventure-skill-hand] button div:nth-of-type(3){display:none}
+  [data-adventure-question]{max-height:none;padding:10px 11px!important;background:rgba(255,255,255,.95)!important;backdrop-filter:blur(12px);box-shadow:0 10px 28px rgba(0,0,0,.18)}
+  [data-adventure-question] > div:first-child{font-size:11px!important;margin-bottom:3px!important}
+  [data-adventure-question] > div:nth-of-type(2){font-size:15px!important;line-height:1.28!important}
+  [data-adventure-question] > div:nth-of-type(3){font-size:11px!important;margin-top:3px!important}
+  [data-adventure-question] > button{margin-top:6px!important;padding:5px 9px!important;font-size:11px!important;min-height:30px!important}
+  [data-adventure-question] > div:nth-of-type(4){display:grid!important;grid-template-columns:1fr 1fr;gap:6px!important;margin-top:7px!important}
+  [data-adventure-question] > div:nth-of-type(4) button{min-height:38px!important;padding:8px 9px!important;font-size:12px!important}
+  [data-adventure-question] > div:last-child{margin-top:8px!important;padding:9px 10px!important}
 }
 @media (max-width: 520px){
-  [data-pet-adventure-arena]{min-height:330px !important}
+  [data-pet-adventure-arena]{min-height:calc(100dvh - 108px) !important}
   [data-pet-adventure-controls]{gap:8px}
 }
 @media (prefers-reduced-motion: reduce) { [data-pet-adventure-battle] *{animation:none !important} }
@@ -4890,7 +4908,7 @@ function PetAdventurePage({lv,onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,
           <div key={`aura-${feedback.effectKey}`} style={{position:"absolute",left:"38%",top:"50%",width:90,height:90,borderRadius:"50%",background:activeVisual.glow,animation:"advSkillAura .72s ease-out forwards",pointerEvents:"none"}}/>
           <div key={`skill-${feedback.effectKey}`} style={{position:"absolute",left:"46%",top:"42%",fontSize:58,color:activeVisual.color,filter:"drop-shadow(0 8px 10px rgba(0,0,0,.2))",animation:"advSkillFly .75s ease-out forwards",pointerEvents:"none"}}>{feedback.correct?activeVisual.effect:"💥"}</div>
         </>}
-        <div style={{position:"absolute",left:12,right:12,bottom:10,padding:"12px 14px",borderRadius:14,background:isBoss?"#3B0A16":"#123047",color:"#fff",border:`3px solid ${isBoss?"#FDE68A":"rgba(255,255,255,.9)"}`,boxShadow:"0 6px 16px rgba(0,0,0,.18)",fontSize:14,fontWeight:900,lineHeight:1.5,animation:"advDialog .2s ease-out"}}>
+        <div data-adventure-dialog style={{position:"absolute",left:12,right:12,bottom:10,padding:"12px 14px",borderRadius:14,background:isBoss?"#3B0A16":"#123047",color:"#fff",border:`3px solid ${isBoss?"#FDE68A":"rgba(255,255,255,.9)"}`,boxShadow:"0 6px 16px rgba(0,0,0,.18)",fontSize:14,fontWeight:900,lineHeight:1.5,animation:"advDialog .2s ease-out"}}>
           {feedback?feedback.message:`${activeDef?.name||"Your pet"} is ready. Pick a skill card, then choose the best English answer.`}
           {!feedback&&<div style={{fontSize:11,fontWeight:700,color:"rgba(255,255,255,.72)",marginTop:3}}>{activeVisual.effect} Skill ready: {activeSkill.name} · {activeSkill.zh}</div>}
         </div>
