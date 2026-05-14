@@ -2375,8 +2375,8 @@ export default function App(){
         <VoicePicker/>
         <button onClick={()=>setDark(!dark)} style={{background:"none",border:"none",fontSize:14,cursor:"pointer",minWidth:32,minHeight:32,display:"flex",alignItems:"center",justifyContent:"center"}}>{dark?"☀️":"🌙"}</button>
       </nav>
-      <div style={{maxWidth:mod==="petAdventure"?1280:760,margin:"0 auto",padding:mod==="petAdventure"?"14px 18px calc(20px + env(safe-area-inset-bottom, 0px))":"12px 12px calc(16px + env(safe-area-inset-bottom, 0px))"}}>
-        {!mod?<Menu lv={lv} onSelect={m=>{setSharedWord(null);setMod(m)}} daily={daily} c={c} xp={xp} coins={coins} streak={streak} achUnlocked={achUnlocked} weakWords={weakWords} isSponsor={isSponsor} pets={pets} eggs={eggs}/>:
+      <div style={{maxWidth:!mod?940:mod==="petAdventure"?1280:760,margin:"0 auto",padding:mod==="petAdventure"?"14px 18px calc(20px + env(safe-area-inset-bottom, 0px))":"12px 12px calc(16px + env(safe-area-inset-bottom, 0px))"}}>
+        {!mod?<MenuV2 lv={lv} onSelect={m=>{setSharedWord(null);setMod(m)}} daily={daily} c={c} xp={xp} coins={coins} streak={streak} achUnlocked={achUnlocked} weakWords={weakWords} isSponsor={isSponsor} pets={pets} eggs={eggs}/>:
          mod==="wordsearch"?<WordSearchM lv={lv} onBack={back} onOpenCard={(word,level)=>{setLv(level||lv);setSharedWord(word);setMod("srs")}}/>:
          mod==="srs"?<SRS lv={lv} onBack={back} onXp={n=>addXpWithTask(n,"srsToday")} onDone={()=>setStats(s=>({...s,srsRounds:s.srsRounds+1}))} trackWeak={trackWeak} gifKey={gifKey} onSetGifKey={setGifKey} sharedWord={sharedWord} apiKey={gemKey} onSetApiKey={setGemKey} weakWords={weakWords}/>:
          mod==="quiz"?<QuizM lv={lv} onBack={back} onXp={n=>addXpWithTask(n,"quizToday")} onPerfect={()=>setStats(s=>({...s,perfectQuiz:s.perfectQuiz+1}))} trackWeak={trackWeak}/>:
@@ -2458,6 +2458,230 @@ function Landing({onSelect,dark,setDark}){
       </footer>
     </div>
   </div>);
+}
+
+function MenuV2({lv,onSelect,daily,c,xp,coins,streak,achUnlocked,weakWords,isSponsor,pets,eggs}){
+  const target=Math.max(1,daily?.target||1);
+  const pct=Math.min(100,Math.round(((daily?.done||0)/target)*100));
+  const todayKey=dateKey();
+  const vocab=V[lv]||[];
+  const fallbackToday=vocab[hashText(`${todayKey}:${lv}:fallback`)%Math.max(1,vocab.length)]||{w:"learn",m:"學習",p:"v."};
+  const[todayWord,setTodayWord]=useState(fallbackToday);
+  const[cloudCount,setCloudCount]=useState(0);
+  const[activeGroup,setActiveGroup]=useState("learn");
+  useEffect(()=>{
+    let active=true;
+    setTodayWord(fallbackToday);
+    setCloudCount(0);
+    fetchCloudCount(lv).then(n=>{if(active)setCloudCount(n||0)});
+    fetchDailyCloudWord(lv,fallbackToday).then(w=>{if(active&&w)setTodayWord(w)});
+    return()=>{active=false};
+  },[lv,todayKey]);
+
+  const modules=[
+    {id:"srs",group:"learn",icon:"▣",t:"單字卡",d:cloudCount?`目前 ${cloudCount} 個單字可練習`:"用間隔重複記單字",tag:"每日核心"},
+    {id:"wordsearch",group:"learn",icon:"⌕",t:"單字查詢",d:"查英文、中文、變化形",tag:"快速查找"},
+    {id:"quiz",group:"learn",icon:"✓",t:"單字測驗",d:"選擇題確認理解",tag:"檢查記憶"},
+    {id:"grammar",group:"learn",icon:"¶",t:"文法學堂",d:`${G?.[lv]?.length||0} 個文法主題`,tag:"句型理解"},
+    {id:"speak",group:"learn",icon:"◉",t:"口說練習",d:"聽、念、比對發音",tag:"開口練習"},
+    {id:"ai",group:"learn",icon:"AI",t:"AI 家教",d:"用 Gemini 問英文問題",tag:"個別指導"},
+    {id:"reading",group:"read",icon:"R",t:"閱讀理解",d:`${R?.[lv]?.length||0} 篇短文練習`,tag:"短文測驗"},
+    {id:"novels",group:"read",icon:"N",t:"英文小說",d:lv==="junior"?"國中奇幻長篇":"小學插圖故事",tag:"故事閱讀"},
+    {id:"songs",group:"read",icon:"♪",t:"英文歌曲",d:(SONGS?.[lv]?.length||0)?`${SONGS[lv].length} 首歌曲`:"尚未建立歌曲",tag:"聽唱學習"},
+    {id:"dictation",group:"read",icon:"D",t:"聽寫練習",d:"聽句子並輸入答案",tag:"聽力拼字"},
+    {id:"story",group:"read",icon:"✦",t:"AI 故事",d:"生成適合程度的短故事",tag:"創意閱讀"},
+    {id:"whack",group:"game",icon:"W",t:"打地鼠",d:"限時反應練單字",tag:"速度訓練"},
+    {id:"match",group:"game",icon:"M",t:"配對遊戲",d:"英文與中文快速配對",tag:"記憶配對"},
+    {id:"bomb",group:"game",icon:"B",t:"拆蛋拼字",d:"看提示完成拼字",tag:"拼字挑戰"},
+    {id:"scramble",group:"game",icon:"S",t:"句子重組",d:"把單字排成正確句子",tag:"語順練習"},
+    {id:"gacha",group:"pet",icon:"G",t:"扭蛋機",d:`${coins} 金幣可使用`,tag:"取得寵物"},
+    {id:"pets",group:"pet",icon:"P",t:"寵物圖鑑",d:`${pets.length} 隻寵物 · ${eggs.length} 顆蛋`,tag:"培養照顧"},
+    {id:"petAdventure",group:"pet",icon:"A",t:"寵物冒險",d:pets.length?`${pets.length} 隻可組隊戰鬥`:"先取得寵物再挑戰",tag:"英文戰鬥"},
+    {id:"achievements",group:"tools",icon:"★",t:"成就牆",d:`${achUnlocked.length}/${ACH_DEFS.length} 個已解鎖`,tag:"學習成果"},
+    {id:"weak",group:"tools",icon:"!",t:"弱點單字",d:weakWords.length?`${weakWords.length} 個需要複習`:"目前沒有弱點紀錄",tag:"補強清單"},
+    {id:"dashboard",group:"tools",icon:"▤",t:"學習報告",d:"查看 XP、連續天數與紀錄",tag:"進度分析"},
+    {id:"sponsor",group:"tools",icon:"♡",t:isSponsor?"支持紀錄":"支持我們",d:isSponsor?"已留下支持資訊":"銀行轉帳與留言",tag:"支持專案"},
+  ];
+  const groups=[
+    {id:"learn",icon:"▣",t:"學習",d:"單字、文法、口說",color:c.cl},
+    {id:"read",icon:"R",t:"閱讀聽力",d:"短文、小說、歌曲",color:"#185FA5"},
+    {id:"game",icon:"▶",t:"遊戲",d:"用遊戲加強反應",color:"#D97706"},
+    {id:"pet",icon:"P",t:"寵物",d:"扭蛋、培養、冒險",color:"#DB2777"},
+    {id:"tools",icon:"▤",t:"工具",d:"報告、弱點、支持",color:"#7C3AED"},
+  ];
+  const activeGroupData=groups.find(g=>g.id===activeGroup)||groups[0];
+  const activeModules=modules.filter(m=>m.group===activeGroup);
+  const recommendedIds=["srs",weakWords.length?"weak":"wordsearch",pets.length?"petAdventure":"quiz"];
+  const recommendedModules=recommendedIds.map(id=>modules.find(m=>m.id===id)).filter(Boolean);
+  const statItems=[
+    {label:"連續",value:`${streak} 天`,hint:"保持節奏",tone:"#E24B4A"},
+    {label:"XP",value:xp,hint:"累積學習量",tone:"#D97706"},
+    {label:"金幣",value:coins,hint:"可用於寵物",tone:"#C47A12",action:"gacha"},
+    {label:"寵物",value:pets.length,hint:eggs.length?`${eggs.length} 顆蛋待孵化`:"培養夥伴",tone:c.cl,action:"pets"},
+  ];
+  const ModuleCard=({m})=>{
+    const group=groups.find(g=>g.id===m.group)||groups[0];
+    return(
+      <button type="button" className="eg-menu-module" onClick={()=>onSelect(m.id)} style={{"--module-color":group.color}}>
+        <span className="eg-menu-module-icon">{m.icon}</span>
+        <span className="eg-menu-module-body">
+          <span className="eg-menu-module-title">{m.t}</span>
+          <span className="eg-menu-module-desc">{m.d}</span>
+          <span className="eg-menu-module-tag">{m.tag}</span>
+        </span>
+      </button>
+    );
+  };
+
+  return(
+    <div className="eg-menu" style={{"--accent":c.cl,"--accent-2":c.ac,"--accent-soft":c.bg,"--card":S.bg1,"--surface":S.bg2,"--page":S.bg3,"--border":S.bd,"--text":S.t1,"--muted":S.t2,"--faint":S.t3}}>
+      <style>{`
+        .eg-menu{display:grid;gap:16px}
+        .eg-menu button{font-family:inherit}
+        .eg-menu-hero{position:relative;overflow:hidden;border:1px solid color-mix(in srgb,var(--accent) 24%,var(--border));border-radius:24px;background:linear-gradient(135deg,var(--accent-soft),var(--card) 58%);box-shadow:0 18px 40px rgba(15,110,86,.08);padding:18px;display:grid;grid-template-columns:minmax(0,1fr) 278px;gap:16px}
+        .eg-menu-hero:after{content:"";position:absolute;right:-110px;top:-120px;width:280px;height:280px;border-radius:999px;background:color-mix(in srgb,var(--accent) 12%,transparent);pointer-events:none}
+        .eg-menu-eyebrow{display:inline-flex;align-items:center;gap:8px;width:max-content;max-width:100%;padding:6px 10px;border-radius:999px;border:1px solid color-mix(in srgb,var(--accent) 22%,transparent);background:color-mix(in srgb,var(--accent) 8%,var(--card));color:var(--accent);font-size:12px;font-weight:900}
+        .eg-menu-word-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px}
+        .eg-menu-word{font-size:clamp(30px,7vw,46px);font-weight:1000;line-height:1;color:var(--text);letter-spacing:0}
+        .eg-menu-sound{width:42px;height:42px;border-radius:14px;border:1px solid color-mix(in srgb,var(--accent) 24%,var(--border));background:var(--card);color:var(--accent);font-size:16px;font-weight:900;cursor:pointer;box-shadow:0 8px 18px color-mix(in srgb,var(--accent) 10%,transparent)}
+        .eg-menu-word-meta{font-size:14px;color:var(--muted);margin-top:8px;line-height:1.55}
+        .eg-menu-progress{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;margin-top:18px}
+        .eg-menu-track{height:10px;border-radius:999px;background:rgba(0,0,0,.07);overflow:hidden}
+        .eg-menu-fill{height:100%;width:var(--progress);border-radius:999px;background:linear-gradient(90deg,var(--accent),var(--accent-2));transition:width .25s ease}
+        .eg-menu-progress-label{font-size:12px;font-weight:1000;color:var(--accent)}
+        .eg-menu-note{font-size:12px;color:var(--faint);line-height:1.6;margin-top:8px}
+        .eg-menu-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;position:relative;z-index:1}
+        .eg-menu-stat{border:1px solid color-mix(in srgb,var(--tone) 18%,var(--border));border-radius:18px;background:linear-gradient(135deg,color-mix(in srgb,var(--tone) 9%,var(--card)),var(--card));padding:13px;text-align:left;min-height:92px;cursor:default}
+        .eg-menu-stat.has-action{cursor:pointer}
+        .eg-menu-stat-label{display:block;font-size:11px;color:var(--tone);font-weight:1000}
+        .eg-menu-stat-value{display:block;font-size:22px;color:var(--text);font-weight:1000;margin-top:8px;line-height:1.05}
+        .eg-menu-stat-hint{display:block;font-size:11px;color:var(--faint);margin-top:6px;line-height:1.35}
+        .eg-menu-section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin:2px 2px 10px}
+        .eg-menu-section-title{font-size:16px;font-weight:1000;color:var(--text)}
+        .eg-menu-section-sub{font-size:12px;color:var(--faint);margin-top:3px;line-height:1.45}
+        .eg-menu-recommended{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+        .eg-menu-groups{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+        .eg-menu-group{border:1px solid transparent;border-radius:18px;background:var(--surface);padding:12px 10px;text-align:left;cursor:pointer;min-height:78px;color:var(--text);transition:transform .14s ease,box-shadow .14s ease,border-color .14s ease}
+        .eg-menu-group:hover,.eg-menu-module:hover{transform:translateY(-2px)}
+        .eg-menu-group.is-active{border-color:color-mix(in srgb,var(--group-color) 58%,var(--border));background:linear-gradient(135deg,color-mix(in srgb,var(--group-color) 12%,var(--card)),var(--card));box-shadow:0 10px 24px color-mix(in srgb,var(--group-color) 12%,transparent)}
+        .eg-menu-group-top{display:flex;align-items:center;gap:8px}
+        .eg-menu-group-icon{width:28px;height:28px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--group-color) 12%,var(--card));color:var(--group-color);font-weight:1000;font-size:13px}
+        .eg-menu-group-title{font-size:13px;font-weight:1000;color:var(--text)}
+        .eg-menu-group-desc{display:block;font-size:11px;color:var(--faint);line-height:1.35;margin-top:7px}
+        .eg-menu-panel{border:1px solid color-mix(in srgb,var(--active-color) 18%,var(--border));border-radius:22px;background:linear-gradient(135deg,color-mix(in srgb,var(--active-color) 7%,var(--card)),var(--card));padding:14px}
+        .eg-menu-module-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(176px,1fr));gap:10px}
+        .eg-menu-module{position:relative;overflow:hidden;border:1px solid color-mix(in srgb,var(--module-color) 18%,var(--border));border-radius:18px;background:var(--card);padding:14px;text-align:left;display:flex;gap:11px;min-height:106px;cursor:pointer;color:var(--text);transition:transform .14s ease,box-shadow .14s ease,border-color .14s ease}
+        .eg-menu-module:hover{box-shadow:0 12px 24px color-mix(in srgb,var(--module-color) 12%,transparent);border-color:color-mix(in srgb,var(--module-color) 45%,var(--border))}
+        .eg-menu-module:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--module-color);opacity:.8}
+        .eg-menu-module-icon{width:38px;height:38px;border-radius:13px;display:inline-flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--module-color) 12%,var(--card));color:var(--module-color);font-size:15px;font-weight:1000;flex:0 0 auto}
+        .eg-menu-module-body{min-width:0;display:flex;flex-direction:column;align-items:flex-start}
+        .eg-menu-module-title{font-size:14px;font-weight:1000;line-height:1.25;color:var(--text)}
+        .eg-menu-module-desc{font-size:12px;color:var(--muted);line-height:1.45;margin-top:5px}
+        .eg-menu-module-tag{font-size:10px;font-weight:1000;color:var(--module-color);background:color-mix(in srgb,var(--module-color) 10%,transparent);border:1px solid color-mix(in srgb,var(--module-color) 18%,transparent);border-radius:999px;padding:3px 8px;margin-top:auto}
+        .eg-menu-alert{border:1px solid rgba(226,75,74,.24);border-radius:18px;background:linear-gradient(135deg,#FCEBEB,var(--card));padding:13px 14px;display:flex;align-items:center;gap:12px}
+        .eg-menu-alert-title{font-size:13px;font-weight:1000;color:#B42318}
+        .eg-menu-alert-body{font-size:12px;color:var(--muted);line-height:1.5;margin-top:3px}
+        .eg-menu-alert-action{border:0;background:#E24B4A;color:#fff;border-radius:999px;padding:8px 12px;font-size:12px;font-weight:900;cursor:pointer;white-space:nowrap}
+        @media (max-width:760px){
+          .eg-menu{gap:14px}
+          .eg-menu-hero{grid-template-columns:1fr;padding:16px;border-radius:20px}
+          .eg-menu-stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;overflow:visible;padding-bottom:0}
+          .eg-menu-stat{min-width:78px;min-height:74px;padding:10px}
+          .eg-menu-stat-value{font-size:17px}
+          .eg-menu-stat-hint{display:none}
+          .eg-menu-recommended{grid-template-columns:1fr}
+          .eg-menu-groups{display:flex;overflow-x:auto;padding-bottom:2px}
+          .eg-menu-group{min-width:112px;min-height:64px;padding:10px}
+          .eg-menu-group-desc{display:none}
+          .eg-menu-module-grid{grid-template-columns:1fr}
+          .eg-menu-module{min-height:88px}
+          .eg-menu-section-head{align-items:flex-start}
+        }
+        @media (max-width:420px){
+          .eg-menu-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+          .eg-menu-word{font-size:34px}
+          .eg-menu-alert{align-items:flex-start;flex-direction:column}
+          .eg-menu-alert-action{width:100%}
+        }
+      `}</style>
+
+      <section className="eg-menu-hero">
+        <div>
+          <div className="eg-menu-eyebrow">{c.ic} {c.l} 操作中心</div>
+          <div className="eg-menu-word-row">
+            <div className="eg-menu-word">{todayWord.w}</div>
+            <button type="button" className="eg-menu-sound" onClick={()=>speak(todayWord.w)} aria-label="朗讀今日單字">▶</button>
+          </div>
+          <div className="eg-menu-word-meta">{todayWord.m} · {todayWord.p || "word"}</div>
+          <div className="eg-menu-progress">
+            <div className="eg-menu-track"><div className="eg-menu-fill" style={{"--progress":`${pct}%`}}/></div>
+            <div className="eg-menu-progress-label">{pct}%</div>
+          </div>
+          <div className="eg-menu-note">今日進度會同時累積 XP、金幣與寵物培養。先完成推薦項目，再依需求切換分類。</div>
+        </div>
+        <div className="eg-menu-stats">
+          {statItems.map(item=>(
+            <button key={item.label} type="button" disabled={!item.action} onClick={()=>item.action&&onSelect(item.action)} className={`eg-menu-stat ${item.action?"has-action":""}`} style={{"--tone":item.tone}}>
+              <span className="eg-menu-stat-label">{item.label}</span>
+              <span className="eg-menu-stat-value">{item.value}</span>
+              <span className="eg-menu-stat-hint">{item.hint}</span>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {weakWords.length>0&&(
+        <section className="eg-menu-alert">
+          <div style={{fontSize:22,fontWeight:1000,color:"#B42318"}}>!</div>
+          <div style={{flex:1,minWidth:180}}>
+            <div className="eg-menu-alert-title">有單字需要補強</div>
+            <div className="eg-menu-alert-body">{[...weakWords].sort((a,b)=>b.n-a.n).slice(0,5).map(w=>`${w.w}(${w.n})`).join(" · ")}</div>
+          </div>
+          <button type="button" className="eg-menu-alert-action" onClick={()=>onSelect("weak")}>開始複習</button>
+        </section>
+      )}
+
+      <section>
+        <div className="eg-menu-section-head">
+          <div>
+            <div className="eg-menu-section-title">建議下一步</div>
+            <div className="eg-menu-section-sub">依照目前進度挑出最常用的入口。</div>
+          </div>
+        </div>
+        <div className="eg-menu-recommended">
+          {recommendedModules.map(m=><ModuleCard key={`rec-${m.id}`} m={m}/>)}
+        </div>
+      </section>
+
+      <section className="eg-menu-groups" aria-label="功能分類">
+        {groups.map(g=>{
+          const active=g.id===activeGroup;
+          return(
+            <button key={g.id} type="button" className={`eg-menu-group ${active?"is-active":""}`} onClick={()=>setActiveGroup(g.id)} style={{"--group-color":g.color}}>
+              <span className="eg-menu-group-top">
+                <span className="eg-menu-group-icon">{g.icon}</span>
+                <span className="eg-menu-group-title">{g.t}</span>
+              </span>
+              <span className="eg-menu-group-desc">{g.d}</span>
+            </button>
+          );
+        })}
+      </section>
+
+      <section className="eg-menu-panel" style={{"--active-color":activeGroupData.color}}>
+        <div className="eg-menu-section-head">
+          <div>
+            <div className="eg-menu-section-title" style={{color:activeGroupData.color}}>{activeGroupData.t}</div>
+            <div className="eg-menu-section-sub">{activeGroupData.d}</div>
+          </div>
+          <div style={{fontSize:12,fontWeight:1000,color:activeGroupData.color,background:`${activeGroupData.color}14`,borderRadius:999,padding:"6px 10px",whiteSpace:"nowrap"}}>{activeModules.length} 個功能</div>
+        </div>
+        <div className="eg-menu-module-grid">
+          {activeModules.map(m=><ModuleCard key={m.id} m={m}/>)}
+        </div>
+      </section>
+    </div>
+  );
 }
 
 // ═══ MENU ═══════════════════════════════════════════════════════════

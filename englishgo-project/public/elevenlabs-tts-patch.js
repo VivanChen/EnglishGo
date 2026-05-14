@@ -215,6 +215,10 @@
       #eg-tts-loading-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
       .eg-tts-spinner{width:14px;height:14px;border-radius:999px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;animation:egTtsSpin .75s linear infinite;flex:0 0 auto}
       .eg-tts-loading-target{position:relative;animation:egTtsPulse .9s ease-in-out infinite!important;filter:drop-shadow(0 0 8px rgba(15,143,111,.5))}
+      @media (max-width:640px){
+        #eg-tts-panel{right:12px;bottom:12px;width:min(220px,calc(100vw - 24px))}
+        #eg-tts-panel.eg-mini{width:auto;max-width:calc(100vw - 24px)}
+      }
       @keyframes egTtsSpin{to{transform:rotate(360deg)}}
       @keyframes egTtsPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.18)}}
     `;
@@ -240,12 +244,14 @@
       </div>
     `;
     document.body.appendChild(panel);
+    panel.classList.add("eg-mini");
 
     const voice = panel.querySelector("#eg-tts-voice");
     const speed = panel.querySelector("#eg-tts-speed");
     const speedLabel = panel.querySelector("#eg-tts-speed-label");
     const head = panel.querySelector(".eg-head");
     const toggle = panel.querySelector("#eg-tts-toggle");
+    if (panel.classList.contains("eg-mini")) toggle.textContent = "+";
 
     function sync() {
       const s = getSettings();
