@@ -10069,6 +10069,168 @@ body.eg-anim-off [data-pet-card] { animation: none !important; }
 function SponsorPage({onBack,c,sponsor,setSponsor}){
   const[name,setName]=useState(sponsor.name&&sponsor.name!=="支持者"?sponsor.name:"");
   const[note,setNote]=useState("");
+  const[msg,setMsg]=useState(null);
+  const[copied,setCopied]=useState("");
+  const[busy,setBusy]=useState(false);
+  const bankRows=[
+    {label:"戶名",value:"陳韋安",copy:"陳韋安"},
+    {label:"銀行",value:"華南銀行",meta:"代號 008",copy:"008"},
+    {label:"帳號",value:"1132 0096 8044",copy:"113200968044",mono:true},
+  ];
+  const tiers=[
+    {amt:"NT$50",label:"小小鼓勵"},
+    {amt:"NT$100",label:"一份早餐"},
+    {amt:"NT$300",label:"營運支援"},
+    {amt:"自由決定",label:"量力而為"},
+  ];
+  const copyBank=async(text,label)=>{
+    try{
+      await navigator.clipboard.writeText(text);
+      setCopied(label);
+      setMsg({type:"ok",text:`已複製${label}`});
+      playSound("done");
+      window.setTimeout(()=>setCopied(v=>v===label?"":v),1600);
+    }catch{
+      setMsg({type:"warn",text:`${label}：${text}`});
+    }
+  };
+  const copyAll=()=>copyBank("戶名：陳韋安\n銀行：華南銀行（代號 008）\n帳號：113200968044","全部資訊");
+  const submit=async(e)=>{
+    e?.preventDefault?.();
+    if(busy)return;
+    const cleanName=name.trim();
+    if(!cleanName){
+      setMsg({type:"err",text:"請先輸入姓名"});
+      return;
+    }
+    setBusy(true);
+    setMsg(null);
+    const r=await submitSponsorMessage(cleanName,note);
+    setBusy(false);
+    if(r.ok){
+      setSponsor({active:true,name:cleanName,date:new Date().toISOString()});
+      setNote("");
+      setMsg({type:"ok",text:"已收到您的姓名與留言，謝謝支持。"});
+      playSound("done");
+    }else{
+      setMsg({type:"err",text:r.err});
+      playSound("bad");
+    }
+  };
+  const resetSupporter=()=>{setSponsor({active:false,name:""});setMsg(null);setName("");setNote("")};
+  const msgColor=msg?.type==="err"?"#D83A34":msg?.type==="warn"?"#9A6400":"#0F7A5D";
+
+  return(<div className="sponsor-page">
+    <style>{`
+      .sponsor-page{--accent:${c.cl};--support-bg:${c.bg};}
+      .support-hero{position:relative;overflow:hidden;border:1px solid color-mix(in srgb,var(--accent) 28%,#d8d8d8);border-top:4px solid var(--accent);border-radius:18px;padding:22px;background:linear-gradient(135deg,var(--support-bg),var(--color-background-primary,#fff) 62%);box-shadow:0 16px 38px rgba(15,110,86,.10);margin-bottom:14px}
+      .support-hero h2{font-size:26px;line-height:1.15;margin:0 0 8px;color:${S.t1}}
+      .support-hero p{font-size:14px;line-height:1.75;color:${S.t2};margin:0;max-width:620px}
+      .support-pill-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+      .support-pill{display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(15,110,86,.18);background:rgba(29,158,117,.10);color:#0F6E56;border-radius:999px;padding:7px 11px;font-size:12px;font-weight:800}
+      .support-grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(280px,.95fr);gap:14px;align-items:start}
+      .support-card{border:1px solid ${S.bd};border-radius:16px;background:${S.bg1};padding:16px}
+      .support-card-title{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:16px;font-weight:900;color:${S.t1};margin-bottom:12px}
+      .support-copy-all{border:1px solid rgba(15,110,86,.22);background:rgba(29,158,117,.10);color:var(--accent);border-radius:10px;padding:8px 10px;font-size:12px;font-weight:900;font-family:inherit;cursor:pointer}
+      .support-copy-all.is-copied{background:var(--accent);border-color:var(--accent);color:white}
+      .support-bank-row{display:grid;grid-template-columns:64px minmax(0,1fr) auto;gap:10px;align-items:center;padding:12px;border:1px solid ${S.bd};border-radius:12px;background:${S.bg2};margin-bottom:8px}
+      .support-bank-label{font-size:12px;color:${S.t3};font-weight:900}
+      .support-bank-value{min-width:0;color:${S.t1};font-size:16px;font-weight:900;word-break:break-word}
+      .support-bank-meta{display:block;font-size:11px;color:${S.t3};font-weight:700;margin-top:2px}
+      .support-mono{font-family:"SFMono-Regular","Consolas",monospace;letter-spacing:.04em}
+      .support-copy-btn{border:1px solid ${S.bd};background:${S.bg1};color:var(--accent);border-radius:9px;padding:7px 9px;font-size:12px;font-weight:900;font-family:inherit;cursor:pointer;white-space:nowrap}
+      .support-copy-btn.is-copied{background:var(--accent);border-color:var(--accent);color:white}
+      .support-note{border-radius:12px;background:rgba(239,159,39,.10);border:1px solid rgba(239,159,39,.24);padding:11px 12px;color:#7A5200;font-size:12px;line-height:1.7;margin-top:10px}
+      .support-tier-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
+      .support-tier{border:1px solid ${S.bd};border-radius:12px;background:${S.bg2};padding:11px 8px;text-align:center}
+      .support-tier strong{display:block;color:var(--accent);font-size:14px;margin-bottom:2px}
+      .support-tier span{font-size:11px;color:${S.t3};font-weight:800}
+      .support-form{display:grid;gap:11px}
+      .support-field{display:grid;gap:6px;font-size:12px;color:${S.t2};font-weight:900}
+      .support-input{width:100%;border:1px solid ${S.bd};border-radius:12px;background:${S.bg2};color:${S.t1};font:inherit;font-size:14px;padding:12px 13px;outline:none}
+      .support-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(29,158,117,.12);background:${S.bg1}}
+      .support-submit{border:0;border-radius:12px;background:var(--accent);color:white;font:inherit;font-size:14px;font-weight:900;padding:13px 16px;cursor:pointer}
+      .support-submit:disabled{opacity:.48;cursor:not-allowed}
+      .support-status{border-radius:12px;padding:10px 12px;font-size:13px;font-weight:900;text-align:center;background:rgba(29,158,117,.10)}
+      .support-thanks{border:1px solid rgba(239,159,39,.28);background:linear-gradient(135deg,#FFF5D8,#fff);border-radius:16px;padding:15px 16px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+      .support-thanks b{display:block;color:#7A5200;font-size:16px}
+      .support-thanks span{font-size:12px;color:#856404}
+      .support-privacy{margin-top:14px;border:1px solid ${S.bd};border-radius:14px;background:${S.bg2};padding:12px 14px;color:${S.t3};font-size:12px;line-height:1.8}
+      @media(max-width:760px){
+        .support-hero{padding:18px 16px;border-radius:16px}
+        .support-hero h2{font-size:22px}
+        .support-grid{grid-template-columns:1fr}
+        .support-bank-row{grid-template-columns:54px minmax(0,1fr) auto;padding:10px}
+        .support-bank-value{font-size:14px}
+        .support-tier-grid{grid-template-columns:repeat(2,1fr)}
+        .support-thanks{align-items:flex-start;flex-direction:column}
+      }
+    `}</style>
+    <Hdr t="☕ 支持我們" onBack={onBack} cl={c.cl} extra={<a href="/learn/sponsor.html" target="_blank" rel="noreferrer" style={{fontSize:12,color:c.cl,textDecoration:"none",fontWeight:800,padding:"6px 8px",border:`1px solid ${S.bd}`,borderRadius:8}}>說明頁</a>}/>
+
+    <section className="support-hero">
+      <h2>支持 EnglishGo 持續免費</h2>
+      <p>EnglishGo 目前維持無廣告、無付費牆。若這個網站對你或孩子有幫助，可以用銀行轉帳支持營運；不需要寄信、不需要上傳匯款證明，也不用留下帳號資訊。</p>
+      <div className="support-pill-row">
+        <span className="support-pill">無廣告承諾</span>
+        <span className="support-pill">銀行轉帳即可</span>
+        <span className="support-pill">只記錄姓名與留言</span>
+      </div>
+    </section>
+
+    {sponsor.active&&(<section className="support-thanks">
+      <div>
+        <b>謝謝您的支持</b>
+        <span>{sponsor.name?`${sponsor.name}，`:''}您的留言已記錄，可以隨時重新填寫。</span>
+      </div>
+      <button type="button" onClick={resetSupporter} className="support-copy-btn">重新填寫</button>
+    </section>)}
+
+    <div className="support-grid">
+      <section className="support-card">
+        <div className="support-card-title">
+          <span>銀行轉帳資訊</span>
+          <button type="button" onClick={copyAll} className={`support-copy-all ${copied==="全部資訊"?"is-copied":""}`}>{copied==="全部資訊"?"已複製":"複製全部"}</button>
+        </div>
+        {bankRows.map(row=><div key={row.label} className="support-bank-row">
+          <div className="support-bank-label">{row.label}</div>
+          <div className={`support-bank-value ${row.mono?"support-mono":""}`}>
+            {row.value}
+            {row.meta&&<span className="support-bank-meta">{row.meta}</span>}
+          </div>
+          <button type="button" onClick={()=>copyBank(row.copy,row.label)} className={`support-copy-btn ${copied===row.label?"is-copied":""}`}>{copied===row.label?"已複製":"複製"}</button>
+        </div>)}
+        <div className="support-note">轉帳完成後不用通知我。若願意讓我知道是誰支持，可以在右側留下姓名與一句話。</div>
+        <div className="support-tier-grid">
+          {tiers.map(tier=><div key={tier.amt} className="support-tier"><strong>{tier.amt}</strong><span>{tier.label}</span></div>)}
+        </div>
+      </section>
+
+      <section className="support-card">
+        <div className="support-card-title"><span>留下姓名與留言</span></div>
+        <form onSubmit={submit} className="support-form">
+          <label className="support-field">你的姓名（必填）
+            <input className="support-input" value={name} onChange={e=>setName(e.target.value)} maxLength={60} placeholder="例如：陳小明、某某家長"/>
+          </label>
+          <label className="support-field">想對我說的話（選填）
+            <textarea className="support-input" value={note} onChange={e=>setNote(e.target.value)} maxLength={500} rows={5} placeholder="可以留下鼓勵、建議，或希望 EnglishGo 增加的功能。" style={{resize:"vertical",lineHeight:1.65}}/>
+          </label>
+          <div style={{fontSize:11,color:S.t3,textAlign:"right"}}>{note.length}/500</div>
+          <button className="support-submit" type="submit" disabled={busy||!name.trim()}>{busy?"送出中...":"送出留言"}</button>
+        </form>
+        {msg&&<div className="support-status" style={{color:msgColor,marginTop:12}}>{msg.text}</div>}
+      </section>
+    </div>
+
+    <div className="support-privacy">
+      <b>資料說明：</b>系統只記錄你填寫的姓名與留言，用來知道誰支持 EnglishGo。請不要填寫匯款帳號、Email、電話或其他敏感資訊。
+    </div>
+  </div>);
+}
+
+function SponsorPageLegacy({onBack,c,sponsor,setSponsor}){
+  const[name,setName]=useState(sponsor.name&&sponsor.name!=="支持者"?sponsor.name:"");
+  const[note,setNote]=useState("");
   const[msg,setMsg]=useState("");
   const[busy,setBusy]=useState(false);
   const copyBank=async(text,label)=>{

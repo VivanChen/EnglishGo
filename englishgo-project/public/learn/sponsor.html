@@ -3,90 +3,164 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <meta name="description" content="支持 EnglishGo - 銀行轉帳資訊與留言方式">
-  <title>支持 EnglishGo · 銀行轉帳</title>
+  <meta name="description" content="支持 EnglishGo 持續免費，銀行轉帳資訊與留言方式。">
+  <title>支持 EnglishGo｜銀行轉帳資訊</title>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Noto Sans TC', 'Segoe UI', sans-serif; background: linear-gradient(150deg,#091825,#122a45 45%,#183a58 75%,#0d1f32); color: #fff; line-height: 1.7; min-height: 100vh; }
-    .container { max-width: 720px; margin: 0 auto; padding: 32px 20px 80px; }
-    h1 { font-size: 32px; font-weight: 800; margin-bottom: 12px; color: #7FD1AE; }
-    h2 { font-size: 20px; font-weight: 800; margin: 26px 0 12px; color: #fff; }
-    p { color: rgba(255,255,255,.82); margin-bottom: 12px; font-size: 15px; }
-    .lead { font-size: 17px; color: rgba(255,255,255,.72); margin-bottom: 24px; }
-    .badge { display: inline-block; padding: 4px 12px; background: rgba(127,209,174,.15); border: 1px solid rgba(127,209,174,.4); border-radius: 12px; color: #7FD1AE; font-size: 12px; font-weight: 700; margin-bottom: 16px; }
-    .card { background: rgba(255,255,255,.055); border: 1px solid rgba(255,255,255,.12); border-radius: 14px; padding: 20px; margin-bottom: 16px; }
-    .bank-row { display: flex; gap: 12px; align-items: center; padding: 13px 0; border-bottom: 1px solid rgba(255,255,255,.09); }
-    .bank-row:last-child { border-bottom: none; }
-    .label { width: 86px; color: rgba(255,255,255,.55); font-size: 13px; font-weight: 700; }
-    .value { flex: 1; color: #fff; font-size: 17px; font-weight: 800; word-break: break-all; }
-    .note { color: rgba(255,255,255,.62); font-size: 13px; background: rgba(255,255,255,.05); border-radius: 10px; padding: 12px 14px; }
-    .amounts { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
-    .amount { text-align: center; padding: 14px 8px; background: rgba(255,255,255,.055); border: 1px solid rgba(255,255,255,.1); border-radius: 10px; }
-    .amount strong { display: block; color: #7FD1AE; font-size: 18px; margin-top: 3px; }
-    .home-link, .app-link { display: inline-block; padding: 12px 22px; border-radius: 12px; color: #fff; text-decoration: none; font-weight: 700; margin-top: 10px; }
-    .home-link { background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14); }
-    .app-link { background: linear-gradient(135deg,#168E6D,#58B996); }
-    ul { padding-left: 20px; margin-bottom: 12px; }
-    li { color: rgba(255,255,255,.78); margin-bottom: 6px; }
-    @media(max-width:600px){ h1{font-size:26px}.amounts{grid-template-columns:1fr}.bank-row{align-items:flex-start}.label{width:72px}.value{font-size:15px} }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      font-family: "Noto Sans TC", "Segoe UI", sans-serif;
+      color: #17201d;
+      background:
+        radial-gradient(circle at 14% 6%, rgba(71, 179, 139, .18), transparent 34%),
+        linear-gradient(180deg, #f8faf7 0%, #f2f5ef 100%);
+      line-height: 1.7;
+    }
+    .wrap { max-width: 920px; margin: 0 auto; padding: 28px 18px 72px; }
+    .top-link { color: #08745a; text-decoration: none; font-size: 14px; font-weight: 800; display: inline-block; margin-bottom: 18px; }
+    .hero {
+      border: 1px solid rgba(8,116,90,.18);
+      border-top: 5px solid #08745a;
+      border-radius: 20px;
+      padding: 28px;
+      background: linear-gradient(135deg, #e9faf4 0%, #fff 62%);
+      box-shadow: 0 18px 44px rgba(25, 58, 46, .09);
+      margin-bottom: 16px;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(8,116,90,.10);
+      color: #08745a;
+      font-size: 12px;
+      font-weight: 900;
+      margin-bottom: 14px;
+    }
+    h1 { font-size: clamp(30px, 5vw, 48px); line-height: 1.1; margin-bottom: 12px; letter-spacing: 0; }
+    .lead { color: #5b6762; font-size: 16px; max-width: 720px; }
+    .grid { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(280px, .95fr); gap: 16px; align-items: start; }
+    .card {
+      background: rgba(255,255,255,.86);
+      border: 1px solid #dde3dc;
+      border-radius: 18px;
+      padding: 20px;
+      box-shadow: 0 10px 26px rgba(25, 58, 46, .05);
+    }
+    h2 { font-size: 20px; margin-bottom: 14px; }
+    .bank-row {
+      display: grid;
+      grid-template-columns: 72px minmax(0, 1fr);
+      gap: 12px;
+      padding: 13px 0;
+      border-bottom: 1px solid #e7ebe6;
+      align-items: center;
+    }
+    .bank-row:last-child { border-bottom: 0; }
+    .label { color: #6d7974; font-size: 13px; font-weight: 900; }
+    .value { color: #17201d; font-size: 18px; font-weight: 900; word-break: break-word; }
+    .sub { display: block; color: #87918d; font-size: 12px; margin-top: 2px; }
+    .mono { font-family: "SFMono-Regular", Consolas, monospace; letter-spacing: .04em; }
+    .note {
+      margin-top: 14px;
+      border-radius: 14px;
+      padding: 13px 14px;
+      background: #fff8e8;
+      border: 1px solid #f0d394;
+      color: #785500;
+      font-size: 13px;
+    }
+    .tiers { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 14px; }
+    .tier {
+      border: 1px solid #dde3dc;
+      border-radius: 14px;
+      background: #f7faf6;
+      padding: 13px 10px;
+      text-align: center;
+    }
+    .tier strong { display: block; color: #08745a; font-size: 17px; }
+    .tier span { color: #6d7974; font-size: 12px; font-weight: 800; }
+    .steps { display: grid; gap: 10px; }
+    .step {
+      border: 1px solid #dde3dc;
+      border-radius: 14px;
+      background: #f7faf6;
+      padding: 13px 14px;
+      color: #45524d;
+      font-size: 14px;
+    }
+    .step b { display: block; color: #17201d; margin-bottom: 2px; }
+    .app-link {
+      display: inline-flex;
+      justify-content: center;
+      width: 100%;
+      margin-top: 16px;
+      padding: 13px 18px;
+      border-radius: 14px;
+      background: #08745a;
+      color: #fff;
+      text-decoration: none;
+      font-weight: 900;
+    }
+    footer { margin-top: 34px; color: #8a948f; text-align: center; font-size: 12px; }
+    @media (max-width: 760px) {
+      .wrap { padding: 20px 12px 56px; }
+      .hero { padding: 22px 18px; border-radius: 18px; }
+      .grid { grid-template-columns: 1fr; }
+      .tiers { grid-template-columns: 1fr 1fr; }
+      .bank-row { grid-template-columns: 58px minmax(0, 1fr); }
+      .value { font-size: 16px; }
+    }
   </style>
 </head>
 <body>
-<main class="container">
-  <a href="/" style="color:#7FD1AE;text-decoration:none;font-size:14px;display:inline-block;margin-bottom:24px;">← 回首頁</a>
+  <main class="wrap">
+    <a href="/" class="top-link">← 回到 EnglishGo</a>
 
-  <div class="badge">100% 無廣告 · 永遠免費</div>
-  <h1>支持 EnglishGo</h1>
-  <p class="lead">EnglishGo 會維持免費、無廣告、無付費牆。如果這個平台對您或孩子有幫助，歡迎用銀行轉帳小額支持。</p>
+    <section class="hero">
+      <div class="badge">無廣告 · 無付費牆 · 自由支持</div>
+      <h1>支持 EnglishGo 持續免費</h1>
+      <p class="lead">EnglishGo 會盡量維持免費使用。如果這個網站對你或孩子有幫助，可以透過銀行轉帳支持營運。轉帳後不用寄信，也不用提供匯款證明。</p>
+    </section>
 
-  <section class="card">
-    <h2>銀行轉帳資訊</h2>
-    <div class="bank-row">
-      <div class="label">戶名</div>
-      <div class="value">陳韋安</div>
+    <div class="grid">
+      <section class="card">
+        <h2>銀行轉帳資訊</h2>
+        <div class="bank-row">
+          <div class="label">戶名</div>
+          <div class="value">陳韋安</div>
+        </div>
+        <div class="bank-row">
+          <div class="label">銀行</div>
+          <div class="value">華南銀行 <span class="sub">代號 008</span></div>
+        </div>
+        <div class="bank-row">
+          <div class="label">帳號</div>
+          <div class="value mono">1132 0096 8044</div>
+        </div>
+        <p class="note">提醒：轉帳完成後不需要通知，也不需要留下匯款帳號、Email 或電話。</p>
+        <div class="tiers">
+          <div class="tier"><strong>NT$50</strong><span>小小鼓勵</span></div>
+          <div class="tier"><strong>NT$100</strong><span>一份早餐</span></div>
+          <div class="tier"><strong>NT$300</strong><span>營運支援</span></div>
+          <div class="tier"><strong>自由決定</strong><span>量力而為</span></div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>留下支持紀錄</h2>
+        <div class="steps">
+          <div class="step"><b>1. 完成銀行轉帳</b>金額自由決定，主要是心意與鼓勵。</div>
+          <div class="step"><b>2. 回到 App 留言</b>只需要填姓名與想說的話，不用填付款資料。</div>
+          <div class="step"><b>3. 繼續使用 EnglishGo</b>你的支持會用在網站維護、資料庫與 AI 功能成本。</div>
+        </div>
+        <a href="/?support=1" class="app-link">前往支持留言頁</a>
+      </section>
     </div>
-    <div class="bank-row">
-      <div class="label">銀行</div>
-      <div class="value">華南銀行（代號 008）</div>
-    </div>
-    <div class="bank-row">
-      <div class="label">帳號</div>
-      <div class="value">113200968044</div>
-    </div>
-    <p class="note" style="margin-top:14px;">轉帳完成後不用寄信告知，也不用提供匯款證明。</p>
-  </section>
 
-  <section class="card">
-    <h2>隨意金額</h2>
-    <p>沒有固定金額，量力而為即可。</p>
-    <div class="amounts">
-      <div class="amount">請喝奶茶<strong>NT$50</strong></div>
-      <div class="amount">請喝咖啡<strong>NT$100</strong></div>
-      <div class="amount">請吃午餐<strong>NT$300</strong></div>
-    </div>
-  </section>
-
-  <section class="card">
-    <h2>留下姓名與留言</h2>
-    <p>若願意讓我知道是誰支持 EnglishGo，可以回到 App 內的「支持我們」頁面留下姓名與想說的話。留言會記錄在資料庫，不需要 Email。</p>
-    <a href="/?support=1" class="app-link">前往留言表單</a>
-  </section>
-
-  <section class="card">
-    <h2>支持會用在哪裡</h2>
-    <ul>
-      <li>Supabase 資料庫與雲端同步</li>
-      <li>Netlify 託管與網站維運</li>
-      <li>AI 家教、TTS、閱讀與單字卡功能更新</li>
-      <li>持續擴充小學、國中、高中學習內容</li>
-    </ul>
-  </section>
-
-  <a href="/" class="home-link">← 回到 EnglishGo</a>
-
-  <footer style="margin-top:48px;padding-top:24px;border-top:1px solid rgba(255,255,255,.1);text-align:center;font-size:12px;color:rgba(255,255,255,.4);">
-    © 2026 EnglishGo · 專為台灣學生設計的免費英語學習平台
-  </footer>
-</main>
+    <footer>© 2026 EnglishGo · Thanks for supporting better English learning.</footer>
+  </main>
 </body>
 </html>
