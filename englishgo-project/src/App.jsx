@@ -2271,13 +2271,50 @@ export default function App(){
   };
   const trackWeak=(word)=>{setWeakWords(w=>{const e=w.find(x=>x.w===word);if(e)return w.map(x=>x.w===word?{...x,n:x.n+1}:x);return[...w,{w:word,n:1}].slice(-50)})};
 
-  useEffect(()=>{const r=document.documentElement.style;r.colorScheme=dark?"dark":"light";if(dark){r.setProperty('--color-background-primary','#1a1a2e');r.setProperty('--color-background-secondary','#16213e');r.setProperty('--color-background-tertiary','#0f0f23');r.setProperty('--color-text-primary','#e0e0e0');r.setProperty('--color-text-secondary','#a0a0a0');r.setProperty('--color-text-tertiary','#707070');r.setProperty('--color-border-tertiary','#2a2a4a')}else{['--color-background-primary','--color-background-secondary','--color-background-tertiary','--color-text-primary','--color-text-secondary','--color-text-tertiary','--color-border-tertiary'].forEach(p=>r.removeProperty(p))}},[dark]);
+  useEffect(()=>{
+    const r=document.documentElement.style;
+    r.colorScheme=dark?"dark":"light";
+    const vars=dark?{
+      '--color-background-primary':'#171B2D',
+      '--color-background-secondary':'#202744',
+      '--color-background-tertiary':'#090B1D',
+      '--color-text-primary':'#F8FAFC',
+      '--color-text-secondary':'#D5DCEF',
+      '--color-text-tertiary':'#AAB4CE',
+      '--color-border-tertiary':'#3A4264',
+      '--eg-app-background':'linear-gradient(180deg,#0B0D22 0%,#10142E 42%,#080A18 100%)',
+      '--eg-nav-background':'rgba(18,23,42,.92)',
+      '--eg-card-shadow':'0 18px 42px rgba(0,0,0,.28)',
+      '--eg-menu-hero-bg':'linear-gradient(135deg,rgba(52,211,153,.22) 0%,rgba(31,41,85,.94) 44%,rgba(9,11,29,.98) 100%)',
+      '--eg-menu-card-bg':'linear-gradient(145deg,rgba(32,39,68,.96),rgba(21,26,47,.98))',
+      '--eg-menu-panel-bg':'linear-gradient(145deg,rgba(26,33,60,.98),rgba(15,19,39,.98))',
+      '--eg-hero-word':'#FFFFFF',
+      '--eg-soft-track':'rgba(255,255,255,.14)',
+    }:{
+      '--color-background-primary':'#FFFFFF',
+      '--color-background-secondary':'#F3F7F2',
+      '--color-background-tertiary':'#FFFDF7',
+      '--color-text-primary':'#1F2522',
+      '--color-text-secondary':'#53625B',
+      '--color-text-tertiary':'#7A857F',
+      '--color-border-tertiary':'#D9E4DC',
+      '--eg-app-background':'linear-gradient(180deg,#FFF8E8 0%,#F4FBF4 44%,#F7FAFF 100%)',
+      '--eg-nav-background':'rgba(255,255,255,.88)',
+      '--eg-card-shadow':'0 16px 36px rgba(20,66,52,.10)',
+      '--eg-menu-hero-bg':'linear-gradient(135deg,#E6FFF3 0%,#FFFFFF 47%,#FFF1D8 100%)',
+      '--eg-menu-card-bg':'linear-gradient(145deg,#FFFFFF,#F9FFFC)',
+      '--eg-menu-panel-bg':'linear-gradient(145deg,#FFFFFF,#F7FFFB)',
+      '--eg-hero-word':'#202522',
+      '--eg-soft-track':'rgba(25,52,43,.10)',
+    };
+    Object.entries(vars).forEach(([k,v])=>r.setProperty(k,v));
+  },[dark]);
 
   if(!lv)return<Landing onSelect={setLv} dark={dark} setDark={setDark}/>;
   const c=LV[lv],back=()=>setMod(null);
 
   return(
-    <div style={{minHeight:"100vh",background:S.bg3,fontFamily:"'Noto Sans TC','Segoe UI',sans-serif"}}>
+    <div style={{minHeight:"100vh",background:"var(--eg-app-background,var(--color-background-tertiary,#f8f7f4))",color:S.t1,fontFamily:"'Noto Sans TC','Segoe UI',sans-serif"}}>
       {/* Offline indicator - top bar */}
       {isOffline&&<div style={{position:"sticky",top:0,zIndex:100,background:"#EF9F27",color:"#fff",padding:"8px 14px",textAlign:"center",fontSize:12,fontWeight:600,letterSpacing:.5}}>
         📡 離線模式 · 已上過的內容可以繼續使用
@@ -2363,7 +2400,7 @@ export default function App(){
       `}</style>
       {showAch&&<div onClick={()=>setShowAch(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.5)",zIndex:999,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}><div style={{...S.card,padding:"32px 40px",textAlign:"center",animation:"fadeUp .4s ease-out"}}><div style={{fontSize:56}}>{showAch.icon}</div><div style={{fontSize:22,fontWeight:700,color:S.t1,marginTop:8}}>成就解鎖！</div><div style={{fontSize:16,fontWeight:600,color:c.cl,marginTop:4}}>{showAch.name}</div><div style={{fontSize:13,color:S.t2,marginTop:4}}>{showAch.desc}</div><div style={{fontSize:11,color:S.t3,marginTop:12}}>點擊關閉</div></div></div>}
       <RewardBurstHost/>
-      <nav style={{background:S.bg1,borderBottom:`1px solid ${S.bd}`,padding:"8px 12px",paddingTop:"calc(8px + env(safe-area-inset-top, 0px))",display:"flex",alignItems:"center",gap:6,position:"sticky",top:0,zIndex:100}}>
+      <nav style={{background:"var(--eg-nav-background,var(--color-background-primary,#fff))",backdropFilter:"blur(14px)",WebkitBackdropFilter:"blur(14px)",borderBottom:`1px solid ${S.bd}`,boxShadow:"0 8px 24px rgba(0,0,0,.06)",padding:"8px 12px",paddingTop:"calc(8px + env(safe-area-inset-top, 0px))",display:"flex",alignItems:"center",gap:6,position:"sticky",top:0,zIndex:100}}>
         <button onClick={()=>{setLv(null);setMod(null)}} style={{background:"none",border:"none",fontSize:18,cursor:"pointer",padding:"4px",minWidth:32,minHeight:32,display:"flex",alignItems:"center",justifyContent:"center"}}>←</button>
         <span style={{fontSize:14}}>{c.ic}</span>
         <span style={{fontWeight:600,color:c.cl,fontSize:14,flex:1}}>{c.l}</span>
@@ -2419,6 +2456,136 @@ export default function App(){
 
 // ═══ LANDING ════════════════════════════════════════════════════════
 function Landing({onSelect,dark,setDark}){
+  const[hov,setHov]=useState(null);
+  const features=[
+    {i:"🃏",t:"SRS 記憶",d:"間隔重複背單字",tone:"#10B981"},
+    {i:"🎧",t:"聽說練習",d:"朗讀、聽寫、口說",tone:"#3B82F6"},
+    {i:"🧩",t:"互動遊戲",d:"配對、拼字、打地鼠",tone:"#F59E0B"},
+    {i:"🤖",t:"AI 家教",d:"即時問答與提示",tone:"#8B5CF6"},
+    {i:"🐾",t:"寵物養成",d:"學習累積成長",tone:"#EC4899"},
+    {i:"📚",t:"故事歌曲",d:"閱讀與跟讀輸入",tone:"#06B6D4"},
+  ];
+  const articles=[
+    {href:"/learn/srs-method.html",t:"SRS 間隔重複",d:"用科學方式記住單字",ic:"🧠",tone:"#10B981"},
+    {href:"/learn/speaking-tips.html",t:"英文口說提升",d:"不用出國也能練",ic:"🗣️",tone:"#3B82F6"},
+    {href:"/learn/vocabulary-guide.html",t:"會考單字攻略",d:"國中 1200 字準備法",ic:"📚",tone:"#F59E0B"},
+    {href:"/learn/api-keys.html",t:"API Key 教學",d:"Gemini 與動圖設定",ic:"🔑",tone:"#8B5CF6"},
+    {href:"/learn/gif-guide.html",t:"單字動圖效果",d:"申請前先看差異",ic:"🖼️",tone:"#EC4899"},
+    {href:"/?support=1",t:"支持 EnglishGo",d:"銀行轉帳與留言",ic:"☕",tone:"#0F766E"},
+  ];
+  return(<div className={`eg-landing ${dark?"is-dark":"is-light"}`}>
+    <style>{`
+      .eg-landing{--landing-text:${dark?"#F8FAFC":"#18211D"};--landing-muted:${dark?"#C9D4EA":"#5D6B64"};--landing-faint:${dark?"#8FA0C2":"#7B8882"};--landing-card:${dark?"rgba(25,32,58,.82)":"rgba(255,255,255,.86)"};--landing-border:${dark?"rgba(154,170,210,.28)":"rgba(13,118,90,.18)"};min-height:100vh;color:var(--landing-text);font-family:'Noto Sans TC','Segoe UI',sans-serif;background:${dark?"linear-gradient(180deg,#080A1A 0%,#101735 44%,#070812 100%)":"linear-gradient(180deg,#FFF4D6 0%,#EFFFF6 48%,#F8FBFF 100%)"};position:relative;overflow:hidden}
+      .eg-landing:before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(135deg,${dark?"rgba(255,255,255,.035)":"rgba(15,110,86,.045)"} 0 1px,transparent 1px 34px);pointer-events:none}
+      .eg-landing-shell{position:relative;z-index:1;max-width:1040px;margin:0 auto;padding:42px 18px 44px}
+      .eg-landing-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:28px}
+      .eg-landing-brand{display:inline-flex;align-items:center;gap:11px;border:1px solid var(--landing-border);background:var(--landing-card);border-radius:999px;padding:9px 16px;box-shadow:${dark?"0 14px 34px rgba(0,0,0,.25)":"0 14px 34px rgba(20,66,52,.10)"};backdrop-filter:blur(14px)}
+      .eg-landing-brand strong{font-size:22px;letter-spacing:0}
+      .eg-theme-toggle{border:1px solid var(--landing-border);background:var(--landing-card);color:var(--landing-text);border-radius:999px;padding:9px 14px;font:inherit;font-size:12px;font-weight:900;cursor:pointer;box-shadow:${dark?"0 12px 28px rgba(0,0,0,.22)":"0 12px 28px rgba(20,66,52,.08)"}}
+      .eg-landing-hero{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:18px;align-items:stretch;margin-bottom:18px}
+      .eg-landing-copy{border:1px solid var(--landing-border);border-radius:28px;background:${dark?"linear-gradient(145deg,rgba(24,32,67,.88),rgba(11,14,32,.92))":"linear-gradient(145deg,rgba(255,255,255,.9),rgba(236,255,246,.86))"};padding:28px;box-shadow:${dark?"0 22px 54px rgba(0,0,0,.28)":"0 22px 54px rgba(20,66,52,.12)"};position:relative;overflow:hidden}
+      .eg-landing-copy:after{content:"";position:absolute;left:0;right:0;bottom:0;height:6px;background:linear-gradient(90deg,#10B981,#3B82F6,#F59E0B,#EC4899)}
+      .eg-landing-kicker{display:inline-flex;align-items:center;gap:7px;border:1px solid ${dark?"rgba(52,211,153,.32)":"rgba(16,185,129,.24)"};background:${dark?"rgba(16,185,129,.13)":"rgba(16,185,129,.10)"};color:${dark?"#7FFFD1":"#08745A"};border-radius:999px;padding:7px 12px;font-size:12px;font-weight:1000;margin-bottom:16px}
+      .eg-landing h1{font-size:clamp(34px,6vw,60px);line-height:1.02;margin:0 0 14px;font-weight:1000;letter-spacing:0}
+      .eg-landing h1 span{background:linear-gradient(92deg,#10B981,#3B82F6 48%,#EC4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+      .eg-landing-lead{font-size:16px;line-height:1.85;color:var(--landing-muted);max-width:620px;margin:0}
+      .eg-landing-proof{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:22px}
+      .eg-proof{border:1px solid var(--landing-border);border-radius:16px;background:${dark?"rgba(255,255,255,.045)":"rgba(255,255,255,.68)"};padding:12px}
+      .eg-proof b{display:block;font-size:18px}
+      .eg-proof span{display:block;font-size:11px;color:var(--landing-faint);margin-top:3px}
+      .eg-level-stack{display:grid;gap:12px}
+      .eg-level-card{border:1px solid color-mix(in srgb,var(--level-color) 42%,var(--landing-border));background:${dark?"linear-gradient(145deg,rgba(28,36,70,.88),rgba(17,22,45,.96))":"linear-gradient(145deg,#FFFFFF,#F9FFFC)"};border-radius:22px;padding:17px 16px;text-align:left;color:var(--landing-text);cursor:pointer;font:inherit;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;box-shadow:0 14px 30px color-mix(in srgb,var(--level-color) 12%,transparent);transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease}
+      .eg-level-card:hover{transform:translateY(-3px);box-shadow:0 18px 38px color-mix(in srgb,var(--level-color) 20%,transparent);border-color:color-mix(in srgb,var(--level-color) 72%,var(--landing-border))}
+      .eg-level-icon{width:48px;height:48px;border-radius:17px;display:flex;align-items:center;justify-content:center;font-size:25px;background:color-mix(in srgb,var(--level-color) 16%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--level-color) 18%,transparent)}
+      .eg-level-title{display:block;font-size:20px;font-weight:1000;line-height:1.2}
+      .eg-level-sub{display:block;font-size:12px;color:var(--landing-faint);margin-top:2px}
+      .eg-level-badge{font-size:12px;font-weight:1000;color:var(--level-color);background:color-mix(in srgb,var(--level-color) 12%,transparent);border-radius:999px;padding:5px 9px;white-space:nowrap}
+      .eg-feature-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin:18px 0}
+      .eg-feature{border:1px solid color-mix(in srgb,var(--feature-color) 24%,var(--landing-border));border-radius:18px;background:var(--landing-card);padding:14px 10px;text-align:center;box-shadow:${dark?"0 10px 28px rgba(0,0,0,.14)":"0 10px 24px rgba(20,66,52,.06)"}}
+      .eg-feature-icon{font-size:24px;margin-bottom:5px}
+      .eg-feature-title{font-size:12px;font-weight:1000}
+      .eg-feature-desc{font-size:11px;color:var(--landing-faint);line-height:1.35;margin-top:3px}
+      .eg-article-section{border:1px solid var(--landing-border);border-radius:24px;background:var(--landing-card);padding:18px;backdrop-filter:blur(14px)}
+      .eg-article-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:12px}
+      .eg-article-head b{font-size:17px}
+      .eg-article-head span{font-size:12px;color:var(--landing-faint)}
+      .eg-article-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+      .eg-article{display:flex;gap:11px;align-items:flex-start;border:1px solid color-mix(in srgb,var(--article-color) 20%,var(--landing-border));border-radius:16px;background:${dark?"rgba(255,255,255,.035)":"rgba(255,255,255,.62)"};padding:13px;text-decoration:none;color:var(--landing-text);transition:transform .15s ease,border-color .15s ease}
+      .eg-article:hover{transform:translateY(-2px);border-color:color-mix(in srgb,var(--article-color) 60%,var(--landing-border))}
+      .eg-article-ic{width:34px;height:34px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--article-color) 14%,transparent);flex:0 0 auto}
+      .eg-article-title{display:block;font-size:13px;font-weight:1000}
+      .eg-article-desc{display:block;font-size:11px;color:var(--landing-faint);margin-top:2px}
+      .eg-landing-footer{margin-top:24px;text-align:center;font-size:11px;color:var(--landing-faint);line-height:1.8}
+      @media(max-width:820px){
+        .eg-landing-shell{padding:22px 12px 34px}
+        .eg-landing-top{margin-bottom:18px}
+        .eg-landing-hero{grid-template-columns:1fr}
+        .eg-landing-copy{padding:22px 18px;border-radius:22px}
+        .eg-landing-proof{grid-template-columns:1fr}
+        .eg-feature-grid{grid-template-columns:repeat(2,1fr)}
+        .eg-article-grid{grid-template-columns:1fr}
+      }
+      @media(max-width:420px){
+        .eg-landing-brand strong{font-size:18px}
+        .eg-theme-toggle{padding:8px 10px}
+        .eg-level-card{grid-template-columns:auto 1fr;padding:14px}
+        .eg-level-badge{grid-column:2}
+      }
+    `}</style>
+    <main className="eg-landing-shell">
+      <div className="eg-landing-top">
+        <div className="eg-landing-brand"><span style={{fontSize:26}}>📘</span><strong>EnglishGo</strong></div>
+        <button className="eg-theme-toggle" type="button" onClick={()=>setDark(!dark)}>{dark?"☀️ 白天模式":"🌙 黑夜模式"}</button>
+      </div>
+      <section className="eg-landing-hero">
+        <div className="eg-landing-copy">
+          <div className="eg-landing-kicker">台灣學生專用 · AI 英語學習平台</div>
+          <h1>讓英文練習<br/><span>像遊戲一樣上癮</span></h1>
+          <p className="eg-landing-lead">用單字卡、閱讀、歌曲、口說、互動遊戲與寵物養成，把每天 10 分鐘變成看得到進步的學習流程。</p>
+          <div className="eg-landing-proof">
+            <div className="eg-proof"><b>3</b><span>學習階段</span></div>
+            <div className="eg-proof"><b>10+</b><span>練習模式</span></div>
+            <div className="eg-proof"><b>0</b><span>付費牆與廣告</span></div>
+          </div>
+        </div>
+        <div className="eg-level-stack" aria-label="選擇學習階段">
+          {Object.entries(LV).map(([k,level])=>(
+            <button key={k} type="button" className="eg-level-card" onClick={()=>onSelect(k)} onMouseEnter={()=>setHov(k)} onMouseLeave={()=>setHov(null)} style={{"--level-color":level.cl,transform:hov===k?"translateY(-3px)":"none"}}>
+              <span className="eg-level-icon">{level.ic}</span>
+              <span>
+                <span className="eg-level-title">{level.l}</span>
+                <span className="eg-level-sub">{level.en}</span>
+              </span>
+              <span className="eg-level-badge">{level.wd}</span>
+            </button>
+          ))}
+        </div>
+      </section>
+      <section className="eg-feature-grid">
+        {features.map(f=><div key={f.t} className="eg-feature" style={{"--feature-color":f.tone}}>
+          <div className="eg-feature-icon">{f.i}</div>
+          <div className="eg-feature-title">{f.t}</div>
+          <div className="eg-feature-desc">{f.d}</div>
+        </div>)}
+      </section>
+      <section className="eg-article-section">
+        <div className="eg-article-head"><b>學習資源</b><span>快速了解功能與設定</span></div>
+        <div className="eg-article-grid">
+          {articles.map(a=><a key={a.href} className="eg-article" href={a.href} style={{"--article-color":a.tone}}>
+            <span className="eg-article-ic">{a.ic}</span>
+            <span><span className="eg-article-title">{a.t}</span><span className="eg-article-desc">{a.d}</span></span>
+          </a>)}
+        </div>
+      </section>
+      <footer className="eg-landing-footer">
+        <div>AI Tutor powered by <b>Gemini</b> · Speech by <b>Web Speech API</b></div>
+        <div>© {new Date().getFullYear()} EnglishGo · 專為台灣學生設計</div>
+      </footer>
+    </main>
+  </div>);
+}
+
+function LandingLegacy({onSelect,dark,setDark}){
   const[hov,setHov]=useState(null);
   return(<div style={{minHeight:"100vh",background:"linear-gradient(150deg,#091825,#122a45 45%,#183a58 75%,#0d1f32)",color:"#fff",fontFamily:"'Noto Sans TC','Segoe UI',sans-serif"}}>
     <div style={{position:"relative",zIndex:1,maxWidth:860,margin:"0 auto",padding:"48px 20px 36px",textAlign:"center"}}>
@@ -2536,22 +2703,22 @@ function MenuV2({lv,onSelect,daily,c,xp,coins,streak,achUnlocked,weakWords,isSpo
   return(
     <div className="eg-menu" style={{"--accent":c.cl,"--accent-2":c.ac,"--accent-soft":c.bg,"--card":S.bg1,"--surface":S.bg2,"--page":S.bg3,"--border":S.bd,"--text":S.t1,"--muted":S.t2,"--faint":S.t3}}>
       <style>{`
-        .eg-menu{display:grid;gap:16px}
+        .eg-menu{display:grid;gap:18px}
         .eg-menu button{font-family:inherit}
-        .eg-menu-hero{position:relative;overflow:hidden;border:1px solid color-mix(in srgb,var(--accent) 24%,var(--border));border-radius:24px;background:linear-gradient(135deg,var(--accent-soft),var(--card) 58%);box-shadow:0 18px 40px rgba(15,110,86,.08);padding:18px;display:grid;grid-template-columns:minmax(0,1fr) 278px;gap:16px}
-        .eg-menu-hero:after{content:"";position:absolute;right:-110px;top:-120px;width:280px;height:280px;border-radius:999px;background:color-mix(in srgb,var(--accent) 12%,transparent);pointer-events:none}
-        .eg-menu-eyebrow{display:inline-flex;align-items:center;gap:8px;width:max-content;max-width:100%;padding:6px 10px;border-radius:999px;border:1px solid color-mix(in srgb,var(--accent) 22%,transparent);background:color-mix(in srgb,var(--accent) 8%,var(--card));color:var(--accent);font-size:12px;font-weight:900}
+        .eg-menu-hero{position:relative;overflow:hidden;border:1px solid color-mix(in srgb,var(--accent) 36%,var(--border));border-radius:26px;background:var(--eg-menu-hero-bg,linear-gradient(135deg,var(--accent-soft),var(--card) 58%));box-shadow:var(--eg-card-shadow,0 18px 40px rgba(15,110,86,.08));padding:20px;display:grid;grid-template-columns:minmax(0,1fr) 292px;gap:18px}
+        .eg-menu-hero:before{content:"";position:absolute;inset:0;background:linear-gradient(110deg,rgba(255,255,255,.32) 0%,transparent 34%,transparent 64%,rgba(255,255,255,.10) 100%);pointer-events:none;mix-blend-mode:screen}
+        .eg-menu-eyebrow{position:relative;z-index:1;display:inline-flex;align-items:center;gap:8px;width:max-content;max-width:100%;padding:7px 11px;border-radius:999px;border:1px solid color-mix(in srgb,var(--accent) 32%,transparent);background:color-mix(in srgb,var(--accent) 14%,var(--card));color:var(--accent);font-size:12px;font-weight:1000;box-shadow:0 8px 18px color-mix(in srgb,var(--accent) 14%,transparent)}
         .eg-menu-word-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px}
-        .eg-menu-word{font-size:clamp(30px,7vw,46px);font-weight:1000;line-height:1;color:var(--text);letter-spacing:0}
-        .eg-menu-sound{width:42px;height:42px;border-radius:14px;border:1px solid color-mix(in srgb,var(--accent) 24%,var(--border));background:var(--card);color:var(--accent);font-size:16px;font-weight:900;cursor:pointer;box-shadow:0 8px 18px color-mix(in srgb,var(--accent) 10%,transparent)}
+        .eg-menu-word{font-size:clamp(34px,7vw,54px);font-weight:1000;line-height:1;color:var(--eg-hero-word,var(--text));letter-spacing:0;text-shadow:0 2px 14px rgba(0,0,0,.12)}
+        .eg-menu-sound{width:44px;height:44px;border-radius:15px;border:1px solid color-mix(in srgb,var(--accent) 30%,var(--border));background:var(--card);color:var(--accent);font-size:17px;font-weight:900;cursor:pointer;box-shadow:0 10px 22px color-mix(in srgb,var(--accent) 18%,transparent)}
         .eg-menu-word-meta{font-size:14px;color:var(--muted);margin-top:8px;line-height:1.55}
         .eg-menu-progress{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;margin-top:18px}
-        .eg-menu-track{height:10px;border-radius:999px;background:rgba(0,0,0,.07);overflow:hidden}
+        .eg-menu-track{height:11px;border-radius:999px;background:var(--eg-soft-track,rgba(0,0,0,.07));overflow:hidden;box-shadow:inset 0 1px 4px rgba(0,0,0,.10)}
         .eg-menu-fill{height:100%;width:var(--progress);border-radius:999px;background:linear-gradient(90deg,var(--accent),var(--accent-2));transition:width .25s ease}
         .eg-menu-progress-label{font-size:12px;font-weight:1000;color:var(--accent)}
         .eg-menu-note{font-size:12px;color:var(--faint);line-height:1.6;margin-top:8px}
         .eg-menu-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;position:relative;z-index:1}
-        .eg-menu-stat{border:1px solid color-mix(in srgb,var(--tone) 18%,var(--border));border-radius:18px;background:linear-gradient(135deg,color-mix(in srgb,var(--tone) 9%,var(--card)),var(--card));padding:13px;text-align:left;min-height:92px;cursor:default}
+        .eg-menu-stat{border:1px solid color-mix(in srgb,var(--tone) 28%,var(--border));border-radius:18px;background:linear-gradient(145deg,color-mix(in srgb,var(--tone) 15%,var(--card)),var(--card));padding:13px;text-align:left;min-height:92px;cursor:default;box-shadow:0 10px 24px color-mix(in srgb,var(--tone) 10%,transparent)}
         .eg-menu-stat.has-action{cursor:pointer}
         .eg-menu-stat-label{display:block;font-size:11px;color:var(--tone);font-weight:1000}
         .eg-menu-stat-value{display:block;font-size:22px;color:var(--text);font-weight:1000;margin-top:8px;line-height:1.05}
@@ -2559,21 +2726,22 @@ function MenuV2({lv,onSelect,daily,c,xp,coins,streak,achUnlocked,weakWords,isSpo
         .eg-menu-section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin:2px 2px 10px}
         .eg-menu-section-title{font-size:16px;font-weight:1000;color:var(--text)}
         .eg-menu-section-sub{font-size:12px;color:var(--faint);margin-top:3px;line-height:1.45}
-        .eg-menu-recommended{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+        .eg-menu-recommended{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
         .eg-menu-groups{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
-        .eg-menu-group{border:1px solid transparent;border-radius:18px;background:var(--surface);padding:12px 10px;text-align:left;cursor:pointer;min-height:78px;color:var(--text);transition:transform .14s ease,box-shadow .14s ease,border-color .14s ease}
+        .eg-menu-group{border:1px solid color-mix(in srgb,var(--group-color) 8%,var(--border));border-radius:18px;background:linear-gradient(145deg,color-mix(in srgb,var(--group-color) 6%,var(--surface)),var(--surface));padding:12px 10px;text-align:left;cursor:pointer;min-height:78px;color:var(--text);transition:transform .14s ease,box-shadow .14s ease,border-color .14s ease}
         .eg-menu-group:hover,.eg-menu-module:hover{transform:translateY(-2px)}
-        .eg-menu-group.is-active{border-color:color-mix(in srgb,var(--group-color) 58%,var(--border));background:linear-gradient(135deg,color-mix(in srgb,var(--group-color) 12%,var(--card)),var(--card));box-shadow:0 10px 24px color-mix(in srgb,var(--group-color) 12%,transparent)}
+        .eg-menu-group.is-active{border-color:color-mix(in srgb,var(--group-color) 70%,var(--border));background:linear-gradient(135deg,color-mix(in srgb,var(--group-color) 18%,var(--card)),var(--card));box-shadow:0 12px 26px color-mix(in srgb,var(--group-color) 18%,transparent)}
         .eg-menu-group-top{display:flex;align-items:center;gap:8px}
         .eg-menu-group-icon{width:28px;height:28px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--group-color) 12%,var(--card));color:var(--group-color);font-weight:1000;font-size:13px}
         .eg-menu-group-title{font-size:13px;font-weight:1000;color:var(--text)}
         .eg-menu-group-desc{display:block;font-size:11px;color:var(--faint);line-height:1.35;margin-top:7px}
-        .eg-menu-panel{border:1px solid color-mix(in srgb,var(--active-color) 18%,var(--border));border-radius:22px;background:linear-gradient(135deg,color-mix(in srgb,var(--active-color) 7%,var(--card)),var(--card));padding:14px}
+        .eg-menu-panel{border:1px solid color-mix(in srgb,var(--active-color) 26%,var(--border));border-radius:24px;background:var(--eg-menu-panel-bg,linear-gradient(135deg,color-mix(in srgb,var(--active-color) 7%,var(--card)),var(--card)));padding:16px;box-shadow:var(--eg-card-shadow,none)}
         .eg-menu-module-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(176px,1fr));gap:10px}
-        .eg-menu-module{position:relative;overflow:hidden;border:1px solid color-mix(in srgb,var(--module-color) 18%,var(--border));border-radius:18px;background:var(--card);padding:14px;text-align:left;display:flex;gap:11px;min-height:106px;cursor:pointer;color:var(--text);transition:transform .14s ease,box-shadow .14s ease,border-color .14s ease}
-        .eg-menu-module:hover{box-shadow:0 12px 24px color-mix(in srgb,var(--module-color) 12%,transparent);border-color:color-mix(in srgb,var(--module-color) 45%,var(--border))}
-        .eg-menu-module:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--module-color);opacity:.8}
-        .eg-menu-module-icon{width:38px;height:38px;border-radius:13px;display:inline-flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--module-color) 12%,var(--card));color:var(--module-color);font-size:15px;font-weight:1000;flex:0 0 auto}
+        .eg-menu-module{position:relative;overflow:hidden;border:1px solid color-mix(in srgb,var(--module-color) 26%,var(--border));border-radius:18px;background:var(--eg-menu-card-bg,var(--card));padding:14px;text-align:left;display:flex;gap:11px;min-height:106px;cursor:pointer;color:var(--text);transition:transform .14s ease,box-shadow .14s ease,border-color .14s ease}
+        .eg-menu-module:hover{box-shadow:0 14px 28px color-mix(in srgb,var(--module-color) 18%,transparent);border-color:color-mix(in srgb,var(--module-color) 58%,var(--border))}
+        .eg-menu-module:before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:linear-gradient(180deg,var(--module-color),color-mix(in srgb,var(--module-color) 44%,#fff));opacity:.95}
+        .eg-menu-module:after{content:"";position:absolute;inset:0;background:linear-gradient(120deg,rgba(255,255,255,.20),transparent 42%);pointer-events:none}
+        .eg-menu-module-icon{width:40px;height:40px;border-radius:14px;display:inline-flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--module-color) 16%,var(--card));color:var(--module-color);font-size:15px;font-weight:1000;flex:0 0 auto;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--module-color) 14%,transparent)}
         .eg-menu-module-body{min-width:0;display:flex;flex-direction:column;align-items:flex-start}
         .eg-menu-module-title{font-size:14px;font-weight:1000;line-height:1.25;color:var(--text)}
         .eg-menu-module-desc{font-size:12px;color:var(--muted);line-height:1.45;margin-top:5px}
