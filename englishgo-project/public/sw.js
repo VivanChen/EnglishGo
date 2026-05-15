@@ -44,7 +44,6 @@ self.addEventListener('fetch', (event) => {
                 url.hostname.includes('generativelanguage') ||
                 url.hostname.includes('giphy.com') ||
                 url.hostname.includes('loremflickr.com') ||
-                url.hostname.includes('esm.sh') ||
                 url.pathname.startsWith('/api/');
   if (isAPI) return;
 

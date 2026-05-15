@@ -27,7 +27,7 @@ function getSupabaseUrl() {
 }
 
 function getSupabaseKey() {
-  return getFirstEnv("SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_ANON_KEY", "VITE_SUPABASE_ANON_KEY");
+  return getFirstEnv("SUPABASE_SERVICE_ROLE_KEY");
 }
 
 function safeHeaderValue(value) {
@@ -219,18 +219,20 @@ export default async function handler(req, context = {}) {
   }
 
   const cacheKey = makeCacheKey({ normalizedText, voiceId, modelId, outputFormat, voiceSettings });
-  const debugHeaders = {
-    "X-TTS-Bucket": safeHeaderValue(bucket),
-    "X-TTS-Cache-Key": safeHeaderValue(cacheKey),
-    "X-TTS-Normalized-Text": safeHeaderValue(normalizedText),
-    "X-TTS-Voice-Id": safeHeaderValue(voiceId),
-    "X-TTS-Model-Id": safeHeaderValue(modelId),
-    "X-TTS-Output-Format": safeHeaderValue(outputFormat),
-    "X-TTS-Speaker-Boost": String(voiceSettings.use_speaker_boost),
-    "X-TTS-Playback-Speed": safeHeaderValue(playbackSpeed),
-    "X-TTS-Has-Supabase-Url": String(hasSupabaseUrl),
-    "X-TTS-Has-Supabase-Key": String(hasSupabaseKey),
-  };
+  const debugHeaders = getBooleanEnv("TTS_DEBUG_HEADERS", false)
+    ? {
+        "X-TTS-Bucket": safeHeaderValue(bucket),
+        "X-TTS-Cache-Key": safeHeaderValue(cacheKey),
+        "X-TTS-Normalized-Text": safeHeaderValue(normalizedText),
+        "X-TTS-Voice-Id": safeHeaderValue(voiceId),
+        "X-TTS-Model-Id": safeHeaderValue(modelId),
+        "X-TTS-Output-Format": safeHeaderValue(outputFormat),
+        "X-TTS-Speaker-Boost": String(voiceSettings.use_speaker_boost),
+        "X-TTS-Playback-Speed": safeHeaderValue(playbackSpeed),
+        "X-TTS-Has-Supabase-Url": String(hasSupabaseUrl),
+        "X-TTS-Has-Supabase-Key": String(hasSupabaseKey),
+      }
+    : {};
 
   const cached = await tryReadFromSupabaseStorage({ bucket, cacheKey });
   if (cached.ok && cached.audioBuffer) {
