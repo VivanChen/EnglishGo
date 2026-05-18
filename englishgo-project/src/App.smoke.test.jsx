@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import App from './App.jsx';
 
 async function openElementaryMenu() {
@@ -32,6 +32,12 @@ function clickMenuStat(label) {
   fireEvent.click(labelNode.closest('button'));
 }
 
+function clickFirstModuleCard() {
+  const target = document.querySelector('.eg-menu-module');
+  expect(target).toBeTruthy();
+  fireEvent.click(target);
+}
+
 describe('EnglishGo app smoke flow', () => {
   it('renders the landing page', () => {
     render(<App />);
@@ -52,6 +58,39 @@ describe('EnglishGo app smoke flow', () => {
     clickFirstButtonWithText('單字卡');
 
     expect(await screen.findByText(/SRS 單字卡/)).toBeInTheDocument();
+  });
+
+  it('shows a Giphy GIF on SRS cards when a GIF key is configured', async () => {
+    const gifUrl = 'https://media.giphy.com/media/englishgo-test.gif';
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        data: {
+          images: {
+            fixed_height_small: { url: gifUrl },
+          },
+        },
+      }),
+    });
+
+    localStorage.setItem('eg_gifkey', JSON.stringify('test-key'));
+
+    try {
+      await openElementaryMenu();
+      clickFirstModuleCard();
+
+      expect(await screen.findByText(/SRS/)).toBeInTheDocument();
+
+      await waitFor(() => {
+        expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('api.giphy.com/v1/gifs/translate'));
+      });
+
+      await waitFor(() => {
+        expect(document.querySelector(`img[src="${gifUrl}"]`)).toBeTruthy();
+      });
+    } finally {
+      fetchMock.mockRestore();
+    }
   });
 
   it('opens the lazy novel reader module', async () => {

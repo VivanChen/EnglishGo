@@ -1,16 +1,21 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 
+const _gifCache = new Map();
+
 async function fetchGif(word,apiKey){
-  if(!apiKey)return null;
-  const k=word.toLowerCase();
-  if(_gifCache[k]!==undefined)return _gifCache[k];
+  const key=String(apiKey||"").trim();
+  const k=String(word||"").trim().toLowerCase();
+  if(!key||!k)return null;
+  const cacheKey=`${key}:${k}`;
+  if(_gifCache.has(cacheKey))return _gifCache.get(cacheKey);
   try{
-    const res=await fetch(`https://api.giphy.com/v1/gifs/translate?api_key=${apiKey}&s=${encodeURIComponent(k)}&rating=g&lang=en`);
+    const res=await fetch(`https://api.giphy.com/v1/gifs/translate?api_key=${encodeURIComponent(key)}&s=${encodeURIComponent(k)}&rating=g&lang=en`);
+    if(!res.ok)return null;
     const data=await res.json();
     const url=data?.data?.images?.fixed_height_small?.url||data?.data?.images?.fixed_height?.url||null;
-    _gifCache[k]=url;
+    _gifCache.set(cacheKey,url);
     return url;
-  }catch{_gifCache[k]=null;return null}
+  }catch{return null}
 }
 
 // ═══ ANIMATED EMOJI FOR CARDS ══════════════════════════════════════
