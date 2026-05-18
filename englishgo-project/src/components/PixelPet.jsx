@@ -51,6 +51,13 @@ const EGG_SPRITE=[
   '....DDDDDDD.....',
 ];
 
+const PET_VARIANT_BASE={
+  hamster:"bunny",turtle:"froggy",duckling:"chick",lamb:"bunny",
+  deer:"fox",seal:"penguin",parrot:"chick",squirrel:"fox",
+  pegasus:"unicorn",griffin:"phoenix",seaotter:"whale",
+  moonlion:"celestial",aurorafox:"fox",
+};
+
 // Pet sprites: each pet has {baby, adult, evolved} stages. All 16x14 grid.
 const PIXEL_PETS={
   bunny:{
