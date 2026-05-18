@@ -2327,7 +2327,7 @@ export default function App(){
       <div style={{maxWidth:!mod?940:mod==="petAdventure"?1280:760,margin:"0 auto",padding:mod==="petAdventure"?"14px 18px calc(20px + env(safe-area-inset-bottom, 0px))":"12px 12px calc(16px + env(safe-area-inset-bottom, 0px))"}}>
         {!mod?<MenuV2 lv={lv} onSelect={m=>{setSharedWord(null);setMod(m)}} daily={daily} c={c} xp={xp} coins={coins} streak={streak} achUnlocked={achUnlocked} weakWords={weakWords} isSponsor={isSponsor} pets={pets} eggs={eggs}/>:
          mod==="wordsearch"?<WordSearchM lv={lv} onBack={back} onOpenCard={(word,level)=>{setLv(level||lv);setSharedWord(word);setMod("srs")}}/>:
-         mod==="srs"?<SRS lv={lv} onBack={back} onXp={n=>addXpWithTask(n,"srsToday")} onDone={()=>setStats(s=>({...s,srsRounds:s.srsRounds+1}))} trackWeak={trackWeak} gifKey={gifKey} onSetGifKey={setGifKey} sharedWord={sharedWord} apiKey={gemKey} onSetApiKey={setGemKey} weakWords={weakWords}/>:
+         mod==="srs"?<SRS lv={lv} onBack={back} onXp={n=>addXpWithTask(n,"srsToday")} onDone={()=>setStats(s=>({...s,srsRounds:s.srsRounds+1}))} trackWeak={trackWeak} gifKey={gifKey} sharedWord={sharedWord} apiKey={gemKey} weakWords={weakWords} onOpenSettings={()=>setMod("settings")}/>:
          mod==="quiz"?<QuizM lv={lv} onBack={back} onXp={n=>addXpWithTask(n,"quizToday")} onPerfect={()=>setStats(s=>({...s,perfectQuiz:s.perfectQuiz+1}))} trackWeak={trackWeak}/>:
          mod==="speak"?<SpeakM lv={lv} onBack={back} onXp={n=>addXpWithTask(n,"speakToday")}/>:
          mod==="whack"?<WhackM lv={lv} onBack={back} onXp={addXp}/>:
@@ -2339,11 +2339,12 @@ export default function App(){
          mod==="songs"?<SongsM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="dictation"?<DictM lv={lv} onBack={back} onXp={addXp} onDone={()=>setStats(s=>({...s,dictDone:s.dictDone+1}))}/>:
          mod==="scramble"?<ScramM lv={lv} onBack={back} onXp={addXp} onDone={()=>setStats(s=>({...s,scramDone:s.scramDone+1}))}/>:
-         mod==="ai"?<AIT lv={lv} onBack={back} apiKey={gemKey} onSetKey={setGemKey}/>:
-         mod==="story"?<StoryMode lv={lv} onBack={back} apiKey={gemKey} onSetKey={setGemKey} pets={pets} c={c} onXp={addXp} trackWeak={trackWeak}/>:
+         mod==="ai"?<AIT lv={lv} onBack={back} apiKey={gemKey} onOpenSettings={()=>setMod("settings")}/>:
+         mod==="story"?<StoryMode lv={lv} onBack={back} apiKey={gemKey} pets={pets} c={c} onXp={addXp} trackWeak={trackWeak} onOpenSettings={()=>setMod("settings")}/>:
          mod==="achievements"?<AchPage onBack={back} unlocked={achUnlocked} c={c}/>:
          mod==="weak"?<WeakPage onBack={back} weakWords={weakWords} setWeakWords={setWeakWords} c={c} lv={lv}/>:
          mod==="dashboard"?<Dashboard onBack={back} c={c} xp={xp} streak={streak} stats={stats} daily={daily} weakWords={weakWords} history={history} achUnlocked={achUnlocked} lv={lv} isSponsor={isSponsor}/>:
+         mod==="settings"?<SettingsPage onBack={back} c={c} gemKey={gemKey} setGemKey={setGemKey} gifKey={gifKey} setGifKey={setGifKey}/>:
          mod==="gacha"?<GachaPage onBack={back} c={c} coins={coins} setCoins={setCoins} eggs={eggs} setEggs={setEggs} pets={pets} setPets={setPets}/>:
          mod==="pets"?<PetsGuard onBack={back} c={c} pets={pets} setPets={setPets} eggs={eggs} setEggs={setEggs} coins={coins} setCoins={setCoins} inventory={inventory} setInventory={setInventory} petAccount={petAccount} setPetAccount={setPetAccount} petTasks={petTasks} setPetTasks={setPetTasks} incrTask={incrTask}/>:
          mod==="petAdventure"?<PetAdventurePage lv={lv} onBack={back} c={c} pets={pets} setPets={setPets} eggs={eggs} setEggs={setEggs} coins={coins} setCoins={setCoins} inventory={inventory} setInventory={setInventory}/>:
@@ -2356,7 +2357,7 @@ export default function App(){
         <div style={{maxWidth:480,margin:"0 auto"}}>
           <div style={{fontWeight:600,fontSize:12,color:S.t2,marginBottom:6}}>📘 如何使用 EnglishGo</div>
           <div style={{marginBottom:8}}>選擇等級（小學／國中／高中）後，透過 SRS 單字卡記憶單字，搭配口說練習、打地鼠拼字、配對翻牌等遊戲強化學習。AI 家教可即時回答英文問題。每天練習 10 題即可累積經驗值與成就徽章！</div>
-          <div style={{marginBottom:8}}><a href="/learn/api-keys.html" style={{color:c.cl,textDecoration:"underline"}}>🔑 API Key 申請教學</a> · <a href="/learn/gif-guide.html" style={{color:c.cl,textDecoration:"underline"}}>🖼️ 單字動圖說明</a> · <button onClick={()=>setMod("sponsor")} style={{background:"none",border:"none",padding:0,color:c.cl,textDecoration:"underline",font:"inherit",cursor:"pointer"}}>☕ 支持我們</button></div>
+          <div style={{marginBottom:8}}><button onClick={()=>setMod("settings")} style={{background:"none",border:"none",padding:0,color:c.cl,textDecoration:"underline",font:"inherit",cursor:"pointer"}}>🔑 Key 設定</button> · <a href="/learn/api-keys.html" style={{color:c.cl,textDecoration:"underline"}}>API Key 申請教學</a> · <a href="/learn/gif-guide.html" style={{color:c.cl,textDecoration:"underline"}}>🖼️ 單字動圖說明</a> · <button onClick={()=>setMod("sponsor")} style={{background:"none",border:"none",padding:0,color:c.cl,textDecoration:"underline",font:"inherit",cursor:"pointer"}}>☕ 支持我們</button></div>
           <div style={{display:"inline-block",fontSize:10,color:"#1D9E75",fontWeight:600,padding:"3px 10px",background:"#E1F5EE",borderRadius:10,marginBottom:6}}>✨ 100% 無廣告 · 純淨學習空間</div>
           <div>AI Tutor powered by <b>Gemini</b> · Speech by <b>Web Speech API</b></div>
           <div>© {new Date().getFullYear()} EnglishGo · 專為台灣學生設計</div>
@@ -2364,6 +2365,81 @@ export default function App(){
       </footer>
     </div>
   );
+}
+
+function SettingsPage({onBack,c,gemKey,setGemKey,gifKey,setGifKey}){
+  const[gemInp,setGemInp]=useState(gemKey||"");
+  const[gifInp,setGifInp]=useState(gifKey||"");
+  const[showGem,setShowGem]=useState(false);
+  const[showGif,setShowGif]=useState(false);
+  const[saved,setSaved]=useState("");
+  useEffect(()=>setGemInp(gemKey||""),[gemKey]);
+  useEffect(()=>setGifInp(gifKey||""),[gifKey]);
+  const flash=id=>{setSaved(id);window.setTimeout(()=>setSaved(""),1200)};
+  const saveGem=()=>{setGemKey(gemInp.trim());flash("gem")};
+  const saveGif=()=>{setGifKey(gifInp.trim());flash("gif")};
+  const clearGem=()=>{setGemInp("");setGemKey("");flash("gem-clear")};
+  const clearGif=()=>{setGifInp("");setGifKey("");flash("gif-clear")};
+  const status=ok=>(
+    <span style={{fontSize:11,fontWeight:900,color:ok?c.cl:S.t3,background:ok?c.bg:S.bg2,border:`1px solid ${ok?`${c.cl}33`:S.bd}`,borderRadius:999,padding:"4px 9px"}}>
+      {ok?"已設定":"未設定"}
+    </span>
+  );
+  const pill=t=><span key={t} style={{fontSize:11,color:c.cl,fontWeight:900,background:c.bg,border:`1px solid ${c.cl}26`,borderRadius:999,padding:"5px 9px"}}>{t}</span>;
+  const inputStyle={width:"100%",padding:"11px 12px",borderRadius:12,border:`1px solid ${S.bd}`,fontSize:13,fontFamily:"inherit",background:S.bg1,color:S.t1,outline:"none",boxSizing:"border-box"};
+  return(<div>
+    <Hdr t="API Key 設定" onBack={onBack} cl={c.cl}/>
+    <div style={{...S.card,padding:"18px 20px",marginBottom:12,background:`linear-gradient(135deg,${c.bg},var(--color-background-primary,#fff))`}}>
+      <div style={{fontSize:18,fontWeight:1000,color:S.t1,marginBottom:6}}>統一管理外部服務 Key</div>
+      <div style={{fontSize:13,color:S.t2,lineHeight:1.7}}>Key 只會儲存在目前瀏覽器的 localStorage，用來呼叫 Gemini 與 Giphy；不會寫入雲端資料庫。</div>
+    </div>
+
+    <section style={{...S.card,padding:"18px 20px",marginBottom:12}}>
+      <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:12,marginBottom:12}}>
+        <div>
+          <div style={{fontSize:16,fontWeight:1000,color:S.t1}}>Gemini API Key</div>
+          <div style={{fontSize:12,color:S.t3,marginTop:3}}>AI 例句、AI 字典、家教與故事模式共用</div>
+        </div>
+        {status(!!gemKey?.trim())}
+      </div>
+      <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:12}}>
+        {["SRS AI 例句","SRS 小朋友字典","AI 家教","AI 故事"].map(pill)}
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"minmax(0,1fr) auto",gap:8,alignItems:"center"}}>
+        <input value={gemInp} onChange={e=>setGemInp(e.target.value)} type={showGem?"text":"password"} placeholder="貼上 Gemini API Key" style={inputStyle}/>
+        <button onClick={()=>setShowGem(v=>!v)} style={{...S.btn,background:S.bg2,color:S.t2,padding:"10px 12px",fontSize:12}}>{showGem?"隱藏":"顯示"}</button>
+      </div>
+      <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center",marginTop:10}}>
+        <button onClick={saveGem} style={{...S.btn,background:c.cl,color:"#fff",padding:"10px 16px",fontSize:13}}>儲存 Gemini Key</button>
+        <button onClick={clearGem} style={{...S.btn,background:S.bg2,color:S.t2,padding:"10px 14px",fontSize:13}}>清除</button>
+        <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" style={{fontSize:12,color:c.cl,fontWeight:900,textDecoration:"underline"}}>Google AI Studio</a>
+        {(saved==="gem"||saved==="gem-clear")&&<span style={{fontSize:12,color:c.cl,fontWeight:900}}>已更新</span>}
+      </div>
+    </section>
+
+    <section style={{...S.card,padding:"18px 20px",marginBottom:12}}>
+      <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:12,marginBottom:12}}>
+        <div>
+          <div style={{fontSize:16,fontWeight:1000,color:S.t1}}>Giphy API Key</div>
+          <div style={{fontSize:12,color:S.t3,marginTop:3}}>可選，用來在 SRS 單字卡顯示相關 GIF 動圖</div>
+        </div>
+        {status(!!gifKey?.trim())}
+      </div>
+      <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:12}}>
+        {["SRS 單字動圖"].map(pill)}
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"minmax(0,1fr) auto",gap:8,alignItems:"center"}}>
+        <input value={gifInp} onChange={e=>setGifInp(e.target.value)} type={showGif?"text":"password"} placeholder="貼上 Giphy API Key，可留空關閉" style={inputStyle}/>
+        <button onClick={()=>setShowGif(v=>!v)} style={{...S.btn,background:S.bg2,color:S.t2,padding:"10px 12px",fontSize:12}}>{showGif?"隱藏":"顯示"}</button>
+      </div>
+      <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center",marginTop:10}}>
+        <button onClick={saveGif} style={{...S.btn,background:c.cl,color:"#fff",padding:"10px 16px",fontSize:13}}>儲存 Giphy Key</button>
+        <button onClick={clearGif} style={{...S.btn,background:S.bg2,color:S.t2,padding:"10px 14px",fontSize:13}}>清除</button>
+        <a href="/learn/gif-guide.html" target="_blank" rel="noopener noreferrer" style={{fontSize:12,color:c.cl,fontWeight:900,textDecoration:"underline"}}>動圖設定教學</a>
+        {(saved==="gif"||saved==="gif-clear")&&<span style={{fontSize:12,color:c.cl,fontWeight:900}}>已更新</span>}
+      </div>
+    </section>
+  </div>);
 }
 
 // ═══ LANDING ════════════════════════════════════════════════════════
@@ -2560,6 +2636,7 @@ function MenuV2({lv,onSelect,daily,c,xp,coins,streak,achUnlocked,weakWords,isSpo
     {id:"achievements",group:"tools",icon:"★",t:"成就牆",d:`${achUnlocked.length}/${ACH_DEFS.length} 個已解鎖`,tag:"學習成果"},
     {id:"weak",group:"tools",icon:"!",t:"弱點單字",d:weakWords.length?`${weakWords.length} 個需要複習`:"目前沒有弱點紀錄",tag:"補強清單"},
     {id:"dashboard",group:"tools",icon:"▤",t:"學習報告",d:"查看 XP、連續天數與紀錄",tag:"進度分析"},
+    {id:"settings",group:"tools",icon:"Key",t:"API Key 設定",d:"Gemini 與 Giphy 統一管理",tag:"Key 管理"},
     {id:"sponsor",group:"tools",icon:"♡",t:isSponsor?"支持紀錄":"支持我們",d:isSponsor?"已留下支持資訊":"銀行轉帳與留言",tag:"支持專案"},
   ];
   const groups=[
@@ -2582,7 +2659,7 @@ function MenuV2({lv,onSelect,daily,c,xp,coins,streak,achUnlocked,weakWords,isSpo
   const ModuleCard=({m})=>{
     const group=groups.find(g=>g.id===m.group)||groups[0];
     return(
-      <button type="button" className="eg-menu-module" onClick={()=>onSelect(m.id)} style={{"--module-color":group.color}}>
+      <button type="button" className="eg-menu-module" data-module-id={m.id} onClick={()=>onSelect(m.id)} style={{"--module-color":group.color}}>
         <span className="eg-menu-module-icon">{m.icon}</span>
         <span className="eg-menu-module-body">
           <span className="eg-menu-module-title">{m.t}</span>
@@ -2595,7 +2672,7 @@ function MenuV2({lv,onSelect,daily,c,xp,coins,streak,achUnlocked,weakWords,isSpo
   const QuickAction=({m})=>{
     const group=groups.find(g=>g.id===m.group)||groups[0];
     return(
-      <button type="button" className="eg-menu-quick-action" onClick={()=>onSelect(m.id)} style={{"--module-color":group.color}}>
+      <button type="button" className="eg-menu-quick-action" data-module-id={m.id} onClick={()=>onSelect(m.id)} style={{"--module-color":group.color}}>
         <span className="eg-menu-quick-icon">{m.icon}</span>
         <span className="eg-menu-quick-text">
           <span className="eg-menu-quick-title">{m.t}</span>
@@ -2734,7 +2811,7 @@ function MenuV2({lv,onSelect,daily,c,xp,coins,streak,achUnlocked,weakWords,isSpo
         {groups.map(g=>{
           const active=g.id===activeGroup;
           return(
-            <button key={g.id} type="button" role="tab" aria-selected={active} aria-controls="eg-menu-active-panel" className={`eg-menu-group ${active?"is-active":""}`} onClick={()=>setActiveGroup(g.id)} style={{"--group-color":g.color}}>
+            <button key={g.id} type="button" role="tab" aria-selected={active} aria-controls="eg-menu-active-panel" className={`eg-menu-group ${active?"is-active":""}`} data-group-id={g.id} onClick={()=>setActiveGroup(g.id)} style={{"--group-color":g.color}}>
               <span className="eg-menu-group-top">
                 <span className="eg-menu-group-icon">{g.icon}</span>
                 <span className="eg-menu-group-title">{g.t}</span>
@@ -4274,13 +4351,12 @@ function SongsM({lv,onBack,onXp}){
   </div>);
 }
 // ═══ AI TUTOR ═══════════════════════════════════════════════════════
-function AIT({lv,onBack,apiKey,onSetKey}){
+function AIT({lv,onBack,apiKey,onOpenSettings}){
   const c=LV[lv];const RATES=[{l:"慢速",i:"🐢",v:0.6},{l:"正常",i:"🎯",v:0.85},{l:"快速",i:"🐇",v:1.15}];
   const initialMsg=useMemo(()=>({role:"a",content:`哈囉！我是你的 AI 英語家教。\n\n我可以陪你練 **vocabulary**、**grammar**、**translation** 和英文造句。\n\n你可以直接問問題，也可以點下面的練習按鈕開始。`}),[]);
   const[msgs,setMsgs]=useState(()=>[initialMsg]);
-  const[inp,setInp]=useState("");const[busy,setBusy]=useState(false);const[showKey,setShowKey]=useState(!apiKey);const[keyInp,setKeyInp]=useState(apiKey);const[ri,setRi]=useState(1);const[pi,setPi]=useState(-1);const[pt,setPt]=useState(0);const[copied,setCopied]=useState(-1);const btm=useRef(null);const reqRef=useRef(null);const speakPollRef=useRef(null);
+  const[inp,setInp]=useState("");const[busy,setBusy]=useState(false);const[showKey,setShowKey]=useState(!apiKey);const[ri,setRi]=useState(1);const[pi,setPi]=useState(-1);const[pt,setPt]=useState(0);const[copied,setCopied]=useState(-1);const btm=useRef(null);const reqRef=useRef(null);const speakPollRef=useRef(null);
   useEffect(()=>{btm.current?.scrollIntoView({behavior:"smooth"})},[msgs,busy]);
-  useEffect(()=>{setKeyInp(apiKey)},[apiKey]);
   useEffect(()=>()=>{reqRef.current?.abort();if(speakPollRef.current)clearInterval(speakPollRef.current);stopSpeech()},[]);
   const promptGroups=[
     {l:"學習",items:[
@@ -4351,7 +4427,7 @@ Do not imitate copyrighted songs, books, or specific artists.`;
   const send=async(ov)=>{
     const txt=(typeof ov==="string"?ov:inp).trim();
     if(!txt||busy)return;
-    if(!apiKey?.trim()){setShowKey(true);return}
+    if(!apiKey?.trim()){onOpenSettings?.();setShowKey(true);return}
     if(!ov)setInp("");
     const userMsg={role:"u",content:txt};
     const contents=buildContents(userMsg);
@@ -4379,8 +4455,8 @@ Do not imitate copyrighted songs, books, or specific artists.`;
   const copyMsg=async(text,idx)=>{try{await navigator.clipboard?.writeText(text)}catch{}setCopied(idx);setTimeout(()=>setCopied(-1),900)};
   const resetChat=()=>{reqRef.current?.abort();stopSpeech();setPi(-1);setBusy(false);setMsgs([initialMsg])};
   return(<div style={{display:"flex",flexDirection:"column",height:"calc(100vh - 110px)"}}>
-    <Hdr t="AI 英語家教" onBack={onBack} cl={c.cl} extra={<div style={{display:"flex",gap:4,alignItems:"center"}}><button onClick={()=>setRi(r=>(r+1)%3)} title="調整朗讀速度" style={{background:S.bg1,border:`1px solid ${S.bd}`,borderRadius:8,padding:"5px 8px",fontSize:12,cursor:"pointer",color:S.t2,fontFamily:"inherit"}}>{RATES[ri].i}{RATES[ri].l}</button><button onClick={resetChat} title="清空對話" style={{background:S.bg1,border:`1px solid ${S.bd}`,borderRadius:8,padding:"5px 8px",fontSize:12,cursor:"pointer",color:S.t2,fontFamily:"inherit"}}>清空</button><button onClick={()=>setShowKey(!showKey)} title="設定 API Key" style={{background:S.bg1,border:`1px solid ${S.bd}`,borderRadius:8,padding:"5px 8px",fontSize:12,cursor:"pointer",color:S.t2,fontFamily:"inherit"}}>{apiKey?"🔑":"⚙️"}</button></div>}/>
-    {showKey&&<div style={{...S.card,padding:"12px 14px",marginBottom:8,fontSize:12,boxShadow:"0 8px 22px rgba(15,110,86,.06)"}}><div style={{fontWeight:700,color:S.t1,marginBottom:4}}>Gemini API Key</div><div style={{color:S.t2,marginBottom:8,lineHeight:1.6}}>到 <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" style={{color:c.cl,fontWeight:700}}>Google AI Studio</a> 建立 API Key，貼上後會儲存在本機瀏覽器。</div><div style={{display:"flex",gap:6}}><input value={keyInp} onChange={e=>setKeyInp(e.target.value)} placeholder="API Key..." type="password" style={{flex:1,padding:"9px 10px",borderRadius:8,border:`1px solid ${S.bd}`,fontSize:12,fontFamily:"inherit",background:S.bg1,color:S.t1,outline:"none",minWidth:0}}/><button onClick={()=>{const k=keyInp.trim();onSetKey(k);setShowKey(!k)}} style={{...S.btn,background:c.cl,color:"#fff",padding:"8px 14px",fontSize:12}}>儲存</button></div></div>}
+    <Hdr t="AI 英語家教" onBack={onBack} cl={c.cl} extra={<div style={{display:"flex",gap:4,alignItems:"center"}}><button onClick={()=>setRi(r=>(r+1)%3)} title="調整朗讀速度" style={{background:S.bg1,border:`1px solid ${S.bd}`,borderRadius:8,padding:"5px 8px",fontSize:12,cursor:"pointer",color:S.t2,fontFamily:"inherit"}}>{RATES[ri].i}{RATES[ri].l}</button><button onClick={resetChat} title="清空對話" style={{background:S.bg1,border:`1px solid ${S.bd}`,borderRadius:8,padding:"5px 8px",fontSize:12,cursor:"pointer",color:S.t2,fontFamily:"inherit"}}>清空</button><button onClick={()=>onOpenSettings?.()} title="API Key 設定" style={{background:S.bg1,border:`1px solid ${S.bd}`,borderRadius:8,padding:"5px 8px",fontSize:12,cursor:"pointer",color:S.t2,fontFamily:"inherit"}}>{apiKey?"🔑":"⚙️"}</button></div>}/>
+    {showKey&&<div style={{...S.card,padding:"12px 14px",marginBottom:8,fontSize:12,boxShadow:"0 8px 22px rgba(15,110,86,.06)"}}><div style={{fontWeight:700,color:S.t1,marginBottom:4}}>Gemini API Key</div><div style={{color:S.t2,marginBottom:8,lineHeight:1.6}}>AI 家教共用全站 Gemini Key。請到統一設定頁輸入或更新。</div><button onClick={()=>onOpenSettings?.()} style={{...S.btn,background:c.cl,color:"#fff",padding:"8px 14px",fontSize:12}}>前往 Key 設定</button></div>}
     <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:9,padding:"2px 0 6px"}}>
       {msgs.map((m,i)=>(<div key={i} style={{display:"flex",justifyContent:m.role==="u"?"flex-end":"flex-start",gap:6,alignItems:"flex-start"}}><div style={{maxWidth:"86%",padding:"10px 12px",borderRadius:m.role==="u"?"14px 14px 4px 14px":"14px 14px 14px 4px",background:m.role==="u"?c.cl:S.bg1,color:m.role==="u"?"#fff":S.t1,border:m.role==="u"?"none":`1px solid ${S.bd}`,fontSize:13,lineHeight:1.75,whiteSpace:"pre-wrap",boxShadow:m.role==="u"?"none":"0 6px 18px rgba(0,0,0,.04)"}}>{m.role==="u"?m.content:<><Md text={m.content} color={c.cl}/><div style={{display:"flex",gap:5,marginTop:8,justifyContent:"flex-end"}}><button onClick={()=>doSpeak(m.content,i)} style={{border:`1px solid ${S.bd}`,background:pi===i?c.bg:S.bg2,color:pi===i?c.cl:S.t2,borderRadius:999,padding:"4px 8px",fontSize:11,cursor:"pointer",fontFamily:"inherit",fontWeight:700}}>{pi===i?"停止":"朗讀"}</button><button onClick={()=>copyMsg(m.content,i)} style={{border:`1px solid ${S.bd}`,background:S.bg2,color:S.t2,borderRadius:999,padding:"4px 8px",fontSize:11,cursor:"pointer",fontFamily:"inherit",fontWeight:700}}>{copied===i?"已複製":"複製"}</button></div></>}</div></div>))}
       {busy&&<div style={{padding:"10px 12px",borderRadius:14,background:S.bg1,border:`1px solid ${S.bd}`,fontSize:12,color:S.t2,alignSelf:"flex-start",display:"flex",alignItems:"center",gap:8}}><span style={{animation:"pulse 1.2s ease-in-out infinite"}}>AI 家教思考中...</span><button onClick={cancelSend} style={{border:`1px solid ${S.bd}`,background:S.bg2,color:S.t2,borderRadius:999,padding:"4px 8px",fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>停止</button></div>}
@@ -4609,7 +4685,7 @@ function StoryReader({story,pageIdx,setPageIdx,selectedPet,c,onNext,onExit}){
 }
 
 // ═══ AI STORY MODE (AI 故事模式 - 用你的寵物做主角) ═══════════════════
-function StoryMode({lv,onBack,apiKey,onSetKey,pets,c,onXp,trackWeak}){
+function StoryMode({lv,onBack,apiKey,pets,c,onXp,trackWeak,onOpenSettings}){
   const[step,setStep]=useState("setup");// setup | loading | reading | quiz | done
   const[selectedPet,setSelectedPet]=useState(pets[0]||null);
   const[theme,setTheme]=useState("adventure");
@@ -4633,7 +4709,7 @@ function StoryMode({lv,onBack,apiKey,onSetKey,pets,c,onXp,trackWeak}){
   const lvDesc={elem:"elementary school (A1)",junior:"junior high school (A2-B1)",senior:"senior high school (B1-B2)"};
 
   const genStory=async()=>{
-    if(!apiKey){setShowApiKeyInput(true);return}
+    if(!apiKey){onOpenSettings?.();setShowApiKeyInput(true);return}
     if(!selectedPet){setError("請先擁有一隻寵物！去扭蛋機抽一隻吧");return}
     setStep("loading");setError("");
     const petName=PETS[selectedPet.rarity].find(p=>p.id===selectedPet.petId)?.name||"寵物";
@@ -4749,8 +4825,6 @@ Return STRICT JSON only (no markdown, no explanations):
     }
   };
 
-  const saveKey=(k)=>{onSetKey(k);setShowApiKeyInput(false)};
-
   const nextPage=()=>{
     if(pageIdx<story.pages.length-1)setPageIdx(pageIdx+1);
     else setStep("quiz");
@@ -4771,15 +4845,13 @@ Return STRICT JSON only (no markdown, no explanations):
 
   // API Key input
   if(showApiKeyInput){
-    const[tmpKey,setTmpKey]=[null,null];// inline
     return(<div><Hdr t="🔑 設定 Gemini API" onBack={()=>setShowApiKeyInput(false)} cl={c.cl}/>
       <div style={{...S.card,padding:"20px"}}>
         <div style={{fontSize:13,color:S.t2,lineHeight:1.7,marginBottom:14}}>
-          故事模式需要 Google Gemini API Key（免費申請）。<br/>
-          請到 <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" style={{color:c.cl}}>Google AI Studio</a> 免費取得 API Key，貼到下方：
+          故事模式共用全站 Gemini API Key。請到統一設定頁輸入或更新，回來後即可開始產生故事。<br/>
+          也可以到 <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" style={{color:c.cl}}>Google AI Studio</a> 建立 API Key。
         </div>
-        <input type="password" placeholder="貼上你的 API Key..." defaultValue={apiKey} onChange={e=>onSetKey(e.target.value)} style={{width:"100%",padding:"12px",fontSize:14,border:`2px solid ${S.bd}`,borderRadius:10,fontFamily:"monospace",boxSizing:"border-box",background:S.bg1,color:S.t1}}/>
-        <button onClick={()=>{setShowApiKeyInput(false);if(apiKey)genStory()}} style={{...S.btn,background:c.cl,color:"#fff",width:"100%",padding:"14px",fontSize:14,marginTop:12}}>✓ 儲存並開始故事</button>
+        <button onClick={()=>onOpenSettings?.()} style={{...S.btn,background:c.cl,color:"#fff",width:"100%",padding:"14px",fontSize:14,marginTop:12}}>前往 Key 設定</button>
       </div>
     </div>);
   }
@@ -4831,7 +4903,7 @@ Return STRICT JSON only (no markdown, no explanations):
       <button onClick={genStory} style={{...S.btn,background:`linear-gradient(135deg,${c.cl},${c.ac})`,color:"#fff",width:"100%",padding:"16px",fontSize:15,boxShadow:`0 4px 12px ${c.cl}44`}}>✨ 開始生成故事</button>
 
       <div style={{fontSize:11,color:S.t3,textAlign:"center",marginTop:8}}>
-        {apiKey?"✓ API Key 已設定":<button onClick={()=>setShowApiKeyInput(true)} style={{background:"none",border:"none",color:c.cl,fontSize:11,textDecoration:"underline",cursor:"pointer"}}>設定 API Key</button>}
+        {apiKey?"✓ API Key 已設定":<button onClick={()=>onOpenSettings?.()} style={{background:"none",border:"none",color:c.cl,fontSize:11,textDecoration:"underline",cursor:"pointer"}}>前往 Key 設定</button>}
       </div>
     </div>);
   }

@@ -52,6 +52,22 @@ describe('EnglishGo app smoke flow', () => {
     await openElementaryMenu();
   });
 
+  it('opens unified API key settings from the tools menu', async () => {
+    await openElementaryMenu();
+
+    const toolsTab = document.querySelector('[data-group-id="tools"]');
+    expect(toolsTab).toBeTruthy();
+    fireEvent.click(toolsTab);
+
+    const settingsCard = document.querySelector('[data-module-id="settings"]');
+    expect(settingsCard).toBeTruthy();
+    fireEvent.click(settingsCard);
+
+    expect(await screen.findByText('API Key 設定')).toBeInTheDocument();
+    expect(screen.getByText('Gemini API Key')).toBeInTheDocument();
+    expect(screen.getByText('Giphy API Key')).toBeInTheDocument();
+  });
+
   it('opens the lazy SRS module', async () => {
     await openElementaryMenu();
 
@@ -79,7 +95,7 @@ describe('EnglishGo app smoke flow', () => {
       await openElementaryMenu();
       clickFirstModuleCard();
 
-      expect(await screen.findByText(/SRS/)).toBeInTheDocument();
+      expect(await screen.findByRole('heading', { name: /SRS/ })).toBeInTheDocument();
 
       await waitFor(() => {
         expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('api.giphy.com/v1/gifs/translate'));

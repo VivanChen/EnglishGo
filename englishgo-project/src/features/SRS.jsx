@@ -149,11 +149,11 @@ function Mascot({mood}){
 
 // ═══ SRS FLASHCARD (Gamified) ═══════════════════════════════════
 
-export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,onSetGifKey,sharedWord,apiKey,onSetApiKey,weakWords=[],deps}){
+export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,apiKey,weakWords=[],onOpenSettings,deps}){
   const {V,LV,S,fetchCloudVocab,fetchCloudWord,findAnyWord,sortCardsForStudy,createDeck,rateDeck,getWordImg,preloadImgs,isPlaceholderExample,exampleCache:_exampleCache,generateExample,preloadTts,speak,speechTimer,playSound,triggerRewardBurst,parseCSV,Hdr,Confetti}=deps;
   const built=V[lv];const[cards,setCards]=useState(built);const[deck,setDeck]=useState(()=>createDeck(built));const[flip,setFlip]=useState(false);const[info,setInfo]=useState(false);const[loading,setLoading]=useState(true);const[src,setSrc]=useState("built-in");const c=LV[lv];const fr=useRef();const completedRef=useRef(false);
   const[combo,setCombo]=useState(0);const[maxCombo,setMaxCombo]=useState(0);const[comboAnim,setComboAnim]=useState(false);const[showConfetti,setShowConfetti]=useState(false);const[flipAnim,setFlipAnim]=useState(false);const[mascotMood,setMascotMood]=useState("idle");
-  const[gifUrl,setGifUrl]=useState(null);const[gifLoading,setGifLoading]=useState(false);const[gifKeyInp,setGifKeyInp]=useState(gifKey||"");
+  const[gifUrl,setGifUrl]=useState(null);const[gifLoading,setGifLoading]=useState(false);
   const[imgUrl,setImgUrl]=useState(null);
   const[dictOpen,setDictOpen]=useState(false);
   const[dictData,setDictData]=useState(null);const[dictLoading,setDictLoading]=useState(false);const[dictError,setDictError]=useState("");
@@ -226,12 +226,15 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,onSetGifKey,
           <div style={{background:S.bg2,border:`1px solid ${S.bd}`,borderRadius:8,padding:"7px 8px",fontSize:11,color:S.t2}}><b style={{color:S.t1}}>未啟用</b><br/>顯示內建圖片 / emoji</div>
           <div style={{background:c.bg,border:`1px solid ${c.cl}33`,borderRadius:8,padding:"7px 8px",fontSize:11,color:S.t2}}><b style={{color:c.cl}}>啟用後</b><br/>依單字搜尋 GIF 動圖</div>
         </div>
-        <div style={{display:"flex",gap:5}}><input value={gifKeyInp} onChange={e=>setGifKeyInp(e.target.value)} placeholder="貼上 Giphy API Key，可留空關閉" type="password" style={{flex:1,padding:"6px 8px",borderRadius:6,border:`1px solid ${S.bd}`,fontSize:12,fontFamily:"inherit",background:S.bg1,color:S.t1,outline:"none",minWidth:0}}/><button onClick={()=>onSetGifKey(gifKeyInp.trim())} style={{...S.btn,background:c.cl,color:"#fff",padding:"6px 12px",fontSize:12}}>存</button></div>
+        <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+          <button onClick={()=>onOpenSettings?.()} style={{...S.btn,background:c.cl,color:"#fff",padding:"7px 12px",fontSize:12}}>前往 Key 設定</button>
+          <a href="/learn/gif-guide.html" target="_blank" rel="noreferrer" style={{...S.btn,background:S.bg2,color:c.cl,padding:"7px 12px",fontSize:12,textDecoration:"none"}}>申請教學</a>
+        </div>
       </div>
     </div>}
     {!(gifKey||"").trim()&&<div style={{...S.card,padding:"10px 12px",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,flexWrap:"wrap",fontSize:12,lineHeight:1.5}}>
       <div style={{color:S.t2,flex:"1 1 220px"}}><b style={{color:S.t1}}>🖼️ 單字動圖尚未啟用</b><br/>目前使用內建圖片；申請 Giphy Key 後可自動顯示單字相關 GIF。</div>
-      <div style={{display:"flex",gap:6,flexWrap:"wrap"}}><a href="/learn/gif-guide.html" target="_blank" rel="noreferrer" style={{...S.btn,background:S.bg2,color:c.cl,padding:"8px 12px",fontSize:12,textDecoration:"none"}}>看效果</a><button onClick={()=>setInfo(true)} style={{...S.btn,background:c.cl,color:"#fff",padding:"8px 12px",fontSize:12}}>設定動圖</button></div>
+      <div style={{display:"flex",gap:6,flexWrap:"wrap"}}><a href="/learn/gif-guide.html" target="_blank" rel="noreferrer" style={{...S.btn,background:S.bg2,color:c.cl,padding:"8px 12px",fontSize:12,textDecoration:"none"}}>看效果</a><button onClick={()=>onOpenSettings?.()} style={{...S.btn,background:c.cl,color:"#fff",padding:"8px 12px",fontSize:12}}>設定 Key</button></div>
     </div>}
     {comboLabel&&<div style={{textAlign:"center",fontSize:combo>=7?16:13,fontWeight:700,color:"#EF9F27",marginBottom:4,animation:comboAnim?"comboFlash .5s ease-out":"none"}}>{comboLabel}</div>}
     <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:8,fontSize:12}}><div style={{flex:1,height:6,background:S.bg2,borderRadius:3}}><div style={{height:"100%",width:`${pct}%`,background:`linear-gradient(90deg,${c.cl},${c.ac})`,borderRadius:3,transition:"width .3s"}}/></div><span style={{color:S.t3}}>{left}/{deck.total}</span>{[["#E24B4A",deck.stats.again],["#EF9F27",deck.stats.hard],["#1D9E75",deck.stats.good],["#185FA5",deck.stats.easy]].map(([cl,v],i)=><span key={i} style={{color:cl,fontWeight:600}}>{v}</span>)}</div>
@@ -287,7 +290,7 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,onSetGifKey,
           if(isPlaceholder&&!apiKey){
             return(<div style={{fontSize:12,color:S.t3,padding:"10px 14px",background:S.bg2,borderRadius:12,textAlign:"center",lineHeight:1.6}}>
               💡 此單字的例句不太完整<br/>
-              <button onClick={(e)=>{e.stopPropagation();const k=prompt("請輸入 Gemini API Key 以自動生成優質例句：\n（免費申請：https://aistudio.google.com/apikey）");if(k){onSetApiKey(k.trim());}}} style={{background:"none",border:`1px solid ${c.cl}`,color:c.cl,padding:"4px 12px",fontSize:11,borderRadius:8,marginTop:6,cursor:"pointer",fontFamily:"inherit"}}>🔑 設定 API Key 自動生成</button>
+              <button onClick={(e)=>{e.stopPropagation();onOpenSettings?.()}} style={{background:"none",border:`1px solid ${c.cl}`,color:c.cl,padding:"4px 12px",fontSize:11,borderRadius:8,marginTop:6,cursor:"pointer",fontFamily:"inherit"}}>🔑 前往 Key 設定</button>
             </div>);
           }
           // Original example is good, show it
@@ -315,7 +318,7 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,onSetGifKey,
         {!apiKey?.trim()&&<div style={{padding:12,background:S.bg2,border:`1px solid ${S.bd}`,borderRadius:12,color:S.t2,lineHeight:1.7}}>
           <div style={{fontWeight:900,color:S.t1,marginBottom:4}}>需要 Gemini API Key</div>
           <div>AI 字典會產生適合學生閱讀的中文解釋、例句、搭配詞與學習提醒，並快取在本機。</div>
-          <button onClick={()=>{const k=prompt("請貼上 Gemini API Key：\nhttps://aistudio.google.com/apikey");if(k)onSetApiKey(k.trim())}} style={{...S.btn,background:c.cl,color:"#fff",padding:"8px 12px",fontSize:12,marginTop:10}}>設定 API Key</button>
+          <button onClick={()=>onOpenSettings?.()} style={{...S.btn,background:c.cl,color:"#fff",padding:"8px 12px",fontSize:12,marginTop:10}}>前往 Key 設定</button>
         </div>}
         {apiKey?.trim()&&dictLoading&&<div style={{padding:"28px 0",textAlign:"center",color:S.t3}}>AI 正在整理小朋友版字典...</div>}
         {apiKey?.trim()&&!dictLoading&&dictError&&<div style={{padding:12,background:"#fff4f4",border:"1px solid #f2c7c7",borderRadius:12,color:"#9f2f2f"}}>{dictError}</div>}
