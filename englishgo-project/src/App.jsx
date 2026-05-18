@@ -2488,11 +2488,17 @@ function Landing({onSelect,dark,setDark,keyMissing=false}){
       .eg-level-title{display:block;font-size:20px;font-weight:1000;line-height:1.2}
       .eg-level-sub{display:block;font-size:12px;color:var(--landing-faint);margin-top:2px}
       .eg-level-badge{font-size:12px;font-weight:1000;color:var(--level-color);background:color-mix(in srgb,var(--level-color) 12%,transparent);border-radius:999px;padding:5px 9px;white-space:nowrap}
-      .eg-feature-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin:18px 0}
-      .eg-feature{border:1px solid color-mix(in srgb,var(--feature-color) 24%,var(--landing-border));border-radius:18px;background:var(--landing-card);padding:14px 10px;text-align:center;box-shadow:${dark?"0 10px 28px rgba(0,0,0,.14)":"0 10px 24px rgba(20,66,52,.06)"}}
-      .eg-feature-icon{font-size:24px;margin-bottom:5px}
-      .eg-feature-title{font-size:12px;font-weight:1000}
-      .eg-feature-desc{font-size:11px;color:var(--landing-faint);line-height:1.35;margin-top:3px}
+      .eg-feature-marquee{position:relative;overflow:hidden;border:1px solid var(--landing-border);border-radius:22px;background:${dark?"linear-gradient(135deg,rgba(25,32,58,.72),rgba(20,26,48,.88))":"linear-gradient(135deg,rgba(255,255,255,.68),rgba(241,255,249,.76))"};box-shadow:${dark?"0 12px 30px rgba(0,0,0,.18)":"0 12px 28px rgba(20,66,52,.08)"};margin:18px 0;padding:12px 0;backdrop-filter:blur(14px)}
+      .eg-feature-marquee:before,.eg-feature-marquee:after{content:"";position:absolute;top:0;bottom:0;width:64px;z-index:2;pointer-events:none}
+      .eg-feature-marquee:before{left:0;background:linear-gradient(90deg,var(--landing-card),transparent)}
+      .eg-feature-marquee:after{right:0;background:linear-gradient(270deg,var(--landing-card),transparent)}
+      .eg-feature-track{display:flex;gap:10px;width:max-content;animation:featureMarquee 28s linear infinite}
+      .eg-feature-marquee:hover .eg-feature-track{animation-play-state:paused}
+      .eg-feature{flex:0 0 auto;min-width:178px;border:1px solid color-mix(in srgb,var(--feature-color) 24%,var(--landing-border));border-radius:16px;background:${dark?"rgba(255,255,255,.045)":"rgba(255,255,255,.72)"};padding:11px 13px;display:flex;align-items:center;gap:10px;box-shadow:${dark?"0 8px 20px rgba(0,0,0,.12)":"0 8px 20px rgba(20,66,52,.05)"};user-select:none}
+      .eg-feature-icon{width:34px;height:34px;border-radius:13px;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--feature-color) 14%,transparent);font-size:20px;flex:0 0 auto}
+      .eg-feature-title{font-size:12px;font-weight:1000;line-height:1.2}
+      .eg-feature-desc{font-size:11px;color:var(--landing-faint);line-height:1.35;margin-top:2px;white-space:nowrap}
+      @keyframes featureMarquee{from{transform:translateX(0)}to{transform:translateX(calc(-50% - 5px))}}
       .eg-article-section{border:1px solid var(--landing-border);border-radius:24px;background:var(--landing-card);padding:18px;backdrop-filter:blur(14px)}
       .eg-article-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:12px}
       .eg-article-head b{font-size:17px}
@@ -2516,7 +2522,8 @@ function Landing({onSelect,dark,setDark,keyMissing=false}){
         .eg-landing-hero{grid-template-columns:1fr}
         .eg-landing-copy{padding:22px 18px;border-radius:22px}
         .eg-landing-proof{grid-template-columns:1fr}
-        .eg-feature-grid{grid-template-columns:repeat(2,1fr)}
+        .eg-feature-marquee{border-radius:18px;margin:14px 0}
+        .eg-feature{min-width:166px}
         .eg-article-grid{grid-template-columns:1fr}
       }
       @media(max-width:420px){
@@ -2555,12 +2562,16 @@ function Landing({onSelect,dark,setDark,keyMissing=false}){
           ))}
         </div>
       </section>
-      <section className="eg-feature-grid">
-        {features.map(f=><div key={f.t} className="eg-feature" style={{"--feature-color":f.tone}}>
-          <div className="eg-feature-icon">{f.i}</div>
-          <div className="eg-feature-title">{f.t}</div>
-          <div className="eg-feature-desc">{f.d}</div>
-        </div>)}
+      <section className="eg-feature-marquee" aria-label="EnglishGo 功能亮點">
+        <div className="eg-feature-track">
+          {[...features,...features].map((f,i)=><div key={`${f.t}-${i}`} className="eg-feature" style={{"--feature-color":f.tone}} aria-hidden={i>=features.length}>
+            <div className="eg-feature-icon">{f.i}</div>
+            <div>
+              <div className="eg-feature-title">{f.t}</div>
+              <div className="eg-feature-desc">{f.d}</div>
+            </div>
+          </div>)}
+        </div>
       </section>
       <section className="eg-article-section">
         <div className="eg-article-head"><b>學習資源</b><span>快速了解功能與設定</span></div>
@@ -2728,19 +2739,18 @@ function MenuV2({lv,onSelect,daily,c,xp,coins,streak,achUnlocked,weakWords,isSpo
         .eg-menu-quick-text{min-width:0;display:flex;align-items:baseline;gap:6px}
         .eg-menu-quick-title{font-size:12px;font-weight:1000;line-height:1.1;color:var(--text);white-space:nowrap}
         .eg-menu-quick-tag{font-size:10px;font-weight:900;color:var(--module-color);white-space:nowrap}
-        .eg-menu-groups{position:relative;z-index:2;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;padding-bottom:14px;margin-bottom:-14px}
-        .eg-menu-groups:before{content:"";position:absolute;left:0;right:0;bottom:6px;height:2px;border-radius:999px;background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--accent) 34%,transparent),color-mix(in srgb,var(--accent-3) 28%,transparent),transparent);pointer-events:none}
-        .eg-menu-group{position:relative;border:1px solid color-mix(in srgb,var(--group-color) 14%,var(--border));border-radius:18px;background:linear-gradient(145deg,color-mix(in srgb,var(--group-color) 8%,var(--surface)),var(--surface));padding:12px 10px;text-align:left;cursor:pointer;min-height:78px;color:var(--text);transition:transform .14s ease,box-shadow .14s ease,border-color .14s ease,background .14s ease}
-        .eg-menu-group:hover,.eg-menu-module:hover{transform:translateY(-2px)}
-        .eg-menu-group.is-active{transform:translateY(5px);border-color:color-mix(in srgb,var(--group-color) 78%,var(--border));background:linear-gradient(135deg,color-mix(in srgb,var(--group-color) 22%,var(--card)),var(--card));box-shadow:0 16px 30px color-mix(in srgb,var(--group-color) 20%,transparent)}
-        .eg-menu-group.is-active:before{content:"";position:absolute;left:14px;right:14px;bottom:-1px;height:4px;border-radius:999px;background:linear-gradient(90deg,var(--group-color),color-mix(in srgb,var(--group-color) 48%,#fff))}
-        .eg-menu-group.is-active:after{content:"";position:absolute;left:50%;bottom:-19px;width:18px;height:18px;transform:translateX(-50%) rotate(45deg);background:color-mix(in srgb,var(--group-color) 12%,var(--card));border-right:1px solid color-mix(in srgb,var(--group-color) 38%,var(--border));border-bottom:1px solid color-mix(in srgb,var(--group-color) 38%,var(--border));box-shadow:6px 6px 14px color-mix(in srgb,var(--group-color) 10%,transparent)}
+        .eg-menu-groups{position:relative;z-index:2;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;padding:8px;border:1px solid color-mix(in srgb,var(--accent) 18%,var(--border));border-radius:22px;background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 6%,var(--card)),color-mix(in srgb,var(--accent-3) 5%,var(--surface)));box-shadow:0 12px 26px rgba(15,110,86,.06)}
+        .eg-menu-group{position:relative;overflow:hidden;border:1px solid transparent;border-radius:16px;background:transparent;padding:11px 10px;text-align:left;cursor:pointer;min-height:74px;color:var(--text);transition:transform .14s ease,box-shadow .14s ease,border-color .14s ease,background .14s ease}
+        .eg-menu-group:hover{transform:translateY(-1px);background:color-mix(in srgb,var(--group-color) 7%,var(--card));border-color:color-mix(in srgb,var(--group-color) 18%,transparent)}
+        .eg-menu-module:hover{transform:translateY(-2px)}
+        .eg-menu-group.is-active{border-color:color-mix(in srgb,var(--group-color) 45%,var(--border));background:linear-gradient(135deg,color-mix(in srgb,var(--group-color) 18%,var(--card)),color-mix(in srgb,var(--group-color) 7%,var(--surface)));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--group-color) 12%,transparent),0 10px 22px color-mix(in srgb,var(--group-color) 12%,transparent)}
+        .eg-menu-group.is-active:before{content:"";position:absolute;left:12px;right:12px;bottom:8px;height:3px;border-radius:999px;background:linear-gradient(90deg,var(--group-color),color-mix(in srgb,var(--group-color) 42%,#fff));opacity:.9}
         .eg-menu-group-top{display:flex;align-items:center;gap:8px}
         .eg-menu-group-icon{width:28px;height:28px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--group-color) 12%,var(--card));color:var(--group-color);font-weight:1000;font-size:13px}
         .eg-menu-group-title{font-size:13px;font-weight:1000;color:var(--text)}
         .eg-menu-group-desc{display:block;font-size:11px;color:var(--faint);line-height:1.35;margin-top:7px}
-        .eg-menu-panel{position:relative;z-index:1;border:1px solid color-mix(in srgb,var(--active-color) 32%,var(--border));border-top-width:2px;border-radius:24px;background:var(--eg-menu-panel-bg,var(--grade-panel));padding:16px;box-shadow:var(--eg-card-shadow,none);overflow:hidden}
-        .eg-menu-panel:before{content:"";position:absolute;left:18px;right:18px;top:0;height:4px;border-radius:0 0 999px 999px;background:linear-gradient(90deg,var(--active-color),color-mix(in srgb,var(--active-color) 42%,#fff));opacity:.95}
+        .eg-menu-panel{position:relative;z-index:1;border:1px solid color-mix(in srgb,var(--active-color) 28%,var(--border));border-radius:24px;background:var(--eg-menu-panel-bg,var(--grade-panel));padding:16px;box-shadow:var(--eg-card-shadow,none);overflow:hidden}
+        .eg-menu-panel:before{content:"";position:absolute;left:16px;right:16px;top:0;height:3px;border-radius:0 0 999px 999px;background:linear-gradient(90deg,var(--active-color),color-mix(in srgb,var(--active-color) 28%,transparent));opacity:.78}
         .eg-menu-module-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(176px,1fr));gap:10px}
         .eg-menu-module{position:relative;overflow:hidden;border:1px solid color-mix(in srgb,var(--module-color) 26%,var(--border));border-radius:18px;background:var(--eg-menu-card-bg,var(--card));padding:14px;text-align:left;display:flex;gap:11px;min-height:106px;cursor:pointer;color:var(--text);transition:transform .14s ease,box-shadow .14s ease,border-color .14s ease}
         .eg-menu-module:hover{box-shadow:0 14px 28px color-mix(in srgb,var(--module-color) 18%,transparent);border-color:color-mix(in srgb,var(--module-color) 58%,var(--border))}
@@ -2762,8 +2772,8 @@ function MenuV2({lv,onSelect,daily,c,xp,coins,streak,achUnlocked,weakWords,isSpo
           .eg-menu-stat{min-width:78px;min-height:74px;padding:10px}
           .eg-menu-stat-value{font-size:17px}
           .eg-menu-stat-hint{display:none}
-          .eg-menu-groups{display:flex;overflow-x:auto;padding-bottom:2px}
-          .eg-menu-group{min-width:112px;min-height:64px;padding:10px}
+          .eg-menu-groups{display:flex;overflow-x:auto;padding:7px;border-radius:18px}
+          .eg-menu-group{min-width:112px;min-height:62px;padding:10px}
           .eg-menu-group-desc{display:none}
           .eg-menu-module-grid{grid-template-columns:1fr}
           .eg-menu-module{min-height:88px}
