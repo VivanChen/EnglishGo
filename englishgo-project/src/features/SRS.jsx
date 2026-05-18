@@ -217,6 +217,7 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
   if(done){const{stats,total}=deck;const attempts=stats.again+stats.hard+stats.good+stats.easy;const goodPct=Math.round(((stats.good+stats.easy)/total)*100);return(<div>{showConfetti&&<Confetti/>}<Hdr t="🃏 SRS 單字卡" onBack={onBack} cl={c.cl}/><div style={{textAlign:"center",padding:"32px 16px"}}><div style={{fontSize:56,animation:"bounceIn .5s ease-out"}}>{goodPct>=80?"🏆":goodPct>=60?"🎉":"💪"}</div><h2 style={{fontSize:22,fontWeight:700,color:S.t1,marginTop:8}}>練習完成！共 {total} 張</h2>{maxCombo>=3&&<div style={{fontSize:13,color:"#EF9F27",fontWeight:600,marginTop:4}}>🔥 最高 {maxCombo} 連擊！</div>}<div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,maxWidth:400,margin:"16px auto"}}>{[["😅 Again",stats.again,"#E24B4A"],["🤔 Hard",stats.hard,"#EF9F27"],["😊 Good",stats.good,"#1D9E75"],["🤩 Easy",stats.easy,"#185FA5"]].map(([l,v,cl])=>(<div key={l} style={{...S.card,padding:"12px 6px",textAlign:"center",borderTop:`3px solid ${cl}`}}><div style={{fontSize:26,fontWeight:700,color:cl}}>{v}</div><div style={{fontSize:11,color:S.t3,marginTop:2}}>{l}</div></div>))}</div><div style={{textAlign:"center",fontSize:13,color:S.t2,margin:"8px 0"}}>掌握率 {goodPct}% · 答題 {attempts} 次</div><div style={{fontSize:14,color:S.t2,marginBottom:14}}>{goodPct>=80?"太厲害了！🌟":goodPct>=60?"表現不錯！繼續加油 💪":"多練習幾次會更好！📖"}</div><button onClick={async()=>{setLoading(true);completedRef.current=false;setShowConfetti(false);setCombo(0);setMaxCombo(0);const cloud=await fetchCloudVocab(lv,20);const next=sortCardsForStudy(cloud?.length?cloud:cards,weakWords,sharedWord);setCards(next);setDeck(createDeck(next));setFlip(false);setLoading(false)}} style={{...S.btn,background:c.cl,color:"#fff",marginRight:8,fontSize:14}}>🔄 新一輪</button><button onClick={onBack} style={{...S.btn,background:S.bg2,color:S.t1,fontSize:14}}>返回</button></div></div>)}
   const pct=Math.round(((deck.total-left)/deck.total)*100);
   const rateTooltip=deck.total-left===0?"第一張卡片！加油 💪":"";const comboLabel=combo>=10?"🔥🔥🔥 UNSTOPPABLE!":combo>=7?"🔥🔥 ON FIRE!":combo>=5?"🔥 COMBO x"+combo:combo>=3?"✨ "+combo+" 連擊！":"";
+  const speakTiny=(text,label="播放英文發音")=>{const clean=String(text||"").trim();return clean?<button type="button" onClick={()=>speak(clean)} title={label} aria-label={label} style={{border:`1px solid ${S.bd}`,background:S.bg1,color:c.cl,borderRadius:999,width:24,height:24,display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:12,cursor:"pointer",fontFamily:"inherit",verticalAlign:"middle",padding:0,flex:"0 0 auto"}}>🔊</button>:null};
   return(<div><Hdr t="🃏 SRS 單字卡" onBack={onBack} cl={c.cl} extra={<div style={{display:"flex",gap:4}}><button onClick={()=>setInfo(!info)} style={{background:"none",border:`1px solid ${S.bd}`,borderRadius:8,padding:"2px 6px",fontSize:12,cursor:"pointer",color:S.t2}}>ⓘ</button><label style={{background:"none",border:`1px solid ${S.bd}`,borderRadius:8,padding:"2px 6px",fontSize:12,cursor:"pointer",color:S.t2}}>📥<input ref={fr} type="file" accept=".csv" onChange={handleCSV} style={{display:"none"}}/></label></div>}/>
     {info&&<div style={{...S.card,padding:"12px 16px",marginBottom:10,fontSize:13,color:S.t2,lineHeight:1.7}}>💻 <b>Space</b> 翻牌/翻回 · <b>Enter</b> 朗讀 · <b>1</b>Again <b>2</b>Hard <b>3</b>Good <b>4</b>Easy<br/>📱 <b>點擊</b>翻牌 · 點 <b>🔙翻回</b> · <b>按鈕</b>評分<br/>🔎 <b>查字典</b>：翻到背面後點 <b>查字典</b>，可在右側查看小朋友版解釋、例句與常見搭配<div style={{marginTop:4,fontSize:11,color:S.t3}}>來源：{src} {gifKey?"· 🖼️ GIF 已啟用":""}</div>
       <div style={{borderTop:`1px solid ${S.bd}`,marginTop:8,paddingTop:8}}>
@@ -328,7 +329,7 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10,flexWrap:"wrap"}}>
             {cur.ph&&<span style={{background:S.bg2,border:`1px solid ${S.bd}`,borderRadius:999,padding:"4px 9px",fontWeight:700,color:S.t2}}>{cur.ph}</span>}
             <span style={{background:c.bg,border:`1px solid ${c.cl}33`,borderRadius:999,padding:"4px 9px",fontWeight:800,color:c.cl}}>{dictData.partOfSpeechZh||cur.p}</span>
-            <button onClick={()=>speak(cur.w)} style={{...S.btn,background:c.cl,color:"#fff",padding:"6px 10px",fontSize:12}}>播放發音</button>
+            <button onClick={()=>speak(cur.w)} style={{...S.btn,background:c.cl,color:"#fff",padding:"6px 10px",fontSize:12}}>播放單字</button>
           </div>
           <div style={{padding:12,background:c.bg,border:`1px solid ${c.cl}33`,borderRadius:12,marginBottom:12}}>
             <div style={{fontSize:11,color:c.cl,fontWeight:900,marginBottom:3}}>小朋友版解釋</div>
@@ -338,22 +339,22 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
           </div>
           {dictData.forms.length>0&&<div style={{padding:"10px 0",borderTop:`1px solid ${S.bd}`}}>
             <div style={{fontSize:12,color:c.cl,fontWeight:900,marginBottom:6}}>詞性變化</div>
-            <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{dictData.forms.map((f,i)=><span key={i} style={{background:S.bg2,border:`1px solid ${S.bd}`,borderRadius:999,padding:"4px 8px",color:S.t2}}>{f.word}{f.note?`：${f.note}`:""}</span>)}</div>
+            <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{dictData.forms.map((f,i)=><span key={i} style={{background:S.bg2,border:`1px solid ${S.bd}`,borderRadius:999,padding:"4px 7px 4px 9px",color:S.t2,display:"inline-flex",alignItems:"center",gap:3}}><span>{f.word}{f.note?`：${f.note}`:""}</span>{speakTiny(f.word,`播放詞性變化 ${f.word}`)}</span>)}</div>
           </div>}
           {dictData.collocations.length>0&&<div style={{padding:"10px 0",borderTop:`1px solid ${S.bd}`}}>
             <div style={{fontSize:12,color:c.cl,fontWeight:900,marginBottom:6}}>常見搭配</div>
-            {dictData.collocations.map((x,i)=><div key={i} style={{marginBottom:5,color:S.t1}}>・<b>{x.phrase}</b>{x.zh?` - ${x.zh}`:""}</div>)}
+            {dictData.collocations.map((x,i)=><div key={i} style={{marginBottom:6,color:S.t1,display:"flex",alignItems:"center",gap:5,flexWrap:"wrap"}}><span>・<b>{x.phrase}</b>{x.zh?` - ${x.zh}`:""}</span>{speakTiny(x.phrase,`播放搭配 ${x.phrase}`)}</div>)}
           </div>}
           {dictData.examples.length>0&&<div style={{padding:"10px 0",borderTop:`1px solid ${S.bd}`}}>
             <div style={{fontSize:12,color:c.cl,fontWeight:900,marginBottom:6}}>例句</div>
             {dictData.examples.map((x,i)=><div key={i} style={{padding:"8px 10px",background:S.bg2,borderRadius:10,marginBottom:7}}>
-              <div style={{color:S.t1,fontWeight:800}}>{x.en}</div>
+              <div style={{color:S.t1,fontWeight:800,display:"flex",alignItems:"center",gap:6}}><span style={{flex:1,minWidth:0}}>{x.en}</span>{speakTiny(x.en,`播放例句 ${i+1}`)}</div>
               {x.zh&&<div style={{color:S.t3,marginTop:3}}>{x.zh}</div>}
             </div>)}
           </div>}
           {dictData.synonyms.length>0&&<div style={{padding:"10px 0",borderTop:`1px solid ${S.bd}`}}>
             <div style={{fontSize:12,color:c.cl,fontWeight:900,marginBottom:6}}>相似字</div>
-            <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>{dictData.synonyms.map((s,i)=><span key={i} style={{background:S.bg2,border:`1px solid ${S.bd}`,borderRadius:999,padding:"3px 7px",fontSize:11,color:S.t2}}>{s.word}{s.zh?` ${s.zh}`:""}</span>)}</div>
+            <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>{dictData.synonyms.map((s,i)=><span key={i} style={{background:S.bg2,border:`1px solid ${S.bd}`,borderRadius:999,padding:"3px 6px 3px 8px",fontSize:11,color:S.t2,display:"inline-flex",alignItems:"center",gap:3}}><span>{s.word}{s.zh?` ${s.zh}`:""}</span>{speakTiny(s.word,`播放相似字 ${s.word}`)}</span>)}</div>
           </div>}
           {dictData.tips.length>0&&<div style={{padding:"10px 0",borderTop:`1px solid ${S.bd}`}}>
             <div style={{fontSize:12,color:c.cl,fontWeight:900,marginBottom:6}}>學習提醒</div>

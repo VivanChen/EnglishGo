@@ -152,6 +152,10 @@ describe('EnglishGo app smoke flow', () => {
       });
       expect(await screen.findByText('小朋友版解釋')).toBeInTheDocument();
       expect(await screen.findByText(/一種常見的水果/)).toBeInTheDocument();
+      expect(screen.getByLabelText('播放詞性變化 apples')).toBeInTheDocument();
+      expect(screen.getByLabelText('播放搭配 eat an apple')).toBeInTheDocument();
+      expect(screen.getByLabelText('播放例句 1')).toBeInTheDocument();
+      expect(screen.getByLabelText('播放相似字 fruit')).toBeInTheDocument();
       expect(document.querySelector('iframe')).toBeNull();
     } finally {
       fetchMock.mockRestore();
