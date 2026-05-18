@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 
 const _gifCache = new Map();
+const _kidDictCache = new Map();
 
 async function fetchGif(word,apiKey){
   const key=String(apiKey||"").trim();
@@ -16,6 +17,94 @@ async function fetchGif(word,apiKey){
     _gifCache.set(cacheKey,url);
     return url;
   }catch{return null}
+}
+
+function yahooDictionaryUrl(word){
+  return `https://tw.dictionary.search.yahoo.com/search?p=${encodeURIComponent(String(word||"").trim())}`;
+}
+
+function extractJson(text){
+  let s=String(text||"").trim().replace(/^```(?:json)?\s*/i,"").replace(/\s*```\s*$/,"");
+  const a=s.indexOf("{");const b=s.lastIndexOf("}");
+  if(a>=0&&b>a)s=s.slice(a,b+1);
+  return JSON.parse(s);
+}
+
+function normalizeKidDictionary(raw,word,meaning,pos){
+  const pickArr=v=>Array.isArray(v)?v.filter(Boolean).slice(0,6):[];
+  return {
+    word:raw.word||word,
+    headlineZh:raw.headlineZh||meaning,
+    shortMeaning:raw.shortMeaning||meaning,
+    kidExplanation:raw.kidExplanation||`${word} 的意思是「${meaning}」。`,
+    partOfSpeechZh:raw.partOfSpeechZh||pos||"",
+    forms:pickArr(raw.forms).map(x=>({word:x.word||"",note:x.note||x.zh||""})).filter(x=>x.word||x.note),
+    collocations:pickArr(raw.collocations).map(x=>({phrase:x.phrase||"",zh:x.zh||x.note||""})).filter(x=>x.phrase||x.zh),
+    examples:pickArr(raw.examples).map(x=>({en:x.en||"",zh:x.zh||""})).filter(x=>x.en||x.zh).slice(0,3),
+    synonyms:pickArr(raw.synonyms).map(x=>({word:x.word||"",zh:x.zh||""})).filter(x=>x.word||x.zh).slice(0,5),
+    tips:pickArr(raw.tips).map(String).slice(0,3),
+  };
+}
+
+async function generateKidDictionary(word,meaning,pos,level,apiKey){
+  const cleanKey=String(word||"").trim().toLowerCase();
+  const key=`${level}:${cleanKey}`;
+  if(!cleanKey||!apiKey)return null;
+  if(_kidDictCache.has(key))return _kidDictCache.get(key);
+  try{
+    const cached=localStorage.getItem(`kid_dict_${encodeURIComponent(key)}`);
+    if(cached){
+      const obj=JSON.parse(cached);
+      _kidDictCache.set(key,obj);
+      return obj;
+    }
+  }catch{}
+  const levelName=level==="elementary"?"國小":level==="junior"?"國中":"高中";
+  const prompt=`你是台灣英文老師。請為 ${levelName} 學生製作小朋友友善的英漢字典卡。
+
+單字: ${word}
+目前中文釋義: ${meaning}
+詞性: ${pos}
+
+要求:
+- 使用繁體中文，語氣簡單清楚，適合學生自學。
+- 不要給太艱深、宗教、成人或太抽象的解釋。
+- 英文例句要短、自然、生活化。
+- 常見搭配要像 Yahoo 字典一樣實用。
+- 只回傳 JSON，不要 markdown。
+
+JSON 格式:
+{
+  "word": "${word}",
+  "headlineZh": "最常用中文意思",
+  "shortMeaning": "一句話中文意思",
+  "kidExplanation": "用小朋友懂的方式解釋",
+  "partOfSpeechZh": "名詞/動詞/形容詞...",
+  "forms": [{"word":"變化形","note":"中文說明"}],
+  "collocations": [{"phrase":"英文搭配","zh":"中文意思"}],
+  "examples": [{"en":"English sentence.","zh":"中文翻譯"}],
+  "synonyms": [{"word":"similar word","zh":"中文意思"}],
+  "tips": ["學習提醒"]
+}`;
+  const models=["gemini-2.5-flash-lite","gemini-2.5-flash","gemini-2.0-flash"];
+  for(const model of models){
+    try{
+      const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey.trim())}`,{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:900,temperature:0.45,responseMimeType:"application/json"}}),
+      });
+      const data=await res.json();
+      if(data?.error)continue;
+      const text=data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      if(!text)continue;
+      const parsed=normalizeKidDictionary(extractJson(text),word,meaning,pos);
+      _kidDictCache.set(key,parsed);
+      try{localStorage.setItem(`kid_dict_${encodeURIComponent(key)}`,JSON.stringify(parsed))}catch{}
+      return parsed;
+    }catch{}
+  }
+  throw new Error("Gemini dictionary generation failed");
 }
 
 // ═══ ANIMATED EMOJI FOR CARDS ══════════════════════════════════════
@@ -66,6 +155,8 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,onSetGifKey,
   const[combo,setCombo]=useState(0);const[maxCombo,setMaxCombo]=useState(0);const[comboAnim,setComboAnim]=useState(false);const[showConfetti,setShowConfetti]=useState(false);const[flipAnim,setFlipAnim]=useState(false);const[mascotMood,setMascotMood]=useState("idle");
   const[gifUrl,setGifUrl]=useState(null);const[gifLoading,setGifLoading]=useState(false);const[gifKeyInp,setGifKeyInp]=useState(gifKey||"");
   const[imgUrl,setImgUrl]=useState(null);
+  const[dictOpen,setDictOpen]=useState(false);
+  const[dictData,setDictData]=useState(null);const[dictLoading,setDictLoading]=useState(false);const[dictError,setDictError]=useState("");
   const[aiExample,setAiExample]=useState(null);// AI-generated example {en, zh}
   const[exampleLoading,setExampleLoading]=useState(false);
   useEffect(()=>{let active=true;(async()=>{setLoading(true);completedRef.current=false;setFlip(false);setFlipAnim(false);setCombo(0);setMaxCombo(0);const cloud=await fetchCloudVocab(lv,20);if(!active)return;if(cloud&&cloud.length>0){
@@ -82,6 +173,8 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,onSetGifKey,
     setCards(ordered);setDeck(createDeck(ordered));setSrc(`cloud (${ordered.length}字)`);
   }else{let base=built;if(sharedWord){const target=await findAnyWord(lv,sharedWord);if(!active)return;if(target){const key=String(target.w).toLowerCase();base=[target,...built.filter(w=>String(w.w).toLowerCase()!==key)]}}const ordered=sortCardsForStudy(base,weakWords,sharedWord);setCards(ordered);setDeck(createDeck(ordered));setSrc("built-in ("+ordered.length+"字)")}setLoading(false)})();return()=>{active=false}},[lv,sharedWord]);
   const cur=deck.queue[0]!==undefined?cards[deck.queue[0]]:null;const left=deck.queue.length;const done=left===0;const spokenExample=cur?(aiExample?.en||(!isPlaceholderExample(cur.ex,cur.w)?cur.ex:"")):"";
+  useEffect(()=>{setDictOpen(false);setDictData(null);setDictError("")},[cur?.w]);
+  useEffect(()=>{let active=true;if(!dictOpen||!cur){setDictLoading(false);return()=>{active=false}}if(!apiKey?.trim()){setDictLoading(false);setDictData(null);setDictError("");return()=>{active=false}}setDictLoading(true);setDictError("");generateKidDictionary(cur.w,cur.m,cur.p,lv,apiKey).then(data=>{if(!active)return;setDictData(data);setDictLoading(false)}).catch(()=>{if(!active)return;setDictData(null);setDictError("AI 字典目前產生失敗，請稍後再試，或使用 Yahoo 查詢。");setDictLoading(false)});return()=>{active=false}},[dictOpen,cur?.w,apiKey,lv]);
   // Fetch GIF for current word
   useEffect(()=>{let active=true;setGifUrl(null);if(!cur||!gifKey){setGifLoading(false);return()=>{active=false}}setGifLoading(true);fetchGif(cur.w,gifKey).then(url=>{if(!active)return;setGifUrl(url);setGifLoading(false)}).catch(()=>{if(active)setGifLoading(false)});return()=>{active=false}},[cur?.w,gifKey]);
   // Static image — always available regardless of Giphy key
@@ -142,7 +235,9 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,onSetGifKey,
     </div>}
     {comboLabel&&<div style={{textAlign:"center",fontSize:combo>=7?16:13,fontWeight:700,color:"#EF9F27",marginBottom:4,animation:comboAnim?"comboFlash .5s ease-out":"none"}}>{comboLabel}</div>}
     <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:8,fontSize:12}}><div style={{flex:1,height:6,background:S.bg2,borderRadius:3}}><div style={{height:"100%",width:`${pct}%`,background:`linear-gradient(90deg,${c.cl},${c.ac})`,borderRadius:3,transition:"width .3s"}}/></div><span style={{color:S.t3}}>{left}/{deck.total}</span>{[["#E24B4A",deck.stats.again],["#EF9F27",deck.stats.hard],["#1D9E75",deck.stats.good],["#185FA5",deck.stats.easy]].map(([cl,v],i)=><span key={i} style={{color:cl,fontWeight:600}}>{v}</span>)}</div>
-    <div onClick={handleCardTap} style={{cursor:!flip?"pointer":"default",borderRadius:16,padding:flip?"18px 20px 22px":"48px 20px",textAlign:"center",minHeight:flip?280:220,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:flip?"flex-start":"center",background:flip?`linear-gradient(135deg,${c.bg},var(--color-background-primary,#fff))`:S.bg1,border:`2px solid ${flip?c.ac:S.bd}`,transition:"all .3s",userSelect:"none",WebkitUserSelect:"none",animation:flipAnim?"cardFlip .35s ease-out":"none",position:"relative",overflow:"hidden"}}>
+    <style>{`@media (max-width: 900px){.srs-study-grid{grid-template-columns:1fr!important}.srs-dict-panel{max-height:none!important}}`}</style>
+    <div className="srs-study-grid" style={{display:"grid",gridTemplateColumns:dictOpen&&flip?"minmax(0,1fr) minmax(300px,420px)":"1fr",gap:14,alignItems:"stretch"}}>
+    <div data-testid="srs-card" onClick={handleCardTap} style={{cursor:!flip?"pointer":"default",borderRadius:16,padding:flip?(dictOpen?"16px 16px 18px":"18px 20px 22px"):"48px 20px",textAlign:"center",minHeight:flip?(dictOpen?420:280):220,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:flip?"flex-start":"center",background:flip?`linear-gradient(135deg,${c.bg},var(--color-background-primary,#fff))`:S.bg1,border:`2px solid ${flip?c.ac:S.bd}`,transition:"all .3s",userSelect:"none",WebkitUserSelect:"none",animation:flipAnim?"cardFlip .35s ease-out":"none",position:"relative",overflow:"hidden"}}>
       {/* Sparkles background */}
       {!flip&&<CardSparkles color={c.cl}/>}
       {/* Mascot */}
@@ -163,6 +258,7 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,onSetGifKey,
         {imgUrl&&(imgUrl.type==="emoji"?<div style={{fontSize:80,marginBottom:6,lineHeight:1}}>{imgUrl.value}</div>:<img src={imgUrl.value} alt={cur.w} style={{width:"85%",maxWidth:260,height:140,objectFit:"cover",borderRadius:14,marginBottom:8,boxShadow:"0 3px 10px rgba(0,0,0,.08)"}} onError={e=>e.target.style.display="none"}/>)}
         <div style={{fontSize:28,fontWeight:700,color:c.cl,letterSpacing:.5}}>{cur.w} <span style={{fontSize:13,fontWeight:400,color:S.t3}}>({cur.p})</span> <button onClick={e=>{e.stopPropagation();speak(cur.w)}} style={{background:"none",border:"none",fontSize:24,cursor:"pointer",verticalAlign:"middle",padding:"4px",minWidth:36,minHeight:36}}>🔊</button></div>
         <div style={{fontSize:22,fontWeight:600,color:S.t1,margin:"4px 0 8px"}}>{cur.m} <button onClick={e=>{e.stopPropagation();speak(cur.m,"zh-TW",0.9)}} style={{background:"none",border:"none",fontSize:22,cursor:"pointer",verticalAlign:"middle",padding:"4px",minWidth:36,minHeight:36}}>🔈</button></div>
+        <button onClick={e=>{e.stopPropagation();setDictOpen(true)}} style={{background:S.bg2,border:`1px solid ${c.cl}66`,borderRadius:999,padding:"8px 14px",fontSize:13,cursor:"pointer",color:c.cl,fontFamily:"inherit",fontWeight:800,marginBottom:8}}>🔎 查字典</button>
         {cur.f?.length>0&&<div style={{fontSize:13,color:S.t2,marginBottom:6,width:"100%",padding:"8px 12px",background:`${c.ac}0a`,borderRadius:10,textAlign:"left"}}><b style={{color:c.cl,fontSize:12}}>📝 詞性變化</b><div style={{marginTop:3,display:"flex",flexWrap:"wrap",gap:4}}>{cur.f.map((f,i)=><span key={i} style={{background:S.bg2,padding:"2px 8px",borderRadius:6,fontSize:12}}>{f.w} <span style={{color:S.t3}}>({f.p}) {f.n}</span></span>)}</div></div>}
         {cur.c?.length>0&&<div style={{fontSize:13,color:S.t2,marginBottom:6,width:"100%",padding:"8px 12px",background:`${c.ac}08`,borderRadius:10,textAlign:"left"}}><b style={{color:c.cl,fontSize:12}}>🔗 常見搭配</b><div style={{marginTop:3}}>{cur.c.map((x,i)=><div key={i} style={{fontSize:13,padding:"2px 0",borderBottom:i<cur.c.length-1?`1px solid ${S.bd}`:"none"}}>· {x}</div>)}</div></div>}
         {(()=>{
@@ -205,6 +301,64 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,onSetGifKey,
           return null;
         })()}
       </>)}
+    </div>
+    {dictOpen&&flip&&cur&&<aside className="srs-dict-panel" role="complementary" aria-label="Dictionary results" style={{...S.card,padding:0,overflow:"hidden",maxHeight:560,display:"flex",flexDirection:"column",border:`1px solid ${c.cl}55`,boxShadow:"0 18px 48px rgba(20,66,52,.12)"}}>
+      <div style={{padding:"12px 14px",borderBottom:`1px solid ${S.bd}`,background:`linear-gradient(135deg,${S.bg1},${c.bg})`,display:"flex",alignItems:"center",gap:8}}>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontSize:12,color:c.cl,fontWeight:800}}>外部字典查詢</div>
+          <div style={{fontSize:20,color:S.t1,fontWeight:900,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{cur.w}</div>
+        </div>
+        <a href={yahooDictionaryUrl(cur.w)} target="_blank" rel="noreferrer" style={{...S.btn,background:S.bg2,color:c.cl,padding:"7px 10px",fontSize:12,textDecoration:"none",minHeight:34}}>Yahoo</a>
+        <button onClick={()=>setDictOpen(false)} aria-label="Close dictionary" style={{background:S.bg2,border:`1px solid ${S.bd}`,borderRadius:10,width:34,height:34,cursor:"pointer",color:S.t2,fontSize:16}}>×</button>
+      </div>
+      <div style={{padding:14,overflow:"auto",fontSize:13,lineHeight:1.55,color:S.t2}}>
+        {!apiKey?.trim()&&<div style={{padding:12,background:S.bg2,border:`1px solid ${S.bd}`,borderRadius:12,color:S.t2,lineHeight:1.7}}>
+          <div style={{fontWeight:900,color:S.t1,marginBottom:4}}>需要 Gemini API Key</div>
+          <div>AI 字典會產生適合學生閱讀的中文解釋、例句、搭配詞與學習提醒，並快取在本機。</div>
+          <button onClick={()=>{const k=prompt("請貼上 Gemini API Key：\nhttps://aistudio.google.com/apikey");if(k)onSetApiKey(k.trim())}} style={{...S.btn,background:c.cl,color:"#fff",padding:"8px 12px",fontSize:12,marginTop:10}}>設定 API Key</button>
+        </div>}
+        {apiKey?.trim()&&dictLoading&&<div style={{padding:"28px 0",textAlign:"center",color:S.t3}}>AI 正在整理小朋友版字典...</div>}
+        {apiKey?.trim()&&!dictLoading&&dictError&&<div style={{padding:12,background:"#fff4f4",border:"1px solid #f2c7c7",borderRadius:12,color:"#9f2f2f"}}>{dictError}</div>}
+        {apiKey?.trim()&&!dictLoading&&!dictError&&!dictData&&<div style={{padding:12,background:S.bg2,border:`1px solid ${S.bd}`,borderRadius:12,color:S.t3}}>尚未產生字典內容，可重新點擊查字典或使用 Yahoo 查詢。</div>}
+        {apiKey?.trim()&&!dictLoading&&dictData&&<>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10,flexWrap:"wrap"}}>
+            {cur.ph&&<span style={{background:S.bg2,border:`1px solid ${S.bd}`,borderRadius:999,padding:"4px 9px",fontWeight:700,color:S.t2}}>{cur.ph}</span>}
+            <span style={{background:c.bg,border:`1px solid ${c.cl}33`,borderRadius:999,padding:"4px 9px",fontWeight:800,color:c.cl}}>{dictData.partOfSpeechZh||cur.p}</span>
+            <button onClick={()=>speak(cur.w)} style={{...S.btn,background:c.cl,color:"#fff",padding:"6px 10px",fontSize:12}}>播放發音</button>
+          </div>
+          <div style={{padding:12,background:c.bg,border:`1px solid ${c.cl}33`,borderRadius:12,marginBottom:12}}>
+            <div style={{fontSize:11,color:c.cl,fontWeight:900,marginBottom:3}}>小朋友版解釋</div>
+            <div style={{fontSize:20,color:S.t1,fontWeight:900,marginBottom:4}}>{dictData.headlineZh||cur.m}</div>
+            <div style={{color:S.t2,fontWeight:700,marginBottom:4}}>{dictData.shortMeaning}</div>
+            <div style={{color:S.t2}}>{dictData.kidExplanation}</div>
+          </div>
+          {dictData.forms.length>0&&<div style={{padding:"10px 0",borderTop:`1px solid ${S.bd}`}}>
+            <div style={{fontSize:12,color:c.cl,fontWeight:900,marginBottom:6}}>詞性變化</div>
+            <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{dictData.forms.map((f,i)=><span key={i} style={{background:S.bg2,border:`1px solid ${S.bd}`,borderRadius:999,padding:"4px 8px",color:S.t2}}>{f.word}{f.note?`：${f.note}`:""}</span>)}</div>
+          </div>}
+          {dictData.collocations.length>0&&<div style={{padding:"10px 0",borderTop:`1px solid ${S.bd}`}}>
+            <div style={{fontSize:12,color:c.cl,fontWeight:900,marginBottom:6}}>常見搭配</div>
+            {dictData.collocations.map((x,i)=><div key={i} style={{marginBottom:5,color:S.t1}}>・<b>{x.phrase}</b>{x.zh?` - ${x.zh}`:""}</div>)}
+          </div>}
+          {dictData.examples.length>0&&<div style={{padding:"10px 0",borderTop:`1px solid ${S.bd}`}}>
+            <div style={{fontSize:12,color:c.cl,fontWeight:900,marginBottom:6}}>例句</div>
+            {dictData.examples.map((x,i)=><div key={i} style={{padding:"8px 10px",background:S.bg2,borderRadius:10,marginBottom:7}}>
+              <div style={{color:S.t1,fontWeight:800}}>{x.en}</div>
+              {x.zh&&<div style={{color:S.t3,marginTop:3}}>{x.zh}</div>}
+            </div>)}
+          </div>}
+          {dictData.synonyms.length>0&&<div style={{padding:"10px 0",borderTop:`1px solid ${S.bd}`}}>
+            <div style={{fontSize:12,color:c.cl,fontWeight:900,marginBottom:6}}>相似字</div>
+            <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>{dictData.synonyms.map((s,i)=><span key={i} style={{background:S.bg2,border:`1px solid ${S.bd}`,borderRadius:999,padding:"3px 7px",fontSize:11,color:S.t2}}>{s.word}{s.zh?` ${s.zh}`:""}</span>)}</div>
+          </div>}
+          {dictData.tips.length>0&&<div style={{padding:"10px 0",borderTop:`1px solid ${S.bd}`}}>
+            <div style={{fontSize:12,color:c.cl,fontWeight:900,marginBottom:6}}>學習提醒</div>
+            {dictData.tips.map((t,i)=><div key={i} style={{color:S.t2,marginBottom:4}}>・{t}</div>)}
+          </div>}
+          <div style={{fontSize:11,color:S.t3,borderTop:`1px solid ${S.bd}`,paddingTop:9,marginTop:4}}>資料來源：Gemini AI 產生，已快取於本機 · Yahoo 可作外部查詢參考</div>
+        </>}
+      </div>
+    </aside>}
     </div>
     {flip&&<>
       <div style={{display:"flex",justifyContent:"center",gap:8,marginTop:8}}>

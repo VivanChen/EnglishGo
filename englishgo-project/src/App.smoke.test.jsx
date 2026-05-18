@@ -93,6 +93,55 @@ describe('EnglishGo app smoke flow', () => {
     }
   });
 
+  it('opens dictionary lookup results from the SRS card back', async () => {
+    localStorage.removeItem('eg_gifkey');
+    localStorage.setItem('eg_gemkey', JSON.stringify('test-gemini-key'));
+    localStorage.removeItem('kid_dict_elementary%3Aapple');
+
+    await openElementaryMenu();
+    clickFirstModuleCard();
+
+    fireEvent.click(await screen.findByTestId('srs-card'));
+
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        candidates: [{
+          content: {
+            parts: [{
+              text: JSON.stringify({
+                word: 'apple',
+                headlineZh: '蘋果',
+                shortMeaning: '一種常見的水果。',
+                kidExplanation: 'apple 是紅色、綠色或黃色的水果，可以直接吃。',
+                partOfSpeechZh: '名詞',
+                forms: [{ word: 'apples', note: '複數' }],
+                collocations: [{ phrase: 'eat an apple', zh: '吃一顆蘋果' }],
+                examples: [{ en: 'I eat an apple every day.', zh: '我每天吃一顆蘋果。' }],
+                synonyms: [{ word: 'fruit', zh: '水果' }],
+                tips: ['apple 前面常用 an。'],
+              }),
+            }],
+          },
+        }],
+      }),
+    });
+
+    try {
+      fireEvent.click(await screen.findByText('🔎 查字典'));
+
+      expect(await screen.findByRole('complementary', { name: 'Dictionary results' })).toBeInTheDocument();
+      await waitFor(() => {
+        expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('generativelanguage.googleapis.com'), expect.any(Object));
+      });
+      expect(await screen.findByText('小朋友版解釋')).toBeInTheDocument();
+      expect(await screen.findByText(/一種常見的水果/)).toBeInTheDocument();
+      expect(document.querySelector('iframe')).toBeNull();
+    } finally {
+      fetchMock.mockRestore();
+    }
+  });
+
   it('opens the lazy novel reader module', async () => {
     await openElementaryMenu();
 
