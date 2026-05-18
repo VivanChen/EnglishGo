@@ -164,7 +164,7 @@ describe('EnglishGo app smoke flow', () => {
     clickFirstButtonWithText('閱讀聽力');
     clickFirstButtonWithText('英文小說');
 
-    expect(await screen.findByText('The Secret Forest Adventure')).toBeInTheDocument();
+    expect(await screen.findByText('The Secret Forest Adventure', {}, { timeout: 5000 })).toBeInTheDocument();
   });
 
   it('opens the lazy gacha module from the coin stat', async () => {

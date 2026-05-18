@@ -218,7 +218,7 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
   const pct=Math.round(((deck.total-left)/deck.total)*100);
   const rateTooltip=deck.total-left===0?"第一張卡片！加油 💪":"";const comboLabel=combo>=10?"🔥🔥🔥 UNSTOPPABLE!":combo>=7?"🔥🔥 ON FIRE!":combo>=5?"🔥 COMBO x"+combo:combo>=3?"✨ "+combo+" 連擊！":"";
   return(<div><Hdr t="🃏 SRS 單字卡" onBack={onBack} cl={c.cl} extra={<div style={{display:"flex",gap:4}}><button onClick={()=>setInfo(!info)} style={{background:"none",border:`1px solid ${S.bd}`,borderRadius:8,padding:"2px 6px",fontSize:12,cursor:"pointer",color:S.t2}}>ⓘ</button><label style={{background:"none",border:`1px solid ${S.bd}`,borderRadius:8,padding:"2px 6px",fontSize:12,cursor:"pointer",color:S.t2}}>📥<input ref={fr} type="file" accept=".csv" onChange={handleCSV} style={{display:"none"}}/></label></div>}/>
-    {info&&<div style={{...S.card,padding:"12px 16px",marginBottom:10,fontSize:13,color:S.t2,lineHeight:1.7}}>💻 <b>Space</b> 翻牌/翻回 · <b>Enter</b> 朗讀 · <b>1</b>Again <b>2</b>Hard <b>3</b>Good <b>4</b>Easy<br/>📱 <b>點擊</b>翻牌 · 點 <b>🔙翻回</b> · <b>按鈕</b>評分<div style={{marginTop:4,fontSize:11,color:S.t3}}>來源：{src} {gifKey?"· 🖼️ GIF 已啟用":""}</div>
+    {info&&<div style={{...S.card,padding:"12px 16px",marginBottom:10,fontSize:13,color:S.t2,lineHeight:1.7}}>💻 <b>Space</b> 翻牌/翻回 · <b>Enter</b> 朗讀 · <b>1</b>Again <b>2</b>Hard <b>3</b>Good <b>4</b>Easy<br/>📱 <b>點擊</b>翻牌 · 點 <b>🔙翻回</b> · <b>按鈕</b>評分<br/>🔎 <b>查字典</b>：翻到背面後點 <b>查字典</b>，可在右側查看小朋友版解釋、例句與常見搭配<div style={{marginTop:4,fontSize:11,color:S.t3}}>來源：{src} {gifKey?"· 🖼️ GIF 已啟用":""}</div>
       <div style={{borderTop:`1px solid ${S.bd}`,marginTop:8,paddingTop:8}}>
         <div style={{fontWeight:700,fontSize:12,color:S.t1,marginBottom:4}}>🖼️ 單字動圖 (Giphy，可選)</div>
         <div style={{fontSize:11,color:S.t3,marginBottom:6,lineHeight:1.7}}>未設定也能使用內建圖片與表情符號；貼上 Giphy API Key 後，單字卡會依目前單字自動顯示相關 GIF。<a href="/learn/gif-guide.html" target="_blank" rel="noreferrer" style={{color:c.cl,fontWeight:700}}>看效果與申請教學</a></div>
@@ -310,8 +310,9 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
         <div style={{flex:1,minWidth:0}}>
           <div style={{fontSize:12,color:c.cl,fontWeight:800}}>外部字典查詢</div>
           <div style={{fontSize:20,color:S.t1,fontWeight:900,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{cur.w}</div>
+          <div style={{fontSize:11,color:S.t3,marginTop:3,lineHeight:1.45}}>點右側 Yahoo 會開新分頁到 Yahoo 字典，可看更多外部釋義與例句。</div>
         </div>
-        <a href={yahooDictionaryUrl(cur.w)} target="_blank" rel="noreferrer" style={{...S.btn,background:S.bg2,color:c.cl,padding:"7px 10px",fontSize:12,textDecoration:"none",minHeight:34}}>Yahoo</a>
+        <a href={yahooDictionaryUrl(cur.w)} target="_blank" rel="noreferrer" title="開新分頁到 Yahoo 字典查詢" aria-label={`開新分頁到 Yahoo 字典查詢 ${cur.w}`} style={{...S.btn,background:c.cl,color:"#fff",padding:"7px 10px",fontSize:12,textDecoration:"none",minHeight:34,display:"inline-flex",alignItems:"center",gap:4,boxShadow:`0 8px 18px ${c.cl}22`,whiteSpace:"nowrap"}}>Yahoo 外站 ↗</a>
         <button onClick={()=>setDictOpen(false)} aria-label="Close dictionary" style={{background:S.bg2,border:`1px solid ${S.bd}`,borderRadius:10,width:34,height:34,cursor:"pointer",color:S.t2,fontSize:16}}>×</button>
       </div>
       <div style={{padding:14,overflow:"auto",fontSize:13,lineHeight:1.55,color:S.t2}}>

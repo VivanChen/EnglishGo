@@ -2222,7 +2222,7 @@ export default function App(){
     Object.entries(vars).forEach(([k,v])=>r.setProperty(k,v));
   },[dark]);
 
-  if(!lv)return<Landing onSelect={setLv} dark={dark} setDark={setDark}/>;
+  if(!lv)return<Landing onSelect={setLv} dark={dark} setDark={setDark} keyMissing={!gemKey?.trim()||!gifKey?.trim()}/>;
   const c=LV[lv],back=()=>setMod(null);
 
   return(
@@ -2443,7 +2443,7 @@ function SettingsPage({onBack,c,gemKey,setGemKey,gifKey,setGifKey}){
 }
 
 // ═══ LANDING ════════════════════════════════════════════════════════
-function Landing({onSelect,dark,setDark}){
+function Landing({onSelect,dark,setDark,keyMissing=false}){
   const[hov,setHov]=useState(null);
   const features=[
     {i:"🃏",t:"SRS 記憶",d:"間隔重複背單字",tone:"#10B981"},
@@ -2457,7 +2457,7 @@ function Landing({onSelect,dark,setDark}){
     {href:"/learn/srs-method.html",t:"SRS 間隔重複",d:"用科學方式記住單字",ic:"🧠",tone:"#10B981"},
     {href:"/learn/speaking-tips.html",t:"英文口說提升",d:"不用出國也能練",ic:"🗣️",tone:"#3B82F6"},
     {href:"/learn/vocabulary-guide.html",t:"會考單字攻略",d:"國中 1200 字準備法",ic:"📚",tone:"#F59E0B"},
-    {href:"/learn/api-keys.html",t:"API Key 教學",d:"Gemini 與動圖設定",ic:"🔑",tone:"#8B5CF6"},
+    {href:"/learn/api-keys.html",t:"API Key 教學",d:keyMissing?"尚有 Key 未設定，點這裡查看":"Gemini 與動圖設定",ic:"🔑",tone:"#8B5CF6",highlight:keyMissing},
     {href:"/learn/gif-guide.html",t:"單字動圖效果",d:"申請前先看差異",ic:"🖼️",tone:"#EC4899"},
     {href:"/?support=1",t:"支持 EnglishGo",d:"銀行轉帳與留言",ic:"☕",tone:"#0F766E"},
   ];
@@ -2500,9 +2500,15 @@ function Landing({onSelect,dark,setDark}){
       .eg-article-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
       .eg-article{display:flex;gap:11px;align-items:flex-start;border:1px solid color-mix(in srgb,var(--article-color) 20%,var(--landing-border));border-radius:16px;background:${dark?"rgba(255,255,255,.035)":"rgba(255,255,255,.62)"};padding:13px;text-decoration:none;color:var(--landing-text);transition:transform .15s ease,border-color .15s ease}
       .eg-article:hover{transform:translateY(-2px);border-color:color-mix(in srgb,var(--article-color) 60%,var(--landing-border))}
+      .eg-article.is-highlight{position:relative;border-color:color-mix(in srgb,var(--article-color) 72%,var(--landing-border));background:linear-gradient(135deg,color-mix(in srgb,var(--article-color) 14%,var(--landing-card)),var(--landing-card));box-shadow:0 0 0 0 color-mix(in srgb,var(--article-color) 35%,transparent);animation:keyPulse 1.8s ease-in-out infinite}
+      .eg-article.is-highlight:after{content:"建議設定";position:absolute;right:10px;top:8px;font-size:10px;font-weight:1000;color:var(--article-color);background:color-mix(in srgb,var(--article-color) 14%,#fff);border:1px solid color-mix(in srgb,var(--article-color) 28%,transparent);border-radius:999px;padding:3px 7px}
       .eg-article-ic{width:34px;height:34px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--article-color) 14%,transparent);flex:0 0 auto}
       .eg-article-title{display:block;font-size:13px;font-weight:1000}
       .eg-article-desc{display:block;font-size:11px;color:var(--landing-faint);margin-top:2px}
+      .eg-key-reminder{display:flex;align-items:center;gap:10px;border:1px solid color-mix(in srgb,#8B5CF6 36%,var(--landing-border));border-radius:18px;background:${dark?"linear-gradient(135deg,rgba(139,92,246,.18),rgba(25,32,58,.82))":"linear-gradient(135deg,#F3E8FF,#FFFFFF)"};padding:12px 14px;margin-bottom:12px;color:var(--landing-text);box-shadow:0 14px 30px rgba(139,92,246,.12);text-decoration:none}
+      .eg-key-reminder b{font-size:13px}
+      .eg-key-reminder span{font-size:12px;color:var(--landing-muted);line-height:1.5}
+      @keyframes keyPulse{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--article-color) 28%,transparent)}50%{box-shadow:0 0 0 7px color-mix(in srgb,var(--article-color) 0%,transparent)}}
       .eg-landing-footer{margin-top:24px;text-align:center;font-size:11px;color:var(--landing-faint);line-height:1.8}
       @media(max-width:820px){
         .eg-landing-shell{padding:22px 12px 34px}
@@ -2558,8 +2564,12 @@ function Landing({onSelect,dark,setDark}){
       </section>
       <section className="eg-article-section">
         <div className="eg-article-head"><b>學習資源</b><span>快速了解功能與設定</span></div>
+        {keyMissing&&<a className="eg-key-reminder" href="/learn/api-keys.html">
+          <span style={{fontSize:22}}>🔑</span>
+          <span><b>AI 與動圖功能尚未完整設定</b><br/>點選 API Key 教學，完成 Gemini / Giphy 設定後可使用 AI 字典、AI 家教與單字動圖。</span>
+        </a>}
         <div className="eg-article-grid">
-          {articles.map(a=><a key={a.href} className="eg-article" href={a.href} style={{"--article-color":a.tone}}>
+          {articles.map(a=><a key={a.href} className={`eg-article ${a.highlight?"is-highlight":""}`} href={a.href} style={{"--article-color":a.tone}}>
             <span className="eg-article-ic">{a.ic}</span>
             <span><span className="eg-article-title">{a.t}</span><span className="eg-article-desc">{a.d}</span></span>
           </a>)}
