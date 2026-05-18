@@ -1677,6 +1677,14 @@ function speak(t,l="en-US",r=0.9,opts={}){
   startUtterance(u,token,opts.delay??35);
   return u;
 }
+function speakWebSpeech(t,l="en-US",r=0.9,opts={}){
+  if(typeof window==="undefined"||!window.speechSynthesis||!t)return null;
+  const token=stopSpeech();
+  const u=makeUtterance(t,l,r,opts,token);
+  u.__englishGoWebSpeechOnly=true;
+  startUtterance(u,token,opts.delay??35);
+  return u;
+}
 
 function preloadTts(texts,opts={}){
   if(typeof window==="undefined")return;
@@ -3059,7 +3067,7 @@ function WordSearchM({lv,onBack,onOpenCard}){
 const _gifCache={};
 const LazySRS=lazy(()=>import("./features/SRS.jsx"));
 function SRS(props){
-  const deps={V,LV,S,fetchCloudVocab,fetchCloudWord,findAnyWord,sortCardsForStudy,createDeck,rateDeck,getWordImg,preloadImgs,isPlaceholderExample,exampleCache:_exampleCache,generateExample,preloadTts,speak,speechTimer,playSound,triggerRewardBurst,parseCSV,Hdr,Confetti};
+  const deps={V,LV,S,fetchCloudVocab,fetchCloudWord,findAnyWord,sortCardsForStudy,createDeck,rateDeck,getWordImg,preloadImgs,isPlaceholderExample,exampleCache:_exampleCache,generateExample,preloadTts,speak,speakWebSpeech,speechTimer,playSound,triggerRewardBurst,parseCSV,Hdr,Confetti};
   return <Suspense fallback={<div style={{textAlign:"center",padding:"48px 16px",color:S.t3}}>??????...</div>}><LazySRS {...props} deps={deps}/></Suspense>;
 }
 

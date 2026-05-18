@@ -70,6 +70,7 @@
   }
 
   function shouldUseElevenLabs(utterance) {
+    if (utterance?.__englishGoWebSpeechOnly) return false;
     const text = String(utterance?.text || "").trim();
     const lang = String(utterance?.lang || "en-US");
     if (!text || text.length > MAX_CHARS) return false;
