@@ -188,6 +188,63 @@ describe('EnglishGo app smoke flow', () => {
     expect(await screen.findByText('The Secret Forest Adventure', {}, { timeout: 5000 })).toBeInTheDocument();
   });
 
+  it('shows improved novel reading navigation inside a chapter', async () => {
+    await openElementaryMenu();
+
+    clickFirstButtonWithText('閱讀聽力');
+    clickFirstButtonWithText('英文小說');
+
+    fireEvent.click(await screen.findByText('The Whispering Tree', {}, { timeout: 5000 }));
+
+    expect(await screen.findByText('閱讀控制台')).toBeInTheDocument();
+    expect(screen.getByText('本頁進度')).toBeInTheDocument();
+    expect(screen.getByText('章節概覽')).toBeInTheDocument();
+    expect(screen.getByText('下一頁')).toBeInTheDocument();
+  });
+
+  it('resumes a novel from the last read page', async () => {
+    await openElementaryMenu();
+
+    clickFirstButtonWithText('閱讀聽力');
+    clickFirstButtonWithText('英文小說');
+
+    fireEvent.click(await screen.findByText('The Whispering Tree', {}, { timeout: 5000 }));
+    expect(await screen.findByText('閱讀控制台')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '下一頁' }));
+    expect(await screen.findByText('Page 2')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('章節列表'));
+
+    expect(await screen.findByText('繼續閱讀')).toBeInTheDocument();
+    expect(screen.getByText(/上次讀到 Chapter 1 · Page 2/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('繼續閱讀'));
+    expect(await screen.findByText('Page 2')).toBeInTheDocument();
+  });
+
+  it('adjusts novel reading comfort settings', async () => {
+    await openElementaryMenu();
+
+    clickFirstButtonWithText('閱讀聽力');
+    clickFirstButtonWithText('英文小說');
+
+    fireEvent.click(await screen.findByText('The Whispering Tree', {}, { timeout: 5000 }));
+
+    expect(await screen.findByText('閱讀設定')).toBeInTheDocument();
+    const paragraphs = await screen.findAllByTestId('novel-reader-text');
+    expect(paragraphs[0]).toHaveStyle({ fontSize: '16px' });
+
+    fireEvent.click(screen.getByRole('button', { name: 'A+' }));
+    expect(paragraphs[0]).toHaveStyle({ fontSize: '18px' });
+
+    fireEvent.click(screen.getByRole('button', { name: '寬行距' }));
+    expect(paragraphs[0]).toHaveStyle({ lineHeight: '1.9' });
+
+    fireEvent.click(screen.getByRole('button', { name: '專注模式' }));
+    expect(screen.queryByText('閱讀控制台')).not.toBeInTheDocument();
+  });
+
   it('opens the lazy gacha module from the coin stat', async () => {
     await openElementaryMenu();
 
