@@ -1,5 +1,6 @@
 import { getElementaryExample } from "./elementaryExamples.js";
 import { JUNIOR_NOVEL_WORDS } from "./juniorNovelWords.js";
+import { MINISTRY_ELEMENTARY_WORDS } from "./ministryElementaryWords.js";
 
 const EXTRA_ELEMENTARY_WORDS = {
   curious:["好奇的","adj."], explore:["探索","v."], forest:["森林","n."], edge:["邊緣","n."], glow:["發光","v."], shadow:["影子","n."],
@@ -97,12 +98,15 @@ const MORE_BASIC_ELEMENTARY_WORDS = {
   both:["兩者都","adj./pron."], few:["少數的","adj."], same:["相同的","adj."], different:["不同的","adj."], wrong:["錯的","adj."], ok:["好的","adj."],
 };
 
-function extraWordCard(word,[meaning,pos]){
-  const example = getElementaryExample(word, meaning, pos);
-  return{w:word,ph:"",p:pos,m:meaning,f:[],c:[],ex:example.ex,ez:example.ez,img:""};
+function extraWordCard(word,meta){
+  const [meaning,pos]=Array.isArray(meta)?meta:[meta.m,meta.p];
+  const example = Array.isArray(meta) || !meta.ex
+    ? getElementaryExample(word, meaning, pos)
+    : {ex:meta.ex,ez:meta.ez};
+  return{w:word,ph:"",p:pos,m:meaning,f:[],c:meta.c||[],ex:example.ex,ez:example.ez,img:meta.img||""};
 }
 
-const ELEMENTARY_WORDS = {...BASIC_ELEMENTARY_WORDS,...MORE_BASIC_ELEMENTARY_WORDS,...EXTRA_ELEMENTARY_WORDS};
+const ELEMENTARY_WORDS = {...BASIC_ELEMENTARY_WORDS,...MORE_BASIC_ELEMENTARY_WORDS,...EXTRA_ELEMENTARY_WORDS,...MINISTRY_ELEMENTARY_WORDS};
 
 export const EXTRA_WORDS = {
   elementary: Object.entries(ELEMENTARY_WORDS).map(([word,meta])=>extraWordCard(word,meta)),
