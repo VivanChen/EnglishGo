@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import App from './App.jsx';
 
@@ -36,6 +36,13 @@ function clickFirstModuleCard() {
   const target = document.querySelector('.eg-menu-module');
   expect(target).toBeTruthy();
   fireEvent.click(target);
+}
+
+function setViewportWidth(width) {
+  act(() => {
+    Object.defineProperty(window, 'innerWidth', { configurable: true, writable: true, value: width });
+    window.dispatchEvent(new Event('resize'));
+  });
 }
 
 describe('EnglishGo app smoke flow', () => {
@@ -243,6 +250,22 @@ describe('EnglishGo app smoke flow', () => {
 
     fireEvent.click(screen.getByRole('button', { name: '專注模式' }));
     expect(screen.queryByText('閱讀控制台')).not.toBeInTheDocument();
+  });
+
+  it('uses a mobile-safe novel reader layout on narrow screens', async () => {
+    setViewportWidth(390);
+    await openElementaryMenu();
+
+    clickFirstButtonWithText('閱讀聽力');
+    clickFirstButtonWithText('英文小說');
+
+    fireEvent.click(await screen.findByText('The Whispering Tree', {}, { timeout: 5000 }));
+
+    expect(await screen.findByTestId('novel-chapter-hero')).toHaveStyle({ gridTemplateColumns: '1fr' });
+    expect(screen.getByTestId('novel-reading-settings')).toHaveStyle({ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' });
+    expect(screen.getByTestId('novel-chapter-nav')).toHaveStyle({ gridTemplateColumns: '1fr 1fr' });
+
+    setViewportWidth(1024);
   });
 
   it('opens the lazy gacha module from the coin stat', async () => {
