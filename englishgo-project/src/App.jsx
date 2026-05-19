@@ -1796,6 +1796,20 @@ function sortCardsForStudy(cards,weakWords=[],sharedWord=""){
     return(weakRank.get(bw)||0)-(weakRank.get(aw)||0);
   });
 }
+function parseExamWords(text){
+  const seen=new Set();
+  return String(text||"").split(/[^A-Za-z'-]+/).map(w=>w.trim().replace(/^[-']+|[-']+$/g,"").toLowerCase()).filter(w=>{
+    if(!w||seen.has(w)||!/^[a-z][a-z'-]*$/.test(w))return false;
+    seen.add(w);
+    return true;
+  }).slice(0,80);
+}
+function orderExamCards(cards,lv){
+  return[...cards].sort((a,b)=>hashText(`${lv}:exam:${String(a?.w||"").toLowerCase()}`)-hashText(`${lv}:exam:${String(b?.w||"").toLowerCase()}`)||String(a?.w||"").localeCompare(String(b?.w||"")));
+}
+function countExamRawItems(text){
+  return String(text||"").split(/[^A-Za-z'-]+/).map(w=>w.trim()).filter(Boolean).length;
+}
 function parseCSV(t){return t.trim().split("\n").slice(1).map(l=>{const m=l.match(/^"?([^",]+)"?\s*,\s*"?([\s\S]*?)"?\s*$/);if(!m)return null;const w=m[1].trim(),b=m[2].trim(),p=b.match(/\(([a-z.\/]+)\)\s*(.+?)(?:\n|$)/);return{w,ph:"",p:p?.[1]||"",m:p?.[2]?.trim()||b.split("\n")[0],f:[],c:[],ex:"",ez:""}}).filter(Boolean)}
 // ═══ EXAMPLE QUALITY DETECTION & GENERATION ═══════════════════════════
 // Detect placeholder/low-quality examples like "Example: word.", "This is a word.", "I have a word."
@@ -2086,6 +2100,7 @@ export default function App(){
   const[sponsor,setSponsor]=useLS("sponsor",{code:"",active:false,name:""});
   const[showAch,setShowAch]=useState(null);
   const[sharedWord,setSharedWord]=useState(null);
+  const[customDeck,setCustomDeck]=useState(null);
   const isSponsor=sponsor.active;
 
   // Deep link: detect ?word=xxx&lv=xxx from shared URL
@@ -2333,9 +2348,10 @@ export default function App(){
         <button onClick={()=>setDark(!dark)} style={{background:"none",border:"none",fontSize:14,cursor:"pointer",minWidth:32,minHeight:32,display:"flex",alignItems:"center",justifyContent:"center"}}>{dark?"☀️":"🌙"}</button>
       </nav>
       <div style={{maxWidth:!mod?940:mod==="petAdventure"?1280:760,margin:"0 auto",padding:mod==="petAdventure"?"14px 18px calc(20px + env(safe-area-inset-bottom, 0px))":"12px 12px calc(16px + env(safe-area-inset-bottom, 0px))"}}>
-        {!mod?<MenuV2 lv={lv} onSelect={m=>{setSharedWord(null);setMod(m)}} daily={daily} c={c} xp={xp} coins={coins} streak={streak} achUnlocked={achUnlocked} weakWords={weakWords} isSponsor={isSponsor} pets={pets} eggs={eggs}/>:
-         mod==="wordsearch"?<WordSearchM lv={lv} onBack={back} onOpenCard={(word,level)=>{setLv(level||lv);setSharedWord(word);setMod("srs")}}/>:
-         mod==="srs"?<SRS lv={lv} onBack={back} onXp={n=>addXpWithTask(n,"srsToday")} onDone={()=>setStats(s=>({...s,srsRounds:s.srsRounds+1}))} trackWeak={trackWeak} gifKey={gifKey} sharedWord={sharedWord} apiKey={gemKey} weakWords={weakWords} onOpenSettings={()=>setMod("settings")}/>:
+        {!mod?<MenuV2 lv={lv} onSelect={m=>{setSharedWord(null);setCustomDeck(null);setMod(m)}} daily={daily} c={c} xp={xp} coins={coins} streak={streak} achUnlocked={achUnlocked} weakWords={weakWords} isSponsor={isSponsor} pets={pets} eggs={eggs}/>:
+         mod==="wordsearch"?<WordSearchM lv={lv} onBack={back} onOpenCard={(word,level)=>{setLv(level||lv);setSharedWord(word);setCustomDeck(null);setMod("srs")}}/>:
+         mod==="exam"?<ExamReviewM lv={lv} onBack={back} c={c} onStart={deck=>{setSharedWord(null);setCustomDeck(deck);setMod("srs")}}/>:
+         mod==="srs"?<SRS lv={lv} onBack={back} onXp={n=>addXpWithTask(n,"srsToday")} onDone={()=>setStats(s=>({...s,srsRounds:s.srsRounds+1}))} trackWeak={trackWeak} gifKey={gifKey} sharedWord={sharedWord} apiKey={gemKey} weakWords={weakWords} customCards={customDeck?.cards||null} customSource={customDeck?.source||""} onOpenSettings={()=>setMod("settings")}/>:
          mod==="quiz"?<QuizM lv={lv} onBack={back} onXp={n=>addXpWithTask(n,"quizToday")} onPerfect={()=>setStats(s=>({...s,perfectQuiz:s.perfectQuiz+1}))} trackWeak={trackWeak}/>:
          mod==="speak"?<SpeakM lv={lv} onBack={back} onXp={n=>addXpWithTask(n,"speakToday")}/>:
          mod==="whack"?<WhackM lv={lv} onBack={back} onXp={addXp}/>:
@@ -2645,6 +2661,7 @@ function MenuV2({lv,onSelect,daily,c,xp,coins,streak,achUnlocked,weakWords,isSpo
 
   const modules=[
     {id:"srs",group:"learn",icon:"▣",t:"單字卡",d:cloudCount?`目前 ${cloudCount} 個單字可練習`:"用間隔重複記單字",tag:"每日核心"},
+    {id:"exam",group:"learn",icon:"📝",t:"考試複習",d:"輸入考試範圍自訂一輪",tag:"範圍複習"},
     {id:"wordsearch",group:"learn",icon:"⌕",t:"單字查詢",d:"查英文、中文、變化形",tag:"快速查找"},
     {id:"quiz",group:"learn",icon:"✓",t:"單字測驗",d:"選擇題確認理解",tag:"檢查記憶"},
     {id:"grammar",group:"learn",icon:"¶",t:"文法學堂",d:`${G?.[lv]?.length||0} 個文法主題`,tag:"句型理解"},
@@ -2677,7 +2694,7 @@ function MenuV2({lv,onSelect,daily,c,xp,coins,streak,achUnlocked,weakWords,isSpo
   ];
   const activeGroupData=groups.find(g=>g.id===activeGroup)||groups[0];
   const activeModules=modules.filter(m=>m.group===activeGroup);
-  const recommendedIds=["srs",weakWords.length?"weak":"wordsearch",pets.length?"petAdventure":"quiz"];
+  const recommendedIds=["srs","exam",weakWords.length?"weak":"wordsearch",pets.length?"petAdventure":"quiz"];
   const recommendedModules=recommendedIds.map(id=>modules.find(m=>m.id===id)).filter(Boolean);
   const statItems=[
     {label:"連續",value:`${streak} 天`,hint:"保持節奏",tone:"#E24B4A"},
@@ -3014,6 +3031,89 @@ function Menu({lv,onSelect,daily,c,xp,coins,streak,achUnlocked,weakWords,isSpons
         {activeModules.map(m=><ModuleCard key={m.id} m={m}/>)}
       </div>
     </div>
+  </div>);
+}
+
+function ExamReviewM({lv,onBack,c,onStart}){
+  const sample=lv==="elementary"?"apple school water happy run":lv==="junior"?"environment experience communicate opportunity improve":"comprehensive phenomenon sustainable ambiguous facilitate";
+  const[text,setText]=useLS(`exam_${lv}`,"");
+  const[busy,setBusy]=useState(false);
+  const[err,setErr]=useState("");
+  const[progress,setProgress]=useState("");
+  const words=useMemo(()=>parseExamWords(text),[text]);
+  const rawCount=useMemo(()=>countExamRawItems(text),[text]);
+  const ignoredCount=Math.max(0,rawCount-words.length);
+  const start=async()=>{
+    setErr("");
+    setProgress("");
+    if(words.length<1){setErr("請先輸入至少 1 個英文單字。");return}
+    setBusy(true);
+    try{
+      let done=0;
+      const resolved=await Promise.all(words.map(async word=>{
+        const [cloud,local]=await Promise.all([fetchCloudWord(lv,word),findAnyWord(lv,word)]);
+        const found=cloud||local;
+        done+=1;
+        setProgress(`${done}/${words.length}`);
+        if(found)return{...found,w:found.w||word};
+        return{w:word,ph:"",p:"",m:"待查字義",f:[],c:["使用查字典補上解釋"],ex:`I am reviewing ${word}.`,ez:"我正在複習這個單字。",source:"自訂輸入",customMissing:true};
+      }));
+      const cards=orderExamCards(resolved,lv);
+      const missing=cards.filter(x=>x.customMissing).map(x=>x.w);
+      onStart?.({cards,missing,source:`考試範圍 (${cards.length}字${missing.length?`，${missing.length}字待查`:''})`});
+    }catch{
+      setErr("整理單字時發生問題，請稍後再試。");
+    }finally{
+      setBusy(false);
+      setProgress("");
+    }
+  };
+  return(<div>
+    <Hdr t="📝 考試範圍複習" onBack={onBack} cl={c.cl}/>
+    <section style={{...S.card,padding:18,border:`1px solid ${c.cl}55`,background:`linear-gradient(135deg,${c.bg},${S.bg1})`,boxShadow:"0 18px 42px rgba(20,66,52,.10)"}}>
+      <div className="eg-exam-grid" style={{display:"grid",gridTemplateColumns:"minmax(0,1fr) 220px",gap:14,alignItems:"stretch"}}>
+        <div>
+          <div style={{display:"inline-flex",alignItems:"center",gap:8,padding:"6px 10px",borderRadius:999,background:S.bg2,border:`1px solid ${S.bd}`,fontSize:12,fontWeight:900,color:c.cl,marginBottom:10}}>考前自訂一輪</div>
+          <h3 style={{fontSize:22,lineHeight:1.25,margin:"0 0 8px",color:S.t1}}>貼上老師指定的單字範圍</h3>
+          <p style={{fontSize:13,lineHeight:1.7,color:S.t2,margin:"0 0 14px"}}>可用空格、逗號或換行分隔。系統會自動整理並打散順序，練習時不會照輸入順序出題。</p>
+          <textarea value={text} onChange={e=>setText(e.target.value)} placeholder={`例如：\n${sample}`} disabled={busy} style={{width:"100%",minHeight:190,resize:"vertical",border:`1px solid ${S.bd}`,borderRadius:16,background:S.bg1,color:S.t1,padding:"13px 14px",fontSize:16,lineHeight:1.6,fontFamily:"inherit",outline:"none",boxShadow:"inset 0 1px 4px rgba(0,0,0,.04)",opacity:busy?0.82:1}}/>
+          <div style={{display:"flex",justifyContent:"space-between",gap:10,flexWrap:"wrap",marginTop:7,fontSize:12,color:S.t3}}>
+            <span>已自動儲存這份範圍</span>
+            <span>{ignoredCount?`已合併/忽略 ${ignoredCount} 筆重複或無效內容`:"重複單字會自動合併"}</span>
+          </div>
+          <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap",marginTop:12}}>
+            <button onClick={start} disabled={busy||words.length<1} style={{...S.btn,background:busy||words.length<1?S.bg2:c.cl,color:busy||words.length<1?S.t3:"#fff",padding:"11px 18px",fontSize:14,minHeight:44,cursor:busy||words.length<1?"not-allowed":"pointer"}}>{busy?`整理中 ${progress}`:"開始這輪複習"}</button>
+            <button onClick={()=>setText(sample)} disabled={busy} style={{...S.btn,background:S.bg2,color:c.cl,padding:"11px 14px",fontSize:13,minHeight:44}}>填入範例</button>
+            {text&&<button onClick={()=>setText("")} disabled={busy} style={{...S.btn,background:S.bg2,color:S.t2,padding:"11px 14px",fontSize:13,minHeight:44}}>清空</button>}
+          </div>
+          {err&&<div style={{marginTop:10,padding:"9px 11px",borderRadius:12,background:"#fff4f4",border:"1px solid #f2c7c7",color:"#9f2f2f",fontSize:13}}>{err}</div>}
+          {words.length>0&&<div style={{marginTop:14,padding:12,border:`1px solid ${S.bd}`,borderRadius:16,background:S.bg1}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,marginBottom:8}}>
+              <div style={{fontSize:12,fontWeight:900,color:S.t2}}>本輪單字清單</div>
+              <div style={{fontSize:11,color:S.t3}}>只確認範圍，不代表出題順序</div>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(110px,1fr))",gap:6,maxHeight:150,overflow:"auto"}}>
+              {words.map(w=><span key={w} style={{fontSize:12,color:S.t1,background:S.bg2,border:`1px solid ${S.bd}`,borderRadius:10,padding:"6px 8px",fontWeight:800,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{w}</span>)}
+            </div>
+          </div>}
+        </div>
+        <aside style={{border:`1px solid ${S.bd}`,borderRadius:18,background:S.bg1,padding:14,display:"flex",flexDirection:"column",gap:12}}>
+          <div>
+            <div style={{fontSize:12,fontWeight:900,color:S.t2}}>已讀取單字</div>
+            <div style={{fontSize:34,fontWeight:1000,color:c.cl,lineHeight:1,marginTop:6}}>{words.length}</div>
+            <div style={{fontSize:12,color:S.t3,marginTop:5}}>最多 80 個，重複會自動合併</div>
+            {ignoredCount>0&&<div style={{fontSize:11,color:"#BA7517",marginTop:5}}>已排除 {ignoredCount} 筆重複或無效項目</div>}
+          </div>
+          <div style={{height:1,background:S.bd}}/>
+          <div>
+            <div style={{fontSize:12,fontWeight:900,color:S.t2,marginBottom:7}}>系統規則</div>
+            {["保留你輸入的所有單字","優先使用雲端字庫資料","未收錄字可進 SRS 後查字典","練習順序由系統決定"].map(x=><div key={x} style={{display:"flex",gap:7,alignItems:"flex-start",fontSize:12,color:S.t2,lineHeight:1.55,marginBottom:6}}><span style={{color:c.cl,fontWeight:900}}>✓</span><span>{x}</span></div>)}
+          </div>
+          {words.length>0&&<div style={{fontSize:11,color:S.t3,lineHeight:1.6,padding:"9px 10px",background:S.bg2,borderRadius:12}}>開始後會先整理字義與例句，找不到的字仍會放進本輪，翻到背面可用「查字典」補充。</div>}
+        </aside>
+      </div>
+    </section>
+    <style>{`@media (max-width: 780px){.eg-exam-grid{grid-template-columns:1fr!important}} textarea:focus{border-color:${c.cl}!important;box-shadow:0 0 0 3px ${c.cl}22!important}`}</style>
   </div>);
 }
 

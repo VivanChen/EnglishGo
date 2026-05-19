@@ -76,6 +76,23 @@ describe('EnglishGo app smoke flow', () => {
     expect(await screen.findByText(/SRS 單字卡/)).toBeInTheDocument();
   });
 
+  it('starts an exam-range SRS round from typed words', async () => {
+    await openElementaryMenu();
+
+    const examCard = document.querySelector('[data-module-id="exam"]');
+    expect(examCard).toBeTruthy();
+    fireEvent.click(examCard);
+
+    expect(await screen.findByText(/考試範圍複習/)).toBeInTheDocument();
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'apple school apple' } });
+    expect(screen.getByText(/已合併\/忽略 1 筆/)).toBeInTheDocument();
+    fireEvent.click(screen.getByText('開始這輪複習'));
+
+    expect(await screen.findByText(/SRS 單字卡/)).toBeInTheDocument();
+    expect(await screen.findByText('考試範圍模式')).toBeInTheDocument();
+    expect(screen.getByText('2 個單字')).toBeInTheDocument();
+  });
+
   it('shows a Giphy GIF on SRS cards when a GIF key is configured', async () => {
     const gifUrl = 'https://media.giphy.com/media/englishgo-test.gif';
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
