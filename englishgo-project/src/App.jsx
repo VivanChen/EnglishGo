@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense } from "react";
 import { getElementaryExample } from "./data/elementaryExamples.js";
+import { JUNIOR_SONGS } from "./data/juniorSongs.js";
 
 // ═══ SUPABASE CLIENT (lazy init, graceful fallback) ═════════════════
 let _sb = null;
@@ -698,7 +699,7 @@ const SONGS = {
       ],
     },
   ],
-  junior: [],
+  junior: JUNIOR_SONGS,
   senior: [],
 };
 // ═══ DICTATION SENTENCES ════════════════════════════════════════════
