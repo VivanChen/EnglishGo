@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense } from "react";
 import { getElementaryExample } from "./data/elementaryExamples.js";
 import { JUNIOR_SONGS } from "./data/juniorSongs.js";
+import { SENIOR_SONGS } from "./data/seniorSongs.js";
 
 // ═══ SUPABASE CLIENT (lazy init, graceful fallback) ═════════════════
 let _sb = null;
@@ -700,7 +701,7 @@ const SONGS = {
     },
   ],
   junior: JUNIOR_SONGS,
-  senior: [],
+  senior: SENIOR_SONGS,
 };
 // ═══ DICTATION SENTENCES ════════════════════════════════════════════
 const DICT = {
@@ -4396,6 +4397,7 @@ function SongsM({lv,onBack,onXp}){
   const songs=SONGS[lv]||[];const c=LV[lv];const[si,setSi]=useState(0);const[time,setTime]=useState(0);const[dur,setDur]=useState(0);const[playing,setPlaying]=useState(false);const[showZh,setShowZh]=useState(true);const[view,setView]=useState("lyrics");const[speed,setSpeed]=useState(1);const[practice,setPractice]=useState({idx:0,pick:null,score:0,done:false});const audioRef=useRef(null);const lineRefs=useRef({});const songPanelRef=useRef(null);const rewarded=useRef({});
   const song=songs[si];const lyricLines=useMemo(()=>song?song.lines.map((l,i)=>({...l,i})).filter(l=>l.en):[],[song]);
   const hasAudio=!!song?.audio;
+  const hasCover=!!song?.cover;
   const weights=useMemo(()=>lyricLines.map(l=>Math.max(1,readingWords(l.en).length)),[lyricLines]);
   const totalWeight=weights.reduce((a,b)=>a+b,0)||1;
   const hasTimedLyrics=lyricLines.length>0&&lyricLines.every(l=>Number.isFinite(Number(l.t)));
@@ -4450,7 +4452,7 @@ function SongsM({lv,onBack,onXp}){
   return(<div><Hdr t="🎵 英文歌曲" onBack={onBack} cl={c.cl} extra={<button onClick={()=>setShowZh(z=>!z)} style={{background:S.bg1,border:`1px solid ${S.bd}`,borderRadius:8,padding:"5px 9px",fontSize:12,color:c.cl,cursor:"pointer",fontFamily:"inherit",fontWeight:700}}>{showZh?"隱藏中文":"顯示中文"}</button>}/>
     {songs.length>1&&<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:7,marginBottom:10}}>{songs.map((s,i)=><button key={s.id} onClick={()=>{setSi(i);setTime(0);setDur(0);setPlaying(false)}} style={{padding:"10px 11px",borderRadius:12,background:i===si?c.cl:S.bg1,color:i===si?"#fff":S.t1,border:`1px solid ${i===si?c.cl:S.bd}`,fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit",textAlign:"left",boxShadow:i===si?"0 8px 18px rgba(15,110,86,.18)":"none"}}><div>{s.title}</div><div style={{fontSize:11,fontWeight:600,opacity:.72,marginTop:2}}>{s.theme}</div></button>)}</div>}
     <div style={{...S.card,padding:"18px 16px",marginBottom:10,borderTop:`4px solid ${c.cl}`,background:`linear-gradient(135deg,${c.bg}55,var(--color-background-primary,#fff))`}}>
-      <div style={{display:"flex",gap:12,alignItems:"center",marginBottom:12}}><div style={{width:58,height:58,borderRadius:14,background:`linear-gradient(135deg,${c.cl},${c.ac})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:30,color:"#fff",flexShrink:0}}>🎵</div><div style={{flex:1,minWidth:0}}><div style={{fontSize:21,fontWeight:900,color:S.t1,lineHeight:1.2}}>{song.title}</div><div style={{fontSize:12,color:S.t2,marginTop:3}}>{song.zhTitle} · {song.theme} · {song.level}</div></div></div>
+      <div style={{display:"flex",gap:14,alignItems:"center",marginBottom:12,flexWrap:"wrap"}}>{hasCover?<button type="button" onClick={()=>hasAudio&&toggle()} aria-label={playing?"暫停歌曲":"播放歌曲"} title={playing?"暫停歌曲":"播放歌曲"} style={{position:"relative",width:"clamp(118px,28vw,172px)",aspectRatio:"1/1",border:`1px solid ${S.bd}`,borderRadius:16,overflow:"hidden",padding:0,background:S.bg2,boxShadow:"0 16px 34px rgba(0,0,0,.18)",cursor:hasAudio?"pointer":"default",flex:"0 0 auto"}}><img src={song.cover} alt={`${song.title} cover`} style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}}/><span style={{position:"absolute",left:"50%",top:"50%",transform:"translate(-50%,-50%)",width:54,height:54,borderRadius:999,background:"rgba(20,24,28,.84)",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:playing?24:25,fontWeight:900,boxShadow:"0 10px 22px rgba(0,0,0,.35)"}}>{playing?"Ⅱ":"▶"}</span></button>:<div style={{width:58,height:58,borderRadius:14,background:`linear-gradient(135deg,${c.cl},${c.ac})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:30,color:"#fff",flexShrink:0}}>🎵</div>}<div style={{flex:"1 1 220px",minWidth:0}}><div style={{fontSize:21,fontWeight:900,color:S.t1,lineHeight:1.2}}>{song.title}</div><div style={{fontSize:12,color:S.t2,marginTop:3}}>{song.zhTitle} · {song.theme} · {song.level}</div></div></div>
       {hasAudio?<><audio ref={audioRef} src={song.audio} preload="metadata"/>
       <div style={{padding:"12px",borderRadius:14,background:S.bg1,border:`1px solid ${S.bd}`,marginBottom:10}}><div style={{fontSize:11,fontWeight:800,color:c.cl,marginBottom:5}}>現在播放</div><div style={{fontSize:16,fontWeight:900,color:S.t1,lineHeight:1.45,minHeight:24}}>{activeLyric?.en||"點播放開始，或點任一句歌詞重播。"}</div>{showZh&&activeLyric?.zh&&<div style={{fontSize:12,color:S.t2,lineHeight:1.5,marginTop:2}}>{activeLyric.zh}</div>}<div style={{height:4,background:S.bg2,borderRadius:999,overflow:"hidden",marginTop:9}}><div style={{height:"100%",width:`${linePct}%`,background:c.cl,borderRadius:999}}/></div></div>
       <div onClick={e=>{const r=e.currentTarget.getBoundingClientRect();seekTo((e.clientX-r.left)/Math.max(1,r.width)*(dur||0),false)}} style={{height:10,background:S.bg2,borderRadius:999,overflow:"hidden",cursor:"pointer",marginBottom:8}}><div style={{height:"100%",width:`${dur?Math.min(100,time/dur*100):0}%`,background:`linear-gradient(90deg,${c.cl},${c.ac})`,borderRadius:999}}/></div>

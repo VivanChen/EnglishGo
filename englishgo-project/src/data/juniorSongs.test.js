@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { existsSync } from "node:fs";
 import { JUNIOR_SONGS } from "./juniorSongs.js";
 
 describe("junior songs", () => {
@@ -8,6 +9,8 @@ describe("junior songs", () => {
     expect(song).toBeTruthy();
     expect(song.title).toBe("Dream in Color");
     expect(song.audio).toBe("/audio/songs/junior-dream-in-color.mp3");
+    expect(song.cover).toBe("/images/songs/junior-dream-in-color-cover.svg");
+    expect(existsSync("public/images/songs/junior-dream-in-color-cover.svg")).toBe(true);
     expect(song.level).toBe("國中");
     expect(song.vocab.length).toBeGreaterThanOrEqual(10);
     expect(song.patterns.length).toBeGreaterThanOrEqual(3);

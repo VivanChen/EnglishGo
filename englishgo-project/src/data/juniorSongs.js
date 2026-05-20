@@ -4,6 +4,7 @@ export const JUNIOR_SONGS = [
     title: "Dream in Color",
     zhTitle: "彩色築夢",
     audio: "/audio/songs/junior-dream-in-color.mp3",
+    cover: "/images/songs/junior-dream-in-color-cover.svg",
     theme: "Modern K-Pop 英文學習",
     level: "國中",
     lines: [
