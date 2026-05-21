@@ -2248,7 +2248,15 @@ export default function App(){
     Object.entries(vars).forEach(([k,v])=>r.setProperty(k,v));
   },[dark]);
 
-  if(!lv)return<Landing onSelect={setLv} dark={dark} setDark={setDark} keyMissing={!gemKey?.trim()||!gifKey?.trim()}/>;
+  const openLandingFeature=(targetLevel,targetModule)=>{
+    const nextLevel=LV[targetLevel]?targetLevel:"elementary";
+    setSharedWord(null);
+    setCustomDeck(null);
+    setLv(nextLevel);
+    setMod(targetModule||null);
+  };
+
+  if(!lv)return<Landing onSelect={setLv} onOpenFeature={openLandingFeature} dark={dark} setDark={setDark} keyMissing={!gemKey?.trim()||!gifKey?.trim()}/>;
   const c=LV[lv],back=()=>setMod(null);
 
   return(
@@ -2470,12 +2478,9 @@ function SettingsPage({onBack,c,gemKey,setGemKey,gifKey,setGifKey}){
 }
 
 // ═══ LANDING ════════════════════════════════════════════════════════
-function Landing({onSelect,dark,setDark,keyMissing=false}){
+function Landing({onSelect,onOpenFeature,dark,setDark,keyMissing=false}){
   const[hov,setHov]=useState(null);
   const recentFeatures=(RECENT_FEATURES?.length?RECENT_FEATURES:[]).slice(0,3);
-  const mainRecent=recentFeatures[0];
-  const sideRecent=recentFeatures.slice(1,3);
-  const githubUpdatesHref="https://github.com/VivanChen/EnglishGo/commits/main";
   const features=[
     {i:"🃏",t:"SRS 記憶",d:"間隔重複背單字",tone:"#10B981"},
     {i:"🎧",t:"聽說練習",d:"朗讀、聽寫、口說",tone:"#3B82F6"},
@@ -2492,15 +2497,15 @@ function Landing({onSelect,dark,setDark,keyMissing=false}){
     {href:"/learn/gif-guide.html",t:"單字動圖效果",d:"申請前先看差異",ic:"🖼️",tone:"#EC4899"},
     {href:"/?support=1",t:"支持 EnglishGo",d:"銀行轉帳與留言",ic:"☕",tone:"#0F766E"},
   ];
-  const RecentCard=({item,i,primary=false})=>(
-    <a className={`eg-update-card ${primary?"is-primary":"is-compact"}`} href={item.href} target="_blank" rel="noopener noreferrer" style={{"--update-color":item.tone,"--update-index":i}}>
+  const RecentCard=({item,i})=>(
+    <button className="eg-update-card" type="button" onClick={()=>onOpenFeature?.(item.targetLevel,item.targetModule)} style={{"--update-color":item.tone,"--update-index":i}}>
       <span className="eg-update-icon">{item.icon}</span>
       <span style={{minWidth:0}}>
         <span className="eg-update-meta"><span className="eg-update-category">{item.category||"功能"}</span><span className="eg-update-level">{item.level}</span><span className="eg-update-date">{item.date}</span></span>
         <span className="eg-update-title">{item.title}</span>
         <span className="eg-update-desc">{item.description}</span>
       </span>
-    </a>
+    </button>
   );
   return(<div className={`eg-landing ${dark?"is-dark":"is-light"}`}>
     <style>{`
@@ -2519,31 +2524,23 @@ function Landing({onSelect,dark,setDark,keyMissing=false}){
       .eg-landing h1{font-size:clamp(34px,6vw,60px);line-height:1.02;margin:0 0 14px;font-weight:1000;letter-spacing:0}
       .eg-landing h1 span{background:linear-gradient(92deg,#10B981,#3B82F6 48%,#EC4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
       .eg-landing-lead{font-size:16px;line-height:1.85;color:var(--landing-muted);max-width:620px;margin:0}
-      .eg-recent-updates{margin-top:22px;border:1px solid var(--landing-border);border-radius:20px;background:${dark?"linear-gradient(135deg,rgba(255,255,255,.05),rgba(255,255,255,.025))":"linear-gradient(135deg,rgba(255,255,255,.74),rgba(243,255,249,.62))"};padding:12px;position:relative;overflow:hidden;min-width:0}
-      .eg-recent-updates:before{content:"";position:absolute;inset:-40% 20% auto auto;width:180px;height:180px;border-radius:999px;background:radial-gradient(circle,color-mix(in srgb,#10B981 22%,transparent),transparent 65%);animation:updateGlow 5.5s ease-in-out infinite;pointer-events:none}
-      .eg-recent-head{position:relative;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
-      .eg-recent-title{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:1000;color:var(--landing-text)}
-      .eg-recent-title span{font-size:12px;color:${dark?"#7FFFD1":"#08745A"};background:${dark?"rgba(16,185,129,.16)":"rgba(16,185,129,.11)"};border:1px solid ${dark?"rgba(52,211,153,.28)":"rgba(16,185,129,.22)"};border-radius:999px;padding:4px 8px}
-      .eg-recent-source{font-size:11px;color:var(--landing-faint);font-weight:800;white-space:nowrap}
-      .eg-recent-more{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--landing-border);border-radius:999px;background:${dark?"rgba(255,255,255,.055)":"rgba(255,255,255,.72)"};color:${dark?"#7FFFD1":"#08745A"};padding:5px 9px;text-decoration:none;font-size:11px;font-weight:1000;white-space:nowrap;transition:transform .15s ease,border-color .15s ease}
-      .eg-recent-more:hover{transform:translateY(-1px);border-color:${dark?"rgba(127,255,209,.38)":"rgba(8,116,90,.34)"}}
-      .eg-recent-layout{position:relative;display:grid;grid-template-columns:minmax(0,1.12fr) minmax(0,.88fr);gap:9px;min-width:0}
-      .eg-update-side{display:grid;gap:9px;min-width:0}
-      .eg-update-card{position:relative;overflow:hidden;display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:center;border:1px solid color-mix(in srgb,var(--update-color) 26%,var(--landing-border));border-radius:16px;background:${dark?"rgba(255,255,255,.045)":"rgba(255,255,255,.72)"};padding:10px 11px;text-decoration:none;color:var(--landing-text);box-shadow:0 10px 22px color-mix(in srgb,var(--update-color) 8%,transparent);transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease;min-width:0}
+      .eg-recent-updates{margin-top:16px;border:1px solid var(--landing-border);border-radius:18px;background:${dark?"linear-gradient(135deg,rgba(255,255,255,.045),rgba(255,255,255,.02))":"linear-gradient(135deg,rgba(255,255,255,.72),rgba(243,255,249,.58))"};padding:10px;position:relative;overflow:hidden;min-width:0;max-width:760px}
+      .eg-recent-updates:before{content:"";position:absolute;inset:-60% 42% auto auto;width:150px;height:150px;border-radius:999px;background:radial-gradient(circle,color-mix(in srgb,#10B981 20%,transparent),transparent 65%);animation:updateGlow 5.5s ease-in-out infinite;pointer-events:none}
+      .eg-recent-head{position:relative;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:7px}
+      .eg-recent-title{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:1000;color:var(--landing-text)}
+      .eg-recent-title span{font-size:11px;color:${dark?"#7FFFD1":"#08745A"};background:${dark?"rgba(16,185,129,.16)":"rgba(16,185,129,.11)"};border:1px solid ${dark?"rgba(52,211,153,.28)":"rgba(16,185,129,.22)"};border-radius:999px;padding:3px 7px}
+      .eg-recent-source{font-size:10px;color:var(--landing-faint);font-weight:800;white-space:nowrap}
+      .eg-recent-layout{position:relative;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;min-width:0}
+      .eg-update-card{position:relative;overflow:hidden;display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px;align-items:center;border:1px solid color-mix(in srgb,var(--update-color) 26%,var(--landing-border));border-radius:14px;background:${dark?"rgba(255,255,255,.045)":"rgba(255,255,255,.72)"};padding:8px 9px;text-decoration:none;color:var(--landing-text);box-shadow:0 8px 18px color-mix(in srgb,var(--update-color) 7%,transparent);transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease;min-width:0;font:inherit;text-align:left;cursor:pointer}
       .eg-update-card:after{content:"";position:absolute;inset:0;background:linear-gradient(120deg,transparent,color-mix(in srgb,var(--update-color) 10%,transparent),transparent);opacity:.75;transform:translateX(-120%);animation:updateSweep 4.8s ease-in-out infinite;animation-delay:calc(var(--update-index) * .55s);pointer-events:none}
       .eg-update-card:hover{transform:translateY(-2px);border-color:color-mix(in srgb,var(--update-color) 64%,var(--landing-border));box-shadow:0 14px 28px color-mix(in srgb,var(--update-color) 14%,transparent)}
-      .eg-update-card.is-primary{grid-template-columns:50px minmax(0,1fr);align-items:center;min-height:119px;padding:15px 14px;background:${dark?"linear-gradient(135deg,rgba(255,255,255,.08),rgba(255,255,255,.035))":"linear-gradient(135deg,rgba(255,255,255,.88),rgba(255,255,255,.62))"}}
-      .eg-update-card.is-primary .eg-update-icon{width:50px;height:50px;border-radius:17px;font-size:27px}
-      .eg-update-card.is-primary .eg-update-title{font-size:17px}
-      .eg-update-card.is-primary .eg-update-desc{font-size:12px;white-space:normal}
-      .eg-update-card.is-compact{min-height:55px}
-      .eg-update-icon{width:38px;height:38px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--update-color) 14%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--update-color) 16%,transparent);font-size:21px;flex:0 0 auto}
-      .eg-update-meta{display:flex;align-items:center;gap:6px;min-width:0;margin-bottom:3px}
-      .eg-update-level{font-size:10px;font-weight:1000;color:var(--update-color);background:color-mix(in srgb,var(--update-color) 12%,transparent);border-radius:999px;padding:3px 6px;white-space:nowrap}
-      .eg-update-category{font-size:10px;font-weight:1000;color:var(--landing-text);background:${dark?"rgba(255,255,255,.07)":"rgba(255,255,255,.76)"};border:1px solid color-mix(in srgb,var(--update-color) 20%,transparent);border-radius:999px;padding:3px 6px;white-space:nowrap}
-      .eg-update-date{font-size:10px;color:var(--landing-faint);font-weight:800}
-      .eg-update-title{display:block;font-size:13px;font-weight:1000;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-      .eg-update-desc{display:block;font-size:11px;color:var(--landing-faint);line-height:1.35;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      .eg-update-icon{width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--update-color) 14%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--update-color) 16%,transparent);font-size:18px;flex:0 0 auto}
+      .eg-update-meta{display:flex;align-items:center;gap:4px;min-width:0;margin-bottom:2px}
+      .eg-update-level{font-size:9px;font-weight:1000;color:var(--update-color);background:color-mix(in srgb,var(--update-color) 12%,transparent);border-radius:999px;padding:2px 5px;white-space:nowrap}
+      .eg-update-category{font-size:9px;font-weight:1000;color:var(--landing-text);background:${dark?"rgba(255,255,255,.07)":"rgba(255,255,255,.76)"};border:1px solid color-mix(in srgb,var(--update-color) 20%,transparent);border-radius:999px;padding:2px 5px;white-space:nowrap}
+      .eg-update-date{font-size:9px;color:var(--landing-faint);font-weight:800}
+      .eg-update-title{display:block;font-size:12px;font-weight:1000;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      .eg-update-desc{display:block;font-size:10px;color:var(--landing-faint);line-height:1.35;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
       @keyframes updateSweep{0%,62%,100%{transform:translateX(-120%)}78%{transform:translateX(120%)}}
       @keyframes updateGlow{0%,100%{transform:translate3d(0,0,0);opacity:.55}50%{transform:translate3d(-20px,18px,0);opacity:.95}}
       .eg-level-stack{display:grid;gap:12px}
@@ -2586,6 +2583,7 @@ function Landing({onSelect,dark,setDark,keyMissing=false}){
         .eg-landing-top{margin-bottom:18px}
         .eg-landing-hero{grid-template-columns:1fr}
         .eg-landing-copy{padding:22px 18px;border-radius:22px}
+        .eg-recent-updates{max-width:none}
         .eg-recent-layout{grid-template-columns:1fr}
         .eg-recent-head{align-items:flex-start;flex-direction:column}
         .eg-feature-marquee{border-radius:18px;margin:14px 0}
@@ -2611,15 +2609,11 @@ function Landing({onSelect,dark,setDark,keyMissing=false}){
           <p className="eg-landing-lead">用單字卡、閱讀、歌曲、口說、互動遊戲與寵物養成，把每天 10 分鐘變成看得到進步的學習流程。</p>
           <section className="eg-recent-updates" aria-label="近期新增功能">
             <div className="eg-recent-head">
-              <div className="eg-recent-title"><span>GitHub 更新</span>近期新增</div>
-              <a className="eg-recent-more" href={githubUpdatesHref} target="_blank" rel="noopener noreferrer">查看 GitHub 更新</a>
+              <div className="eg-recent-title"><span>新功能</span>近期新增</div>
+              <div className="eg-recent-source">點卡片直接進入功能</div>
             </div>
-            <div className="eg-recent-source">只顯示功能新增，修復、單字補充與校準紀錄不放在首頁。</div>
             <div className="eg-recent-layout">
-              {mainRecent&&<RecentCard item={mainRecent} i={0} primary/>}
-              <div className="eg-update-side">
-                {sideRecent.map((item,i)=><RecentCard key={`${item.title}-${item.date}-${i}`} item={item} i={i+1}/>)}
-              </div>
+              {recentFeatures.map((item,i)=><RecentCard key={`${item.title}-${item.date}-${i}`} item={item} i={i}/>)}
             </div>
           </section>
         </div>

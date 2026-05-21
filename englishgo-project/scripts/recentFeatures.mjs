@@ -15,6 +15,8 @@ const FEATURE_RULES = [
     level: "國中",
     icon: "🎧",
     tone: "#6366F1",
+    targetLevel: "junior",
+    targetModule: "songs",
   },
   {
     match: /Add senior Taipei Cipher song/i,
@@ -24,6 +26,8 @@ const FEATURE_RULES = [
     level: "高中",
     icon: "🎤",
     tone: "#D85A30",
+    targetLevel: "senior",
+    targetModule: "songs",
   },
   {
     match: /Add exam range SRS review/i,
@@ -33,6 +37,8 @@ const FEATURE_RULES = [
     level: "全階段",
     icon: "📝",
     tone: "#10B981",
+    targetLevel: "elementary",
+    targetModule: "exam",
   },
   {
     match: /Add AI kid-friendly dictionary panel/i,
@@ -42,6 +48,8 @@ const FEATURE_RULES = [
     level: "全階段",
     icon: "🔎",
     tone: "#8B5CF6",
+    targetLevel: "elementary",
+    targetModule: "srs",
   },
   {
     match: /Add pet adventure battle mode/i,
@@ -51,6 +59,8 @@ const FEATURE_RULES = [
     level: "全階段",
     icon: "🐾",
     tone: "#EC4899",
+    targetLevel: "elementary",
+    targetModule: "petAdventure",
   },
 ];
 
@@ -67,6 +77,8 @@ const FALLBACK_UPDATES = [
     level: "高中",
     icon: "🎤",
     tone: "#D85A30",
+    targetLevel: "senior",
+    targetModule: "songs",
     date: "2026-05-21",
     href: `${REPO_URL}/commits/main`,
   },
@@ -77,6 +89,8 @@ const FALLBACK_UPDATES = [
     level: "國中",
     icon: "🎧",
     tone: "#6366F1",
+    targetLevel: "junior",
+    targetModule: "songs",
     date: "2026-05-21",
     href: `${REPO_URL}/commits/main`,
   },
@@ -87,6 +101,8 @@ const FALLBACK_UPDATES = [
     level: "全階段",
     icon: "📝",
     tone: "#10B981",
+    targetLevel: "elementary",
+    targetModule: "exam",
     date: "2026-05-21",
     href: `${REPO_URL}/commits/main`,
   },
@@ -118,6 +134,8 @@ function genericFeature(commit) {
     level: "NEW",
     icon: "✨",
     tone: "#06B6D4",
+    targetLevel: "elementary",
+    targetModule: null,
   };
 }
 

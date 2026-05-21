@@ -73,8 +73,18 @@ describe('EnglishGo app smoke flow', () => {
     expect(screen.getByText('近期新增')).toBeInTheDocument();
     expect(screen.getByText('高中歌曲新增')).toBeInTheDocument();
     expect(screen.getByText('國中歌曲新增')).toBeInTheDocument();
-    expect(screen.getByText('查看 GitHub 更新')).toBeInTheDocument();
+    expect(screen.queryByText('查看 GitHub 更新')).not.toBeInTheDocument();
     expect(screen.queryByText('AI 小朋友字典')).not.toBeInTheDocument();
+  });
+
+  it('opens a recent feature inside the app', async () => {
+    render(<App />);
+
+    const seniorSongCard = screen.getByText('高中歌曲新增').closest('button');
+    expect(seniorSongCard).toBeTruthy();
+    fireEvent.click(seniorSongCard);
+
+    expect(await screen.findByText('Taipei Cipher', {}, { timeout: 5000 })).toBeInTheDocument();
   });
 
   it('opens the main menu after selecting a level', async () => {
