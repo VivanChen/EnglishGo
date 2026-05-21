@@ -70,6 +70,11 @@ describe('EnglishGo app smoke flow', () => {
     expect(screen.getByText('Elementary')).toBeInTheDocument();
     expect(screen.getByText('Junior High')).toBeInTheDocument();
     expect(screen.getByText('Senior High')).toBeInTheDocument();
+    expect(screen.getByText('近期新增')).toBeInTheDocument();
+    expect(screen.getByText('高中歌曲新增')).toBeInTheDocument();
+    expect(screen.getByText('國中歌曲新增')).toBeInTheDocument();
+    expect(screen.getByText('查看 GitHub 更新')).toBeInTheDocument();
+    expect(screen.queryByText('AI 小朋友字典')).not.toBeInTheDocument();
   });
 
   it('opens the main menu after selecting a level', async () => {

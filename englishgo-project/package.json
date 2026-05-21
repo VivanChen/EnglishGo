@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "generate:recent-features": "node scripts/recentFeatures.mjs",
+    "prebuild": "npm run generate:recent-features",
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
