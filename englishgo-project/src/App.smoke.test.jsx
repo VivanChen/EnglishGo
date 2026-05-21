@@ -32,6 +32,23 @@ function clickMenuStat(label) {
   fireEvent.click(labelNode.closest('button'));
 }
 
+async function openSeniorMenu(search = '/') {
+  window.history.pushState({}, '', search);
+  localStorage.setItem(
+    'eg_loginBonus',
+    JSON.stringify({ lastDate: new Date().toDateString(), streak: 1, claimed: true }),
+  );
+
+  render(<App />);
+
+  const seniorButton = screen.getByText('Senior High').closest('button');
+  fireEvent.click(seniorButton);
+
+  await waitFor(() => {
+    expect(screen.getByText('XP')).toBeInTheDocument();
+  });
+}
+
 function clickFirstModuleCard() {
   const target = document.querySelector('.eg-menu-module');
   expect(target).toBeTruthy();
@@ -283,4 +300,21 @@ describe('EnglishGo app smoke flow', () => {
 
     expect(await screen.findByText('歡迎來到寵物樂園！', {}, { timeout: 5000 })).toBeInTheDocument();
   }, 15000);
+
+  it('shows hidden timing calibration controls for songs', async () => {
+    await openSeniorMenu('/?timing=1');
+
+    const readTab = document.querySelector('[data-group-id="read"]');
+    expect(readTab).toBeTruthy();
+    fireEvent.click(readTab);
+
+    const songsCard = document.querySelector('[data-module-id="songs"]');
+    expect(songsCard).toBeTruthy();
+    fireEvent.click(songsCard);
+
+    expect(await screen.findByText('Taipei Cipher', {}, { timeout: 5000 })).toBeInTheDocument();
+    expect(screen.getByText('Timing Lab')).toBeInTheDocument();
+    expect(screen.getByText('Export timings')).toBeInTheDocument();
+    expect(screen.getAllByText('Set current').length).toBeGreaterThan(0);
+  });
 });
