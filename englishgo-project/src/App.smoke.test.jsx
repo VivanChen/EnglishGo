@@ -160,6 +160,11 @@ describe('EnglishGo app smoke flow', () => {
       await waitFor(() => {
         expect(document.querySelector(`img[src="${gifUrl}"]`)).toBeTruthy();
       });
+
+      fireEvent.click(await screen.findByTestId('srs-card'));
+
+      const backMedia = await screen.findByTestId('srs-back-media');
+      expect(backMedia.querySelector(`img[src="${gifUrl}"]`)).toBeTruthy();
     } finally {
       fetchMock.mockRestore();
     }

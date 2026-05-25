@@ -382,8 +382,8 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
                 <div className="srs-flow-hint is-back" data-testid="srs-study-guidance"><b>下一步</b><span><strong>查字典補強</strong>，或直接評分進下一題</span></div>
               </div>
             </div>
-            {!dictOpen&&<div className={`srs-back-thumb ${showEmoji||!showImg?"is-emoji":""}`} data-testid="srs-back-media">
-              {showEmoji?imgUrl.value:showImg?<img src={imgUrl.value} alt={cur.w} onError={()=>setMediaError("image")}/>:fallbackVisual.emoji}
+            {!dictOpen&&<div className={`srs-back-thumb ${!showGif&&(showEmoji||!showImg)?"is-emoji":""}`} data-testid="srs-back-media">
+              {showGif?<img src={gifUrl} alt={cur.w} onError={()=>{setMediaError("gif");setGifUrl(null)}}/>:showEmoji?imgUrl.value:showImg?<img src={imgUrl.value} alt={cur.w} onError={()=>setMediaError("image")}/>:fallbackVisual.emoji}
             </div>}
           </div>
           {(()=>{
