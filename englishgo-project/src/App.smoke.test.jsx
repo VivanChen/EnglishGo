@@ -384,6 +384,27 @@ describe('EnglishGo app smoke flow', () => {
     expect(screen.getByText('下一頁')).toBeInTheDocument();
   });
 
+  it('opens novel vocabulary and quiz only when requested', async () => {
+    await openElementaryMenu();
+
+    clickFirstButtonWithText('閱讀聽力');
+    clickFirstButtonWithText('英文小說');
+
+    fireEvent.click(await screen.findByText('The Whispering Tree', {}, { timeout: 5000 }));
+
+    expect(await screen.findByText('閱讀控制台')).toBeInTheDocument();
+    expect(screen.queryByText('curious')).not.toBeInTheDocument();
+    expect(screen.queryByText(/What did Lily find in the forest/)).not.toBeInTheDocument();
+
+    const novelSettings = screen.getByTestId('novel-reading-settings');
+    fireEvent.click(within(novelSettings).getByRole('button', { name: /重點單字/ }));
+    expect(screen.getByTestId('novel-side-panel')).toBeInTheDocument();
+    expect(screen.getByText('curious')).toBeInTheDocument();
+
+    fireEvent.click(within(novelSettings).getByRole('button', { name: /章節測驗/ }));
+    expect(await screen.findByText(/What did Lily find in the forest/)).toBeInTheDocument();
+  });
+
   it('resumes a novel from the last read page', async () => {
     await openElementaryMenu();
 
