@@ -4825,11 +4825,19 @@ function StoryReader({story,pageIdx,setPageIdx,selectedPet,c,onNext,onExit}){
       <span>{text.slice(wordEnd)}</span>
     </>);
   };
+  const focusLine=page?.word?`本頁重點：${page.word}${page.meaning?` · ${page.meaning}`:""}`:"";
 
   return(<div><Hdr t={`📖 ${story.zh_title}`} onBack={()=>{stopPlay();onExit()}} cl={c.cl} extra={<button onClick={playAllStory} disabled={playing&&!playingAll} style={{background:playingAll?c.cl:"none",border:`1px solid ${c.cl}`,borderRadius:8,padding:"4px 10px",fontSize:11,cursor:playing&&!playingAll?"default":"pointer",color:playingAll?"#fff":c.cl,opacity:playing&&!playingAll?.4:1}}>{playingAll?"📖 朗讀中...":"🎙️ 整本朗讀"}</button>}/>
     {/* Progress dots */}
     <div style={{display:"flex",justifyContent:"center",gap:6,marginBottom:12}}>
       {story.pages.map((_,i)=>(<div key={i} style={{width:24,height:4,background:i<=pageIdx?c.cl:S.bg2,borderRadius:2,transition:"background .3s"}}/>))}
+    </div>
+    <div style={{...S.card,padding:"10px 12px",marginBottom:12,display:"flex",gap:8,alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",background:"var(--color-background-primary,#fff)"}}>
+      <div style={{minWidth:0}}>
+        <div style={{fontSize:12,fontWeight:800,color:c.cl}}>{story.level_label||"AI 英文故事"}</div>
+        {story.summary&&<div style={{fontSize:11,color:S.t2,lineHeight:1.5,marginTop:2}}>{story.summary}</div>}
+      </div>
+      <div style={{fontSize:11,fontWeight:800,color:S.t2,background:S.bg2,borderRadius:999,padding:"5px 9px",whiteSpace:"nowrap"}}>第 {pageIdx+1} 頁 / 共 {story.pages.length} 頁</div>
     </div>
 
     {/* Story card */}
@@ -4840,6 +4848,10 @@ function StoryReader({story,pageIdx,setPageIdx,selectedPet,c,onNext,onExit}){
       <div style={{display:"flex",justifyContent:"center",marginBottom:14}}>
         <PixelPet petId={selectedPet.petId} stage={getPetStage(selectedPet)} size={96} animate={playing}/>
       </div>
+
+      {focusLine&&<div style={{display:"flex",justifyContent:"center",marginBottom:10}}>
+        <button type="button" onClick={()=>speak(page.word,"en-US",0.85,{pitch:1.1})} style={{border:`1px solid ${c.cl}55`,background:"var(--color-background-primary,#fff)",color:c.cl,borderRadius:999,padding:"6px 12px",fontSize:12,fontWeight:800,cursor:"pointer",boxShadow:`0 8px 18px ${c.cl}14`}}>{focusLine}</button>
+      </div>}
 
       {/* English text (big, with word highlighting) */}
       <div style={{fontSize:18,fontWeight:500,color:S.t1,lineHeight:1.75,textAlign:"center",margin:"0 0 14px",minHeight:60}}>
@@ -4866,11 +4878,114 @@ function StoryReader({story,pageIdx,setPageIdx,selectedPet,c,onNext,onExit}){
       <button onClick={()=>{stopPlay();onNext()}} style={{...S.btn,background:c.cl,color:"#fff",padding:"14px",fontSize:13}}>{pageIdx<story.pages.length-1?"下一頁 →":"📝 開始測驗"}</button>
     </div>
 
-    <div style={{textAlign:"center",fontSize:11,color:S.t3,marginTop:8}}>第 {pageIdx+1} 頁 / 共 {story.pages.length} 頁</div>
   </div>);
 }
 
 // ═══ AI STORY MODE (AI 故事模式 - 用你的寵物做主角) ═══════════════════
+const STORY_LEVEL_PROFILES={
+  elem:{
+    promptName:"elementary",
+    label:"小學 A1 友善故事",
+    pages:4,
+    pageRule:"1-2 short sentences per page. Use familiar school, family, food, pet, action, and feeling words.",
+    languageRule:"A1-A2 words, present tense first, no idioms, no long clauses.",
+    quizRule:"Questions should check obvious facts from the story.",
+  },
+  junior:{
+    promptName:"junior high",
+    label:"國中 A2-B1 劇情故事",
+    pages:5,
+    pageRule:"2-3 clear sentences per page. Include a simple problem, action, turning point, and resolution.",
+    languageRule:"A2-B1 words, natural connectors, one useful phrase per page, still easy to translate.",
+    quizRule:"Questions should check facts, cause-effect, and one simple inference.",
+  },
+  senior:{
+    promptName:"senior high",
+    label:"高中 B1-B2 閱讀故事",
+    pages:5,
+    pageRule:"2-3 richer sentences per page with a clear plot and meaningful theme.",
+    languageRule:"B1-B2 vocabulary, controlled complex sentences, useful academic or expressive words.",
+    quizRule:"Questions should check facts, inference, and the story message.",
+  },
+};
+
+function cleanStoryText(value,fallback=""){
+  return String(value||fallback).replace(/\s+/g," ").trim();
+}
+
+function pickStoryFocusWord(page){
+  const en=cleanStoryText(page?.en);
+  const candidates=[
+    page?.word,
+    page?.focus_word,
+    ...(Array.isArray(page?.keywords)?page.keywords:[]),
+  ].map(w=>cleanStoryText(w).replace(/[^\w'-]/g,"")).filter(Boolean);
+  const lowerEn=en.toLowerCase();
+  const matched=candidates.find(w=>lowerEn.includes(w.toLowerCase()));
+  if(matched)return matched;
+  const words=en.match(/[A-Za-z][A-Za-z'-]{2,}/g)||[];
+  return words[0]||"story";
+}
+
+function normalizeStoryPayload(raw,{lv,petName,themeName}){
+  const profile=STORY_LEVEL_PROFILES[lv]||STORY_LEVEL_PROFILES.elem;
+  const rawPages=Array.isArray(raw?.pages)?raw.pages:[];
+  const pages=rawPages.slice(0,profile.pages).map((page,idx)=>{
+    const en=cleanStoryText(page?.en,`Page ${idx+1} is about ${petName}.`);
+    const zh=cleanStoryText(page?.zh,`第 ${idx+1} 頁是關於${petName}的故事。`);
+    const word=pickStoryFocusWord({...page,en});
+    const meaning=cleanStoryText(page?.meaning||page?.zh_word||page?.word_zh,word);
+    const keywords=[word,...(Array.isArray(page?.keywords)?page.keywords:[])]
+      .map(k=>cleanStoryText(k).replace(/[^\w'-]/g,""))
+      .filter(Boolean)
+      .filter((k,i,arr)=>arr.findIndex(x=>x.toLowerCase()===k.toLowerCase())===i)
+      .slice(0,3);
+    return{...page,en,zh,word,meaning,keywords};
+  });
+  while(pages.length<profile.pages){
+    const idx=pages.length;
+    pages.push({
+      en:`${petName} learns a new word in the ${themeName} story.`,
+      zh:`${petName}在${themeName}故事中學到一個新單字。`,
+      word:"learns",
+      meaning:"學到",
+      keywords:["learns","story"],
+    });
+  }
+
+  const rawQuestions=Array.isArray(raw?.questions)?raw.questions:[];
+  const questions=rawQuestions.slice(0,3).map((q,idx)=>{
+    const choices=Array.isArray(q?.choices)?q.choices:Array.isArray(q?.options)?q.options:[];
+    const safeChoices=choices.map(ch=>cleanStoryText(ch)).filter(Boolean).slice(0,4);
+    while(safeChoices.length<4)safeChoices.push(["A story detail","A different place","A new friend","A wrong idea"][safeChoices.length]);
+    const correct=Number.isInteger(q?.correct)?q.correct:Number.isInteger(q?.answer)?q.answer:0;
+    return{
+      q:cleanStoryText(q?.q||q?.question,`Question ${idx+1}: What happens in the story?`),
+      zh_q:cleanStoryText(q?.zh_q||q?.zh_question,""),
+      choices:safeChoices,
+      correct:Math.min(Math.max(correct,0),safeChoices.length-1),
+      explain:cleanStoryText(q?.explain||q?.explanation,"答案可以從故事內容找到。"),
+    };
+  });
+  while(questions.length<3){
+    questions.push({
+      q:"What is this story mainly about?",
+      choices:[petName,"A bus","A game score","A rainy day"],
+      correct:0,
+      explain:`故事主角是 ${petName}。`,
+    });
+  }
+
+  return{
+    title:cleanStoryText(raw?.title,`${petName}'s ${themeName} Story`),
+    zh_title:cleanStoryText(raw?.zh_title,`${petName}的${themeName}故事`),
+    level_label:cleanStoryText(raw?.level_label,profile.label),
+    summary:cleanStoryText(raw?.summary,`一個適合${profile.label}的${themeName}故事。`),
+    pages,
+    questions,
+  };
+}
+
 function StoryMode({lv,onBack,apiKey,pets,c,onXp,trackWeak,onOpenSettings}){
   const[step,setStep]=useState("setup");// setup | loading | reading | quiz | done
   const[selectedPet,setSelectedPet]=useState(pets[0]||null);
@@ -4891,8 +5006,7 @@ function StoryMode({lv,onBack,apiKey,pets,c,onXp,trackWeak,onOpenSettings}){
     {id:"school",icon:"🏫",name:"學校",desc:"校園生活故事"},
     {id:"space",icon:"🚀",name:"太空",desc:"太空探索之旅"},
   ];
-
-  const lvDesc={elem:"elementary school (A1)",junior:"junior high school (A2-B1)",senior:"senior high school (B1-B2)"};
+  const storyProfile=STORY_LEVEL_PROFILES[lv]||STORY_LEVEL_PROFILES.elem;
 
   const genStory=async()=>{
     if(!apiKey){onOpenSettings?.();setShowApiKeyInput(true);return}
@@ -4900,29 +5014,38 @@ function StoryMode({lv,onBack,apiKey,pets,c,onXp,trackWeak,onOpenSettings}){
     setStep("loading");setError("");
     const petName=PETS[selectedPet.rarity].find(p=>p.id===selectedPet.petId)?.name||"寵物";
     const themeObj=themes.find(t=>t.id===theme);
-    const prompt=`Create an engaging short English story for a Taiwanese ${lvDesc[lv]||"elementary"} student.
+    const levelProfile=storyProfile;
+    const prompt=`Create an engaging, school-safe English story for a Taiwanese ${levelProfile.promptName} student.
 
-Main character: A pet named "${petName}" (${selectedPet.petId})
-Theme: ${themeObj.name} (${themeObj.desc})
-Story length: 4 pages, each page is 2-3 short simple sentences
-Level: Simple vocabulary suitable for the student's level
+Main character: A pet named "${petName}" (${selectedPet.petId}).
+Theme: ${themeObj.name} (${themeObj.desc}).
+Level rules for ${levelProfile.promptName}:
+- ${levelProfile.pageRule}
+- ${levelProfile.languageRule}
+- Keep English and Chinese aligned page by page.
+- Avoid violence, romance, horror, politics, adult topics, and scary endings.
+- Each page must have one focus word that appears in that page's English text.
 
-After the story, create 3 comprehension questions (multiple choice, 4 options each).
+After the story, create 3 comprehension questions with 4 choices each. ${levelProfile.quizRule}
+
+The "pages" array must contain exactly ${levelProfile.pages} page objects.
 
 Return STRICT JSON only (no markdown, no explanations):
 {
   "title": "Story Title in English",
   "zh_title": "中文標題",
+  "level_label": "${levelProfile.label}",
+  "summary": "一行中文故事大綱",
   "pages": [
-    {"en": "English text", "zh": "中文翻譯", "keywords": ["key_word1", "key_word2"]},
-    {"en": "...", "zh": "...", "keywords": [...]},
-    {"en": "...", "zh": "...", "keywords": [...]},
-    {"en": "...", "zh": "...", "keywords": [...]}
+    {"en": "English text", "zh": "中文翻譯", "word": "focus word", "meaning": "中文意思", "keywords": ["focus word", "useful word"]},
+    {"en": "...", "zh": "...", "word": "focus word", "meaning": "...", "keywords": [...]},
+    {"en": "...", "zh": "...", "word": "focus word", "meaning": "...", "keywords": [...]},
+    {"en": "...", "zh": "...", "word": "focus word", "meaning": "...", "keywords": [...]}
   ],
   "questions": [
-    {"q": "Question in English", "choices": ["A", "B", "C", "D"], "correct": 0, "explain": "中文解釋"},
-    {"q": "...", "choices": [...], "correct": 0, "explain": "..."},
-    {"q": "...", "choices": [...], "correct": 0, "explain": "..."}
+    {"q": "Question in English", "zh_q": "中文題目", "choices": ["A", "B", "C", "D"], "correct": 0, "explain": "中文解釋"},
+    {"q": "...", "zh_q": "...", "choices": [...], "correct": 0, "explain": "..."},
+    {"q": "...", "zh_q": "...", "choices": [...], "correct": 0, "explain": "..."}
   ]
 }`;
     try{
@@ -4938,7 +5061,7 @@ Return STRICT JSON only (no markdown, no explanations):
               method:"POST",headers:{"Content-Type":"application/json"},
               body:JSON.stringify({
                 contents:[{parts:[{text:prompt}]}],
-                generationConfig:{maxOutputTokens:2500,temperature:0.9},
+                generationConfig:{maxOutputTokens:2500,temperature:0.85,responseMimeType:"application/json"},
               }),
             });
             const data=await res.json();
@@ -4981,6 +5104,8 @@ Return STRICT JSON only (no markdown, no explanations):
               await new Promise(r=>setTimeout(r,1500));
               continue;
             }
+
+            parsed=normalizeStoryPayload(parsed,{lv,petName,themeName:themeObj.name});
 
             // Success - break out of both loops
             break outer;
@@ -5057,13 +5182,17 @@ Return STRICT JSON only (no markdown, no explanations):
     return(<div><Hdr t="📖 AI 故事" onBack={onBack} cl={c.cl}/>
       <div style={{...S.card,padding:"14px 16px",marginBottom:12,background:`linear-gradient(135deg,${c.bg},var(--color-background-primary,#fff))`}}>
         <div style={{fontSize:14,fontWeight:700,color:S.t1}}>📖 用你的寵物創造英文故事</div>
-        <div style={{fontSize:12,color:S.t2,marginTop:4,lineHeight:1.6}}>選一隻寵物 + 主題 → AI 會為你生成 4 頁小故事 + 3 題測驗</div>
+        <div style={{fontSize:12,color:S.t2,marginTop:4,lineHeight:1.6}}>AI 會產生英中對照、重點單字與閱讀測驗</div>
+        <div style={{fontSize:11,color:S.t3,marginTop:4,lineHeight:1.55}}>系統會依目前年級調整篇幅、句型和單字難度，故事讀完後再做 3 題理解測驗。</div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:6,marginTop:10}}>
+          {[storyProfile.label,`${storyProfile.pages} 頁故事`,"3 題測驗"].map(item=><span key={item} style={{fontSize:10,fontWeight:800,color:c.cl,background:"var(--color-background-primary,#fff)",border:`1px solid ${c.cl}33`,borderRadius:999,padding:"4px 8px"}}>{item}</span>)}
+        </div>
       </div>
 
       {/* Pet selector */}
       <div style={{...S.card,padding:"14px 16px",marginBottom:12}}>
         <div style={{fontSize:13,fontWeight:600,color:S.t1,marginBottom:10}}>🐾 選主角</div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(104px,1fr))",gap:8}}>
           {pets.map(p=>{const pd=PETS[p.rarity].find(x=>x.id===p.petId);if(!pd)return null;const ri=RARITY_INFO[p.rarity];const sel=selectedPet?.petId===p.petId;return(<div key={p.petId} onClick={()=>setSelectedPet(p)} style={{padding:"10px 6px",border:sel?`2px solid ${c.cl}`:`1px solid ${S.bd}`,borderRadius:10,textAlign:"center",cursor:"pointer",background:sel?`${c.cl}11`:"transparent"}}>
             <div style={{display:"flex",justifyContent:"center"}}><PixelPet petId={p.petId} stage={getPetStage(p)} size={44} animate={false}/></div>
             <div style={{fontSize:11,fontWeight:600,color:S.t1,marginTop:4}}>{pd.name}</div>
@@ -5075,7 +5204,7 @@ Return STRICT JSON only (no markdown, no explanations):
       {/* Theme selector */}
       <div style={{...S.card,padding:"14px 16px",marginBottom:12}}>
         <div style={{fontSize:13,fontWeight:600,color:S.t1,marginBottom:10}}>🎨 選主題</div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:8}}>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:8}}>
           {themes.map(t=>(<div key={t.id} onClick={()=>setTheme(t.id)} style={{padding:"10px",border:theme===t.id?`2px solid ${c.cl}`:`1px solid ${S.bd}`,borderRadius:10,cursor:"pointer",background:theme===t.id?`${c.cl}11`:"transparent"}}>
             <div style={{fontSize:22}}>{t.icon}</div>
             <div style={{fontSize:13,fontWeight:600,color:S.t1,marginTop:2}}>{t.name}</div>
@@ -5126,6 +5255,7 @@ Return STRICT JSON only (no markdown, no explanations):
       <div style={{...S.card,padding:"18px 16px",marginBottom:12}}>
         <div style={{fontSize:10,color:c.cl,fontWeight:700,letterSpacing:1}}>問題 {quizIdx+1} / {story.questions.length}</div>
         <div style={{fontSize:16,fontWeight:600,color:S.t1,marginTop:6,lineHeight:1.5}}>{q.q}</div>
+        {q.zh_q&&<div style={{fontSize:13,color:S.t2,lineHeight:1.6,marginTop:6,padding:"8px 10px",background:S.bg2,borderRadius:10}}>{q.zh_q}</div>}
       </div>
 
       <div style={{display:"grid",gap:8,marginBottom:12}}>

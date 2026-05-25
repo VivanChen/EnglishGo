@@ -116,7 +116,7 @@ export default function NovelM({lv,onBack,onXp,deps}){
     </div>}
     {novels.length>1&&<div style={{display:"flex",gap:6,overflowX:"auto",marginBottom:10}}>{novels.map((n,i)=><button key={n.id} onClick={()=>{setNi(i);setCi(null)}} style={{flexShrink:0,padding:"8px 12px",border:"none",borderRadius:12,background:i===ni?c.cl:S.bg2,color:i===ni?"#fff":S.t1,fontWeight:700,fontSize:12,fontFamily:"inherit",cursor:"pointer"}}>{n.title}</button>)}</div>}
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(min(100%,158px),1fr))",gap:10}}>
-      {novel.chapters.map((ch,i)=>{const isDone=completed.includes(ch.no);return(<div key={ch.no} onClick={()=>goChapter(i)} style={{...S.card,padding:0,overflow:"hidden",cursor:"pointer",border:`1px solid ${isDone?"#1D9E75":S.bd}`}}>
+      {novel.chapters.map((ch,i)=>{const isDone=completed.includes(ch.no);const chProgress=readingProgress[novel.id]?.chapterNo===ch.no?readingProgress[novel.id]:null;const chPageCount=Math.max(1,Number(chProgress?.pageCount)||Math.ceil(novelBlockPairs(ch.en,ch.zh).length/NOVEL_PAGE_SIZE));const chPage=Math.max(0,Math.min(Number(chProgress?.page)||0,chPageCount-1));const chQuiz=ch.quiz||[];const chQuizState=quizAns[`${novel.id}:${ch.no}`]||{};const chQuizAnswered=chQuiz.filter((_,qi)=>chQuizState[qi]!=null).length;const statusText=isDone?"已完成":chProgress?`進行中 · Page ${chPage+1}/${chPageCount}`:"尚未開始";return(<div key={ch.no} data-testid={`novel-chapter-card-${ch.no}`} onClick={()=>goChapter(i,chProgress?chPage:0)} style={{...S.card,padding:0,overflow:"hidden",cursor:"pointer",border:`1px solid ${isDone?"#1D9E75":chProgress?c.cl:S.bd}`,boxShadow:chProgress?`0 10px 24px ${c.cl}22`:S.card.boxShadow}}>
         <div style={{position:"relative",color:"#fff"}}>
           <NovelIllustration chapter={ch.no} small imageBase={novelImageBase} title={novel.title}/>
           <div style={{position:"absolute",top:8,left:8,width:28,height:28,borderRadius:"50%",background:"rgba(255,255,255,.9)",color:c.cl,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:900}}>{ch.no}</div>
@@ -126,6 +126,10 @@ export default function NovelM({lv,onBack,onXp,deps}){
           <div style={{fontSize:14,fontWeight:800,color:S.t1,lineHeight:1.35}}>{ch.title}</div>
           <div style={{fontSize:12,color:S.t2,marginTop:4}}>{ch.zhTitle}</div>
           <div style={{fontSize:11,color:S.t3,marginTop:8}}>{readingWords(ch.en).length} words · {ch.vocab.length} key words</div>
+          <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:9}}>
+            <span style={{fontSize:10,fontWeight:900,color:isDone?"#1D9E75":chProgress?c.cl:S.t3,background:isDone?"#E1F5EE":chProgress?c.bg:S.bg2,border:`1px solid ${isDone?"#1D9E75":chProgress?c.cl:S.bd}`,borderRadius:999,padding:"4px 8px"}}>{statusText}</span>
+            <span style={{fontSize:10,fontWeight:900,color:chQuizAnswered===chQuiz.length&&chQuiz.length?c.cl:S.t3,background:S.bg2,border:`1px solid ${S.bd}`,borderRadius:999,padding:"4px 8px"}}>測驗 {chQuizAnswered}/{chQuiz.length}</span>
+          </div>
         </div>
       </div>)})}
     </div>

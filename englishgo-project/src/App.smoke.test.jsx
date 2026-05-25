@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import App from './App.jsx';
 
@@ -249,6 +249,118 @@ describe('EnglishGo app smoke flow', () => {
     expect(screen.getByText('AI 字典留在頁面內')).toBeInTheDocument();
   });
 
+  it('generates a level-aware AI story with reading guidance', async () => {
+    localStorage.setItem('eg_gemkey', JSON.stringify('test-gemini-key'));
+    localStorage.setItem(
+      'eg_pets',
+      JSON.stringify([{ petId: 'bunny', rarity: 'N', level: 3, exp: 0, bond: 8 }]),
+    );
+
+    const storyPayload = {
+      title: 'Bunny and the Library Map',
+      zh_title: '小兔兔和圖書館地圖',
+      level_label: '小學 A1 友善故事',
+      summary: '小兔兔在圖書館找到地圖，並學會問路。',
+      pages: [
+        {
+          en: 'Bunny finds a map in the school library.',
+          zh: '小兔兔在學校圖書館找到一張地圖。',
+          word: 'library',
+          meaning: '圖書館',
+          keywords: ['library', 'map'],
+        },
+        {
+          en: 'The map shows a quiet reading room.',
+          zh: '地圖上有一間安靜的閱讀室。',
+          word: 'quiet',
+          meaning: '安靜的',
+          keywords: ['quiet', 'room'],
+        },
+        {
+          en: 'Bunny asks a teacher for help.',
+          zh: '小兔兔向老師尋求幫忙。',
+          word: 'teacher',
+          meaning: '老師',
+          keywords: ['teacher', 'help'],
+        },
+        {
+          en: 'Bunny reads one page and smiles.',
+          zh: '小兔兔讀了一頁，開心地笑了。',
+          word: 'smiles',
+          meaning: '微笑',
+          keywords: ['reads', 'smiles'],
+        },
+      ],
+      questions: [
+        {
+          q: 'Where does Bunny find the map?',
+          zh_q: '小兔兔在哪裡找到地圖？',
+          choices: ['In the library', 'At the zoo', 'On the bus', 'In the kitchen'],
+          correct: 0,
+          explain: 'Bunny finds the map in the school library.',
+        },
+        {
+          q: 'Who helps Bunny?',
+          choices: ['A teacher', 'A driver', 'A singer', 'A cook'],
+          correct: 0,
+          explain: 'Bunny asks a teacher for help.',
+        },
+        {
+          q: 'How does Bunny feel at the end?',
+          choices: ['Happy', 'Angry', 'Sleepy', 'Lost'],
+          correct: 0,
+          explain: 'Bunny smiles at the end.',
+        },
+      ],
+    };
+
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        candidates: [{
+          content: {
+            parts: [{ text: JSON.stringify(storyPayload) }],
+          },
+        }],
+      }),
+    });
+
+    try {
+      await openElementaryMenu();
+
+      fireEvent.click(document.querySelector('[data-group-id="read"]'));
+      fireEvent.click(document.querySelector('[data-module-id="story"]'));
+
+      expect(await screen.findByText('AI 會產生英中對照、重點單字與閱讀測驗')).toBeInTheDocument();
+      fireEvent.click(screen.getByText('✨ 開始生成故事'));
+
+      expect(await screen.findByText(/小兔兔和圖書館地圖/)).toBeInTheDocument();
+      expect(screen.getByText('小學 A1 友善故事')).toBeInTheDocument();
+      expect(screen.getByText(/第 1 頁 \/ 共 4 頁/)).toBeInTheDocument();
+      expect(screen.getByText('本頁重點：library · 圖書館')).toBeInTheDocument();
+      expect(screen.getByText('Bunny finds a map in the school library.')).toBeInTheDocument();
+
+      await waitFor(() => {
+        const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+        expect(body.contents[0].parts[0].text).toContain('Level rules for elementary');
+        expect(body.contents[0].parts[0].text).toContain('focus word');
+      });
+
+      fireEvent.click(screen.getByText('下一頁 →'));
+      expect(await screen.findByText('The map shows a quiet reading room.')).toBeInTheDocument();
+      fireEvent.click(screen.getByText('下一頁 →'));
+      expect(await screen.findByText('Bunny asks a teacher for help.')).toBeInTheDocument();
+      fireEvent.click(screen.getByText('下一頁 →'));
+      expect(await screen.findByText('Bunny reads one page and smiles.')).toBeInTheDocument();
+      fireEvent.click(screen.getByText('📝 開始測驗'));
+
+      expect(await screen.findByText('Where does Bunny find the map?')).toBeInTheDocument();
+      expect(screen.getByText('小兔兔在哪裡找到地圖？')).toBeInTheDocument();
+    } finally {
+      fetchMock.mockRestore();
+    }
+  });
+
   it('opens the lazy novel reader module', async () => {
     await openElementaryMenu();
 
@@ -288,6 +400,9 @@ describe('EnglishGo app smoke flow', () => {
 
     expect(await screen.findByText('繼續閱讀')).toBeInTheDocument();
     expect(screen.getByText(/上次讀到 Chapter 1 · Page 2/)).toBeInTheDocument();
+    const firstChapterCard = screen.getByTestId('novel-chapter-card-1');
+    expect(within(firstChapterCard).getByText(/進行中 · Page 2/)).toBeInTheDocument();
+    expect(within(firstChapterCard).getByText(/測驗 0\/3/)).toBeInTheDocument();
 
     fireEvent.click(screen.getByText('繼續閱讀'));
     expect(await screen.findByText('Page 2')).toBeInTheDocument();
