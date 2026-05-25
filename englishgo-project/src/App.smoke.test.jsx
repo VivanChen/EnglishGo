@@ -218,6 +218,32 @@ describe('EnglishGo app smoke flow', () => {
     }
   });
 
+  it('uses the optimized SRS study layout after flipping a card', async () => {
+    localStorage.removeItem('eg_gifkey');
+    localStorage.removeItem('eg_gemkey');
+
+    await openElementaryMenu();
+    clickFirstModuleCard();
+
+    expect(await screen.findByTestId('srs-study-guidance')).toHaveTextContent('點卡片看答案');
+
+    fireEvent.click(await screen.findByTestId('srs-card'));
+
+    expect(await screen.findByTestId('srs-back-primary')).toBeInTheDocument();
+    expect(screen.getByTestId('srs-learning-details')).toBeInTheDocument();
+    expect(screen.getByTestId('srs-rating-bar')).toBeInTheDocument();
+    expect(screen.getByTestId('srs-support-actions')).toBeInTheDocument();
+    expect(screen.getByTestId('srs-study-guidance')).toHaveTextContent('下一步');
+    expect(screen.getByText('查字典補強')).toBeInTheDocument();
+    expect(screen.getByTestId('srs-dictionary-action')).toHaveTextContent('小朋友字典');
+
+    fireEvent.click(screen.getByText('🔎 查字典'));
+
+    expect(await screen.findByRole('complementary', { name: 'Dictionary results' })).toBeInTheDocument();
+    expect(screen.getByText('單字學習助手')).toBeInTheDocument();
+    expect(screen.getByText('AI 字典留在頁面內')).toBeInTheDocument();
+  });
+
   it('opens the lazy novel reader module', async () => {
     await openElementaryMenu();
 

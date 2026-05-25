@@ -155,6 +155,7 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
   const[combo,setCombo]=useState(0);const[maxCombo,setMaxCombo]=useState(0);const[comboAnim,setComboAnim]=useState(false);const[showConfetti,setShowConfetti]=useState(false);const[flipAnim,setFlipAnim]=useState(false);const[mascotMood,setMascotMood]=useState("idle");
   const[gifUrl,setGifUrl]=useState(null);const[gifLoading,setGifLoading]=useState(false);
   const[imgUrl,setImgUrl]=useState(null);
+  const[mediaError,setMediaError]=useState("");
   const[dictOpen,setDictOpen]=useState(false);
   const[dictData,setDictData]=useState(null);const[dictLoading,setDictLoading]=useState(false);const[dictError,setDictError]=useState("");
   const[aiExample,setAiExample]=useState(null);// AI-generated example {en, zh}
@@ -174,6 +175,7 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
   }else{let base=built;if(sharedWord){const target=await findAnyWord(lv,sharedWord);if(!active)return;if(target){const key=String(target.w).toLowerCase();base=[target,...built.filter(w=>String(w.w).toLowerCase()!==key)]}}const ordered=sortCardsForStudy(base,weakWords,sharedWord);setCards(ordered);setDeck(createDeck(ordered));setSrc("built-in ("+ordered.length+"字)")}setLoading(false)})();return()=>{active=false}},[lv,sharedWord,customCards,customSource]);
   const cur=deck.queue[0]!==undefined?cards[deck.queue[0]]:null;const left=deck.queue.length;const done=left===0;const spokenExample=cur?(aiExample?.en||(!isPlaceholderExample(cur.ex,cur.w)?cur.ex:"")):"";
   useEffect(()=>{setDictOpen(false);setDictData(null);setDictError("")},[cur?.w]);
+  useEffect(()=>{setMediaError("")},[cur?.w]);
   useEffect(()=>{let active=true;if(!dictOpen||!cur){setDictLoading(false);return()=>{active=false}}if(!apiKey?.trim()){setDictLoading(false);setDictData(null);setDictError("");return()=>{active=false}}setDictLoading(true);setDictError("");generateKidDictionary(cur.w,cur.m,cur.p,lv,apiKey).then(data=>{if(!active)return;setDictData(data);setDictLoading(false)}).catch(()=>{if(!active)return;setDictData(null);setDictError("AI 字典目前產生失敗，請稍後再試，或使用 Yahoo 查詢。");setDictLoading(false)});return()=>{active=false}},[dictOpen,cur?.w,apiKey,lv]);
   // Fetch GIF for current word
   useEffect(()=>{let active=true;setGifUrl(null);if(!cur||!gifKey){setGifLoading(false);return()=>{active=false}}setGifLoading(true);fetchGif(cur.w,gifKey).then(url=>{if(!active)return;setGifUrl(url);setGifLoading(false)}).catch(()=>{if(active)setGifLoading(false)});return()=>{active=false}},[cur?.w,gifKey]);
@@ -220,7 +222,12 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
   const speakDict=speakWebSpeech||speak;
   const rateTooltip=deck.total-left===0?"第一張卡片！加油 💪":"";const comboLabel=combo>=10?"🔥🔥🔥 UNSTOPPABLE!":combo>=7?"🔥🔥 ON FIRE!":combo>=5?"🔥 COMBO x"+combo:combo>=3?"✨ "+combo+" 連擊！":"";
   const speakTiny=(text,label="播放英文發音")=>{const clean=String(text||"").trim();return clean?<button type="button" onClick={()=>speakDict(clean)} title={label} aria-label={label} style={{border:`1px solid ${S.bd}`,background:S.bg1,color:c.cl,borderRadius:999,width:24,height:24,display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:12,cursor:"pointer",fontFamily:"inherit",verticalAlign:"middle",padding:0,flex:"0 0 auto"}}>🔊</button>:null};
-  return(<div><Hdr t="🃏 SRS 單字卡" onBack={onBack} cl={c.cl} extra={<div style={{display:"flex",gap:4}}><button onClick={()=>setInfo(!info)} style={{background:"none",border:`1px solid ${S.bd}`,borderRadius:8,padding:"2px 6px",fontSize:12,cursor:"pointer",color:S.t2}}>ⓘ</button><label style={{background:"none",border:`1px solid ${S.bd}`,borderRadius:8,padding:"2px 6px",fontSize:12,cursor:"pointer",color:S.t2}}>📥<input ref={fr} type="file" accept=".csv" onChange={handleCSV} style={{display:"none"}}/></label></div>}/>
+  const fallbackVisual=getWordEmoji(cur);
+  const showGif=Boolean(gifUrl&&mediaError!=="gif");
+  const showImg=Boolean(imgUrl?.type!=="emoji"&&imgUrl?.value&&mediaError!=="image");
+  const showEmoji=Boolean(imgUrl?.type==="emoji");
+  const mediaLabel=showGif?"GIF 動圖":showImg?"內建圖片":showEmoji?"內建圖示":"備用圖示";
+  return(<div className={`srs-page ${dictOpen&&flip?"has-dict":""}`} style={{"--srs-accent":c.cl,"--srs-accent-2":c.ac,"--srs-soft":c.bg,"--srs-card":S.bg1,"--srs-surface":S.bg2,"--srs-border":S.bd,"--srs-text":S.t1,"--srs-muted":S.t2,"--srs-faint":S.t3}}><Hdr t="🃏 SRS 單字卡" onBack={onBack} cl={c.cl} extra={<div style={{display:"flex",gap:4}}><button onClick={()=>setInfo(!info)} style={{background:"none",border:`1px solid ${S.bd}`,borderRadius:8,padding:"2px 6px",fontSize:12,cursor:"pointer",color:S.t2}}>ⓘ</button><label style={{background:"none",border:`1px solid ${S.bd}`,borderRadius:8,padding:"2px 6px",fontSize:12,cursor:"pointer",color:S.t2}}>📥<input ref={fr} type="file" accept=".csv" onChange={handleCSV} style={{display:"none"}}/></label></div>}/>
     {info&&<div style={{...S.card,padding:"12px 16px",marginBottom:10,fontSize:13,color:S.t2,lineHeight:1.7}}>💻 <b>Space</b> 翻牌/翻回 · <b>Enter</b> 朗讀 · <b>1</b>Again <b>2</b>Hard <b>3</b>Good <b>4</b>Easy<br/>📱 <b>點擊</b>翻牌 · 點 <b>🔙翻回</b> · <b>按鈕</b>評分<br/>🔎 <b>查字典</b>：翻到背面後點 <b>查字典</b>，可在右側查看小朋友版解釋、例句與常見搭配<div style={{marginTop:4,fontSize:11,color:S.t3}}>來源：{src} {gifKey?"· 🖼️ GIF 已啟用":""}</div>
       <div style={{borderTop:`1px solid ${S.bd}`,marginTop:8,paddingTop:8}}>
         <div style={{fontWeight:700,fontSize:12,color:S.t1,marginBottom:4}}>🖼️ 單字動圖 (Giphy，可選)</div>
@@ -240,35 +247,146 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
       <div style={{display:"flex",gap:6,flexWrap:"wrap"}}><a href="/learn/gif-guide.html" target="_blank" rel="noreferrer" style={{...S.btn,background:S.bg2,color:c.cl,padding:"8px 12px",fontSize:12,textDecoration:"none"}}>看效果</a><button onClick={()=>onOpenSettings?.()} style={{...S.btn,background:c.cl,color:"#fff",padding:"8px 12px",fontSize:12}}>設定 Key</button></div>
     </div>}
     {comboLabel&&<div style={{textAlign:"center",fontSize:combo>=7?16:13,fontWeight:700,color:"#EF9F27",marginBottom:4,animation:comboAnim?"comboFlash .5s ease-out":"none"}}>{comboLabel}</div>}
-    <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:8,fontSize:12}}><div style={{flex:1,height:6,background:S.bg2,borderRadius:3}}><div style={{height:"100%",width:`${pct}%`,background:`linear-gradient(90deg,${c.cl},${c.ac})`,borderRadius:3,transition:"width .3s"}}/></div><span style={{color:S.t3}}>{left}/{deck.total}</span>{[["#E24B4A",deck.stats.again],["#EF9F27",deck.stats.hard],["#1D9E75",deck.stats.good],["#185FA5",deck.stats.easy]].map(([cl,v],i)=><span key={i} style={{color:cl,fontWeight:600}}>{v}</span>)}</div>
     {Array.isArray(customCards)&&customCards.length>0&&<div style={{marginBottom:10,padding:"8px 11px",border:`1px solid ${c.cl}33`,background:c.bg,borderRadius:12,color:S.t2,fontSize:12,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}><b style={{color:c.cl}}>考試範圍模式</b><span>{customCards.length} 個單字</span><span style={{color:S.t3}}>系統自動排序，輸入順序不會決定出題順序</span></div>}
-    <style>{`@media (max-width: 900px){.srs-study-grid{grid-template-columns:1fr!important}.srs-dict-panel{max-height:none!important}}`}</style>
-    <div className="srs-study-grid" style={{display:"grid",gridTemplateColumns:dictOpen&&flip?"minmax(0,1fr) minmax(300px,420px)":"1fr",gap:14,alignItems:"stretch"}}>
-    <div data-testid="srs-card" onClick={handleCardTap} style={{cursor:!flip?"pointer":"default",borderRadius:16,padding:flip?(dictOpen?"16px 16px 18px":"18px 20px 22px"):"48px 20px",textAlign:"center",minHeight:flip?(dictOpen?420:280):220,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:flip?"flex-start":"center",background:flip?`linear-gradient(135deg,${c.bg},var(--color-background-primary,#fff))`:S.bg1,border:`2px solid ${flip?c.ac:S.bd}`,transition:"all .3s",userSelect:"none",WebkitUserSelect:"none",animation:flipAnim?"cardFlip .35s ease-out":"none",position:"relative",overflow:"hidden"}}>
-      {/* Sparkles background */}
-      {!flip&&<CardSparkles color={c.cl}/>}
-      {/* Mascot */}
-      <Mascot mood={mascotMood}/>
-      {!flip?(<>
-        {/* Front face: show GIF if available, else static image */}
-        {gifUrl?<img src={gifUrl} alt={cur.w} style={{width:"90%",maxWidth:280,height:200,objectFit:"cover",borderRadius:18,marginBottom:10,position:"relative",zIndex:1,boxShadow:"0 6px 20px rgba(0,0,0,.15)"}} onError={e=>e.target.style.display="none"}/>
-        :imgUrl?(imgUrl.type==="emoji"?<div style={{fontSize:120,marginBottom:10,position:"relative",zIndex:1,lineHeight:1,filter:"drop-shadow(0 4px 12px rgba(0,0,0,.15))"}}>{imgUrl.value}</div>
-        :<img src={imgUrl.value} alt={cur.w} style={{width:"90%",maxWidth:280,height:200,objectFit:"cover",borderRadius:18,marginBottom:10,position:"relative",zIndex:1,boxShadow:"0 4px 16px rgba(0,0,0,.1)"}} onError={e=>e.target.style.display="none"}/>)
-        :gifLoading&&gifKey?<div style={{fontSize:13,color:S.t3,marginBottom:6,position:"relative",zIndex:1,animation:"pulse 1s infinite"}}>載入圖片中...</div>:null}
-        <div style={{fontSize:38,fontWeight:700,color:S.t1,letterSpacing:1,position:"relative",zIndex:1}}>{cur.w}<button onClick={e=>{e.stopPropagation();speak(cur.w)}} style={{background:"none",border:"none",fontSize:28,cursor:"pointer",marginLeft:6,verticalAlign:"middle",padding:"4px",minWidth:40,minHeight:40}}>🔊</button></div>
-        {cur.ph&&<div style={{fontSize:14,color:S.t3,marginTop:3,position:"relative",zIndex:1}}>{cur.ph}</div>}
-        <div style={{fontSize:14,color:"#fff",marginTop:16,padding:"10px 24px",background:`linear-gradient(135deg,${c.cl},${c.ac})`,borderRadius:24,fontWeight:600,boxShadow:`0 2px 8px ${c.cl}40`,position:"relative",zIndex:1}}>👆 點擊翻牌</div>
-        <div style={{fontSize:11,color:S.t3,marginTop:5,position:"relative",zIndex:1}}>電腦可按 Space</div>
-      </>):(<>
-        {/* Back face images — GIF + static image */}
-        {gifUrl&&<img src={gifUrl} alt={cur.w} style={{width:"80%",maxWidth:240,height:150,objectFit:"cover",borderRadius:14,marginBottom:6,boxShadow:"0 4px 12px rgba(0,0,0,.1)",border:`2px solid ${c.bg}`}} onError={e=>e.target.style.display="none"}/>}
-        {imgUrl&&(imgUrl.type==="emoji"?<div style={{fontSize:80,marginBottom:6,lineHeight:1}}>{imgUrl.value}</div>:<img src={imgUrl.value} alt={cur.w} style={{width:"85%",maxWidth:260,height:140,objectFit:"cover",borderRadius:14,marginBottom:8,boxShadow:"0 3px 10px rgba(0,0,0,.08)"}} onError={e=>e.target.style.display="none"}/>)}
-        <div style={{fontSize:28,fontWeight:700,color:c.cl,letterSpacing:.5}}>{cur.w} <span style={{fontSize:13,fontWeight:400,color:S.t3}}>({cur.p})</span> <button onClick={e=>{e.stopPropagation();speak(cur.w)}} style={{background:"none",border:"none",fontSize:24,cursor:"pointer",verticalAlign:"middle",padding:"4px",minWidth:36,minHeight:36}}>🔊</button></div>
-        <div style={{fontSize:22,fontWeight:600,color:S.t1,margin:"4px 0 8px"}}>{cur.m} <button onClick={e=>{e.stopPropagation();speak(cur.m,"zh-TW",0.9)}} style={{background:"none",border:"none",fontSize:22,cursor:"pointer",verticalAlign:"middle",padding:"4px",minWidth:36,minHeight:36}}>🔈</button></div>
-        <button onClick={e=>{e.stopPropagation();setDictOpen(true)}} style={{background:S.bg2,border:`1px solid ${c.cl}66`,borderRadius:999,padding:"8px 14px",fontSize:13,cursor:"pointer",color:c.cl,fontFamily:"inherit",fontWeight:800,marginBottom:8}}>🔎 查字典</button>
-        {cur.f?.length>0&&<div style={{fontSize:13,color:S.t2,marginBottom:6,width:"100%",padding:"8px 12px",background:`${c.ac}0a`,borderRadius:10,textAlign:"left"}}><b style={{color:c.cl,fontSize:12}}>📝 詞性變化</b><div style={{marginTop:3,display:"flex",flexWrap:"wrap",gap:4}}>{cur.f.map((f,i)=><span key={i} style={{background:S.bg2,padding:"2px 8px",borderRadius:6,fontSize:12}}>{f.w} <span style={{color:S.t3}}>({f.p}) {f.n}</span></span>)}</div></div>}
-        {cur.c?.length>0&&<div style={{fontSize:13,color:S.t2,marginBottom:6,width:"100%",padding:"8px 12px",background:`${c.ac}08`,borderRadius:10,textAlign:"left"}}><b style={{color:c.cl,fontSize:12}}>🔗 常見搭配</b><div style={{marginTop:3}}>{cur.c.map((x,i)=><div key={i} style={{fontSize:13,padding:"2px 0",borderBottom:i<cur.c.length-1?`1px solid ${S.bd}`:"none"}}>· {x}</div>)}</div></div>}
-        {(()=>{
+    <style>{`
+      .srs-page{padding-bottom:12px}
+      .srs-progress-row{display:flex;align-items:center;gap:7px;margin-bottom:10px;font-size:12px}
+      .srs-progress-track{flex:1;height:7px;background:var(--srs-surface);border-radius:999px;overflow:hidden;box-shadow:inset 0 1px 4px rgba(0,0,0,.06)}
+      .srs-progress-fill{height:100%;background:linear-gradient(90deg,var(--srs-accent),var(--srs-accent-2));border-radius:999px;transition:width .3s ease}
+      .srs-stat-dot{font-weight:900;font-size:11px}
+      .srs-study-grid{display:grid;grid-template-columns:1fr;gap:14px;align-items:stretch}
+      .srs-study-grid.is-dict-open{grid-template-columns:minmax(0,1fr) minmax(320px,430px)}
+      .srs-card-shell{cursor:pointer;border-radius:22px;padding:30px 22px;text-align:center;min-height:350px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(145deg,var(--srs-card),color-mix(in srgb,var(--srs-soft) 34%,var(--srs-card)));border:1px solid color-mix(in srgb,var(--srs-accent) 18%,var(--srs-border));transition:box-shadow .2s ease,border-color .2s ease,background .2s ease;user-select:none;WebkitUserSelect:none;animation:none;position:relative;overflow:hidden;box-shadow:0 18px 42px rgba(20,66,52,.10)}
+      .srs-card-shell.is-back{cursor:default;justify-content:flex-start;align-items:stretch;text-align:left;padding:18px;background:linear-gradient(135deg,var(--srs-soft),var(--color-background-primary,#fff));border:2px solid color-mix(in srgb,var(--srs-accent) 70%,var(--srs-border));min-height:360px}
+      .srs-card-shell.is-dict-open{min-height:500px}
+      .srs-front-media{position:relative;z-index:1;width:min(84%,292px);height:184px;margin:0 auto 12px;border-radius:20px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:radial-gradient(circle at 30% 20%,rgba(255,255,255,.85),transparent 36%),linear-gradient(135deg,var(--srs-soft),var(--srs-card));box-shadow:0 14px 30px rgba(0,0,0,.12)}
+      .srs-front-media img{width:100%;height:100%;object-fit:cover}
+      .srs-front-emoji{font-size:110px;line-height:1;filter:drop-shadow(0 6px 16px rgba(0,0,0,.16))}
+      .srs-media-badge{position:absolute;left:10px;top:10px;background:rgba(255,255,255,.82);border:1px solid color-mix(in srgb,var(--srs-accent) 22%,var(--srs-border));border-radius:999px;padding:4px 8px;color:var(--srs-accent);font-size:11px;font-weight:950;backdrop-filter:blur(10px)}
+      .srs-media-fallback{display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--srs-muted);font-size:12px;font-weight:800}
+      .srs-media-fallback strong{font-size:72px;line-height:1;filter:drop-shadow(0 6px 14px rgba(0,0,0,.14))}
+      .srs-front-word{position:relative;z-index:1;font-size:42px;font-weight:950;color:var(--srs-text);letter-spacing:0;line-height:1.1;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+      .srs-sound-btn{background:rgba(255,255,255,.64);border:1px solid var(--srs-border);border-radius:999px;color:var(--srs-accent);cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;justify-content:center;min-width:36px;min-height:36px;padding:4px;font-size:20px}
+      .srs-front-ph{position:relative;z-index:1;font-size:14px;color:var(--srs-faint);margin-top:5px}
+      .srs-flow-hint{position:relative;z-index:1;margin-top:14px;display:inline-flex;align-items:center;gap:8px;padding:9px 18px;border-radius:999px;background:linear-gradient(135deg,var(--srs-accent),var(--srs-accent-2));color:#fff;font-size:13px;font-weight:900;box-shadow:0 10px 22px color-mix(in srgb,var(--srs-accent) 24%,transparent)}
+      .srs-flow-hint span{font-size:11px;font-weight:750;opacity:.86}
+      .srs-flow-hint.is-back{justify-content:center;margin:0;background:color-mix(in srgb,var(--srs-accent) 10%,var(--srs-card));border:1px solid color-mix(in srgb,var(--srs-accent) 22%,var(--srs-border));color:var(--srs-accent);box-shadow:none;padding:8px 12px}
+      .srs-flow-hint.is-back span{color:var(--srs-muted);opacity:1}
+      .srs-front-sub{position:relative;z-index:1;font-size:11px;color:var(--srs-faint);margin-top:6px}
+      .srs-back-top{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:start;margin-bottom:12px}
+      .srs-back-main{min-width:0}
+      .srs-back-word{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:34px;font-weight:950;color:var(--srs-accent);line-height:1.1}
+      .srs-back-pos{font-size:13px;font-weight:700;color:var(--srs-faint)}
+      .srs-back-meaning{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:25px;font-weight:900;color:var(--srs-text);margin-top:7px}
+      .srs-back-ph{font-size:13px;color:var(--srs-faint);margin-top:4px}
+      .srs-back-thumb{width:92px;height:74px;border-radius:18px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:rgba(255,255,255,.62);border:1px solid color-mix(in srgb,var(--srs-accent) 20%,var(--srs-border));box-shadow:0 10px 22px rgba(20,66,52,.08)}
+      .srs-back-thumb img{width:100%;height:100%;object-fit:cover}
+      .srs-back-thumb.is-emoji{font-size:52px}
+      .srs-card-actions{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 12px}
+      .srs-pill-btn{border:1px solid color-mix(in srgb,var(--srs-accent) 44%,var(--srs-border));background:var(--srs-card);color:var(--srs-accent);border-radius:999px;padding:8px 13px;font:inherit;font-size:13px;font-weight:900;cursor:pointer;display:inline-flex;align-items:center;gap:5px;min-height:38px}
+      .srs-dict-cta{background:linear-gradient(135deg,var(--srs-accent),var(--srs-accent-2));color:#fff;border-color:transparent;box-shadow:0 8px 18px color-mix(in srgb,var(--srs-accent) 22%,transparent)}
+      .srs-dict-cta small{font-size:10px;font-weight:850;opacity:.86}
+      .srs-example-card{width:100%;padding:14px 16px;background:linear-gradient(135deg,var(--srs-card),color-mix(in srgb,var(--srs-soft) 60%,var(--srs-card)));border:1px solid color-mix(in srgb,var(--srs-accent) 20%,var(--srs-border));border-left:4px solid var(--srs-accent);border-radius:16px;color:var(--srs-text);line-height:1.65;box-shadow:0 10px 22px rgba(20,66,52,.06)}
+      .srs-example-kicker{font-size:11px;color:var(--srs-accent);font-weight:900;margin-bottom:4px}
+      .srs-example-en{font-size:17px;font-weight:850;font-style:italic}
+      .srs-example-zh{font-size:13px;color:var(--srs-muted);margin-top:5px}
+      .srs-learning-details{margin-top:12px;border:1px solid color-mix(in srgb,var(--srs-accent) 18%,var(--srs-border));border-radius:16px;background:rgba(255,255,255,.48);padding:0;overflow:hidden}
+      .srs-learning-details summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;font-size:13px;font-weight:950;color:var(--srs-text)}
+      .srs-learning-details summary::-webkit-details-marker{display:none}
+      .srs-learning-details summary small{font-size:11px;color:var(--srs-faint);font-weight:800}
+      .srs-detail-body{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:0 12px 12px}
+      .srs-detail-box{background:var(--srs-card);border:1px solid var(--srs-border);border-radius:13px;padding:10px 11px;color:var(--srs-muted);font-size:13px;line-height:1.55}
+      .srs-detail-title{font-size:12px;font-weight:950;color:var(--srs-accent);margin-bottom:6px}
+      .srs-detail-chip{display:inline-flex;margin:0 5px 5px 0;background:var(--srs-surface);border-radius:999px;padding:4px 8px;font-size:12px;color:var(--srs-muted)}
+      .srs-support-actions{display:flex;justify-content:center;gap:8px;margin-top:8px;flex-wrap:wrap}
+      .srs-support-actions button{min-height:42px}
+      .srs-rating-bar{position:static;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:8px;padding:6px;border:1px solid var(--srs-border);border-radius:18px;background:color-mix(in srgb,var(--color-background-primary,#fff) 88%,transparent);box-shadow:0 18px 46px rgba(20,66,52,.16);backdrop-filter:blur(14px)}
+      .srs-rate-btn{border:none;border-radius:15px;padding:8px 6px;font:inherit;font-size:14px;font-weight:950;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;min-height:58px;transition:transform .1s ease;WebkitTapHighlightColor:transparent}
+      .srs-rate-btn span:first-child{font-size:25px;line-height:1}
+      .srs-rate-btn small{font-size:10px;opacity:.55}
+      .srs-dict-backdrop{display:none}
+      .srs-dict-panel{padding:0!important;overflow:hidden!important;max-height:560px;display:flex!important;flex-direction:column;border:1px solid color-mix(in srgb,var(--srs-accent) 42%,var(--srs-border))!important;box-shadow:0 18px 48px rgba(20,66,52,.12)!important}
+      .srs-dict-head{padding:14px 15px;border-bottom:1px solid var(--srs-border);background:linear-gradient(135deg,var(--srs-card),var(--srs-soft));display:flex;align-items:center;gap:8px}
+      .srs-dict-title{font-size:12px;color:var(--srs-accent);font-weight:950}
+      .srs-dict-word{font-size:22px;color:var(--srs-text);font-weight:950;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      .srs-dict-hint{font-size:11px;color:var(--srs-faint);margin-top:3px;line-height:1.45}
+      .srs-dict-body{padding:14px;overflow:auto;font-size:13px;line-height:1.58;color:var(--srs-muted)}
+      .srs-dict-section{padding:10px 0;border-top:1px solid var(--srs-border)}
+      .srs-dict-label{font-size:12px;color:var(--srs-accent);font-weight:950;margin-bottom:6px}
+      .srs-dict-card{padding:12px;background:var(--srs-soft);border:1px solid color-mix(in srgb,var(--srs-accent) 25%,var(--srs-border));border-radius:14px;margin-bottom:12px}
+      @media (max-width:900px){
+        .srs-page{padding-bottom:150px}
+        .srs-study-grid,.srs-study-grid.is-dict-open{grid-template-columns:1fr}
+        .srs-card-shell{min-height:300px;padding:22px 14px;border-radius:20px}
+        .srs-card-shell.is-back{min-height:0;padding:13px}
+        .srs-front-media{height:150px;width:min(82%,260px);margin-bottom:10px}
+        .srs-front-emoji{font-size:88px}
+        .srs-front-word{font-size:35px}
+        .srs-flow-hint{margin-top:12px;padding:8px 14px;font-size:12px}
+        .srs-flow-hint span{display:none}
+        .srs-flow-hint.is-back{display:flex;padding:8px 10px;margin:0;grid-column:1/-1}
+        .srs-flow-hint.is-back span{display:inline;font-size:10px}
+        .srs-back-top{grid-template-columns:1fr}
+        .srs-back-thumb{display:none}
+        .srs-back-word{font-size:29px;justify-content:center;text-align:center}
+        .srs-back-meaning{font-size:21px;justify-content:center;text-align:center}
+        .srs-back-ph{text-align:center}
+        .srs-card-actions{justify-content:center;gap:6px;margin:8px 0 9px}
+        .srs-example-card{padding:11px 13px}
+        .srs-example-en{font-size:16px}
+        .srs-learning-details{margin-top:8px}
+        .srs-learning-details summary{padding:8px 10px}
+        .srs-detail-body{grid-template-columns:1fr}
+        .srs-support-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+        .srs-support-actions button{padding:9px 8px!important;font-size:12px!important}
+        .srs-rating-bar{position:fixed;left:10px;right:10px;bottom:calc(8px + env(safe-area-inset-bottom,0px));grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;padding:8px;border-radius:18px}
+        .srs-rate-btn{min-height:62px;padding:10px 4px;font-size:12px;border-radius:14px}
+        .srs-rate-btn span:first-child{font-size:22px}
+        .srs-page.has-dict .srs-rating-bar{display:none}
+        .srs-dict-backdrop{display:block;position:fixed;inset:0;background:rgba(15,23,42,.22);z-index:68;border:0}
+        .srs-dict-panel{position:fixed!important;left:10px;right:10px;bottom:calc(8px + env(safe-area-inset-bottom,0px));max-height:min(78vh,620px)!important;z-index:70;border-radius:22px!important;animation:dictFadeIn .16s ease-out}
+      }
+      @keyframes dictFadeIn{from{opacity:.72}to{opacity:1}}
+    `}</style>
+    <div className="srs-progress-row">
+      <div className="srs-progress-track"><div className="srs-progress-fill" style={{width:`${pct}%`}}/></div>
+      <span style={{color:S.t3}}>{left}/{deck.total}</span>
+      {[["#E24B4A",deck.stats.again],["#EF9F27",deck.stats.hard],["#1D9E75",deck.stats.good],["#185FA5",deck.stats.easy]].map(([cl,v],i)=><span className="srs-stat-dot" key={i} style={{color:cl}}>{v}</span>)}
+    </div>
+    <div className={`srs-study-grid ${dictOpen&&flip?"is-dict-open":""}`}>
+      <section data-testid="srs-card" className={`srs-card-shell ${flip?"is-back":"is-front"} ${dictOpen?"is-dict-open":""}`} onClick={handleCardTap}>
+        {!flip&&<CardSparkles color={c.cl}/>}
+        <Mascot mood={mascotMood}/>
+        {!flip?(<>
+          <div className="srs-front-media" data-testid="srs-front-media">
+            <div className="srs-media-badge">{mediaLabel}</div>
+            {showGif?<img src={gifUrl} alt={cur.w} onError={()=>{setMediaError("gif");setGifUrl(null)}}/>
+            :showEmoji?<div className="srs-front-emoji">{imgUrl.value}</div>
+            :showImg?<img src={imgUrl.value} alt={cur.w} onError={()=>setMediaError("image")}/>
+            :gifLoading&&gifKey?<div style={{fontSize:13,color:S.t3,animation:"pulse 1s infinite"}}>載入圖片中...</div>
+            :<div className="srs-media-fallback" data-testid="srs-media-fallback"><strong>{fallbackVisual.emoji}</strong><span>使用備用圖示</span></div>}
+          </div>
+          <div className="srs-front-word">{cur.w}<button className="srs-sound-btn" onClick={e=>{e.stopPropagation();speak(cur.w)}} aria-label={`播放單字 ${cur.w}`}>🔊</button></div>
+          {cur.ph&&<div className="srs-front-ph">{cur.ph}</div>}
+          <div className="srs-flow-hint" data-testid="srs-study-guidance"><b>點卡片看答案</b><span>先在心裡想中文，再翻面確認</span></div>
+          <div className="srs-front-sub">電腦可按 Space</div>
+        </>):(<>
+          <div className="srs-back-top" data-testid="srs-back-primary">
+            <div className="srs-back-main">
+              <div className="srs-back-word">{cur.w}<span className="srs-back-pos">({cur.p})</span><button className="srs-sound-btn" onClick={e=>{e.stopPropagation();speak(cur.w)}} aria-label={`播放單字 ${cur.w}`}>🔊</button></div>
+              {cur.ph&&<div className="srs-back-ph">{cur.ph}</div>}
+              <div className="srs-back-meaning">{cur.m}<button className="srs-sound-btn" onClick={e=>{e.stopPropagation();speak(cur.m,"zh-TW",0.9)}} aria-label={`播放中文 ${cur.m}`}>🔈</button></div>
+              <div className="srs-card-actions">
+                <button data-testid="srs-dictionary-action" className="srs-pill-btn srs-dict-cta" onClick={e=>{e.stopPropagation();setDictOpen(true)}}><span>🔎 查字典</span><small>小朋友字典</small></button>
+                <button className="srs-pill-btn" onClick={e=>{e.stopPropagation();speak(spokenExample||cur.w)}}>🔊 朗讀例句</button>
+                <div className="srs-flow-hint is-back" data-testid="srs-study-guidance"><b>下一步</b><span><strong>查字典補強</strong>，或直接評分進下一題</span></div>
+              </div>
+            </div>
+            {!dictOpen&&<div className={`srs-back-thumb ${showEmoji||!showImg?"is-emoji":""}`} data-testid="srs-back-media">
+              {showEmoji?imgUrl.value:showImg?<img src={imgUrl.value} alt={cur.w} onError={()=>setMediaError("image")}/>:fallbackVisual.emoji}
+            </div>}
+          </div>
+          {(()=>{
           // Decide which example to show
           const useAi=aiExample&&isPlaceholderExample(cur.ex,cur.w);
           const exEn=useAi?aiExample.en:cur.ex;
@@ -277,49 +395,62 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
 
           // Show AI-generated example
           if(useAi){
-            return(<div style={{fontSize:14,color:S.t1,width:"100%",padding:"10px 14px",background:`linear-gradient(135deg,${S.bg2},${c.bg}22)`,borderRadius:12,textAlign:"left",borderLeft:`3px solid ${c.cl}`}}>
-              <div style={{fontSize:10,color:c.cl,fontWeight:600,marginBottom:4}}>✨ AI 生成例句</div>
-              📖 <i>"{exEn}"</i>
-              <button onClick={e=>{e.stopPropagation();speak(exEn)}} style={{background:"none",border:"none",fontSize:22,cursor:"pointer",marginLeft:4,verticalAlign:"middle",padding:"2px"}}>🔊</button>
-              {exZh&&<div style={{fontSize:13,color:S.t3,fontStyle:"normal",marginTop:2}}>{exZh} <button onClick={e=>{e.stopPropagation();speak(exZh,"zh-TW",0.9)}} style={{background:"none",border:"none",fontSize:18,cursor:"pointer",verticalAlign:"middle",padding:"2px"}}>🔈</button></div>}
+            return(<div className="srs-example-card">
+              <div className="srs-example-kicker">✨ AI 生成例句</div>
+              <div className="srs-example-en">"{exEn}" <button className="srs-sound-btn" onClick={e=>{e.stopPropagation();speak(exEn)}} aria-label="播放例句">🔊</button></div>
+              {exZh&&<div className="srs-example-zh">{exZh} <button className="srs-sound-btn" onClick={e=>{e.stopPropagation();speak(exZh,"zh-TW",0.9)}} aria-label="播放中文例句">🔈</button></div>}
             </div>);
           }
           // Loading state
           if(isPlaceholder&&exampleLoading){
-            return(<div style={{fontSize:13,color:S.t3,padding:"10px 14px",background:S.bg2,borderRadius:12,textAlign:"center",animation:"pulse 1s infinite"}}>
+            return(<div className="srs-example-card" style={{textAlign:"center",color:S.t3,animation:"pulse 1s infinite"}}>
               ✨ AI 正在生成例句...
             </div>);
           }
           // Placeholder detected but no API key - show prompt
           if(isPlaceholder&&!apiKey){
-            return(<div style={{fontSize:12,color:S.t3,padding:"10px 14px",background:S.bg2,borderRadius:12,textAlign:"center",lineHeight:1.6}}>
+            return(<div className="srs-example-card" style={{textAlign:"center",color:S.t3}}>
               💡 此單字的例句不太完整<br/>
-              <button onClick={(e)=>{e.stopPropagation();onOpenSettings?.()}} style={{background:"none",border:`1px solid ${c.cl}`,color:c.cl,padding:"4px 12px",fontSize:11,borderRadius:8,marginTop:6,cursor:"pointer",fontFamily:"inherit"}}>🔑 前往 Key 設定</button>
+              <button className="srs-pill-btn" onClick={(e)=>{e.stopPropagation();onOpenSettings?.()}} style={{marginTop:8}}>🔑 前往 Key 設定</button>
             </div>);
           }
           // Original example is good, show it
           if(cur.ex&&!isPlaceholder){
-            return(<div style={{fontSize:14,color:S.t1,width:"100%",padding:"10px 14px",background:`linear-gradient(135deg,${S.bg2},${c.bg}22)`,borderRadius:12,textAlign:"left",borderLeft:`3px solid ${c.cl}`}}>
-              📖 <i>"{cur.ex}"</i>
-              <button onClick={e=>{e.stopPropagation();speak(cur.ex)}} style={{background:"none",border:"none",fontSize:22,cursor:"pointer",marginLeft:4,verticalAlign:"middle",padding:"2px"}}>🔊</button>
-              {cur.ez&&<div style={{fontSize:13,color:S.t3,fontStyle:"normal",marginTop:2}}>{cur.ez} <button onClick={e=>{e.stopPropagation();speak(cur.ez,"zh-TW",0.9)}} style={{background:"none",border:"none",fontSize:18,cursor:"pointer",verticalAlign:"middle",padding:"2px"}}>🔈</button></div>}
+            return(<div className="srs-example-card">
+              <div className="srs-example-kicker">📖 主要例句</div>
+              <div className="srs-example-en">"{cur.ex}" <button className="srs-sound-btn" onClick={e=>{e.stopPropagation();speak(cur.ex)}} aria-label="播放例句">🔊</button></div>
+              {cur.ez&&<div className="srs-example-zh">{cur.ez} <button className="srs-sound-btn" onClick={e=>{e.stopPropagation();speak(cur.ez,"zh-TW",0.9)}} aria-label="播放中文例句">🔈</button></div>}
             </div>);
           }
           return null;
         })()}
+          <details data-testid="srs-learning-details" className="srs-learning-details">
+            <summary><span>補充用法</span><small>詞性變化與常見搭配</small></summary>
+            <div className="srs-detail-body">
+              <div className="srs-detail-box">
+                <div className="srs-detail-title">詞性變化</div>
+                {cur.f?.length>0?cur.f.map((f,i)=><span className="srs-detail-chip" key={i}>{f.w} <span style={{color:S.t3,marginLeft:4}}>({f.p}) {f.n}</span></span>):<span style={{color:S.t3}}>這張卡沒有額外詞形。</span>}
+              </div>
+              <div className="srs-detail-box">
+                <div className="srs-detail-title">常見搭配</div>
+                {cur.c?.length>0?cur.c.map((x,i)=><div key={i} style={{padding:"2px 0"}}>・{x}</div>):<span style={{color:S.t3}}>先掌握例句，再查字典看更多搭配。</span>}
+              </div>
+            </div>
+          </details>
       </>)}
-    </div>
-    {dictOpen&&flip&&cur&&<aside className="srs-dict-panel" role="complementary" aria-label="Dictionary results" style={{...S.card,padding:0,overflow:"hidden",maxHeight:560,display:"flex",flexDirection:"column",border:`1px solid ${c.cl}55`,boxShadow:"0 18px 48px rgba(20,66,52,.12)"}}>
-      <div style={{padding:"12px 14px",borderBottom:`1px solid ${S.bd}`,background:`linear-gradient(135deg,${S.bg1},${c.bg})`,display:"flex",alignItems:"center",gap:8}}>
+      </section>
+      {dictOpen&&flip&&cur&&<div className="srs-dict-backdrop" onClick={()=>setDictOpen(false)} aria-hidden="true"/>}
+      {dictOpen&&flip&&cur&&<aside className="srs-dict-panel" role="complementary" aria-label="Dictionary results" style={S.card}>
+      <div className="srs-dict-head">
         <div style={{flex:1,minWidth:0}}>
-          <div style={{fontSize:12,color:c.cl,fontWeight:800}}>外部字典查詢</div>
-          <div style={{fontSize:20,color:S.t1,fontWeight:900,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{cur.w}</div>
-          <div style={{fontSize:11,color:S.t3,marginTop:3,lineHeight:1.45}}>點右側 Yahoo 會開新分頁到 Yahoo 字典，可看更多外部釋義與例句。</div>
+          <div className="srs-dict-title">單字學習助手</div>
+          <div className="srs-dict-word">{cur.w}</div>
+          <div className="srs-dict-hint"><span>AI 字典留在頁面內</span>；Yahoo 會開新分頁查更多外部釋義與例句。</div>
         </div>
         <a href={yahooDictionaryUrl(cur.w)} target="_blank" rel="noreferrer" title="開新分頁到 Yahoo 字典查詢" aria-label={`開新分頁到 Yahoo 字典查詢 ${cur.w}`} style={{...S.btn,background:c.cl,color:"#fff",padding:"7px 10px",fontSize:12,textDecoration:"none",minHeight:34,display:"inline-flex",alignItems:"center",gap:4,boxShadow:`0 8px 18px ${c.cl}22`,whiteSpace:"nowrap"}}>Yahoo 外站 ↗</a>
         <button onClick={()=>setDictOpen(false)} aria-label="Close dictionary" style={{background:S.bg2,border:`1px solid ${S.bd}`,borderRadius:10,width:34,height:34,cursor:"pointer",color:S.t2,fontSize:16}}>×</button>
       </div>
-      <div style={{padding:14,overflow:"auto",fontSize:13,lineHeight:1.55,color:S.t2}}>
+      <div className="srs-dict-body">
         {!apiKey?.trim()&&<div style={{padding:12,background:S.bg2,border:`1px solid ${S.bd}`,borderRadius:12,color:S.t2,lineHeight:1.7}}>
           <div style={{fontWeight:900,color:S.t1,marginBottom:4}}>需要 Gemini API Key</div>
           <div>AI 字典會產生適合學生閱讀的中文解釋、例句、搭配詞與學習提醒，並快取在本機。</div>
@@ -334,47 +465,47 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
             <span style={{background:c.bg,border:`1px solid ${c.cl}33`,borderRadius:999,padding:"4px 9px",fontWeight:800,color:c.cl}}>{dictData.partOfSpeechZh||cur.p}</span>
             <button onClick={()=>speakDict(cur.w)} style={{...S.btn,background:c.cl,color:"#fff",padding:"6px 10px",fontSize:12}}>播放單字</button>
           </div>
-          <div style={{padding:12,background:c.bg,border:`1px solid ${c.cl}33`,borderRadius:12,marginBottom:12}}>
+          <div className="srs-dict-card">
             <div style={{fontSize:11,color:c.cl,fontWeight:900,marginBottom:3}}>小朋友版解釋</div>
             <div style={{fontSize:20,color:S.t1,fontWeight:900,marginBottom:4}}>{dictData.headlineZh||cur.m}</div>
             <div style={{color:S.t2,fontWeight:700,marginBottom:4}}>{dictData.shortMeaning}</div>
             <div style={{color:S.t2}}>{dictData.kidExplanation}</div>
           </div>
-          {dictData.forms.length>0&&<div style={{padding:"10px 0",borderTop:`1px solid ${S.bd}`}}>
-            <div style={{fontSize:12,color:c.cl,fontWeight:900,marginBottom:6}}>詞性變化</div>
+          {dictData.forms.length>0&&<div className="srs-dict-section">
+            <div className="srs-dict-label">詞性變化</div>
             <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{dictData.forms.map((f,i)=><span key={i} style={{background:S.bg2,border:`1px solid ${S.bd}`,borderRadius:999,padding:"4px 7px 4px 9px",color:S.t2,display:"inline-flex",alignItems:"center",gap:3}}><span>{f.word}{f.note?`：${f.note}`:""}</span>{speakTiny(f.word,`播放詞性變化 ${f.word}`)}</span>)}</div>
           </div>}
-          {dictData.collocations.length>0&&<div style={{padding:"10px 0",borderTop:`1px solid ${S.bd}`}}>
-            <div style={{fontSize:12,color:c.cl,fontWeight:900,marginBottom:6}}>常見搭配</div>
+          {dictData.collocations.length>0&&<div className="srs-dict-section">
+            <div className="srs-dict-label">常見搭配</div>
             {dictData.collocations.map((x,i)=><div key={i} style={{marginBottom:6,color:S.t1,display:"flex",alignItems:"center",gap:5,flexWrap:"wrap"}}><span>・<b>{x.phrase}</b>{x.zh?` - ${x.zh}`:""}</span>{speakTiny(x.phrase,`播放搭配 ${x.phrase}`)}</div>)}
           </div>}
-          {dictData.examples.length>0&&<div style={{padding:"10px 0",borderTop:`1px solid ${S.bd}`}}>
-            <div style={{fontSize:12,color:c.cl,fontWeight:900,marginBottom:6}}>例句</div>
+          {dictData.examples.length>0&&<div className="srs-dict-section">
+            <div className="srs-dict-label">例句</div>
             {dictData.examples.map((x,i)=><div key={i} style={{padding:"8px 10px",background:S.bg2,borderRadius:10,marginBottom:7}}>
               <div style={{color:S.t1,fontWeight:800,display:"flex",alignItems:"center",gap:6}}><span style={{flex:1,minWidth:0}}>{x.en}</span>{speakTiny(x.en,`播放例句 ${i+1}`)}</div>
               {x.zh&&<div style={{color:S.t3,marginTop:3}}>{x.zh}</div>}
             </div>)}
           </div>}
-          {dictData.synonyms.length>0&&<div style={{padding:"10px 0",borderTop:`1px solid ${S.bd}`}}>
-            <div style={{fontSize:12,color:c.cl,fontWeight:900,marginBottom:6}}>相似字</div>
+          {dictData.synonyms.length>0&&<div className="srs-dict-section">
+            <div className="srs-dict-label">相似字</div>
             <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>{dictData.synonyms.map((s,i)=><span key={i} style={{background:S.bg2,border:`1px solid ${S.bd}`,borderRadius:999,padding:"3px 6px 3px 8px",fontSize:11,color:S.t2,display:"inline-flex",alignItems:"center",gap:3}}><span>{s.word}{s.zh?` ${s.zh}`:""}</span>{speakTiny(s.word,`播放相似字 ${s.word}`)}</span>)}</div>
           </div>}
-          {dictData.tips.length>0&&<div style={{padding:"10px 0",borderTop:`1px solid ${S.bd}`}}>
-            <div style={{fontSize:12,color:c.cl,fontWeight:900,marginBottom:6}}>學習提醒</div>
+          {dictData.tips.length>0&&<div className="srs-dict-section">
+            <div className="srs-dict-label">學習提醒</div>
             {dictData.tips.map((t,i)=><div key={i} style={{color:S.t2,marginBottom:4}}>・{t}</div>)}
           </div>}
           <div style={{fontSize:11,color:S.t3,borderTop:`1px solid ${S.bd}`,paddingTop:9,marginTop:4}}>資料來源：Gemini AI 產生，已快取於本機 · Yahoo 可作外部查詢參考</div>
         </>}
       </div>
-    </aside>}
+      </aside>}
     </div>
     {flip&&<>
-      <div style={{display:"flex",justifyContent:"center",gap:8,marginTop:8}}>
+      <div data-testid="srs-support-actions" className="srs-support-actions">
         <button onClick={()=>{setFlip(false);setFlipAnim(false)}} style={{background:S.bg2,border:`1px solid ${S.bd}`,borderRadius:14,padding:"10px 20px",fontSize:14,cursor:"pointer",color:S.t2,fontFamily:"inherit",minHeight:44}}>🔙 翻回</button>
         <button onClick={()=>{const url=`https://englishgo-vevan.netlify.app/?word=${encodeURIComponent(cur.w)}&lv=${lv}`;const t=`📘 今天學了一個英文單字！\n\n📝 ${cur.w}${cur.ph?` ${cur.ph}`:""}\n   ${cur.p} ${cur.m}\n${cur.ex?`\n📖 ${cur.ex}`:""}\n${cur.ez?`   ${cur.ez}`:""}\n\n一起來學英文 👇\n${url}`;shareLine(t,url)}} style={{background:"#06C755",border:"none",borderRadius:14,padding:"10px 16px",fontSize:14,cursor:"pointer",color:"#fff",fontFamily:"inherit",minHeight:44,fontWeight:600}}>📤 LINE</button>
         <button onClick={()=>{const url=`https://englishgo-vevan.netlify.app/?word=${encodeURIComponent(cur.w)}&lv=${lv}`;const t=`📘 ${cur.w}${cur.ph?` ${cur.ph}`:""} — ${cur.m}${cur.ex?`\n📖 ${cur.ex}`:""}${cur.ez?`\n   ${cur.ez}`:""}\n${url}`;navigator.clipboard?.writeText(t).then(()=>{const d=document.createElement("div");d.textContent="✅ 已複製！";d.style.cssText="position:fixed;top:20%;left:50%;transform:translateX(-50%);background:#1D9E75;color:#fff;padding:10px 24px;border-radius:20px;font-size:14px;font-weight:600;z-index:9999;animation:fadeUp .3s";document.body.appendChild(d);setTimeout(()=>d.remove(),1500)})}} style={{background:S.bg2,border:`1px solid ${S.bd}`,borderRadius:14,padding:"10px 16px",fontSize:14,cursor:"pointer",color:S.t2,fontFamily:"inherit",minHeight:44}}>📋 複製</button>
       </div>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6,marginTop:8}}>{[{k:"again",l:"Again",n:"1",cl:"#E24B4A",bg:"#FCEBEB",em:"😅"},{k:"hard",l:"Hard",n:"2",cl:"#BA7517",bg:"#FAEEDA",em:"🤔"},{k:"good",l:"Good",n:"3",cl:"#0F6E56",bg:"#E1F5EE",em:"😊"},{k:"easy",l:"Easy",n:"4",cl:"#185FA5",bg:"#E6F1FB",em:"🤩"}].map(b=>(<button key={b.k} onClick={()=>rate(b.k)} style={{...S.btn,background:b.bg,color:b.cl,padding:"14px 4px",fontSize:14,display:"flex",flexDirection:"column",alignItems:"center",gap:2,transition:"transform .1s",minHeight:60,WebkitTapHighlightColor:"transparent"}} onTouchStart={e=>e.currentTarget.style.transform="scale(0.93)"} onTouchEnd={e=>e.currentTarget.style.transform="scale(1)"} onMouseDown={e=>e.currentTarget.style.transform="scale(0.95)"} onMouseUp={e=>e.currentTarget.style.transform="scale(1)"}><span style={{fontSize:24}}>{b.em}</span>{b.l}<span style={{fontSize:10,opacity:.5}}>{b.n}</span></button>))}</div>
+      <div data-testid="srs-rating-bar" className="srs-rating-bar">{[{k:"again",l:"Again",n:"1",cl:"#E24B4A",bg:"#FCEBEB",em:"😅"},{k:"hard",l:"Hard",n:"2",cl:"#BA7517",bg:"#FAEEDA",em:"🤔"},{k:"good",l:"Good",n:"3",cl:"#0F6E56",bg:"#E1F5EE",em:"😊"},{k:"easy",l:"Easy",n:"4",cl:"#185FA5",bg:"#E6F1FB",em:"🤩"}].map(b=>(<button className="srs-rate-btn" key={b.k} onClick={()=>rate(b.k)} style={{background:b.bg,color:b.cl}} onTouchStart={e=>e.currentTarget.style.transform="scale(0.93)"} onTouchEnd={e=>e.currentTarget.style.transform="scale(1)"} onMouseDown={e=>e.currentTarget.style.transform="scale(0.95)"} onMouseUp={e=>e.currentTarget.style.transform="scale(1)"}><span>{b.em}</span>{b.l}<small>{b.n}</small></button>))}</div>
       
     </>}
   </div>);
