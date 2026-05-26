@@ -461,8 +461,19 @@ describe('EnglishGo app smoke flow', () => {
     fireEvent.click(await screen.findByText('The Whispering Tree', {}, { timeout: 5000 }));
 
     expect(await screen.findByTestId('novel-chapter-hero')).toHaveStyle({ gridTemplateColumns: '1fr' });
+    expect(screen.getByTestId('novel-hero-media')).toHaveStyle({ overflow: 'visible' });
+    expect(screen.getByTestId('novel-illustration-frame')).toHaveStyle({ height: '100%' });
     expect(screen.getByTestId('novel-reading-settings')).toHaveStyle({ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' });
     expect(screen.getByTestId('novel-chapter-nav')).toHaveStyle({ gridTemplateColumns: '1fr 1fr' });
+    expect(screen.getByTestId('novel-reader-panel')).toHaveStyle({ padding: '0 4px calc(18px + env(safe-area-inset-bottom))' });
+    expect(screen.getByTestId('novel-page-actions')).toHaveStyle({
+      position: 'sticky',
+      bottom: '0',
+      paddingBottom: 'calc(10px + env(safe-area-inset-bottom))',
+    });
+
+    fireEvent.click(within(screen.getByTestId('novel-reading-settings')).getByRole('button', { name: /章節測驗/ }));
+    expect(screen.getByTestId('novel-side-panel')).toHaveStyle({ paddingBottom: 'calc(14px + env(safe-area-inset-bottom))' });
 
     setViewportWidth(1024);
   });

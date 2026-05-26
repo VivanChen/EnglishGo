@@ -3,6 +3,7 @@ const DEFAULT_IMAGE_BASE = "/images/novels/secret-forest";
 export default function NovelIllustration({
   chapter = 1,
   cover = false,
+  fill = false,
   small = false,
   imageBase = DEFAULT_IMAGE_BASE,
   title = "The Secret Forest Adventure",
@@ -12,14 +13,16 @@ export default function NovelIllustration({
     : small
       ? `${imageBase}/chapter-${chapter}-thumb.jpg`
     : `${imageBase}/chapter-${chapter}.jpg`;
-  const height = small ? 150 : cover ? 240 : 360;
+  const height = fill ? "100%" : small ? 150 : cover ? 240 : 360;
   const fit = small || cover ? "cover" : "contain";
   const radius = small ? 0 : 18;
 
   return (
     <div
+      data-testid={fill ? "novel-illustration-frame" : undefined}
       style={{
         height,
+        width: fill ? "100%" : undefined,
         borderRadius: radius,
         overflow: "hidden",
         background: "linear-gradient(135deg,#0B3F35,#77C79D)",
