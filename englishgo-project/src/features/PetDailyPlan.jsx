@@ -1,4 +1,4 @@
-const LEARNING_TASK_IDS = new Set(['srs_5', 'quiz_3', 'speak_1']);
+const LEARNING_TASK_ORDER = ['srs_5', 'quiz_3', 'speak_1'];
 
 const LEARNING_LABELS = {
   srs_5: 'SRS',
@@ -6,12 +6,18 @@ const LEARNING_LABELS = {
   speak_1: 'Speaking',
 };
 
-function countForTask(task, taskCounts) {
-  return taskCounts[task.statKey] || 0;
+const LEARNING_TONES = {
+  srs_5: 'violet',
+  quiz_3: 'blue',
+  speak_1: 'teal',
+};
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
 }
 
-function isLearningTask(task) {
-  return LEARNING_TASK_IDS.has(task.id);
+function countForTask(task, taskCounts) {
+  return taskCounts[task.statKey] || 0;
 }
 
 function getTaskLabel(task) {
@@ -19,18 +25,27 @@ function getTaskLabel(task) {
 }
 
 export function buildLearningProgress({ dailyTaskDefs = [], taskCounts = {} } = {}) {
-  return dailyTaskDefs
-    .filter(isLearningTask)
+  const taskById = new Map(dailyTaskDefs.map(task => [task.id, task]));
+
+  return LEARNING_TASK_ORDER
+    .map(id => taskById.get(id))
+    .filter(Boolean)
     .map(task => {
-      const count = countForTask(task, taskCounts);
-      const target = task.target || 0;
+      const target = Math.max(0, task.target || 0);
+      const rawCount = countForTask(task, taskCounts);
+      const count = target > 0 ? clamp(rawCount, 0, target) : Math.max(0, rawCount);
+      const pct = target > 0 ? Math.round((count / target) * 100) : 100;
       const label = getTaskLabel(task);
 
       return {
         id: task.id,
         label,
         text: `${label} ${count}/${target}`,
-        done: count >= target,
+        done: target === 0 || count >= target,
+        count,
+        target,
+        pct: clamp(pct, 0, 100),
+        tone: LEARNING_TONES[task.id] || 'neutral',
       };
     });
 }
@@ -79,10 +94,12 @@ export function buildPetDailyPlan({
 
   if ((quickCarePlan.total || 0) > 0) {
     const careParts = [
-      `餵食 ${quickCarePlan.feed || 0}`,
-      `清潔 ${quickCarePlan.clean || 0}`,
-      `休息 ${quickCarePlan.sleep || 0}`,
-    ];
+      ['餵食', quickCarePlan.feed || 0],
+      ['清潔', quickCarePlan.clean || 0],
+      ['休息', quickCarePlan.sleep || 0],
+    ]
+      .filter(([, count]) => count > 0)
+      .map(([label, count]) => `${label} ${count}`);
 
     return {
       kind: 'quickCare',

@@ -1,5 +1,6 @@
+import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import { buildLearningProgress, buildPetDailyPlan } from './PetDailyPlan.jsx';
+import { DailyPetPlan, buildLearningProgress, buildPetDailyPlan } from './PetDailyPlan.jsx';
 
 const learningTaskDefs = [
   { id: 'srs_5', label: 'SRS', target: 5, statKey: 'srsToday' },
@@ -8,8 +9,17 @@ const learningTaskDefs = [
   { id: 'feed_1', label: 'Feed', target: 1, statKey: 'feedToday' },
 ];
 
+const shuffledLearningTaskDefs = [
+  learningTaskDefs[3],
+  learningTaskDefs[2],
+  learningTaskDefs[0],
+  learningTaskDefs[1],
+];
+
+const allTasksClaimed = learningTaskDefs.map(task => task.id);
+
 describe('buildLearningProgress', () => {
-  it('returns learning progress chips for unfinished daily learning tasks', () => {
+  it('returns canonical learning progress chips with incomplete progress marked not done', () => {
     const progress = buildLearningProgress({
       dailyTaskDefs: learningTaskDefs,
       taskCounts: { srsToday: 3, quizToday: 1, speakToday: 0 },
@@ -20,10 +30,57 @@ describe('buildLearningProgress', () => {
     expect(progress.map(item => item.text)).toEqual(['SRS 3/5', 'Quiz 1/3', 'Speaking 0/1']);
     expect(progress.map(item => item.done)).toEqual([false, false, false]);
   });
+
+  it('keeps canonical order when daily task definitions are shuffled', () => {
+    const progress = buildLearningProgress({
+      dailyTaskDefs: shuffledLearningTaskDefs,
+      taskCounts: { srsToday: 3, quizToday: 1, speakToday: 0 },
+    });
+
+    expect(progress.map(item => item.id)).toEqual(['srs_5', 'quiz_3', 'speak_1']);
+  });
+
+  it('includes clamped count, target, pct, and tone fields for future UI chips', () => {
+    const progress = buildLearningProgress({
+      dailyTaskDefs: shuffledLearningTaskDefs,
+      taskCounts: { srsToday: 9, quizToday: 1, speakToday: -2 },
+    });
+
+    expect(progress).toEqual([
+      expect.objectContaining({
+        id: 'srs_5',
+        count: 5,
+        target: 5,
+        pct: 100,
+        tone: expect.any(String),
+        text: 'SRS 5/5',
+        done: true,
+      }),
+      expect.objectContaining({
+        id: 'quiz_3',
+        count: 1,
+        target: 3,
+        pct: 33,
+        tone: expect.any(String),
+        text: 'Quiz 1/3',
+        done: false,
+      }),
+      expect.objectContaining({
+        id: 'speak_1',
+        count: 0,
+        target: 1,
+        pct: 0,
+        tone: expect.any(String),
+        text: 'Speaking 0/1',
+        done: false,
+      }),
+    ]);
+    expect(progress.every(item => item.tone.length > 0)).toBe(true);
+  });
 });
 
 describe('buildPetDailyPlan', () => {
-  it('recommends hatchable eggs before claimable tasks and care', () => {
+  it('recommends hatchable eggs before claimable tasks', () => {
     const plan = buildPetDailyPlan({
       pets: [{ id: 'pet-1' }],
       eggs: [{ id: 'egg-1', petId: 'cat', rarity: 'N', progress: 10 }],
@@ -31,12 +88,25 @@ describe('buildPetDailyPlan', () => {
       dailyTaskDefs: learningTaskDefs,
       taskCounts: { feedToday: 1 },
       claimedToday: [],
-      quickCarePlan: { feed: 1, clean: 0, sleep: 0, needsFood: 0, total: 1 },
     });
 
     expect(plan.kind).toBe('hatch');
     expect(plan.action).toBe('eggs');
     expect(plan.title).toContain('1');
+  });
+
+  it('recommends hatchable eggs before care', () => {
+    const plan = buildPetDailyPlan({
+      pets: [{ id: 'pet-1' }],
+      eggs: [{ id: 'egg-1', petId: 'cat', rarity: 'N', progress: 10 }],
+      eggHatchTasks: { N: 10 },
+      dailyTaskDefs: learningTaskDefs,
+      claimedToday: allTasksClaimed,
+      quickCarePlan: { feed: 1, clean: 1, sleep: 0, needsFood: 0, total: 2 },
+    });
+
+    expect(plan.kind).toBe('hatch');
+    expect(plan.action).toBe('eggs');
   });
 
   it('recommends claimable tasks when no egg is ready', () => {
@@ -53,11 +123,25 @@ describe('buildPetDailyPlan', () => {
     expect(plan.title).toContain('1');
   });
 
+  it('recommends claimable tasks before quick care', () => {
+    const plan = buildPetDailyPlan({
+      pets: [{ id: 'pet-1' }],
+      eggs: [],
+      dailyTaskDefs: learningTaskDefs,
+      taskCounts: { feedToday: 1 },
+      claimedToday: ['srs_5', 'quiz_3', 'speak_1'],
+      quickCarePlan: { feed: 1, clean: 0, sleep: 0, needsFood: 0, total: 1 },
+    });
+
+    expect(plan.kind).toBe('claim');
+    expect(plan.action).toBe('tasks');
+  });
+
   it('recommends quick care before food buying when actionable care exists', () => {
     const plan = buildPetDailyPlan({
       pets: [{ id: 'pet-1' }],
       dailyTaskDefs: learningTaskDefs,
-      claimedToday: learningTaskDefs.map(task => task.id),
+      claimedToday: allTasksClaimed,
       quickCarePlan: { feed: 1, clean: 1, sleep: 0, needsFood: 0, total: 2 },
     });
 
@@ -65,19 +149,33 @@ describe('buildPetDailyPlan', () => {
     expect(plan.action).toBe('quickCare');
     expect(plan.description).toContain('餵食 1');
     expect(plan.description).toContain('清潔 1');
+    expect(plan.description).not.toContain('休息 0');
   });
 
   it('recommends shop when only needsFood exists', () => {
     const plan = buildPetDailyPlan({
       pets: [{ id: 'pet-1' }],
       dailyTaskDefs: learningTaskDefs,
-      claimedToday: learningTaskDefs.map(task => task.id),
+      claimedToday: allTasksClaimed,
       quickCarePlan: { feed: 0, clean: 0, sleep: 0, needsFood: 2, total: 0 },
     });
 
     expect(plan.kind).toBe('shop');
     expect(plan.action).toBe('shop');
     expect(plan.title).toContain('補食物');
+  });
+
+  it('recommends shop before learning when food is missing', () => {
+    const plan = buildPetDailyPlan({
+      pets: [{ id: 'pet-1' }],
+      dailyTaskDefs: learningTaskDefs,
+      taskCounts: { srsToday: 3, quizToday: 3, speakToday: 1 },
+      claimedToday: ['quiz_3', 'speak_1', 'feed_1'],
+      quickCarePlan: { feed: 0, clean: 0, sleep: 0, needsFood: 2, total: 0 },
+    });
+
+    expect(plan.kind).toBe('shop');
+    expect(plan.action).toBe('shop');
   });
 
   it('recommends learning when care, eggs, and claims are settled', () => {
@@ -101,12 +199,29 @@ describe('buildPetDailyPlan', () => {
       eggs: [],
       dailyTaskDefs: learningTaskDefs,
       taskCounts: { srsToday: 5, quizToday: 3, speakToday: 1 },
-      claimedToday: learningTaskDefs.map(task => task.id),
+      claimedToday: allTasksClaimed,
     });
 
     expect(plan.kind).toBe('empty');
     expect(plan.action).toBe('dex');
     expect(plan.title).toContain('第一位');
+  });
+
+  it('returns collection state after care, eggs, claims, and learning are settled', () => {
+    const plan = buildPetDailyPlan({
+      pets: [{ id: 'pet-1' }],
+      eggs: [],
+      dailyTaskDefs: learningTaskDefs,
+      taskCounts: { srsToday: 5, quizToday: 3, speakToday: 1 },
+      claimedToday: allTasksClaimed,
+      quickCarePlan: { feed: 0, clean: 0, sleep: 0, needsFood: 0, total: 0 },
+      totalPetKinds: 4,
+      ownedCount: 1,
+    });
+
+    expect(plan.kind).toBe('collection');
+    expect(plan.action).toBe('dex');
+    expect(plan.title).toContain('3');
   });
 
   it('skips unknown eggs when looking for hatchable recommendations', () => {
@@ -122,5 +237,11 @@ describe('buildPetDailyPlan', () => {
     });
 
     expect(plan.kind).toBe('learn');
+  });
+});
+
+describe('DailyPetPlan', () => {
+  it('renders null while the component shell is reserved for Task 2', () => {
+    expect(renderToStaticMarkup(<DailyPetPlan />)).toBe('');
   });
 });
