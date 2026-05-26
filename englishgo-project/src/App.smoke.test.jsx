@@ -494,6 +494,151 @@ describe('EnglishGo app smoke flow', () => {
     expect(await screen.findByText('歡迎來到寵物樂園！', {}, { timeout: 5000 })).toBeInTheDocument();
   }, 15000);
 
+  it('shows pet care priorities and next-step hints without competition features', async () => {
+    const today = new Date().toDateString();
+    localStorage.setItem('eg_petAcc', JSON.stringify({ username: 'Kid', pinHash: 'demo', lastSync: today }));
+    localStorage.setItem(
+      'eg_pets',
+      JSON.stringify([
+        {
+          petId: 'bunny',
+          rarity: 'N',
+          level: 2,
+          exp: 30,
+          bond: 20,
+          hunger: 18,
+          clean: 82,
+          energy: 76,
+          poops: [],
+          lastUpdate: new Date().toISOString(),
+        },
+      ]),
+    );
+    localStorage.setItem(
+      'eg_eggs',
+      JSON.stringify([{ id: 'egg-1', petId: 'chick', rarity: 'N', progress: 10, date: new Date().toISOString() }]),
+    );
+    localStorage.setItem('eg_inv', JSON.stringify({ apple: 2 }));
+    localStorage.setItem('eg_petTasks', JSON.stringify({ date: today, counts: { feedToday: 1 } }));
+    localStorage.setItem('eg_claimedTasks', JSON.stringify({ date: today, ids: [] }));
+
+    await openElementaryMenu();
+    clickMenuStat('寵物');
+
+    const center = await screen.findByTestId('pet-care-center', {}, { timeout: 5000 });
+    expect(within(center).getByText('今日照顧中心')).toBeInTheDocument();
+    expect(within(center).getByText(/任務可領/)).toBeInTheDocument();
+    expect(within(center).getByText(/蛋可孵化/)).toBeInTheDocument();
+    expect(within(center).getByText(/優先照顧/)).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /寵物 \(1\)/ }));
+    });
+    const nextStep = await screen.findByTestId('pet-next-step-bunny');
+    expect(nextStep).toHaveTextContent(/下一步/);
+    expect(nextStep).toHaveTextContent(/餵/);
+  }, 15000);
+
+  it('shows a collection goal that points to the closest pet egg', async () => {
+    const today = new Date().toDateString();
+    localStorage.setItem('eg_petAcc', JSON.stringify({ username: 'Kid', pinHash: 'demo', lastSync: today }));
+    localStorage.setItem(
+      'eg_pets',
+      JSON.stringify([
+        {
+          petId: 'bunny',
+          rarity: 'N',
+          level: 2,
+          exp: 30,
+          bond: 20,
+          hunger: 82,
+          clean: 82,
+          energy: 76,
+          poops: [],
+          lastUpdate: new Date().toISOString(),
+        },
+      ]),
+    );
+    localStorage.setItem(
+      'eg_eggs',
+      JSON.stringify([{ id: 'egg-1', petId: 'chick', rarity: 'N', progress: 7, date: new Date().toISOString() }]),
+    );
+    localStorage.setItem('eg_inv', JSON.stringify({ apple: 2 }));
+    localStorage.setItem('eg_petTasks', JSON.stringify({ date: today, counts: {} }));
+    localStorage.setItem('eg_claimedTasks', JSON.stringify({ date: today, ids: [] }));
+
+    await openElementaryMenu();
+    clickMenuStat('寵物');
+
+    const goal = await screen.findByTestId('pet-collection-goal', {}, { timeout: 5000 });
+    expect(goal).toHaveTextContent('收藏目標');
+    expect(goal).toHaveTextContent('小雞');
+    expect(goal).toHaveTextContent('7/10');
+    expect(goal).toHaveTextContent(/還差 3 題英文/);
+    expect(goal).toHaveTextContent('收藏進度');
+    expect(goal).toHaveTextContent('1/29');
+    expect(goal).toHaveTextContent(/還缺 28 種/);
+    expect(goal).toHaveTextContent('下一枚徽章');
+    expect(goal).toHaveTextContent('3 種寵物');
+    expect(goal).toHaveTextContent(/還差 2 種/);
+    const badges = within(goal).getByTestId('pet-collection-badges');
+    expect(badges).toHaveTextContent('收藏徽章');
+    expect(badges).toHaveTextContent('入門收藏');
+    expect(badges).toHaveTextContent('1/3');
+    expect(badges).toHaveTextContent('進行中');
+    expect(badges).toHaveTextContent('10 種');
+  }, 15000);
+
+  it('shows a clear result after completing a pet care action', async () => {
+    const today = new Date().toDateString();
+    localStorage.setItem('eg_petAcc', JSON.stringify({ username: 'Kid', pinHash: 'demo', lastSync: today }));
+    localStorage.setItem(
+      'eg_pets',
+      JSON.stringify([
+        {
+          petId: 'bunny',
+          rarity: 'N',
+          level: 2,
+          exp: 30,
+          bond: 20,
+          hunger: 18,
+          clean: 82,
+          energy: 76,
+          poops: [],
+          lastUpdate: new Date().toISOString(),
+        },
+      ]),
+    );
+    localStorage.setItem('eg_eggs', JSON.stringify([]));
+    localStorage.setItem('eg_inv', JSON.stringify({ apple: 2 }));
+    localStorage.setItem('eg_petTasks', JSON.stringify({ date: today, counts: {} }));
+    localStorage.setItem('eg_claimedTasks', JSON.stringify({ date: today, ids: [] }));
+
+    await openElementaryMenu();
+    clickMenuStat('寵物');
+
+    await screen.findByTestId('pet-care-center', {}, { timeout: 5000 });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /寵物 \(1\)/ }));
+    });
+
+    const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.99);
+    try {
+      fireEvent.click(await screen.findByTestId('pet-card-bunny'));
+      fireEvent.click(await screen.findByTestId('pet-primary-care-action'));
+      fireEvent.click(await screen.findByTestId('pet-action-complete'));
+
+      const result = await screen.findByTestId('pet-care-result');
+      expect(result).toHaveTextContent('照顧完成');
+      expect(result).toHaveTextContent(/餵|吃/);
+      expect(result).toHaveTextContent(/飽|飢餓|狀態/);
+      expect(result).toHaveTextContent('今日培養 1/3');
+      expect(result).toHaveTextContent(/再完成 2 種照顧/);
+    } finally {
+      randomSpy.mockRestore();
+    }
+  }, 15000);
+
   it('shows hidden timing calibration controls for songs', async () => {
     await openSeniorMenu('/?timing=1');
 

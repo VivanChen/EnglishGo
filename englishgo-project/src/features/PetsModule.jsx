@@ -2501,6 +2501,7 @@ function PetsPage({onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,s
   const[toast,setToast]=useState(null);// {msg, icon, type}
   const[confirmModal,setConfirmModal]=useState(null);// {msg, onConfirm}
   const[actionCelebration,setActionCelebration]=useState(null);// {actionKey, statText, statColor} (P0-2 視覺優化)
+  const[lastCareResult,setLastCareResult]=useState(null);// persistent care feedback after an action
   const[levelUpShown,setLevelUpShown]=useState(null);// {pet, fromLevel, toLevel} (P1-3 升級慶祝)
   const[settingsOpen,setSettingsOpen]=useState(false);// (P2-3 無障礙設定 modal)
   const[animLevel,setAnimLevel]=useLS("eg_animLevel","full");// (P2-3) "full" | "lite" | "off"
@@ -2573,6 +2574,14 @@ function PetsPage({onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,s
     const eggIds=new Set(eggs.map(e=>e.petId));
     const eggOnlyIds=[...eggIds].filter(id=>!ownedIds.has(id));
     const missingIds=Object.values(PETS).flat().map(p=>p.id).filter(id=>!ownedIds.has(id));
+    const badgeNames={3:"入門收藏",10:"進階收藏",20:"稀有收藏",[totalPetKinds]:"圖鑑大師"};
+    const milestones=[3,10,20,totalPetKinds].filter((n,i,arr)=>n<=totalPetKinds&&arr.indexOf(n)===i);
+    const nextBadgeTarget=milestones.find(n=>ownedIds.size<n)||totalPetKinds;
+    const collectionBadges=milestones.map(target=>{
+      const done=ownedIds.size>=target;
+      const active=!done&&target===nextBadgeTarget;
+      return{target,label:badgeNames[target]||`${target} 種收藏`,done,active,left:Math.max(0,target-ownedIds.size)};
+    });
     const dupeTotal=pets.reduce((sum,p)=>sum+(p.dupes||0),0);
     const resonanceLeader=[...pets].sort((a,b)=>(b.dupes||0)-(a.dupes||0))[0]||null;
     const closestEgg=eggs
@@ -2583,8 +2592,8 @@ function PetsPage({onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,s
       })
       .filter(x=>x.def)
       .sort((a,b)=>Number(b.egg.progress>=b.needed)-Number(a.egg.progress>=a.needed)||b.pct-a.pct||RARITY_ORDER[b.egg.rarity]-RARITY_ORDER[a.egg.rarity])[0]||null;
-    return{eggOnlyCount:eggOnlyIds.length,missingCount:missingIds.length,dupeTotal,resonanceLeader,closestEgg};
-  },[eggs,pets,ownedIds]);
+    return{eggOnlyCount:eggOnlyIds.length,missingCount:missingIds.length,nextBadgeTarget,nextBadgeLeft:Math.max(0,nextBadgeTarget-ownedIds.size),collectionBadges,dupeTotal,resonanceLeader,closestEgg};
+  },[eggs,pets,ownedIds,totalPetKinds]);
   const quickCarePlan=useMemo(()=>{
     const inv={...inventory};
     let feed=0,clean=0,sleep=0,needsFood=0;
@@ -2599,6 +2608,17 @@ function PetsPage({onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,s
     });
     return{feed,clean,sleep,needsFood,total:feed+clean+sleep};
   },[pets,inventory]);
+  const claimableTaskCount=DAILY_TASK_DEFS.filter(t=>!claimedToday.includes(t.id)&&(taskCounts[t.statKey]||0)>=t.target).length;
+  const careFocusPet=useMemo(()=>pets
+    .map(p=>({pet:p,def:getPetDef(p),suggestion:getPetCareSuggestion(p,inventory),needs:getCareCount(p),readiness:getPetReadiness(p)}))
+    .filter(x=>x.def&&(x.suggestion||x.needs>0))
+    .sort((a,b)=>b.needs-a.needs||a.readiness.avg-b.readiness.avg)[0]||null,[pets,inventory]);
+  const petCareCenterItems=[
+    claimableTaskCount>0&&{key:"tasks",icon:"📋",title:"任務可領",desc:`${claimableTaskCount} 個每日任務已完成，先領獎讓寵物拿到成長。`,button:"去領獎",onClick:()=>setTab("tasks"),tone:c.cl},
+    readyEggCount>0&&{key:"eggs",icon:"🥚",title:"蛋可孵化",desc:`有 ${readyEggCount} 顆蛋準備好了，孵化後會加入你的寵物夥伴。`,button:"去孵化",onClick:()=>setTab("eggs"),tone:"#EF9F27"},
+    careFocusPet&&{key:"care",icon:careFocusPet.suggestion?.emoji||careFocusPet.readiness.emoji,title:"優先照顧",desc:`${careFocusPet.def.name}：${careFocusPet.suggestion?.reason||careFocusPet.readiness.tone}`,button:"去照顧",onClick:()=>{setTab("pets");setSelectedPet(careFocusPet.pet)},tone:careFocusPet.readiness.color},
+    !claimableTaskCount&&!readyEggCount&&!careFocusPet&&{key:"grow",icon:"✨",title:"狀態穩定",desc:"今天可以用學習任務累積親密度，或帶寵物去冒險拿技能。",button:"看寵物",onClick:()=>setTab("pets"),tone:c.cl},
+  ].filter(Boolean).slice(0,3);
   const mergeDuplicateEggs=()=>{
     if(!duplicateEggIssueCount)return;
     const now=new Date().toISOString();
@@ -2787,6 +2807,14 @@ function PetsPage({onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,s
     const petIdx=pets.findIndex(p=>p.petId===pet.petId);
     if(petIdx<0)return;
     let updated={...pets[petIdx]};
+    const action=PET_ACTIONS[actionKey]||{name:"照顧",icon:"✨"};
+    const beforeStats={
+      hunger:updated.hunger??80,
+      clean:updated.clean??80,
+      energy:updated.energy??80,
+      bond:updated.bond||0,
+      exp:updated.exp||0,
+    };
     const prevBond=updated.bond||0;
 
     // 計算狀態變化文字（給粒子動畫的數值跳動用） (P0-2)
@@ -2849,6 +2877,28 @@ function PetsPage({onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,s
     // 觸發粒子慶祝動畫 (P0-2 視覺優化)
     setActionModal(null);
     if(selectedPet&&selectedPet.petId===pet.petId)setSelectedPet(updated);
+    const resultDetail=(()=>{
+      if(actionKey==="feed")return `飢餓 ${Math.round(beforeStats.hunger)} → ${Math.round(updated.hunger??0)}`;
+      if(actionKey==="clean")return `清潔 ${Math.round(beforeStats.clean)} → ${Math.round(updated.clean??0)}`;
+      if(actionKey==="play")return `親密 ${Math.round(beforeStats.bond)} → ${Math.round(updated.bond||0)}`;
+      if(actionKey==="sleep")return `體力 ${Math.round(beforeStats.energy)} → ${Math.round(updated.energy??0)}`;
+      if(actionKey==="study")return `成長 XP +30 · 親密 ${Math.round(beforeStats.bond)} → ${Math.round(updated.bond||0)}`;
+      return "狀態提升";
+    })();
+    const cultivationDoneCount=Math.min(dailyActions.length,3);
+    const cultivationLeft=Math.max(0,3-cultivationDoneCount);
+    setLastCareResult({
+      petId:pet.petId,
+      icon:action.icon||"✨",
+      title:"照顧完成",
+      actionName:action.name||"照顧",
+      statText,
+      statColor,
+      detail:resultDetail,
+      progressText:`今日培養 ${cultivationDoneCount}/3`,
+      nextText:cultivationBonus?"今日培養獎勵已解鎖":(cultivationLeft>0?`再完成 ${cultivationLeft} 種照顧可拿培養獎勵`:"今日培養已完成"),
+      bonusText:cultivationBonus?`今日培養完成：XP +${cultivationBonus.exp}、親密 +${cultivationBonus.bond}、金幣 +${cultivationBonus.coins}`:"",
+    });
     setActionCelebration({actionKey,statText,statColor,bonusText:cultivationBonus?`今日培養完成：XP +${cultivationBonus.exp}、親密 +${cultivationBonus.bond}、金幣 +${cultivationBonus.coins}`:null,foodEmoji:foodId?(PET_FOODS.find(f=>f.id===foodId)?.emoji||"🍖"):null});
     setTimeout(()=>setActionCelebration(null),1400);
 
@@ -3020,7 +3070,7 @@ function PetsPage({onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,s
         </div>
         <div style={{display:"flex",gap:8,justifyContent:"center",marginTop:16}}>
           <button onClick={()=>setActionModal(null)} style={{...S.btn,background:S.bg2,color:S.t2,fontSize:14}}>取消</button>
-          <button onClick={()=>completeAction(actionKey,foodId)} style={{...S.btn,background:c.cl,color:"#fff",fontSize:14}}>✅ 我念完了！</button>
+          <button data-testid="pet-action-complete" onClick={()=>completeAction(actionKey,foodId)} style={{...S.btn,background:c.cl,color:"#fff",fontSize:14}}>✅ 我念完了！</button>
         </div>
       </div>
     </div>);
@@ -3104,6 +3154,30 @@ function PetsPage({onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,s
         </div>
       </div>
 
+      {lastCareResult?.petId===selectedPet.petId&&<div data-testid="pet-care-result" style={{
+        ...S.card,
+        padding:"12px 14px",
+        marginBottom:12,
+        border:`1px solid ${lastCareResult.statColor||c.cl}66`,
+        background:`linear-gradient(135deg,${lastCareResult.statColor||c.cl}12,var(--color-background-primary,#fff))`,
+        display:"flex",
+        alignItems:"center",
+        gap:10,
+        boxShadow:"0 12px 28px rgba(20,66,52,.10)",
+      }}>
+        <div style={{width:38,height:38,borderRadius:14,display:"flex",alignItems:"center",justifyContent:"center",background:S.bg1,border:`1px solid ${lastCareResult.statColor||c.cl}33`,fontSize:20,flex:"0 0 auto"}}>{lastCareResult.icon}</div>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontSize:12,fontWeight:1000,color:lastCareResult.statColor||c.cl}}>{lastCareResult.title}</div>
+          <div style={{fontSize:14,fontWeight:1000,color:S.t1,marginTop:2}}>{lastCareResult.actionName} · {lastCareResult.detail}</div>
+          <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap",marginTop:7}}>
+            <span style={{fontSize:10,fontWeight:1000,color:lastCareResult.statColor||c.cl,background:`${lastCareResult.statColor||c.cl}12`,border:`1px solid ${lastCareResult.statColor||c.cl}22`,borderRadius:999,padding:"3px 8px"}}>{lastCareResult.progressText}</span>
+            <span style={{fontSize:11,color:S.t2,fontWeight:800}}>{lastCareResult.nextText}</span>
+          </div>
+          {lastCareResult.bonusText&&<div style={{fontSize:11,color:"#856404",marginTop:3,lineHeight:1.45}}>{lastCareResult.bonusText}</div>}
+        </div>
+        <button aria-label="關閉照顧結果" onClick={()=>setLastCareResult(null)} style={{border:`1px solid ${S.bd}`,background:S.bg1,borderRadius:999,width:30,height:30,cursor:"pointer",color:S.t2,fontWeight:900,flex:"0 0 auto"}}>×</button>
+      </div>}
+
       <div style={{...S.card,padding:"14px 16px",marginBottom:12,border:`1px solid ${c.cl}33`,background:`linear-gradient(135deg,${c.bg},var(--color-background-primary,#fff))`}}>
         <div style={{display:"flex",justifyContent:"space-between",gap:10,alignItems:"flex-start",flexWrap:"wrap",marginBottom:10}}>
           <div>
@@ -3163,7 +3237,7 @@ function PetsPage({onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,s
           <div style={{fontSize:13,fontWeight:900,color:readiness.color}}>冒險狀態：{readiness.label} · {readiness.avg}/100</div>
           <div style={{fontSize:11,color:S.t2,lineHeight:1.5,marginTop:2}}>{careSuggestion.reason}</div>
         </div>
-        <button onClick={startSuggestedCare} style={{...S.btn,background:readiness.color,color:"#fff",fontSize:12,padding:"9px 12px"}}>{careSuggestion.label}</button>
+        <button data-testid="pet-primary-care-action" onClick={startSuggestedCare} style={{...S.btn,background:readiness.color,color:"#fff",fontSize:12,padding:"9px 12px"}}>{careSuggestion.label}</button>
       </div>}
 
       {/* Status bars (P1-2 液體感狀態條) */}
@@ -3413,6 +3487,25 @@ body.eg-anim-off [data-pet-card] { animation: none !important; }
       <div style={{fontSize:12,color:S.t2}}>👤 <b style={{color:c.cl}}>{petAccount.username}</b> <span style={{color:S.t3,marginLeft:4}}>· 已同步雲端 ☁️</span></div>
       <button onClick={()=>setConfirmModal({msg:"登出帳號？\n\n本地寵物資料將保留，但不會再同步到雲端。",icon:"👋",onConfirm:()=>setPetAccount(null)})} style={{background:"none",border:"none",fontSize:11,color:S.t3,cursor:"pointer",padding:"4px 8px",textDecoration:"underline"}}>登出</button>
     </div>}
+    <section data-testid="pet-care-center" style={{...S.card,padding:"14px",marginBottom:12,border:`1px solid ${c.cl}33`,background:`radial-gradient(circle at 100% 0,${c.cl}18,transparent 34%),linear-gradient(135deg,${c.bg},var(--color-background-primary,#fff))`}}>
+      <div style={{display:"flex",justifyContent:"space-between",gap:10,alignItems:"flex-start",marginBottom:10,flexWrap:"wrap"}}>
+        <div>
+          <div style={{fontSize:15,fontWeight:1000,color:S.t1}}>今日照顧中心</div>
+          <div style={{fontSize:11,color:S.t2,lineHeight:1.5,marginTop:2}}>先處理最有感的事，讓寵物狀態、蛋倉與每日獎勵一起推進。</div>
+        </div>
+        <div style={{fontSize:11,fontWeight:900,color:c.cl,background:S.bg1,border:`1px solid ${c.cl}22`,borderRadius:999,padding:"5px 9px"}}>{pets.length} 隻寵物 · {eggs.length} 顆蛋</div>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:8}}>
+        {petCareCenterItems.map(item=><button key={item.key} onClick={item.onClick} style={{textAlign:"left",border:`1px solid ${item.tone}33`,background:"rgba(255,255,255,.82)",borderRadius:14,padding:"11px 12px",cursor:"pointer",fontFamily:"inherit",boxShadow:"0 8px 18px rgba(20,66,52,.05)"}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+            <span style={{width:32,height:32,borderRadius:12,display:"inline-flex",alignItems:"center",justifyContent:"center",background:`${item.tone}18`,fontSize:18}}>{item.icon}</span>
+            <span style={{fontSize:13,fontWeight:1000,color:item.tone}}>{item.title}</span>
+          </div>
+          <div style={{fontSize:11,color:S.t2,lineHeight:1.5,minHeight:33}}>{item.desc}</div>
+          <div style={{display:"inline-flex",marginTop:8,fontSize:10,fontWeight:1000,color:item.tone,background:`${item.tone}12`,border:`1px solid ${item.tone}22`,borderRadius:999,padding:"3px 8px"}}>{item.button}</div>
+        </button>)}
+      </div>
+    </section>
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))",gap:8,marginBottom:12}}>
       <button onClick={()=>setTab("dex")} style={{...S.card,padding:"12px",textAlign:"left",cursor:"pointer",fontFamily:"inherit",background:`linear-gradient(135deg,${c.bg},var(--color-background-primary,#fff))`}}>
         <div style={{fontSize:11,color:S.t2,fontWeight:800}}>收藏完成度</div>
@@ -3435,12 +3528,35 @@ body.eg-anim-off [data-pet-card] { animation: none !important; }
         <div style={{fontSize:11,color:"#856404",fontWeight:800,marginTop:3}}>{collectionStats.resonanceLeader?`最高 ${getDuplicateEnergyInfo(collectionStats.resonanceLeader).label}`:"抽到重複會成長"}</div>
       </button>
     </div>
-    <div style={{...S.card,padding:"11px 14px",marginBottom:12,border:`1px solid ${collectionStats.closestEgg?.egg?.progress>=collectionStats.closestEgg?.needed?c.cl:S.bd}`,background:collectionStats.closestEgg?"linear-gradient(135deg,#F7FBFF,var(--color-background-primary,#fff))":S.bg1,display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+    <div data-testid="pet-collection-goal" style={{...S.card,padding:"11px 14px",marginBottom:12,border:`1px solid ${collectionStats.closestEgg?.egg?.progress>=collectionStats.closestEgg?.needed?c.cl:S.bd}`,background:collectionStats.closestEgg?"linear-gradient(135deg,#F7FBFF,var(--color-background-primary,#fff))":S.bg1,display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
       <div style={{fontSize:24}}>{readyEggCount?"🎉":collectionStats.closestEgg?"🥚":"📖"}</div>
       <div style={{flex:1,minWidth:190}}>
-        <div style={{fontSize:12,fontWeight:900,color:S.t1}}>下一步建議</div>
+        <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+          <div style={{fontSize:12,fontWeight:900,color:S.t1}}>收藏目標</div>
+          {collectionStats.closestEgg&&<span style={{fontSize:10,fontWeight:1000,color:c.cl,background:c.bg,border:`1px solid ${c.cl}22`,borderRadius:999,padding:"3px 8px"}}>
+            {collectionStats.closestEgg.egg.progress||0}/{collectionStats.closestEgg.needed}
+          </span>}
+        </div>
+        {collectionStats.closestEgg&&<div style={{height:6,background:S.bg2,borderRadius:999,overflow:"hidden",marginTop:7}}>
+          <div style={{height:"100%",width:`${collectionStats.closestEgg.pct}%`,background:`linear-gradient(90deg,${c.cl},${c.ac})`,borderRadius:999}}/>
+        </div>}
         <div style={{fontSize:11,color:S.t2,lineHeight:1.5,marginTop:2}}>
           {readyEggCount?`有 ${readyEggCount} 顆蛋可以孵化，先去蛋倉看看。`:collectionStats.closestEgg?`${collectionStats.closestEgg.def.name} 蛋最接近孵化，還差 ${collectionStats.closestEgg.left} 題英文。`:collectionStats.missingCount?`圖鑑還缺 ${collectionStats.missingCount} 種寵物，可以透過扭蛋與冒險獎勵慢慢收集。`:"圖鑑已收齊，接下來可以培養親密度與重複能量。"}
+        </div>
+        <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap",marginTop:8}}>
+          <span style={{fontSize:10,fontWeight:1000,color:c.cl,background:S.bg1,border:`1px solid ${c.cl}22`,borderRadius:999,padding:"3px 8px"}}>收藏進度 {ownedIds.size}/{totalPetKinds}</span>
+          {collectionStats.missingCount>0&&<span style={{fontSize:10,fontWeight:900,color:S.t2,background:S.bg2,border:`1px solid ${S.bd}`,borderRadius:999,padding:"3px 8px"}}>還缺 {collectionStats.missingCount} 種</span>}
+          {collectionStats.nextBadgeLeft>0&&<span style={{fontSize:10,fontWeight:1000,color:"#856404",background:"#FFF3CD",border:"1px solid #EF9F2744",borderRadius:999,padding:"3px 8px"}}>下一枚徽章 {collectionStats.nextBadgeTarget} 種寵物 · 還差 {collectionStats.nextBadgeLeft} 種</span>}
+        </div>
+        <div data-testid="pet-collection-badges" style={{marginTop:9,padding:"8px 9px",borderRadius:12,background:"rgba(255,255,255,.72)",border:`1px solid ${S.bd}`}}>
+          <div style={{fontSize:10,fontWeight:1000,color:S.t2,marginBottom:6}}>收藏徽章</div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(86px,1fr))",gap:6}}>
+            {collectionStats.collectionBadges.map(badge=><div key={badge.target} style={{border:`1px solid ${badge.done?c.cl:badge.active?"#EF9F27":S.bd}`,background:badge.done?c.bg:badge.active?"#FFF3CD":S.bg2,borderRadius:10,padding:"7px 8px"}}>
+              <div style={{fontSize:10,fontWeight:1000,color:badge.done?c.cl:badge.active?"#856404":S.t3}}>{badge.label}</div>
+              <div style={{fontSize:11,fontWeight:1000,color:S.t1,marginTop:2}}>{Math.min(ownedIds.size,badge.target)}/{badge.target}</div>
+              <div style={{fontSize:9,fontWeight:900,color:badge.done?c.cl:badge.active?"#856404":S.t3,marginTop:2}}>{badge.done?"已獲得":badge.active?"進行中":`${badge.target} 種`}</div>
+            </div>)}
+          </div>
         </div>
       </div>
       <button onClick={()=>setTab(readyEggCount||collectionStats.closestEgg?"eggs":"dex")} style={{...S.btn,background:c.cl,color:"#fff",fontSize:12,padding:"9px 12px"}}>{readyEggCount||collectionStats.closestEgg?"去蛋倉":"看圖鑑"}</button>
@@ -3640,8 +3756,9 @@ body.eg-anim-off [data-pet-card] { animation: none !important; }
         ];
         const isUrgent=need.urgency===2;
         const duplicateInfo=getDuplicateEnergyInfo(pet);
+        const nextStep=getPetCareSuggestion(pet,inventory);
         return(
-        <div key={i} data-pet-card onClick={()=>{setSelectedPet(pet);triggerEvent(pet)}}
+        <div key={i} data-pet-card data-testid={`pet-card-${pet.petId}`} onClick={()=>{setSelectedPet(pet);triggerEvent(pet)}}
           style={{
             ...S.card,
             padding:"10px 8px 8px",
@@ -3712,6 +3829,10 @@ body.eg-anim-off [data-pet-card] { animation: none !important; }
 
           {/* 等級 */}
           <div style={{fontSize:10,color:c.cl,fontWeight:600,marginBottom:6}}>Lv.{pet.level}</div>
+
+          {nextStep&&<div data-testid={`pet-next-step-${pet.petId}`} style={{display:"inline-flex",alignItems:"center",justifyContent:"center",gap:3,maxWidth:"100%",fontSize:9,fontWeight:1000,color:nextStep.shop?"#856404":c.cl,background:nextStep.shop?"#FFF3CD":c.bg,border:`1px solid ${nextStep.shop?"#EF9F2744":c.cl+"33"}`,borderRadius:999,padding:"3px 7px",marginBottom:6,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
+            <span>下一步</span><span>·</span><span>{nextStep.label}</span>
+          </div>}
 
           {/* 重複成長能量 */}
           {duplicateInfo.dupes>0&&<div style={{display:"inline-flex",alignItems:"center",gap:3,fontSize:9,color:"#856404",background:"#FFF3CD",border:"1px solid #EF9F2744",borderRadius:999,padding:"2px 6px",marginTop:-4,marginBottom:5,fontWeight:900}}>
