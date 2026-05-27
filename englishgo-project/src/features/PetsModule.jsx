@@ -1,4 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { DailyPetPlan, buildLearningProgress, buildPetDailyPlan } from "./PetDailyPlan.jsx";
 
 let ACTION_PROMPTS,BOND_MILESTONES,DAILY_TASK_DEFS,DUPLICATE_EGG_PROGRESS,DUPLICATE_PET_REWARD,EGG_COST,EGG_HATCH_TASKS,GACHA_SR_PITY,Hdr,MAX_STAT,PETS,PET_ACTIONS,PET_ADVENTURE_BOSS_REQUIRED_CLEARS,PET_ADVENTURE_ENEMY_ICONS,PET_ADVENTURE_SKILLS,PET_ADVENTURE_SKILL_UNLOCKS,PET_ADVENTURE_SKILL_VISUALS,PET_CULTIVATION_ACTIONS,PET_EVENTS,PET_FOODS,RARITY_INFO,RARITY_ORDER,S,STAGE_NAMES,STAGE_SAYINGS,TIME_GREETINGS,applyDuplicatePetReward,buildPetAdventureStages,calcDecay,choosePetFoodForNeed,completePetAdventureProgress,createPetAdventureBgm,getAdventureAnswerLine,getAdventureCorrectSpeech,getAdventurePetDef,getAdventureQuestionMeta,getAdventureQuestionSpeech,getBondLevel,getCareCount,getDuplicateEnergyInfo,getDuplicatePetReward,getEventCenter,getNextPetAdventureSkillCard,getPetAdventureDifficulty,getPetAdventureFatigue,getPetAdventurePower,getPetAdventureProgress,getPetAdventureScore,getPetAdventureSkill,getPetAdventureSkillCards,getPetCareAverage,getPetCareSuggestion,getPetCultivationPlan,getPetDailyCultivation,getPetMood,getPetReadiness,getPetSize,getPetStage,getPetUrgentNeed,getSelectedPetAdventureSkill,getTeamAdventureMorale,getTimeOfDay,hashPin,improvePetAfterAdventure,isPetAdventureBossReady,isPetSleeping,levelUpPet,loadPetAdventureQuestions,petCloudLogin,petCloudSignup,playPetAdventureSkillSound,playSound,randomPet,rollRarity,savePetAdventureProgress,speak,triggerRewardBurst,useLS;
 function setPetModuleDeps(deps={}){
@@ -2609,6 +2610,22 @@ function PetsPage({onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,s
     return{feed,clean,sleep,needsFood,total:feed+clean+sleep};
   },[pets,inventory]);
   const claimableTaskCount=DAILY_TASK_DEFS.filter(t=>!claimedToday.includes(t.id)&&(taskCounts[t.statKey]||0)>=t.target).length;
+  const learningProgress=useMemo(()=>buildLearningProgress({
+    dailyTaskDefs:DAILY_TASK_DEFS,
+    taskCounts,
+  }),[taskCounts]);
+  const dailyPetPlan=useMemo(()=>buildPetDailyPlan({
+    pets,
+    eggs,
+    eggHatchTasks:EGG_HATCH_TASKS,
+    isKnownEgg:egg=>!!PETS[egg.rarity]?.some(p=>p.id===egg.petId),
+    dailyTaskDefs:DAILY_TASK_DEFS,
+    taskCounts,
+    claimedToday,
+    quickCarePlan,
+    totalPetKinds,
+    ownedCount:ownedIds.size,
+  }),[pets,eggs,taskCounts,claimedToday,quickCarePlan,totalPetKinds,ownedIds]);
   const careFocusPet=useMemo(()=>pets
     .map(p=>({pet:p,def:getPetDef(p),suggestion:getPetCareSuggestion(p,inventory),needs:getCareCount(p),readiness:getPetReadiness(p)}))
     .filter(x=>x.def&&(x.suggestion||x.needs>0))
@@ -2700,6 +2717,14 @@ function PetsPage({onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,s
     showToast(`快速照顧完成：餵食 ${fed}、清潔 ${cleaned}、休息 ${rested}`,"✨","info");
     if(needsFood>0)window.setTimeout(()=>showToast(`${needsFood} 隻寵物還需要食物，記得補貨。`,"🏪","info"),900);
   };
+
+  const handleDailyPetPlanAction=useCallback((action)=>{
+    if(action==="eggs"){setTab("eggs");return}
+    if(action==="tasks"){setTab("tasks");return}
+    if(action==="quickCare"){quickCareAll();return}
+    if(action==="shop"){setShopOpen(true);return}
+    setTab("dex");
+  },[quickCareAll]);
 
   const claimTask=(task,event)=>{
     if(claimedToday.includes(task.id))return;
@@ -3487,6 +3512,13 @@ body.eg-anim-off [data-pet-card] { animation: none !important; }
       <div style={{fontSize:12,color:S.t2}}>👤 <b style={{color:c.cl}}>{petAccount.username}</b> <span style={{color:S.t3,marginLeft:4}}>· 已同步雲端 ☁️</span></div>
       <button onClick={()=>setConfirmModal({msg:"登出帳號？\n\n本地寵物資料將保留，但不會再同步到雲端。",icon:"👋",onConfirm:()=>setPetAccount(null)})} style={{background:"none",border:"none",fontSize:11,color:S.t3,cursor:"pointer",padding:"4px 8px",textDecoration:"underline"}}>登出</button>
     </div>}
+    <DailyPetPlan
+      plan={dailyPetPlan}
+      learningProgress={learningProgress}
+      onAction={handleDailyPetPlanAction}
+      S={S}
+      c={c}
+    />
     <section data-testid="pet-care-center" style={{...S.card,padding:"14px",marginBottom:12,border:`1px solid ${c.cl}33`,background:`radial-gradient(circle at 100% 0,${c.cl}18,transparent 34%),linear-gradient(135deg,${c.bg},var(--color-background-primary,#fff))`}}>
       <div style={{display:"flex",justifyContent:"space-between",gap:10,alignItems:"flex-start",marginBottom:10,flexWrap:"wrap"}}>
         <div>
