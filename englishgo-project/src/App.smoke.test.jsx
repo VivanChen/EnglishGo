@@ -107,6 +107,22 @@ describe('EnglishGo app smoke flow', () => {
     expect(screen.getByText('Giphy API Key')).toBeInTheDocument();
   });
 
+  it('opens AI tutor with polished practice starters', async () => {
+    localStorage.setItem('eg_gemkey', JSON.stringify('test-gemini-key'));
+    await openElementaryMenu();
+
+    const aiCard = document.querySelector('[data-module-id="ai"]');
+    expect(aiCard).toBeTruthy();
+    fireEvent.click(aiCard);
+
+    expect(await screen.findByText('家教練習室')).toBeInTheDocument();
+    expect(screen.getByText('先選模式，再用聊天微調。')).toBeInTheDocument();
+    expect(screen.getByText('短句上手')).toBeInTheDocument();
+    expect(screen.getByText('生活對話')).toBeInTheDocument();
+    expect(screen.getByText('精準批改')).toBeInTheDocument();
+    expect(screen.getByText('可朗讀、可複製')).toBeInTheDocument();
+  });
+
   it('opens the lazy SRS module', async () => {
     await openElementaryMenu();
 

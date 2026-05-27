@@ -4539,10 +4539,10 @@ function SongsM({lv,onBack,onXp}){
 // ═══ AI TUTOR ═══════════════════════════════════════════════════════
 function AIT({lv,onBack,apiKey,onOpenSettings}){
   const c=LV[lv];const RATES=[{l:"慢速",i:"🐢",v:0.6},{l:"正常",i:"🎯",v:0.85},{l:"快速",i:"🐇",v:1.15}];
-  const initialMsg=useMemo(()=>({role:"a",content:`哈囉！我是你的 AI 英語家教。\n\n我可以陪你練 **vocabulary**、**grammar**、**translation** 和英文造句。\n\n你可以直接問問題，也可以點下面的練習按鈕開始。`}),[]);
+  const initialMsg=useMemo(()=>({role:"a",content:`哈囉，我是你的 AI 英語家教。\n\n你可以貼上英文句子、問文法問題，或選上方練習模式開始。\n\n我會用適合你的程度說明，並把重點英文標成 **bold**，方便朗讀和複習。`}),[]);
   const[msgs,setMsgs]=useState(()=>[initialMsg]);
   const[inp,setInp]=useState("");const[busy,setBusy]=useState(false);const[showKey,setShowKey]=useState(!apiKey);const[ri,setRi]=useState(1);const[pi,setPi]=useState(-1);const[pt,setPt]=useState(0);const[copied,setCopied]=useState(-1);const btm=useRef(null);const reqRef=useRef(null);const speakPollRef=useRef(null);
-  useEffect(()=>{btm.current?.scrollIntoView({behavior:"smooth"})},[msgs,busy]);
+  useEffect(()=>{btm.current?.scrollIntoView?.({behavior:"smooth"})},[msgs,busy]);
   useEffect(()=>()=>{reqRef.current?.abort();if(speakPollRef.current)clearInterval(speakPollRef.current);stopSpeech()},[]);
   const promptGroups=[
     {l:"學習",items:[
@@ -4563,6 +4563,11 @@ function AIT({lv,onBack,apiKey,onOpenSettings}){
       {label:"造句",prompt:"請給我一個英文單字，讓我造句。等我回答後，請幫我批改。"},
       {label:"日記",prompt:"請教我寫一篇 4 句英文小日記。先給架構，再讓我自己試寫，最後幫我修正。"}
     ]}
+  ];
+  const starterCards=[
+    {title:"短句上手",desc:"一句英文、中文意思、替換練習",icon:"1",tone:"#2563EB",prompt:`請用${c.l}程度帶我練一句今天能用的英文。請先給一句英文和中文，再讓我替換一個單字。`},
+    {title:"生活對話",desc:"一次一句，像真人陪練",icon:"Q",tone:"#DB2777",prompt:"請陪我做一段英文情境對話。先給我 3 個情境選項，等我選好後，每次只問一句並幫我修正。"},
+    {title:"精準批改",desc:"原句、修正版、原因、再練一句",icon:"✓",tone:"#D97706",prompt:"我會貼一個英文句子。請用「原句、修正版、原因、再練一句」幫我批改，說明要簡短。"}
   ];
   const systemText=`You are EnglishGo AI Tutor for a Taiwanese ${c.l} student.
 Reply mainly in Traditional Chinese, with target English words or phrases in **bold**.
@@ -4640,16 +4645,89 @@ Do not imitate copyrighted songs, books, or specific artists.`;
   };
   const copyMsg=async(text,idx)=>{try{await navigator.clipboard?.writeText(text)}catch{}setCopied(idx);setTimeout(()=>setCopied(-1),900)};
   const resetChat=()=>{reqRef.current?.abort();stopSpeech();setPi(-1);setBusy(false);setMsgs([initialMsg])};
-  return(<div style={{display:"flex",flexDirection:"column",height:"calc(100vh - 110px)"}}>
-    <Hdr t="AI 英語家教" onBack={onBack} cl={c.cl} extra={<div style={{display:"flex",gap:4,alignItems:"center"}}><button onClick={()=>setRi(r=>(r+1)%3)} title="調整朗讀速度" style={{background:S.bg1,border:`1px solid ${S.bd}`,borderRadius:8,padding:"5px 8px",fontSize:12,cursor:"pointer",color:S.t2,fontFamily:"inherit"}}>{RATES[ri].i}{RATES[ri].l}</button><button onClick={resetChat} title="清空對話" style={{background:S.bg1,border:`1px solid ${S.bd}`,borderRadius:8,padding:"5px 8px",fontSize:12,cursor:"pointer",color:S.t2,fontFamily:"inherit"}}>清空</button><button onClick={()=>onOpenSettings?.()} title="API Key 設定" style={{background:S.bg1,border:`1px solid ${S.bd}`,borderRadius:8,padding:"5px 8px",fontSize:12,cursor:"pointer",color:S.t2,fontFamily:"inherit"}}>{apiKey?"🔑":"⚙️"}</button></div>}/>
-    {showKey&&<div style={{...S.card,padding:"12px 14px",marginBottom:8,fontSize:12,boxShadow:"0 8px 22px rgba(15,110,86,.06)"}}><div style={{fontWeight:700,color:S.t1,marginBottom:4}}>Gemini API Key</div><div style={{color:S.t2,marginBottom:8,lineHeight:1.6}}>AI 家教共用全站 Gemini Key。請到統一設定頁輸入或更新。</div><button onClick={()=>onOpenSettings?.()} style={{...S.btn,background:c.cl,color:"#fff",padding:"8px 14px",fontSize:12}}>前往 Key 設定</button></div>}
-    <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:9,padding:"2px 0 6px"}}>
-      {msgs.map((m,i)=>(<div key={i} style={{display:"flex",justifyContent:m.role==="u"?"flex-end":"flex-start",gap:6,alignItems:"flex-start"}}><div style={{maxWidth:"86%",padding:"10px 12px",borderRadius:m.role==="u"?"14px 14px 4px 14px":"14px 14px 14px 4px",background:m.role==="u"?c.cl:S.bg1,color:m.role==="u"?"#fff":S.t1,border:m.role==="u"?"none":`1px solid ${S.bd}`,fontSize:13,lineHeight:1.75,whiteSpace:"pre-wrap",boxShadow:m.role==="u"?"none":"0 6px 18px rgba(0,0,0,.04)"}}>{m.role==="u"?m.content:<><Md text={m.content} color={c.cl}/><div style={{display:"flex",gap:5,marginTop:8,justifyContent:"flex-end"}}><button onClick={()=>doSpeak(m.content,i)} style={{border:`1px solid ${S.bd}`,background:pi===i?c.bg:S.bg2,color:pi===i?c.cl:S.t2,borderRadius:999,padding:"4px 8px",fontSize:11,cursor:"pointer",fontFamily:"inherit",fontWeight:700}}>{pi===i?"停止":"朗讀"}</button><button onClick={()=>copyMsg(m.content,i)} style={{border:`1px solid ${S.bd}`,background:S.bg2,color:S.t2,borderRadius:999,padding:"4px 8px",fontSize:11,cursor:"pointer",fontFamily:"inherit",fontWeight:700}}>{copied===i?"已複製":"複製"}</button></div></>}</div></div>))}
-      {busy&&<div style={{padding:"10px 12px",borderRadius:14,background:S.bg1,border:`1px solid ${S.bd}`,fontSize:12,color:S.t2,alignSelf:"flex-start",display:"flex",alignItems:"center",gap:8}}><span style={{animation:"pulse 1.2s ease-in-out infinite"}}>AI 家教思考中...</span><button onClick={cancelSend} style={{border:`1px solid ${S.bd}`,background:S.bg2,color:S.t2,borderRadius:999,padding:"4px 8px",fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>停止</button></div>}
+  return(<div className="ai-tutor" style={{"--ai-accent":c.cl,"--ai-accent-bg":c.bg,"--ai-accent-soft":c.ac,"--ai-card":S.bg1,"--ai-surface":S.bg2,"--ai-border":S.bd,"--ai-text":S.t1,"--ai-muted":S.t2,"--ai-faint":S.t3}}>
+    <style>{`
+      .ai-tutor{display:flex;flex-direction:column;height:calc(100vh - 110px);min-height:0;gap:8px}
+      .ai-tutor button,.ai-tutor textarea{font-family:inherit}
+      .ai-tutor-toolbar{display:flex;gap:5px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+      .ai-tutor-chip{border:1px solid var(--ai-border);background:var(--ai-card);color:var(--ai-muted);border-radius:9px;padding:6px 9px;font-size:12px;font-weight:800;cursor:pointer;min-height:32px}
+      .ai-tutor-status{border:1px solid var(--ai-status-border);background:var(--ai-status-bg);color:var(--ai-status-text);border-radius:999px;padding:6px 9px;font-size:11px;font-weight:900;white-space:nowrap}
+      .ai-tutor-key{border:1px solid var(--ai-border);background:linear-gradient(135deg,var(--ai-card),var(--ai-surface));border-radius:12px;padding:12px 14px;margin-bottom:2px;font-size:12px;box-shadow:0 8px 22px rgba(15,110,86,.06)}
+      .ai-tutor-key-title{font-size:13px;font-weight:1000;color:var(--ai-text);margin-bottom:4px}
+      .ai-tutor-key-body{color:var(--ai-muted);line-height:1.6;margin-bottom:8px}
+      .ai-tutor-hero{position:relative;overflow:hidden;border:1px solid color-mix(in srgb,var(--ai-accent) 28%,var(--ai-border));background:linear-gradient(135deg,color-mix(in srgb,var(--ai-accent) 13%,var(--ai-card)),var(--ai-card) 52%,color-mix(in srgb,#2563EB 7%,var(--ai-card)));border-radius:16px;padding:14px;box-shadow:0 12px 28px rgba(15,110,86,.08)}
+      .ai-tutor-hero:before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:linear-gradient(180deg,var(--ai-accent),#2563EB,#D97706)}
+      .ai-tutor-hero-head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:start;margin-bottom:12px}
+      .ai-tutor-kicker{font-size:11px;font-weight:1000;color:var(--ai-accent);letter-spacing:0;margin-bottom:4px}
+      .ai-tutor-title{font-size:18px;font-weight:1000;color:var(--ai-text);line-height:1.15;margin:0}
+      .ai-tutor-subtitle{font-size:12px;color:var(--ai-muted);line-height:1.55;margin-top:5px}
+      .ai-tutor-badges{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+      .ai-tutor-badge{border:1px solid color-mix(in srgb,var(--ai-accent) 28%,var(--ai-border));background:var(--ai-card);color:var(--ai-accent);border-radius:999px;padding:6px 9px;font-size:11px;font-weight:900;white-space:nowrap}
+      .ai-tutor-starter-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+      .ai-tutor-starter{border:1px solid color-mix(in srgb,var(--card-tone) 24%,var(--ai-border));background:linear-gradient(145deg,color-mix(in srgb,var(--card-tone) 9%,var(--ai-card)),var(--ai-card));border-radius:12px;padding:11px;text-align:left;cursor:pointer;display:grid;grid-template-columns:30px minmax(0,1fr);gap:9px;align-items:start;min-height:78px;color:var(--ai-text);transition:transform .14s ease,border-color .14s ease,box-shadow .14s ease}
+      .ai-tutor-starter:hover{transform:translateY(-1px);border-color:color-mix(in srgb,var(--card-tone) 55%,var(--ai-border));box-shadow:0 10px 22px color-mix(in srgb,var(--card-tone) 12%,transparent)}
+      .ai-tutor-starter:disabled{cursor:default;opacity:.55;transform:none;box-shadow:none}
+      .ai-tutor-starter-icon{width:30px;height:30px;border-radius:10px;background:color-mix(in srgb,var(--card-tone) 14%,var(--ai-card));color:var(--card-tone);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:1000;border:1px solid color-mix(in srgb,var(--card-tone) 20%,transparent)}
+      .ai-tutor-starter-title{display:block;font-size:13px;font-weight:1000;color:var(--card-tone);line-height:1.25}
+      .ai-tutor-starter-desc{display:block;font-size:11px;color:var(--ai-muted);line-height:1.4;margin-top:4px}
+      .ai-tutor-chat{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding:2px 1px 6px}
+      .ai-tutor-row{display:flex;gap:7px;align-items:flex-start}
+      .ai-tutor-row.user{justify-content:flex-end}
+      .ai-tutor-avatar{width:28px;height:28px;border-radius:10px;background:var(--ai-accent-bg);color:var(--ai-accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:1000;flex:0 0 28px;border:1px solid var(--ai-accent-soft)}
+      .ai-tutor-bubble{max-width:min(86%,620px);padding:11px 13px;border-radius:14px;background:var(--ai-card);color:var(--ai-text);border:1px solid var(--ai-border);font-size:13px;line-height:1.72;white-space:pre-wrap;box-shadow:0 7px 18px rgba(0,0,0,.045)}
+      .ai-tutor-bubble.user{background:linear-gradient(135deg,var(--ai-accent),color-mix(in srgb,var(--ai-accent) 80%,#2563EB));color:#fff;border:0;border-radius:14px 14px 4px 14px;box-shadow:none}
+      .ai-tutor-actions{display:flex;gap:5px;margin-top:8px;justify-content:flex-end;flex-wrap:wrap}
+      .ai-tutor-action{border:1px solid var(--ai-border);background:var(--ai-surface);color:var(--ai-muted);border-radius:999px;padding:4px 8px;font-size:11px;cursor:pointer;font-weight:800}
+      .ai-tutor-action.active{background:var(--ai-accent-bg);color:var(--ai-accent)}
+      .ai-tutor-thinking{align-self:flex-start;display:flex;align-items:center;gap:8px;border:1px solid var(--ai-border);background:var(--ai-card);border-radius:14px;padding:10px 12px;font-size:12px;color:var(--ai-muted)}
+      .ai-tutor-promptbar{flex-shrink:0;border-top:1px solid var(--ai-border);padding-top:7px}
+      .ai-tutor-tabs{display:flex;gap:5px;margin-bottom:6px;overflow-x:auto;scrollbar-width:none}
+      .ai-tutor-tabs::-webkit-scrollbar,.ai-tutor-prompts::-webkit-scrollbar{display:none}
+      .ai-tutor-tab{border:0;background:var(--ai-surface);color:var(--ai-muted);border-radius:999px;padding:6px 11px;font-size:12px;font-weight:900;cursor:pointer;white-space:nowrap}
+      .ai-tutor-tab.active{background:var(--ai-accent);color:#fff}
+      .ai-tutor-prompts{display:flex;gap:6px;overflow-x:auto;padding-bottom:5px}
+      .ai-tutor-prompt{flex:0 0 auto;border:1px solid var(--ai-border);background:var(--ai-card);color:var(--ai-muted);border-radius:999px;padding:7px 10px;font-size:12px;cursor:pointer;white-space:nowrap}
+      .ai-tutor-compose{display:flex;gap:7px;align-items:flex-end;flex-shrink:0;padding-top:2px}
+      .ai-tutor-compose textarea{flex:1;padding:12px;border-radius:12px;border:1px solid var(--ai-border);font-size:13px;outline:none;background:var(--ai-card);color:var(--ai-text);resize:none;min-height:45px;max-height:108px;line-height:1.5;box-sizing:border-box}
+      .ai-tutor-send{border:0;background:var(--ai-accent);color:#fff;border-radius:12px;padding:12px 16px;min-width:66px;font-size:13px;font-weight:900;cursor:pointer}
+      .ai-tutor-send:disabled{opacity:.48;cursor:default}
+      @media (max-width:620px){
+        .ai-tutor{height:calc(100vh - 98px)}
+        .ai-tutor-hero{padding:12px;border-radius:14px}
+        .ai-tutor-hero-head{grid-template-columns:1fr;gap:7px}
+        .ai-tutor-badges{justify-content:flex-start}
+        .ai-tutor-starter-grid{grid-template-columns:1fr}
+        .ai-tutor-bubble{max-width:calc(100% - 36px)}
+      }
+    `}</style>
+    <Hdr t="AI 英語家教" onBack={onBack} cl={c.cl} extra={<div className="ai-tutor-toolbar"><span className="ai-tutor-status" style={{"--ai-status-text":apiKey?c.cl:"#B42318","--ai-status-bg":apiKey?c.bg:"#FCEBEB","--ai-status-border":apiKey?c.ac:"#F5B5B5"}}>{apiKey?"Gemini 已就緒":"需要 Key"}</span><button className="ai-tutor-chip" onClick={()=>setRi(r=>(r+1)%3)} title="調整朗讀速度">{RATES[ri].i}{RATES[ri].l}</button><button className="ai-tutor-chip" onClick={resetChat} title="清空對話">清空</button><button className="ai-tutor-chip" onClick={()=>onOpenSettings?.()} title="API Key 設定">{apiKey?"🔑":"⚙️"}</button></div>}/>
+    {showKey&&<div className="ai-tutor-key"><div className="ai-tutor-key-title">Gemini API Key</div><div className="ai-tutor-key-body">AI 家教共用全站 Gemini Key。請到統一設定頁輸入或更新。</div><button onClick={()=>onOpenSettings?.()} style={{...S.btn,background:c.cl,color:"#fff",padding:"8px 14px",fontSize:12}}>前往 Key 設定</button></div>}
+    <section data-testid="ai-tutor-starters" className="ai-tutor-hero">
+      <div className="ai-tutor-hero-head">
+        <div>
+          <div className="ai-tutor-kicker">AI Tutor</div>
+          <h3 className="ai-tutor-title">家教練習室</h3>
+          <div className="ai-tutor-subtitle">先選模式，再用聊天微調。</div>
+        </div>
+        <div className="ai-tutor-badges">
+          <span className="ai-tutor-badge">{c.l}</span>
+          <span className="ai-tutor-badge">可朗讀、可複製</span>
+        </div>
+      </div>
+      <div className="ai-tutor-starter-grid">
+        {starterCards.map(card=><button key={card.title} className="ai-tutor-starter" style={{"--card-tone":card.tone}} onClick={()=>send(card.prompt)} disabled={busy}>
+          <span className="ai-tutor-starter-icon">{card.icon}</span>
+          <span><span className="ai-tutor-starter-title">{card.title}</span><span className="ai-tutor-starter-desc">{card.desc}</span></span>
+        </button>)}
+      </div>
+    </section>
+    <div className="ai-tutor-chat">
+      {msgs.map((m,i)=>(<div key={i} className={`ai-tutor-row ${m.role==="u"?"user":""}`}>{m.role==="a"&&<div className="ai-tutor-avatar">AI</div>}<div className={`ai-tutor-bubble ${m.role==="u"?"user":""}`}>{m.role==="u"?m.content:<><Md text={m.content} color={c.cl}/><div className="ai-tutor-actions"><button onClick={()=>doSpeak(m.content,i)} className={`ai-tutor-action ${pi===i?"active":""}`}>{pi===i?"停止":"朗讀"}</button><button onClick={()=>copyMsg(m.content,i)} className="ai-tutor-action">{copied===i?"已複製":"複製"}</button></div></>}</div></div>))}
+      {busy&&<div className="ai-tutor-thinking"><span style={{animation:"pulse 1.2s ease-in-out infinite"}}>AI 家教整理回答中...</span><button onClick={cancelSend} className="ai-tutor-action">停止</button></div>}
       <div ref={btm}/>
     </div>
-    <div style={{flexShrink:0,padding:"4px 0 0",borderTop:`1px solid ${S.bd}`}}><div style={{display:"flex",gap:4,marginBottom:5,paddingTop:6}}>{promptGroups.map((g,i)=>(<button key={i} onClick={()=>setPt(i)} style={{padding:"5px 10px",borderRadius:999,background:pt===i?c.cl:S.bg2,color:pt===i?"#fff":S.t2,border:"none",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{g.l}</button>))}</div><div style={{display:"flex",gap:5,overflowX:"auto",paddingBottom:5}}>{promptGroups[pt].items.map((p,i)=>(<button key={i} onClick={()=>send(p.prompt)} disabled={busy} style={{flexShrink:0,padding:"6px 10px",borderRadius:999,background:S.bg2,border:`1px solid ${S.bd}`,fontSize:12,cursor:busy?"default":"pointer",color:S.t2,fontFamily:"inherit",opacity:busy?0.55:1}}>{p.label}</button>))}</div></div>
-    <div style={{display:"flex",gap:6,padding:"4px 0 1px",flexShrink:0,alignItems:"flex-end"}}><textarea value={inp} onChange={e=>setInp(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send()}}} rows={1} placeholder={apiKey?"輸入英文問題、句子或想練習的主題...":"先設定 API Key ↑"} style={{flex:1,padding:"10px 11px",borderRadius:12,border:`1px solid ${S.bd}`,fontSize:13,outline:"none",fontFamily:"inherit",background:S.bg1,color:S.t1,resize:"none",minHeight:42,maxHeight:100,lineHeight:1.5,boxSizing:"border-box"}}/><button onClick={()=>send()} disabled={busy||!inp.trim()} style={{...S.btn,background:c.cl,color:"#fff",padding:"11px 16px",opacity:(busy||!inp.trim())?0.5:1,fontSize:13,borderRadius:12}}>發送</button></div>
+    <div className="ai-tutor-promptbar"><div className="ai-tutor-tabs">{promptGroups.map((g,i)=>(<button key={i} onClick={()=>setPt(i)} className={`ai-tutor-tab ${pt===i?"active":""}`}>{g.l}</button>))}</div><div className="ai-tutor-prompts">{promptGroups[pt].items.map((p,i)=>(<button key={i} onClick={()=>send(p.prompt)} disabled={busy} className="ai-tutor-prompt" style={{opacity:busy?0.55:1,cursor:busy?"default":"pointer"}}>{p.label}</button>))}</div></div>
+    <div className="ai-tutor-compose"><textarea value={inp} onChange={e=>setInp(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send()}}} rows={1} placeholder={apiKey?"輸入英文問題、句子或想練習的主題...":"先設定 API Key ↑"}/><button onClick={()=>send()} disabled={busy||!inp.trim()} className="ai-tutor-send">發送</button></div>
   </div>);
 }
 // ═══ ACHIEVEMENTS PAGE ══════════════════════════════════════════════

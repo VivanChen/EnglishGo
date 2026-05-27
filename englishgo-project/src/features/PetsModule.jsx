@@ -1194,6 +1194,7 @@ function playNoise(ctx,opts){
 }
 
 function playPetSound(petId){
+  if(typeof window==="undefined")return;
   if(!window.AudioContext&&!window.webkitAudioContext)return;
   let ctx;
   try{ctx=new (window.AudioContext||window.webkitAudioContext)()}catch{return}
