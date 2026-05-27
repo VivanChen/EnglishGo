@@ -12,6 +12,16 @@ const LEARNING_TONES = {
   speak_1: 'teal',
 };
 
+const PLAN_TONES = {
+  hatch: '#EF9F27',
+  claim: '#1D9E75',
+  quickCare: '#1D9E75',
+  shop: '#EF9F27',
+  learn: '#185FA5',
+  empty: '#7B61FF',
+  collection: '#7B61FF',
+};
+
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
 }
@@ -72,6 +82,7 @@ export function buildPetDailyPlan({
     return {
       kind: 'hatch',
       action: 'eggs',
+      tone: PLAN_TONES.hatch,
       title: `${hatchableEggs.length} 顆蛋可以孵化`,
       description: '先到蛋倉孵化新夥伴，讓今天的學習成果變成寵物成長。',
       buttonLabel: '去蛋倉',
@@ -86,6 +97,7 @@ export function buildPetDailyPlan({
     return {
       kind: 'claim',
       action: 'tasks',
+      tone: PLAN_TONES.claim,
       title: `${claimableTasks.length} 個任務獎勵可領取`,
       description: '先領取今日任務獎勵，讓寵物拿到金幣與經驗值。',
       buttonLabel: '領任務獎勵',
@@ -104,6 +116,7 @@ export function buildPetDailyPlan({
     return {
       kind: 'quickCare',
       action: 'quickCare',
+      tone: PLAN_TONES.quickCare,
       title: `${quickCarePlan.total} 項照顧可以快速完成`,
       description: `可快速處理：${careParts.join('、')}。`,
       buttonLabel: '一鍵照顧',
@@ -114,6 +127,7 @@ export function buildPetDailyPlan({
     return {
       kind: 'shop',
       action: 'shop',
+      tone: PLAN_TONES.shop,
       title: `補食物給 ${quickCarePlan.needsFood} 位夥伴`,
       description: '有寵物需要餵食，但目前缺少可用食物。',
       buttonLabel: '去補食物',
@@ -127,6 +141,7 @@ export function buildPetDailyPlan({
     return {
       kind: 'learn',
       action: 'tasks',
+      tone: PLAN_TONES.learn,
       title: `繼續完成 ${nextLearning.label}`,
       description: `${nextLearning.text}，完成後可以累積任務獎勵與孵蛋進度。`,
       buttonLabel: '去學習任務',
@@ -138,6 +153,7 @@ export function buildPetDailyPlan({
     return {
       kind: 'empty',
       action: 'dex',
+      tone: PLAN_TONES.empty,
       title: '先迎接第一位寵物夥伴',
       description: '完成學習任務或抽蛋後，就能開始照顧自己的寵物。',
       buttonLabel: '看寵物圖鑑',
@@ -150,6 +166,7 @@ export function buildPetDailyPlan({
   return {
     kind: 'collection',
     action: 'dex',
+    tone: PLAN_TONES.collection,
     title: remainingCount > 0 ? `還有 ${remainingCount} 位夥伴等待收集` : '今日寵物狀態已完成',
     description: remainingCount > 0 ? '保持學習節奏，繼續孵蛋與擴充收藏。' : '任務、照顧與收藏都已整理好。',
     buttonLabel: '查看圖鑑',

@@ -95,6 +95,66 @@ describe('buildPetDailyPlan', () => {
     expect(plan.title).toContain('1');
   });
 
+  it('includes a visual tone on recommendation plans', () => {
+    const hatchPlan = buildPetDailyPlan({
+      pets: [{ id: 'pet-1' }],
+      eggs: [{ id: 'egg-1', petId: 'cat', rarity: 'N', progress: 10 }],
+      eggHatchTasks: { N: 10 },
+      dailyTaskDefs: learningTaskDefs,
+      claimedToday: allTasksClaimed,
+    });
+    const claimPlan = buildPetDailyPlan({
+      pets: [{ id: 'pet-1' }],
+      dailyTaskDefs: learningTaskDefs,
+      taskCounts: { feedToday: 1 },
+      claimedToday: [],
+    });
+    const quickCarePlan = buildPetDailyPlan({
+      pets: [{ id: 'pet-1' }],
+      dailyTaskDefs: learningTaskDefs,
+      claimedToday: allTasksClaimed,
+      quickCarePlan: { feed: 1, clean: 0, sleep: 0, needsFood: 0, total: 1 },
+    });
+    const shopPlan = buildPetDailyPlan({
+      pets: [{ id: 'pet-1' }],
+      dailyTaskDefs: learningTaskDefs,
+      claimedToday: allTasksClaimed,
+      quickCarePlan: { feed: 0, clean: 0, sleep: 0, needsFood: 1, total: 0 },
+    });
+    const learnPlan = buildPetDailyPlan({
+      pets: [{ id: 'pet-1' }],
+      dailyTaskDefs: learningTaskDefs,
+      taskCounts: { srsToday: 3, quizToday: 3, speakToday: 1 },
+      claimedToday: ['quiz_3', 'speak_1', 'feed_1'],
+      quickCarePlan: { feed: 0, clean: 0, sleep: 0, needsFood: 0, total: 0 },
+    });
+    const collectionPlan = buildPetDailyPlan({
+      pets: [{ id: 'pet-1' }],
+      dailyTaskDefs: learningTaskDefs,
+      taskCounts: { srsToday: 5, quizToday: 3, speakToday: 1 },
+      claimedToday: allTasksClaimed,
+      quickCarePlan: { feed: 0, clean: 0, sleep: 0, needsFood: 0, total: 0 },
+      totalPetKinds: 4,
+      ownedCount: 1,
+    });
+
+    expect([
+      hatchPlan,
+      claimPlan,
+      quickCarePlan,
+      shopPlan,
+      learnPlan,
+      collectionPlan,
+    ].map(plan => plan.tone)).toEqual([
+      expect.any(String),
+      expect.any(String),
+      expect.any(String),
+      expect.any(String),
+      expect.any(String),
+      expect.any(String),
+    ]);
+  });
+
   it('recommends hatchable eggs before care', () => {
     const plan = buildPetDailyPlan({
       pets: [{ id: 'pet-1' }],
