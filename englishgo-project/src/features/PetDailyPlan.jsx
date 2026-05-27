@@ -157,6 +157,126 @@ export function buildPetDailyPlan({
   };
 }
 
-export function DailyPetPlan() {
-  return null;
+function resolveChipTone(tone, fallback) {
+  const tones = {
+    violet: '#7B61FF',
+    blue: '#185FA5',
+    teal: '#1D9E75',
+    neutral: fallback,
+  };
+  return tones[tone] || tone || fallback;
+}
+
+export function DailyPetPlan({ plan, learningProgress = [], onAction, S = {}, c = {} }) {
+  if (!plan) return null;
+  const styles = {
+    card: S.card || {},
+    btn: S.btn || {},
+    bg1: S.bg1 || '#ffffff',
+    bg2: S.bg2 || '#f3f2ee',
+    bd: S.bd || '#ddd',
+    t1: S.t1 || '#222',
+    t2: S.t2 || '#555',
+    t3: S.t3 || '#777',
+  };
+  const theme = {
+    cl: c.cl || '#1D9E75',
+    ac: c.ac || '#0F6E56',
+  };
+  const tone = plan.tone || theme.cl;
+
+  return (
+    <section
+      data-testid="pet-daily-plan"
+      style={{
+        ...styles.card,
+        padding: '14px',
+        marginBottom: 12,
+        border: `1px solid ${tone}44`,
+        background: `linear-gradient(135deg, ${tone}14, var(--color-background-primary, #fff))`,
+        display: 'grid',
+        gap: 10,
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+        <div style={{ flex: '1 1 220px', minWidth: 0 }}>
+          <div style={{ fontSize: 11, color: tone, fontWeight: 1000, marginBottom: 3 }}>今日寵物任務</div>
+          <div style={{ fontSize: 15, color: styles.t1, fontWeight: 1000, lineHeight: 1.35 }}>{plan.title}</div>
+          <div style={{ fontSize: 12, color: styles.t2, lineHeight: 1.6, marginTop: 4 }}>{plan.description}</div>
+        </div>
+        <button
+          type="button"
+          onClick={() => onAction?.(plan.action, plan)}
+          style={{
+            ...styles.btn,
+            background: `linear-gradient(135deg, ${tone}, ${theme.ac})`,
+            color: '#fff',
+            border: 'none',
+            borderRadius: 12,
+            padding: '10px 14px',
+            fontSize: 13,
+            fontWeight: 900,
+            cursor: 'pointer',
+            fontFamily: 'inherit',
+            flex: '0 0 auto',
+            minHeight: 40,
+            maxWidth: '100%',
+            whiteSpace: 'normal',
+          }}
+        >
+          {plan.buttonLabel}
+        </button>
+      </div>
+
+      {learningProgress.length > 0 && (
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {learningProgress.map(item => {
+            const chipTone = resolveChipTone(item.tone, tone);
+            return (
+              <div
+                key={item.id}
+                data-testid={`pet-learning-chip-${item.id}`}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  maxWidth: '100%',
+                  padding: '5px 8px',
+                  borderRadius: 999,
+                  border: `1px solid ${item.done ? '#1D9E7544' : styles.bd}`,
+                  background: item.done ? '#E1F5EE' : styles.bg1,
+                  color: item.done ? '#0F6E56' : styles.t2,
+                  fontSize: 11,
+                  fontWeight: 900,
+                  whiteSpace: 'normal',
+                }}
+              >
+                <span>{item.text}</span>
+                <span
+                  aria-hidden="true"
+                  style={{
+                    width: 28,
+                    height: 4,
+                    borderRadius: 999,
+                    background: styles.bg2,
+                    overflow: 'hidden',
+                    display: 'inline-flex',
+                    flex: '0 0 auto',
+                  }}
+                >
+                  <span
+                    style={{
+                      width: `${item.pct || 0}%`,
+                      background: item.done ? '#1D9E75' : chipTone,
+                      borderRadius: 999,
+                    }}
+                  />
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </section>
+  );
 }

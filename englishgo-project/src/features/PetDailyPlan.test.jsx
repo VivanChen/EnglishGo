@@ -1,5 +1,5 @@
-import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it } from 'vitest';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
 import { DailyPetPlan, buildLearningProgress, buildPetDailyPlan } from './PetDailyPlan.jsx';
 
 const learningTaskDefs = [
@@ -282,7 +282,48 @@ describe('buildPetDailyPlan', () => {
 });
 
 describe('DailyPetPlan', () => {
-  it('renders null while the component shell is reserved for Task 2', () => {
-    expect(renderToStaticMarkup(<DailyPetPlan />)).toBe('');
+  it('renders the recommendation, learning chips, and dispatches the selected action', () => {
+    const onAction = vi.fn();
+    const plan = {
+      kind: 'hatch',
+      action: 'eggs',
+      tone: '#EF9F27',
+      title: '1 顆蛋可以孵化',
+      description: '先把完成進度的蛋孵化。',
+      buttonLabel: '查看蛋',
+    };
+    const learningProgress = [
+      { id: 'srs_5', text: 'SRS 3/5', pct: 60, done: false, tone: '#7B61FF' },
+      { id: 'quiz_3', text: 'Quiz 3/3', pct: 100, done: true, tone: '#185FA5' },
+      { id: 'speak_1', text: 'Speaking 0/1', pct: 0, done: false, tone: '#1D9E75' },
+    ];
+
+    render(
+      <DailyPetPlan
+        plan={plan}
+        learningProgress={learningProgress}
+        onAction={onAction}
+        S={{
+          card: {},
+          btn: {},
+          bg1: '#ffffff',
+          bg2: '#f3f2ee',
+          bd: '#ddd',
+          t1: '#222',
+          t2: '#555',
+          t3: '#777',
+        }}
+        c={{ cl: '#1D9E75', ac: '#0F6E56', bg: '#E1F5EE' }}
+      />
+    );
+
+    expect(screen.getByTestId('pet-daily-plan')).toHaveTextContent('1 顆蛋可以孵化');
+    expect(screen.getByTestId('pet-learning-chip-srs_5')).toHaveTextContent('SRS 3/5');
+    expect(screen.getByTestId('pet-learning-chip-quiz_3')).toHaveTextContent('Quiz 3/3');
+    expect(screen.getByTestId('pet-learning-chip-speak_1')).toHaveTextContent('Speaking 0/1');
+
+    fireEvent.click(screen.getByRole('button', { name: '查看蛋' }));
+
+    expect(onAction).toHaveBeenCalledWith('eggs', plan);
   });
 });
