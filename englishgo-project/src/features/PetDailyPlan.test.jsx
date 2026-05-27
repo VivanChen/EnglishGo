@@ -152,6 +152,18 @@ describe('buildPetDailyPlan', () => {
     expect(plan.description).not.toContain('休息 0');
   });
 
+  it('recommends quick care before shop when actionable care and missing food compete', () => {
+    const plan = buildPetDailyPlan({
+      pets: [{ id: 'pet-1' }],
+      dailyTaskDefs: learningTaskDefs,
+      claimedToday: allTasksClaimed,
+      quickCarePlan: { feed: 1, clean: 0, sleep: 0, needsFood: 2, total: 1 },
+    });
+
+    expect(plan.kind).toBe('quickCare');
+    expect(plan.action).toBe('quickCare');
+  });
+
   it('recommends shop when only needsFood exists', () => {
     const plan = buildPetDailyPlan({
       pets: [{ id: 'pet-1' }],
@@ -193,6 +205,20 @@ describe('buildPetDailyPlan', () => {
     expect(plan.title).toContain('SRS');
   });
 
+  it('recommends learning before empty state when learning is incomplete without pets or eggs', () => {
+    const plan = buildPetDailyPlan({
+      pets: [],
+      eggs: [],
+      dailyTaskDefs: learningTaskDefs,
+      taskCounts: { srsToday: 3, quizToday: 3, speakToday: 1 },
+      claimedToday: ['quiz_3', 'speak_1', 'feed_1'],
+      quickCarePlan: { feed: 0, clean: 0, sleep: 0, needsFood: 0, total: 0 },
+    });
+
+    expect(plan.kind).toBe('learn');
+    expect(plan.action).toBe('tasks');
+  });
+
   it('returns a safe empty state when there are no pets or eggs', () => {
     const plan = buildPetDailyPlan({
       pets: [],
@@ -205,6 +231,21 @@ describe('buildPetDailyPlan', () => {
     expect(plan.kind).toBe('empty');
     expect(plan.action).toBe('dex');
     expect(plan.title).toContain('第一位');
+  });
+
+  it('recommends empty state before collection when there are no pets or eggs', () => {
+    const plan = buildPetDailyPlan({
+      pets: [],
+      eggs: [],
+      dailyTaskDefs: learningTaskDefs,
+      taskCounts: { srsToday: 5, quizToday: 3, speakToday: 1 },
+      claimedToday: allTasksClaimed,
+      totalPetKinds: 4,
+      ownedCount: 2,
+    });
+
+    expect(plan.kind).toBe('empty');
+    expect(plan.action).toBe('dex');
   });
 
   it('returns collection state after care, eggs, claims, and learning are settled', () => {
