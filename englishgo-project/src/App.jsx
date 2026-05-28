@@ -3110,35 +3110,31 @@ const EXAM_AI_TERMS=[
   ["senior-2a","高中 2 年級上學期"],["senior-2b","高中 2 年級下學期"],
   ["senior-3a","高中 3 年級上學期"],["senior-3b","高中 3 年級下學期"],
 ];
+const EXAM_AI_COUNTS=[5,10,15,20,30,50,80];
 function defaultExamTerm(lv){return lv==="junior"?"junior-1a":lv==="senior"?"senior-1a":"elementary-1a"}
-function normalizeExamAiQuestions(raw){
-  const list=Array.isArray(raw?.questions)?raw.questions:Array.isArray(raw?.items)?raw.items:[];
-  return list.map((q,i)=>{
-    const options=(Array.isArray(q?.options)?q.options:[]).map(x=>String(x||"").trim()).filter(Boolean).slice(0,4);
-    const answer=Number.isInteger(q?.answerIndex)?options[q.answerIndex]:String(q?.answer||q?.correct||"").trim();
-    return {
-      prompt:String(q?.prompt||q?.question||"").trim(),
-      options,
-      answer,
-      explanation:String(q?.explanation||q?.reason||"").trim(),
-      id:`aiq-${i}-${hashText(String(q?.prompt||i))}`,
-    };
-  }).filter(q=>q.prompt&&q.options.length>=2&&q.answer).slice(0,8);
+function normalizeExamAiWords(raw,count){
+  const list=Array.isArray(raw?.words)?raw.words:Array.isArray(raw?.vocabulary)?raw.vocabulary:Array.isArray(raw?.items)?raw.items:[];
+  const seen=new Set();
+  return list.map(x=>String(typeof x==="string"?x:x?.word||x?.en||"").trim().toLowerCase().replace(/^[-']+|[-']+$/g,"")).filter(w=>{
+    if(!w||seen.has(w)||!/^[a-z][a-z'-]*$/.test(w))return false;
+    seen.add(w);
+    return true;
+  }).slice(0,count);
 }
-async function generateExamAiQuestions({term,lv,apiKey,count=6}){
+async function generateExamAiWords({term,lv,apiKey,count=10}){
   if(!apiKey?.trim())throw new Error("請先到設定填入 Gemini API Key。");
   const termLabel=EXAM_AI_TERMS.find(([id])=>id===term)?.[1]||LV[lv]?.l||"指定學年";
-  const prompt=`你是台灣學生的英文考試複習出題老師。請依「${termLabel}」程度產生 ${count} 題英文選擇題。
+  const prompt=`你是台灣學生的英文考試複習老師。請依「${termLabel}」程度產生 ${count} 個適合考前複習的英文單字。
 
-出題範圍要求：
-- 小學生用生活字彙、基礎句型、中文提示可以出現。
-- 國中生可加入文法、閱讀語意與常見會考字彙。
-- 高中生可加入進階字彙、片語、句型與克漏字。
-- 每題 4 個選項，只有 1 個正解。
-- 解釋用繁體中文，短而清楚。
+單字要求：
+- 只輸出英文單字，不要中文、不要題目、不要例句。
+- 小學生用生活字彙與校園常用字。
+- 國中生用常見會考與課本核心字。
+- 高中生用學測常見與閱讀常用字。
+- 避免重複，避免太冷門或超出該學年太多。
 
 請輸出 STRICT JSON：
-{"questions":[{"prompt":"題目文字","options":["A","B","C","D"],"answer":"正確選項文字","explanation":"繁體中文解析"}]}`;
+{"words":["apple","school","water"]}`;
   const models=["gemini-2.5-flash-lite","gemini-2.5-flash","gemini-2.0-flash"];
   for(const model of models){
     try{
@@ -3150,19 +3146,18 @@ async function generateExamAiQuestions({term,lv,apiKey,count=6}){
       if(!res.ok||data?.error)continue;
       const text=(data?.candidates?.[0]?.content?.parts||[]).map(p=>p.text||"").join("");
       if(!text)continue;
-      const questions=normalizeExamAiQuestions(parseGrammarJson(text));
-      if(questions.length)return questions;
+      const words=normalizeExamAiWords(parseGrammarJson(text),count);
+      if(words.length)return words;
     }catch{}
   }
-  throw new Error("AI 題目暫時產生失敗，請稍後再試。");
+  throw new Error("AI 單字暫時產生失敗，請稍後再試。");
 }
-function isSameExamAnswer(a,b){return String(a||"").trim().toLowerCase()===String(b||"").trim().toLowerCase()}
 function ExamReviewM({lv,onBack,c,onStart,apiKey,onOpenSettings}){
   const sample=lv==="elementary"?"apple school water happy run":lv==="junior"?"environment experience communicate opportunity improve":"comprehensive phenomenon sustainable ambiguous facilitate";
   const[text,setText]=useLS(`exam_${lv}`,"");
   const[aiTerm,setAiTerm]=useLS(`exam_ai_term_${lv}`,defaultExamTerm(lv));
-  const[aiQuestions,setAiQuestions]=useState([]);
-  const[aiAnswers,setAiAnswers]=useState({});
+  const[aiCount,setAiCount]=useLS(`exam_ai_count_${lv}`,10);
+  const[aiNote,setAiNote]=useState("");
   const[aiBusy,setAiBusy]=useState(false);
   const[aiErr,setAiErr]=useState("");
   const[busy,setBusy]=useState(false);
@@ -3198,14 +3193,18 @@ function ExamReviewM({lv,onBack,c,onStart,apiKey,onOpenSettings}){
   };
   const generateAi=async()=>{
     setAiErr("");
-    setAiAnswers({});
+    setAiNote("");
     if(!apiKey?.trim()){setAiErr("請先到設定填入 Gemini API Key。");onOpenSettings?.();return}
     setAiBusy(true);
-    try{setAiQuestions(await generateExamAiQuestions({term:aiTerm,lv,apiKey,count:6}))}
-    catch(e){setAiErr(e?.message||"AI 題目暫時產生失敗。")}
+    try{
+      const count=Number(aiCount)||10;
+      const generated=await generateExamAiWords({term:aiTerm,lv,apiKey,count});
+      setText(generated.join(" "));
+      setAiNote(`已產生 ${generated.length} 個單字並填入上方範圍。`);
+    }
+    catch(e){setAiErr(e?.message||"AI 單字暫時產生失敗。")}
     finally{setAiBusy(false)}
   };
-  const pickAi=(qi,opt)=>setAiAnswers(a=>a[qi]!=null?a:{...a,[qi]:opt});
   return(<div>
     <Hdr t="📝 考試範圍複習" onBack={onBack} cl={c.cl}/>
     <section style={{...S.card,padding:18,border:`1px solid ${c.cl}55`,background:`linear-gradient(135deg,${c.bg},${S.bg1})`,boxShadow:"0 18px 42px rgba(20,66,52,.10)"}}>
@@ -3237,28 +3236,22 @@ function ExamReviewM({lv,onBack,c,onStart,apiKey,onOpenSettings}){
           <div style={{marginTop:16,padding:14,border:"1px solid #DDD6FE",borderRadius:18,background:"#F5F3FF"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12,marginBottom:10,flexWrap:"wrap"}}>
               <div>
-                <div style={{fontSize:12,fontWeight:1000,color:"#6D28D9",marginBottom:4}}>AI 產題</div>
-                <div style={{fontSize:15,fontWeight:900,color:S.t1}}>依學年與學期產生考前選擇題</div>
-                <div style={{fontSize:12,color:S.t2,lineHeight:1.6,marginTop:3}}>選好程度後，AI 會產生符合該學期的英文題目與中文解析。</div>
+                <div style={{fontSize:12,fontWeight:1000,color:"#6D28D9",marginBottom:4}}>AI 產生單字</div>
+                <div style={{fontSize:15,fontWeight:900,color:S.t1}}>依學年、學期與數量填入單字範圍</div>
+                <div style={{fontSize:12,color:S.t2,lineHeight:1.6,marginTop:3}}>選好程度與單字數量後，AI 會把單字放進上方輸入框，再用原本流程開始複習。</div>
               </div>
-              <button onClick={generateAi} disabled={aiBusy} style={{...S.btn,background:"#6D28D9",color:"#fff",padding:"10px 14px",fontSize:13,minHeight:42,opacity:aiBusy ? .65 : 1}}>{aiBusy?"AI 產生中...":"AI 產生題目"}</button>
+              <button onClick={generateAi} disabled={aiBusy} style={{...S.btn,background:"#6D28D9",color:"#fff",padding:"10px 14px",fontSize:13,minHeight:42,opacity:aiBusy ? .65 : 1}}>{aiBusy?"AI 產生中...":"AI 產生單字"}</button>
             </div>
-            <select data-testid="exam-ai-term" value={aiTerm} onChange={e=>setAiTerm(e.target.value)} disabled={aiBusy} style={{width:"100%",border:"1px solid #C4B5FD",borderRadius:12,background:S.bg1,color:S.t1,padding:"10px 12px",fontSize:14,fontWeight:800,fontFamily:"inherit",outline:"none"}}>
-              {EXAM_AI_TERMS.map(([id,label])=><option key={id} value={id}>{label}</option>)}
-            </select>
+            <div className="eg-exam-ai-controls" style={{display:"grid",gridTemplateColumns:"minmax(0,1fr) 132px",gap:8}}>
+              <select data-testid="exam-ai-term" value={aiTerm} onChange={e=>setAiTerm(e.target.value)} disabled={aiBusy} style={{width:"100%",border:"1px solid #C4B5FD",borderRadius:12,background:S.bg1,color:S.t1,padding:"10px 12px",fontSize:14,fontWeight:800,fontFamily:"inherit",outline:"none"}}>
+                {EXAM_AI_TERMS.map(([id,label])=><option key={id} value={id}>{label}</option>)}
+              </select>
+              <select data-testid="exam-ai-count" value={aiCount} onChange={e=>setAiCount(Number(e.target.value))} disabled={aiBusy} style={{width:"100%",border:"1px solid #C4B5FD",borderRadius:12,background:S.bg1,color:S.t1,padding:"10px 12px",fontSize:14,fontWeight:800,fontFamily:"inherit",outline:"none"}}>
+                {EXAM_AI_COUNTS.map(n=><option key={n} value={n}>{n} 字</option>)}
+              </select>
+            </div>
             {aiErr&&<div style={{marginTop:10,padding:"9px 11px",borderRadius:12,background:"#FFF7E6",border:"1px solid #F0D59A",color:"#8A5A00",fontSize:13,lineHeight:1.55}}>{aiErr}</div>}
-            {aiQuestions.length>0&&<div style={{display:"grid",gap:10,marginTop:12}}>
-              {aiQuestions.map((q,qi)=>{const picked=aiAnswers[qi];const answered=picked!=null;const correct=answered&&isSameExamAnswer(picked,q.answer);return <div key={q.id} style={{background:S.bg1,border:`1px solid ${answered?(correct?"#9DDDC7":"#F1B5B5"):"#E9D5FF"}`,borderRadius:14,padding:"11px 12px"}}>
-                <div style={{display:"flex",gap:8,alignItems:"flex-start",marginBottom:8}}>
-                  <span style={{width:24,height:24,borderRadius:"50%",background:"#EDE9FE",color:"#6D28D9",display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:1000,flexShrink:0}}>{qi+1}</span>
-                  <div style={{fontSize:14,fontWeight:850,color:S.t1,lineHeight:1.6}}>{q.prompt}</div>
-                </div>
-                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(120px,1fr))",gap:7}}>
-                  {q.options.map(opt=>{const ok=isSameExamAnswer(opt,q.answer),chosen=isSameExamAnswer(opt,picked);let bg=S.bg2,bd=`1px solid ${S.bd}`,cl=S.t1;if(answered){if(ok){bg="#E1F5EE";bd="2px solid #1D9E75";cl="#146B45"}else if(chosen){bg="#FCEBEB";bd="2px solid #E24B4A";cl="#A12F2F"}}return <button key={opt} onClick={()=>pickAi(qi,opt)} disabled={answered} style={{border:bd,background:bg,color:cl,borderRadius:11,padding:"10px 9px",fontSize:13,fontWeight:850,cursor:answered?"default":"pointer",fontFamily:"inherit"}}>{opt}</button>})}
-                </div>
-                {answered&&<div style={{marginTop:8,fontSize:12,color:S.t2,lineHeight:1.6}}>答案：<b style={{color:"#1D9E75"}}>{q.answer}</b>{q.explanation?`，${q.explanation}`:""}</div>}
-              </div>})}
-            </div>}
+            {aiNote&&<div style={{marginTop:10,padding:"9px 11px",borderRadius:12,background:"#EDE9FE",border:"1px solid #C4B5FD",color:"#5B21B6",fontSize:13,fontWeight:850,lineHeight:1.55}}>{aiNote}</div>}
           </div>
         </div>
         <aside style={{border:`1px solid ${S.bd}`,borderRadius:18,background:S.bg1,padding:14,display:"flex",flexDirection:"column",gap:12}}>
@@ -3277,7 +3270,7 @@ function ExamReviewM({lv,onBack,c,onStart,apiKey,onOpenSettings}){
         </aside>
       </div>
     </section>
-    <style>{`@media (max-width: 780px){.eg-exam-grid{grid-template-columns:1fr!important}} textarea:focus{border-color:${c.cl}!important;box-shadow:0 0 0 3px ${c.cl}22!important}`}</style>
+    <style>{`@media (max-width: 780px){.eg-exam-grid{grid-template-columns:1fr!important}}@media (max-width: 520px){.eg-exam-ai-controls{grid-template-columns:1fr!important}} textarea:focus{border-color:${c.cl}!important;box-shadow:0 0 0 3px ${c.cl}22!important}`}</style>
   </div>);
 }
 

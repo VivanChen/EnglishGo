@@ -205,7 +205,7 @@ describe('EnglishGo app smoke flow', () => {
     expect(screen.getByText('2 個單字')).toBeInTheDocument();
   });
 
-  it('generates grade-semester exam questions with AI', async () => {
+  it('generates grade-semester exam words into the review range with AI', async () => {
     localStorage.setItem('eg_gemkey', JSON.stringify('test-gemini-key'));
 
     await openElementaryMenu();
@@ -214,8 +214,9 @@ describe('EnglishGo app smoke flow', () => {
     expect(examCard).toBeTruthy();
     fireEvent.click(examCard);
 
-    expect(await screen.findByText(/AI 產題/)).toBeInTheDocument();
-    fireEvent.change(screen.getByTestId('exam-ai-term'), { target: { value: 'elementary-1a' } });
+    expect(await screen.findByText('依學年、學期與數量填入單字範圍')).toBeInTheDocument();
+    fireEvent.change(screen.getByTestId('exam-ai-term'), { target: { value: 'elementary-1b' } });
+    fireEvent.change(screen.getByTestId('exam-ai-count'), { target: { value: '5' } });
 
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
       ok: true,
@@ -224,12 +225,7 @@ describe('EnglishGo app smoke flow', () => {
           content: {
             parts: [{
               text: JSON.stringify({
-                questions: [{
-                  prompt: 'Choose the word for 蘋果.',
-                  options: ['apple', 'book', 'run', 'blue'],
-                  answer: 'apple',
-                  explanation: 'apple 的意思是蘋果。',
-                }],
+                words: ['apple', 'book', 'cat', 'red', 'run'],
               }),
             }],
           },
@@ -238,11 +234,13 @@ describe('EnglishGo app smoke flow', () => {
     });
 
     try {
-      fireEvent.click(screen.getByText('AI 產生題目'));
+      fireEvent.click(screen.getByRole('button', { name: 'AI 產生單字' }));
 
-      expect(await screen.findByText('Choose the word for 蘋果.')).toBeInTheDocument();
-      fireEvent.click(screen.getByText('apple'));
-      expect(await screen.findByText(/apple 的意思是蘋果。/)).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByRole('textbox')).toHaveValue('apple book cat red run');
+      });
+      expect(screen.getByText('5')).toBeInTheDocument();
+      expect(screen.getByText('apple')).toBeInTheDocument();
       await waitFor(() => {
         expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('generativelanguage.googleapis.com'), expect.any(Object));
       });
