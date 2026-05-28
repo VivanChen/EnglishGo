@@ -4258,6 +4258,44 @@ const GRAMMAR_GUIDES={
   "名詞子句":{zh:"把一整個問題或句子當名詞使用，可以放在 know、think、wonder 後面。",pattern:"I know that ... · I wonder whether ... · What he said ...",tips:["看動詞後面缺一個內容","是否用 whether","疑問詞可引導名詞子句"],mistake:"間接問句通常不用疑問句倒裝。"},
   "強調句型":{zh:"用 It is/was ... that 來強調句子中的某個部分。",pattern:"It is/was + 被強調部分 + that + 其餘句子",tips:["找被強調的資訊","過去事件用 was","後面常接 that"],mistake:"It was in Tokyo that I met her，不要再加 where。"},
 };
+const GRAMMAR_DRILLS={
+  "Be 動詞":[{s:"My friends ___ in the classroom.",o:["am","is","are","be"],a:2,e:"My friends 是複數，所以用 are。"},{s:"I ___ not tired today.",o:["am","is","are","be"],a:0,e:"I 要搭配 am。"}],
+  "現在簡單式":[{s:"Tom ___ his teeth every morning.",o:["brush","brushes","brushing","brushed"],a:1,e:"Tom 是第三人稱單數，brush 加 es。"},{s:"They ___ English after dinner.",o:["study","studies","studying","studied"],a:0,e:"They 是複數主詞，動詞用原形。"}],
+  "現在進行式":[{s:"Listen! The birds ___ outside.",o:["sing","sings","are singing","sang"],a:2,e:"Listen! 表示正在發生，用 are singing。"},{s:"Mom ___ dinner now.",o:["cooks","is cooking","cook","cooked"],a:1,e:"now 是進行式線索，Mom 搭配 is。"}],
+  "There is / There are":[{s:"There ___ three pencils on the desk.",o:["is","are","has","have"],a:1,e:"three pencils 是複數，所以用 are。"},{s:"There ___ some water in the bottle.",o:["is","are","has","have"],a:0,e:"water 是不可數名詞，這裡用 is。"}],
+  "名詞單複數":[{s:"Two ___ are in the box.",o:["watch","watchs","watches","watchies"],a:2,e:"watch 結尾 ch，複數加 es。"},{s:"The farmer has many ___.",o:["sheep","sheeps","sheepes","sheepies"],a:0,e:"sheep 單複數同形。"}],
+  "代名詞":[{s:"This is Amy. I sit next to ___.",o:["she","her","hers","herself"],a:1,e:"介系詞 to 後面用受格 her。"},{s:"___ are going to the park.",o:["Us","Our","We","Ours"],a:2,e:"空格是主詞位置，用 We。"}],
+  "一般過去式":[{s:"We ___ a new song yesterday.",o:["learn","learned","learning","learns"],a:1,e:"yesterday 是過去時間，用 learned。"},{s:"She ___ to school by bus last week.",o:["go","goes","went","going"],a:2,e:"go 的過去式是 went。"}],
+  "未來式 will / be going to":[{s:"I think it ___ be sunny tomorrow.",o:["will","is going","was","does"],a:0,e:"預測未來常用 will。"},{s:"We ___ clean the classroom after lunch.",o:["am going to","is going to","are going to","will to"],a:2,e:"We 搭配 are going to。"}],
+  "can / can't":[{s:"Can she ___ the piano?",o:["plays","play","to play","played"],a:1,e:"can 後面接原形動詞 play。"},{s:"Students ___ use phones during the test.",o:["can't","can't to","doesn't can","not can"],a:0,e:"can't 後面直接接原形動詞。"}],
+  "冠詞 a / an / the":[{s:"He is ___ honest boy.",o:["a","an","the","x"],a:1,e:"honest 的 h 不發音，開頭是母音音，用 an。"},{s:"I bought a pen. ___ pen is blue.",o:["A","An","The","x"],a:2,e:"第二次提到同一支筆，用 the。"}],
+  "疑問句 Do / Does":[{s:"___ they like science?",o:["Do","Does","Are","Is"],a:0,e:"they 的一般動詞問句用 Do。"},{s:"What ___ your sister want?",o:["do","does","is","are"],a:1,e:"your sister 是第三人稱單數，用 does。"}],
+  "時間介系詞 in / on / at":[{s:"We eat lunch ___ noon.",o:["in","on","at","for"],a:2,e:"noon 是明確時刻，用 at。"},{s:"The festival is ___ October.",o:["in","on","at","to"],a:0,e:"月份用 in。"}],
+  "現在完成式":[{s:"I ___ this movie before.",o:["saw","have seen","has seen","see"],a:1,e:"before 常搭配現在完成式 have seen。"},{s:"He ___ here since Monday.",o:["lives","has lived","lived","is living"],a:1,e:"since Monday 表示持續到現在，用 has lived。"}],
+  "被動語態":[{s:"The letter ___ yesterday.",o:["sent","was sent","is sending","sends"],a:1,e:"信是被寄出，用 was sent。"},{s:"English ___ in many countries.",o:["speaks","is spoken","spoke","speaking"],a:1,e:"English 被人使用，用 is spoken。"}],
+  "關係代名詞":[{s:"The woman ___ teaches us is kind.",o:["which","who","what","where"],a:1,e:"先行詞是人 woman，用 who。"},{s:"This is the bike ___ I want.",o:["who","where","that","what"],a:2,e:"先行詞是物 bike，可用 that。"}],
+  "不定詞 vs 動名詞":[{s:"I plan ___ abroad next year.",o:["study","studying","to study","studied"],a:2,e:"plan 後面常接 to V。"},{s:"He avoids ___ late.",o:["arrive","to arrive","arriving","arrived"],a:2,e:"avoid 後面接 V-ing。"}],
+  "連接詞":[{s:"I opened the window ___ it was hot.",o:["although","because","if","but"],a:1,e:"後面說原因，用 because。"},{s:"___ you practice, you will improve.",o:["If","Although","Because","So"],a:0,e:"前句是條件，用 If。"}],
+  "比較級與最高級":[{s:"This bag is ___ than that one.",o:["heavy","heavier","heaviest","more heavy"],a:1,e:"than 前面用比較級 heavier。"},{s:"She is the ___ student in our class.",o:["careful","more careful","most careful","carefully"],a:2,e:"the + 最高級，用 most careful。"}],
+  "助動詞 should / must":[{s:"You ___ see a doctor if you feel worse.",o:["should","should to","musts","are should"],a:0,e:"建議用 should，後面接原形 see。"},{s:"Drivers ___ stop at a red light.",o:["shoulds","must","must to","are must"],a:1,e:"交通規定用 must。"}],
+  "過去進行式":[{s:"Dad ___ when I got home.",o:["was cooking","were cooking","cooks","cooked"],a:0,e:"Dad 是單數，用 was cooking。"},{s:"The kids ___ loudly at that time.",o:["talk","talked","were talking","was talking"],a:2,e:"kids 是複數，過去進行式用 were talking。"}],
+  "未來式":[{s:"Look! The glass ___ fall.",o:["will","is going to","was going to","falls"],a:1,e:"有明顯跡象時常用 be going to。"},{s:"We ___ dinner with Mr. Chen tonight.",o:["have","are having","had","were having"],a:1,e:"已安排好的近期行程可用現在進行式。"}],
+  "間接問句":[{s:"I wonder what time ___.",o:["is it","it is","does it","it"],a:1,e:"間接問句用主詞 + 動詞語序。"},{s:"Do you know why ___ sad?",o:["is she","she is","does she","she"],a:1,e:"why 後面接 she is，不倒裝。"}],
+  "too / enough":[{s:"The box is too heavy ___.",o:["lift","lifting","to lift","lifted"],a:2,e:"too + adj + to V 表示太過而不能。"},{s:"The water is warm ___ to drink.",o:["too","enough","very","so"],a:1,e:"形容詞後面放 enough。"}],
+  "使役與感官動詞":[{s:"Please let me ___ first.",o:["try","to try","trying","tried"],a:0,e:"let + 受詞 + 原形動詞。"},{s:"I heard someone ___ my name.",o:["call","to call","called","calls"],a:0,e:"hear + 受詞 + 原形動詞可表示聽見完整動作。"}],
+  "假設語氣（現在）":[{s:"If I ___ taller, I could reach it.",o:["am","were","will be","be"],a:1,e:"與現在事實相反，be 動詞用 were。"},{s:"She would travel more if she ___ time.",o:["has","had","will have","having"],a:1,e:"If 子句用過去式 had。"}],
+  "假設語氣（過去）":[{s:"If we had known, we ___ earlier.",o:["leave","left","would leave","would have left"],a:3,e:"過去假設的結果用 would have p.p.。"},{s:"He would have passed if he ___ harder.",o:["studies","studied","had studied","has studied"],a:2,e:"過去相反假設的 if 子句用 had p.p.。"}],
+  "分詞構句":[{s:"___ tired, she went home early.",o:["Feel","Feeling","Felt","To feel"],a:1,e:"主動原因可用 V-ing 開頭。"},{s:"___ by many students, the app became popular.",o:["Use","Using","Used","To use"],a:2,e:"app 是被使用，用過去分詞 Used。"}],
+  "倒裝句":[{s:"Never ___ such a difficult question.",o:["I have seen","have I seen","I saw","did I seen"],a:1,e:"Never 放句首時助動詞提前。"},{s:"Only after the test ___ the mistake.",o:["I noticed","noticed I","did I notice","I did notice"],a:2,e:"Only + 副詞片語放句首時，用倒裝 did I notice。"}],
+  "名詞子句":[{s:"___ he said was surprising.",o:["That","What","Whether","Which"],a:1,e:"What he said 表示他說的事。"},{s:"I believe ___ she is right.",o:["what","whether","that","who"],a:2,e:"believe 後面可接 that 子句。"}],
+  "強調句型":[{s:"It was my teacher ___ encouraged me.",o:["who","which","where","what"],a:0,e:"被強調的是人，用 who 或 that。"},{s:"It is hard work ___ matters most.",o:["who","where","that","what"],a:2,e:"強調句型常用 It is ... that。"}],
+  "完成進行式":[{s:"They ___ for the bus for thirty minutes.",o:["wait","have been waiting","waited","are waited"],a:1,e:"for thirty minutes 表示持續到現在，用 have been waiting。"},{s:"She was tired because she ___ all night.",o:["studies","has studied","had been studying","is studying"],a:2,e:"過去某結果前的持續動作用 had been studying。"}],
+  "混合假設語氣":[{s:"If he had taken the train, he ___ here now.",o:["is","would be","would have been","will be"],a:1,e:"過去條件影響現在結果，用 would be now。"},{s:"If I had learned coding earlier, I ___ more confident today.",o:["am","was","would be","would have been"],a:2,e:"today 指現在結果，所以用 would be。"}],
+  "讓步與轉折":[{s:"The weather was cold; ___, we went hiking.",o:["because","however","although","so"],a:1,e:"分號後接轉折副詞 however。"},{s:"Even though he was nervous, he ___ calmly.",o:["speaks","spoke","speaking","spoken"],a:1,e:"主句敘述過去，用 spoke。"}],
+  "同位語":[{s:"Jason, ___, won the contest.",o:["my cousin","who my cousin","is my cousin","my cousin is"],a:0,e:"同位語直接用名詞片語補充 Jason。"},{s:"The island, ___, attracts many tourists.",o:["a popular destination","which a popular destination","is popular destination","where popular"],a:0,e:"逗號中的同位語是名詞片語。"}],
+  "關係子句進階":[{s:"The book, ___ I borrowed yesterday, is excellent.",o:["that","which","what","who"],a:1,e:"非限定關係子句用 which，不用 that。"},{s:"The friend with ___ I traveled is a photographer.",o:["who","whom","which","that"],a:1,e:"介系詞 with 後面正式用 whom。"}],
+  "省略與替代":[{s:"I don't like horror movies, and neither ___ Ken.",o:["does","is","has","can"],a:0,e:"前句是現在簡單式否定，附和用 neither does。"},{s:"This shirt is too small. I need a larger ___.",o:["one","ones","it","that"],a:0,e:"one 代替前面的單數名詞 shirt。"}],
+};
 function normalizeGrammarExamples(rule,guide){
   const raw=Array.isArray(rule?.examples)&&rule.examples.length?rule.examples:(Array.isArray(guide?.examples)?guide.examples:[]);
   const examples=raw.map(x=>typeof x==="string"?{en:x,zh:""}:{en:String(x?.en||""),zh:String(x?.zh||"")}).filter(x=>x.en);
@@ -4274,6 +4312,7 @@ function grammarGuide(rule){
     examples:normalizeGrammarExamples(rule,guide),
   };
 }
+function grammarDrills(rule){return (GRAMMAR_DRILLS[rule?.t]||[]).slice(0,3)}
 function parseGrammarJson(text){
   let raw=String(text||"").trim().replace(/^```(?:json)?\s*/i,"").replace(/\s*```\s*$/,"");
   const s=raw.indexOf("{"),e=raw.lastIndexOf("}");
@@ -4334,10 +4373,11 @@ function grammarCloze(sentence,fill,cl){
 function GrammarM({lv,onBack,onXp,apiKey,onOpenSettings}){
   const rules=G[lv];const c=LV[lv];
   const[sel,setSel]=useState(null);const[answers,setAnswers]=useState({});const[showResult,setShowResult]=useState(false);const[showHint,setShowHint]=useState(false);
+  const[drillAnswers,setDrillAnswers]=useState({});
   const[aiExplain,setAiExplain]=useState(null);const[aiLoading,setAiLoading]=useState(false);const[aiError,setAiError]=useState("");
   const rewarded=useRef(new Set());
-  useEffect(()=>{setSel(null);setAnswers({});setShowResult(false);setShowHint(false);setAiExplain(null);setAiError("");setAiLoading(false);rewarded.current=new Set()},[lv]);
-  useEffect(()=>{setAiExplain(null);setAiError("");setAiLoading(false)},[sel,lv]);
+  useEffect(()=>{setSel(null);setAnswers({});setDrillAnswers({});setShowResult(false);setShowHint(false);setAiExplain(null);setAiError("");setAiLoading(false);rewarded.current=new Set()},[lv]);
+  useEffect(()=>{setDrillAnswers({});setAiExplain(null);setAiError("");setAiLoading(false)},[sel,lv]);
   const completed=Object.keys(answers).length;
   const score=Object.values(answers).filter(a=>a?.correct).length;
   const pct=rules.length?Math.round(score/rules.length*100):0;
@@ -4351,6 +4391,11 @@ function GrammarM({lv,onBack,onXp,apiKey,onOpenSettings}){
     const r=rules[sel];const correct=i===r.q.a;
     setAnswers(a=>({...a,[sel]:{choice:i,correct}}));
     if(correct){playSound("good");if(!rewarded.current.has(sel)){rewarded.current.add(sel);onXp?.(5)}}else playSound("bad");
+  };
+  const handleDrill=(di,oi)=>{
+    const r=rules[sel],d=grammarDrills(r)[di];if(!d||drillAnswers[di]!=null)return;
+    setDrillAnswers(a=>({...a,[di]:oi}));
+    playSound(oi===d.a?"good":"bad");
   };
   const clearCurrentAnswer=()=>{setAnswers(a=>{const next={...a};delete next[sel];return next});setShowHint(true)};
   const goNext=()=>{setShowHint(false);if(sel<rules.length-1)setSel(sel+1);else setShowResult(true)};
@@ -4384,7 +4429,7 @@ function GrammarM({lv,onBack,onXp,apiKey,onOpenSettings}){
     </div>
   </div>);
 
-  const r=rules[sel];const guide=grammarGuide(r);const examples=guide.examples;const current=answers[sel];const progress=(sel+1)/rules.length*100;const fill=current?r.q.o[current.choice]:"";const fillColor=current?(current.correct?"#1D9E75":"#E24B4A"):c.cl;
+  const r=rules[sel];const guide=grammarGuide(r);const examples=guide.examples;const drills=grammarDrills(r);const current=answers[sel];const progress=(sel+1)/rules.length*100;const fill=current?r.q.o[current.choice]:"";const fillColor=current?(current.correct?"#1D9E75":"#E24B4A"):c.cl;
   return(<div><Hdr t="🧠 文法學堂" onBack={onBack} cl={c.cl}/>
     <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:10,fontSize:12}}>
       <button onClick={()=>{setSel(null);setShowHint(false)}} style={{background:"none",border:`1px solid ${S.bd}`,borderRadius:8,padding:"4px 10px",fontSize:11,cursor:"pointer",color:S.t2,fontFamily:"inherit"}}>列表</button>
@@ -4432,6 +4477,22 @@ function GrammarM({lv,onBack,onXp,apiKey,onOpenSettings}){
           </div>}
         </div>}
       </div>
+
+      {drills.length>0&&<div style={{background:S.bg1,border:`1px solid ${S.bd}`,borderRadius:14,padding:"13px 14px",marginBottom:15}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,marginBottom:10}}>
+          <div><div style={{fontSize:14,fontWeight:900,color:S.t1}}>加強練習</div><div style={{fontSize:12,color:S.t2,marginTop:2}}>同一個文法點多做幾題，先熟悉判斷線索。</div></div>
+          <div style={{fontSize:12,fontWeight:900,color:c.cl,background:c.bg,borderRadius:999,padding:"5px 9px",whiteSpace:"nowrap"}}>{Object.keys(drillAnswers).length}/{drills.length}</div>
+        </div>
+        <div style={{display:"grid",gap:10}}>
+          {drills.map((d,di)=>{const picked=drillAnswers[di];return <div key={di} style={{border:`1px solid ${picked==null?S.bd:picked===d.a?"#9DDDC7":"#F1B5B5"}`,background:picked==null?S.bg2:picked===d.a?"#F0FBF6":"#FFF2F2",borderRadius:13,padding:"11px 12px"}}>
+            <div style={{fontSize:13,fontWeight:850,color:S.t1,lineHeight:1.6,marginBottom:8}}>{grammarCloze(d.s,picked!=null?d.o[picked]:"",picked==null?c.cl:picked===d.a?"#1D9E75":"#E24B4A")}</div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(110px,1fr))",gap:7}}>
+              {d.o.map((o,oi)=>{const ok=oi===d.a,chosen=picked===oi;let bg=S.bg1,bd=`1px solid ${S.bd}`,cl=S.t1;if(picked!=null){if(ok){bg="#E1F5EE";bd="2px solid #1D9E75";cl="#146B45"}else if(chosen){bg="#FCEBEB";bd="2px solid #E24B4A";cl="#A12F2F"}}return <button key={o} data-testid={`grammar-drill-${di}-option-${oi}`} onClick={()=>handleDrill(di,oi)} disabled={picked!=null} style={{border:bd,background:bg,color:cl,borderRadius:11,padding:"9px 8px",fontSize:13,fontWeight:800,cursor:picked==null?"pointer":"default",fontFamily:"inherit"}}>{o}</button>})}
+            </div>
+            {picked!=null&&<div style={{fontSize:12,color:S.t2,lineHeight:1.55,marginTop:8}}>解析：{d.e}</div>}
+          </div>})}
+        </div>
+      </div>}
 
       <div style={{borderTop:`2px solid ${S.bd}`,paddingTop:15}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,marginBottom:10}}><div style={{fontSize:14,fontWeight:800,color:S.t1}}>小測驗</div>{!current&&<button onClick={()=>setShowHint(v=>!v)} style={{background:showHint?"#FFF3CD":S.bg2,border:`1px solid ${S.bd}`,borderRadius:10,padding:"5px 9px",fontSize:12,cursor:"pointer",color:showHint?"#8A5A00":S.t2,fontFamily:"inherit"}}>提示</button>}</div>

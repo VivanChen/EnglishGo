@@ -139,6 +139,10 @@ describe('EnglishGo app smoke flow', () => {
     fireEvent.click(screen.getByText('Be 動詞').closest('button'));
 
     expect(await screen.findByText('例句庫')).toBeInTheDocument();
+    expect(screen.getByText('加強練習')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('grammar-drill-0-option-2'));
+    expect(await screen.findByText(/My friends 是複數，所以用 are。/)).toBeInTheDocument();
+
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
       ok: true,
       json: async () => ({
