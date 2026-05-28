@@ -123,6 +123,59 @@ describe('EnglishGo app smoke flow', () => {
     expect(screen.getByText('可朗讀、可複製')).toBeInTheDocument();
   });
 
+  it('shows expanded grammar content with AI explanation for the current topic', async () => {
+    localStorage.setItem('eg_gemkey', JSON.stringify('test-gemini-key'));
+    localStorage.removeItem('grammar_ai_elementary%3ABe%20%E5%8B%95%E8%A9%9E');
+
+    await openElementaryMenu();
+
+    const grammarCard = document.querySelector('[data-module-id="grammar"]');
+    expect(grammarCard).toBeTruthy();
+    fireEvent.click(grammarCard);
+
+    expect(await screen.findByText('冠詞 a / an / the')).toBeInTheDocument();
+    expect(screen.getByText('未來式 will / be going to')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Be 動詞').closest('button'));
+
+    expect(await screen.findByText('例句庫')).toBeInTheDocument();
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        candidates: [{
+          content: {
+            parts: [{
+              text: JSON.stringify({
+                simple: 'be 動詞像句子的連接橋。',
+                examples: [
+                  { en: 'I am ready.', zh: '我準備好了。' },
+                  { en: 'They are in class.', zh: '他們在上課。' },
+                ],
+                practice: {
+                  prompt: 'She ___ happy today.',
+                  answer: 'is',
+                  explanation: 'She 是單數第三人稱，所以用 is。',
+                },
+              }),
+            }],
+          },
+        }],
+      }),
+    });
+
+    try {
+      fireEvent.click(screen.getByText('AI 講解'));
+
+      expect(await screen.findByText('be 動詞像句子的連接橋。')).toBeInTheDocument();
+      expect(screen.getByText('She ___ happy today.')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('generativelanguage.googleapis.com'), expect.any(Object));
+      });
+    } finally {
+      fetchMock.mockRestore();
+    }
+  });
+
   it('opens the lazy SRS module', async () => {
     await openElementaryMenu();
 

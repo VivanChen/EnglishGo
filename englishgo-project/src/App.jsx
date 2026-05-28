@@ -472,28 +472,46 @@ async function searchAnyWords(level,query,limit=16,scope="all"){
 // ═══ GRAMMAR ════════════════════════════════════════════════════════
 const G = {
   elementary: [
-    {t:"Be 動詞",d:"I am / You are / He is",ex:"I am a student.",q:{s:"She ___ a teacher.",o:["am","is","are","be"],a:1}},
-    {t:"現在簡單式",d:"第三人稱加 s/es",ex:"He goes to school every day.",q:{s:"She ___ breakfast at 7.",o:["eat","eats","eating","ate"],a:1}},
-    {t:"現在進行式",d:"be + V-ing 正在做",ex:"I am reading a book now.",q:{s:"They ___ TV now.",o:["watch","watches","are watching","watched"],a:2}},
-    {t:"There is / There are",d:"表示「有…」",ex:"There are two cats.",q:{s:"There ___ a dog.",o:["is","are","has","have"],a:0}},
-    {t:"名詞單複數",d:"大部分加 s，特殊變化要記",ex:"one child → two children",q:{s:"I have three ___.",o:["box","boxs","boxes","boxies"],a:2}},
-    {t:"代名詞",d:"I/me, he/him, she/her",ex:"She likes him.",q:{s:"Give ___ the book.",o:["I","my","me","mine"],a:2}},
+    {t:"Be 動詞",d:"I am / You are / He is",ex:"I am a student.",examples:[{en:"I am hungry.",zh:"我餓了。"},{en:"They are my classmates.",zh:"他們是我的同學。"},{en:"The weather is nice today.",zh:"今天天氣很好。"}],q:{s:"She ___ a teacher.",o:["am","is","are","be"],a:1}},
+    {t:"現在簡單式",d:"第三人稱加 s/es",ex:"He goes to school every day.",examples:[{en:"I play basketball after school.",zh:"我放學後打籃球。"},{en:"My sister likes music.",zh:"我妹妹喜歡音樂。"},{en:"Dad watches the news at night.",zh:"爸爸晚上看新聞。"}],q:{s:"She ___ breakfast at 7.",o:["eat","eats","eating","ate"],a:1}},
+    {t:"現在進行式",d:"be + V-ing 正在做",ex:"I am reading a book now.",examples:[{en:"We are studying English now.",zh:"我們現在正在讀英文。"},{en:"The baby is sleeping.",zh:"寶寶正在睡覺。"},{en:"I am waiting for the bus.",zh:"我正在等公車。"}],q:{s:"They ___ TV now.",o:["watch","watches","are watching","watched"],a:2}},
+    {t:"There is / There are",d:"表示「有…」",ex:"There are two cats.",examples:[{en:"There is a park near my house.",zh:"我家附近有一座公園。"},{en:"There are many books on the desk.",zh:"桌上有很多書。"},{en:"There is no milk in the fridge.",zh:"冰箱裡沒有牛奶。"}],q:{s:"There ___ a dog.",o:["is","are","has","have"],a:0}},
+    {t:"名詞單複數",d:"大部分加 s，特殊變化要記",ex:"one child → two children",examples:[{en:"I have two boxes.",zh:"我有兩個盒子。"},{en:"Three children are playing outside.",zh:"三個孩子正在外面玩。"},{en:"There are five buses at the station.",zh:"車站有五輛公車。"}],q:{s:"I have three ___.",o:["box","boxs","boxes","boxies"],a:2}},
+    {t:"代名詞",d:"I/me, he/him, she/her",ex:"She likes him.",examples:[{en:"Please help me.",zh:"請幫我。"},{en:"He gave her a gift.",zh:"他送她一份禮物。"},{en:"This book is mine.",zh:"這本書是我的。"}],q:{s:"Give ___ the book.",o:["I","my","me","mine"],a:2}},
+    {t:"一般過去式",d:"動作發生在過去，動詞用過去式",ex:"I visited my grandma yesterday.",zh:"過去式用來說已經發生的事，常見時間線索有 yesterday, last night, two days ago。",pattern:"S + V-ed / 過去式動詞",tips:["先找過去時間線索","規則動詞多加 -ed","不規則動詞要直接記"],mistake:"看到 yesterday 不要再用現在式，例如 I go yesterday 要改成 I went yesterday。",examples:[{en:"We watched a movie last night.",zh:"我們昨晚看了一部電影。"},{en:"She bought a new bag yesterday.",zh:"她昨天買了一個新包包。"},{en:"Tom played soccer after school.",zh:"Tom 放學後踢足球。"}],q:{s:"He ___ his homework last night.",o:["does","did","do","doing"],a:1}},
+    {t:"未來式 will / be going to",d:"will 表臨時決定或預測，be going to 表計畫",ex:"I will call you tonight.",zh:"will 常用在臨時決定、承諾、預測；be going to 常用在已經有安排或明顯跡象的未來。",pattern:"will + V / am-is-are going to + V",tips:["will 後面接原形動詞","be going to 前面要配 am/is/are","看句子是臨時決定還是已有計畫"],mistake:"不要寫 will goes，will 後面一定用原形 go。",examples:[{en:"I will help you.",zh:"我會幫你。"},{en:"She is going to visit Taipei tomorrow.",zh:"她明天要去台北。"},{en:"Look at the clouds. It is going to rain.",zh:"看那些雲。快要下雨了。"}],q:{s:"They ___ visit their uncle tomorrow.",o:["are going to","is going to","will to","going"],a:0}},
+    {t:"can / can't",d:"表示能力、許可或不可能",ex:"I can swim.",zh:"can 表示能夠、可以；can't 表示不能、不可以。後面的動詞保持原形。",pattern:"can / can't + V",tips:["can 後面不加 to","第三人稱也不用加 s","否定可以寫 cannot 或 can't"],mistake:"He can plays 是錯的，can 後面要用 play。",examples:[{en:"She can speak English.",zh:"她會說英文。"},{en:"You can't eat in the library.",zh:"你不能在圖書館吃東西。"},{en:"Can I ask a question?",zh:"我可以問一個問題嗎？"}],q:{s:"My brother ___ ride a bike.",o:["can","cans","can to","is can"],a:0}},
+    {t:"冠詞 a / an / the",d:"a/an 表泛指，the 表特定",ex:"I saw a dog. The dog was cute.",zh:"第一次提到或不特定的人事物常用 a/an；雙方都知道或第二次提到時用 the。",pattern:"a + 子音音開頭 / an + 母音音開頭 / the + 特定名詞",tips:["看發音不是只看字母","第一次提到多用 a/an","第二次提到或唯一事物用 the"],mistake:"an university 是錯的，university 發音以 /ju/ 開頭，所以用 a university。",examples:[{en:"I need an umbrella.",zh:"我需要一把傘。"},{en:"She has a cat. The cat is black.",zh:"她有一隻貓。那隻貓是黑色的。"},{en:"The sun is bright.",zh:"太陽很亮。"}],q:{s:"I ate ___ apple after lunch.",o:["a","an","the","x"],a:1}},
+    {t:"疑問句 Do / Does",d:"一般動詞問句用 do / does",ex:"Does she like tea?",zh:"現在簡單式的一般動詞問句，要把 do 或 does 放到句首；he/she/it 用 does。",pattern:"Do/Does + S + 原形動詞?",tips:["he/she/it 問句用 does","用了 does 後動詞改回原形","回答可用 Yes, she does / No, she doesn't"],mistake:"Does she likes tea? 是錯的，does 已經表示第三人稱，like 不加 s。",examples:[{en:"Do you play tennis?",zh:"你打網球嗎？"},{en:"Does he live near school?",zh:"他住在學校附近嗎？"},{en:"What do they want?",zh:"他們想要什麼？"}],q:{s:"___ your father cook dinner?",o:["Do","Does","Is","Are"],a:1}},
+    {t:"時間介系詞 in / on / at",d:"in 年月季節，on 日期星期，at 精確時間",ex:"We meet at 7 on Monday.",zh:"in 用在較大的時間範圍，on 用在日期或星期，at 用在明確時刻。",pattern:"in May / on Monday / at 7:30",tips:["月份年份季節用 in","星期日期用 on","幾點幾分用 at"],mistake:"at Monday 是錯的，星期要用 on Monday。",examples:[{en:"My birthday is in July.",zh:"我的生日在七月。"},{en:"We have a test on Friday.",zh:"我們星期五有考試。"},{en:"The class starts at nine.",zh:"課九點開始。"}],q:{s:"The party is ___ Saturday night.",o:["in","on","at","to"],a:1}},
   ],
   junior: [
-    {t:"現在完成式",d:"have/has + p.p.",ex:"I have lived here for 5 years.",q:{s:"She ___ to Japan twice.",o:["has been","have been","was","went"],a:0}},
-    {t:"被動語態",d:"be + p.p.",ex:"The window was broken.",q:{s:"The cake ___ by mom.",o:["baked","was baked","is baking","bake"],a:1}},
-    {t:"關係代名詞",d:"who/which/that",ex:"The man who lives next door is a doctor.",q:{s:"The book ___ I read was great.",o:["who","which","what","where"],a:1}},
-    {t:"不定詞 vs 動名詞",d:"to V / V-ing",ex:"I enjoy reading. I want to go.",q:{s:"She enjoys ___.",o:["swim","to swim","swimming","swam"],a:2}},
-    {t:"連接詞",d:"because/although/if",ex:"Although it rained, we went out.",q:{s:"___ he was tired, he kept working.",o:["Because","Although","If","So"],a:1}},
-    {t:"比較級與最高級",d:"-er/-est 或 more/most",ex:"She is taller than her brother.",q:{s:"This is the ___ movie ever.",o:["good","better","best","most good"],a:2}},
+    {t:"現在完成式",d:"have/has + p.p.",ex:"I have lived here for 5 years.",examples:[{en:"We have finished the project.",zh:"我們已經完成專題。"},{en:"She has never tried sushi.",zh:"她從沒試過壽司。"},{en:"I have known him since 2020.",zh:"我從 2020 年就認識他。"}],q:{s:"She ___ to Japan twice.",o:["has been","have been","was","went"],a:0}},
+    {t:"被動語態",d:"be + p.p.",ex:"The window was broken.",examples:[{en:"The room is cleaned every day.",zh:"這個房間每天都被打掃。"},{en:"The song was written by Jay.",zh:"這首歌是 Jay 寫的。"},{en:"The report will be sent tonight.",zh:"報告今晚會被寄出。"}],q:{s:"The cake ___ by mom.",o:["baked","was baked","is baking","bake"],a:1}},
+    {t:"關係代名詞",d:"who/which/that",ex:"The man who lives next door is a doctor.",examples:[{en:"The girl who won the race is my friend.",zh:"贏得比賽的女孩是我朋友。"},{en:"This is the phone that I bought yesterday.",zh:"這是我昨天買的手機。"},{en:"I like stories which have surprising endings.",zh:"我喜歡有驚喜結局的故事。"}],q:{s:"The book ___ I read was great.",o:["who","which","what","where"],a:1}},
+    {t:"不定詞 vs 動名詞",d:"to V / V-ing",ex:"I enjoy reading. I want to go.",examples:[{en:"She decided to join the club.",zh:"她決定加入社團。"},{en:"They finished cleaning the classroom.",zh:"他們打掃完教室。"},{en:"I hope to see you again.",zh:"我希望再見到你。"}],q:{s:"She enjoys ___.",o:["swim","to swim","swimming","swam"],a:2}},
+    {t:"連接詞",d:"because/although/if",ex:"Although it rained, we went out.",examples:[{en:"I stayed home because I was sick.",zh:"我待在家，因為我生病了。"},{en:"Although he was tired, he kept studying.",zh:"雖然他很累，他還是繼續讀書。"},{en:"If it rains, we will stay inside.",zh:"如果下雨，我們會待在室內。"}],q:{s:"___ he was tired, he kept working.",o:["Because","Although","If","So"],a:1}},
+    {t:"比較級與最高級",d:"-er/-est 或 more/most",ex:"She is taller than her brother.",examples:[{en:"This question is easier than that one.",zh:"這題比那題簡單。"},{en:"English is more useful than I expected.",zh:"英文比我預期更有用。"},{en:"This is the most exciting game this year.",zh:"這是今年最刺激的比賽。"}],q:{s:"This is the ___ movie ever.",o:["good","better","best","most good"],a:2}},
+    {t:"助動詞 should / must",d:"should 表建議，must 表必須",ex:"You should drink more water.",zh:"should 用來提出建議；must 表強烈義務或規定。後面都接原形動詞。",pattern:"should / must + V",tips:["should 語氣較柔和","must 表必須或很確定","後面動詞不加 s、不加 to"],mistake:"You should to sleep 是錯的，should 後面直接接 sleep。",examples:[{en:"You should review before the test.",zh:"考試前你應該複習。"},{en:"Students must wear uniforms.",zh:"學生必須穿制服。"},{en:"He must be at home now.",zh:"他現在一定在家。"}],q:{s:"You ___ finish your homework before dinner.",o:["must","must to","shoulds","are must"],a:0}},
+    {t:"過去進行式",d:"was/were + V-ing",ex:"I was doing homework at eight.",zh:"過去進行式描述過去某個時間點正在發生的動作。",pattern:"was / were + V-ing",tips:["單數主詞多用 was","you/we/they 用 were","常搭配 when 或 at that time"],mistake:"I was do homework 是錯的，要用 was doing。",examples:[{en:"She was reading when I called.",zh:"我打電話時她正在閱讀。"},{en:"They were playing basketball at 5 p.m.",zh:"下午五點他們正在打籃球。"},{en:"I was sleeping at that time.",zh:"那時我正在睡覺。"}],q:{s:"We ___ dinner when the phone rang.",o:["eat","were eating","was eating","ate"],a:1}},
+    {t:"未來式",d:"will / be going to / present continuous",ex:"We are meeting at the station tomorrow.",zh:"談未來可用 will、be going to，也可用現在進行式表示已安排好的行程。",pattern:"will + V / be going to + V / be + V-ing",tips:["臨時決定多用 will","已計畫多用 be going to","固定安排可用 be V-ing"],mistake:"表示已安排好的會面時，We are meet tomorrow 要改成 We are meeting tomorrow。",examples:[{en:"I will answer the phone.",zh:"我來接電話。"},{en:"We are going to have a picnic.",zh:"我們要去野餐。"},{en:"She is flying to Japan next week.",zh:"她下週要飛日本。"}],q:{s:"I ___ my dentist at 3 p.m. tomorrow.",o:["am seeing","saw","see","was seeing"],a:0}},
+    {t:"間接問句",d:"疑問詞 + 主詞 + 動詞",ex:"Do you know where he lives?",zh:"間接問句放在句子裡當名詞子句，語序要改回主詞在前、動詞在後。",pattern:"Do you know + wh- + S + V?",tips:["不要保留倒裝語序","Yes/No 問句可用 whether/if","句尾只留一個問號"],mistake:"Do you know where does he live? 是錯的，要說 where he lives。",examples:[{en:"I don't know what she wants.",zh:"我不知道她想要什麼。"},{en:"Can you tell me when the class starts?",zh:"你能告訴我課什麼時候開始嗎？"},{en:"She asked if I was free.",zh:"她問我是否有空。"}],q:{s:"Can you tell me where ___?",o:["is the station","the station is","does the station","the station"],a:1}},
+    {t:"too / enough",d:"too 表太過，enough 表足夠",ex:"The bag is too heavy to carry.",zh:"too 表示程度過高而無法做到某事；enough 表示足以做到某事。",pattern:"too + adj + to V / adj + enough + to V",tips:["too 放形容詞前","enough 放形容詞後","後面常接 to V 說結果"],mistake:"enough tall 是錯的，形容詞要放在 enough 前面：tall enough。",examples:[{en:"The soup is too hot to drink.",zh:"湯太燙，不能喝。"},{en:"He is old enough to drive.",zh:"他年紀夠大，可以開車。"},{en:"This room is big enough for us.",zh:"這房間夠大，適合我們。"}],q:{s:"She is tall ___ to reach the shelf.",o:["too","enough","very","so"],a:1}},
+    {t:"使役與感官動詞",d:"make/let/have/see/hear + O + V",ex:"My teacher made us rewrite the essay.",zh:"make、let、have 以及 see、hear、watch 後面常接受詞加原形動詞，表示讓某人做或感受到某人做某事。",pattern:"V + O + 原形動詞",tips:["make 表要求或造成","let 表允許","see/hear/watch 強調看見或聽見完整動作"],mistake:"Let me to help 是錯的，要說 Let me help。",examples:[{en:"The news made me cry.",zh:"這則新聞讓我哭了。"},{en:"Mom let me use her computer.",zh:"媽媽讓我用她的電腦。"},{en:"I saw him cross the street.",zh:"我看見他過馬路。"}],q:{s:"The coach made the players ___ ten laps.",o:["run","to run","running","ran"],a:0}},
   ],
   senior: [
-    {t:"假設語氣（現在）",d:"If + 過去式, would + V",ex:"If I were you, I would study harder.",q:{s:"If I ___ rich, I would travel.",o:["am","was","were","be"],a:2}},
-    {t:"假設語氣（過去）",d:"If + had p.p., would have p.p.",ex:"If I had studied, I would have passed.",q:{s:"If she ___ earlier, she wouldn't have missed it.",o:["comes","came","had come","has come"],a:2}},
-    {t:"分詞構句",d:"V-ing 開頭簡化子句",ex:"Walking along the street, I met a friend.",q:{s:"___ the letter, she cried.",o:["Reading","Read","To read","Reads"],a:0}},
-    {t:"倒裝句",d:"否定副詞放句首",ex:"Never have I seen such beauty.",q:{s:"Not only ___ hard, but he helped others.",o:["he worked","did he work","he did work","does he works"],a:1}},
-    {t:"名詞子句",d:"that / whether / wh-",ex:"What he said surprised everyone.",q:{s:"I don't know ___ she will come.",o:["that","whether","what","which"],a:1}},
-    {t:"強調句型",d:"It is/was...that",ex:"It was John that broke the window.",q:{s:"It was ___ that I met her.",o:["in Tokyo","Tokyo","at Tokyo is","Tokyo where"],a:0}},
+    {t:"假設語氣（現在）",d:"If + 過去式, would + V",ex:"If I were you, I would study harder.",examples:[{en:"If I had more time, I would learn French.",zh:"如果我有更多時間，我會學法文。"},{en:"She would join us if she were free.",zh:"如果她有空，她會加入我們。"},{en:"If this room were larger, we could hold the meeting here.",zh:"如果這房間更大，我們就能在這裡開會。"}],q:{s:"If I ___ rich, I would travel.",o:["am","was","were","be"],a:2}},
+    {t:"假設語氣（過去）",d:"If + had p.p., would have p.p.",ex:"If I had studied, I would have passed.",examples:[{en:"If they had left earlier, they would have caught the train.",zh:"如果他們早點離開，就會趕上火車。"},{en:"I would have helped you if I had known.",zh:"如果我知道，我就會幫你。"},{en:"She might have won if she had practiced more.",zh:"如果她多練習，她可能會贏。"}],q:{s:"If she ___ earlier, she wouldn't have missed it.",o:["comes","came","had come","has come"],a:2}},
+    {t:"分詞構句",d:"V-ing 開頭簡化子句",ex:"Walking along the street, I met a friend.",examples:[{en:"Feeling tired, he went to bed early.",zh:"因為覺得累，他早早上床睡覺。"},{en:"Built in 1920, the school is still in use.",zh:"這所學校建於 1920 年，至今仍在使用。"},{en:"Having finished the report, she took a break.",zh:"完成報告後，她休息了一下。"}],q:{s:"___ the letter, she cried.",o:["Reading","Read","To read","Reads"],a:0}},
+    {t:"倒裝句",d:"否定副詞放句首",ex:"Never have I seen such beauty.",examples:[{en:"Rarely do we get such a chance.",zh:"我們很少有這樣的機會。"},{en:"Not only did he apologize, but he also paid for the damage.",zh:"他不只道歉，也賠償損失。"},{en:"Only then did I understand the problem.",zh:"直到那時我才了解問題。"}],q:{s:"Not only ___ hard, but he helped others.",o:["he worked","did he work","he did work","does he works"],a:1}},
+    {t:"名詞子句",d:"that / whether / wh-",ex:"What he said surprised everyone.",examples:[{en:"I believe that effort matters.",zh:"我相信努力很重要。"},{en:"Whether she agrees is still unclear.",zh:"她是否同意仍不清楚。"},{en:"What you need is more practice.",zh:"你需要的是更多練習。"}],q:{s:"I don't know ___ she will come.",o:["that","whether","what","which"],a:1}},
+    {t:"強調句型",d:"It is/was...that",ex:"It was John that broke the window.",examples:[{en:"It was my sister who solved the problem.",zh:"解決問題的是我妹妹。"},{en:"It is practice that makes the difference.",zh:"真正造成差異的是練習。"},{en:"It was in Taipei that we first met.",zh:"我們第一次見面是在台北。"}],q:{s:"It was ___ that I met her.",o:["in Tokyo","Tokyo","at Tokyo is","Tokyo where"],a:0}},
+    {t:"完成進行式",d:"have/has/had been + V-ing",ex:"I have been studying for three hours.",zh:"完成進行式強調某動作從過去開始、持續到某時間點，並且常帶有持續造成的影響。",pattern:"have/has/had been + V-ing",tips:["現在完成進行式連到現在","過去完成進行式連到過去另一時間點","常搭配 for / since"],mistake:"I have studying 是錯的，要補上 been：I have been studying。",examples:[{en:"She has been working all day.",zh:"她一整天都在工作。"},{en:"They had been waiting for an hour before the bus arrived.",zh:"公車到之前，他們已經等了一小時。"},{en:"It has been raining since morning.",zh:"從早上開始一直在下雨。"}],q:{s:"He ___ for the company since 2021.",o:["has worked","has been working","is worked","had working"],a:1}},
+    {t:"混合假設語氣",d:"過去條件影響現在結果",ex:"If I had slept earlier, I would not be tired now.",zh:"混合假設用來連接不同時間：過去沒有發生的條件，造成現在不同的結果。",pattern:"If + had p.p., S + would + V now",tips:["if 子句談過去，用 had p.p.","主要子句談現在，用 would + V","句中常有 now 或 today"],mistake:"不要兩邊都套同一種時間；看到 now 通常主要子句要回到現在結果。",examples:[{en:"If she had studied medicine, she would be a doctor now.",zh:"如果她當初讀醫，她現在就是醫生。"},{en:"If I had taken the job, I would live in London now.",zh:"如果我當初接那份工作，我現在會住在倫敦。"},{en:"If we had left earlier, we would be there now.",zh:"如果我們早點出發，現在就會在那裡。"}],q:{s:"If I had saved more money, I ___ a car now.",o:["would buy","would have bought","will buy","bought"],a:0}},
+    {t:"讓步與轉折",d:"although / even though / however / nevertheless",ex:"Although the plan was risky, we tried it.",zh:"讓步子句承認某個事實，再提出相反或意外的結果；轉折副詞則連接兩個完整句子的對比。",pattern:"Although + S + V, S + V. / S + V; however, S + V.",tips:["although 後面接子句","however 通常用逗號隔開","although 不要和 but 重複使用"],mistake:"Although it was raining, but we left 是錯的，although 和 but 留一個就好。",examples:[{en:"Even though the task was hard, she finished it.",zh:"即使任務很難，她仍完成了。"},{en:"The idea sounds simple; however, it is difficult to apply.",zh:"這想法聽起來簡單，然而很難執行。"},{en:"Nevertheless, the team continued.",zh:"儘管如此，團隊仍繼續。"}],q:{s:"___ the test was difficult, many students passed.",o:["Although","Because","So","However"],a:0}},
+    {t:"同位語",d:"用名詞片語補充說明前面的名詞",ex:"My brother, a software engineer, lives in Hsinchu.",zh:"同位語用另一個名詞或名詞片語補充前面的名詞，常用逗號隔開。",pattern:"Noun, appositive, + V",tips:["同位語不是完整子句","可用來補充身份或定義","非必要資訊通常用逗號"],mistake:"My brother who a doctor is busy 是錯的；若不是子句，直接用 My brother, a doctor, is busy。",examples:[{en:"Taipei, the capital of Taiwan, has excellent public transportation.",zh:"台北，台灣的首都，有很好的大眾運輸。"},{en:"Mr. Lin, our math teacher, is patient.",zh:"林老師，我們的數學老師，很有耐心。"},{en:"The novel, a classic in American literature, remains popular.",zh:"這本小說是美國文學經典，至今仍受歡迎。"}],q:{s:"Ms. Wang, ___, will give a speech.",o:["our principal","who our principal","is our principal","our principal is"],a:0}},
+    {t:"關係子句進階",d:"非限定、介系詞 + whom/which",ex:"The project, which took months, was finally finished.",zh:"進階關係子句可補充非必要資訊，也可把介系詞放到 whom/which 前面，語氣較正式。",pattern:"N, which/who ..., V / prep + whom/which",tips:["非限定子句用逗號","人用 who/whom，物用 which","介系詞前置時不用 that"],mistake:"The issue about that we argued 是錯的，正式寫法是 the issue about which we argued。",examples:[{en:"My aunt, who lives in Tainan, is a chef.",zh:"我阿姨住在台南，她是廚師。"},{en:"The topic about which we talked was sensitive.",zh:"我們談到的那個主題很敏感。"},{en:"The museum, which opened last year, attracts many visitors.",zh:"那座去年開幕的博物館吸引許多遊客。"}],q:{s:"The scientist, ___ won the prize, gave a lecture.",o:["who","which","that","what"],a:0}},
+    {t:"省略與替代",d:"用省略或替代避免重複",ex:"I like jazz, and so does my sister.",zh:"英文常用省略或替代讓句子更自然，例如 so do I、neither did he、do so、one/ones。",pattern:"so/neither + auxiliary + S / do so / one(s)",tips:["先找前句的助動詞或時態","肯定附和用 so","否定附和用 neither"],mistake:"I like it and so my sister 是錯的，要補助動詞：so does my sister。",examples:[{en:"I have finished the task, and so has Emma.",zh:"我完成任務了，Emma 也完成了。"},{en:"He didn't attend the meeting, and neither did I.",zh:"他沒參加會議，我也沒有。"},{en:"If you need a pen, I can lend you one.",zh:"如果你需要筆，我可以借你一支。"}],q:{s:"She can swim, and so ___ I.",o:["can","do","am","have"],a:0}},
   ],
 };
 // ═══ READING ════════════════════════════════════════════════════════
@@ -2368,7 +2386,7 @@ export default function App(){
          mod==="whack"?<WhackM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="match"?<MatchM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="bomb"?<BombM lv={lv} onBack={back} onXp={addXp}/>:
-         mod==="grammar"?<GrammarM lv={lv} onBack={back} onXp={addXp}/>:
+         mod==="grammar"?<GrammarM lv={lv} onBack={back} onXp={addXp} apiKey={gemKey} onOpenSettings={()=>setMod("settings")}/>:
          mod==="reading"?<ReadingM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="novels"?<NovelM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="songs"?<SongsM lv={lv} onBack={back} onXp={addXp}/>:
@@ -4240,16 +4258,86 @@ const GRAMMAR_GUIDES={
   "名詞子句":{zh:"把一整個問題或句子當名詞使用，可以放在 know、think、wonder 後面。",pattern:"I know that ... · I wonder whether ... · What he said ...",tips:["看動詞後面缺一個內容","是否用 whether","疑問詞可引導名詞子句"],mistake:"間接問句通常不用疑問句倒裝。"},
   "強調句型":{zh:"用 It is/was ... that 來強調句子中的某個部分。",pattern:"It is/was + 被強調部分 + that + 其餘句子",tips:["找被強調的資訊","過去事件用 was","後面常接 that"],mistake:"It was in Tokyo that I met her，不要再加 where。"},
 };
-function grammarGuide(rule){return GRAMMAR_GUIDES[rule?.t]||{zh:rule?.d||"",pattern:rule?.d||"",tips:["先找主詞和時間","再看句型","最後檢查答案是否自然"],mistake:"選完後把句子完整讀一次，通常能發現不自然的地方。"}}
+function normalizeGrammarExamples(rule,guide){
+  const raw=Array.isArray(rule?.examples)&&rule.examples.length?rule.examples:(Array.isArray(guide?.examples)?guide.examples:[]);
+  const examples=raw.map(x=>typeof x==="string"?{en:x,zh:""}:{en:String(x?.en||""),zh:String(x?.zh||"")}).filter(x=>x.en);
+  if(rule?.ex&&!examples.some(x=>x.en===rule.ex))examples.unshift({en:rule.ex,zh:""});
+  return examples.slice(0,5);
+}
+function grammarGuide(rule){
+  const guide=GRAMMAR_GUIDES[rule?.t]||{};
+  return {
+    zh:rule?.zh||guide.zh||rule?.d||"",
+    pattern:rule?.pattern||guide.pattern||rule?.d||"",
+    tips:rule?.tips||guide.tips||["先找主詞和時間","再看句型","最後檢查答案是否自然"],
+    mistake:rule?.mistake||guide.mistake||"選完後把句子完整讀一次，通常能發現不自然的地方。",
+    examples:normalizeGrammarExamples(rule,guide),
+  };
+}
+function parseGrammarJson(text){
+  let raw=String(text||"").trim().replace(/^```(?:json)?\s*/i,"").replace(/\s*```\s*$/,"");
+  const s=raw.indexOf("{"),e=raw.lastIndexOf("}");
+  if(s>=0&&e>s)raw=raw.slice(s,e+1);
+  return JSON.parse(raw);
+}
+function normalizeGrammarAi(raw,rule){
+  const fallback=grammarGuide(rule);
+  const simple=String(raw?.simple||fallback.zh||rule?.d||"").trim();
+  const examples=(Array.isArray(raw?.examples)?raw.examples:[]).map(x=>({en:String(x?.en||""),zh:String(x?.zh||"")})).filter(x=>x.en).slice(0,3);
+  const practice=raw?.practice&&raw.practice.prompt?{
+    prompt:String(raw.practice.prompt),
+    answer:String(raw.practice.answer||""),
+    explanation:String(raw.practice.explanation||""),
+  }:null;
+  return {simple,examples:examples.length?examples:fallback.examples.slice(0,3),practice};
+}
+async function generateGrammarAiExplanation(rule,lv,apiKey){
+  if(!rule||!apiKey?.trim())throw new Error("需要 Gemini API Key 才能產生 AI 講解。");
+  const cacheKey=`grammar_ai_${encodeURIComponent(`${lv}:${rule.t}`)}`;
+  try{const cached=localStorage.getItem(cacheKey);if(cached)return normalizeGrammarAi(JSON.parse(cached),rule)}catch{}
+  const guide=grammarGuide(rule);
+  const prompt=`你是給台灣學生使用的 AI 英語文法家教。只講解目前這個文法主題，不要延伸到其他主題。
+
+目前程度：${LV[lv]?.name||lv}
+文法主題：${rule.t}
+規則：${guide.zh}
+句型：${guide.pattern}
+範例：${guide.examples.map(x=>`${x.en}${x.zh?`（${x.zh}）`:""}`).join(" / ")}
+小測驗：${rule.q?.s}
+選項：${rule.q?.o?.join("、")}
+正解：${rule.q?.o?.[rule.q?.a]}
+
+請用繁體中文輸出 STRICT JSON：
+{"simple":"用學生聽得懂的方式講解 2-3 句","examples":[{"en":"英文例句","zh":"繁中翻譯"}],"practice":{"prompt":"一題含 ___ 的練習題","answer":"答案","explanation":"為什麼"}}`;
+  const models=["gemini-2.5-flash-lite","gemini-2.5-flash","gemini-2.0-flash"];
+  for(const model of models){
+    try{
+      const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey.trim())}`,{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:900,temperature:0.45,responseMimeType:"application/json"}}),
+      });
+      const data=await res.json();
+      if(!res.ok||data?.error)continue;
+      const text=(data?.candidates?.[0]?.content?.parts||[]).map(p=>p.text||"").join("");
+      if(!text)continue;
+      const normalized=normalizeGrammarAi(parseGrammarJson(text),rule);
+      try{localStorage.setItem(cacheKey,JSON.stringify(normalized))}catch{}
+      return normalized;
+    }catch{}
+  }
+  throw new Error("AI 講解暫時產生失敗，請稍後再試。");
+}
 function grammarCloze(sentence,fill,cl){
   const parts=String(sentence||"").split("___");
   return parts.map((p,i)=><span key={i}>{p}{i<parts.length-1&&<span style={{display:"inline-block",minWidth:76,borderBottom:`3px solid ${cl}`,textAlign:"center",fontWeight:800,color:cl,padding:"0 6px",margin:"0 2px"}}>{fill||"？"}</span>}</span>);
 }
-function GrammarM({lv,onBack,onXp}){
+function GrammarM({lv,onBack,onXp,apiKey,onOpenSettings}){
   const rules=G[lv];const c=LV[lv];
   const[sel,setSel]=useState(null);const[answers,setAnswers]=useState({});const[showResult,setShowResult]=useState(false);const[showHint,setShowHint]=useState(false);
+  const[aiExplain,setAiExplain]=useState(null);const[aiLoading,setAiLoading]=useState(false);const[aiError,setAiError]=useState("");
   const rewarded=useRef(new Set());
-  useEffect(()=>{setSel(null);setAnswers({});setShowResult(false);setShowHint(false);rewarded.current=new Set()},[lv]);
+  useEffect(()=>{setSel(null);setAnswers({});setShowResult(false);setShowHint(false);setAiExplain(null);setAiError("");setAiLoading(false);rewarded.current=new Set()},[lv]);
+  useEffect(()=>{setAiExplain(null);setAiError("");setAiLoading(false)},[sel,lv]);
   const completed=Object.keys(answers).length;
   const score=Object.values(answers).filter(a=>a?.correct).length;
   const pct=rules.length?Math.round(score/rules.length*100):0;
@@ -4267,6 +4355,14 @@ function GrammarM({lv,onBack,onXp}){
   const clearCurrentAnswer=()=>{setAnswers(a=>{const next={...a};delete next[sel];return next});setShowHint(true)};
   const goNext=()=>{setShowHint(false);if(sel<rules.length-1)setSel(sel+1);else setShowResult(true)};
   const goPrev=()=>{setShowHint(false);if(sel>0)setSel(sel-1)};
+  const loadAiExplanation=async()=>{
+    const r=rules[sel];
+    if(!apiKey?.trim()){setAiError("請先到設定填入 Gemini API Key。");onOpenSettings?.();return}
+    setAiLoading(true);setAiError("");
+    try{setAiExplain(await generateGrammarAiExplanation(r,lv,apiKey))}
+    catch(e){setAiError(e?.message||"AI 講解暫時產生失敗。")}
+    finally{setAiLoading(false)}
+  };
 
   if(showResult){return(<div><Hdr t="🧠 文法學堂" onBack={onBack} cl={c.cl}/><div style={{textAlign:"center",padding:"28px 12px"}}><div style={{fontSize:56,animation:"bounceIn .5s ease-out"}}>{pct>=80?"🏆":pct>=60?"🎉":"💪"}</div><h2 style={{fontSize:22,fontWeight:700,color:S.t1,marginTop:8}}>文法學習完成！</h2><div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,maxWidth:420,margin:"16px auto"}}>{[["答對",`${score}/${rules.length}`,c.cl],["掌握率",`${pct}%`,pct>=80?"#1D9E75":"#EF9F27"],["待複習",wrongIdx.length,"#E24B4A"]].map(([l,v,cl])=><div key={l} style={{...S.card,padding:"12px 8px",borderTop:`3px solid ${cl}`}}><div style={{fontSize:22,fontWeight:800,color:cl}}>{v}</div><div style={{fontSize:11,color:S.t3,marginTop:2}}>{l}</div></div>)}</div><div style={{fontSize:14,color:S.t2,margin:"8px 0 14px"}}>{pct>=80?"規則掌握得很好，可以進入閱讀或造句練習。":pct>=60?"基本概念不錯，建議把錯題再跑一輪。":"先看提示與範例，再慢慢重做錯題。"}</div>{wrongIdx.length>0&&<div style={{...S.card,padding:"12px 14px",maxWidth:520,margin:"0 auto 14px",textAlign:"left"}}><div style={{fontSize:13,fontWeight:800,color:"#E24B4A",marginBottom:8}}>錯題複習</div><div style={{display:"grid",gap:7}}>{wrongIdx.map(i=><button key={i} onClick={()=>openTopic(i)} style={{border:`1px solid ${S.bd}`,background:S.bg1,borderRadius:12,padding:"9px 11px",textAlign:"left",cursor:"pointer",fontFamily:"inherit"}}><div style={{fontSize:14,fontWeight:800,color:S.t1}}>{rules[i].t}</div><div style={{fontSize:12,color:S.t2,marginTop:2}}>正解：{rules[i].q.o[rules[i].q.a]} · 你的答案：{rules[i].q.o[answers[i].choice]}</div></button>)}</div></div>}<button onClick={wrongIdx.length?retryWrong:resetAll} style={{...S.btn,background:c.cl,color:"#fff",marginRight:8,fontSize:14}}>{wrongIdx.length?"只練錯題":"重新學習"}</button><button onClick={onBack} style={{...S.btn,background:S.bg2,color:S.t1,fontSize:14}}>返回</button></div></div>)}
 
@@ -4288,7 +4384,7 @@ function GrammarM({lv,onBack,onXp}){
     </div>
   </div>);
 
-  const r=rules[sel];const guide=grammarGuide(r);const current=answers[sel];const progress=(sel+1)/rules.length*100;const fill=current?r.q.o[current.choice]:"";const fillColor=current?(current.correct?"#1D9E75":"#E24B4A"):c.cl;
+  const r=rules[sel];const guide=grammarGuide(r);const examples=guide.examples;const current=answers[sel];const progress=(sel+1)/rules.length*100;const fill=current?r.q.o[current.choice]:"";const fillColor=current?(current.correct?"#1D9E75":"#E24B4A"):c.cl;
   return(<div><Hdr t="🧠 文法學堂" onBack={onBack} cl={c.cl}/>
     <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:10,fontSize:12}}>
       <button onClick={()=>{setSel(null);setShowHint(false)}} style={{background:"none",border:`1px solid ${S.bd}`,borderRadius:8,padding:"4px 10px",fontSize:11,cursor:"pointer",color:S.t2,fontFamily:"inherit"}}>列表</button>
@@ -4308,9 +4404,33 @@ function GrammarM({lv,onBack,onXp}){
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:8}}>{guide.tips.map((t,i)=><div key={i} style={{padding:"10px 11px",borderRadius:12,background:S.bg2,border:`1px solid ${S.bd}`}}><div style={{fontSize:11,color:S.t3,fontWeight:800}}>STEP {i+1}</div><div style={{fontSize:13,color:S.t1,fontWeight:700,marginTop:3,lineHeight:1.45}}>{t}</div></div>)}</div>
       </div>
 
-      <div style={{background:S.bg2,borderRadius:14,padding:"13px 14px",marginBottom:15}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,marginBottom:5}}><div style={{fontSize:12,fontWeight:800,color:S.t2}}>範例</div><button onClick={()=>speak(r.ex)} style={{background:S.bg1,border:`1px solid ${S.bd}`,borderRadius:10,padding:"4px 8px",fontSize:12,cursor:"pointer",color:c.cl,fontFamily:"inherit"}}>🔊 發音</button></div>
-        <div style={{fontSize:16,color:S.t1,fontStyle:"italic",lineHeight:1.65}}>"{r.ex}"</div>
+      <div style={{background:S.bg2,borderRadius:14,padding:"13px 14px",marginBottom:12}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,marginBottom:9}}><div style={{fontSize:12,fontWeight:800,color:S.t2}}>例句庫</div><button onClick={()=>speak(examples[0]?.en||r.ex)} style={{background:S.bg1,border:`1px solid ${S.bd}`,borderRadius:10,padding:"4px 8px",fontSize:12,cursor:"pointer",color:c.cl,fontFamily:"inherit"}}>🔊 第一句</button></div>
+        <div style={{display:"grid",gap:8}}>
+          {examples.map((ex,i)=><div key={`${ex.en}-${i}`} style={{background:S.bg1,border:`1px solid ${S.bd}`,borderRadius:12,padding:"10px 11px"}}>
+            <div style={{display:"flex",gap:8,alignItems:"flex-start"}}>
+              <button onClick={()=>speak(ex.en)} style={{border:"none",background:c.bg,color:c.cl,borderRadius:8,width:30,height:30,cursor:"pointer",flexShrink:0,fontSize:13}}>🔊</button>
+              <div style={{minWidth:0}}><div style={{fontSize:15,color:S.t1,fontWeight:800,lineHeight:1.5}}>{ex.en}</div>{ex.zh&&<div style={{fontSize:12,color:S.t2,lineHeight:1.55,marginTop:2}}>{ex.zh}</div>}</div>
+            </div>
+          </div>)}
+        </div>
+      </div>
+
+      <div style={{background:"#F5F3FF",border:"1px solid #DDD6FE",borderRadius:14,padding:"13px 14px",marginBottom:15}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,marginBottom:aiExplain?10:0}}>
+          <div><div style={{fontSize:13,fontWeight:900,color:"#5B21B6"}}>AI 文法教練</div><div style={{fontSize:12,color:S.t2,marginTop:2}}>只整理「{r.t}」這個主題</div></div>
+          <button onClick={loadAiExplanation} disabled={aiLoading} style={{...S.btn,background:"#6D28D9",color:"#fff",fontSize:13,padding:"9px 13px",borderRadius:12,whiteSpace:"nowrap",opacity:aiLoading ? .65 : 1}}>{aiLoading?"整理中...":"AI 講解"}</button>
+        </div>
+        {aiError&&<div style={{fontSize:12,color:"#8A5A00",background:"#FFF7E6",border:"1px solid #F0D59A",borderRadius:10,padding:"8px 10px",marginTop:10,lineHeight:1.55}}>{aiError}</div>}
+        {aiExplain&&<div style={{display:"grid",gap:10,animation:"fadeUp .25s"}}>
+          <div style={{fontSize:14,color:S.t1,lineHeight:1.7,fontWeight:650}}>{aiExplain.simple}</div>
+          {aiExplain.examples.length>0&&<div style={{display:"grid",gap:7}}>{aiExplain.examples.map((ex,i)=><div key={`${ex.en}-${i}`} style={{background:"#fff",border:"1px solid #E9D5FF",borderRadius:11,padding:"9px 10px"}}><div style={{fontSize:14,fontWeight:800,color:S.t1}}>{ex.en}</div>{ex.zh&&<div style={{fontSize:12,color:S.t2,marginTop:2,lineHeight:1.5}}>{ex.zh}</div>}</div>)}</div>}
+          {aiExplain.practice&&<div style={{background:"#fff",border:"1px solid #C4B5FD",borderRadius:12,padding:"10px 11px"}}>
+            <div style={{fontSize:11,fontWeight:900,color:"#6D28D9",marginBottom:5}}>AI 小練習</div>
+            <div style={{fontSize:14,color:S.t1,fontWeight:800,lineHeight:1.55}}>{aiExplain.practice.prompt}</div>
+            <div style={{fontSize:12,color:S.t2,marginTop:5,lineHeight:1.55}}>答案：<b>{aiExplain.practice.answer}</b>{aiExplain.practice.explanation?`，${aiExplain.practice.explanation}`:""}</div>
+          </div>}
+        </div>}
       </div>
 
       <div style={{borderTop:`2px solid ${S.bd}`,paddingTop:15}}>
