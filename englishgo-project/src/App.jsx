@@ -2098,6 +2098,7 @@ function getEventCenter(e){
 // ═══ MAIN APP ═══════════════════════════════════════════════════════
 export default function App(){
   const[lv,setLv]=useState(null),[mod,setMod]=useState(null);
+  const[menuGroup,setMenuGroup]=useState("learn");
   const[xp,setXp]=useLS("xp",0);
   const[coins,setCoins]=useLS("coins",0);
   const[pets,setPets]=useLS("pets",[]);
@@ -2128,8 +2129,8 @@ export default function App(){
   useEffect(()=>{
     const p=new URLSearchParams(window.location.search);
     const w=p.get("word"),l=p.get("lv"),support=p.get("support");
-    if(w&&l&&LV[l]){setLv(l);setMod("srs");setSharedWord(w)}
-    if(support){setLv(LV[l]?l:"elementary");setMod("sponsor")}
+    if(w&&l&&LV[l]){setMenuGroup("learn");setLv(l);setMod("srs");setSharedWord(w)}
+    if(support){setMenuGroup("tools");setLv(LV[l]?l:"elementary");setMod("sponsor")}
     if(w||support)window.history.replaceState({},"",window.location.pathname);
   },[]);
 
@@ -2268,14 +2269,27 @@ export default function App(){
 
   const openLandingFeature=(targetLevel,targetModule)=>{
     const nextLevel=LV[targetLevel]?targetLevel:"elementary";
+    const targetGroup={
+      songs:"read",novels:"read",reading:"read",dictation:"read",story:"read",
+      whack:"game",match:"game",bomb:"game",scramble:"game",
+      gacha:"pet",pets:"pet",petAdventure:"pet",
+      achievements:"tools",weak:"tools",dashboard:"tools",settings:"tools",sponsor:"tools",
+    }[targetModule]||"learn";
     setSharedWord(null);
     setCustomDeck(null);
+    setMenuGroup(targetGroup);
     setLv(nextLevel);
     setMod(targetModule||null);
   };
 
-  if(!lv)return<Landing onSelect={setLv} onOpenFeature={openLandingFeature} dark={dark} setDark={setDark} keyMissing={!gemKey?.trim()||!gifKey?.trim()}/>;
+  if(!lv)return<Landing onSelect={nextLv=>{setMenuGroup("learn");setLv(nextLv)}} onOpenFeature={openLandingFeature} dark={dark} setDark={setDark} keyMissing={!gemKey?.trim()||!gifKey?.trim()}/>;
   const c=LV[lv],back=()=>setMod(null);
+  const openModule=(nextMod,group)=>{
+    setSharedWord(null);
+    setCustomDeck(null);
+    if(group)setMenuGroup(group);
+    setMod(nextMod);
+  };
 
   return(
     <div style={{minHeight:"100vh",background:"var(--eg-app-background,var(--color-background-tertiary,#f8f7f4))",color:S.t1,fontFamily:"'Noto Sans TC','Segoe UI',sans-serif"}}>
@@ -2365,7 +2379,7 @@ export default function App(){
       {showAch&&<div onClick={()=>setShowAch(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.5)",zIndex:999,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}><div style={{...S.card,padding:"32px 40px",textAlign:"center",animation:"fadeUp .4s ease-out"}}><div style={{fontSize:56}}>{showAch.icon}</div><div style={{fontSize:22,fontWeight:700,color:S.t1,marginTop:8}}>成就解鎖！</div><div style={{fontSize:16,fontWeight:600,color:c.cl,marginTop:4}}>{showAch.name}</div><div style={{fontSize:13,color:S.t2,marginTop:4}}>{showAch.desc}</div><div style={{fontSize:11,color:S.t3,marginTop:12}}>點擊關閉</div></div></div>}
       <RewardBurstHost/>
       <nav style={{background:"var(--eg-nav-background,var(--color-background-primary,#fff))",backdropFilter:"blur(14px)",WebkitBackdropFilter:"blur(14px)",borderBottom:`1px solid ${S.bd}`,boxShadow:"0 8px 24px rgba(0,0,0,.06)",padding:"8px 12px",paddingTop:"calc(8px + env(safe-area-inset-top, 0px))",display:"flex",alignItems:"center",gap:6,position:"sticky",top:0,zIndex:100}}>
-        <button onClick={()=>{setLv(null);setMod(null)}} style={{background:"none",border:"none",fontSize:18,cursor:"pointer",padding:"4px",minWidth:32,minHeight:32,display:"flex",alignItems:"center",justifyContent:"center"}}>←</button>
+        <button onClick={()=>{setMenuGroup("learn");setLv(null);setMod(null)}} style={{background:"none",border:"none",fontSize:18,cursor:"pointer",padding:"4px",minWidth:32,minHeight:32,display:"flex",alignItems:"center",justifyContent:"center"}}>←</button>
         <span style={{fontSize:14}}>{c.ic}</span>
         <span style={{fontWeight:600,color:c.cl,fontSize:14,flex:1}}>{c.l}</span>
         <div style={{display:"flex",alignItems:"center",gap:4,fontSize:11,color:S.t3}}>
@@ -2377,7 +2391,7 @@ export default function App(){
         <button onClick={()=>setDark(!dark)} style={{background:"none",border:"none",fontSize:14,cursor:"pointer",minWidth:32,minHeight:32,display:"flex",alignItems:"center",justifyContent:"center"}}>{dark?"☀️":"🌙"}</button>
       </nav>
       <div style={{maxWidth:!mod?940:mod==="petAdventure"?1280:mod==="srs"?1080:760,margin:"0 auto",padding:mod==="petAdventure"?"14px 18px calc(20px + env(safe-area-inset-bottom, 0px))":"12px 12px calc(16px + env(safe-area-inset-bottom, 0px))"}}>
-        {!mod?<MenuV2 lv={lv} onSelect={m=>{setSharedWord(null);setCustomDeck(null);setMod(m)}} daily={daily} c={c} xp={xp} coins={coins} streak={streak} achUnlocked={achUnlocked} weakWords={weakWords} isSponsor={isSponsor} pets={pets} eggs={eggs}/>:
+        {!mod?<MenuV2 lv={lv} onSelect={openModule} activeGroup={menuGroup} onGroupChange={setMenuGroup} daily={daily} c={c} xp={xp} coins={coins} streak={streak} achUnlocked={achUnlocked} weakWords={weakWords} isSponsor={isSponsor} pets={pets} eggs={eggs}/>:
          mod==="wordsearch"?<WordSearchM lv={lv} onBack={back} onOpenCard={(word,level)=>{setLv(level||lv);setSharedWord(word);setCustomDeck(null);setMod("srs")}}/>:
          mod==="exam"?<ExamReviewM lv={lv} onBack={back} c={c} apiKey={gemKey} onOpenSettings={()=>setMod("settings")} onStart={deck=>{setSharedWord(null);setCustomDeck(deck);setMod("srs")}}/>:
          mod==="srs"?<SRS lv={lv} onBack={back} onXp={n=>addXpWithTask(n,"srsToday")} onDone={()=>setStats(s=>({...s,srsRounds:s.srsRounds+1}))} trackWeak={trackWeak} gifKey={gifKey} sharedWord={sharedWord} apiKey={gemKey} weakWords={weakWords} customCards={customDeck?.cards||null} customSource={customDeck?.source||""} onOpenSettings={()=>setMod("settings")}/>:
@@ -2410,7 +2424,7 @@ export default function App(){
         <div style={{maxWidth:480,margin:"0 auto"}}>
           <div style={{fontWeight:600,fontSize:12,color:S.t2,marginBottom:6}}>📘 如何使用 EnglishGo</div>
           <div style={{marginBottom:8}}>選擇等級（小學／國中／高中）後，透過 SRS 單字卡記憶單字，搭配口說練習、打地鼠拼字、配對翻牌等遊戲強化學習。AI 家教可即時回答英文問題。每天練習 10 題即可累積經驗值與成就徽章！</div>
-          <div style={{marginBottom:8}}><button onClick={()=>setMod("settings")} style={{background:"none",border:"none",padding:0,color:c.cl,textDecoration:"underline",font:"inherit",cursor:"pointer"}}>🔑 Key 設定</button> · <a href="/learn/api-keys.html" style={{color:c.cl,textDecoration:"underline"}}>API Key 申請教學</a> · <a href="/learn/gif-guide.html" style={{color:c.cl,textDecoration:"underline"}}>🖼️ 單字動圖說明</a> · <button onClick={()=>setMod("sponsor")} style={{background:"none",border:"none",padding:0,color:c.cl,textDecoration:"underline",font:"inherit",cursor:"pointer"}}>☕ 支持我們</button></div>
+          <div style={{marginBottom:8}}><button onClick={()=>{setMenuGroup("tools");setMod("settings")}} style={{background:"none",border:"none",padding:0,color:c.cl,textDecoration:"underline",font:"inherit",cursor:"pointer"}}>🔑 Key 設定</button> · <a href="/learn/api-keys.html" style={{color:c.cl,textDecoration:"underline"}}>API Key 申請教學</a> · <a href="/learn/gif-guide.html" style={{color:c.cl,textDecoration:"underline"}}>🖼️ 單字動圖說明</a> · <button onClick={()=>{setMenuGroup("tools");setMod("sponsor")}} style={{background:"none",border:"none",padding:0,color:c.cl,textDecoration:"underline",font:"inherit",cursor:"pointer"}}>☕ 支持我們</button></div>
           <div style={{display:"inline-block",fontSize:10,color:"#1D9E75",fontWeight:600,padding:"3px 10px",background:"#E1F5EE",borderRadius:10,marginBottom:6}}>✨ 100% 無廣告 · 純淨學習空間</div>
           <div>AI Tutor powered by <b>Gemini</b> · Speech by <b>Web Speech API</b></div>
           <div>© {new Date().getFullYear()} EnglishGo · 專為台灣學生設計</div>
@@ -2680,7 +2694,7 @@ function Landing({onSelect,onOpenFeature,dark,setDark,keyMissing=false}){
   </div>);
 }
 
-function MenuV2({lv,onSelect,daily,c,xp,coins,streak,achUnlocked,weakWords,isSponsor,pets,eggs}){
+function MenuV2({lv,onSelect,activeGroup="learn",onGroupChange,daily,c,xp,coins,streak,achUnlocked,weakWords,isSponsor,pets,eggs}){
   const target=Math.max(1,daily?.target||1);
   const pct=Math.min(100,Math.round(((daily?.done||0)/target)*100));
   const todayKey=dateKey();
@@ -2688,7 +2702,7 @@ function MenuV2({lv,onSelect,daily,c,xp,coins,streak,achUnlocked,weakWords,isSpo
   const fallbackToday=vocab[hashText(`${todayKey}:${lv}:fallback`)%Math.max(1,vocab.length)]||{w:"learn",m:"學習",p:"v."};
   const[todayWord,setTodayWord]=useState(fallbackToday);
   const[cloudCount,setCloudCount]=useState(0);
-  const[activeGroup,setActiveGroup]=useState("learn");
+  const setActiveGroup=onGroupChange||(()=>{});
   const gradeTheme=({
     elementary:{
       accent:"#0F9F7A",accent2:"#22C55E",accent3:"#0EA5E9",warm:"#F59E0B",
@@ -2761,13 +2775,13 @@ function MenuV2({lv,onSelect,daily,c,xp,coins,streak,achUnlocked,weakWords,isSpo
   const statItems=[
     {label:"連續",value:`${streak} 天`,hint:"保持節奏",tone:"#E24B4A"},
     {label:"XP",value:xp,hint:"累積學習量",tone:"#D97706"},
-    {label:"金幣",value:coins,hint:"可用於寵物",tone:"#C47A12",action:"gacha"},
-    {label:"寵物",value:pets.length,hint:eggs.length?`${eggs.length} 顆蛋待孵化`:"培養夥伴",tone:gradeTheme.groups?.pet||c.cl,action:"pets"},
+    {label:"金幣",value:coins,hint:"可用於寵物",tone:"#C47A12",action:"gacha",group:"pet"},
+    {label:"寵物",value:pets.length,hint:eggs.length?`${eggs.length} 顆蛋待孵化`:"培養夥伴",tone:gradeTheme.groups?.pet||c.cl,action:"pets",group:"pet"},
   ];
   const ModuleCard=({m})=>{
     const group=groups.find(g=>g.id===m.group)||groups[0];
     return(
-      <button type="button" className="eg-menu-module" data-module-id={m.id} onClick={()=>onSelect(m.id)} style={{"--module-color":group.color}}>
+      <button type="button" className="eg-menu-module" data-module-id={m.id} onClick={()=>onSelect(m.id,m.group)} style={{"--module-color":group.color}}>
         <span className="eg-menu-module-icon">{m.icon}</span>
         <span className="eg-menu-module-body">
           <span className="eg-menu-module-title">{m.t}</span>
@@ -2780,7 +2794,7 @@ function MenuV2({lv,onSelect,daily,c,xp,coins,streak,achUnlocked,weakWords,isSpo
   const QuickAction=({m})=>{
     const group=groups.find(g=>g.id===m.group)||groups[0];
     return(
-      <button type="button" className="eg-menu-quick-action" data-module-id={m.id} onClick={()=>onSelect(m.id)} style={{"--module-color":group.color}}>
+      <button type="button" className="eg-menu-quick-action" data-module-id={m.id} onClick={()=>onSelect(m.id,m.group)} style={{"--module-color":group.color}}>
         <span className="eg-menu-quick-icon">{m.icon}</span>
         <span className="eg-menu-quick-text">
           <span className="eg-menu-quick-title">{m.t}</span>
@@ -2894,7 +2908,7 @@ function MenuV2({lv,onSelect,daily,c,xp,coins,streak,achUnlocked,weakWords,isSpo
         </div>
         <div className="eg-menu-stats">
           {statItems.map(item=>(
-            <button key={item.label} type="button" disabled={!item.action} onClick={()=>item.action&&onSelect(item.action)} className={`eg-menu-stat ${item.action?"has-action":""}`} style={{"--tone":item.tone}}>
+            <button key={item.label} type="button" disabled={!item.action} onClick={()=>item.action&&onSelect(item.action,item.group)} className={`eg-menu-stat ${item.action?"has-action":""}`} style={{"--tone":item.tone}}>
               <span className="eg-menu-stat-label">{item.label}</span>
               <span className="eg-menu-stat-value">{item.value}</span>
               <span className="eg-menu-stat-hint">{item.hint}</span>
@@ -2910,7 +2924,7 @@ function MenuV2({lv,onSelect,daily,c,xp,coins,streak,achUnlocked,weakWords,isSpo
             <div className="eg-menu-alert-title">有單字需要補強</div>
             <div className="eg-menu-alert-body">{[...weakWords].sort((a,b)=>b.n-a.n).slice(0,5).map(w=>`${w.w}(${w.n})`).join(" · ")}</div>
           </div>
-          <button type="button" className="eg-menu-alert-action" onClick={()=>onSelect("weak")}>開始複習</button>
+          <button type="button" className="eg-menu-alert-action" onClick={()=>onSelect("weak","tools")}>開始複習</button>
         </section>
       )}
 

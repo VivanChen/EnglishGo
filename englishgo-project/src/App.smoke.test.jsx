@@ -18,6 +18,22 @@ async function openElementaryMenu() {
   });
 }
 
+async function openJuniorMenu() {
+  localStorage.setItem(
+    'eg_loginBonus',
+    JSON.stringify({ lastDate: new Date().toDateString(), streak: 1, claimed: true }),
+  );
+
+  render(<App />);
+
+  const juniorButton = screen.getByText('Junior High').closest('button');
+  fireEvent.click(juniorButton);
+
+  await waitFor(() => {
+    expect(screen.getByText('XP')).toBeInTheDocument();
+  });
+}
+
 function clickFirstButtonWithText(text) {
   const target = screen.getAllByText(text).find(node => node.closest('button'));
   expect(target).toBeTruthy();
@@ -609,6 +625,30 @@ describe('EnglishGo app smoke flow', () => {
     clickMenuStat('寵物');
 
     expect(await screen.findByText('歡迎來到寵物樂園！', {}, { timeout: 5000 })).toBeInTheDocument();
+  }, 15000);
+
+  it('returns to the same menu category after opening a module from that category', async () => {
+    localStorage.setItem(
+      'eg_pets',
+      JSON.stringify([{ petId: 'bunny', rarity: 'N', level: 3, exp: 0, bond: 8 }]),
+    );
+    await openJuniorMenu();
+
+    const petTab = document.querySelector('[data-group-id="pet"]');
+    expect(petTab).toBeTruthy();
+    fireEvent.click(petTab);
+
+    const adventureCard = document.querySelector('[data-module-id="petAdventure"]');
+    expect(adventureCard).toBeTruthy();
+    fireEvent.click(adventureCard);
+
+    expect(await screen.findByText(/寵物冒險/, {}, { timeout: 5000 })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '← 返回' }));
+
+    const returnedPetTab = document.querySelector('[data-group-id="pet"]');
+    expect(returnedPetTab).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByText('扭蛋機')).toBeInTheDocument();
+    expect(screen.getByText('寵物圖鑑')).toBeInTheDocument();
   }, 15000);
 
   it('shows pet care priorities and next-step hints without competition features', async () => {
