@@ -204,6 +204,47 @@ describe('EnglishGo app smoke flow', () => {
     expect(await screen.findByText(/SRS 單字卡/)).toBeInTheDocument();
   });
 
+  it('opens speaking practice and scores a recognized word without crashing', async () => {
+    const OriginalSpeechRecognition = window.SpeechRecognition;
+    const OriginalWebkitSpeechRecognition = window.webkitSpeechRecognition;
+    class MockSpeechRecognition {
+      constructor() {
+        this.lang = '';
+        this.interimResults = false;
+        this.maxAlternatives = 1;
+        this.continuous = false;
+      }
+      start() {
+        const result = { 0: { transcript: 'apple', confidence: 0.99 }, length: 1, isFinal: true };
+        this.onresult?.({ resultIndex: 0, results: { 0: result, length: 1 } });
+        this.onend?.();
+      }
+      stop() {
+        this.onend?.();
+      }
+      abort() {}
+    }
+    window.SpeechRecognition = MockSpeechRecognition;
+    window.webkitSpeechRecognition = MockSpeechRecognition;
+
+    try {
+      await openElementaryMenu();
+
+      const speakCard = document.querySelector('[data-module-id="speak"]');
+      expect(speakCard).toBeTruthy();
+      fireEvent.click(speakCard);
+
+      expect(await screen.findByText('蘋果')).toBeInTheDocument();
+      fireEvent.click(screen.getByText('🎤 直接開說'));
+
+      expect(await screen.findByText('通過')).toBeInTheDocument();
+      expect(screen.getByText(/準確度/)).toHaveTextContent('100%');
+    } finally {
+      window.SpeechRecognition = OriginalSpeechRecognition;
+      window.webkitSpeechRecognition = OriginalWebkitSpeechRecognition;
+    }
+  });
+
   it('starts an exam-range SRS round from typed words', async () => {
     await openElementaryMenu();
 

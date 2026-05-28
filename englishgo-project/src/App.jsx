@@ -3472,6 +3472,16 @@ const HOMOPHONES={
   "son":["sun"],"sun":["son"],"mail":["male"],"male":["mail"],
 };
 
+function normalizeText(text){
+  return String(text||"")
+    .toLowerCase()
+    .replace(/[’‘]/g,"'")
+    .replace(/[^a-z0-9'\s-]/g," ")
+    .replace(/-/g," ")
+    .replace(/\s+/g," ")
+    .trim();
+}
+
 // Fuzzy match a single word — allow edit distance based on length
 function wordMatches(target,spoken){
   if(target===spoken)return true;
