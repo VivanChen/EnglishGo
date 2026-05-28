@@ -2379,7 +2379,7 @@ export default function App(){
       <div style={{maxWidth:!mod?940:mod==="petAdventure"?1280:mod==="srs"?1080:760,margin:"0 auto",padding:mod==="petAdventure"?"14px 18px calc(20px + env(safe-area-inset-bottom, 0px))":"12px 12px calc(16px + env(safe-area-inset-bottom, 0px))"}}>
         {!mod?<MenuV2 lv={lv} onSelect={m=>{setSharedWord(null);setCustomDeck(null);setMod(m)}} daily={daily} c={c} xp={xp} coins={coins} streak={streak} achUnlocked={achUnlocked} weakWords={weakWords} isSponsor={isSponsor} pets={pets} eggs={eggs}/>:
          mod==="wordsearch"?<WordSearchM lv={lv} onBack={back} onOpenCard={(word,level)=>{setLv(level||lv);setSharedWord(word);setCustomDeck(null);setMod("srs")}}/>:
-         mod==="exam"?<ExamReviewM lv={lv} onBack={back} c={c} onStart={deck=>{setSharedWord(null);setCustomDeck(deck);setMod("srs")}}/>:
+         mod==="exam"?<ExamReviewM lv={lv} onBack={back} c={c} apiKey={gemKey} onOpenSettings={()=>setMod("settings")} onStart={deck=>{setSharedWord(null);setCustomDeck(deck);setMod("srs")}}/>:
          mod==="srs"?<SRS lv={lv} onBack={back} onXp={n=>addXpWithTask(n,"srsToday")} onDone={()=>setStats(s=>({...s,srsRounds:s.srsRounds+1}))} trackWeak={trackWeak} gifKey={gifKey} sharedWord={sharedWord} apiKey={gemKey} weakWords={weakWords} customCards={customDeck?.cards||null} customSource={customDeck?.source||""} onOpenSettings={()=>setMod("settings")}/>:
          mod==="quiz"?<QuizM lv={lv} onBack={back} onXp={n=>addXpWithTask(n,"quizToday")} onPerfect={()=>setStats(s=>({...s,perfectQuiz:s.perfectQuiz+1}))} trackWeak={trackWeak}/>:
          mod==="speak"?<SpeakM lv={lv} onBack={back} onXp={n=>addXpWithTask(n,"speakToday")}/>:
@@ -3096,9 +3096,75 @@ function Menu({lv,onSelect,daily,c,xp,coins,streak,achUnlocked,weakWords,isSpons
   </div>);
 }
 
-function ExamReviewM({lv,onBack,c,onStart}){
+const EXAM_AI_TERMS=[
+  ["elementary-1a","小學 1 年級上學期"],["elementary-1b","小學 1 年級下學期"],
+  ["elementary-2a","小學 2 年級上學期"],["elementary-2b","小學 2 年級下學期"],
+  ["elementary-3a","小學 3 年級上學期"],["elementary-3b","小學 3 年級下學期"],
+  ["elementary-4a","小學 4 年級上學期"],["elementary-4b","小學 4 年級下學期"],
+  ["elementary-5a","小學 5 年級上學期"],["elementary-5b","小學 5 年級下學期"],
+  ["elementary-6a","小學 6 年級上學期"],["elementary-6b","小學 6 年級下學期"],
+  ["junior-1a","國中 1 年級上學期"],["junior-1b","國中 1 年級下學期"],
+  ["junior-2a","國中 2 年級上學期"],["junior-2b","國中 2 年級下學期"],
+  ["junior-3a","國中 3 年級上學期"],["junior-3b","國中 3 年級下學期"],
+  ["senior-1a","高中 1 年級上學期"],["senior-1b","高中 1 年級下學期"],
+  ["senior-2a","高中 2 年級上學期"],["senior-2b","高中 2 年級下學期"],
+  ["senior-3a","高中 3 年級上學期"],["senior-3b","高中 3 年級下學期"],
+];
+function defaultExamTerm(lv){return lv==="junior"?"junior-1a":lv==="senior"?"senior-1a":"elementary-1a"}
+function normalizeExamAiQuestions(raw){
+  const list=Array.isArray(raw?.questions)?raw.questions:Array.isArray(raw?.items)?raw.items:[];
+  return list.map((q,i)=>{
+    const options=(Array.isArray(q?.options)?q.options:[]).map(x=>String(x||"").trim()).filter(Boolean).slice(0,4);
+    const answer=Number.isInteger(q?.answerIndex)?options[q.answerIndex]:String(q?.answer||q?.correct||"").trim();
+    return {
+      prompt:String(q?.prompt||q?.question||"").trim(),
+      options,
+      answer,
+      explanation:String(q?.explanation||q?.reason||"").trim(),
+      id:`aiq-${i}-${hashText(String(q?.prompt||i))}`,
+    };
+  }).filter(q=>q.prompt&&q.options.length>=2&&q.answer).slice(0,8);
+}
+async function generateExamAiQuestions({term,lv,apiKey,count=6}){
+  if(!apiKey?.trim())throw new Error("請先到設定填入 Gemini API Key。");
+  const termLabel=EXAM_AI_TERMS.find(([id])=>id===term)?.[1]||LV[lv]?.l||"指定學年";
+  const prompt=`你是台灣學生的英文考試複習出題老師。請依「${termLabel}」程度產生 ${count} 題英文選擇題。
+
+出題範圍要求：
+- 小學生用生活字彙、基礎句型、中文提示可以出現。
+- 國中生可加入文法、閱讀語意與常見會考字彙。
+- 高中生可加入進階字彙、片語、句型與克漏字。
+- 每題 4 個選項，只有 1 個正解。
+- 解釋用繁體中文，短而清楚。
+
+請輸出 STRICT JSON：
+{"questions":[{"prompt":"題目文字","options":["A","B","C","D"],"answer":"正確選項文字","explanation":"繁體中文解析"}]}`;
+  const models=["gemini-2.5-flash-lite","gemini-2.5-flash","gemini-2.0-flash"];
+  for(const model of models){
+    try{
+      const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey.trim())}`,{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:1800,temperature:0.55,responseMimeType:"application/json"}}),
+      });
+      const data=await res.json();
+      if(!res.ok||data?.error)continue;
+      const text=(data?.candidates?.[0]?.content?.parts||[]).map(p=>p.text||"").join("");
+      if(!text)continue;
+      const questions=normalizeExamAiQuestions(parseGrammarJson(text));
+      if(questions.length)return questions;
+    }catch{}
+  }
+  throw new Error("AI 題目暫時產生失敗，請稍後再試。");
+}
+function isSameExamAnswer(a,b){return String(a||"").trim().toLowerCase()===String(b||"").trim().toLowerCase()}
+function ExamReviewM({lv,onBack,c,onStart,apiKey,onOpenSettings}){
   const sample=lv==="elementary"?"apple school water happy run":lv==="junior"?"environment experience communicate opportunity improve":"comprehensive phenomenon sustainable ambiguous facilitate";
   const[text,setText]=useLS(`exam_${lv}`,"");
+  const[aiTerm,setAiTerm]=useLS(`exam_ai_term_${lv}`,defaultExamTerm(lv));
+  const[aiQuestions,setAiQuestions]=useState([]);
+  const[aiAnswers,setAiAnswers]=useState({});
+  const[aiBusy,setAiBusy]=useState(false);
+  const[aiErr,setAiErr]=useState("");
   const[busy,setBusy]=useState(false);
   const[err,setErr]=useState("");
   const[progress,setProgress]=useState("");
@@ -3130,6 +3196,16 @@ function ExamReviewM({lv,onBack,c,onStart}){
       setProgress("");
     }
   };
+  const generateAi=async()=>{
+    setAiErr("");
+    setAiAnswers({});
+    if(!apiKey?.trim()){setAiErr("請先到設定填入 Gemini API Key。");onOpenSettings?.();return}
+    setAiBusy(true);
+    try{setAiQuestions(await generateExamAiQuestions({term:aiTerm,lv,apiKey,count:6}))}
+    catch(e){setAiErr(e?.message||"AI 題目暫時產生失敗。")}
+    finally{setAiBusy(false)}
+  };
+  const pickAi=(qi,opt)=>setAiAnswers(a=>a[qi]!=null?a:{...a,[qi]:opt});
   return(<div>
     <Hdr t="📝 考試範圍複習" onBack={onBack} cl={c.cl}/>
     <section style={{...S.card,padding:18,border:`1px solid ${c.cl}55`,background:`linear-gradient(135deg,${c.bg},${S.bg1})`,boxShadow:"0 18px 42px rgba(20,66,52,.10)"}}>
@@ -3158,6 +3234,32 @@ function ExamReviewM({lv,onBack,c,onStart}){
               {words.map(w=><span key={w} style={{fontSize:12,color:S.t1,background:S.bg2,border:`1px solid ${S.bd}`,borderRadius:10,padding:"6px 8px",fontWeight:800,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{w}</span>)}
             </div>
           </div>}
+          <div style={{marginTop:16,padding:14,border:"1px solid #DDD6FE",borderRadius:18,background:"#F5F3FF"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12,marginBottom:10,flexWrap:"wrap"}}>
+              <div>
+                <div style={{fontSize:12,fontWeight:1000,color:"#6D28D9",marginBottom:4}}>AI 產題</div>
+                <div style={{fontSize:15,fontWeight:900,color:S.t1}}>依學年與學期產生考前選擇題</div>
+                <div style={{fontSize:12,color:S.t2,lineHeight:1.6,marginTop:3}}>選好程度後，AI 會產生符合該學期的英文題目與中文解析。</div>
+              </div>
+              <button onClick={generateAi} disabled={aiBusy} style={{...S.btn,background:"#6D28D9",color:"#fff",padding:"10px 14px",fontSize:13,minHeight:42,opacity:aiBusy ? .65 : 1}}>{aiBusy?"AI 產生中...":"AI 產生題目"}</button>
+            </div>
+            <select data-testid="exam-ai-term" value={aiTerm} onChange={e=>setAiTerm(e.target.value)} disabled={aiBusy} style={{width:"100%",border:"1px solid #C4B5FD",borderRadius:12,background:S.bg1,color:S.t1,padding:"10px 12px",fontSize:14,fontWeight:800,fontFamily:"inherit",outline:"none"}}>
+              {EXAM_AI_TERMS.map(([id,label])=><option key={id} value={id}>{label}</option>)}
+            </select>
+            {aiErr&&<div style={{marginTop:10,padding:"9px 11px",borderRadius:12,background:"#FFF7E6",border:"1px solid #F0D59A",color:"#8A5A00",fontSize:13,lineHeight:1.55}}>{aiErr}</div>}
+            {aiQuestions.length>0&&<div style={{display:"grid",gap:10,marginTop:12}}>
+              {aiQuestions.map((q,qi)=>{const picked=aiAnswers[qi];const answered=picked!=null;const correct=answered&&isSameExamAnswer(picked,q.answer);return <div key={q.id} style={{background:S.bg1,border:`1px solid ${answered?(correct?"#9DDDC7":"#F1B5B5"):"#E9D5FF"}`,borderRadius:14,padding:"11px 12px"}}>
+                <div style={{display:"flex",gap:8,alignItems:"flex-start",marginBottom:8}}>
+                  <span style={{width:24,height:24,borderRadius:"50%",background:"#EDE9FE",color:"#6D28D9",display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:1000,flexShrink:0}}>{qi+1}</span>
+                  <div style={{fontSize:14,fontWeight:850,color:S.t1,lineHeight:1.6}}>{q.prompt}</div>
+                </div>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(120px,1fr))",gap:7}}>
+                  {q.options.map(opt=>{const ok=isSameExamAnswer(opt,q.answer),chosen=isSameExamAnswer(opt,picked);let bg=S.bg2,bd=`1px solid ${S.bd}`,cl=S.t1;if(answered){if(ok){bg="#E1F5EE";bd="2px solid #1D9E75";cl="#146B45"}else if(chosen){bg="#FCEBEB";bd="2px solid #E24B4A";cl="#A12F2F"}}return <button key={opt} onClick={()=>pickAi(qi,opt)} disabled={answered} style={{border:bd,background:bg,color:cl,borderRadius:11,padding:"10px 9px",fontSize:13,fontWeight:850,cursor:answered?"default":"pointer",fontFamily:"inherit"}}>{opt}</button>})}
+                </div>
+                {answered&&<div style={{marginTop:8,fontSize:12,color:S.t2,lineHeight:1.6}}>答案：<b style={{color:"#1D9E75"}}>{q.answer}</b>{q.explanation?`，${q.explanation}`:""}</div>}
+              </div>})}
+            </div>}
+          </div>
         </div>
         <aside style={{border:`1px solid ${S.bd}`,borderRadius:18,background:S.bg1,padding:14,display:"flex",flexDirection:"column",gap:12}}>
           <div>

@@ -205,6 +205,52 @@ describe('EnglishGo app smoke flow', () => {
     expect(screen.getByText('2 個單字')).toBeInTheDocument();
   });
 
+  it('generates grade-semester exam questions with AI', async () => {
+    localStorage.setItem('eg_gemkey', JSON.stringify('test-gemini-key'));
+
+    await openElementaryMenu();
+
+    const examCard = document.querySelector('[data-module-id="exam"]');
+    expect(examCard).toBeTruthy();
+    fireEvent.click(examCard);
+
+    expect(await screen.findByText(/AI 產題/)).toBeInTheDocument();
+    fireEvent.change(screen.getByTestId('exam-ai-term'), { target: { value: 'elementary-1a' } });
+
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        candidates: [{
+          content: {
+            parts: [{
+              text: JSON.stringify({
+                questions: [{
+                  prompt: 'Choose the word for 蘋果.',
+                  options: ['apple', 'book', 'run', 'blue'],
+                  answer: 'apple',
+                  explanation: 'apple 的意思是蘋果。',
+                }],
+              }),
+            }],
+          },
+        }],
+      }),
+    });
+
+    try {
+      fireEvent.click(screen.getByText('AI 產生題目'));
+
+      expect(await screen.findByText('Choose the word for 蘋果.')).toBeInTheDocument();
+      fireEvent.click(screen.getByText('apple'));
+      expect(await screen.findByText(/apple 的意思是蘋果。/)).toBeInTheDocument();
+      await waitFor(() => {
+        expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('generativelanguage.googleapis.com'), expect.any(Object));
+      });
+    } finally {
+      fetchMock.mockRestore();
+    }
+  });
+
   it('shows a Giphy GIF on SRS cards when a GIF key is configured', async () => {
     const gifUrl = 'https://media.giphy.com/media/englishgo-test.gif';
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
