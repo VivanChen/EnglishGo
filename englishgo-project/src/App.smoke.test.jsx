@@ -390,6 +390,8 @@ describe('EnglishGo app smoke flow', () => {
       expect(await screen.findByText('I like to eat apples.')).toBeInTheDocument();
       expect(screen.queryByText(/重點單字：/)).not.toBeInTheDocument();
       expect(screen.getByText('整句近似音')).toBeInTheDocument();
+      expect(screen.getByText('拆解對照')).toBeInTheDocument();
+      expect(screen.getByText(/i → 愛/)).toBeInTheDocument();
 
       const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
         ok: true,
@@ -398,7 +400,7 @@ describe('EnglishGo app smoke flow', () => {
             content: {
               parts: [{
                 text: JSON.stringify({
-                  zhSound: '愛 賴克 吐 伊特 欸-婆-z',
+                  zhSound: '愛 賴ク ㄊ 伊特',
                   syllables: 'I like / to eat apples',
                   stress: '整句重音：like / eat / apples',
                   mouth: '整句分成兩段，先說 I like，再接 to eat apples。',
@@ -420,10 +422,12 @@ describe('EnglishGo app smoke flow', () => {
 
         expect(await screen.findByText('整句重音：like / eat / apples')).toBeInTheDocument();
         expect(screen.getByText('不要只練 apples，要把整句節奏接起來。')).toBeInTheDocument();
+        expect(screen.queryByText(/賴ク|ㄊ/)).not.toBeInTheDocument();
         const requestBody = JSON.parse(fetchMock.mock.calls[0][1].body);
         const promptText = requestBody.contents[0].parts[0].text;
         expect(promptText).toContain('完整英文句子');
         expect(promptText).toContain('I like to eat apples.');
+        expect(promptText).toContain('不要使用注音符號');
         expect(promptText).not.toContain('重點單字：apples');
       } finally {
         fetchMock.mockRestore();
