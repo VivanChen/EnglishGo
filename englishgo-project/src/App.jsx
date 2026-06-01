@@ -3482,6 +3482,20 @@ function normalizeText(text){
     .trim();
 }
 
+function editDist(a,b){
+  const s=String(a||""),t=String(b||"");
+  const dp=Array.from({length:s.length+1},()=>Array(t.length+1).fill(0));
+  for(let i=0;i<=s.length;i++)dp[i][0]=i;
+  for(let j=0;j<=t.length;j++)dp[0][j]=j;
+  for(let i=1;i<=s.length;i++){
+    for(let j=1;j<=t.length;j++){
+      const cost=s[i-1]===t[j-1]?0:1;
+      dp[i][j]=Math.min(dp[i-1][j]+1,dp[i][j-1]+1,dp[i-1][j-1]+cost);
+    }
+  }
+  return dp[s.length][t.length];
+}
+
 // Fuzzy match a single word — allow edit distance based on length
 function wordMatches(target,spoken){
   if(target===spoken)return true;
@@ -3686,17 +3700,28 @@ function normalizePronunciationGuide(raw,item,lv,source="ai"){
     source,
   };
 }
-async function generatePronunciationGuide(item,lv,apiKey){
+async function generatePronunciationGuide(item,lv,apiKey,coachingContext=null){
   if(!item||!apiKey?.trim())throw new Error("需要 Gemini API Key 才能產生 AI 發音提示。");
   const isSentence=item.type==="sentence";
   const target=speakGuideTarget(item);
-  const cacheKey=`speak_pron_${encodeURIComponent(`${lv}:${target}`)}`;
+  const contextKey=coachingContext?.heard?`:heard-${normalizeText(coachingContext.heard)}:${coachingContext.pct??0}`:"";
+  const cacheKey=`speak_pron_${encodeURIComponent(`${lv}:${target}${contextKey}`)}`;
   try{const cached=localStorage.getItem(cacheKey);if(cached)return normalizePronunciationGuide(JSON.parse(cached),item,lv,"ai")}catch{}
+  const analysisBlock=coachingContext?.heard?`
+
+這次學生已經錄音，請優先針對這次結果設計補強練習：
+這次辨識結果：${coachingContext.heard}
+這次分數：${coachingContext.pct}%
+漏掉或未通過：${coachingContext.missing?.length?coachingContext.missing.join(", "):"無"}
+多辨識到：${coachingContext.extra?.length?coachingContext.extra.join(", "):"無"}
+
+請把 steps 做成可以立刻照做的補強流程，例如「先練漏掉的短語」「再接前後單字」「最後說完整句」。`:"";
   const prompt=isSentence?`你是給台灣小朋友使用的英文發音老師。請針對目前這個完整英文句子的節奏、重音、停頓、連音提供發音提示，不要只講單一單字。
 
 程度：${LV[lv]?.name||lv}
 完整英文句子：${item.en}
 中文意思：${item.zh||""}
+${analysisBlock}
 
 請用繁體中文輸出 STRICT JSON：
 {"zhSound":"整句中文近似音，例如：底斯 意斯 惹 安的 歐夫 惹 斯多瑞","syllables":"逐字拆解對照，例如：This → 底斯 / is → 意斯 / the → 惹","stress":"語調提醒，例如：the 輕輕帶過，story 的尾音往上收","mouth":"整句嘴型或連音提示，一句話","mistake":"台灣學生常見句子發音錯誤，一句話","steps":["第一步","第二步","第三步"],"words":[{"word":"句子中的英文單字","zhSound":"中文近似音"}]}
@@ -3713,6 +3738,7 @@ async function generatePronunciationGuide(item,lv,apiKey){
 英文：${item.en}
 中文意思：${item.zh||""}
 重點單字：${target}
+${analysisBlock}
 
 請用繁體中文輸出 STRICT JSON：
 {"zhSound":"相似中文音，用 2-5 個短音節表示，例如 欸-婆","syllables":"英文音節，用 · 分隔","stress":"重音在哪一拍","mouth":"嘴型或舌頭提示，一句話","mistake":"台灣學生常見錯誤，一句話","steps":["第一步","第二步","第三步"],"words":[{"word":"句子中的英文單字","zhSound":"相似中文音"}]}
@@ -3829,11 +3855,23 @@ function SpeakM({lv,onBack,onXp,apiKey,onOpenSettings}){
   };
   const stopListening=()=>{if(recogRef.current&&listening){try{recogRef.current.stop()}catch{}}};
   const demo=()=>cur&&speak(cur.en,"en-US",0.85);
+  const buildPronunciationContext=()=>{
+    const comp=comparison||currentRecord?.comparison;
+    const heard=(spoken&&!spoken.startsWith("[")?spoken:currentRecord?.lastSpoken||"").trim();
+    if(!comp||!heard)return null;
+    return {
+      heard,
+      pct:comp.pct,
+      missing:(comp.result||[]).filter(x=>!x.ok).map(x=>x.word).slice(0,6),
+      extra:(comp.extra||[]).slice(0,6),
+    };
+  };
+  const aiPronLabel=buildPronunciationContext()?"AI 分析這次發音":"AI 產生練習法";
   const loadAiPronunciation=async()=>{
     setPronErr("");
-    if(!apiKey?.trim()){setPronErr("設定 Gemini Key 後，可以產生更貼近這個單字的發音提示。");onOpenSettings?.();return}
+    if(!apiKey?.trim()){setPronErr("設定 Gemini Key 後，可以依目前題目或這次錄音產生補強練習。");onOpenSettings?.();return}
     setPronBusy(true);
-    try{setPronGuide(await generatePronunciationGuide(cur,lv,apiKey))}
+    try{setPronGuide(await generatePronunciationGuide(cur,lv,apiKey,buildPronunciationContext()))}
     catch(e){setPronErr(e?.message||"AI 發音提示暫時產生失敗。")}
     finally{setPronBusy(false)}
   };
@@ -3898,7 +3936,7 @@ function SpeakM({lv,onBack,onXp,apiKey,onOpenSettings}){
               <div style={{fontSize:14,fontWeight:1000,color:S.t1}}>發音小老師</div>
               <div style={{fontSize:11,color:S.t3,marginTop:2}}>中文音只是輔助，最後要跟英文示範音對齊。</div>
             </div>
-            <button onClick={loadAiPronunciation} disabled={pronBusy} aria-label="AI 補強發音" style={{...S.btn,background:guide.source==="ai"?c.cl:S.bg1,color:guide.source==="ai"?"#fff":c.cl,border:`1px solid ${c.cl}44`,padding:"7px 10px",fontSize:12,opacity:pronBusy?0.65:1}}>{pronBusy?"AI 整理中":"AI 補強發音"}</button>
+            <button onClick={loadAiPronunciation} disabled={pronBusy} aria-label={aiPronLabel} style={{...S.btn,background:guide.source==="ai"?c.cl:S.bg1,color:guide.source==="ai"?"#fff":c.cl,border:`1px solid ${c.cl}44`,padding:"7px 10px",fontSize:12,opacity:pronBusy?0.65:1}}>{pronBusy?"AI 整理中":aiPronLabel}</button>
           </div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(128px,1fr))",gap:8,marginBottom:10}}>
             {[[isSentence?"整句近似音":"中文近似音",guide.zhSound],[isSentence?"拆解對照":"音節",guide.syllables],[isSentence?"語調提醒":"重音",guide.stress]].map(([label,value])=><div key={label} style={{background:S.bg1,border:`1px solid ${S.bd}`,borderRadius:12,padding:"8px 10px"}}>

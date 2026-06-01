@@ -360,7 +360,7 @@ describe('EnglishGo app smoke flow', () => {
       });
 
       try {
-        fireEvent.click(screen.getByRole('button', { name: 'AI 補強發音' }));
+        fireEvent.click(screen.getByRole('button', { name: 'AI 產生練習法' }));
 
         expect(await screen.findByText('第一拍 ap')).toBeInTheDocument();
         expect(screen.getByText('不要把 ple 念得太重。')).toBeInTheDocument();
@@ -418,7 +418,7 @@ describe('EnglishGo app smoke flow', () => {
       });
 
       try {
-        fireEvent.click(screen.getByRole('button', { name: 'AI 補強發音' }));
+        fireEvent.click(screen.getByRole('button', { name: 'AI 產生練習法' }));
 
         expect(await screen.findByText('整句重音：like / eat / apples')).toBeInTheDocument();
         expect(screen.getByText('不要只練 apples，要把整句節奏接起來。')).toBeInTheDocument();
@@ -434,6 +434,86 @@ describe('EnglishGo app smoke flow', () => {
       }
     } finally {
       restoreSpeechRecognition();
+    }
+  });
+
+  it('sends the latest speaking result to AI for targeted pronunciation coaching', async () => {
+    localStorage.setItem('eg_gemkey', JSON.stringify('test-gemini-key'));
+    localStorage.removeItem('speak_pron_elementary%3Ai%20like%20to%20eat%20apples%3Aheard-i%20like%20apples%3A60');
+    const OriginalSpeechRecognition = window.SpeechRecognition;
+    const OriginalWebkitSpeechRecognition = window.webkitSpeechRecognition;
+    class MockSpeechRecognition {
+      constructor() {
+        this.lang = '';
+        this.interimResults = false;
+        this.maxAlternatives = 1;
+        this.continuous = false;
+      }
+      start() {
+        const result = { 0: { transcript: 'I like apples', confidence: 0.99 }, length: 1, isFinal: true };
+        this.onresult?.({ resultIndex: 0, results: { 0: result, length: 1 } });
+        this.onend?.();
+      }
+      stop() {
+        this.onend?.();
+      }
+      abort() {}
+    }
+    window.SpeechRecognition = MockSpeechRecognition;
+    window.webkitSpeechRecognition = MockSpeechRecognition;
+
+    try {
+      await openElementaryMenu();
+
+      const speakCard = document.querySelector('[data-module-id="speak"]');
+      expect(speakCard).toBeTruthy();
+      fireEvent.click(speakCard);
+      fireEvent.click(await screen.findByRole('button', { name: '句子練習' }));
+      fireEvent.click(await screen.findByText('🎤 直接開說'));
+
+      expect(await screen.findByText('再練一次')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'AI 分析這次發音' })).toBeInTheDocument();
+
+      const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          candidates: [{
+            content: {
+              parts: [{
+                text: JSON.stringify({
+                  zhSound: '愛 賴克 吐 伊特 欸婆斯',
+                  syllables: 'i → 愛 / like → 賴克 / to → 吐 / eat → 伊特 / apples → 欸婆斯',
+                  stress: '先補上 to eat，再接 apples。',
+                  mouth: 'I like 後面不要直接跳到 apples。',
+                  mistake: '這次少了 to eat，句子意思會不完整。',
+                  steps: ['先練 to eat', '再練 like to eat', '最後說完整句'],
+                  words: [
+                    { word: 'to', zhSound: '吐' },
+                    { word: 'eat', zhSound: '伊特' },
+                  ],
+                }),
+              }],
+            },
+          }],
+        }),
+      });
+
+      try {
+        fireEvent.click(screen.getByRole('button', { name: 'AI 分析這次發音' }));
+
+        expect(await screen.findByText('這次少了 to eat，句子意思會不完整。')).toBeInTheDocument();
+        const requestBody = JSON.parse(fetchMock.mock.calls[0][1].body);
+        const promptText = requestBody.contents[0].parts[0].text;
+        expect(promptText).toContain('這次辨識結果：I like apples');
+        expect(promptText).toContain('這次分數：60%');
+        expect(promptText).toContain('漏掉或未通過：to, eat');
+        expect(promptText).toContain('請優先針對這次結果設計補強練習');
+      } finally {
+        fetchMock.mockRestore();
+      }
+    } finally {
+      window.SpeechRecognition = OriginalSpeechRecognition;
+      window.webkitSpeechRecognition = OriginalWebkitSpeechRecognition;
     }
   });
 
