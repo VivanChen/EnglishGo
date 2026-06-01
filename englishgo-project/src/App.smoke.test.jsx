@@ -898,6 +898,35 @@ describe('EnglishGo app smoke flow', () => {
     expect(screen.getByText('寵物圖鑑')).toBeInTheDocument();
   }, 15000);
 
+  it('opens pet monopoly and rewards an English answer', async () => {
+    localStorage.setItem(
+      'eg_pets',
+      JSON.stringify([{ petId: 'bunny', rarity: 'N', level: 2, exp: 20, bond: 6, hunger: 70, clean: 80, energy: 90 }]),
+    );
+
+    await openElementaryMenu();
+
+    const gameTab = document.querySelector('[data-group-id="game"]');
+    expect(gameTab).toBeTruthy();
+    fireEvent.click(gameTab);
+
+    const monopolyCard = document.querySelector('[data-module-id="petMonopoly"]');
+    expect(monopolyCard).toBeTruthy();
+    fireEvent.click(monopolyCard);
+
+    expect(await screen.findByText(/寵物大富翁/, {}, { timeout: 5000 })).toBeInTheDocument();
+    expect(screen.getByTestId('pet-monopoly-board')).toBeInTheDocument();
+    expect(screen.getAllByText('擲骰前先答英文題').length).toBeGreaterThan(0);
+
+    fireEvent.click(screen.getByTestId('pet-monopoly-roll'));
+    expect((await screen.findAllByText(/英文挑戰/)).length).toBeGreaterThan(0);
+
+    fireEvent.click(screen.getByTestId('pet-monopoly-choice-correct'));
+
+    expect(await screen.findByTestId('pet-monopoly-feedback')).toHaveTextContent('答對');
+    expect(screen.getAllByText(/寵物獲得/).length).toBeGreaterThan(0);
+  }, 15000);
+
   it('shows pet care priorities and next-step hints without competition features', async () => {
     const today = new Date().toDateString();
     localStorage.setItem('eg_petAcc', JSON.stringify({ username: 'Kid', pinHash: 'demo', lastSync: today }));

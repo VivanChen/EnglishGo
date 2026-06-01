@@ -2271,7 +2271,7 @@ export default function App(){
     const nextLevel=LV[targetLevel]?targetLevel:"elementary";
     const targetGroup={
       songs:"read",novels:"read",reading:"read",dictation:"read",story:"read",
-      whack:"game",match:"game",bomb:"game",scramble:"game",
+      whack:"game",match:"game",bomb:"game",scramble:"game",petMonopoly:"game",
       gacha:"pet",pets:"pet",petAdventure:"pet",
       achievements:"tools",weak:"tools",dashboard:"tools",settings:"tools",sponsor:"tools",
     }[targetModule]||"learn";
@@ -2390,7 +2390,7 @@ export default function App(){
         <VoicePicker/>
         <button onClick={()=>setDark(!dark)} style={{background:"none",border:"none",fontSize:14,cursor:"pointer",minWidth:32,minHeight:32,display:"flex",alignItems:"center",justifyContent:"center"}}>{dark?"☀️":"🌙"}</button>
       </nav>
-      <div style={{maxWidth:!mod?940:mod==="petAdventure"?1280:mod==="srs"?1080:760,margin:"0 auto",padding:mod==="petAdventure"?"14px 18px calc(20px + env(safe-area-inset-bottom, 0px))":"12px 12px calc(16px + env(safe-area-inset-bottom, 0px))"}}>
+      <div style={{maxWidth:!mod?940:mod==="petAdventure"?1280:mod==="petMonopoly"?1180:mod==="srs"?1080:760,margin:"0 auto",padding:mod==="petAdventure"||mod==="petMonopoly"?"14px 18px calc(20px + env(safe-area-inset-bottom, 0px))":"12px 12px calc(16px + env(safe-area-inset-bottom, 0px))"}}>
         {!mod?<MenuV2 lv={lv} onSelect={openModule} activeGroup={menuGroup} onGroupChange={setMenuGroup} daily={daily} c={c} xp={xp} coins={coins} streak={streak} achUnlocked={achUnlocked} weakWords={weakWords} isSponsor={isSponsor} pets={pets} eggs={eggs}/>:
          mod==="wordsearch"?<WordSearchM lv={lv} onBack={back} onOpenCard={(word,level)=>{setLv(level||lv);setSharedWord(word);setCustomDeck(null);setMod("srs")}}/>:
          mod==="exam"?<ExamReviewM lv={lv} onBack={back} c={c} apiKey={gemKey} onOpenSettings={()=>setMod("settings")} onStart={deck=>{setSharedWord(null);setCustomDeck(deck);setMod("srs")}}/>:
@@ -2400,6 +2400,7 @@ export default function App(){
          mod==="whack"?<WhackM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="match"?<MatchM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="bomb"?<BombM lv={lv} onBack={back} onXp={addXp}/>:
+         mod==="petMonopoly"?<PetMonopolyM lv={lv} onBack={back} onXp={addXp} c={c} pets={pets} setPets={setPets} coins={coins} setCoins={setCoins}/>:
          mod==="grammar"?<GrammarM lv={lv} onBack={back} onXp={addXp} apiKey={gemKey} onOpenSettings={()=>setMod("settings")}/>:
          mod==="reading"?<ReadingM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="novels"?<NovelM lv={lv} onBack={back} onXp={addXp}/>:
@@ -2752,6 +2753,7 @@ function MenuV2({lv,onSelect,activeGroup="learn",onGroupChange,daily,c,xp,coins,
     {id:"match",group:"game",icon:"M",t:"配對遊戲",d:"英文與中文快速配對",tag:"記憶配對"},
     {id:"bomb",group:"game",icon:"B",t:"拆蛋拼字",d:"看提示完成拼字",tag:"拼字挑戰"},
     {id:"scramble",group:"game",icon:"S",t:"句子重組",d:"把單字排成正確句子",tag:"語順練習"},
+    {id:"petMonopoly",group:"game",icon:"🎲",t:"寵物大富翁",d:"走棋盤答英文養寵物",tag:"寵物桌遊"},
     {id:"gacha",group:"pet",icon:"G",t:"扭蛋機",d:`${coins} 金幣可使用`,tag:"取得寵物"},
     {id:"pets",group:"pet",icon:"P",t:"寵物圖鑑",d:`${pets.length} 隻寵物 · ${eggs.length} 顆蛋`,tag:"培養照顧"},
     {id:"petAdventure",group:"pet",icon:"A",t:"寵物冒險",d:pets.length?`${pets.length} 隻可組隊戰鬥`:"先取得寵物再挑戰",tag:"英文戰鬥"},
@@ -2984,6 +2986,7 @@ function Menu({lv,onSelect,daily,c,xp,coins,streak,achUnlocked,weakWords,isSpons
     {id:"match",group:"game",icon:"🎴",t:"配對翻牌",d:"記憶遊戲",tag:"記憶配對"},
     {id:"bomb",group:"game",icon:"💣",t:"拆彈拼字",d:"限時拆彈！",tag:"拼字挑戰"},
     {id:"scramble",group:"game",icon:"🧩",t:"句子重組",d:"語序訓練",tag:"句子遊戲"},
+    {id:"petMonopoly",group:"game",icon:"🎲",t:"寵物大富翁",d:"答英文走棋盤",tag:"寵物桌遊"},
     {id:"gacha",group:"pet",icon:"🎰",t:"扭蛋機",d:`🪙 ${coins} 金幣`,tag:"取得寵物"},
     {id:"pets",group:"pet",icon:"🐾",t:"寵物圖鑑",d:`${pets.length} 隻 · ${eggs.length} 顆蛋`,tag:"培養照顧"},
     {id:"petAdventure",group:"pet",icon:"🗺️",t:"寵物冒險",d:pets.length?`${pets.length} 隻可組隊`:"先取得寵物",tag:"英文戰鬥"},
@@ -3966,6 +3969,299 @@ function whackRoundTime(word,lv){
   const cap=lv==="elementary"?28:lv==="junior"?25:23;
   return Math.min(cap,Math.max(base,Math.ceil(base+len*per)));
 }
+const PET_MONOPOLY_TILES=[
+  {id:"start",type:"start",name:"起點",icon:"🏁",hint:"經過可領取補給"},
+  {id:"word-market",type:"word",name:"單字市集",icon:"🔤",hint:"看中文選英文"},
+  {id:"grammar-gate",type:"grammar",name:"文法城門",icon:"¶",hint:"補上正確句型"},
+  {id:"coin-park",type:"event",name:"金幣公園",icon:"🪙",hint:"答對拿小獎"},
+  {id:"pet-school",type:"training",name:"寵物學院",icon:"🎓",hint:"寵物 EXP 加成"},
+  {id:"word-harbor",type:"word",name:"單字港口",icon:"⚓",hint:"核心字彙挑戰"},
+  {id:"shop",type:"shop",name:"補給商店",icon:"🛒",hint:"答對換補給金"},
+  {id:"grammar-plaza",type:"grammar",name:"文法廣場",icon:"▦",hint:"句型四選一"},
+  {id:"chance",type:"event",name:"命運卡",icon:"✦",hint:"隨機學習事件"},
+  {id:"word-station",type:"word",name:"單字車站",icon:"🚉",hint:"快速翻譯"},
+  {id:"training-yard",type:"training",name:"訓練庭院",icon:"🏋️",hint:"寵物羈絆提升"},
+  {id:"grammar-tower",type:"grammar",name:"文法塔",icon:"🏰",hint:"高分文法題"},
+  {id:"treasure",type:"event",name:"寶箱格",icon:"🎁",hint:"答對開寶箱"},
+  {id:"word-library",type:"word",name:"單字圖書館",icon:"📚",hint:"例句單字"},
+  {id:"pet-camp",type:"training",name:"寵物營地",icon:"⛺",hint:"休息後更親密"},
+  {id:"boss",type:"boss",name:"Boss 城堡",icon:"👑",hint:"高獎勵英文關卡"},
+];
+const PET_MONOPOLY_GRID=[
+  [5,5],[4,5],[3,5],[2,5],[1,5],
+  [1,4],[1,3],[1,2],[1,1],
+  [2,1],[3,1],[4,1],[5,1],
+  [5,2],[5,3],[5,4],
+];
+const PET_MONOPOLY_TYPE_META={
+  start:{label:"起點",color:"#0F9F7A",soft:"#E7FFF5"},
+  word:{label:"單字",color:"#2563EB",soft:"#EFF6FF"},
+  grammar:{label:"文法",color:"#7C3AED",soft:"#F5F3FF"},
+  event:{label:"事件",color:"#D97706",soft:"#FFF7ED"},
+  shop:{label:"商店",color:"#0891B2",soft:"#ECFEFF"},
+  training:{label:"培養",color:"#DB2777",soft:"#FDF2F8"},
+  boss:{label:"Boss",color:"#DC2626",soft:"#FEF2F2"},
+};
+function pickPetMonopolyWord(lv,seed=0){
+  const list=(V[lv]||V.elementary||[]).filter(w=>w?.w&&w?.m);
+  return list[Math.abs(seed)%Math.max(1,list.length)]||{w:"learn",m:"學習",p:"v.",ex:"I learn English."};
+}
+function buildPetMonopolyQuestion(lv,tile,seed=0){
+  const wordTiles=["word","event","shop","training","start"];
+  const grammarList=(G[lv]||G.elementary||[]).filter(g=>g?.q?.s&&Array.isArray(g?.q?.o));
+  if((tile?.type==="grammar"||tile?.type==="boss")&&grammarList.length){
+    const topic=grammarList[Math.abs(seed)%grammarList.length];
+    return{
+      kind:"grammar",
+      title:`英文挑戰：${topic.t}`,
+      prompt:topic.q.s,
+      sub:`${topic.d}${topic.pattern?` · ${topic.pattern}`:""}`,
+      choices:topic.q.o.map(String),
+      answer:topic.q.a,
+      explain:topic.q.o[topic.q.a],
+    };
+  }
+  const word=pickPetMonopolyWord(lv,seed);
+  const pool=(V[lv]||V.elementary||[]).filter(w=>w?.w&&w?.m&&w.w!==word.w);
+  const wrongs=shuffleCopy(pool).slice(0,3).map(w=>w.w);
+  const choices=shuffleCopy([word.w,...wrongs]);
+  return{
+    kind:wordTiles.includes(tile?.type)?"word":"word",
+    title:"英文挑戰：單字翻譯",
+    prompt:`「${word.m}」的英文是？`,
+    sub:word.p?`${word.p}${word.ex?` · ${word.ex}`:""}`:word.ex||"看中文選出正確英文",
+    choices,
+    answer:choices.indexOf(word.w),
+    explain:word.w,
+    word,
+  };
+}
+function getPetMonopolyReward(tile,lapBonus=false){
+  const table={
+    start:{xp:4,coins:6,petExp:4,bond:1,label:"起點補給"},
+    word:{xp:8,coins:8,petExp:9,bond:2,label:"單字街獎勵"},
+    grammar:{xp:10,coins:9,petExp:10,bond:2,label:"文法地產獎勵"},
+    event:{xp:7,coins:14,petExp:7,bond:2,label:"事件卡獎勵"},
+    shop:{xp:6,coins:18,petExp:6,bond:1,label:"商店補給"},
+    training:{xp:9,coins:7,petExp:18,bond:5,label:"寵物訓練"},
+    boss:{xp:18,coins:24,petExp:28,bond:8,label:"Boss 勝利獎勵"},
+  };
+  const base=table[tile?.type]||table.word;
+  return lapBonus?{...base,xp:base.xp+6,coins:base.coins+12,petExp:base.petExp+4,bond:base.bond+1,label:`${base.label} + 繞行一圈`}:base;
+}
+function growPetFromMonopoly(pet,reward){
+  if(!pet)return pet;
+  let next={
+    ...pet,
+    exp:Math.max(0,Number(pet.exp)||0)+(reward.petExp||0),
+    bond:Math.min(100,Math.max(0,Number(pet.bond)||0)+(reward.bond||0)),
+    energy:Math.max(0,Math.min(100,Number(pet.energy??80)-2)),
+    hunger:Math.max(0,Math.min(100,Number(pet.hunger??80)-1)),
+    lastUpdate:new Date().toISOString(),
+  };
+  for(let i=0;i<8;i++){
+    const leveled=levelUpPet(next);
+    if(leveled===next)break;
+    next=leveled;
+  }
+  return next;
+}
+function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
+  const color=c?.cl||"#0F6E56";
+  const accent=c?.ac||"#1D9E75";
+  const tiles=PET_MONOPOLY_TILES;
+  const[petIndex,setPetIndex]=useState(0);
+  const[position,setPosition]=useState(0);
+  const[dice,setDice]=useState(null);
+  const[turn,setTurn]=useState(0);
+  const[pending,setPending]=useState(null);
+  const[feedback,setFeedback]=useState("擲骰前先答英文題");
+  const[score,setScore]=useState({correct:0,wrong:0,laps:0});
+  const[logs,setLogs]=useState(["歡迎來到學習島，答對英文題才能前進。"]);
+  const selectedPet=pets?.[petIndex]||null;
+  const selectedPetDef=selectedPet?getAdventurePetDef(selectedPet):null;
+  useEffect(()=>{if(pets.length&&petIndex>=pets.length)setPetIndex(0)},[pets.length,petIndex]);
+  const addLog=text=>setLogs(prev=>[text,...prev].slice(0,5));
+  const nextDice=1+(turn%6);
+  const previewTile=tiles[(position+nextDice)%tiles.length];
+  const roll=()=>{
+    if(pending)return;
+    const nextPos=(position+nextDice)%tiles.length;
+    const tile=tiles[nextPos];
+    const question=buildPetMonopolyQuestion(lv,tile,turn+position+nextPos);
+    setDice(nextDice);
+    setPending({dice:nextDice,nextPos,tile,question,lapBonus:nextPos<=position&&position!==0});
+    setFeedback(`骰出 ${nextDice}，完成英文挑戰後前進到「${tile.name}」。`);
+  };
+  const answer=idx=>{
+    if(!pending)return;
+    const correct=idx===pending.question.answer;
+    if(correct){
+      const reward=getPetMonopolyReward(pending.tile,pending.lapBonus);
+      const totalXp=reward.xp;
+      const totalCoins=reward.coins;
+      setPosition(pending.nextPos);
+      setScore(s=>({correct:s.correct+1,wrong:s.wrong,laps:s.laps+(pending.lapBonus?1:0)}));
+      onXp?.(totalXp);
+      setCoins?.(v=>Math.max(0,(Number(v)||0)+totalCoins));
+      if(selectedPet&&setPets){
+        setPets(prev=>(prev||[]).map((pet,i)=>i===petIndex?growPetFromMonopoly(pet,reward):pet));
+      }
+      const petText=selectedPet?`寵物獲得 ${reward.petExp} EXP、羈絆 +${reward.bond}`:"取得寵物後可累積寵物 EXP";
+      const msg=`答對！${reward.label}：+${totalXp} XP、+${totalCoins} 金幣，${petText}。`;
+      setFeedback(msg);
+      addLog(msg);
+    }else{
+      setScore(s=>({correct:s.correct,wrong:s.wrong+1,laps:s.laps}));
+      const msg=`再挑戰一次：正確答案是 ${pending.question.explain}。`;
+      setFeedback(msg);
+      addLog(msg);
+    }
+    setTurn(t=>t+1);
+    setPending(null);
+  };
+  const accuracy=Math.round((score.correct/Math.max(1,score.correct+score.wrong))*100);
+  return(<div className="pet-monopoly" style={{"--pm-accent":color,"--pm-accent-2":accent,"--pm-border":S.bd,"--pm-card":S.bg1,"--pm-surface":S.bg2,"--pm-text":S.t1,"--pm-muted":S.t2}}>
+    <Hdr t="🎲 寵物大富翁" onBack={onBack} cl={color}/>
+    <style>{`
+      .pet-monopoly{display:grid;gap:14px;color:var(--pm-text)}
+      .pet-monopoly button{font-family:inherit}
+      .pm-hero{border:1px solid color-mix(in srgb,var(--pm-accent) 30%,var(--pm-border));border-radius:24px;background:radial-gradient(circle at 18% 12%,color-mix(in srgb,var(--pm-accent) 22%,transparent),transparent 30%),radial-gradient(circle at 92% 20%,rgba(250,204,21,.24),transparent 26%),linear-gradient(135deg,#F8FFF8,var(--pm-card));padding:18px;display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:14px;box-shadow:0 18px 38px rgba(15,110,86,.08)}
+      .pm-kicker{display:inline-flex;align-items:center;gap:7px;color:var(--pm-accent);background:color-mix(in srgb,var(--pm-accent) 10%,#fff);border:1px solid color-mix(in srgb,var(--pm-accent) 24%,transparent);border-radius:999px;padding:6px 10px;font-size:12px;font-weight:1000}
+      .pm-title{font-size:clamp(28px,5vw,48px);line-height:1.02;font-weight:1000;margin:10px 0 8px;letter-spacing:0}
+      .pm-desc{font-size:13px;color:var(--pm-muted);line-height:1.7;max-width:680px}
+      .pm-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+      .pm-stat{border:1px solid color-mix(in srgb,var(--tone) 24%,var(--pm-border));border-radius:16px;background:linear-gradient(135deg,color-mix(in srgb,var(--tone) 12%,#fff),var(--pm-card));padding:12px;min-height:74px}
+      .pm-stat b{display:block;font-size:20px;line-height:1.05;margin-top:6px}
+      .pm-stat span{font-size:11px;color:var(--tone);font-weight:1000}
+      .pm-main{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px;align-items:start}
+      .pm-board{display:grid;grid-template-columns:repeat(5,minmax(78px,1fr));grid-template-rows:repeat(5,minmax(78px,1fr));gap:8px;border:1px solid color-mix(in srgb,var(--pm-accent) 28%,var(--pm-border));border-radius:24px;background:linear-gradient(135deg,#F7FFFC,var(--pm-card));padding:10px;box-shadow:0 18px 44px rgba(15,110,86,.07)}
+      .pm-tile{position:relative;border:1px solid color-mix(in srgb,var(--tile-color) 34%,var(--pm-border));border-radius:14px;background:linear-gradient(135deg,var(--tile-soft),var(--pm-card));padding:7px;text-align:left;overflow:hidden;min-height:78px}
+      .pm-tile.is-active{box-shadow:0 0 0 3px color-mix(in srgb,var(--tile-color) 24%,transparent),0 12px 24px color-mix(in srgb,var(--tile-color) 18%,transparent);transform:translateY(-1px)}
+      .pm-tile-icon{font-size:20px;display:block}
+      .pm-tile-name{display:block;font-size:11px;font-weight:1000;line-height:1.2;margin-top:4px}
+      .pm-tile-type{display:inline-block;font-size:9px;font-weight:1000;color:var(--tile-color);background:color-mix(in srgb,var(--tile-color) 10%,#fff);border-radius:999px;padding:2px 6px;margin-top:5px}
+      .pm-token{position:absolute;right:5px;bottom:5px;width:42px;height:42px;border-radius:14px;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 18px rgba(0,0,0,.12);overflow:hidden}
+      .pm-center{grid-column:2 / 5;grid-row:2 / 5;border:1px dashed color-mix(in srgb,var(--pm-accent) 28%,var(--pm-border));border-radius:20px;background:linear-gradient(135deg,color-mix(in srgb,var(--pm-accent) 8%,#fff),#fff);display:grid;place-items:center;text-align:center;padding:18px}
+      .pm-dice{width:78px;height:78px;border:0;border-radius:22px;background:linear-gradient(135deg,var(--pm-accent),var(--pm-accent-2));color:#fff;font-size:34px;font-weight:1000;cursor:pointer;box-shadow:0 18px 32px color-mix(in srgb,var(--pm-accent) 26%,transparent)}
+      .pm-dice:disabled{opacity:.55;cursor:not-allowed}
+      .pm-panel{border:1px solid color-mix(in srgb,var(--pm-accent) 22%,var(--pm-border));border-radius:22px;background:var(--pm-card);padding:14px;display:grid;gap:12px}
+      .pm-section-title{font-size:14px;font-weight:1000;color:var(--pm-text)}
+      .pm-pets{display:grid;gap:8px}
+      .pm-pet-button{border:1px solid var(--pm-border);border-radius:14px;background:var(--pm-surface);padding:9px 10px;display:flex;align-items:center;gap:8px;text-align:left;cursor:pointer}
+      .pm-pet-button.is-active{border-color:var(--pm-accent);background:color-mix(in srgb,var(--pm-accent) 10%,var(--pm-card))}
+      .pm-feedback{border:1px solid color-mix(in srgb,var(--pm-accent) 24%,var(--pm-border));border-radius:16px;background:linear-gradient(135deg,color-mix(in srgb,var(--pm-accent) 9%,#fff),var(--pm-card));padding:12px;font-size:13px;font-weight:900;line-height:1.55;color:var(--pm-accent)}
+      .pm-question{border:1px solid color-mix(in srgb,var(--pm-accent) 24%,var(--pm-border));border-radius:20px;background:linear-gradient(135deg,#fff,color-mix(in srgb,var(--pm-accent) 7%,#fff));padding:14px;box-shadow:0 16px 34px rgba(15,110,86,.08)}
+      .pm-question h3{margin:0 0 8px;font-size:18px}
+      .pm-question p{margin:0;color:var(--pm-muted);font-size:13px;line-height:1.55}
+      .pm-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:12px}
+      .pm-choice{border:1px solid color-mix(in srgb,var(--pm-accent) 22%,var(--pm-border));border-radius:14px;background:var(--pm-card);padding:12px;font-size:15px;font-weight:1000;cursor:pointer;color:var(--pm-text)}
+      .pm-choice:hover{border-color:var(--pm-accent);background:color-mix(in srgb,var(--pm-accent) 8%,#fff)}
+      .pm-log{display:grid;gap:7px}
+      .pm-log div{font-size:12px;line-height:1.45;color:var(--pm-muted);background:var(--pm-surface);border:1px solid var(--pm-border);border-radius:12px;padding:8px}
+      @media (max-width:900px){.pm-hero,.pm-main{grid-template-columns:1fr}.pm-board{grid-template-columns:repeat(5,minmax(58px,1fr));grid-template-rows:repeat(5,minmax(58px,1fr));gap:6px}.pm-tile{min-height:58px;padding:5px}.pm-tile-name{font-size:10px}.pm-tile-type{display:none}.pm-token{width:34px;height:34px}.pm-center{padding:10px}.pm-dice{width:64px;height:64px;font-size:28px}}
+      @media (max-width:520px){.pm-hero{padding:14px;border-radius:20px}.pm-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.pm-board{padding:7px;gap:4px}.pm-tile-icon{font-size:16px}.pm-tile-name{font-size:9px}.pm-choices{grid-template-columns:1fr}.pm-panel{padding:12px}}
+    `}</style>
+    <section className="pm-hero">
+      <div>
+        <div className="pm-kicker">學習桌遊 · 寵物同行</div>
+        <div className="pm-title">學習島棋盤</div>
+        <div className="pm-desc">像大富翁一樣繞棋盤前進，但每一步都要先完成英文挑戰。答對後可拿 XP、金幣，並讓目前選擇的寵物累積 EXP 與羈絆。</div>
+      </div>
+      <div className="pm-stats">
+        <div className="pm-stat" style={{"--tone":"#0F9F7A"}}><span>正確率</span><b>{accuracy}%</b></div>
+        <div className="pm-stat" style={{"--tone":"#D97706"}}><span>金幣</span><b>{coins}</b></div>
+        <div className="pm-stat" style={{"--tone":"#2563EB"}}><span>回合</span><b>{turn}</b></div>
+        <div className="pm-stat" style={{"--tone":"#DB2777"}}><span>圈數</span><b>{score.laps}</b></div>
+      </div>
+    </section>
+    <section className="pm-main">
+      <div>
+        <div className="pm-board" data-testid="pet-monopoly-board" aria-label="寵物大富翁棋盤">
+          {tiles.map((tile,i)=>{
+            const meta=PET_MONOPOLY_TYPE_META[tile.type]||PET_MONOPOLY_TYPE_META.word;
+            const[posCol,posRow]=PET_MONOPOLY_GRID[i]||[1,1];
+            const active=i===position;
+            return(
+              <div key={tile.id} className={`pm-tile ${active?"is-active":""}`} style={{"--tile-color":meta.color,"--tile-soft":meta.soft,gridColumn:posCol,gridRow:posRow}}>
+                <span className="pm-tile-icon">{tile.icon}</span>
+                <span className="pm-tile-name">{tile.name}</span>
+                <span className="pm-tile-type">{meta.label}</span>
+                {active&&<span className="pm-token" aria-label="目前位置">{selectedPet?<PixelPet pet={selectedPet} size={44}/>:<span style={{fontSize:24}}>🐾</span>}</span>}
+              </div>
+            );
+          })}
+          <div className="pm-center">
+            <div>
+              <button className="pm-dice" data-testid="pet-monopoly-roll" disabled={!!pending} onClick={roll} aria-label="擲骰">{dice||nextDice}</button>
+              <div style={{fontSize:13,fontWeight:1000,color:color,marginTop:10}}>下一格：{previewTile.name}</div>
+              <div style={{fontSize:12,color:S.t3,marginTop:4}}>{pending?"先完成目前英文挑戰":"擲骰前先答英文題"}</div>
+            </div>
+          </div>
+        </div>
+        <div className="pm-feedback" data-testid="pet-monopoly-feedback" style={{marginTop:12}}>{feedback}</div>
+        {pending&&(
+          <div className="pm-question" style={{marginTop:12}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,marginBottom:8}}>
+              <div style={{fontSize:12,fontWeight:1000,color:color}}>英文挑戰 · 骰出 {pending.dice}</div>
+              <div style={{fontSize:12,fontWeight:1000,color:PET_MONOPOLY_TYPE_META[pending.tile.type]?.color||color}}>{pending.tile.name}</div>
+            </div>
+            <h3>{pending.question.prompt}</h3>
+            <p>{pending.question.sub}</p>
+            <div className="pm-choices">
+              {pending.question.choices.map((choice,i)=>(
+                <button key={`${choice}-${i}`} type="button" className="pm-choice" data-testid={i===pending.question.answer?"pet-monopoly-choice-correct":undefined} onClick={()=>answer(i)}>
+                  {choice}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+      <aside className="pm-panel">
+        <div>
+          <div className="pm-section-title">寵物隊長</div>
+          <div style={{fontSize:12,color:S.t3,lineHeight:1.55,marginTop:4}}>選一隻寵物當棋子，答對會讓牠成長。</div>
+        </div>
+        {pets.length?(
+          <div className="pm-pets">
+            {pets.slice(0,6).map((pet,i)=>{
+              const def=getAdventurePetDef(pet);
+              return(
+                <button key={`${pet.petId||"pet"}-${i}`} type="button" className={`pm-pet-button ${i===petIndex?"is-active":""}`} onClick={()=>setPetIndex(i)}>
+                  <span style={{width:34,height:34,borderRadius:12,background:"#fff",display:"inline-flex",alignItems:"center",justifyContent:"center",overflow:"hidden"}}><PixelPet pet={pet} size={36}/></span>
+                  <span style={{minWidth:0}}>
+                    <span style={{display:"block",fontSize:13,fontWeight:1000,color:S.t1}}>{def?.name||"學習寵物"} · Lv.{pet.level||1}</span>
+                    <span style={{display:"block",fontSize:11,color:S.t3}}>EXP {pet.exp||0} · 羈絆 {pet.bond||0}</span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        ):(
+          <div style={{border:`1px dashed ${color}55`,borderRadius:16,padding:14,background:`${color}0f`,fontSize:13,lineHeight:1.6,color:S.t2}}>
+            目前先用 🐾 學習棋子遊玩。到扭蛋機取得寵物後，這裡會開始累積寵物 EXP。
+          </div>
+        )}
+        <div>
+          <div className="pm-section-title">目前地產</div>
+          <div style={{marginTop:8,border:`1px solid ${PET_MONOPOLY_TYPE_META[tiles[position].type]?.color||color}33`,borderRadius:16,padding:12,background:PET_MONOPOLY_TYPE_META[tiles[position].type]?.soft||S.bg2}}>
+            <div style={{fontSize:20}}>{tiles[position].icon}</div>
+            <div style={{fontSize:15,fontWeight:1000,marginTop:4}}>{tiles[position].name}</div>
+            <div style={{fontSize:12,color:S.t2,lineHeight:1.5,marginTop:4}}>{tiles[position].hint}</div>
+          </div>
+        </div>
+        <div>
+          <div className="pm-section-title">行動紀錄</div>
+          <div className="pm-log" style={{marginTop:8}}>
+            {logs.map((log,i)=><div key={`${log}-${i}`}>{log}</div>)}
+          </div>
+        </div>
+      </aside>
+    </section>
+  </div>);
+}
+
 function WhackM({lv,onBack,onXp}){
   const c=LV[lv];
   const TOTAL_WORDS=10;
