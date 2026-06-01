@@ -306,7 +306,7 @@ describe('EnglishGo app smoke flow', () => {
     }
   });
 
-  it('shows kid-friendly Chinese-like pronunciation help in speaking practice', async () => {
+  it('shows pronunciation coaching without Chinese-like pronunciation hints', async () => {
     const restoreSpeechRecognition = installMockSpeechRecognition();
 
     try {
@@ -317,15 +317,17 @@ describe('EnglishGo app smoke flow', () => {
       fireEvent.click(speakCard);
 
       expect(await screen.findByText('發音小老師')).toBeInTheDocument();
-      expect(screen.getByText('中文近似音')).toBeInTheDocument();
-      expect(screen.getByText('欸-婆')).toBeInTheDocument();
-      expect(screen.getByText('嘴巴先打開念「欸」，最後輕輕收成「婆」。')).toBeInTheDocument();
+      expect(screen.getByText('音節')).toBeInTheDocument();
+      expect(screen.getByText('重音')).toBeInTheDocument();
+      expect(screen.queryByText('中文近似音')).not.toBeInTheDocument();
+      expect(screen.queryByText(/欸-婆|近似音/)).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'AI 產生練習法' })).not.toBeInTheDocument();
     } finally {
       restoreSpeechRecognition();
     }
   });
 
-  it('uses Gemini to generate pronunciation coaching with Chinese-like sounds', async () => {
+  it('keeps AI pronunciation coaching hidden until there is a speaking result', async () => {
     localStorage.setItem('eg_gemkey', JSON.stringify('test-gemini-key'));
     localStorage.removeItem('speak_pron_elementary%3Aapple');
     const restoreSpeechRecognition = installMockSpeechRecognition();
@@ -338,37 +340,8 @@ describe('EnglishGo app smoke flow', () => {
       fireEvent.click(speakCard);
 
       expect(await screen.findByText('發音小老師')).toBeInTheDocument();
-
-      const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-        ok: true,
-        json: async () => ({
-          candidates: [{
-            content: {
-              parts: [{
-                text: JSON.stringify({
-                  zhSound: '欸-婆',
-                  syllables: 'ap · ple',
-                  stress: '第一拍 ap',
-                  mouth: '嘴巴先打開念「欸」，尾巴輕輕收住。',
-                  mistake: '不要把 ple 念得太重。',
-                  steps: ['先慢慢念「欸」', '接著補上「婆」', '最後連起來 apple'],
-                }),
-              }],
-            },
-          }],
-        }),
-      });
-
-      try {
-        fireEvent.click(screen.getByRole('button', { name: 'AI 產生練習法' }));
-
-        expect(await screen.findByText('第一拍 ap')).toBeInTheDocument();
-        expect(screen.getByText('不要把 ple 念得太重。')).toBeInTheDocument();
-        expect(screen.getByText('最後連起來 apple')).toBeInTheDocument();
-        expect(fetchMock).toHaveBeenCalled();
-      } finally {
-        fetchMock.mockRestore();
-      }
+      expect(screen.queryByRole('button', { name: 'AI 產生練習法' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'AI 分析這次發音' })).not.toBeInTheDocument();
     } finally {
       restoreSpeechRecognition();
     }
@@ -389,49 +362,10 @@ describe('EnglishGo app smoke flow', () => {
 
       expect(await screen.findByText('I like to eat apples.')).toBeInTheDocument();
       expect(screen.queryByText(/重點單字：/)).not.toBeInTheDocument();
-      expect(screen.getByText('整句近似音')).toBeInTheDocument();
-      expect(screen.getByText('拆解對照')).toBeInTheDocument();
-      expect(screen.getByText(/i → 愛/)).toBeInTheDocument();
-
-      const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-        ok: true,
-        json: async () => ({
-          candidates: [{
-            content: {
-              parts: [{
-                text: JSON.stringify({
-                  zhSound: '愛 賴ク ㄊ 伊特',
-                  syllables: 'I like / to eat apples',
-                  stress: '整句重音：like / eat / apples',
-                  mouth: '整句分成兩段，先說 I like，再接 to eat apples。',
-                  mistake: '不要只練 apples，要把整句節奏接起來。',
-                  steps: ['先聽整句一次', '分成兩段跟讀', '最後說完整句'],
-                  words: [
-                    { word: 'like', zhSound: '賴克' },
-                    { word: 'apples', zhSound: '欸-婆-z' },
-                  ],
-                }),
-              }],
-            },
-          }],
-        }),
-      });
-
-      try {
-        fireEvent.click(screen.getByRole('button', { name: 'AI 產生練習法' }));
-
-        expect(await screen.findByText('整句重音：like / eat / apples')).toBeInTheDocument();
-        expect(screen.getByText('不要只練 apples，要把整句節奏接起來。')).toBeInTheDocument();
-        expect(screen.queryByText(/賴ク|ㄊ/)).not.toBeInTheDocument();
-        const requestBody = JSON.parse(fetchMock.mock.calls[0][1].body);
-        const promptText = requestBody.contents[0].parts[0].text;
-        expect(promptText).toContain('完整英文句子');
-        expect(promptText).toContain('I like to eat apples.');
-        expect(promptText).toContain('不要使用注音符號');
-        expect(promptText).not.toContain('重點單字：apples');
-      } finally {
-        fetchMock.mockRestore();
-      }
+      expect(screen.getByText('分段跟讀')).toBeInTheDocument();
+      expect(screen.getByText('語調提醒')).toBeInTheDocument();
+      expect(screen.queryByText(/整句近似音|拆解對照|→ 愛|欸婆/)).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'AI 產生練習法' })).not.toBeInTheDocument();
     } finally {
       restoreSpeechRecognition();
     }
@@ -481,15 +415,14 @@ describe('EnglishGo app smoke flow', () => {
             content: {
               parts: [{
                 text: JSON.stringify({
-                  zhSound: '愛 賴克 吐 伊特 欸婆斯',
-                  syllables: 'i → 愛 / like → 賴克 / to → 吐 / eat → 伊特 / apples → 欸婆斯',
+                  zhSound: '先補上漏掉的短語，再說完整句。',
+                  syllables: 'I like / to eat / apples',
                   stress: '先補上 to eat，再接 apples。',
                   mouth: 'I like 後面不要直接跳到 apples。',
                   mistake: '這次少了 to eat，句子意思會不完整。',
                   steps: ['先練 to eat', '再練 like to eat', '最後說完整句'],
                   words: [
-                    { word: 'to', zhSound: '吐' },
-                    { word: 'eat', zhSound: '伊特' },
+                    { word: 'to eat', zhSound: '漏掉的短語' },
                   ],
                 }),
               }],
@@ -508,6 +441,7 @@ describe('EnglishGo app smoke flow', () => {
         expect(promptText).toContain('這次分數：60%');
         expect(promptText).toContain('漏掉或未通過：to, eat');
         expect(promptText).toContain('請優先針對這次結果設計補強練習');
+        expect(promptText).not.toContain('中文近似音');
       } finally {
         fetchMock.mockRestore();
       }

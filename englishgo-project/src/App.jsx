@@ -3588,45 +3588,14 @@ const PRONUNCIATION_HINTS={
   deteriorate:{zhSound:"迪-提-里-歐-瑞特",syllables:"de · te · ri · o · rate",stress:"第二拍 te",mouth:"前面兩拍清楚，後面 rio-rate 慢慢接上。",mistake:"不要漏掉中間的 ri-o。",steps:["先分五拍","第二拍加重","再加快連起來"]},
 };
 
-const SIMPLE_ZH_SOUND={
-  a:"呃",an:"安",and:"安的",the:"惹",of:"歐夫",to:"吐",in:"因",on:"昂",at:"欸特",for:"佛",with:"威斯",
-  i:"愛",you:"優",he:"希",she:"西",we:"威",they:"累",my:"買",your:"優爾",his:"希斯",her:"喝爾",our:"奧爾",their:"累爾",
-  am:"欸姆",is:"意斯",are:"阿爾",was:"哇斯",were:"沃爾",be:"逼",been:"賓",being:"逼-因",
-  this:"底斯",that:"帶特",these:"底茲",those:"都茲",it:"伊特",its:"伊茲",what:"哇特",who:"呼",where:"威爾",when:"溫",why:"歪",how:"豪",
-  end:"安的",story:"斯多瑞",like:"賴克",eat:"伊特",apples:"欸婆斯",apple:"欸婆",happy:"嗨皮",school:"斯固",water:"沃特",run:"潤",
-  best:"貝斯特",friend:"夫潤德",go:"狗",every:"欸佛瑞",day:"得",good:"古德",morning:"摩寧",everyone:"欸佛瑞萬",
-  please:"普利茲",drink:"準克",some:"森",today:"吐得",work:"沃克",works:"沃克斯",mother:"媽惹",office:"喔菲斯",
-  should:"修德",protect:"普若泰克特",environment:"恩外倫門特",practice:"普瑞克提斯",can:"看",improve:"因普魯夫",
-  english:"英葛利許",communication:"可謬尼凱訊",very:"維瑞",important:"因波騰特",technology:"泰克諾洛吉",changed:"稱吉德",
-  daily:"得利",life:"賴夫",japan:"加潘",twice:"吐外斯",climate:"克萊密特",change:"稱吉",global:"葛羅勃",
-  phenomenon:"菲諾米農",need:"尼德",sustainable:"瑟斯泰納勃",energy:"恩納吉",solutions:"瑟魯訓斯",critical:"克瑞提口",
-  thinking:"辛金",essential:"伊森修",skill:"斯基爾",education:"欸久凱訊",foundation:"放得訊",society:"瑟賽厄提"
-};
-const LETTER_ZH_SOUND={a:"欸",b:"布",c:"克",d:"德",e:"欸",f:"夫",g:"哥",h:"喝",i:"伊",j:"吉",k:"克",l:"勒",m:"姆",n:"恩",o:"喔",p:"普",q:"奎",r:"瑞",s:"斯",t:"特",u:"優",v:"夫",w:"哇",x:"克斯",y:"伊",z:"茲"};
 function speakGuideTarget(item){
   if(!item)return"";
   if(item.type==="sentence")return normalizeText(item.en);
   return String(item.en||"").trim().toLowerCase();
 }
-function approximateZhSound(word){
-  const clean=String(word||"").toLowerCase().replace(/[^a-z']/g,"");
-  if(!clean)return"";
-  if(PRONUNCIATION_HINTS[clean])return PRONUNCIATION_HINTS[clean].zhSound;
-  if(SIMPLE_ZH_SOUND[clean])return SIMPLE_ZH_SOUND[clean];
-  if(clean.endsWith("s")&&SIMPLE_ZH_SOUND[clean.slice(0,-1)])return `${SIMPLE_ZH_SOUND[clean.slice(0,-1)]}斯`;
-  const chunks=clean.match(/[bcdfghjklmnpqrstvwxyz]*[aeiouy]+[bcdfghjklmnpqrstvwxyz]*/g)||[clean];
-  return chunks.slice(0,4).map(chunk=>{
-    if(SIMPLE_ZH_SOUND[chunk])return SIMPLE_ZH_SOUND[chunk];
-    const letters=chunk.split("").slice(0,3).map(ch=>LETTER_ZH_SOUND[ch]||ch).join("");
-    return letters||chunk;
-  }).join("-");
-}
-function sentencePronunciationWords(item){
-  return normalizeText(item?.en).split(" ").filter(Boolean).slice(0,8).map(word=>({word,zhSound:approximateZhSound(word)}));
-}
 function sentenceContentWords(words){
   const weak=new Set(["i","you","he","she","we","they","my","your","his","her","our","their","a","an","the","to","in","on","at","of","for","and","is","am","are","was","were"]);
-  return words.map(x=>x.word).filter(word=>word.length>2&&!weak.has(word)).slice(0,4);
+  return words.filter(word=>word.length>2&&!weak.has(word)).slice(0,4);
 }
 const BAD_PRONUNCIATION_CHARS=/[ㄅ-ㄩㆠ-ㆿぁ-ゟ゠-ヿА-Яа-я\u0600-\u06FF\u0900-\u097F]/u;
 function hasBadPronunciationText(value){return BAD_PRONUNCIATION_CHARS.test(String(value||""))}
@@ -3634,49 +3603,43 @@ function safePronunciationValue(value,fallback){
   const text=String(value||"").trim();
   return text&&!hasBadPronunciationText(text)?text:fallback;
 }
-function safePronunciationWords(rawWords,fallbackWords){
-  const cleaned=Array.isArray(rawWords)?rawWords.map(x=>({word:String(x?.word||"").trim(),zhSound:String(x?.zhSound||"").trim()})).filter(x=>x.word&&x.zhSound&&!hasBadPronunciationText(x.zhSound)):null;
-  return cleaned?.length?cleaned:fallbackWords;
-}
 function localPronunciationGuide(item,lv){
   const target=speakGuideTarget(item);
   if(item?.type==="sentence"){
-    const words=sentencePronunciationWords(item);
+    const words=normalizeText(item.en).split(" ").filter(Boolean);
     const content=sentenceContentWords(words);
-    const phrase=normalizeText(item.en).split(" ");
-    const mid=Math.max(2,Math.ceil(phrase.length/2));
-    const chunks=[phrase.slice(0,mid).join(" "),phrase.slice(mid).join(" ")].filter(Boolean);
-    const hasSoftThe=words.some(x=>x.word==="the");
-    const finalWord=words.at(-1)?.word||"";
-    const finalSound=words.at(-1)?.zhSound||"";
+    const mid=Math.max(2,Math.ceil(words.length/2));
+    const chunks=[words.slice(0,mid).join(" "),words.slice(mid).join(" ")].filter(Boolean);
+    const hasSoftThe=words.some(x=>x==="the");
+    const finalWord=words.at(-1)||"";
     return {
       target,
-      zhSound:words.map(x=>x.zhSound).join(" "),
-      syllables:words.map(x=>`${x.word} → ${x.zhSound}`).join(" / "),
+      zhSound:"先聽英文示範，再跟著分段說完整句。",
+      syllables:chunks.join(" / "),
       stress:content.length?`重音放在 ${content.join(" / ")}；${hasSoftThe?"the 輕輕帶過，":""}${finalWord?`${finalWord} 的尾音自然收起。`:"整句不要每個字都一樣重。"}`:"功能字輕輕帶過，主要意思字說清楚。",
-      mouth:`先聽整句節奏，再分成 ${chunks.join(" / ")} 跟讀；${finalSound?`最後的「${finalSound}」不要念太平。`:"最後把整句自然接起來。"}`,
+      mouth:`先聽整句節奏，再分成 ${chunks.join(" / ")} 跟讀；最後把整句自然接起來。`,
       mistake:"不要只盯著單一單字；句子練習要把停頓、重音和連音一起說出來。",
       steps:["先聽整句一次","分成短語慢慢跟讀","最後用正常速度說完整句"],
-      words,
+      words:[],
       source:"local",
       level:lv,
     };
   }
   const base=PRONUNCIATION_HINTS[target]||{
-    zhSound:approximateZhSound(target),
+    zhSound:"先聽英文示範，再跟著音節慢慢念。",
     syllables:String(target||item?.en||"").replace(/-/g," · "),
     stress:"先聽示範，找最清楚、最用力的那一拍。",
-    mouth:"先慢速跟讀，再把聲音連起來；中文近似音只幫忙起步。",
+    mouth:"先慢速跟讀，再把聲音連起來；不要用中文諧音記發音。",
     mistake:"不要完全照中文注音念，最後要回到英文示範音。",
     steps:["聽示範一次","照音節慢慢念","最後用正常速度念一次"],
   };
   return {
     target,
-    zhSound:base.zhSound||approximateZhSound(target),
+    zhSound:"先聽英文示範，再跟著音節慢慢念。",
     syllables:base.syllables||target,
     stress:base.stress||"先聽出最重的一拍。",
-    mouth:base.mouth||"看示範音，先慢速模仿嘴型。",
-    mistake:base.mistake||"中文音只是輔助，不要直接當成英文發音。",
+    mouth:"看示範音，先慢速模仿嘴型，再回到正常速度。",
+    mistake:base.mistake||"不要用中文諧音背發音，最後要跟英文示範音對齊。",
     steps:Array.isArray(base.steps)&&base.steps.length?base.steps:["聽示範一次","慢速分段念","連起來正常念"],
     words:[],
     source:"local",
@@ -3685,13 +3648,13 @@ function localPronunciationGuide(item,lv){
 }
 function normalizePronunciationGuide(raw,item,lv,source="ai"){
   const fallback=localPronunciationGuide(item,lv);
-  const words=safePronunciationWords(raw?.words,fallback.words);
+  const words=[];
   const steps=Array.isArray(raw?.steps)?raw.steps.map(x=>String(x||"").trim()).filter(x=>x&&!hasBadPronunciationText(x)).slice(0,4):fallback.steps;
   const syllables=safePronunciationValue(raw?.syllables,fallback.syllables);
   return {
     ...fallback,
     zhSound:safePronunciationValue(raw?.zhSound,fallback.zhSound),
-    syllables:item?.type==="sentence"&&!syllables.includes("→")?fallback.syllables:syllables,
+    syllables,
     stress:safePronunciationValue(raw?.stress,fallback.stress),
     mouth:safePronunciationValue(raw?.mouth,fallback.mouth),
     mistake:safePronunciationValue(raw?.mistake,fallback.mistake),
@@ -3716,7 +3679,7 @@ async function generatePronunciationGuide(item,lv,apiKey,coachingContext=null){
 多辨識到：${coachingContext.extra?.length?coachingContext.extra.join(", "):"無"}
 
 請把 steps 做成可以立刻照做的補強流程，例如「先練漏掉的短語」「再接前後單字」「最後說完整句」。`:"";
-  const prompt=isSentence?`你是給台灣小朋友使用的英文發音老師。請針對目前這個完整英文句子的節奏、重音、停頓、連音提供發音提示，不要只講單一單字。
+  const prompt=isSentence?`你是給台灣小朋友使用的英文發音老師。請針對目前這個完整英文句子的節奏、重音、停頓、連音提供發音提示，不要只講單一單字，也不要產生中文諧音。
 
 程度：${LV[lv]?.name||lv}
 完整英文句子：${item.en}
@@ -3724,15 +3687,13 @@ async function generatePronunciationGuide(item,lv,apiKey,coachingContext=null){
 ${analysisBlock}
 
 請用繁體中文輸出 STRICT JSON：
-{"zhSound":"整句中文近似音，例如：底斯 意斯 惹 安的 歐夫 惹 斯多瑞","syllables":"逐字拆解對照，例如：This → 底斯 / is → 意斯 / the → 惹","stress":"語調提醒，例如：the 輕輕帶過，story 的尾音往上收","mouth":"整句嘴型或連音提示，一句話","mistake":"台灣學生常見句子發音錯誤，一句話","steps":["第一步","第二步","第三步"],"words":[{"word":"句子中的英文單字","zhSound":"中文近似音"}]}
+{"zhSound":"一句話說明練習目標，不要寫中文諧音","syllables":"英文短語分段，用 / 分隔，例如：This is / the end / of the story","stress":"語調提醒，例如：the 輕輕帶過，story 的尾音自然收","mouth":"整句嘴型或連音提示，一句話","mistake":"台灣學生常見句子發音錯誤，一句話","steps":["第一步","第二步","第三步"],"words":[]}
 
 規則：
-- 中文近似音只能當輔助，不要說它是完全正確發音。
-- 優先使用常見中文字，例如「底斯、意斯、惹、安的、歐夫、斯多瑞」。
-- 不要使用注音符號、日文假名、俄文字母、阿拉伯字母或印度文字。
-- 不要用逐字母拼音，例如 t-h-e；要用小朋友看得懂的中文近似音。
+- 不要輸出中文諧音、注音符號、日文假名或逐字母拼音。
+- 只使用英文短語、重音、停頓、連音、嘴型來教發音。
 - 主要目標是完整句子的流暢度，不是單字背誦。
-- words 最多列 8 個主要單字，只作為輔助拆解。`:`你是給台灣小朋友使用的英文發音老師。請只針對目前這個英文單字提供發音提示。
+- words 請固定回傳空陣列。`:`你是給台灣小朋友使用的英文發音老師。請只針對目前這個英文單字提供發音提示，不要產生中文諧音。
 
 程度：${LV[lv]?.name||lv}
 英文：${item.en}
@@ -3741,13 +3702,12 @@ ${analysisBlock}
 ${analysisBlock}
 
 請用繁體中文輸出 STRICT JSON：
-{"zhSound":"相似中文音，用 2-5 個短音節表示，例如 欸-婆","syllables":"英文音節，用 · 分隔","stress":"重音在哪一拍","mouth":"嘴型或舌頭提示，一句話","mistake":"台灣學生常見錯誤，一句話","steps":["第一步","第二步","第三步"],"words":[{"word":"句子中的英文單字","zhSound":"相似中文音"}]}
+{"zhSound":"一句話說明練習目標，不要寫中文諧音","syllables":"英文音節，用 · 分隔","stress":"重音在哪一拍","mouth":"嘴型或舌頭提示，一句話","mistake":"台灣學生常見錯誤，一句話","steps":["第一步","第二步","第三步"],"words":[]}
 
 規則：
-- 相似中文音只能當輔助，不要說它是完全正確發音。
+- 不要輸出中文諧音、注音符號、日文假名或逐字母拼音。
 - 文字要短，小學生也看得懂。
-- 不要使用注音符號、日文假名、俄文字母、阿拉伯字母或印度文字。
-- 如果是句子，words 最多列 8 個主要單字。`;
+- words 請固定回傳空陣列。`;
   const models=["gemini-2.5-flash-lite","gemini-2.5-flash","gemini-2.0-flash"];
   for(const model of models){
     try{
@@ -3866,12 +3826,13 @@ function SpeakM({lv,onBack,onXp,apiKey,onOpenSettings}){
       extra:(comp.extra||[]).slice(0,6),
     };
   };
-  const aiPronLabel=buildPronunciationContext()?"AI 分析這次發音":"AI 產生練習法";
+  const pronunciationContext=buildPronunciationContext();
+  const aiPronLabel="AI 分析這次發音";
   const loadAiPronunciation=async()=>{
     setPronErr("");
     if(!apiKey?.trim()){setPronErr("設定 Gemini Key 後，可以依目前題目或這次錄音產生補強練習。");onOpenSettings?.();return}
     setPronBusy(true);
-    try{setPronGuide(await generatePronunciationGuide(cur,lv,apiKey,buildPronunciationContext()))}
+    try{setPronGuide(await generatePronunciationGuide(cur,lv,apiKey,pronunciationContext))}
     catch(e){setPronErr(e?.message||"AI 發音提示暫時產生失敗。")}
     finally{setPronBusy(false)}
   };
@@ -3934,14 +3895,14 @@ function SpeakM({lv,onBack,onXp,apiKey,onOpenSettings}){
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,flexWrap:"wrap",marginBottom:10}}>
             <div>
               <div style={{fontSize:14,fontWeight:1000,color:S.t1}}>發音小老師</div>
-              <div style={{fontSize:11,color:S.t3,marginTop:2}}>中文音只是輔助，最後要跟英文示範音對齊。</div>
+              <div style={{fontSize:11,color:S.t3,marginTop:2}}>先聽英文示範，再用分段、重音和口型練習。</div>
             </div>
-            <button onClick={loadAiPronunciation} disabled={pronBusy} aria-label={aiPronLabel} style={{...S.btn,background:guide.source==="ai"?c.cl:S.bg1,color:guide.source==="ai"?"#fff":c.cl,border:`1px solid ${c.cl}44`,padding:"7px 10px",fontSize:12,opacity:pronBusy?0.65:1}}>{pronBusy?"AI 整理中":aiPronLabel}</button>
+            {pronunciationContext&&<button onClick={loadAiPronunciation} disabled={pronBusy} aria-label={aiPronLabel} style={{...S.btn,background:guide.source==="ai"?c.cl:S.bg1,color:guide.source==="ai"?"#fff":c.cl,border:`1px solid ${c.cl}44`,padding:"7px 10px",fontSize:12,opacity:pronBusy?0.65:1}}>{pronBusy?"AI 整理中":aiPronLabel}</button>}
           </div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(128px,1fr))",gap:8,marginBottom:10}}>
-            {[[isSentence?"整句近似音":"中文近似音",guide.zhSound],[isSentence?"拆解對照":"音節",guide.syllables],[isSentence?"語調提醒":"重音",guide.stress]].map(([label,value])=><div key={label} style={{background:S.bg1,border:`1px solid ${S.bd}`,borderRadius:12,padding:"8px 10px"}}>
+            {(isSentence?[["分段跟讀",guide.syllables],["語調提醒",guide.stress]]:[["音節",guide.syllables],["重音",guide.stress]]).map(([label,value])=><div key={label} style={{background:S.bg1,border:`1px solid ${S.bd}`,borderRadius:12,padding:"8px 10px"}}>
               <div style={{fontSize:11,color:S.t3,fontWeight:800,marginBottom:3}}>{label}</div>
-              <div style={{fontSize:14,color:label.includes("近似音")?c.cl:S.t1,fontWeight:1000,lineHeight:1.35}}>{value}</div>
+              <div style={{fontSize:14,color:S.t1,fontWeight:1000,lineHeight:1.35}}>{value}</div>
             </div>)}
           </div>
           <div style={{display:"grid",gap:7,fontSize:12,lineHeight:1.6,color:S.t2}}>
@@ -3949,7 +3910,6 @@ function SpeakM({lv,onBack,onXp,apiKey,onOpenSettings}){
             <div><b style={{color:S.t1}}>常見卡點：</b>{guide.mistake}</div>
           </div>
           {guide.steps?.length>0&&<div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:10}}>{guide.steps.map((step,i)=><button key={`${step}-${i}`} onClick={()=>speak(step,"zh-TW",0.95)} style={{border:`1px solid ${c.cl}22`,background:S.bg1,color:S.t2,borderRadius:999,padding:"5px 8px",fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}><span>{i+1}. </span><span>{step}</span></button>)}</div>}
-          {isSentence&&guide.words?.length>0&&<div style={{display:"flex",gap:5,flexWrap:"wrap",marginTop:10}}>{guide.words.map(x=><button key={x.word} onClick={()=>speak(x.word,"en-US",0.82)} style={{border:`1px solid ${S.bd}`,background:S.bg2,color:S.t1,borderRadius:999,padding:"5px 8px",fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>{x.word} · {x.zhSound}</button>)}</div>}
           {pronErr&&<div style={{marginTop:9,fontSize:12,color:"#8A5A00",background:"#FFF7E6",border:"1px solid #F0D59A",borderRadius:10,padding:"7px 9px"}}>{pronErr}</div>}
         </div>}
       </div>
