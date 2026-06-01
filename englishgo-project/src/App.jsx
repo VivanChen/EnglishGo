@@ -2396,7 +2396,7 @@ export default function App(){
          mod==="exam"?<ExamReviewM lv={lv} onBack={back} c={c} apiKey={gemKey} onOpenSettings={()=>setMod("settings")} onStart={deck=>{setSharedWord(null);setCustomDeck(deck);setMod("srs")}}/>:
          mod==="srs"?<SRS lv={lv} onBack={back} onXp={n=>addXpWithTask(n,"srsToday")} onDone={()=>setStats(s=>({...s,srsRounds:s.srsRounds+1}))} trackWeak={trackWeak} gifKey={gifKey} sharedWord={sharedWord} apiKey={gemKey} weakWords={weakWords} customCards={customDeck?.cards||null} customSource={customDeck?.source||""} onOpenSettings={()=>setMod("settings")}/>:
          mod==="quiz"?<QuizM lv={lv} onBack={back} onXp={n=>addXpWithTask(n,"quizToday")} onPerfect={()=>setStats(s=>({...s,perfectQuiz:s.perfectQuiz+1}))} trackWeak={trackWeak}/>:
-         mod==="speak"?<SpeakM lv={lv} onBack={back} onXp={n=>addXpWithTask(n,"speakToday")}/>:
+         mod==="speak"?<SpeakM lv={lv} onBack={back} onXp={n=>addXpWithTask(n,"speakToday")} apiKey={gemKey} onOpenSettings={()=>setMod("settings")}/>:
          mod==="whack"?<WhackM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="match"?<MatchM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="bomb"?<BombM lv={lv} onBack={back} onXp={addXp}/>:
@@ -3556,8 +3556,125 @@ function selectSpeakItemsByMode(source,mode){
   return list;
 }
 
+const PRONUNCIATION_HINTS={
+  apple:{zhSound:"欸-婆",syllables:"ap · ple",stress:"第一拍 ap",mouth:"嘴巴先打開念「欸」，最後輕輕收成「婆」。",mistake:"不要把 ple 念成很重的「普」。",steps:["先慢慢念「欸」","尾巴輕輕補上「婆」","最後連起來 apple"]},
+  school:{zhSound:"思-估",syllables:"school",stress:"整個字一拍",mouth:"先用很輕的「思」開頭，再把嘴唇收圓念 oo。",mistake:"不要漏掉開頭的 s，也不要念成中文「死故」。",steps:["先吐出 s 的氣音","接著念長長的 oo","最後輕收成 school"]},
+  water:{zhSound:"窩-特",syllables:"wa · ter",stress:"第一拍 wa",mouth:"嘴巴先圓起來念「窩」，尾音短短收住。",mistake:"t 不要念太重，美式常聽起來像很輕的 d。",steps:["先念「窩」","再接很短的「特」","連起來 water"]},
+  happy:{zhSound:"哈-皮",syllables:"hap · py",stress:"第一拍 hap",mouth:"先笑開嘴巴念 ha，第二拍輕輕收成 py。",mistake:"不要把 py 拉太長。",steps:["先念「哈」","再接輕短的「皮」","連起來 happy"]},
+  run:{zhSound:"潤",syllables:"run",stress:"整個字一拍",mouth:"舌頭往後捲一點念 r，嘴巴不要張太大。",mistake:"不要念成中文「爛」或「讓」。",steps:["先做 r 的捲舌感","短短念出 u","最後收 n"]},
+  environment:{zhSound:"恩-外-倫-門特",syllables:"en · vi · ron · ment",stress:"第二拍 vi",mouth:"先分四小段，第二拍說清楚，最後 ment 輕輕收尾。",mistake:"不要每一拍都一樣大聲。",steps:["先分段 en-vi-ron-ment","第二拍 vi 念大聲","最後加快連起來"]},
+  experience:{zhSound:"伊克-斯比-瑞-恩斯",syllables:"ex · pe · ri · ence",stress:"第二拍 pe",mouth:"開頭 ex 很短，pe 要清楚，尾巴 ence 輕輕帶過。",mistake:"不要漏掉中間的 r 音。",steps:["先念 ex","再重念 pe","接 ri-ence"]},
+  communicate:{zhSound:"可-謬-尼-開特",syllables:"com · mu · ni · cate",stress:"第二拍 mu",mouth:"第二拍嘴唇收圓像念「謬」，最後 cate 清楚收住。",mistake:"不要把每一拍都拖長。",steps:["先切成四拍","第二拍念大聲","最後連起來"]},
+  opportunity:{zhSound:"阿-婆-吐-紐-迪",syllables:"op · por · tu · ni · ty",stress:"第三拍 tu",mouth:"前兩拍短短帶過，第三拍 tu 明顯一點。",mistake:"不要把 opportunity 念成一長串沒有重音。",steps:["先分成五拍","第三拍加重","慢慢連起來"]},
+  responsible:{zhSound:"瑞-斯邦-瑟-伯",syllables:"re · spon · si · ble",stress:"第二拍 spon",mouth:"第二拍嘴巴放鬆往下，最後 ble 很輕。",mistake:"不要把 ble 念成完整的「波」。",steps:["先念 re","重念 spon","輕收 si-ble"]},
+  controversial:{zhSound:"康-特-佛-修",syllables:"con · tro · ver · sial",stress:"第三拍 ver",mouth:"第三拍 ver 比較重，最後 sial 像很快的「修」。",mistake:"不要把最後一拍念成中文「校」。",steps:["先分四拍","第三拍加重","最後收短"]},
+  sustainable:{zhSound:"瑟-斯-TEI-納-伯",syllables:"sus · tain · a · ble",stress:"第二拍 tain",mouth:"tain 要念成長音，尾巴 ble 很輕。",mistake:"不要把 sustain 和 able 分得太開。",steps:["先念 sus","重念 tain","接 a-ble"]},
+  unprecedented:{zhSound:"安-普瑞-瑟-登-特",syllables:"un · pre · ce · dent · ed",stress:"第二拍 pre",mouth:"第二拍 pre 清楚，最後 ed 很短。",mistake:"不要把 ed 念成很重的「的」。",steps:["先分五拍","第二拍加重","尾音收短"]},
+  comprehensive:{zhSound:"康-普瑞-亨-西夫",syllables:"com · pre · hen · sive",stress:"第三拍 hen",mouth:"第三拍 hen 明顯一點，最後 sive 用 v 輕輕震動。",mistake:"不要把 v 念成 f。",steps:["先分四拍","第三拍加重","最後注意 v"]},
+  deteriorate:{zhSound:"迪-提-里-歐-瑞特",syllables:"de · te · ri · o · rate",stress:"第二拍 te",mouth:"前面兩拍清楚，後面 rio-rate 慢慢接上。",mistake:"不要漏掉中間的 ri-o。",steps:["先分五拍","第二拍加重","再加快連起來"]},
+};
+
+const SIMPLE_ZH_SOUND={
+  i:"愛",like:"賴克",to:"吐",eat:"伊特",apples:"欸-婆-z",she:"西",is:"伊茲",my:"買",best:"貝斯特",friend:"夫-潤德",we:"威",go:"狗",every:"欸-佛-里",day:"得",good:"古德",morning:"摸-寧",everyone:"欸-佛-里-萬",please:"普利茲",drink:"準克",some:"森",am:"欸姆",today:"吐-得"
+};
+const LETTER_ZH_SOUND={a:"欸",b:"ㄅ",c:"克",d:"ㄉ",e:"欸",f:"夫",g:"ㄍ",h:"哈",i:"伊",j:"ㄐ",k:"克",l:"ㄌ",m:"姆",n:"恩",o:"喔",p:"ㄆ",q:"ㄎ",r:"ㄖ",s:"思",t:"特",u:"ㄩ",v:"夫",w:"ㄨ",x:"克斯",y:"伊",z:"茲"};
+function speakGuideTarget(item){
+  if(!item)return"";
+  if(item.type==="sentence")return String(item.keyword||normalizeText(item.en).split(" ")[0]||item.en||"").toLowerCase();
+  return String(item.en||"").trim().toLowerCase();
+}
+function approximateZhSound(word){
+  const clean=String(word||"").toLowerCase().replace(/[^a-z']/g,"");
+  if(!clean)return"";
+  if(PRONUNCIATION_HINTS[clean])return PRONUNCIATION_HINTS[clean].zhSound;
+  if(SIMPLE_ZH_SOUND[clean])return SIMPLE_ZH_SOUND[clean];
+  const chunks=clean.match(/[bcdfghjklmnpqrstvwxyz]*[aeiouy]+[bcdfghjklmnpqrstvwxyz]*/g)||[clean];
+  return chunks.slice(0,4).map(chunk=>{
+    if(SIMPLE_ZH_SOUND[chunk])return SIMPLE_ZH_SOUND[chunk];
+    const letters=chunk.split("").slice(0,3).map(ch=>LETTER_ZH_SOUND[ch]||ch).join("");
+    return letters||chunk;
+  }).join("-");
+}
+function localPronunciationGuide(item,lv){
+  const target=speakGuideTarget(item);
+  const base=PRONUNCIATION_HINTS[target]||{
+    zhSound:approximateZhSound(target),
+    syllables:String(target||item?.en||"").replace(/-/g," · "),
+    stress:"先聽示範，找最清楚、最用力的那一拍。",
+    mouth:"先慢速跟讀，再把聲音連起來；中文近似音只幫忙起步。",
+    mistake:"不要完全照中文注音念，最後要回到英文示範音。",
+    steps:["聽示範一次","照音節慢慢念","最後用正常速度念一次"],
+  };
+  const words=item?.type==="sentence"?normalizeText(item.en).split(" ").filter(Boolean).slice(0,8).map(word=>({word,zhSound:approximateZhSound(word)})):[];
+  return {
+    target,
+    zhSound:base.zhSound||approximateZhSound(target),
+    syllables:base.syllables||target,
+    stress:base.stress||"先聽出最重的一拍。",
+    mouth:base.mouth||"看示範音，先慢速模仿嘴型。",
+    mistake:base.mistake||"中文音只是輔助，不要直接當成英文發音。",
+    steps:Array.isArray(base.steps)&&base.steps.length?base.steps:["聽示範一次","慢速分段念","連起來正常念"],
+    words,
+    source:"local",
+    level:lv,
+  };
+}
+function normalizePronunciationGuide(raw,item,lv,source="ai"){
+  const fallback=localPronunciationGuide(item,lv);
+  const words=Array.isArray(raw?.words)?raw.words.map(x=>({word:String(x?.word||""),zhSound:String(x?.zhSound||"")})).filter(x=>x.word&&x.zhSound):fallback.words;
+  const steps=Array.isArray(raw?.steps)?raw.steps.map(x=>String(x||"").trim()).filter(Boolean).slice(0,4):fallback.steps;
+  return {
+    ...fallback,
+    zhSound:String(raw?.zhSound||fallback.zhSound).trim(),
+    syllables:String(raw?.syllables||fallback.syllables).trim(),
+    stress:String(raw?.stress||fallback.stress).trim(),
+    mouth:String(raw?.mouth||fallback.mouth).trim(),
+    mistake:String(raw?.mistake||fallback.mistake).trim(),
+    steps:steps.length?steps:fallback.steps,
+    words,
+    source,
+  };
+}
+async function generatePronunciationGuide(item,lv,apiKey){
+  if(!item||!apiKey?.trim())throw new Error("需要 Gemini API Key 才能產生 AI 發音提示。");
+  const target=speakGuideTarget(item);
+  const cacheKey=`speak_pron_${encodeURIComponent(`${lv}:${target}`)}`;
+  try{const cached=localStorage.getItem(cacheKey);if(cached)return normalizePronunciationGuide(JSON.parse(cached),item,lv,"ai")}catch{}
+  const prompt=`你是給台灣小朋友使用的英文發音老師。請只針對目前這個英文${item.type==="sentence"?"句子中的重點單字":"單字"}提供發音提示。
+
+程度：${LV[lv]?.name||lv}
+英文：${item.en}
+中文意思：${item.zh||""}
+重點單字：${target}
+
+請用繁體中文輸出 STRICT JSON：
+{"zhSound":"相似中文音，用 2-5 個短音節表示，例如 欸-婆","syllables":"英文音節，用 · 分隔","stress":"重音在哪一拍","mouth":"嘴型或舌頭提示，一句話","mistake":"台灣學生常見錯誤，一句話","steps":["第一步","第二步","第三步"],"words":[{"word":"句子中的英文單字","zhSound":"相似中文音"}]}
+
+規則：
+- 相似中文音只能當輔助，不要說它是完全正確發音。
+- 文字要短，小學生也看得懂。
+- 如果是句子，words 最多列 8 個主要單字。`;
+  const models=["gemini-2.5-flash-lite","gemini-2.5-flash","gemini-2.0-flash"];
+  for(const model of models){
+    try{
+      const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey.trim())}`,{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:900,temperature:0.35,responseMimeType:"application/json"}}),
+      });
+      const data=await res.json();
+      if(!res.ok||data?.error)continue;
+      const text=(data?.candidates?.[0]?.content?.parts||[]).map(p=>p.text||"").join("");
+      if(!text)continue;
+      const normalized=normalizePronunciationGuide(parseGrammarJson(text),item,lv,"ai");
+      try{localStorage.setItem(cacheKey,JSON.stringify(normalized))}catch{}
+      return normalized;
+    }catch{}
+  }
+  throw new Error("AI 發音提示暫時產生失敗，請稍後再試。");
+}
+
 function speakPassThreshold(item){return item?.type==="word"?80:70}
-function SpeakM({lv,onBack,onXp}){
+function SpeakM({lv,onBack,onXp,apiKey,onOpenSettings}){
   const c=LV[lv];
   const[speakMode,setSpeakMode]=useLS(`speak_mode_${lv}`,"mixed");
   const[sourceItems,setSourceItems]=useState([]);
@@ -3568,6 +3685,7 @@ function SpeakM({lv,onBack,onXp}){
   const[combo,setCombo]=useState(0);const[maxCombo,setMaxCombo]=useState(0);
   const[showConfetti,setShowConfetti]=useState(false);const[showSuccess,setShowSuccess]=useState(false);
   const[noSupport,setNoSupport]=useState(false);const[tip,setTip]=useState("");
+  const[pronGuide,setPronGuide]=useState(null);const[pronBusy,setPronBusy]=useState(false);const[pronErr,setPronErr]=useState("");
   const recogRef=useRef(null);const finalRef=useRef("");const interimRef=useRef("");const rewardedRef=useRef(new Set());
 
   const resetRound=useCallback((nextItems)=>{
@@ -3584,6 +3702,9 @@ function SpeakM({lv,onBack,onXp}){
   useEffect(()=>{loadItems(speakMode)},[lv]);
 
   const cur=items[si];const currentRecord=records[si];const score=Object.values(records).filter(r=>r.passed).length;const attemptsTotal=Object.values(records).reduce((n,r)=>n+(r.attempts||0),0);
+  const localGuide=useMemo(()=>localPronunciationGuide(cur,lv),[cur?.en,cur?.zh,cur?.keyword,cur?.type,lv]);
+  const guide=pronGuide||localGuide;
+  useEffect(()=>{setPronGuide(null);setPronErr("");setPronBusy(false)},[cur?.en,cur?.keyword,lv]);
 
   useEffect(()=>{
     const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
@@ -3640,6 +3761,14 @@ function SpeakM({lv,onBack,onXp}){
   };
   const stopListening=()=>{if(recogRef.current&&listening){try{recogRef.current.stop()}catch{}}};
   const demo=()=>cur&&speak(cur.en,"en-US",0.85);
+  const loadAiPronunciation=async()=>{
+    setPronErr("");
+    if(!apiKey?.trim()){setPronErr("設定 Gemini Key 後，可以產生更貼近這個單字的發音提示。");onOpenSettings?.();return}
+    setPronBusy(true);
+    try{setPronGuide(await generatePronunciationGuide(cur,lv,apiKey))}
+    catch(e){setPronErr(e?.message||"AI 發音提示暫時產生失敗。")}
+    finally{setPronBusy(false)}
+  };
   const retryAndListen=()=>{retry();speechTimer(startListening,120)};
   const nextItem=()=>{
     if(si+1>=items.length){playSound("done");setShowConfetti(true);setTimeout(()=>setShowConfetti(false),3500);setPhase("done");return}
@@ -3695,6 +3824,28 @@ function SpeakM({lv,onBack,onXp}){
         <div style={{fontSize:isSentence?25:42,fontWeight:800,color:c.cl,lineHeight:1.55,letterSpacing:0}}>{cur.en}</div>
         {cur.keyword&&<div style={{fontSize:11,color:S.t3,marginTop:5}}>重點單字：<b style={{color:c.cl}}>{cur.keyword}</b></div>}
         {isSentence&&<div style={{display:"flex",gap:5,justifyContent:"center",flexWrap:"wrap",marginTop:10}}>{normalizeText(cur.en).split(" ").map(w=><span key={w} style={{fontSize:12,color:S.t2,background:S.bg2,borderRadius:999,padding:"4px 8px"}}>{w}</span>)}</div>}
+        {guide?.target&&<div style={{margin:"16px auto 0",maxWidth:560,textAlign:"left",border:`1px solid ${c.cl}33`,background:`linear-gradient(135deg,${c.bg},${S.bg1})`,borderRadius:16,padding:"13px 14px",boxShadow:`0 10px 24px ${c.cl}10`}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,flexWrap:"wrap",marginBottom:10}}>
+            <div>
+              <div style={{fontSize:14,fontWeight:1000,color:S.t1}}>發音小老師</div>
+              <div style={{fontSize:11,color:S.t3,marginTop:2}}>中文音只是輔助，最後要跟英文示範音對齊。</div>
+            </div>
+            <button onClick={loadAiPronunciation} disabled={pronBusy} aria-label="AI 補強發音" style={{...S.btn,background:guide.source==="ai"?c.cl:S.bg1,color:guide.source==="ai"?"#fff":c.cl,border:`1px solid ${c.cl}44`,padding:"7px 10px",fontSize:12,opacity:pronBusy?0.65:1}}>{pronBusy?"AI 整理中":"AI 補強發音"}</button>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(128px,1fr))",gap:8,marginBottom:10}}>
+            {[["中文近似音",guide.zhSound],["音節",guide.syllables],["重音",guide.stress]].map(([label,value])=><div key={label} style={{background:S.bg1,border:`1px solid ${S.bd}`,borderRadius:12,padding:"8px 10px"}}>
+              <div style={{fontSize:11,color:S.t3,fontWeight:800,marginBottom:3}}>{label}</div>
+              <div style={{fontSize:14,color:label==="中文近似音"?c.cl:S.t1,fontWeight:1000,lineHeight:1.35}}>{value}</div>
+            </div>)}
+          </div>
+          <div style={{display:"grid",gap:7,fontSize:12,lineHeight:1.6,color:S.t2}}>
+            <div><b style={{color:S.t1}}>嘴型：</b>{guide.mouth}</div>
+            <div><b style={{color:S.t1}}>常見卡點：</b>{guide.mistake}</div>
+          </div>
+          {guide.steps?.length>0&&<div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:10}}>{guide.steps.map((step,i)=><button key={`${step}-${i}`} onClick={()=>speak(step,"zh-TW",0.95)} style={{border:`1px solid ${c.cl}22`,background:S.bg1,color:S.t2,borderRadius:999,padding:"5px 8px",fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}><span>{i+1}. </span><span>{step}</span></button>)}</div>}
+          {isSentence&&guide.words?.length>0&&<div style={{display:"flex",gap:5,flexWrap:"wrap",marginTop:10}}>{guide.words.map(x=><button key={x.word} onClick={()=>speak(x.word,"en-US",0.82)} style={{border:`1px solid ${S.bd}`,background:S.bg2,color:S.t1,borderRadius:999,padding:"5px 8px",fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>{x.word} · {x.zhSound}</button>)}</div>}
+          {pronErr&&<div style={{marginTop:9,fontSize:12,color:"#8A5A00",background:"#FFF7E6",border:"1px solid #F0D59A",borderRadius:10,padding:"7px 9px"}}>{pronErr}</div>}
+        </div>}
       </div>
       <div style={{padding:"0 16px 16px",display:"flex",gap:8,justifyContent:"center",flexWrap:"wrap"}}><button onClick={demo} style={{...S.btn,background:c.bg,color:c.cl,padding:"9px 14px",fontSize:13}}>🔊 聽示範</button><button onClick={startListening} disabled={listening} style={{...S.btn,background:c.cl,color:"#fff",padding:"9px 14px",fontSize:13,opacity:listening?0.55:1}}>🎤 直接開說</button><button onClick={()=>window.open(`https://youglish.com/pronounce/${encodeURIComponent(cur.en)}/english`,"_blank")} style={{...S.btn,background:`${c.cl}22`,color:c.cl,padding:"9px 14px",fontSize:13,border:`1px solid ${c.cl}44`}}>🎬 真人發音</button></div>
     </div>

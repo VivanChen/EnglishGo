@@ -78,6 +78,28 @@ function setViewportWidth(width) {
   });
 }
 
+function installMockSpeechRecognition() {
+  const OriginalSpeechRecognition = window.SpeechRecognition;
+  const OriginalWebkitSpeechRecognition = window.webkitSpeechRecognition;
+  class MockSpeechRecognition {
+    constructor() {
+      this.lang = '';
+      this.interimResults = false;
+      this.maxAlternatives = 1;
+      this.continuous = false;
+    }
+    start() {}
+    stop() {}
+    abort() {}
+  }
+  window.SpeechRecognition = MockSpeechRecognition;
+  window.webkitSpeechRecognition = MockSpeechRecognition;
+  return () => {
+    window.SpeechRecognition = OriginalSpeechRecognition;
+    window.webkitSpeechRecognition = OriginalWebkitSpeechRecognition;
+  };
+}
+
 describe('EnglishGo app smoke flow', () => {
   it('renders the landing page', () => {
     render(<App />);
@@ -276,11 +298,79 @@ describe('EnglishGo app smoke flow', () => {
 
       expect(await screen.findByText('I like to eat apples.')).toBeInTheDocument();
       expect(screen.getByText('看中文，唸出完整英文句子')).toBeInTheDocument();
-      expect(screen.getByText('i')).toBeInTheDocument();
-      expect(screen.getByText('apples')).toBeInTheDocument();
+      expect(screen.getAllByText('i').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('apples').length).toBeGreaterThan(0);
     } finally {
       window.SpeechRecognition = OriginalSpeechRecognition;
       window.webkitSpeechRecognition = OriginalWebkitSpeechRecognition;
+    }
+  });
+
+  it('shows kid-friendly Chinese-like pronunciation help in speaking practice', async () => {
+    const restoreSpeechRecognition = installMockSpeechRecognition();
+
+    try {
+      await openElementaryMenu();
+
+      const speakCard = document.querySelector('[data-module-id="speak"]');
+      expect(speakCard).toBeTruthy();
+      fireEvent.click(speakCard);
+
+      expect(await screen.findByText('發音小老師')).toBeInTheDocument();
+      expect(screen.getByText('中文近似音')).toBeInTheDocument();
+      expect(screen.getByText('欸-婆')).toBeInTheDocument();
+      expect(screen.getByText('嘴巴先打開念「欸」，最後輕輕收成「婆」。')).toBeInTheDocument();
+    } finally {
+      restoreSpeechRecognition();
+    }
+  });
+
+  it('uses Gemini to generate pronunciation coaching with Chinese-like sounds', async () => {
+    localStorage.setItem('eg_gemkey', JSON.stringify('test-gemini-key'));
+    localStorage.removeItem('speak_pron_elementary%3Aapple');
+    const restoreSpeechRecognition = installMockSpeechRecognition();
+
+    try {
+      await openElementaryMenu();
+
+      const speakCard = document.querySelector('[data-module-id="speak"]');
+      expect(speakCard).toBeTruthy();
+      fireEvent.click(speakCard);
+
+      expect(await screen.findByText('發音小老師')).toBeInTheDocument();
+
+      const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          candidates: [{
+            content: {
+              parts: [{
+                text: JSON.stringify({
+                  zhSound: '欸-婆',
+                  syllables: 'ap · ple',
+                  stress: '第一拍 ap',
+                  mouth: '嘴巴先打開念「欸」，尾巴輕輕收住。',
+                  mistake: '不要把 ple 念得太重。',
+                  steps: ['先慢慢念「欸」', '接著補上「婆」', '最後連起來 apple'],
+                }),
+              }],
+            },
+          }],
+        }),
+      });
+
+      try {
+        fireEvent.click(screen.getByRole('button', { name: 'AI 補強發音' }));
+
+        expect(await screen.findByText('第一拍 ap')).toBeInTheDocument();
+        expect(screen.getByText('不要把 ple 念得太重。')).toBeInTheDocument();
+        expect(screen.getByText('最後連起來 apple')).toBeInTheDocument();
+        expect(fetchMock).toHaveBeenCalled();
+      } finally {
+        fetchMock.mockRestore();
+      }
+    } finally {
+      restoreSpeechRecognition();
     }
   });
 
