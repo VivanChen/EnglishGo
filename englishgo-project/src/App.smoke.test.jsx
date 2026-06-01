@@ -374,6 +374,65 @@ describe('EnglishGo app smoke flow', () => {
     }
   });
 
+  it('uses the whole sentence as the AI pronunciation target in sentence practice', async () => {
+    localStorage.setItem('eg_gemkey', JSON.stringify('test-gemini-key'));
+    localStorage.removeItem('speak_pron_elementary%3Ai%20like%20to%20eat%20apples');
+    const restoreSpeechRecognition = installMockSpeechRecognition();
+
+    try {
+      await openElementaryMenu();
+
+      const speakCard = document.querySelector('[data-module-id="speak"]');
+      expect(speakCard).toBeTruthy();
+      fireEvent.click(speakCard);
+      fireEvent.click(await screen.findByRole('button', { name: '句子練習' }));
+
+      expect(await screen.findByText('I like to eat apples.')).toBeInTheDocument();
+      expect(screen.queryByText(/重點單字：/)).not.toBeInTheDocument();
+      expect(screen.getByText('整句近似音')).toBeInTheDocument();
+
+      const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          candidates: [{
+            content: {
+              parts: [{
+                text: JSON.stringify({
+                  zhSound: '愛 賴克 吐 伊特 欸-婆-z',
+                  syllables: 'I like / to eat apples',
+                  stress: '整句重音：like / eat / apples',
+                  mouth: '整句分成兩段，先說 I like，再接 to eat apples。',
+                  mistake: '不要只練 apples，要把整句節奏接起來。',
+                  steps: ['先聽整句一次', '分成兩段跟讀', '最後說完整句'],
+                  words: [
+                    { word: 'like', zhSound: '賴克' },
+                    { word: 'apples', zhSound: '欸-婆-z' },
+                  ],
+                }),
+              }],
+            },
+          }],
+        }),
+      });
+
+      try {
+        fireEvent.click(screen.getByRole('button', { name: 'AI 補強發音' }));
+
+        expect(await screen.findByText('整句重音：like / eat / apples')).toBeInTheDocument();
+        expect(screen.getByText('不要只練 apples，要把整句節奏接起來。')).toBeInTheDocument();
+        const requestBody = JSON.parse(fetchMock.mock.calls[0][1].body);
+        const promptText = requestBody.contents[0].parts[0].text;
+        expect(promptText).toContain('完整英文句子');
+        expect(promptText).toContain('I like to eat apples.');
+        expect(promptText).not.toContain('重點單字：apples');
+      } finally {
+        fetchMock.mockRestore();
+      }
+    } finally {
+      restoreSpeechRecognition();
+    }
+  });
+
   it('starts an exam-range SRS round from typed words', async () => {
     await openElementaryMenu();
 

@@ -3580,7 +3580,7 @@ const SIMPLE_ZH_SOUND={
 const LETTER_ZH_SOUND={a:"欸",b:"ㄅ",c:"克",d:"ㄉ",e:"欸",f:"夫",g:"ㄍ",h:"哈",i:"伊",j:"ㄐ",k:"克",l:"ㄌ",m:"姆",n:"恩",o:"喔",p:"ㄆ",q:"ㄎ",r:"ㄖ",s:"思",t:"特",u:"ㄩ",v:"夫",w:"ㄨ",x:"克斯",y:"伊",z:"茲"};
 function speakGuideTarget(item){
   if(!item)return"";
-  if(item.type==="sentence")return String(item.keyword||normalizeText(item.en).split(" ")[0]||item.en||"").toLowerCase();
+  if(item.type==="sentence")return normalizeText(item.en);
   return String(item.en||"").trim().toLowerCase();
 }
 function approximateZhSound(word){
@@ -3595,8 +3595,34 @@ function approximateZhSound(word){
     return letters||chunk;
   }).join("-");
 }
+function sentencePronunciationWords(item){
+  return normalizeText(item?.en).split(" ").filter(Boolean).slice(0,8).map(word=>({word,zhSound:approximateZhSound(word)}));
+}
+function sentenceContentWords(words){
+  const weak=new Set(["i","you","he","she","we","they","my","your","his","her","our","their","a","an","the","to","in","on","at","of","for","and","is","am","are","was","were"]);
+  return words.map(x=>x.word).filter(word=>word.length>2&&!weak.has(word)).slice(0,4);
+}
 function localPronunciationGuide(item,lv){
   const target=speakGuideTarget(item);
+  if(item?.type==="sentence"){
+    const words=sentencePronunciationWords(item);
+    const content=sentenceContentWords(words);
+    const phrase=normalizeText(item.en).split(" ");
+    const mid=Math.max(2,Math.ceil(phrase.length/2));
+    const chunks=[phrase.slice(0,mid).join(" "),phrase.slice(mid).join(" ")].filter(Boolean);
+    return {
+      target,
+      zhSound:words.map(x=>x.zhSound).join(" / "),
+      syllables:chunks.join(" / "),
+      stress:content.length?`整句重音：${content.join(" / ")}`:"整句重音放在主要意思字。",
+      mouth:"先聽整句節奏，再分成短語跟讀，最後把整句自然接起來。",
+      mistake:"不要只盯著單一單字；句子練習要把停頓、重音和連音一起說出來。",
+      steps:["先聽整句一次","分成短語慢慢跟讀","最後用正常速度說完整句"],
+      words,
+      source:"local",
+      level:lv,
+    };
+  }
   const base=PRONUNCIATION_HINTS[target]||{
     zhSound:approximateZhSound(target),
     syllables:String(target||item?.en||"").replace(/-/g," · "),
@@ -3605,7 +3631,6 @@ function localPronunciationGuide(item,lv){
     mistake:"不要完全照中文注音念，最後要回到英文示範音。",
     steps:["聽示範一次","照音節慢慢念","最後用正常速度念一次"],
   };
-  const words=item?.type==="sentence"?normalizeText(item.en).split(" ").filter(Boolean).slice(0,8).map(word=>({word,zhSound:approximateZhSound(word)})):[];
   return {
     target,
     zhSound:base.zhSound||approximateZhSound(target),
@@ -3614,7 +3639,7 @@ function localPronunciationGuide(item,lv){
     mouth:base.mouth||"看示範音，先慢速模仿嘴型。",
     mistake:base.mistake||"中文音只是輔助，不要直接當成英文發音。",
     steps:Array.isArray(base.steps)&&base.steps.length?base.steps:["聽示範一次","慢速分段念","連起來正常念"],
-    words,
+    words:[],
     source:"local",
     level:lv,
   };
@@ -3637,10 +3662,23 @@ function normalizePronunciationGuide(raw,item,lv,source="ai"){
 }
 async function generatePronunciationGuide(item,lv,apiKey){
   if(!item||!apiKey?.trim())throw new Error("需要 Gemini API Key 才能產生 AI 發音提示。");
+  const isSentence=item.type==="sentence";
   const target=speakGuideTarget(item);
   const cacheKey=`speak_pron_${encodeURIComponent(`${lv}:${target}`)}`;
   try{const cached=localStorage.getItem(cacheKey);if(cached)return normalizePronunciationGuide(JSON.parse(cached),item,lv,"ai")}catch{}
-  const prompt=`你是給台灣小朋友使用的英文發音老師。請只針對目前這個英文${item.type==="sentence"?"句子中的重點單字":"單字"}提供發音提示。
+  const prompt=isSentence?`你是給台灣小朋友使用的英文發音老師。請針對目前這個完整英文句子的節奏、重音、停頓、連音提供發音提示，不要只講單一單字。
+
+程度：${LV[lv]?.name||lv}
+完整英文句子：${item.en}
+中文意思：${item.zh||""}
+
+請用繁體中文輸出 STRICT JSON：
+{"zhSound":"整句相似中文音，用短音節表示，但保留英文節奏","syllables":"整句分段，用 / 分隔短語","stress":"整句重音在哪些主要意思字","mouth":"整句嘴型或連音提示，一句話","mistake":"台灣學生常見句子發音錯誤，一句話","steps":["第一步","第二步","第三步"],"words":[{"word":"句子中的英文單字","zhSound":"相似中文音"}]}
+
+規則：
+- 相似中文音只能當輔助，不要說它是完全正確發音。
+- 主要目標是完整句子的流暢度，不是單字背誦。
+- words 最多列 8 個主要單字，只作為輔助拆解。`:`你是給台灣小朋友使用的英文發音老師。請只針對目前這個英文單字提供發音提示。
 
 程度：${LV[lv]?.name||lv}
 英文：${item.en}
@@ -3822,7 +3860,7 @@ function SpeakM({lv,onBack,onXp,apiKey,onOpenSettings}){
       </div>
       <div style={{padding:"20px 17px",textAlign:"center"}}>
         <div style={{fontSize:isSentence?25:42,fontWeight:800,color:c.cl,lineHeight:1.55,letterSpacing:0}}>{cur.en}</div>
-        {cur.keyword&&<div style={{fontSize:11,color:S.t3,marginTop:5}}>重點單字：<b style={{color:c.cl}}>{cur.keyword}</b></div>}
+        {cur.keyword&&!isSentence&&<div style={{fontSize:11,color:S.t3,marginTop:5}}>重點單字：<b style={{color:c.cl}}>{cur.keyword}</b></div>}
         {isSentence&&<div style={{display:"flex",gap:5,justifyContent:"center",flexWrap:"wrap",marginTop:10}}>{normalizeText(cur.en).split(" ").map(w=><span key={w} style={{fontSize:12,color:S.t2,background:S.bg2,borderRadius:999,padding:"4px 8px"}}>{w}</span>)}</div>}
         {guide?.target&&<div style={{margin:"16px auto 0",maxWidth:560,textAlign:"left",border:`1px solid ${c.cl}33`,background:`linear-gradient(135deg,${c.bg},${S.bg1})`,borderRadius:16,padding:"13px 14px",boxShadow:`0 10px 24px ${c.cl}10`}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,flexWrap:"wrap",marginBottom:10}}>
@@ -3833,9 +3871,9 @@ function SpeakM({lv,onBack,onXp,apiKey,onOpenSettings}){
             <button onClick={loadAiPronunciation} disabled={pronBusy} aria-label="AI 補強發音" style={{...S.btn,background:guide.source==="ai"?c.cl:S.bg1,color:guide.source==="ai"?"#fff":c.cl,border:`1px solid ${c.cl}44`,padding:"7px 10px",fontSize:12,opacity:pronBusy?0.65:1}}>{pronBusy?"AI 整理中":"AI 補強發音"}</button>
           </div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(128px,1fr))",gap:8,marginBottom:10}}>
-            {[["中文近似音",guide.zhSound],["音節",guide.syllables],["重音",guide.stress]].map(([label,value])=><div key={label} style={{background:S.bg1,border:`1px solid ${S.bd}`,borderRadius:12,padding:"8px 10px"}}>
+            {[[isSentence?"整句近似音":"中文近似音",guide.zhSound],[isSentence?"分段節奏":"音節",guide.syllables],[isSentence?"句子重音":"重音",guide.stress]].map(([label,value])=><div key={label} style={{background:S.bg1,border:`1px solid ${S.bd}`,borderRadius:12,padding:"8px 10px"}}>
               <div style={{fontSize:11,color:S.t3,fontWeight:800,marginBottom:3}}>{label}</div>
-              <div style={{fontSize:14,color:label==="中文近似音"?c.cl:S.t1,fontWeight:1000,lineHeight:1.35}}>{value}</div>
+              <div style={{fontSize:14,color:label.includes("近似音")?c.cl:S.t1,fontWeight:1000,lineHeight:1.35}}>{value}</div>
             </div>)}
           </div>
           <div style={{display:"grid",gap:7,fontSize:12,lineHeight:1.6,color:S.t2}}>
