@@ -245,6 +245,45 @@ describe('EnglishGo app smoke flow', () => {
     }
   });
 
+  it('switches speaking practice into sentence-focused mode with guidance', async () => {
+    const OriginalSpeechRecognition = window.SpeechRecognition;
+    const OriginalWebkitSpeechRecognition = window.webkitSpeechRecognition;
+    class MockSpeechRecognition {
+      constructor() {
+        this.lang = '';
+        this.interimResults = false;
+        this.maxAlternatives = 1;
+        this.continuous = false;
+      }
+      start() {}
+      stop() {}
+      abort() {}
+    }
+    window.SpeechRecognition = MockSpeechRecognition;
+    window.webkitSpeechRecognition = MockSpeechRecognition;
+
+    try {
+      await openElementaryMenu();
+
+      const speakCard = document.querySelector('[data-module-id="speak"]');
+      expect(speakCard).toBeTruthy();
+      fireEvent.click(speakCard);
+
+      expect(await screen.findByText('練習模式')).toBeInTheDocument();
+      expect(screen.getByText('先聽一次，再按麥克風跟讀。')).toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole('button', { name: '句子練習' }));
+
+      expect(await screen.findByText('I like to eat apples.')).toBeInTheDocument();
+      expect(screen.getByText('看中文，唸出完整英文句子')).toBeInTheDocument();
+      expect(screen.getByText('i')).toBeInTheDocument();
+      expect(screen.getByText('apples')).toBeInTheDocument();
+    } finally {
+      window.SpeechRecognition = OriginalSpeechRecognition;
+      window.webkitSpeechRecognition = OriginalWebkitSpeechRecognition;
+    }
+  });
+
   it('starts an exam-range SRS round from typed words', async () => {
     await openElementaryMenu();
 

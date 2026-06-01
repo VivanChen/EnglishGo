@@ -3537,9 +3537,30 @@ async function fetchSpeakItems(lv,count=10){
   return items.sort(()=>Math.random()-.5).slice(0,count);
 }
 
+const SPEAK_MODE_OPTIONS=[
+  {id:"mixed",label:"單字+句子",desc:"先暖身，再練完整句"},
+  {id:"word",label:"單字練習",desc:"專注發音與重音"},
+  {id:"sentence",label:"句子練習",desc:"練語調與流暢度"},
+];
+
+function selectSpeakItemsByMode(source,mode){
+  const list=Array.isArray(source)?source.filter(Boolean):[];
+  if(mode==="word"){
+    const words=list.filter(x=>x.type!=="sentence");
+    return words.length?words:list;
+  }
+  if(mode==="sentence"){
+    const sentences=list.filter(x=>x.type==="sentence");
+    return sentences.length?sentences:list;
+  }
+  return list;
+}
+
 function speakPassThreshold(item){return item?.type==="word"?80:70}
 function SpeakM({lv,onBack,onXp}){
   const c=LV[lv];
+  const[speakMode,setSpeakMode]=useLS(`speak_mode_${lv}`,"mixed");
+  const[sourceItems,setSourceItems]=useState([]);
   const[items,setItems]=useState([]);const[loading,setLoading]=useState(true);
   const[si,setSi]=useState(0);const[phase,setPhase]=useState("ready");
   const[listening,setListening]=useState(false);const[spoken,setSpoken]=useState("");const[interim,setInterim]=useState("");
@@ -3549,13 +3570,18 @@ function SpeakM({lv,onBack,onXp}){
   const[noSupport,setNoSupport]=useState(false);const[tip,setTip]=useState("");
   const recogRef=useRef(null);const finalRef=useRef("");const interimRef=useRef("");const rewardedRef=useRef(new Set());
 
-  const loadItems=useCallback(async()=>{
+  const resetRound=useCallback((nextItems)=>{
+    setItems(nextItems);setSi(0);setPhase("ready");setSpoken("");setInterim("");setComparison(null);setRecords({});setCombo(0);setMaxCombo(0);setTip("");rewardedRef.current=new Set();
+  },[]);
+  const loadItems=useCallback(async(mode=speakMode)=>{
     setLoading(true);stopSpeech();
     try{recogRef.current?.abort?.()}catch{}
     const r=await fetchSpeakItems(lv,12);
-    setItems(r);setSi(0);setPhase("ready");setSpoken("");setInterim("");setComparison(null);setRecords({});setCombo(0);setMaxCombo(0);setTip("");rewardedRef.current=new Set();setLoading(false);
-  },[lv]);
-  useEffect(()=>{loadItems()},[loadItems]);
+    setSourceItems(r);
+    resetRound(selectSpeakItemsByMode(r,mode));
+    setLoading(false);
+  },[lv,resetRound,speakMode]);
+  useEffect(()=>{loadItems(speakMode)},[lv]);
 
   const cur=items[si];const currentRecord=records[si];const score=Object.values(records).filter(r=>r.passed).length;const attemptsTotal=Object.values(records).reduce((n,r)=>n+(r.attempts||0),0);
 
@@ -3621,6 +3647,11 @@ function SpeakM({lv,onBack,onXp}){
   };
   const retry=()=>{setPhase("ready");setSpoken("");setInterim("");setComparison(null);setTip("")};
   const restart=()=>loadItems();
+  const changeSpeakMode=mode=>{
+    setSpeakMode(mode);
+    const source=sourceItems.length?sourceItems:SPEAK_FALLBACK[lv]||items;
+    resetRound(selectSpeakItemsByMode(source,mode));
+  };
   const retryWeak=()=>{
     const weak=items.map((item,i)=>({item,i,record:records[i]})).filter(x=>!x.record?.passed);
     if(!weak.length)return;
@@ -3635,6 +3666,21 @@ function SpeakM({lv,onBack,onXp}){
 
   const pct=Math.round((si/items.length)*100);const threshold=speakPassThreshold(cur);const best=currentRecord?.bestPct||0;const attempts=currentRecord?.attempts||0;const isSentence=cur.type==="sentence";
   return(<div><Hdr t="🗣️ 口說練習" onBack={onBack} cl={c.cl}/>
+    <section style={{...S.card,padding:"12px 14px",marginBottom:10,background:`linear-gradient(135deg,${c.bg},${S.bg1})`,border:`1px solid ${c.cl}33`}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,flexWrap:"wrap",marginBottom:9}}>
+        <div><div style={{fontSize:13,fontWeight:1000,color:S.t1}}>練習模式</div><div style={{fontSize:12,color:S.t2,marginTop:2}}>先聽一次，再按麥克風跟讀。</div></div>
+        <button onClick={()=>loadItems(speakMode)} style={{...S.btn,background:S.bg2,color:c.cl,padding:"8px 11px",fontSize:12}}>換一批</button>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(118px,1fr))",gap:7}}>
+        {SPEAK_MODE_OPTIONS.map(opt=>{
+          const active=speakMode===opt.id;
+          return <button key={opt.id} aria-label={opt.label} onClick={()=>changeSpeakMode(opt.id)} style={{border:`1px solid ${active?c.cl:S.bd}`,background:active?c.bg:S.bg1,color:active?c.cl:S.t1,borderRadius:12,padding:"9px 10px",textAlign:"left",fontFamily:"inherit",cursor:"pointer",boxShadow:active?`0 8px 18px ${c.cl}14`:"none"}}>
+            <div style={{fontSize:13,fontWeight:1000,lineHeight:1.2}}>{opt.label}</div>
+            <div style={{fontSize:11,color:active?c.cl:S.t3,lineHeight:1.4,marginTop:3}}>{opt.desc}</div>
+          </button>;
+        })}
+      </div>
+    </section>
     <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:8,fontSize:12}}><div style={{flex:1,height:7,background:S.bg2,borderRadius:999,overflow:"hidden"}}><div style={{height:"100%",width:`${pct}%`,background:`linear-gradient(90deg,${c.cl},${c.ac})`,borderRadius:999,transition:"width .3s"}}/></div><span style={{color:S.t3,minWidth:44,textAlign:"right"}}>{si+1}/{items.length}</span><span style={{color:"#1D9E75",fontWeight:800,minWidth:32,textAlign:"right"}}>{score}✓</span></div>
     {comboLabel&&<div style={{textAlign:"center",fontSize:14,fontWeight:700,color:"#EF9F27",marginBottom:6,animation:"comboFlash .5s"}}>{comboLabel}</div>}
     {showSuccess&&<div style={{background:"linear-gradient(90deg,#2ECC71,#27AE60)",borderRadius:12,padding:"10px 16px",marginBottom:8,textAlign:"center",animation:"bounceIn .3s ease-out"}}><span style={{color:"#fff",fontWeight:700,fontSize:16}}>通過了！🎉</span></div>}
