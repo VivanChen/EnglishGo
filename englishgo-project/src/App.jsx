@@ -3976,22 +3976,35 @@ const PET_MONOPOLY_TILES=[
   {id:"coin-park",type:"event",name:"金幣公園",icon:"🪙",hint:"答對拿小獎"},
   {id:"pet-school",type:"training",name:"寵物學院",icon:"🎓",hint:"寵物 EXP 加成"},
   {id:"word-harbor",type:"word",name:"單字港口",icon:"⚓",hint:"核心字彙挑戰"},
+  {id:"north-station",type:"word",name:"台北車站",icon:"🚄",hint:"快速翻譯挑戰"},
   {id:"shop",type:"shop",name:"補給商店",icon:"🛒",hint:"答對換補給金"},
   {id:"grammar-plaza",type:"grammar",name:"文法廣場",icon:"▦",hint:"句型四選一"},
   {id:"chance",type:"event",name:"命運卡",icon:"✦",hint:"隨機學習事件"},
+  {id:"east-coast",type:"training",name:"花東海岸",icon:"🌊",hint:"寵物默契訓練"},
   {id:"word-station",type:"word",name:"單字車站",icon:"🚉",hint:"快速翻譯"},
   {id:"training-yard",type:"training",name:"訓練庭院",icon:"🏋️",hint:"寵物羈絆提升"},
+  {id:"forest-class",type:"grammar",name:"阿里山課堂",icon:"🌲",hint:"文法判斷"},
   {id:"grammar-tower",type:"grammar",name:"文法塔",icon:"🏰",hint:"高分文法題"},
   {id:"treasure",type:"event",name:"寶箱格",icon:"🎁",hint:"答對開寶箱"},
+  {id:"south-market",type:"shop",name:"台南補給站",icon:"🥤",hint:"補給與金幣"},
   {id:"word-library",type:"word",name:"單字圖書館",icon:"📚",hint:"例句單字"},
   {id:"pet-camp",type:"training",name:"寵物營地",icon:"⛺",hint:"休息後更親密"},
+  {id:"science-port",type:"word",name:"高雄港口",icon:"🚢",hint:"港口單字挑戰"},
+  {id:"grammar-lab",type:"grammar",name:"句型研究所",icon:"🔬",hint:"句型推理"},
+  {id:"island-fair",type:"event",name:"島嶼市集",icon:"🎡",hint:"隨機獎勵"},
+  {id:"pet-spa",type:"training",name:"溫泉寵物館",icon:"♨️",hint:"寵物恢復"},
   {id:"boss",type:"boss",name:"Boss 城堡",icon:"👑",hint:"高獎勵英文關卡"},
 ];
 const PET_MONOPOLY_GRID=[
-  [5,5],[4,5],[3,5],[2,5],[1,5],
-  [1,4],[1,3],[1,2],[1,1],
-  [2,1],[3,1],[4,1],[5,1],
-  [5,2],[5,3],[5,4],
+  [7,7],[6,7],[5,7],[4,7],[3,7],[2,7],[1,7],
+  [1,6],[1,5],[1,4],[1,3],[1,2],
+  [1,1],[2,1],[3,1],[4,1],[5,1],[6,1],[7,1],
+  [7,2],[7,3],[7,4],[7,5],[7,6],
+];
+const PET_MONOPOLY_COMPUTERS=[
+  {id:"cpu1",name:"電腦 1",color:"#2563EB",emoji:"🔵"},
+  {id:"cpu2",name:"電腦 2",color:"#D97706",emoji:"🟠"},
+  {id:"cpu3",name:"電腦 3",color:"#DB2777",emoji:"🟣"},
 ];
 const PET_MONOPOLY_TYPE_META={
   start:{label:"起點",color:"#0F9F7A",soft:"#E7FFF5"},
@@ -4055,6 +4068,9 @@ function rollPetMonopolyDice(){
     crypto.getRandomValues(arr);
     return(arr[0]%6)+1;
   }catch{return Math.floor(Math.random()*6)+1}
+}
+function getPetMonopolyMovePath(from,dice,total){
+  return Array.from({length:Math.max(0,Number(dice)||0)},(_,i)=>(from+i+1)%total);
 }
 function isPetMonopolyOwnable(tile){
   return["word","grammar","shop","training"].includes(tile?.type);
@@ -4127,11 +4143,32 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
   const[feedback,setFeedback]=useState("按下骰子，目的地才會揭曉。");
   const[score,setScore]=useState({correct:0,wrong:0,laps:0,boss:0});
   const[streak,setStreak]=useState(0);
-  const[logs,setLogs]=useState(["先搶地產，再靠英文任務拿收益。"]);
+  const[moving,setMoving]=useState(null);
+  const[computerCount,setComputerCount]=useState(3);
+  const[computerNotice,setComputerNotice]=useState("電腦玩家會在你結束決定後行動。");
+  const[computers,setComputers]=useState(()=>PET_MONOPOLY_COMPUTERS.map((cpu,i)=>({...cpu,position:(i+3)%PET_MONOPOLY_TILES.length,coins:90,owned:[],last:"等待開局"})));
+  const moveTimersRef=useRef([]);
   const selectedPet=pets?.[petIndex]||null;
   const selectedPetDef=selectedPet?getAdventurePetDef(selectedPet):null;
+  useEffect(()=>{
+    if(typeof window==="undefined"||/jsdom/i.test(navigator?.userAgent||""))return;
+    const resetScroll=()=>{
+      try{window.scrollTo({top:0,left:0,behavior:"instant"})}catch{try{window.scrollTo(0,0)}catch{}}
+      try{
+        [document.scrollingElement,document.documentElement,document.body,...document.querySelectorAll("main,section,div")].forEach(el=>{
+          if(el&&el.scrollTop>0)el.scrollTop=0;
+          if(el&&el.scrollLeft>0)el.scrollLeft=0;
+        });
+      }catch{}
+    };
+    resetScroll();
+    const raf=requestAnimationFrame(resetScroll);
+    const timer=setTimeout(resetScroll,80);
+    return()=>{cancelAnimationFrame(raf);clearTimeout(timer)};
+  },[]);
   useEffect(()=>{if(pets.length&&petIndex>=pets.length)setPetIndex(0)},[pets.length,petIndex]);
-  const addLog=text=>setLogs(prev=>[text,...prev].slice(0,5));
+  useEffect(()=>()=>{moveTimersRef.current.forEach(clearTimeout);moveTimersRef.current=[]},[]);
+  const clearMoveTimers=()=>{moveTimersRef.current.forEach(clearTimeout);moveTimersRef.current=[]};
   const currentTile=tiles[position];
   const currentProperty=owned[currentTile.id];
   const currentMeta=PET_MONOPOLY_TYPE_META[currentTile.type]||PET_MONOPOLY_TYPE_META.word;
@@ -4139,20 +4176,53 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
   const currentUpgradeCost=currentProperty?getPetMonopolyUpgradeCost(currentProperty):0;
   const offerTile=offer?tiles.find(t=>t.id===offer.tileId):null;
   const propertyCount=Object.keys(owned).length;
+  const activeComputers=computers.slice(0,computerCount);
+  const playComputerRound=()=>{
+    setComputers(prev=>prev.map((cpu,i)=>{
+      if(i>=computerCount)return cpu;
+      const rolled=rollPetMonopolyDice();
+      const nextPos=(cpu.position+rolled)%tiles.length;
+      const tile=tiles[nextPos];
+      const already=cpu.owned.includes(tile.id);
+      const canBuy=isPetMonopolyOwnable(tile)&&!already&&cpu.coins>=getPetMonopolyTileCost(tile);
+      const cost=canBuy?getPetMonopolyTileCost(tile):0;
+      return{
+        ...cpu,
+        position:nextPos,
+        coins:Math.max(0,cpu.coins+(tile.type==="event"?6:3)-cost),
+        owned:canBuy?[...cpu.owned,tile.id]:cpu.owned,
+        last:`骰 ${rolled} 到 ${tile.name}${canBuy?"，收購成功":""}`,
+      };
+    }));
+    setComputerNotice(`${computerCount} 位電腦玩家完成一輪行動。`);
+  };
   const roll=()=>{
-    if(pending||offer)return;
+    if(pending||offer||moving)return;
     const rolled=rollPetMonopolyDice();
     const nextPos=(position+rolled)%tiles.length;
     const tile=tiles[nextPos];
     const question=buildPetMonopolyQuestion(lv,tile,turn+position+nextPos+rolled);
     const lapBonus=nextPos<=position&&position!==0;
+    const path=getPetMonopolyMovePath(position,rolled,tiles.length);
     setDice(rolled);
-    setPosition(nextPos);
-    setLastMove({dice:rolled,tile});
-    setPending({dice:rolled,nextPos,tile,question,lapBonus});
-    const msg=`骰出 ${rolled}，落在「${tile.name}」。完成這格任務後才能結算效果。`;
-    setFeedback(msg);
-    addLog(`🎲 ${msg}`);
+    setLastMove(null);
+    setMoving({actor:"player",dice:rolled,to:tile.name,step:0,total:path.length});
+    setFeedback(`骰出 ${rolled}，移動中...`);
+    clearMoveTimers();
+    path.forEach((pos,step)=>{
+      const timer=setTimeout(()=>{
+        setPosition(pos);
+        if(step+1<path.length){
+          setMoving({actor:"player",dice:rolled,to:tile.name,step:step+1,total:path.length});
+        }else{
+          setMoving(null);
+          setLastMove({dice:rolled,tile});
+          setPending({dice:rolled,nextPos,tile,question,lapBonus});
+          setFeedback(`落在「${tile.name}」。完成這格任務後才能結算效果。`);
+        }
+      },140*(step+1));
+      moveTimersRef.current.push(timer);
+    });
   };
   const answer=idx=>{
     if(!pending)return;
@@ -4190,12 +4260,13 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
       const bossText=pending.tile.type==="boss"?" 已擊敗 Boss，達成勝利條件。":"";
       const msg=`答對！${reward.label}：+${totalXp} XP、+${totalCoins} 金幣${propertyText}${affinityText}${comboText}${twistText}，${petText}。${bossText}${buyText}`;
       setFeedback(msg);
-      addLog(msg);
       if(property){
         setOwned(prev=>({...prev,[pending.tile.id]:{...prev[pending.tile.id],visits:(Number(prev[pending.tile.id]?.visits)||0)+1}}));
       }
       if(!property&&isPetMonopolyOwnable(pending.tile)){
         setOffer({tileId:pending.tile.id,cost:getPetMonopolyTileCost(pending.tile)});
+      }else{
+        playComputerRound();
       }
     }else{
       const penalty=Math.min(Math.max(2,pending.dice),Math.max(0,Number(coins)||0));
@@ -4204,7 +4275,7 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
       setStreak(0);
       const msg=`任務失敗，正確答案是 ${pending.question.explain}。支付 ${penalty} 金幣當作停留費。`;
       setFeedback(msg);
-      addLog(msg);
+      playComputerRound();
     }
     setTurn(t=>t+1);
     setPending(null);
@@ -4219,17 +4290,15 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
     }
     setCoins?.(v=>Math.max(0,(Number(v)||0)-offer.cost));
     setOwned(prev=>({...prev,[tile.id]:{level:1,visits:1}}));
-    const msg=`已收購「${tile.name}」。之後再落到這格會產生地產收益。`;
+    const msg=`已收購「${tile.name}」。之後再落到這格會產生地產收益，下一次再停到這格才能升級。`;
     setFeedback(msg);
-    addLog(`🏠 ${msg}`);
     setOffer(null);
+    playComputerRound();
   };
   const skipOffer=()=>{
-    if(offer){
-      const tile=tiles.find(t=>t.id===offer.tileId);
-      addLog(`略過收購「${tile?.name||"地產"}」。`);
-    }
+    if(offer)setFeedback("已略過本次收購，輪到電腦玩家行動。");
     setOffer(null);
+    playComputerRound();
   };
   const upgradeCurrentProperty=()=>{
     const property=owned[currentTile.id];
@@ -4243,60 +4312,71 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
     setOwned(prev=>({...prev,[currentTile.id]:{...property,level:property.level+1}}));
     const msg=`「${currentTile.name}」升到 Lv.${property.level+1}，未來收益提高。`;
     setFeedback(msg);
-    addLog(`⬆️ ${msg}`);
+    playComputerRound();
   };
   const accuracy=Math.round((score.correct/Math.max(1,score.correct+score.wrong))*100);
   const goalDone=propertyCount>=4||score.boss>0;
   const goalText=score.boss>0?"Boss 已擊敗，這局完成。":propertyCount>=4?"資產目標達成，這局完成。":`勝利條件：再收購 ${Math.max(0,4-propertyCount)} 格地產，或挑戰 Boss 城堡。`;
+  const canUpgradeCurrent=!!currentProperty&&currentProperty.visits>=2&&currentProperty.level<3;
   return(<div className="pet-monopoly" style={{"--pm-accent":color,"--pm-accent-2":accent,"--pm-border":S.bd,"--pm-card":S.bg1,"--pm-surface":S.bg2,"--pm-text":S.t1,"--pm-muted":S.t2}}>
     <Hdr t="🎲 寵物大富翁" onBack={onBack} cl={color}/>
     <style>{`
-      .pet-monopoly{display:grid;gap:14px;color:var(--pm-text)}
+      .pet-monopoly{display:grid;gap:12px;color:var(--pm-text)}
       .pet-monopoly button{font-family:inherit}
-      .pm-hero{border:1px solid color-mix(in srgb,var(--pm-accent) 30%,var(--pm-border));border-radius:24px;background:radial-gradient(circle at 18% 12%,color-mix(in srgb,var(--pm-accent) 22%,transparent),transparent 30%),radial-gradient(circle at 92% 20%,rgba(250,204,21,.24),transparent 26%),linear-gradient(135deg,#F8FFF8,var(--pm-card));padding:18px;display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:14px;box-shadow:0 18px 38px rgba(15,110,86,.08)}
+      .pm-hero{order:3;border:1px solid color-mix(in srgb,var(--pm-accent) 30%,var(--pm-border));border-radius:20px;background:radial-gradient(circle at 18% 12%,color-mix(in srgb,var(--pm-accent) 22%,transparent),transparent 30%),radial-gradient(circle at 92% 20%,rgba(250,204,21,.24),transparent 26%),linear-gradient(135deg,#F8FFF8,var(--pm-card));padding:14px 16px;display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:12px;box-shadow:0 18px 38px rgba(15,110,86,.08)}
       .pm-kicker{display:inline-flex;align-items:center;gap:7px;color:var(--pm-accent);background:color-mix(in srgb,var(--pm-accent) 10%,#fff);border:1px solid color-mix(in srgb,var(--pm-accent) 24%,transparent);border-radius:999px;padding:6px 10px;font-size:12px;font-weight:1000}
-      .pm-title{font-size:clamp(28px,5vw,48px);line-height:1.02;font-weight:1000;margin:10px 0 8px;letter-spacing:0}
+      .pm-title{font-size:clamp(26px,4.4vw,42px);line-height:1.02;font-weight:1000;margin:8px 0 6px;letter-spacing:0}
       .pm-desc{font-size:13px;color:var(--pm-muted);line-height:1.7;max-width:680px}
       .pm-goal{display:inline-flex;align-items:center;gap:6px;margin-top:10px;border:1px solid color-mix(in srgb,var(--pm-accent) 25%,var(--pm-border));border-radius:999px;background:color-mix(in srgb,var(--pm-accent) 9%,#fff);color:var(--pm-accent);padding:7px 10px;font-size:12px;font-weight:1000}
       .pm-goal.is-done{background:#ECFDF3;color:#047857;border-color:#86EFAC}
       .pm-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
-      .pm-stat{border:1px solid color-mix(in srgb,var(--tone) 24%,var(--pm-border));border-radius:16px;background:linear-gradient(135deg,color-mix(in srgb,var(--tone) 12%,#fff),var(--pm-card));padding:12px;min-height:74px}
+      .pm-stat{border:1px solid color-mix(in srgb,var(--tone) 24%,var(--pm-border));border-radius:14px;background:linear-gradient(135deg,color-mix(in srgb,var(--tone) 12%,#fff),var(--pm-card));padding:10px;min-height:64px}
       .pm-stat b{display:block;font-size:20px;line-height:1.05;margin-top:6px}
       .pm-stat span{font-size:11px;color:var(--tone);font-weight:1000}
-      .pm-main{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px;align-items:start}
-      .pm-board{display:grid;grid-template-columns:repeat(5,minmax(78px,1fr));grid-template-rows:repeat(5,minmax(78px,1fr));gap:8px;border:1px solid color-mix(in srgb,var(--pm-accent) 28%,var(--pm-border));border-radius:24px;background:linear-gradient(135deg,#F7FFFC,var(--pm-card));padding:10px;box-shadow:0 18px 44px rgba(15,110,86,.07)}
-      .pm-tile{position:relative;border:1px solid color-mix(in srgb,var(--tile-color) 34%,var(--pm-border));border-radius:14px;background:linear-gradient(135deg,var(--tile-soft),var(--pm-card));padding:7px;text-align:left;overflow:hidden;min-height:78px}
+      .pm-roster{order:2;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.2fr);gap:10px;align-items:stretch}
+      .pm-player-card,.pm-cpu-box{border:1px solid color-mix(in srgb,var(--pm-accent) 20%,var(--pm-border));border-radius:16px;background:linear-gradient(135deg,color-mix(in srgb,var(--pm-accent) 7%,#fff),var(--pm-card));padding:10px}
+      .pm-player-card{display:flex;align-items:center;gap:9px}
+      .pm-cpu-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:8px}
+      .pm-cpu-pill{border:1px solid color-mix(in srgb,var(--cpu-color) 32%,var(--pm-border));border-radius:12px;background:color-mix(in srgb,var(--cpu-color) 8%,#fff);padding:7px;font-size:11px;line-height:1.35;color:var(--pm-muted)}
+      .pm-cpu-pill b{display:block;color:var(--cpu-color);font-size:12px}
+      .pm-count-buttons{display:flex;gap:6px;margin-top:7px}
+      .pm-count-buttons button{border:1px solid var(--pm-border);background:var(--pm-card);border-radius:999px;padding:5px 9px;font-size:11px;font-weight:1000;cursor:pointer;color:var(--pm-text)}
+      .pm-count-buttons button.is-active{background:var(--pm-accent);color:#fff;border-color:var(--pm-accent)}
+      .pm-main{order:1;display:block}
+      .pm-board{position:relative;display:grid;grid-template-columns:repeat(7,minmax(76px,1fr));grid-template-rows:repeat(7,minmax(72px,1fr));gap:8px;border:1px solid color-mix(in srgb,var(--pm-accent) 28%,var(--pm-border));border-radius:28px;background:radial-gradient(circle at 22% 18%,rgba(14,165,233,.16),transparent 24%),radial-gradient(circle at 75% 78%,rgba(34,197,94,.15),transparent 25%),linear-gradient(135deg,#F7FFFC,var(--pm-card));padding:12px;box-shadow:0 22px 52px rgba(15,110,86,.11);min-height:710px}
+      .pm-tile{position:relative;border:1px solid color-mix(in srgb,var(--tile-color) 34%,var(--pm-border));border-radius:14px;background:linear-gradient(135deg,var(--tile-soft),rgba(255,255,255,.92));padding:7px;text-align:left;overflow:hidden;min-height:72px}
       .pm-tile.is-active{box-shadow:0 0 0 3px color-mix(in srgb,var(--tile-color) 24%,transparent),0 12px 24px color-mix(in srgb,var(--tile-color) 18%,transparent);transform:translateY(-1px)}
       .pm-tile-icon{font-size:20px;display:block}
       .pm-tile-name{display:block;font-size:11px;font-weight:1000;line-height:1.2;margin-top:4px}
       .pm-tile-type{display:inline-block;font-size:9px;font-weight:1000;color:var(--tile-color);background:color-mix(in srgb,var(--tile-color) 10%,#fff);border-radius:999px;padding:2px 6px;margin-top:5px}
       .pm-owner-badge{position:absolute;right:5px;top:5px;border-radius:999px;background:var(--tile-color);color:#fff;font-size:10px;font-weight:1000;padding:3px 6px;box-shadow:0 6px 14px color-mix(in srgb,var(--tile-color) 26%,transparent)}
-      .pm-token{position:absolute;right:5px;bottom:5px;width:42px;height:42px;border-radius:14px;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 18px rgba(0,0,0,.12);overflow:hidden}
-      .pm-center{grid-column:2 / 5;grid-row:2 / 5;border:1px dashed color-mix(in srgb,var(--pm-accent) 28%,var(--pm-border));border-radius:20px;background:linear-gradient(135deg,color-mix(in srgb,var(--pm-accent) 8%,#fff),#fff);display:grid;place-items:center;text-align:center;padding:18px}
-      .pm-dice{width:78px;height:78px;border:0;border-radius:22px;background:linear-gradient(135deg,var(--pm-accent),var(--pm-accent-2));color:#fff;font-size:34px;font-weight:1000;cursor:pointer;box-shadow:0 18px 32px color-mix(in srgb,var(--pm-accent) 26%,transparent)}
+      .pm-token-stack{position:absolute;right:5px;bottom:5px;display:flex;gap:3px;align-items:center}
+      .pm-token{width:32px;height:32px;border-radius:11px;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 18px rgba(0,0,0,.12);overflow:hidden;border:2px solid #fff;font-size:14px;font-weight:1000}
+      .pm-token.cpu{background:var(--cpu-color);color:#fff}
+      .pm-center{position:relative;grid-column:2 / 7;grid-row:2 / 7;border:1px dashed color-mix(in srgb,var(--pm-accent) 28%,var(--pm-border));border-radius:24px;background:linear-gradient(135deg,rgba(240,253,250,.72),rgba(255,255,255,.82));display:grid;place-items:center;text-align:center;padding:18px;overflow:hidden}
+      .pm-island{position:absolute;inset:22px;border-radius:22px;background:radial-gradient(ellipse at 52% 46%,rgba(34,197,94,.34) 0 18%,transparent 19%),radial-gradient(ellipse at 50% 47%,rgba(20,184,166,.24) 0 29%,transparent 30%),linear-gradient(135deg,rgba(14,165,233,.12),rgba(250,204,21,.13));}
+      .pm-island:before{content:"";position:absolute;left:48%;top:8%;width:112px;height:330px;border-radius:58% 44% 55% 45%;background:linear-gradient(160deg,#BFEFCC,#68D391 45%,#1D9E75);transform:rotate(17deg);box-shadow:0 18px 42px rgba(15,110,86,.22)}
+      .pm-island-label{position:absolute;left:22px;top:20px;text-align:left;color:var(--pm-accent);font-weight:1000;font-size:18px}
+      .pm-city{position:absolute;border-radius:999px;background:#fff;border:1px solid rgba(15,110,86,.2);padding:4px 8px;font-size:11px;font-weight:1000;color:#0F6E56;box-shadow:0 8px 20px rgba(15,110,86,.12)}
+      .pm-overlay{position:relative;z-index:2;width:min(520px,88%);border:1px solid rgba(15,110,86,.2);border-radius:22px;background:rgba(255,255,255,.82);backdrop-filter:blur(12px);box-shadow:0 24px 54px rgba(15,110,86,.18);padding:14px;display:grid;gap:10px}
+      .pm-dice{width:72px;height:72px;border:0;border-radius:22px;background:linear-gradient(135deg,var(--pm-accent),var(--pm-accent-2));color:#fff;font-size:32px;font-weight:1000;cursor:pointer;box-shadow:0 18px 32px color-mix(in srgb,var(--pm-accent) 26%,transparent)}
       .pm-dice:disabled{opacity:.55;cursor:not-allowed}
-      .pm-panel{border:1px solid color-mix(in srgb,var(--pm-accent) 22%,var(--pm-border));border-radius:22px;background:var(--pm-card);padding:14px;display:grid;gap:12px}
       .pm-section-title{font-size:14px;font-weight:1000;color:var(--pm-text)}
-      .pm-pets{display:grid;gap:8px}
-      .pm-pet-button{border:1px solid var(--pm-border);border-radius:14px;background:var(--pm-surface);padding:9px 10px;display:flex;align-items:center;gap:8px;text-align:left;cursor:pointer}
-      .pm-pet-button.is-active{border-color:var(--pm-accent);background:color-mix(in srgb,var(--pm-accent) 10%,var(--pm-card))}
-      .pm-feedback{border:1px solid color-mix(in srgb,var(--pm-accent) 24%,var(--pm-border));border-radius:16px;background:linear-gradient(135deg,color-mix(in srgb,var(--pm-accent) 9%,#fff),var(--pm-card));padding:12px;font-size:13px;font-weight:900;line-height:1.55;color:var(--pm-accent)}
-      .pm-question{border:1px solid color-mix(in srgb,var(--pm-accent) 24%,var(--pm-border));border-radius:20px;background:linear-gradient(135deg,#fff,color-mix(in srgb,var(--pm-accent) 7%,#fff));padding:14px;box-shadow:0 16px 34px rgba(15,110,86,.08)}
+      .pm-feedback{border:1px solid color-mix(in srgb,var(--pm-accent) 24%,var(--pm-border));border-radius:14px;background:linear-gradient(135deg,color-mix(in srgb,var(--pm-accent) 9%,#fff),rgba(255,255,255,.86));padding:10px;font-size:13px;font-weight:900;line-height:1.55;color:var(--pm-accent)}
+      .pm-question{display:grid;gap:8px}
       .pm-question h3{margin:0 0 8px;font-size:18px}
       .pm-question p{margin:0;color:var(--pm-muted);font-size:13px;line-height:1.55}
       .pm-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:12px}
       .pm-choice{border:1px solid color-mix(in srgb,var(--pm-accent) 22%,var(--pm-border));border-radius:14px;background:var(--pm-card);padding:12px;font-size:15px;font-weight:1000;cursor:pointer;color:var(--pm-text)}
       .pm-choice:hover{border-color:var(--pm-accent);background:color-mix(in srgb,var(--pm-accent) 8%,#fff)}
-      .pm-log{display:grid;gap:7px}
-      .pm-log div{font-size:12px;line-height:1.45;color:var(--pm-muted);background:var(--pm-surface);border:1px solid var(--pm-border);border-radius:12px;padding:8px}
       .pm-deal{border:1px solid color-mix(in srgb,var(--pm-accent) 28%,var(--pm-border));border-radius:16px;background:linear-gradient(135deg,color-mix(in srgb,var(--pm-accent) 10%,#fff),var(--pm-card));padding:12px;display:grid;gap:9px}
       .pm-deal-text{font-size:12px;color:var(--pm-muted);line-height:1.55}
       .pm-action-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
       .pm-action{border:0;border-radius:12px;background:var(--pm-accent);color:#fff;padding:10px 12px;font-size:12px;font-weight:1000;cursor:pointer}
       .pm-action.secondary{background:var(--pm-surface);color:var(--pm-text);border:1px solid var(--pm-border)}
       .pm-action:disabled{opacity:.5;cursor:not-allowed}
-      @media (max-width:900px){.pm-hero,.pm-main{grid-template-columns:1fr}.pm-board{grid-template-columns:repeat(5,minmax(58px,1fr));grid-template-rows:repeat(5,minmax(58px,1fr));gap:6px}.pm-tile{min-height:58px;padding:5px}.pm-tile-name{font-size:10px}.pm-tile-type{display:none}.pm-token{width:34px;height:34px}.pm-center{padding:10px}.pm-dice{width:64px;height:64px;font-size:28px}}
-      @media (max-width:520px){.pm-hero{padding:14px;border-radius:20px}.pm-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.pm-board{padding:7px;gap:4px}.pm-tile-icon{font-size:16px}.pm-tile-name{font-size:9px}.pm-choices{grid-template-columns:1fr}.pm-panel{padding:12px}}
+      @media (max-width:900px){.pm-hero,.pm-roster{grid-template-columns:1fr}.pm-board{grid-template-columns:repeat(7,minmax(44px,1fr));grid-template-rows:repeat(7,minmax(48px,1fr));gap:5px;min-height:560px;padding:8px}.pm-tile{min-height:48px;padding:5px}.pm-tile-name{font-size:9px}.pm-tile-type{display:none}.pm-token{width:25px;height:25px;border-radius:9px}.pm-center{padding:8px}.pm-overlay{width:92%;padding:10px}.pm-dice{width:60px;height:60px;font-size:26px}}
+      @media (max-width:520px){.pm-hero{padding:12px;border-radius:18px}.pm-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.pm-cpu-list{grid-template-columns:1fr}.pm-board{gap:3px;min-height:480px}.pm-tile-icon{font-size:15px}.pm-tile-name{font-size:8px}.pm-choices{grid-template-columns:1fr}.pm-island-label{font-size:14px}.pm-city{display:none}}
     `}</style>
     <section className="pm-hero">
       <div>
@@ -4312,122 +4392,122 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
         <div className="pm-stat" style={{"--tone":"#DB2777"}}><span>連勝</span><b>{streak}</b></div>
       </div>
     </section>
-    <section className="pm-main">
-      <div>
-        <div className="pm-board" data-testid="pet-monopoly-board" aria-label="寵物大富翁棋盤">
-          {tiles.map((tile,i)=>{
-            const meta=PET_MONOPOLY_TYPE_META[tile.type]||PET_MONOPOLY_TYPE_META.word;
-            const[posCol,posRow]=PET_MONOPOLY_GRID[i]||[1,1];
-            const active=i===position;
-            const property=owned[tile.id];
-            return(
-              <div key={tile.id} className={`pm-tile ${active?"is-active":""}`} style={{"--tile-color":meta.color,"--tile-soft":meta.soft,gridColumn:posCol,gridRow:posRow}}>
-                <span className="pm-tile-icon">{tile.icon}</span>
-                <span className="pm-tile-name">{tile.name}</span>
-                <span className="pm-tile-type">{meta.label}</span>
-                {property&&<span className="pm-owner-badge">Lv.{property.level}</span>}
-                {active&&<span className="pm-token" aria-label="目前位置">{selectedPet?<PixelPet pet={selectedPet} size={44}/>:<span style={{fontSize:24}}>🐾</span>}</span>}
-              </div>
-            );
-          })}
-          <div className="pm-center">
-            <div>
-              <button className="pm-dice" data-testid="pet-monopoly-roll" disabled={!!pending||!!offer} onClick={roll} aria-label="擲骰">{dice||"🎲"}</button>
-              <div style={{fontSize:13,fontWeight:1000,color:color,marginTop:10}}>{lastMove?`落在：${lastMove.tile.name}`:"目的地未知"}</div>
-              <div style={{fontSize:12,color:S.t3,marginTop:4}}>{pending?"完成格子任務後結算":offer?"先處理收購決定":"按下骰子，目的地才會揭曉。"}</div>
-            </div>
-          </div>
-        </div>
-        <div className="pm-feedback" data-testid="pet-monopoly-feedback" style={{marginTop:12}}>{feedback}</div>
-        {pending&&(
-          <div className="pm-question" style={{marginTop:12}}>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,marginBottom:8}}>
-              <div style={{fontSize:12,fontWeight:1000,color:color}}>英文挑戰 · 骰出 {pending.dice}</div>
-              <div style={{fontSize:12,fontWeight:1000,color:PET_MONOPOLY_TYPE_META[pending.tile.type]?.color||color}}>{pending.tile.name}</div>
-            </div>
-            <h3>{pending.question.prompt}</h3>
-            <p>{pending.question.sub}</p>
-            <div className="pm-choices">
-              {pending.question.choices.map((choice,i)=>(
-                <button key={`${choice}-${i}`} type="button" className="pm-choice" data-testid={i===pending.question.answer?"pet-monopoly-choice-correct":undefined} onClick={()=>answer(i)}>
-                  {choice}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+    <section className="pm-roster">
+      <div className="pm-player-card">
+        <span style={{width:46,height:46,borderRadius:14,background:"#fff",display:"inline-flex",alignItems:"center",justifyContent:"center",overflow:"hidden",boxShadow:"0 8px 18px rgba(0,0,0,.08)"}}>
+          {selectedPet?<PixelPet pet={selectedPet} size={46}/>:<span style={{fontSize:24}}>🐾</span>}
+        </span>
+        <span style={{minWidth:0}}>
+          <span style={{display:"block",fontSize:14,fontWeight:1000,color:S.t1}}>玩家 · {selectedPetDef?.name||"學習棋子"}</span>
+          <span style={{display:"block",fontSize:12,color:S.t3}}>圈數 {score.laps} · 命中率 {accuracy}% · 地產 {propertyCount}</span>
+        </span>
       </div>
-      <aside className="pm-panel">
-        <div>
-          <div className="pm-section-title">寵物隊長</div>
-          <div style={{fontSize:12,color:S.t3,lineHeight:1.55,marginTop:4}}>選一隻寵物當棋子，答對會讓牠成長。</div>
+      <div className="pm-cpu-box">
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
+          <div className="pm-section-title">電腦玩家</div>
+          <div style={{fontSize:11,color:S.t3}}>最多 3 家 play</div>
         </div>
-        {pets.length?(
-          <div className="pm-pets">
-            {pets.slice(0,6).map((pet,i)=>{
-              const def=getAdventurePetDef(pet);
-              return(
-                <button key={`${pet.petId||"pet"}-${i}`} type="button" className={`pm-pet-button ${i===petIndex?"is-active":""}`} onClick={()=>setPetIndex(i)}>
-                  <span style={{width:34,height:34,borderRadius:12,background:"#fff",display:"inline-flex",alignItems:"center",justifyContent:"center",overflow:"hidden"}}><PixelPet pet={pet} size={36}/></span>
-                  <span style={{minWidth:0}}>
-                    <span style={{display:"block",fontSize:13,fontWeight:1000,color:S.t1}}>{def?.name||"學習寵物"} · Lv.{pet.level||1}</span>
-                    <span style={{display:"block",fontSize:11,color:S.t3}}>EXP {pet.exp||0} · 羈絆 {pet.bond||0}</span>
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        ):(
-          <div style={{border:`1px dashed ${color}55`,borderRadius:16,padding:14,background:`${color}0f`,fontSize:13,lineHeight:1.6,color:S.t2}}>
-            目前先用 🐾 學習棋子遊玩。到扭蛋機取得寵物後，這裡會開始累積寵物 EXP。
-          </div>
-        )}
-        <div>
-          <div className="pm-section-title">目前格子</div>
-          <div style={{marginTop:8,border:`1px solid ${currentMeta.color}33`,borderRadius:16,padding:12,background:currentMeta.soft}}>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
-              <div style={{fontSize:20}}>{currentTile.icon}</div>
-              <span style={{fontSize:11,fontWeight:1000,color:currentMeta.color,background:"#fff",borderRadius:999,padding:"4px 8px"}}>{currentMeta.label}</span>
-            </div>
-            <div style={{fontSize:15,fontWeight:1000,marginTop:4}}>{currentTile.name}</div>
-            <div style={{fontSize:12,color:S.t2,lineHeight:1.5,marginTop:4}}>{currentTile.hint}</div>
-            <div style={{fontSize:12,color:S.t3,lineHeight:1.5,marginTop:8}}>圈數 {score.laps} · 命中率 {accuracy}% · 失誤 {score.wrong}</div>
-          </div>
+        <div className="pm-count-buttons" aria-label="電腦玩家數量">
+          {[1,2,3].map(n=><button key={n} type="button" className={computerCount===n?"is-active":""} onClick={()=>setComputerCount(n)}>{n}</button>)}
         </div>
-        {offer&&offerTile&&(
-          <div className="pm-deal" data-testid="pet-monopoly-deal">
-            <div className="pm-section-title">收購機會</div>
-            <div className="pm-deal-text">用 {offer.cost} 金幣買下「{offerTile.name}」。之後停在這格會拿到地產收益，也能升級提高報酬。</div>
-            <div className="pm-action-row">
-              <button type="button" className="pm-action" data-testid="pet-monopoly-buy" disabled={(Number(coins)||0)<offer.cost} onClick={buyProperty}>收購</button>
-              <button type="button" className="pm-action secondary" onClick={skipOffer}>略過</button>
+        <div className="pm-cpu-list">
+          {activeComputers.map(cpu=>(
+            <div key={cpu.id} className="pm-cpu-pill" style={{"--cpu-color":cpu.color}}>
+              <b>{cpu.emoji} {cpu.name}</b>
+              <span>金幣 {cpu.coins} · 地產 {cpu.owned.length}</span>
+              <span style={{display:"block",marginTop:3}}>{cpu.last}</span>
             </div>
+          ))}
+        </div>
+        <div style={{fontSize:11,color:S.t3,marginTop:7}}>{computerNotice}</div>
+      </div>
+    </section>
+    <section className="pm-main">
+      <div className="pm-board" data-testid="pet-monopoly-board" aria-label="寵物大富翁棋盤">
+        {tiles.map((tile,i)=>{
+          const meta=PET_MONOPOLY_TYPE_META[tile.type]||PET_MONOPOLY_TYPE_META.word;
+          const[posCol,posRow]=PET_MONOPOLY_GRID[i]||[1,1];
+          const active=i===position;
+          const property=owned[tile.id];
+          const computerVisitors=activeComputers.filter(cpu=>cpu.position===i);
+          return(
+            <div key={tile.id} className={`pm-tile ${active?"is-active":""}`} style={{"--tile-color":meta.color,"--tile-soft":meta.soft,gridColumn:posCol,gridRow:posRow}}>
+              <span className="pm-tile-icon">{tile.icon}</span>
+              <span className="pm-tile-name">{tile.name}</span>
+              <span className="pm-tile-type">{meta.label}</span>
+              {property&&<span className="pm-owner-badge">Lv.{property.level}</span>}
+              {(active||computerVisitors.length>0)&&(
+                <span className="pm-token-stack">
+                  {active&&<span className="pm-token" aria-label="目前位置">{selectedPet?<PixelPet pet={selectedPet} size={32}/>:<span>🐾</span>}</span>}
+                  {computerVisitors.map(cpu=><span key={cpu.id} className="pm-token cpu" style={{"--cpu-color":cpu.color}} title={cpu.name}>{cpu.name.replace("電腦 ","")}</span>)}
+                </span>
+              )}
+            </div>
+          );
+        })}
+        <div className="pm-center">
+          <div className="pm-island" aria-hidden="true">
+            <div className="pm-island-label">台灣學習島</div>
+            <span className="pm-city" style={{left:"50%",top:"16%"}}>台北</span>
+            <span className="pm-city" style={{left:"39%",top:"45%"}}>台中</span>
+            <span className="pm-city" style={{left:"47%",top:"70%"}}>高雄</span>
+            <span className="pm-city" style={{right:"18%",top:"48%"}}>花東</span>
           </div>
-        )}
-        {currentProperty&&(
-          <div className="pm-deal">
-            <div className="pm-section-title">你的地產 · Lv.{currentProperty.level}</div>
-            <div className="pm-deal-text">再次停留收益：+{currentYield.coins} 金幣、+{currentYield.xp} XP、寵物 +{currentYield.petExp} EXP。已停留 {currentProperty.visits||1} 次。</div>
-            {currentProperty.level<3?(
-              <button type="button" className="pm-action" disabled={(Number(coins)||0)<currentUpgradeCost||!!pending||!!offer} onClick={upgradeCurrentProperty}>升級 {currentUpgradeCost} 金幣</button>
-            ):(
-              <div className="pm-deal-text" style={{fontWeight:1000,color:color}}>已達最高等級</div>
+          <div className="pm-overlay" data-testid="pet-monopoly-overlay">
+            <div className="pm-feedback" data-testid="pet-monopoly-feedback">{feedback}</div>
+            {moving&&(
+              <div className="pm-deal" data-testid="pet-monopoly-moving">
+                <div className="pm-section-title">移動中</div>
+                <div className="pm-deal-text">骰出 {moving.dice}，正在前往「{moving.to}」：{moving.step}/{moving.total}</div>
+              </div>
+            )}
+            {!moving&&pending&&(
+              <div className="pm-question">
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10}}>
+                  <div style={{fontSize:12,fontWeight:1000,color:color}}>英文挑戰 · 骰出 {pending.dice}</div>
+                  <div style={{fontSize:12,fontWeight:1000,color:PET_MONOPOLY_TYPE_META[pending.tile.type]?.color||color}}>{pending.tile.name}</div>
+                </div>
+                <h3>{pending.question.prompt}</h3>
+                <p>{pending.question.sub}</p>
+                <div className="pm-choices">
+                  {pending.question.choices.map((choice,i)=>(
+                    <button key={`${choice}-${i}`} type="button" className="pm-choice" data-testid={i===pending.question.answer?"pet-monopoly-choice-correct":undefined} onClick={()=>answer(i)}>
+                      {choice}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {!moving&&!pending&&offer&&offerTile&&(
+              <div className="pm-deal" data-testid="pet-monopoly-deal">
+                <div className="pm-section-title">收購機會</div>
+                <div className="pm-deal-text">用 {offer.cost} 金幣買下「{offerTile.name}」。第一次停到這格只能決定是否收購；下一次再停到已擁有地產才可升級。</div>
+                <div className="pm-action-row">
+                  <button type="button" className="pm-action" data-testid="pet-monopoly-buy" disabled={(Number(coins)||0)<offer.cost} onClick={buyProperty}>收購</button>
+                  <button type="button" className="pm-action secondary" onClick={skipOffer}>略過</button>
+                </div>
+              </div>
+            )}
+            {!moving&&!pending&&!offer&&(
+              <div className="pm-deal">
+                <div className="pm-section-title">目前格子 · {currentTile.icon} {currentTile.name}</div>
+                <div className="pm-deal-text">{currentTile.hint} · {currentMeta.label}</div>
+                {currentProperty&&(
+                  <div className="pm-deal-text">你的地產 Lv.{currentProperty.level}，再次停留收益 +{currentYield.coins} 金幣、+{currentYield.xp} XP。已停留 {currentProperty.visits||1} 次。</div>
+                )}
+                {currentProperty&&currentProperty.visits<2&&<div className="pm-deal-text" style={{fontWeight:1000,color:color}}>下一次再停到這格才能升級。</div>}
+                {canUpgradeCurrent&&<button type="button" className="pm-action" disabled={(Number(coins)||0)<currentUpgradeCost} onClick={upgradeCurrentProperty}>升級 {currentUpgradeCost} 金幣</button>}
+                {!currentProperty&&isPetMonopolyOwnable(currentTile)&&<div className="pm-deal-text">答對這格英文任務後，才會出現收購決定。</div>}
+                <div>
+                  <button className="pm-dice" data-testid="pet-monopoly-roll" disabled={!!moving||!!pending||!!offer} onClick={roll} aria-label="擲骰">{dice||"🎲"}</button>
+                  <div style={{fontSize:13,fontWeight:1000,color:color,marginTop:8}}>{lastMove?`落在：${lastMove.tile.name}`:"目的地未知"}</div>
+                  <div style={{fontSize:12,color:S.t3,marginTop:4}}>按下骰子，目的地才會揭曉。</div>
+                </div>
+              </div>
             )}
           </div>
-        )}
-        {!currentProperty&&isPetMonopolyOwnable(currentTile)&&!offer&&(
-          <div className="pm-deal">
-            <div className="pm-section-title">未收購地產</div>
-            <div className="pm-deal-text">答對這格英文任務後，才會出現收購決定。先擲骰，命運交給棋盤。</div>
-          </div>
-        )}
-        <div>
-          <div className="pm-section-title">行動紀錄</div>
-          <div className="pm-log" style={{marginTop:8}}>
-            {logs.map((log,i)=><div key={`${log}-${i}`}>{log}</div>)}
-          </div>
         </div>
-      </aside>
+      </div>
     </section>
   </div>);
 }
