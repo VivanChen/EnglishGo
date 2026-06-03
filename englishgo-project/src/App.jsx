@@ -4049,6 +4049,52 @@ function getPetMonopolyReward(tile,lapBonus=false){
   const base=table[tile?.type]||table.word;
   return lapBonus?{...base,xp:base.xp+6,coins:base.coins+12,petExp:base.petExp+4,bond:base.bond+1,label:`${base.label} + 繞行一圈`}:base;
 }
+function rollPetMonopolyDice(){
+  try{
+    const arr=new Uint32Array(1);
+    crypto.getRandomValues(arr);
+    return(arr[0]%6)+1;
+  }catch{return Math.floor(Math.random()*6)+1}
+}
+function isPetMonopolyOwnable(tile){
+  return["word","grammar","shop","training"].includes(tile?.type);
+}
+function getPetMonopolyTileCost(tile){
+  const table={word:24,grammar:32,shop:28,training:30};
+  return table[tile?.type]||24;
+}
+function getPetMonopolyUpgradeCost(property){
+  return 18+(Number(property?.level)||1)*12;
+}
+function getPetMonopolyYield(property){
+  const level=Number(property?.level)||1;
+  return{coins:5+level*5,xp:level*2,petExp:level*3};
+}
+function getPetMonopolyAffinityBonus(question,petDef){
+  const focus=String(question?.word?.w||"").toLowerCase();
+  if(!focus||!(petDef?.words||[]).map(w=>String(w).toLowerCase()).includes(focus))return{coins:0,petExp:0,label:""};
+  return{coins:4,petExp:5,label:`${petDef.name} 熟悉 ${focus}，技能加成`};
+}
+function getPetMonopolyComboBonus(streak){
+  if(streak<3)return{coins:0,xp:0,petExp:0,label:""};
+  const tier=Math.min(4,Math.floor(streak/3));
+  return{coins:tier*3,xp:tier*2,petExp:tier*2,label:`連勝 ${streak} 回合，加碼獎勵`};
+}
+function getPetMonopolyTileTwist(tile,seed=0){
+  if(tile?.type==="event"){
+    const deck=[
+      {coins:12,xp:2,petExp:0,bond:0,label:"命運卡：金幣雨 +12 金幣"},
+      {coins:4,xp:7,petExp:4,bond:1,label:"命運卡：捷徑筆記 +7 XP"},
+      {coins:0,xp:2,petExp:12,bond:3,label:"命運卡：寵物零食 +12 EXP"},
+      {coins:18,xp:0,petExp:0,bond:0,label:"命運卡：寶箱爆開 +18 金幣"},
+    ];
+    return deck[Math.abs(seed)%deck.length];
+  }
+  if(tile?.type==="boss"){
+    return{coins:10,xp:5,petExp:8,bond:2,label:"Boss 戰利品：皇冠寶箱"};
+  }
+  return null;
+}
 function growPetFromMonopoly(pet,reward){
   if(!pet)return pet;
   let next={
@@ -4075,52 +4121,133 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
   const[dice,setDice]=useState(null);
   const[turn,setTurn]=useState(0);
   const[pending,setPending]=useState(null);
-  const[feedback,setFeedback]=useState("擲骰前先答英文題");
-  const[score,setScore]=useState({correct:0,wrong:0,laps:0});
-  const[logs,setLogs]=useState(["歡迎來到學習島，答對英文題才能前進。"]);
+  const[owned,setOwned]=useState({});
+  const[offer,setOffer]=useState(null);
+  const[lastMove,setLastMove]=useState(null);
+  const[feedback,setFeedback]=useState("按下骰子，目的地才會揭曉。");
+  const[score,setScore]=useState({correct:0,wrong:0,laps:0,boss:0});
+  const[streak,setStreak]=useState(0);
+  const[logs,setLogs]=useState(["先搶地產，再靠英文任務拿收益。"]);
   const selectedPet=pets?.[petIndex]||null;
   const selectedPetDef=selectedPet?getAdventurePetDef(selectedPet):null;
   useEffect(()=>{if(pets.length&&petIndex>=pets.length)setPetIndex(0)},[pets.length,petIndex]);
   const addLog=text=>setLogs(prev=>[text,...prev].slice(0,5));
-  const nextDice=1+(turn%6);
-  const previewTile=tiles[(position+nextDice)%tiles.length];
+  const currentTile=tiles[position];
+  const currentProperty=owned[currentTile.id];
+  const currentMeta=PET_MONOPOLY_TYPE_META[currentTile.type]||PET_MONOPOLY_TYPE_META.word;
+  const currentYield=currentProperty?getPetMonopolyYield(currentProperty):null;
+  const currentUpgradeCost=currentProperty?getPetMonopolyUpgradeCost(currentProperty):0;
+  const offerTile=offer?tiles.find(t=>t.id===offer.tileId):null;
+  const propertyCount=Object.keys(owned).length;
   const roll=()=>{
-    if(pending)return;
-    const nextPos=(position+nextDice)%tiles.length;
+    if(pending||offer)return;
+    const rolled=rollPetMonopolyDice();
+    const nextPos=(position+rolled)%tiles.length;
     const tile=tiles[nextPos];
-    const question=buildPetMonopolyQuestion(lv,tile,turn+position+nextPos);
-    setDice(nextDice);
-    setPending({dice:nextDice,nextPos,tile,question,lapBonus:nextPos<=position&&position!==0});
-    setFeedback(`骰出 ${nextDice}，完成英文挑戰後前進到「${tile.name}」。`);
+    const question=buildPetMonopolyQuestion(lv,tile,turn+position+nextPos+rolled);
+    const lapBonus=nextPos<=position&&position!==0;
+    setDice(rolled);
+    setPosition(nextPos);
+    setLastMove({dice:rolled,tile});
+    setPending({dice:rolled,nextPos,tile,question,lapBonus});
+    const msg=`骰出 ${rolled}，落在「${tile.name}」。完成這格任務後才能結算效果。`;
+    setFeedback(msg);
+    addLog(`🎲 ${msg}`);
   };
   const answer=idx=>{
     if(!pending)return;
     const correct=idx===pending.question.answer;
     if(correct){
-      const reward=getPetMonopolyReward(pending.tile,pending.lapBonus);
+      const baseReward=getPetMonopolyReward(pending.tile,pending.lapBonus);
+      const property=owned[pending.tile.id];
+      const propertyYield=property?getPetMonopolyYield(property):{coins:0,xp:0,petExp:0};
+      const affinity=getPetMonopolyAffinityBonus(pending.question,selectedPetDef);
+      const nextStreak=streak+1;
+      const combo=getPetMonopolyComboBonus(nextStreak);
+      const twist=getPetMonopolyTileTwist(pending.tile,turn+pending.dice+pending.nextPos);
+      const reward={
+        ...baseReward,
+        coins:baseReward.coins+propertyYield.coins+affinity.coins+combo.coins+(twist?.coins||0),
+        xp:baseReward.xp+propertyYield.xp+combo.xp+(twist?.xp||0),
+        petExp:baseReward.petExp+propertyYield.petExp+affinity.petExp+combo.petExp+(twist?.petExp||0),
+        bond:baseReward.bond+(twist?.bond||0),
+      };
       const totalXp=reward.xp;
       const totalCoins=reward.coins;
-      setPosition(pending.nextPos);
-      setScore(s=>({correct:s.correct+1,wrong:s.wrong,laps:s.laps+(pending.lapBonus?1:0)}));
+      setScore(s=>({correct:s.correct+1,wrong:s.wrong,laps:s.laps+(pending.lapBonus?1:0),boss:s.boss+(pending.tile.type==="boss"?1:0)}));
+      setStreak(nextStreak);
       onXp?.(totalXp);
       setCoins?.(v=>Math.max(0,(Number(v)||0)+totalCoins));
       if(selectedPet&&setPets){
         setPets(prev=>(prev||[]).map((pet,i)=>i===petIndex?growPetFromMonopoly(pet,reward):pet));
       }
       const petText=selectedPet?`寵物獲得 ${reward.petExp} EXP、羈絆 +${reward.bond}`:"取得寵物後可累積寵物 EXP";
-      const msg=`答對！${reward.label}：+${totalXp} XP、+${totalCoins} 金幣，${petText}。`;
+      const propertyText=property?`，地產收益 +${propertyYield.coins} 金幣`:"";
+      const affinityText=affinity.label?`，${affinity.label}`:"";
+      const comboText=combo.label?`，${combo.label}`:"";
+      const twistText=twist?`，${twist.label}`:"";
+      const buyText=!property&&isPetMonopolyOwnable(pending.tile)?` 可用 ${getPetMonopolyTileCost(pending.tile)} 金幣收購這格。`:"";
+      const bossText=pending.tile.type==="boss"?" 已擊敗 Boss，達成勝利條件。":"";
+      const msg=`答對！${reward.label}：+${totalXp} XP、+${totalCoins} 金幣${propertyText}${affinityText}${comboText}${twistText}，${petText}。${bossText}${buyText}`;
       setFeedback(msg);
       addLog(msg);
+      if(property){
+        setOwned(prev=>({...prev,[pending.tile.id]:{...prev[pending.tile.id],visits:(Number(prev[pending.tile.id]?.visits)||0)+1}}));
+      }
+      if(!property&&isPetMonopolyOwnable(pending.tile)){
+        setOffer({tileId:pending.tile.id,cost:getPetMonopolyTileCost(pending.tile)});
+      }
     }else{
-      setScore(s=>({correct:s.correct,wrong:s.wrong+1,laps:s.laps}));
-      const msg=`再挑戰一次：正確答案是 ${pending.question.explain}。`;
+      const penalty=Math.min(Math.max(2,pending.dice),Math.max(0,Number(coins)||0));
+      if(penalty)setCoins?.(v=>Math.max(0,(Number(v)||0)-penalty));
+      setScore(s=>({correct:s.correct,wrong:s.wrong+1,laps:s.laps,boss:s.boss}));
+      setStreak(0);
+      const msg=`任務失敗，正確答案是 ${pending.question.explain}。支付 ${penalty} 金幣當作停留費。`;
       setFeedback(msg);
       addLog(msg);
     }
     setTurn(t=>t+1);
     setPending(null);
   };
+  const buyProperty=()=>{
+    if(!offer)return;
+    const tile=tiles.find(t=>t.id===offer.tileId);
+    if(!tile)return setOffer(null);
+    if((Number(coins)||0)<offer.cost){
+      setFeedback(`金幣不足，還差 ${offer.cost-(Number(coins)||0)} 金幣才能收購「${tile.name}」。`);
+      return;
+    }
+    setCoins?.(v=>Math.max(0,(Number(v)||0)-offer.cost));
+    setOwned(prev=>({...prev,[tile.id]:{level:1,visits:1}}));
+    const msg=`已收購「${tile.name}」。之後再落到這格會產生地產收益。`;
+    setFeedback(msg);
+    addLog(`🏠 ${msg}`);
+    setOffer(null);
+  };
+  const skipOffer=()=>{
+    if(offer){
+      const tile=tiles.find(t=>t.id===offer.tileId);
+      addLog(`略過收購「${tile?.name||"地產"}」。`);
+    }
+    setOffer(null);
+  };
+  const upgradeCurrentProperty=()=>{
+    const property=owned[currentTile.id];
+    if(!property||property.level>=3)return;
+    const cost=getPetMonopolyUpgradeCost(property);
+    if((Number(coins)||0)<cost){
+      setFeedback(`升級金幣不足，還差 ${cost-(Number(coins)||0)} 金幣。`);
+      return;
+    }
+    setCoins?.(v=>Math.max(0,(Number(v)||0)-cost));
+    setOwned(prev=>({...prev,[currentTile.id]:{...property,level:property.level+1}}));
+    const msg=`「${currentTile.name}」升到 Lv.${property.level+1}，未來收益提高。`;
+    setFeedback(msg);
+    addLog(`⬆️ ${msg}`);
+  };
   const accuracy=Math.round((score.correct/Math.max(1,score.correct+score.wrong))*100);
+  const goalDone=propertyCount>=4||score.boss>0;
+  const goalText=score.boss>0?"Boss 已擊敗，這局完成。":propertyCount>=4?"資產目標達成，這局完成。":`勝利條件：再收購 ${Math.max(0,4-propertyCount)} 格地產，或挑戰 Boss 城堡。`;
   return(<div className="pet-monopoly" style={{"--pm-accent":color,"--pm-accent-2":accent,"--pm-border":S.bd,"--pm-card":S.bg1,"--pm-surface":S.bg2,"--pm-text":S.t1,"--pm-muted":S.t2}}>
     <Hdr t="🎲 寵物大富翁" onBack={onBack} cl={color}/>
     <style>{`
@@ -4130,6 +4257,8 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
       .pm-kicker{display:inline-flex;align-items:center;gap:7px;color:var(--pm-accent);background:color-mix(in srgb,var(--pm-accent) 10%,#fff);border:1px solid color-mix(in srgb,var(--pm-accent) 24%,transparent);border-radius:999px;padding:6px 10px;font-size:12px;font-weight:1000}
       .pm-title{font-size:clamp(28px,5vw,48px);line-height:1.02;font-weight:1000;margin:10px 0 8px;letter-spacing:0}
       .pm-desc{font-size:13px;color:var(--pm-muted);line-height:1.7;max-width:680px}
+      .pm-goal{display:inline-flex;align-items:center;gap:6px;margin-top:10px;border:1px solid color-mix(in srgb,var(--pm-accent) 25%,var(--pm-border));border-radius:999px;background:color-mix(in srgb,var(--pm-accent) 9%,#fff);color:var(--pm-accent);padding:7px 10px;font-size:12px;font-weight:1000}
+      .pm-goal.is-done{background:#ECFDF3;color:#047857;border-color:#86EFAC}
       .pm-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
       .pm-stat{border:1px solid color-mix(in srgb,var(--tone) 24%,var(--pm-border));border-radius:16px;background:linear-gradient(135deg,color-mix(in srgb,var(--tone) 12%,#fff),var(--pm-card));padding:12px;min-height:74px}
       .pm-stat b{display:block;font-size:20px;line-height:1.05;margin-top:6px}
@@ -4141,6 +4270,7 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
       .pm-tile-icon{font-size:20px;display:block}
       .pm-tile-name{display:block;font-size:11px;font-weight:1000;line-height:1.2;margin-top:4px}
       .pm-tile-type{display:inline-block;font-size:9px;font-weight:1000;color:var(--tile-color);background:color-mix(in srgb,var(--tile-color) 10%,#fff);border-radius:999px;padding:2px 6px;margin-top:5px}
+      .pm-owner-badge{position:absolute;right:5px;top:5px;border-radius:999px;background:var(--tile-color);color:#fff;font-size:10px;font-weight:1000;padding:3px 6px;box-shadow:0 6px 14px color-mix(in srgb,var(--tile-color) 26%,transparent)}
       .pm-token{position:absolute;right:5px;bottom:5px;width:42px;height:42px;border-radius:14px;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 18px rgba(0,0,0,.12);overflow:hidden}
       .pm-center{grid-column:2 / 5;grid-row:2 / 5;border:1px dashed color-mix(in srgb,var(--pm-accent) 28%,var(--pm-border));border-radius:20px;background:linear-gradient(135deg,color-mix(in srgb,var(--pm-accent) 8%,#fff),#fff);display:grid;place-items:center;text-align:center;padding:18px}
       .pm-dice{width:78px;height:78px;border:0;border-radius:22px;background:linear-gradient(135deg,var(--pm-accent),var(--pm-accent-2));color:#fff;font-size:34px;font-weight:1000;cursor:pointer;box-shadow:0 18px 32px color-mix(in srgb,var(--pm-accent) 26%,transparent)}
@@ -4159,6 +4289,12 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
       .pm-choice:hover{border-color:var(--pm-accent);background:color-mix(in srgb,var(--pm-accent) 8%,#fff)}
       .pm-log{display:grid;gap:7px}
       .pm-log div{font-size:12px;line-height:1.45;color:var(--pm-muted);background:var(--pm-surface);border:1px solid var(--pm-border);border-radius:12px;padding:8px}
+      .pm-deal{border:1px solid color-mix(in srgb,var(--pm-accent) 28%,var(--pm-border));border-radius:16px;background:linear-gradient(135deg,color-mix(in srgb,var(--pm-accent) 10%,#fff),var(--pm-card));padding:12px;display:grid;gap:9px}
+      .pm-deal-text{font-size:12px;color:var(--pm-muted);line-height:1.55}
+      .pm-action-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+      .pm-action{border:0;border-radius:12px;background:var(--pm-accent);color:#fff;padding:10px 12px;font-size:12px;font-weight:1000;cursor:pointer}
+      .pm-action.secondary{background:var(--pm-surface);color:var(--pm-text);border:1px solid var(--pm-border)}
+      .pm-action:disabled{opacity:.5;cursor:not-allowed}
       @media (max-width:900px){.pm-hero,.pm-main{grid-template-columns:1fr}.pm-board{grid-template-columns:repeat(5,minmax(58px,1fr));grid-template-rows:repeat(5,minmax(58px,1fr));gap:6px}.pm-tile{min-height:58px;padding:5px}.pm-tile-name{font-size:10px}.pm-tile-type{display:none}.pm-token{width:34px;height:34px}.pm-center{padding:10px}.pm-dice{width:64px;height:64px;font-size:28px}}
       @media (max-width:520px){.pm-hero{padding:14px;border-radius:20px}.pm-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.pm-board{padding:7px;gap:4px}.pm-tile-icon{font-size:16px}.pm-tile-name{font-size:9px}.pm-choices{grid-template-columns:1fr}.pm-panel{padding:12px}}
     `}</style>
@@ -4166,13 +4302,14 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
       <div>
         <div className="pm-kicker">學習桌遊 · 寵物同行</div>
         <div className="pm-title">學習島棋盤</div>
-        <div className="pm-desc">像大富翁一樣繞棋盤前進，但每一步都要先完成英文挑戰。答對後可拿 XP、金幣，並讓目前選擇的寵物累積 EXP 與羈絆。</div>
+        <div className="pm-desc">目標是收購地產、升級收益、用寵物技能拉開差距。英文任務是觸發格子效果的挑戰，不會先告訴你下一步會去哪裡。</div>
+        <div className={`pm-goal ${goalDone?"is-done":""}`}>{goalDone?"🏆":"🎯"} {goalText}</div>
       </div>
       <div className="pm-stats">
-        <div className="pm-stat" style={{"--tone":"#0F9F7A"}}><span>正確率</span><b>{accuracy}%</b></div>
+        <div className="pm-stat" style={{"--tone":"#0F9F7A"}}><span>資產</span><b>{propertyCount}</b></div>
         <div className="pm-stat" style={{"--tone":"#D97706"}}><span>金幣</span><b>{coins}</b></div>
         <div className="pm-stat" style={{"--tone":"#2563EB"}}><span>回合</span><b>{turn}</b></div>
-        <div className="pm-stat" style={{"--tone":"#DB2777"}}><span>圈數</span><b>{score.laps}</b></div>
+        <div className="pm-stat" style={{"--tone":"#DB2777"}}><span>連勝</span><b>{streak}</b></div>
       </div>
     </section>
     <section className="pm-main">
@@ -4182,20 +4319,22 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
             const meta=PET_MONOPOLY_TYPE_META[tile.type]||PET_MONOPOLY_TYPE_META.word;
             const[posCol,posRow]=PET_MONOPOLY_GRID[i]||[1,1];
             const active=i===position;
+            const property=owned[tile.id];
             return(
               <div key={tile.id} className={`pm-tile ${active?"is-active":""}`} style={{"--tile-color":meta.color,"--tile-soft":meta.soft,gridColumn:posCol,gridRow:posRow}}>
                 <span className="pm-tile-icon">{tile.icon}</span>
                 <span className="pm-tile-name">{tile.name}</span>
                 <span className="pm-tile-type">{meta.label}</span>
+                {property&&<span className="pm-owner-badge">Lv.{property.level}</span>}
                 {active&&<span className="pm-token" aria-label="目前位置">{selectedPet?<PixelPet pet={selectedPet} size={44}/>:<span style={{fontSize:24}}>🐾</span>}</span>}
               </div>
             );
           })}
           <div className="pm-center">
             <div>
-              <button className="pm-dice" data-testid="pet-monopoly-roll" disabled={!!pending} onClick={roll} aria-label="擲骰">{dice||nextDice}</button>
-              <div style={{fontSize:13,fontWeight:1000,color:color,marginTop:10}}>下一格：{previewTile.name}</div>
-              <div style={{fontSize:12,color:S.t3,marginTop:4}}>{pending?"先完成目前英文挑戰":"擲骰前先答英文題"}</div>
+              <button className="pm-dice" data-testid="pet-monopoly-roll" disabled={!!pending||!!offer} onClick={roll} aria-label="擲骰">{dice||"🎲"}</button>
+              <div style={{fontSize:13,fontWeight:1000,color:color,marginTop:10}}>{lastMove?`落在：${lastMove.tile.name}`:"目的地未知"}</div>
+              <div style={{fontSize:12,color:S.t3,marginTop:4}}>{pending?"完成格子任務後結算":offer?"先處理收購決定":"按下骰子，目的地才會揭曉。"}</div>
             </div>
           </div>
         </div>
@@ -4244,13 +4383,44 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
           </div>
         )}
         <div>
-          <div className="pm-section-title">目前地產</div>
-          <div style={{marginTop:8,border:`1px solid ${PET_MONOPOLY_TYPE_META[tiles[position].type]?.color||color}33`,borderRadius:16,padding:12,background:PET_MONOPOLY_TYPE_META[tiles[position].type]?.soft||S.bg2}}>
-            <div style={{fontSize:20}}>{tiles[position].icon}</div>
-            <div style={{fontSize:15,fontWeight:1000,marginTop:4}}>{tiles[position].name}</div>
-            <div style={{fontSize:12,color:S.t2,lineHeight:1.5,marginTop:4}}>{tiles[position].hint}</div>
+          <div className="pm-section-title">目前格子</div>
+          <div style={{marginTop:8,border:`1px solid ${currentMeta.color}33`,borderRadius:16,padding:12,background:currentMeta.soft}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
+              <div style={{fontSize:20}}>{currentTile.icon}</div>
+              <span style={{fontSize:11,fontWeight:1000,color:currentMeta.color,background:"#fff",borderRadius:999,padding:"4px 8px"}}>{currentMeta.label}</span>
+            </div>
+            <div style={{fontSize:15,fontWeight:1000,marginTop:4}}>{currentTile.name}</div>
+            <div style={{fontSize:12,color:S.t2,lineHeight:1.5,marginTop:4}}>{currentTile.hint}</div>
+            <div style={{fontSize:12,color:S.t3,lineHeight:1.5,marginTop:8}}>圈數 {score.laps} · 命中率 {accuracy}% · 失誤 {score.wrong}</div>
           </div>
         </div>
+        {offer&&offerTile&&(
+          <div className="pm-deal" data-testid="pet-monopoly-deal">
+            <div className="pm-section-title">收購機會</div>
+            <div className="pm-deal-text">用 {offer.cost} 金幣買下「{offerTile.name}」。之後停在這格會拿到地產收益，也能升級提高報酬。</div>
+            <div className="pm-action-row">
+              <button type="button" className="pm-action" data-testid="pet-monopoly-buy" disabled={(Number(coins)||0)<offer.cost} onClick={buyProperty}>收購</button>
+              <button type="button" className="pm-action secondary" onClick={skipOffer}>略過</button>
+            </div>
+          </div>
+        )}
+        {currentProperty&&(
+          <div className="pm-deal">
+            <div className="pm-section-title">你的地產 · Lv.{currentProperty.level}</div>
+            <div className="pm-deal-text">再次停留收益：+{currentYield.coins} 金幣、+{currentYield.xp} XP、寵物 +{currentYield.petExp} EXP。已停留 {currentProperty.visits||1} 次。</div>
+            {currentProperty.level<3?(
+              <button type="button" className="pm-action" disabled={(Number(coins)||0)<currentUpgradeCost||!!pending||!!offer} onClick={upgradeCurrentProperty}>升級 {currentUpgradeCost} 金幣</button>
+            ):(
+              <div className="pm-deal-text" style={{fontWeight:1000,color:color}}>已達最高等級</div>
+            )}
+          </div>
+        )}
+        {!currentProperty&&isPetMonopolyOwnable(currentTile)&&!offer&&(
+          <div className="pm-deal">
+            <div className="pm-section-title">未收購地產</div>
+            <div className="pm-deal-text">答對這格英文任務後，才會出現收購決定。先擲骰，命運交給棋盤。</div>
+          </div>
+        )}
         <div>
           <div className="pm-section-title">行動紀錄</div>
           <div className="pm-log" style={{marginTop:8}}>

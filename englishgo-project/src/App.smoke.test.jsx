@@ -916,9 +916,12 @@ describe('EnglishGo app smoke flow', () => {
 
     expect(await screen.findByText(/寵物大富翁/, {}, { timeout: 5000 })).toBeInTheDocument();
     expect(screen.getByTestId('pet-monopoly-board')).toBeInTheDocument();
-    expect(screen.getAllByText('擲骰前先答英文題').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('按下骰子，目的地才會揭曉。').length).toBeGreaterThan(0);
+    expect(screen.queryByText(/下一格：/)).not.toBeInTheDocument();
+    expect(screen.getByTestId('pet-monopoly-roll')).toHaveTextContent('🎲');
 
     fireEvent.click(screen.getByTestId('pet-monopoly-roll'));
+    expect((await screen.findAllByText(/落在/)).length).toBeGreaterThan(0);
     expect((await screen.findAllByText(/英文挑戰/)).length).toBeGreaterThan(0);
 
     fireEvent.click(screen.getByTestId('pet-monopoly-choice-correct'));
