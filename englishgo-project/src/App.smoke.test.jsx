@@ -1071,7 +1071,7 @@ describe('EnglishGo app smoke flow', () => {
   }, 15000);
 
   it('uses a shield card to reduce the next pet monopoly toll', async () => {
-    const restoreDice = mockPetMonopolyDice([2, 2, 1, 1, 3]);
+    const restoreDice = mockPetMonopolyDice([2, 1, 1, 1, 2]);
     localStorage.setItem('eg_coins', JSON.stringify(120));
 
     await openElementaryPetMonopoly();
@@ -1104,6 +1104,36 @@ describe('EnglishGo app smoke flow', () => {
     fireEvent.click(await screen.findByTestId('pet-monopoly-buy'));
 
     expect(await screen.findByTestId('pet-monopoly-rent')).toHaveTextContent(/收租卡|x2|16/);
+    restoreDice();
+  }, 15000);
+
+  it('uses a portal event to move onto a buyable pet monopoly tile', async () => {
+    const restoreDice = mockPetMonopolyDice([3]);
+    localStorage.setItem('eg_coins', JSON.stringify(120));
+
+    await openElementaryPetMonopoly();
+
+    fireEvent.click(screen.getByTestId('pet-monopoly-roll'));
+    fireEvent.click(await screen.findByTestId('pet-monopoly-choice-correct'));
+
+    expect(await screen.findByTestId('pet-monopoly-event')).toHaveTextContent(/傳送門|前往/);
+    expect(await screen.findByTestId('pet-monopoly-deal')).toHaveTextContent(/收購機會/);
+    restoreDice();
+  }, 15000);
+
+  it('computer player keeps a cash reserve in pet monopoly instead of blindly buying a low value word tile', async () => {
+    const restoreDice = mockPetMonopolyDice([1, 2]);
+    localStorage.setItem('eg_coins', JSON.stringify(120));
+
+    await openElementaryPetMonopoly();
+
+    fireEvent.click(screen.getByRole('button', { name: '1' }));
+    fireEvent.click(screen.getByTestId('pet-monopoly-roll'));
+    fireEvent.click(await screen.findByTestId('pet-monopoly-choice-correct'));
+    fireEvent.click(await screen.findByTestId('pet-monopoly-buy'));
+
+    await waitFor(() => expect(screen.getByTestId('pet-monopoly-roll')).not.toBeDisabled(), { timeout: 5000 });
+    expect(screen.queryByTestId('pet-monopoly-cpu-owner')).not.toBeInTheDocument();
     restoreDice();
   }, 15000);
 

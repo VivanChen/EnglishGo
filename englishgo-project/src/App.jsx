@@ -4105,6 +4105,31 @@ function getPetMonopolyPropertyValue(tile,property){
 function getPetMonopolyCpuOwner(computers,tileId,limit=3,excludeId=""){
   return(computers||[]).slice(0,limit).find(cpu=>cpu?.id!==excludeId&&(cpu?.owned||[]).includes(tileId))||null;
 }
+function getPetMonopolyDistance(from,to,total){
+  return((Number(to)||0)-(Number(from)||0)+total)%total;
+}
+function getNextPetMonopolyOpenTile(tiles,fromIndex,owned={},computers=[],computerCount=3){
+  const total=tiles.length;
+  for(let step=1;step<=total;step++){
+    const index=(fromIndex+step)%total;
+    const tile=tiles[index];
+    if(isPetMonopolyOwnable(tile)&&!owned?.[tile.id]&&!getPetMonopolyCpuOwner(computers,tile.id,computerCount)){
+      return{tile,index,step};
+    }
+  }
+  return null;
+}
+function getPetMonopolyCpuBuyDecision({cpu,tile,cost,availableCoins,playerPosition,tileIndex,total}){
+  if(!cpu||!isPetMonopolyOwnable(tile)||!cost||availableCoins<cost)return{buy:false,reason:""};
+  const priority={grammar:3,training:3,shop:2,word:1}[tile.type]||1;
+  const afterBuy=availableCoins-cost;
+  const distance=getPetMonopolyDistance(playerPosition,tileIndex,total);
+  const pressure=distance>0&&distance<=4?8:0;
+  const reserve=priority>=3?42:priority===2?56:70;
+  const ownedCount=(cpu.owned||[]).length;
+  const buy=afterBuy>=reserve+pressure||(priority>=3&&afterBuy>=34)||(priority===2&&ownedCount<2&&afterBuy>=48);
+  return{buy,reason:buy?"buy":"reserve"};
+}
 function getPetMonopolyAffinityBonus(question,petDef){
   const focus=String(question?.word?.w||"").toLowerCase();
   if(!focus||!(petDef?.words||[]).map(w=>String(w).toLowerCase()).includes(focus))return{coins:0,petExp:0,label:""};
@@ -4115,15 +4140,29 @@ function getPetMonopolyComboBonus(streak){
   const tier=Math.min(4,Math.floor(streak/3));
   return{coins:tier*3,xp:tier*2,petExp:tier*2,label:`連勝 ${streak} 回合，加碼獎勵`};
 }
-function getPetMonopolyTileTwist(tile,seed=0){
+function getPetMonopolyTileTwist(tile,seed=0,context={}){
   if(tile?.type==="event"){
-    const deck=[
-      {coins:12,xp:2,petExp:0,bond:0,label:"命運卡：金幣雨 +12 金幣"},
-      {coins:4,xp:7,petExp:4,bond:1,label:"命運卡：捷徑筆記 +7 XP"},
-      {coins:0,xp:2,petExp:12,bond:3,label:"命運卡：寵物零食 +12 EXP"},
-      {coins:18,xp:0,petExp:0,bond:0,label:"命運卡：寶箱爆開 +18 金幣"},
-    ];
-    return deck[Math.abs(seed)%deck.length];
+    const kinds={"coin-park":"portal",chance:"tax",treasure:"petBoost"};
+    const fallback=["portal","tax","petBoost"][Math.abs(seed)%3];
+    const kind=kinds[tile.id]||fallback;
+    if(kind==="portal"){
+      const target=getNextPetMonopolyOpenTile(
+        context.tiles||PET_MONOPOLY_TILES,
+        Number(context.position)||0,
+        context.owned||{},
+        context.computers||[],
+        Number(context.computerCount)||3,
+      );
+      if(target)return{kind:"portal",coins:4,xp:2,petExp:0,bond:0,label:`\u50b3\u9001\u9580\uff1a\u524d\u5f80 ${target.tile.name}`,targetTileId:target.tile.id,targetIndex:target.index};
+      return{kind:"bonus",coins:10,xp:3,petExp:4,bond:1,label:"\u50b3\u9001\u9580\uff1a\u5168\u5730\u5716\u5df2\u88ab\u6536\u8cfc"};
+    }
+    if(kind==="tax"){
+      const tax=Math.max(3,Math.min(18,(Number(context.propertyCount)||0)*4||3));
+      return{kind:"tax",coins:-tax,xp:3,petExp:0,bond:0,label:`\u7a05\u91d1\uff1a\u7e73 ${tax} \u91d1\u5e63`};
+    }
+    const petName=context.selectedPetDef?.name||"\u5bf5\u7269";
+    const cardId=(Math.abs(seed)%2===0)?"shield":"boost";
+    return{kind:"petBoost",coins:6,xp:2,petExp:14,bond:4,cardId,label:`\u5bf5\u7269\u52a0\u6210\uff1a${petName} \u5e6b\u4f60\u62ff\u5230\u9053\u5177`};
   }
   if(tile?.type==="boss"){
     return{coins:10,xp:5,petExp:8,bond:2,label:"Boss 戰利品：皇冠寶箱"};
@@ -4281,9 +4320,19 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
           const otherCpuOwner=getPetMonopolyCpuOwner(computersRef.current,tile.id,computerCount,current.id);
           const already=current.owned.includes(tile.id);
           const ownedByAny=!!playerProperty||!!otherCpuOwner||already;
-          const canBuy=isPetMonopolyOwnable(tile)&&!ownedByAny&&current.coins>=getPetMonopolyTileCost(tile);
-          const cost=canBuy?getPetMonopolyTileCost(tile):0;
           const tileBonus=tile.type==="event"?6:3;
+          const buyCost=isPetMonopolyOwnable(tile)?getPetMonopolyTileCost(tile):0;
+          const buyDecision=getPetMonopolyCpuBuyDecision({
+            cpu:current,
+            tile,
+            cost:buyCost,
+            availableCoins:current.coins+tileBonus,
+            playerPosition:position,
+            tileIndex:nextPos,
+            total:tiles.length,
+          });
+          const canBuy=isPetMonopolyOwnable(tile)&&!ownedByAny&&buyDecision.buy;
+          const cost=canBuy?buyCost:0;
           let nextCoins=Math.max(0,current.coins+tileBonus-cost);
           let rentPaid=0;
           if(playerProperty){
@@ -4373,7 +4422,15 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
       const affinity=getPetMonopolyAffinityBonus(pending.question,selectedPetDef);
       const nextStreak=streak+1;
       const combo=getPetMonopolyComboBonus(nextStreak);
-      const twist=getPetMonopolyTileTwist(pending.tile,turn+pending.dice+pending.nextPos);
+      const twist=getPetMonopolyTileTwist(pending.tile,turn+pending.dice+pending.nextPos,{
+        tiles,
+        position:pending.nextPos,
+        owned:ownedRef.current,
+        computers:computersRef.current,
+        computerCount,
+        propertyCount,
+        selectedPetDef,
+      });
       const reward={
         ...baseReward,
         coins:baseReward.coins+propertyYield.coins+affinity.coins+combo.coins+(twist?.coins||0),
@@ -4421,16 +4478,33 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
       }else{
         setEventFlash(null);
       }
-      awardCard(getPetMonopolyCardDrop(pending.tile,turn+pending.dice+pending.nextPos));
-      if(property){
-        const nextOwned={...ownedRef.current,[pending.tile.id]:{...ownedRef.current[pending.tile.id],visits:(Number(ownedRef.current[pending.tile.id]?.visits)||0)+1}};
-        ownedRef.current=nextOwned;
-        setOwned(nextOwned);
-      }
-      if(!property&&!cpuOwner&&isPetMonopolyOwnable(pending.tile)){
-        setOffer({tileId:pending.tile.id,cost:getPetMonopolyTileCost(pending.tile)});
+      awardCard(twist?.cardId||getPetMonopolyCardDrop(pending.tile,turn+pending.dice+pending.nextPos));
+      if(twist?.kind==="portal"&&twist.targetTileId){
+        const portalTile=tiles.find(t=>t.id===twist.targetTileId);
+        const portalIndex=tiles.findIndex(t=>t.id===twist.targetTileId);
+        const portalCpuOwner=getPetMonopolyCpuOwner(computersRef.current,twist.targetTileId,computerCount);
+        if(portalTile&&portalIndex>=0){
+          setPosition(portalIndex);
+          setLastMove({dice:pending.dice,tile:portalTile});
+          if(isPetMonopolyOwnable(portalTile)&&!ownedRef.current[portalTile.id]&&!portalCpuOwner){
+            setOffer({tileId:portalTile.id,cost:getPetMonopolyTileCost(portalTile)});
+          }else{
+            playComputerRound();
+          }
+        }else{
+          playComputerRound();
+        }
       }else{
-        playComputerRound();
+        if(property){
+          const nextOwned={...ownedRef.current,[pending.tile.id]:{...ownedRef.current[pending.tile.id],visits:(Number(ownedRef.current[pending.tile.id]?.visits)||0)+1}};
+          ownedRef.current=nextOwned;
+          setOwned(nextOwned);
+        }
+        if(!property&&!cpuOwner&&isPetMonopolyOwnable(pending.tile)){
+          setOffer({tileId:pending.tile.id,cost:getPetMonopolyTileCost(pending.tile)});
+        }else{
+          playComputerRound();
+        }
       }
     }else{
       const penalty=Math.min(Math.max(2,pending.dice),Math.max(0,Number(coins)||0));
