@@ -4140,13 +4140,13 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
   const[owned,setOwned]=useState({});
   const[offer,setOffer]=useState(null);
   const[lastMove,setLastMove]=useState(null);
-  const[feedback,setFeedback]=useState("按下骰子，目的地才會揭曉。");
+  const[feedback,setFeedback]=useState("你的回合");
   const[score,setScore]=useState({correct:0,wrong:0,laps:0,boss:0});
   const[streak,setStreak]=useState(0);
   const[moving,setMoving]=useState(null);
   const[computerCount,setComputerCount]=useState(3);
-  const[computerNotice,setComputerNotice]=useState("電腦玩家會在你結束決定後行動。");
-  const[computers,setComputers]=useState(()=>PET_MONOPOLY_COMPUTERS.map((cpu,i)=>({...cpu,position:(i+3)%PET_MONOPOLY_TILES.length,coins:90,owned:[],last:"等待開局"})));
+  const[computers,setComputers]=useState(()=>PET_MONOPOLY_COMPUTERS.map((cpu,i)=>({...cpu,position:(i+3)%PET_MONOPOLY_TILES.length,coins:90,owned:[]})));
+  const computersRef=useRef(computers);
   const moveTimersRef=useRef([]);
   const selectedPet=pets?.[petIndex]||null;
   const selectedPetDef=selectedPet?getAdventurePetDef(selectedPet):null;
@@ -4169,6 +4169,11 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
   useEffect(()=>{if(pets.length&&petIndex>=pets.length)setPetIndex(0)},[pets.length,petIndex]);
   useEffect(()=>()=>{moveTimersRef.current.forEach(clearTimeout);moveTimersRef.current=[]},[]);
   const clearMoveTimers=()=>{moveTimersRef.current.forEach(clearTimeout);moveTimersRef.current=[]};
+  const updateComputers=updater=>setComputers(prev=>{
+    const next=typeof updater==="function"?updater(prev):updater;
+    computersRef.current=next;
+    return next;
+  });
   const currentTile=tiles[position];
   const currentProperty=owned[currentTile.id];
   const currentMeta=PET_MONOPOLY_TYPE_META[currentTile.type]||PET_MONOPOLY_TYPE_META.word;
@@ -4178,23 +4183,46 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
   const propertyCount=Object.keys(owned).length;
   const activeComputers=computers.slice(0,computerCount);
   const playComputerRound=()=>{
-    setComputers(prev=>prev.map((cpu,i)=>{
-      if(i>=computerCount)return cpu;
+    clearMoveTimers();
+    const totalPlayers=computerCount;
+    const playOne=index=>{
+      if(index>=totalPlayers){
+        setMoving(null);
+        setFeedback(prev=>prev?.startsWith("輪到")?prev:"輪到你。");
+        return;
+      }
+      const cpu=computersRef.current[index];
+      if(!cpu)return playOne(index+1);
       const rolled=rollPetMonopolyDice();
       const nextPos=(cpu.position+rolled)%tiles.length;
       const tile=tiles[nextPos];
-      const already=cpu.owned.includes(tile.id);
-      const canBuy=isPetMonopolyOwnable(tile)&&!already&&cpu.coins>=getPetMonopolyTileCost(tile);
-      const cost=canBuy?getPetMonopolyTileCost(tile):0;
-      return{
-        ...cpu,
-        position:nextPos,
-        coins:Math.max(0,cpu.coins+(tile.type==="event"?6:3)-cost),
-        owned:canBuy?[...cpu.owned,tile.id]:cpu.owned,
-        last:`骰 ${rolled} 到 ${tile.name}${canBuy?"，收購成功":""}`,
-      };
-    }));
-    setComputerNotice(`${computerCount} 位電腦玩家完成一輪行動。`);
+      const path=getPetMonopolyMovePath(cpu.position,rolled,tiles.length);
+      setMoving({actor:"cpu",name:cpu.name,dice:rolled,to:tile.name,step:0,total:path.length});
+      path.forEach((pos,step)=>{
+        const timer=setTimeout(()=>{
+          updateComputers(prev=>prev.map((item,i)=>i===index?{...item,position:pos}:item));
+          if(step+1<path.length){
+            setMoving({actor:"cpu",name:cpu.name,dice:rolled,to:tile.name,step:step+1,total:path.length});
+            return;
+          }
+          const current=computersRef.current[index]||cpu;
+          const already=current.owned.includes(tile.id);
+          const canBuy=isPetMonopolyOwnable(tile)&&!already&&current.coins>=getPetMonopolyTileCost(tile);
+          const cost=canBuy?getPetMonopolyTileCost(tile):0;
+          updateComputers(prev=>prev.map((item,i)=>i===index?{
+            ...item,
+            position:nextPos,
+            coins:Math.max(0,item.coins+(tile.type==="event"?6:3)-cost),
+            owned:canBuy?[...item.owned,tile.id]:item.owned,
+          }:item));
+          setMoving({actor:"cpu",name:cpu.name,dice:rolled,to:tile.name,step:path.length,total:path.length,result:canBuy?"收購":tile.type==="event"?"事件":"停留"});
+          const nextTimer=setTimeout(()=>playOne(index+1),260);
+          moveTimersRef.current.push(nextTimer);
+        },135*(step+1));
+        moveTimersRef.current.push(timer);
+      });
+    };
+    playOne(0);
   };
   const roll=()=>{
     if(pending||offer||moving)return;
@@ -4207,7 +4235,7 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
     setDice(rolled);
     setLastMove(null);
     setMoving({actor:"player",dice:rolled,to:tile.name,step:0,total:path.length});
-    setFeedback(`骰出 ${rolled}，移動中...`);
+    setFeedback(`前進 ${rolled} 格`);
     clearMoveTimers();
     path.forEach((pos,step)=>{
       const timer=setTimeout(()=>{
@@ -4218,7 +4246,7 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
           setMoving(null);
           setLastMove({dice:rolled,tile});
           setPending({dice:rolled,nextPos,tile,question,lapBonus});
-          setFeedback(`落在「${tile.name}」。完成這格任務後才能結算效果。`);
+          setFeedback(`到達「${tile.name}」`);
         }
       },140*(step+1));
       moveTimersRef.current.push(timer);
@@ -4251,14 +4279,13 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
       if(selectedPet&&setPets){
         setPets(prev=>(prev||[]).map((pet,i)=>i===petIndex?growPetFromMonopoly(pet,reward):pet));
       }
-      const petText=selectedPet?`寵物獲得 ${reward.petExp} EXP、羈絆 +${reward.bond}`:"取得寵物後可累積寵物 EXP";
       const propertyText=property?`，地產收益 +${propertyYield.coins} 金幣`:"";
       const affinityText=affinity.label?`，${affinity.label}`:"";
       const comboText=combo.label?`，${combo.label}`:"";
       const twistText=twist?`，${twist.label}`:"";
-      const buyText=!property&&isPetMonopolyOwnable(pending.tile)?` 可用 ${getPetMonopolyTileCost(pending.tile)} 金幣收購這格。`:"";
-      const bossText=pending.tile.type==="boss"?" 已擊敗 Boss，達成勝利條件。":"";
-      const msg=`答對！${reward.label}：+${totalXp} XP、+${totalCoins} 金幣${propertyText}${affinityText}${comboText}${twistText}，${petText}。${bossText}${buyText}`;
+      const buyText=!property&&isPetMonopolyOwnable(pending.tile)?` 可收購：${getPetMonopolyTileCost(pending.tile)} 金幣。`:"";
+      const bossText=pending.tile.type==="boss"?" Boss 擊敗。":"";
+      const msg=`答對 +${totalXp} XP、+${totalCoins} 金幣${propertyText}${affinityText}${comboText}${twistText}。${bossText}${buyText}`;
       setFeedback(msg);
       if(property){
         setOwned(prev=>({...prev,[pending.tile.id]:{...prev[pending.tile.id],visits:(Number(prev[pending.tile.id]?.visits)||0)+1}}));
@@ -4273,7 +4300,7 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
       if(penalty)setCoins?.(v=>Math.max(0,(Number(v)||0)-penalty));
       setScore(s=>({correct:s.correct,wrong:s.wrong+1,laps:s.laps,boss:s.boss}));
       setStreak(0);
-      const msg=`任務失敗，正確答案是 ${pending.question.explain}。支付 ${penalty} 金幣當作停留費。`;
+      const msg=`失敗 -${penalty} 金幣｜答案：${pending.question.explain}`;
       setFeedback(msg);
       playComputerRound();
     }
@@ -4290,13 +4317,13 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
     }
     setCoins?.(v=>Math.max(0,(Number(v)||0)-offer.cost));
     setOwned(prev=>({...prev,[tile.id]:{level:1,visits:1}}));
-    const msg=`已收購「${tile.name}」。之後再落到這格會產生地產收益，下一次再停到這格才能升級。`;
+    const msg=`已收購「${tile.name}」`;
     setFeedback(msg);
     setOffer(null);
     playComputerRound();
   };
   const skipOffer=()=>{
-    if(offer)setFeedback("已略過本次收購，輪到電腦玩家行動。");
+    if(offer)setFeedback("略過收購");
     setOffer(null);
     playComputerRound();
   };
@@ -4310,13 +4337,13 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
     }
     setCoins?.(v=>Math.max(0,(Number(v)||0)-cost));
     setOwned(prev=>({...prev,[currentTile.id]:{...property,level:property.level+1}}));
-    const msg=`「${currentTile.name}」升到 Lv.${property.level+1}，未來收益提高。`;
+    const msg=`${currentTile.name} Lv.${property.level+1}`;
     setFeedback(msg);
     playComputerRound();
   };
   const accuracy=Math.round((score.correct/Math.max(1,score.correct+score.wrong))*100);
   const goalDone=propertyCount>=4||score.boss>0;
-  const goalText=score.boss>0?"Boss 已擊敗，這局完成。":propertyCount>=4?"資產目標達成，這局完成。":`勝利條件：再收購 ${Math.max(0,4-propertyCount)} 格地產，或挑戰 Boss 城堡。`;
+  const goalText=score.boss>0?"Boss 擊敗":propertyCount>=4?"資產勝利":`收購 ${Math.max(0,4-propertyCount)} 格或擊敗 Boss`;
   const canUpgradeCurrent=!!currentProperty&&currentProperty.visits>=2&&currentProperty.level<3;
   return(<div className="pet-monopoly" style={{"--pm-accent":color,"--pm-accent-2":accent,"--pm-border":S.bd,"--pm-card":S.bg1,"--pm-surface":S.bg2,"--pm-text":S.t1,"--pm-muted":S.t2}}>
     <Hdr t="🎲 寵物大富翁" onBack={onBack} cl={color}/>
@@ -4326,7 +4353,6 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
       .pm-hero{order:3;border:1px solid color-mix(in srgb,var(--pm-accent) 30%,var(--pm-border));border-radius:20px;background:radial-gradient(circle at 18% 12%,color-mix(in srgb,var(--pm-accent) 22%,transparent),transparent 30%),radial-gradient(circle at 92% 20%,rgba(250,204,21,.24),transparent 26%),linear-gradient(135deg,#F8FFF8,var(--pm-card));padding:14px 16px;display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:12px;box-shadow:0 18px 38px rgba(15,110,86,.08)}
       .pm-kicker{display:inline-flex;align-items:center;gap:7px;color:var(--pm-accent);background:color-mix(in srgb,var(--pm-accent) 10%,#fff);border:1px solid color-mix(in srgb,var(--pm-accent) 24%,transparent);border-radius:999px;padding:6px 10px;font-size:12px;font-weight:1000}
       .pm-title{font-size:clamp(26px,4.4vw,42px);line-height:1.02;font-weight:1000;margin:8px 0 6px;letter-spacing:0}
-      .pm-desc{font-size:13px;color:var(--pm-muted);line-height:1.7;max-width:680px}
       .pm-goal{display:inline-flex;align-items:center;gap:6px;margin-top:10px;border:1px solid color-mix(in srgb,var(--pm-accent) 25%,var(--pm-border));border-radius:999px;background:color-mix(in srgb,var(--pm-accent) 9%,#fff);color:var(--pm-accent);padding:7px 10px;font-size:12px;font-weight:1000}
       .pm-goal.is-done{background:#ECFDF3;color:#047857;border-color:#86EFAC}
       .pm-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
@@ -4380,9 +4406,8 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
     `}</style>
     <section className="pm-hero">
       <div>
-        <div className="pm-kicker">學習桌遊 · 寵物同行</div>
-        <div className="pm-title">學習島棋盤</div>
-        <div className="pm-desc">目標是收購地產、升級收益、用寵物技能拉開差距。英文任務是觸發格子效果的挑戰，不會先告訴你下一步會去哪裡。</div>
+        <div className="pm-kicker">大富翁</div>
+        <div className="pm-title">學習島</div>
         <div className={`pm-goal ${goalDone?"is-done":""}`}>{goalDone?"🏆":"🎯"} {goalText}</div>
       </div>
       <div className="pm-stats">
@@ -4405,21 +4430,20 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
       <div className="pm-cpu-box">
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
           <div className="pm-section-title">電腦玩家</div>
-          <div style={{fontSize:11,color:S.t3}}>最多 3 家 play</div>
+          <div style={{fontSize:11,color:S.t3}}>1-3 家</div>
         </div>
         <div className="pm-count-buttons" aria-label="電腦玩家數量">
-          {[1,2,3].map(n=><button key={n} type="button" className={computerCount===n?"is-active":""} onClick={()=>setComputerCount(n)}>{n}</button>)}
+          {[1,2,3].map(n=><button key={n} type="button" disabled={!!moving||!!pending||!!offer} className={computerCount===n?"is-active":""} onClick={()=>setComputerCount(n)}>{n}</button>)}
         </div>
         <div className="pm-cpu-list">
           {activeComputers.map(cpu=>(
             <div key={cpu.id} className="pm-cpu-pill" style={{"--cpu-color":cpu.color}}>
               <b>{cpu.emoji} {cpu.name}</b>
               <span>金幣 {cpu.coins} · 地產 {cpu.owned.length}</span>
-              <span style={{display:"block",marginTop:3}}>{cpu.last}</span>
+              <span style={{display:"block",marginTop:3}}>位置 {tiles[cpu.position]?.name||"起點"}</span>
             </div>
           ))}
         </div>
-        <div style={{fontSize:11,color:S.t3,marginTop:7}}>{computerNotice}</div>
       </div>
     </section>
     <section className="pm-main">
@@ -4457,8 +4481,8 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
             <div className="pm-feedback" data-testid="pet-monopoly-feedback">{feedback}</div>
             {moving&&(
               <div className="pm-deal" data-testid="pet-monopoly-moving">
-                <div className="pm-section-title">移動中</div>
-                <div className="pm-deal-text">骰出 {moving.dice}，正在前往「{moving.to}」：{moving.step}/{moving.total}</div>
+                <div className="pm-section-title">{moving.actor==="cpu"?`${moving.name} 移動`:"玩家移動"}</div>
+                <div className="pm-deal-text">骰 {moving.dice} → {moving.to} · {moving.step}/{moving.total}</div>
               </div>
             )}
             {!moving&&pending&&(
@@ -4481,7 +4505,8 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
             {!moving&&!pending&&offer&&offerTile&&(
               <div className="pm-deal" data-testid="pet-monopoly-deal">
                 <div className="pm-section-title">收購機會</div>
-                <div className="pm-deal-text">用 {offer.cost} 金幣買下「{offerTile.name}」。第一次停到這格只能決定是否收購；下一次再停到已擁有地產才可升級。</div>
+                <div className="pm-deal-text">「{offerTile.name}」· {offer.cost} 金幣</div>
+                <div className="pm-deal-text">下次停留可升級</div>
                 <div className="pm-action-row">
                   <button type="button" className="pm-action" data-testid="pet-monopoly-buy" disabled={(Number(coins)||0)<offer.cost} onClick={buyProperty}>收購</button>
                   <button type="button" className="pm-action secondary" onClick={skipOffer}>略過</button>
@@ -4490,18 +4515,17 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
             )}
             {!moving&&!pending&&!offer&&(
               <div className="pm-deal">
-                <div className="pm-section-title">目前格子 · {currentTile.icon} {currentTile.name}</div>
-                <div className="pm-deal-text">{currentTile.hint} · {currentMeta.label}</div>
+                <div className="pm-section-title">{currentTile.icon} {currentTile.name}</div>
+                <div className="pm-deal-text">{currentMeta.label}</div>
                 {currentProperty&&(
-                  <div className="pm-deal-text">你的地產 Lv.{currentProperty.level}，再次停留收益 +{currentYield.coins} 金幣、+{currentYield.xp} XP。已停留 {currentProperty.visits||1} 次。</div>
+                  <div className="pm-deal-text">Lv.{currentProperty.level} · +{currentYield.coins} 金幣 · +{currentYield.xp} XP</div>
                 )}
-                {currentProperty&&currentProperty.visits<2&&<div className="pm-deal-text" style={{fontWeight:1000,color:color}}>下一次再停到這格才能升級。</div>}
+                {currentProperty&&currentProperty.visits<2&&<div className="pm-deal-text" style={{fontWeight:1000,color:color}}>再停一次可升級</div>}
                 {canUpgradeCurrent&&<button type="button" className="pm-action" disabled={(Number(coins)||0)<currentUpgradeCost} onClick={upgradeCurrentProperty}>升級 {currentUpgradeCost} 金幣</button>}
-                {!currentProperty&&isPetMonopolyOwnable(currentTile)&&<div className="pm-deal-text">答對這格英文任務後，才會出現收購決定。</div>}
+                {!currentProperty&&isPetMonopolyOwnable(currentTile)&&<div className="pm-deal-text">答題後可收購</div>}
                 <div>
                   <button className="pm-dice" data-testid="pet-monopoly-roll" disabled={!!moving||!!pending||!!offer} onClick={roll} aria-label="擲骰">{dice||"🎲"}</button>
-                  <div style={{fontSize:13,fontWeight:1000,color:color,marginTop:8}}>{lastMove?`落在：${lastMove.tile.name}`:"目的地未知"}</div>
-                  <div style={{fontSize:12,color:S.t3,marginTop:4}}>按下骰子，目的地才會揭曉。</div>
+                  <div style={{fontSize:13,fontWeight:1000,color:color,marginTop:8}}>{lastMove?lastMove.tile.name:"?"}</div>
                 </div>
               </div>
             )}

@@ -927,25 +927,26 @@ describe('EnglishGo app smoke flow', () => {
     expect(screen.getByText(/台灣學習島/)).toBeInTheDocument();
     expect(screen.getByText(/電腦 1/)).toBeInTheDocument();
     expect(screen.queryByText('行動紀錄')).not.toBeInTheDocument();
-    expect(screen.getAllByText('按下骰子，目的地才會揭曉。').length).toBeGreaterThan(0);
+    expect(screen.getByTestId('pet-monopoly-feedback')).toHaveTextContent('你的回合');
     expect(screen.queryByText(/下一格：/)).not.toBeInTheDocument();
     expect(screen.getByTestId('pet-monopoly-roll')).toHaveTextContent('🎲');
 
     fireEvent.click(screen.getByTestId('pet-monopoly-roll'));
-    expect(screen.getByTestId('pet-monopoly-moving')).toHaveTextContent(/移動中/);
-    expect((await screen.findAllByText(/落在/)).length).toBeGreaterThan(0);
+    expect(screen.getByTestId('pet-monopoly-moving')).toHaveTextContent(/玩家移動/);
+    expect((await screen.findAllByText(/到達/)).length).toBeGreaterThan(0);
     expect((await screen.findAllByText(/英文挑戰/)).length).toBeGreaterThan(0);
     expect(screen.getByTestId('pet-monopoly-overlay')).toHaveTextContent(/英文挑戰/);
 
     fireEvent.click(screen.getByTestId('pet-monopoly-choice-correct'));
 
     expect(await screen.findByTestId('pet-monopoly-feedback')).toHaveTextContent('答對');
-    expect(screen.getAllByText(/寵物獲得/).length).toBeGreaterThan(0);
     expect(await screen.findByTestId('pet-monopoly-deal')).toHaveTextContent('收購機會');
 
     fireEvent.click(screen.getByTestId('pet-monopoly-buy'));
 
     expect(await screen.findByTestId('pet-monopoly-feedback')).toHaveTextContent('已收購');
+    expect(await screen.findByTestId('pet-monopoly-moving')).toHaveTextContent(/電腦 1/);
+    await waitFor(() => expect(screen.getByTestId('pet-monopoly-roll')).not.toBeDisabled(), { timeout: 5000 });
     expect(screen.queryByRole('button', { name: /升級/ })).not.toBeInTheDocument();
   }, 15000);
 
