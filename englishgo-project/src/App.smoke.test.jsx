@@ -1050,6 +1050,63 @@ describe('EnglishGo app smoke flow', () => {
     restoreDice();
   }, 15000);
 
+  it('uses a boost card to add two steps to the next pet monopoly roll', async () => {
+    const restoreDice = mockPetMonopolyDice([1, 1, 1, 1, 1]);
+    localStorage.setItem('eg_coins', JSON.stringify(120));
+
+    await openElementaryPetMonopoly();
+
+    fireEvent.click(screen.getByTestId('pet-monopoly-roll'));
+    fireEvent.click(await screen.findByTestId('pet-monopoly-choice-correct'));
+    fireEvent.click(await screen.findByTestId('pet-monopoly-buy'));
+    await waitFor(() => expect(screen.getByTestId('pet-monopoly-roll')).not.toBeDisabled(), { timeout: 5000 });
+
+    fireEvent.click(screen.getByTestId('pet-monopoly-card-boost'));
+    expect(screen.getByTestId('pet-monopoly-card-active')).toHaveTextContent(/加速/);
+
+    fireEvent.click(screen.getByTestId('pet-monopoly-roll'));
+
+    expect(screen.getByTestId('pet-monopoly-roll')).toHaveTextContent('3');
+    restoreDice();
+  }, 15000);
+
+  it('uses a shield card to reduce the next pet monopoly toll', async () => {
+    const restoreDice = mockPetMonopolyDice([2, 2, 1, 1, 3]);
+    localStorage.setItem('eg_coins', JSON.stringify(120));
+
+    await openElementaryPetMonopoly();
+
+    fireEvent.click(screen.getByTestId('pet-monopoly-roll'));
+    fireEvent.click(await screen.findByTestId('pet-monopoly-choice-correct'));
+    fireEvent.click(await screen.findByTestId('pet-monopoly-buy'));
+    await waitFor(() => expect(screen.getByTestId('pet-monopoly-roll')).not.toBeDisabled(), { timeout: 5000 });
+
+    fireEvent.click(screen.getByTestId('pet-monopoly-card-shield'));
+    expect(screen.getByTestId('pet-monopoly-card-active')).toHaveTextContent(/護盾/);
+
+    fireEvent.click(screen.getByTestId('pet-monopoly-roll'));
+    fireEvent.click(await screen.findByTestId('pet-monopoly-choice-correct'));
+
+    expect(await screen.findByTestId('pet-monopoly-rent')).toHaveTextContent(/護盾|減半/);
+    restoreDice();
+  }, 15000);
+
+  it('uses a rent card to double the next pet monopoly collection', async () => {
+    const restoreDice = mockPetMonopolyDice([4, 1, 1, 1]);
+    localStorage.setItem('eg_coins', JSON.stringify(120));
+
+    await openElementaryPetMonopoly();
+
+    fireEvent.click(screen.getByTestId('pet-monopoly-roll'));
+    fireEvent.click(await screen.findByTestId('pet-monopoly-choice-correct'));
+    fireEvent.click(screen.getByTestId('pet-monopoly-card-rent'));
+    expect(screen.getByTestId('pet-monopoly-card-active')).toHaveTextContent(/收租/);
+    fireEvent.click(await screen.findByTestId('pet-monopoly-buy'));
+
+    expect(await screen.findByTestId('pet-monopoly-rent')).toHaveTextContent(/收租卡|x2|16/);
+    restoreDice();
+  }, 15000);
+
   it('shows pet care priorities and next-step hints without competition features', async () => {
     const today = new Date().toDateString();
     localStorage.setItem('eg_petAcc', JSON.stringify({ username: 'Kid', pinHash: 'demo', lastSync: today }));
