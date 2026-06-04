@@ -4010,7 +4010,7 @@ const PET_MONOPOLY_TYPE_META={
   start:{label:"起點",color:"#0F9F7A",soft:"#E7FFF5"},
   word:{label:"單字",color:"#2563EB",soft:"#EFF6FF"},
   grammar:{label:"文法",color:"#7C3AED",soft:"#F5F3FF"},
-  event:{label:"事件",color:"#D97706",soft:"#FFF7ED"},
+  event:{label:"機會",color:"#D97706",soft:"#FFF7ED"},
   shop:{label:"商店",color:"#0891B2",soft:"#ECFEFF"},
   training:{label:"培養",color:"#DB2777",soft:"#FDF2F8"},
   boss:{label:"Boss",color:"#DC2626",soft:"#FEF2F2"},
@@ -4021,11 +4021,47 @@ const PET_MONOPOLY_CARDS=[
   {id:"rent",name:"\u6536\u79df\u5361",icon:"$",short:"x2",color:"#D97706",desc:"\u4e0b\u6b21\u6536\u79df\u52a0\u500d"},
 ];
 const PET_MONOPOLY_CARD_BY_ID=PET_MONOPOLY_CARDS.reduce((map,card)=>({...map,[card.id]:card}),{});
-function pickPetMonopolyWord(lv,seed=0){
+const PET_MONOPOLY_EVENT_DECK=[
+  {id:"portal",name:"傳送門",kind:"portal",coins:4,xp:2,petExp:0,bond:0,text:"前往最近無主地"},
+  {id:"tailwind",name:"順風前進",kind:"move",steps:2,coins:6,xp:3,petExp:3,bond:1,text:"前進 2 格"},
+  {id:"detour",name:"臨時繞路",kind:"move",steps:-2,coins:3,xp:2,petExp:2,bond:0,text:"後退 2 格"},
+  {id:"coin-rain",name:"金幣雨",kind:"reward",coins:20,xp:2,petExp:2,bond:1,text:"獲得大量金幣"},
+  {id:"pet-snack",name:"寵物零食",kind:"reward",coins:6,xp:2,petExp:18,bond:5,text:"寵物成長加速"},
+  {id:"tax",name:"臨時稅",kind:"tax",coins:0,xp:3,petExp:0,bond:0,text:"依地產數繳金幣"},
+  {id:"draw-boost",name:"加速補給",kind:"card",cardId:"boost",coins:5,xp:2,petExp:2,bond:1,text:"抽到加速卡"},
+  {id:"draw-shield",name:"護盾補給",kind:"card",cardId:"shield",coins:5,xp:2,petExp:2,bond:1,text:"抽到護盾卡"},
+  {id:"draw-rent",name:"收租補給",kind:"card",cardId:"rent",coins:5,xp:2,petExp:2,bond:1,text:"抽到收租卡"},
+  {id:"upgrade-coupon",name:"升級折扣",kind:"upgradeDiscount",discount:12,coins:6,xp:2,petExp:4,bond:1,text:"下一次升級少 12 金幣"},
+  {id:"rent-spark",name:"收租加成",kind:"card",cardId:"rent",coins:8,xp:2,petExp:3,bond:1,text:"準備下次收租加倍"},
+  {id:"cpu-pause",name:"電腦停買",kind:"cpuPause",coins:8,xp:2,petExp:3,bond:1,text:"電腦下一輪不能收購"},
+  {id:"boss-shortcut",name:"Boss 捷徑",kind:"bossShortcut",coins:4,xp:4,petExp:8,bond:2,text:"前往 Boss 前哨"},
+];
+const PET_MONOPOLY_WORD_MODES=[
+  {id:"zhToEn",label:"中文選英文"},
+  {id:"enToZh",label:"英文選中文"},
+  {id:"exampleBlank",label:"例句填空"},
+  {id:"partOfSpeech",label:"詞性提示"},
+  {id:"context",label:"情境判斷"},
+];
+function pickPetMonopolyWord(lv,seed=0,recentWords=[]){
   const list=(V[lv]||V.elementary||[]).filter(w=>w?.w&&w?.m);
-  return list[Math.abs(seed)%Math.max(1,list.length)]||{w:"learn",m:"學習",p:"v.",ex:"I learn English."};
+  const recent=new Set((recentWords||[]).map(w=>String(w).toLowerCase()));
+  const fresh=list.filter(w=>!recent.has(String(w.w).toLowerCase()));
+  const source=fresh.length?fresh:list;
+  return source[Math.abs(seed)%Math.max(1,source.length)]||{w:"learn",m:"學習",p:"v.",ex:"I learn English."};
 }
-function buildPetMonopolyQuestion(lv,tile,seed=0){
+function getPetMonopolyChoicePool(pool,mapChoice,count=3){
+  const used=new Set();
+  const choices=[];
+  shuffleCopy(pool).forEach(item=>{
+    const value=String(mapChoice(item)||"").trim();
+    if(!value||used.has(value))return;
+    used.add(value);
+    choices.push(value);
+  });
+  return choices.slice(0,count);
+}
+function buildPetMonopolyQuestion(lv,tile,seed=0,recentWords=[]){
   const wordTiles=["word","event","shop","training","start"];
   const grammarList=(G[lv]||G.elementary||[]).filter(g=>g?.q?.s&&Array.isArray(g?.q?.o));
   if((tile?.type==="grammar"||tile?.type==="boss")&&grammarList.length){
@@ -4040,18 +4076,65 @@ function buildPetMonopolyQuestion(lv,tile,seed=0){
       explain:topic.q.o[topic.q.a],
     };
   }
-  const word=pickPetMonopolyWord(lv,seed);
+  const word=pickPetMonopolyWord(lv,seed,recentWords);
   const pool=(V[lv]||V.elementary||[]).filter(w=>w?.w&&w?.m&&w.w!==word.w);
-  const wrongs=shuffleCopy(pool).slice(0,3).map(w=>w.w);
-  const choices=shuffleCopy([word.w,...wrongs]);
+  const mode=PET_MONOPOLY_WORD_MODES[Math.abs(seed)%PET_MONOPOLY_WORD_MODES.length];
+  const englishWrongs=getPetMonopolyChoicePool(pool,w=>w.w,3);
+  const meaningWrongs=getPetMonopolyChoicePool(pool,w=>w.m,3);
+  const englishChoices=shuffleCopy([word.w,...englishWrongs]);
+  const meaningChoices=shuffleCopy([word.m,...meaningWrongs]);
+  const example=String(word.ex||"").trim();
+  const blankExample=example&&new RegExp(escapeRegexSafe(word.w),"i").test(example)
+    ?example.replace(new RegExp(escapeRegexSafe(word.w),"ig"),"____")
+    :`____：${word.m}`;
+  const modeBuilders={
+    zhToEn:()=>({
+      prompt:`「${word.m}」的英文是？`,
+      sub:word.p?`${word.p}${example?` · ${example}`:""}`:example||"看中文選出正確英文",
+      choices:englishChoices,
+      answer:englishChoices.indexOf(word.w),
+      explain:word.w,
+    }),
+    enToZh:()=>({
+      prompt:`「${word.w}」的中文意思是？`,
+      sub:word.p?`${word.p}${example?` · ${example}`:""}`:example||"看英文選出正確中文",
+      choices:meaningChoices,
+      answer:meaningChoices.indexOf(word.m),
+      explain:word.m,
+    }),
+    exampleBlank:()=>({
+      prompt:blankExample,
+      sub:"選出最適合放進例句的英文單字",
+      choices:englishChoices,
+      answer:englishChoices.indexOf(word.w),
+      explain:word.w,
+    }),
+    partOfSpeech:()=>({
+      prompt:`${word.p||"單字"} · ${word.m}`,
+      sub:example||"用詞性與中文意思判斷英文",
+      choices:englishChoices,
+      answer:englishChoices.indexOf(word.w),
+      explain:word.w,
+    }),
+    context:()=>({
+      prompt:`在「${tile?.name||"學習島"}」看到「${word.m}」，要選哪個英文？`,
+      sub:example||"依情境選出正確單字",
+      choices:englishChoices,
+      answer:englishChoices.indexOf(word.w),
+      explain:word.w,
+    }),
+  };
+  const built=(modeBuilders[mode.id]||modeBuilders.zhToEn)();
   return{
     kind:wordTiles.includes(tile?.type)?"word":"word",
-    title:"英文挑戰：單字翻譯",
-    prompt:`「${word.m}」的英文是？`,
-    sub:word.p?`${word.p}${word.ex?` · ${word.ex}`:""}`:word.ex||"看中文選出正確英文",
-    choices,
-    answer:choices.indexOf(word.w),
-    explain:word.w,
+    title:`英文挑戰：${mode.label}`,
+    mode:mode.id,
+    modeLabel:mode.label,
+    prompt:built.prompt,
+    sub:built.sub,
+    choices:built.choices,
+    answer:built.answer,
+    explain:built.explain,
     word,
   };
 }
@@ -4140,12 +4223,16 @@ function getPetMonopolyComboBonus(streak){
   const tier=Math.min(4,Math.floor(streak/3));
   return{coins:tier*3,xp:tier*2,petExp:tier*2,label:`連勝 ${streak} 回合，加碼獎勵`};
 }
+function getPetMonopolyEventCard(tile,seed=0){
+  const offsets={"coin-park":6,chance:1,treasure:4,"island-fair":8};
+  const offset=offsets[tile?.id]??0;
+  return PET_MONOPOLY_EVENT_DECK[Math.abs((Number(seed)||0)+offset)%PET_MONOPOLY_EVENT_DECK.length];
+}
 function getPetMonopolyTileTwist(tile,seed=0,context={}){
   if(tile?.type==="event"){
-    const kinds={"coin-park":"portal",chance:"tax",treasure:"petBoost"};
-    const fallback=["portal","tax","petBoost"][Math.abs(seed)%3];
-    const kind=kinds[tile.id]||fallback;
-    if(kind==="portal"){
+    const card=getPetMonopolyEventCard(tile,seed);
+    const base={kind:card.kind,coins:card.coins||0,xp:card.xp||0,petExp:card.petExp||0,bond:card.bond||0,eventId:card.id,label:`${card.name}：${card.text}`};
+    if(card.kind==="portal"){
       const target=getNextPetMonopolyOpenTile(
         context.tiles||PET_MONOPOLY_TILES,
         Number(context.position)||0,
@@ -4153,16 +4240,38 @@ function getPetMonopolyTileTwist(tile,seed=0,context={}){
         context.computers||[],
         Number(context.computerCount)||3,
       );
-      if(target)return{kind:"portal",coins:4,xp:2,petExp:0,bond:0,label:`\u50b3\u9001\u9580\uff1a\u524d\u5f80 ${target.tile.name}`,targetTileId:target.tile.id,targetIndex:target.index};
-      return{kind:"bonus",coins:10,xp:3,petExp:4,bond:1,label:"\u50b3\u9001\u9580\uff1a\u5168\u5730\u5716\u5df2\u88ab\u6536\u8cfc"};
+      if(target)return{...base,label:`${card.name}：前往 ${target.tile.name}`,targetTileId:target.tile.id,targetIndex:target.index};
+      return{...base,kind:"bonus",coins:10,xp:3,petExp:4,bond:1,label:`${card.name}：全地圖已被收購，改拿補給`};
     }
-    if(kind==="tax"){
+    if(card.kind==="move"){
+      const tiles=context.tiles||PET_MONOPOLY_TILES;
+      const total=tiles.length;
+      const from=Number(context.position)||0;
+      const index=(from+(Number(card.steps)||0)+total*4)%total;
+      const target=tiles[index];
+      return{...base,label:`${card.name}：${card.steps>0?"前進":"後退"} ${Math.abs(card.steps)} 格到 ${target?.name||"下一格"}`,targetTileId:target?.id,targetIndex:index,moveSteps:card.steps};
+    }
+    if(card.kind==="bossShortcut"){
+      const tiles=context.tiles||PET_MONOPOLY_TILES;
+      const bossIndex=tiles.findIndex(item=>item.id==="boss");
+      const index=bossIndex>0?bossIndex-1:Math.max(0,tiles.length-1);
+      const target=tiles[index];
+      return{...base,label:`${card.name}：前往 ${target?.name||"Boss 前哨"}`,targetTileId:target?.id,targetIndex:index};
+    }
+    if(card.kind==="tax"){
       const tax=Math.max(3,Math.min(18,(Number(context.propertyCount)||0)*4||3));
-      return{kind:"tax",coins:-tax,xp:3,petExp:0,bond:0,label:`\u7a05\u91d1\uff1a\u7e73 ${tax} \u91d1\u5e63`};
+      return{...base,coins:-tax,label:`${card.name}：繳 ${tax} 金幣`};
     }
-    const petName=context.selectedPetDef?.name||"\u5bf5\u7269";
-    const cardId=(Math.abs(seed)%2===0)?"shield":"boost";
-    return{kind:"petBoost",coins:6,xp:2,petExp:14,bond:4,cardId,label:`\u5bf5\u7269\u52a0\u6210\uff1a${petName} \u5e6b\u4f60\u62ff\u5230\u9053\u5177`};
+    if(card.kind==="card"){
+      return{...base,cardId:card.cardId};
+    }
+    if(card.kind==="upgradeDiscount"){
+      return{...base,upgradeDiscount:card.discount||0};
+    }
+    if(card.kind==="cpuPause"){
+      return{...base,cpuBuyPause:1};
+    }
+    return base;
   }
   if(tile?.type==="boss"){
     return{coins:10,xp:5,petExp:8,bond:2,label:"Boss 戰利品：皇冠寶箱"};
@@ -4219,10 +4328,15 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
   const[streak,setStreak]=useState(0);
   const[moving,setMoving]=useState(null);
   const[computerCount,setComputerCount]=useState(3);
+  const[cpuBuyPause,setCpuBuyPause]=useState(0);
+  const[upgradeDiscount,setUpgradeDiscount]=useState(0);
+  const[recentQuestionWords,setRecentQuestionWords]=useState([]);
   const[computers,setComputers]=useState(()=>PET_MONOPOLY_COMPUTERS.map((cpu,i)=>({...cpu,position:(i+3)%PET_MONOPOLY_TILES.length,coins:90,owned:[]})));
   const computersRef=useRef(computers);
   const ownedRef=useRef(owned);
   const cardEffectsRef=useRef(cardEffects);
+  const cpuBuyPauseRef=useRef(cpuBuyPause);
+  const recentQuestionWordsRef=useRef(recentQuestionWords);
   const moveTimersRef=useRef([]);
   const selectedPet=pets?.[petIndex]||null;
   const selectedPetDef=selectedPet?getAdventurePetDef(selectedPet):null;
@@ -4245,6 +4359,8 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
   useEffect(()=>{if(pets.length&&petIndex>=pets.length)setPetIndex(0)},[pets.length,petIndex]);
   useEffect(()=>{ownedRef.current=owned},[owned]);
   useEffect(()=>{cardEffectsRef.current=cardEffects},[cardEffects]);
+  useEffect(()=>{cpuBuyPauseRef.current=cpuBuyPause},[cpuBuyPause]);
+  useEffect(()=>{recentQuestionWordsRef.current=recentQuestionWords},[recentQuestionWords]);
   useEffect(()=>()=>{moveTimersRef.current.forEach(clearTimeout);moveTimersRef.current=[]},[]);
   const clearMoveTimers=()=>{moveTimersRef.current.forEach(clearTimeout);moveTimersRef.current=[]};
   const updateComputers=updater=>setComputers(prev=>{
@@ -4257,6 +4373,20 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
     cardEffectsRef.current=next;
     return next;
   });
+  const updateCpuBuyPause=updater=>setCpuBuyPause(prev=>{
+    const next=Math.max(0,typeof updater==="function"?updater(prev):updater);
+    cpuBuyPauseRef.current=next;
+    return next;
+  });
+  const rememberQuestionWord=question=>{
+    const key=String(question?.word?.w||"").toLowerCase();
+    if(!key)return;
+    setRecentQuestionWords(prev=>{
+      const next=[key,...prev.filter(item=>item!==key)].slice(0,12);
+      recentQuestionWordsRef.current=next;
+      return next;
+    });
+  };
   const awardCard=cardId=>{
     const card=PET_MONOPOLY_CARD_BY_ID[cardId];
     if(!card)return;
@@ -4276,7 +4406,8 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
   const currentMeta=PET_MONOPOLY_TYPE_META[currentTile.type]||PET_MONOPOLY_TYPE_META.word;
   const activeCards=PET_MONOPOLY_CARDS.filter(card=>cardEffects[card.id]);
   const currentYield=currentProperty?getPetMonopolyYield(currentProperty):null;
-  const currentUpgradeCost=currentProperty?getPetMonopolyUpgradeCost(currentProperty):0;
+  const currentUpgradeBaseCost=currentProperty?getPetMonopolyUpgradeCost(currentProperty):0;
+  const currentUpgradeCost=currentProperty?Math.max(5,currentUpgradeBaseCost-upgradeDiscount):0;
   const offerTile=offer?tiles.find(t=>t.id===offer.tileId):null;
   const propertyCount=Object.keys(owned).length;
   const activeComputers=computers.slice(0,computerCount);
@@ -4298,6 +4429,7 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
     const playOne=index=>{
       if(index>=totalPlayers){
         setMoving(null);
+        if(cpuBuyPauseRef.current>0)updateCpuBuyPause(v=>Math.max(0,v-1));
         setFeedback(prev=>prev?.startsWith("輪到")?prev:"輪到你。");
         return;
       }
@@ -4322,6 +4454,7 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
           const ownedByAny=!!playerProperty||!!otherCpuOwner||already;
           const tileBonus=tile.type==="event"?6:3;
           const buyCost=isPetMonopolyOwnable(tile)?getPetMonopolyTileCost(tile):0;
+          const buyPaused=(Number(cpuBuyPauseRef.current)||0)>0;
           const buyDecision=getPetMonopolyCpuBuyDecision({
             cpu:current,
             tile,
@@ -4331,7 +4464,7 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
             tileIndex:nextPos,
             total:tiles.length,
           });
-          const canBuy=isPetMonopolyOwnable(tile)&&!ownedByAny&&buyDecision.buy;
+          const canBuy=isPetMonopolyOwnable(tile)&&!ownedByAny&&!buyPaused&&buyDecision.buy;
           const cost=canBuy?buyCost:0;
           let nextCoins=Math.max(0,current.coins+tileBonus-cost);
           let rentPaid=0;
@@ -4380,7 +4513,7 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
     const rolled=baseRoll+(boostActive?2:0);
     const nextPos=(position+rolled)%tiles.length;
     const tile=tiles[nextPos];
-    const question=buildPetMonopolyQuestion(lv,tile,turn+position+nextPos+rolled);
+    const question=buildPetMonopolyQuestion(lv,tile,turn+position+nextPos+rolled,recentQuestionWordsRef.current);
     const lapBonus=nextPos<=position&&position!==0;
     const path=getPetMonopolyMovePath(position,rolled,tiles.length);
     setDice(rolled);
@@ -4414,6 +4547,7 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
   const answer=idx=>{
     if(!pending)return;
     const correct=idx===pending.question.answer;
+    rememberQuestionWord(pending.question);
     if(correct){
       const baseReward=getPetMonopolyReward(pending.tile,pending.lapBonus);
       const property=ownedRef.current[pending.tile.id];
@@ -4448,6 +4582,8 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
       setStreak(nextStreak);
       onXp?.(totalXp);
       setCoins?.(v=>Math.max(0,(Number(v)||0)+totalCoins-rentPaid));
+      if(twist?.upgradeDiscount)setUpgradeDiscount(prev=>Math.max(prev,twist.upgradeDiscount));
+      if(twist?.cpuBuyPause)updateCpuBuyPause(prev=>Math.max(prev,twist.cpuBuyPause));
       if(cpuOwner&&rentPaid){
         updateComputers(prev=>prev.map(cpu=>cpu.id===cpuOwner.id?{...cpu,coins:cpu.coins+rentPaid}:cpu));
         if(shieldActive){
@@ -4471,7 +4607,7 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
       setFeedback(msg);
       if(twist){
         setEventFlash({
-          title:pending.tile.type==="boss"?"Boss 寶箱":"事件",
+          title:pending.tile.type==="boss"?"Boss 寶箱":"機會 / 命運",
           text:twist.label.replace(/^命運卡：/,"").replace(/^Boss 戰利品：/,""),
           color:PET_MONOPOLY_TYPE_META[pending.tile.type]?.color||color,
         });
@@ -4479,15 +4615,15 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
         setEventFlash(null);
       }
       awardCard(twist?.cardId||getPetMonopolyCardDrop(pending.tile,turn+pending.dice+pending.nextPos));
-      if(twist?.kind==="portal"&&twist.targetTileId){
-        const portalTile=tiles.find(t=>t.id===twist.targetTileId);
-        const portalIndex=tiles.findIndex(t=>t.id===twist.targetTileId);
-        const portalCpuOwner=getPetMonopolyCpuOwner(computersRef.current,twist.targetTileId,computerCount);
-        if(portalTile&&portalIndex>=0){
-          setPosition(portalIndex);
-          setLastMove({dice:pending.dice,tile:portalTile});
-          if(isPetMonopolyOwnable(portalTile)&&!ownedRef.current[portalTile.id]&&!portalCpuOwner){
-            setOffer({tileId:portalTile.id,cost:getPetMonopolyTileCost(portalTile)});
+      if(twist?.targetTileId){
+        const targetTile=tiles.find(t=>t.id===twist.targetTileId);
+        const targetIndex=tiles.findIndex(t=>t.id===twist.targetTileId);
+        const targetCpuOwner=getPetMonopolyCpuOwner(computersRef.current,twist.targetTileId,computerCount);
+        if(targetTile&&targetIndex>=0){
+          setPosition(targetIndex);
+          setLastMove({dice:pending.dice,tile:targetTile});
+          if(isPetMonopolyOwnable(targetTile)&&!ownedRef.current[targetTile.id]&&!targetCpuOwner){
+            setOffer({tileId:targetTile.id,cost:getPetMonopolyTileCost(targetTile)});
           }else{
             playComputerRound();
           }
@@ -4559,12 +4695,13 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
   const upgradeCurrentProperty=()=>{
     const property=owned[currentTile.id];
     if(!property||property.level>=3)return;
-    const cost=getPetMonopolyUpgradeCost(property);
+    const cost=currentUpgradeCost;
     if((Number(coins)||0)<cost){
       setFeedback(`升級金幣不足，還差 ${cost-(Number(coins)||0)} 金幣。`);
       return;
     }
     setCoins?.(v=>Math.max(0,(Number(v)||0)-cost));
+    if(upgradeDiscount>0)setUpgradeDiscount(0);
     const nextOwned={...ownedRef.current,[currentTile.id]:{...property,level:property.level+1}};
     ownedRef.current=nextOwned;
     setOwned(nextOwned);
@@ -4583,6 +4720,8 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
       .pet-monopoly button{font-family:inherit}
       .pm-hero{order:3;border:1px solid color-mix(in srgb,var(--pm-accent) 30%,var(--pm-border));border-radius:20px;background:radial-gradient(circle at 18% 12%,color-mix(in srgb,var(--pm-accent) 22%,transparent),transparent 30%),radial-gradient(circle at 92% 20%,rgba(250,204,21,.24),transparent 26%),linear-gradient(135deg,#F8FFF8,var(--pm-card));padding:14px 16px;display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:12px;box-shadow:0 18px 38px rgba(15,110,86,.08)}
       .pm-kicker{display:inline-flex;align-items:center;gap:7px;color:var(--pm-accent);background:color-mix(in srgb,var(--pm-accent) 10%,#fff);border:1px solid color-mix(in srgb,var(--pm-accent) 24%,transparent);border-radius:999px;padding:6px 10px;font-size:12px;font-weight:1000}
+      .pm-kicker-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+      .pm-deck-chip{display:inline-flex;align-items:center;gap:5px;color:#92400E;background:#FFF7ED;border:1px solid #FDBA74;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:1000}
       .pm-title{font-size:clamp(26px,4.4vw,42px);line-height:1.02;font-weight:1000;margin:8px 0 6px;letter-spacing:0}
       .pm-goal{display:inline-flex;align-items:center;gap:6px;margin-top:10px;border:1px solid color-mix(in srgb,var(--pm-accent) 25%,var(--pm-border));border-radius:999px;background:color-mix(in srgb,var(--pm-accent) 9%,#fff);color:var(--pm-accent);padding:7px 10px;font-size:12px;font-weight:1000}
       .pm-goal.is-done{background:#ECFDF3;color:#047857;border-color:#86EFAC}
@@ -4641,6 +4780,7 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
       .pm-card-active{border:1px solid color-mix(in srgb,var(--pm-accent) 20%,var(--pm-border));border-radius:999px;background:rgba(255,255,255,.72);padding:6px 9px;font-size:12px;font-weight:1000;color:var(--pm-text);display:flex;gap:6px;align-items:center;justify-content:center;flex-wrap:wrap}
       .pm-card-active span{color:var(--pm-accent)}
       .pm-question{display:grid;gap:8px}
+      .pm-question-mode{display:inline-flex;align-items:center;justify-content:center;border:1px solid color-mix(in srgb,var(--pm-accent) 24%,var(--pm-border));border-radius:999px;background:color-mix(in srgb,var(--pm-accent) 8%,#fff);color:var(--pm-accent);padding:3px 8px;font-size:11px;font-weight:1000}
       .pm-question h3{margin:0 0 8px;font-size:18px}
       .pm-question p{margin:0;color:var(--pm-muted);font-size:13px;line-height:1.55}
       .pm-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:12px}
@@ -4661,7 +4801,10 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
     `}</style>
     <section className="pm-hero">
       <div>
-        <div className="pm-kicker">大富翁</div>
+        <div className="pm-kicker-row">
+          <div className="pm-kicker">大富翁</div>
+          <div className="pm-deck-chip" data-testid="pet-monopoly-event-deck-size" data-event-count={PET_MONOPOLY_EVENT_DECK.length}>機會/命運 {PET_MONOPOLY_EVENT_DECK.length}</div>
+        </div>
         <div className="pm-title">學習島</div>
         <div className={`pm-goal ${goalDone?"is-done":""}`}>{goalDone?"🏆":"🎯"} {goalText}</div>
       </div>
@@ -4794,13 +4937,16 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
               </div>
             )}
             {!moving&&pending&&(
-              <div className="pm-question">
+              <div className="pm-question" data-testid="pet-monopoly-question-word" data-word={pending.question.word?.w||""}>
                 <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10}}>
-                  <div style={{fontSize:12,fontWeight:1000,color:color}}>英文挑戰 · 骰出 {pending.dice}</div>
+                  <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+                    <span style={{fontSize:12,fontWeight:1000,color:color}}>英文挑戰 · 骰出 {pending.dice}</span>
+                    <span className="pm-question-mode" data-testid="pet-monopoly-question-mode">{pending.question.modeLabel||pending.question.kind}</span>
+                  </div>
                   <div style={{fontSize:12,fontWeight:1000,color:PET_MONOPOLY_TYPE_META[pending.tile.type]?.color||color}}>{pending.tile.name}</div>
                 </div>
-                <h3>{pending.question.prompt}</h3>
-                <p>{pending.question.sub}</p>
+                <h3 data-testid="pet-monopoly-question-prompt">{pending.question.prompt}</h3>
+                <p data-testid="pet-monopoly-question-sub">{pending.question.sub}</p>
                 <div className="pm-choices">
                   {pending.question.choices.map((choice,i)=>(
                     <button key={`${choice}-${i}`} type="button" className="pm-choice" data-testid={i===pending.question.answer?"pet-monopoly-choice-correct":undefined} onClick={()=>answer(i)}>
@@ -4817,7 +4963,7 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
                 <div className="pm-deal-text">下次停留可升級</div>
                 <div className="pm-action-row">
                   <button type="button" className="pm-action" data-testid="pet-monopoly-buy" disabled={(Number(coins)||0)<offer.cost} onClick={buyProperty}>收購</button>
-                  <button type="button" className="pm-action secondary" onClick={skipOffer}>略過</button>
+                  <button type="button" className="pm-action secondary" data-testid="pet-monopoly-skip-buy" onClick={skipOffer}>略過</button>
                 </div>
               </div>
             )}
@@ -4829,6 +4975,7 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
                   <div className="pm-deal-text">Lv.{currentProperty.level} · +{currentYield.coins} 金幣 · +{currentYield.xp} XP</div>
                 )}
                 {currentProperty&&currentProperty.visits<2&&<div className="pm-deal-text" style={{fontWeight:1000,color:color}}>再停一次可升級</div>}
+                {canUpgradeCurrent&&upgradeDiscount>0&&<div className="pm-deal-text" style={{fontWeight:1000,color:"#D97706"}}>升級折扣 -{upgradeDiscount} 金幣</div>}
                 {canUpgradeCurrent&&<button type="button" className="pm-action" disabled={(Number(coins)||0)<currentUpgradeCost} onClick={upgradeCurrentProperty}>升級 {currentUpgradeCost} 金幣</button>}
                 {!currentProperty&&isPetMonopolyOwnable(currentTile)&&<div className="pm-deal-text">答題後可收購</div>}
                 <div>

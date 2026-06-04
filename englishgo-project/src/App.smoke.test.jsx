@@ -1006,7 +1006,44 @@ describe('EnglishGo app smoke flow', () => {
 
     fireEvent.click(screen.getByTestId('pet-monopoly-choice-correct'));
 
-    expect(await screen.findByTestId('pet-monopoly-event')).toHaveTextContent(/事件/);
+    expect(await screen.findByTestId('pet-monopoly-event')).toHaveTextContent(/機會|命運|事件/);
+  }, 15000);
+
+  it('shows a chance destiny deck with at least ten pet monopoly outcomes', async () => {
+    localStorage.setItem('eg_coins', JSON.stringify(120));
+
+    await openElementaryPetMonopoly();
+
+    const deckChip = screen.getByTestId('pet-monopoly-event-deck-size');
+    const deckSize = Number(deckChip.getAttribute('data-event-count'));
+    expect(deckChip).toHaveTextContent(/機會|命運/);
+    expect(deckSize).toBeGreaterThanOrEqual(10);
+  }, 15000);
+
+  it('varies nearby pet monopoly word challenges instead of repeating the same word prompt', async () => {
+    const restoreDice = mockPetMonopolyDice([1, 2, 4]);
+    localStorage.setItem('eg_coins', JSON.stringify(120));
+
+    await openElementaryPetMonopoly();
+
+    fireEvent.click(screen.getByRole('button', { name: '1' }));
+    fireEvent.click(screen.getByTestId('pet-monopoly-roll'));
+
+    const firstWord = await screen.findByTestId('pet-monopoly-question-word');
+    const firstWordValue = firstWord.getAttribute('data-word');
+    const firstKey = `${screen.getByTestId('pet-monopoly-question-mode').textContent}:${firstWordValue}`;
+    fireEvent.click(screen.getByTestId('pet-monopoly-choice-correct'));
+    fireEvent.click(await screen.findByTestId('pet-monopoly-buy'));
+    await waitFor(() => expect(screen.getByTestId('pet-monopoly-roll')).not.toBeDisabled(), { timeout: 5000 });
+
+    fireEvent.click(screen.getByTestId('pet-monopoly-roll'));
+    const secondWord = await screen.findByTestId('pet-monopoly-question-word');
+    const secondWordValue = secondWord.getAttribute('data-word');
+    const secondKey = `${screen.getByTestId('pet-monopoly-question-mode').textContent}:${secondWordValue}`;
+
+    expect(secondWordValue).not.toBe(firstWordValue);
+    expect(secondKey).not.toBe(firstKey);
+    restoreDice();
   }, 15000);
 
   it('collects rent when a computer lands on a player property in pet monopoly', async () => {
