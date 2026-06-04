@@ -4086,6 +4086,11 @@ function getPetMonopolyYield(property){
   const level=Number(property?.level)||1;
   return{coins:5+level*5,xp:level*2,petExp:level*3};
 }
+function getPetMonopolyPropertyValue(tile,property){
+  if(!tile||!property)return 0;
+  const level=Number(property?.level)||1;
+  return getPetMonopolyTileCost(tile)+(Math.max(0,level-1)*24);
+}
 function getPetMonopolyAffinityBonus(question,petDef){
   const focus=String(question?.word?.w||"").toLowerCase();
   if(!focus||!(petDef?.words||[]).map(w=>String(w).toLowerCase()).includes(focus))return{coins:0,petExp:0,label:""};
@@ -4141,6 +4146,7 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
   const[offer,setOffer]=useState(null);
   const[lastMove,setLastMove]=useState(null);
   const[feedback,setFeedback]=useState("你的回合");
+  const[eventFlash,setEventFlash]=useState(null);
   const[score,setScore]=useState({correct:0,wrong:0,laps:0,boss:0});
   const[streak,setStreak]=useState(0);
   const[moving,setMoving]=useState(null);
@@ -4182,6 +4188,18 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
   const offerTile=offer?tiles.find(t=>t.id===offer.tileId):null;
   const propertyCount=Object.keys(owned).length;
   const activeComputers=computers.slice(0,computerCount);
+  const playerAssetValue=Object.entries(owned).reduce((sum,[tileId,property])=>sum+getPetMonopolyPropertyValue(tiles.find(t=>t.id===tileId),property),0);
+  const rankings=[
+    {id:"player",name:"玩家",emoji:"🐾",color,score:(Number(coins)||0)+playerAssetValue,owned:propertyCount},
+    ...activeComputers.map(cpu=>({
+      id:cpu.id,
+      name:cpu.name,
+      emoji:cpu.emoji,
+      color:cpu.color,
+      score:(Number(cpu.coins)||0)+cpu.owned.reduce((sum,tileId)=>sum+getPetMonopolyTileCost(tiles.find(t=>t.id===tileId)),0),
+      owned:cpu.owned.length,
+    })),
+  ].sort((a,b)=>b.score-a.score);
   const playComputerRound=()=>{
     clearMoveTimers();
     const totalPlayers=computerCount;
@@ -4234,6 +4252,7 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
     const path=getPetMonopolyMovePath(position,rolled,tiles.length);
     setDice(rolled);
     setLastMove(null);
+    setEventFlash(null);
     setMoving({actor:"player",dice:rolled,to:tile.name,step:0,total:path.length});
     setFeedback(`前進 ${rolled} 格`);
     clearMoveTimers();
@@ -4287,6 +4306,15 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
       const bossText=pending.tile.type==="boss"?" Boss 擊敗。":"";
       const msg=`答對 +${totalXp} XP、+${totalCoins} 金幣${propertyText}${affinityText}${comboText}${twistText}。${bossText}${buyText}`;
       setFeedback(msg);
+      if(twist){
+        setEventFlash({
+          title:pending.tile.type==="boss"?"Boss 寶箱":"事件",
+          text:twist.label.replace(/^命運卡：/,"").replace(/^Boss 戰利品：/,""),
+          color:PET_MONOPOLY_TYPE_META[pending.tile.type]?.color||color,
+        });
+      }else{
+        setEventFlash(null);
+      }
       if(property){
         setOwned(prev=>({...prev,[pending.tile.id]:{...prev[pending.tile.id],visits:(Number(prev[pending.tile.id]?.visits)||0)+1}}));
       }
@@ -4302,6 +4330,7 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
       setStreak(0);
       const msg=`失敗 -${penalty} 金幣｜答案：${pending.question.explain}`;
       setFeedback(msg);
+      setEventFlash(null);
       playComputerRound();
     }
     setTurn(t=>t+1);
@@ -4362,6 +4391,12 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
       .pm-roster{order:2;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.2fr);gap:10px;align-items:stretch}
       .pm-player-card,.pm-cpu-box{border:1px solid color-mix(in srgb,var(--pm-accent) 20%,var(--pm-border));border-radius:16px;background:linear-gradient(135deg,color-mix(in srgb,var(--pm-accent) 7%,#fff),var(--pm-card));padding:10px}
       .pm-player-card{display:flex;align-items:center;gap:9px}
+      .pm-rank-box{position:absolute;left:50%;right:auto;top:14px;transform:translateX(-50%);z-index:2;width:min(560px,calc(100% - 28px));border:1px solid color-mix(in srgb,var(--pm-accent) 22%,var(--pm-border));border-radius:16px;background:rgba(255,255,255,.76);backdrop-filter:blur(10px);padding:8px 10px;text-align:left;box-shadow:0 14px 30px rgba(15,110,86,.12)}
+      .pm-rank-box .pm-section-title{text-align:center;font-size:12px}
+      .pm-rank-list{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:6px}
+      .pm-rank-row{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:6px;align-items:center;border:1px solid color-mix(in srgb,var(--rank-color) 26%,var(--pm-border));border-radius:11px;background:color-mix(in srgb,var(--rank-color) 7%,#fff);padding:6px 7px;font-size:11px;font-weight:1000;color:var(--pm-text)}
+      .pm-rank-row span:nth-child(2){overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+      .pm-rank-row b{color:var(--rank-color);font-size:12px}
       .pm-cpu-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:8px}
       .pm-cpu-pill{border:1px solid color-mix(in srgb,var(--cpu-color) 32%,var(--pm-border));border-radius:12px;background:color-mix(in srgb,var(--cpu-color) 8%,#fff);padding:7px;font-size:11px;line-height:1.35;color:var(--pm-muted)}
       .pm-cpu-pill b{display:block;color:var(--cpu-color);font-size:12px}
@@ -4397,12 +4432,15 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
       .pm-choice:hover{border-color:var(--pm-accent);background:color-mix(in srgb,var(--pm-accent) 8%,#fff)}
       .pm-deal{border:1px solid color-mix(in srgb,var(--pm-accent) 28%,var(--pm-border));border-radius:16px;background:linear-gradient(135deg,color-mix(in srgb,var(--pm-accent) 10%,#fff),var(--pm-card));padding:12px;display:grid;gap:9px}
       .pm-deal-text{font-size:12px;color:var(--pm-muted);line-height:1.55}
+      .pm-event-card{border:1px solid color-mix(in srgb,var(--event-color) 34%,var(--pm-border));border-radius:14px;background:linear-gradient(135deg,color-mix(in srgb,var(--event-color) 14%,#fff),rgba(255,255,255,.9));padding:10px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px;align-items:center;text-align:left;box-shadow:0 12px 26px color-mix(in srgb,var(--event-color) 14%,transparent)}
+      .pm-event-card b{font-size:12px;color:var(--event-color)}
+      .pm-event-card span{font-size:13px;font-weight:1000;color:var(--pm-text);line-height:1.35}
       .pm-action-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
       .pm-action{border:0;border-radius:12px;background:var(--pm-accent);color:#fff;padding:10px 12px;font-size:12px;font-weight:1000;cursor:pointer}
       .pm-action.secondary{background:var(--pm-surface);color:var(--pm-text);border:1px solid var(--pm-border)}
       .pm-action:disabled{opacity:.5;cursor:not-allowed}
       @media (max-width:900px){.pm-hero,.pm-roster{grid-template-columns:1fr}.pm-board{grid-template-columns:repeat(7,minmax(44px,1fr));grid-template-rows:repeat(7,minmax(48px,1fr));gap:5px;min-height:560px;padding:8px}.pm-tile{min-height:48px;padding:5px}.pm-tile-name{font-size:9px}.pm-tile-type{display:none}.pm-token{width:25px;height:25px;border-radius:9px}.pm-center{padding:8px}.pm-overlay{width:92%;padding:10px}.pm-dice{width:60px;height:60px;font-size:26px}}
-      @media (max-width:520px){.pm-hero{padding:12px;border-radius:18px}.pm-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.pm-cpu-list{grid-template-columns:1fr}.pm-board{gap:3px;min-height:480px}.pm-tile-icon{font-size:15px}.pm-tile-name{font-size:8px}.pm-choices{grid-template-columns:1fr}.pm-island-label{font-size:14px}.pm-city{display:none}}
+      @media (max-width:520px){.pm-hero{padding:12px;border-radius:18px}.pm-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.pm-cpu-list{grid-template-columns:1fr}.pm-board{gap:3px;min-height:480px}.pm-tile-icon{font-size:15px}.pm-tile-name{font-size:8px}.pm-choices{grid-template-columns:1fr}.pm-island-label{font-size:14px}.pm-city{display:none}.pm-rank-box{left:50%;right:auto;top:6px;transform:translateX(-50%);width:min(260px,calc(100% - 16px));padding:4px 5px;border-radius:999px}.pm-rank-box .pm-section-title{display:none}.pm-rank-list{grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;margin-top:0}.pm-rank-row{display:flex;justify-content:center;padding:3px 4px;border-radius:999px;font-size:10px;line-height:1}.pm-rank-row span:nth-child(2){display:none}.pm-rank-row span:last-child{display:inline;font-size:10px}}
     `}</style>
     <section className="pm-hero">
       <div>
@@ -4477,8 +4515,26 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
             <span className="pm-city" style={{left:"47%",top:"70%"}}>高雄</span>
             <span className="pm-city" style={{right:"18%",top:"48%"}}>花東</span>
           </div>
+          <div className="pm-rank-box" data-testid="pet-monopoly-rankings">
+            <div className="pm-section-title">排名</div>
+            <div className="pm-rank-list">
+              {rankings.map((rank,i)=>(
+                <div key={rank.id} className="pm-rank-row" style={{"--rank-color":rank.color}}>
+                  <b>#{i+1}</b>
+                  <span>{rank.emoji} {rank.name}</span>
+                  <span>{rank.score}</span>
+                </div>
+              ))}
+            </div>
+          </div>
           <div className="pm-overlay" data-testid="pet-monopoly-overlay">
             <div className="pm-feedback" data-testid="pet-monopoly-feedback">{feedback}</div>
+            {eventFlash&&(
+              <div className="pm-event-card" data-testid="pet-monopoly-event" style={{"--event-color":eventFlash.color}}>
+                <b>{eventFlash.title}</b>
+                <span>{eventFlash.text}</span>
+              </div>
+            )}
             {moving&&(
               <div className="pm-deal" data-testid="pet-monopoly-moving">
                 <div className="pm-section-title">{moving.actor==="cpu"?`${moving.name} 移動`:"玩家移動"}</div>

@@ -925,9 +925,11 @@ describe('EnglishGo app smoke flow', () => {
     expect(await screen.findByText(/寵物大富翁/, {}, { timeout: 5000 })).toBeInTheDocument();
     expect(screen.getByTestId('pet-monopoly-board')).toBeInTheDocument();
     expect(screen.getByText(/台灣學習島/)).toBeInTheDocument();
-    expect(screen.getByText(/電腦 1/)).toBeInTheDocument();
+    expect(screen.getAllByText(/電腦 1/).length).toBeGreaterThan(0);
     expect(screen.queryByText('行動紀錄')).not.toBeInTheDocument();
     expect(screen.getByTestId('pet-monopoly-feedback')).toHaveTextContent('你的回合');
+    expect(screen.getByTestId('pet-monopoly-rankings')).toHaveTextContent(/排名/);
+    expect(screen.getByTestId('pet-monopoly-rankings')).toHaveTextContent(/玩家/);
     expect(screen.queryByText(/下一格：/)).not.toBeInTheDocument();
     expect(screen.getByTestId('pet-monopoly-roll')).toHaveTextContent('🎲');
 
@@ -948,6 +950,36 @@ describe('EnglishGo app smoke flow', () => {
     expect(await screen.findByTestId('pet-monopoly-moving')).toHaveTextContent(/電腦 1/);
     await waitFor(() => expect(screen.getByTestId('pet-monopoly-roll')).not.toBeDisabled(), { timeout: 5000 });
     expect(screen.queryByRole('button', { name: /升級/ })).not.toBeInTheDocument();
+  }, 15000);
+
+  it('shows a compact event card after landing on an event tile in pet monopoly', async () => {
+    const originalGetRandomValues = globalThis.crypto?.getRandomValues;
+    if (globalThis.crypto && originalGetRandomValues) {
+      vi.spyOn(globalThis.crypto, 'getRandomValues').mockImplementation(arr => {
+        arr[0] = 2;
+        return arr;
+      });
+    }
+    localStorage.setItem('eg_coins', JSON.stringify(120));
+
+    await openElementaryMenu();
+
+    const gameTab = document.querySelector('[data-group-id="game"]');
+    expect(gameTab).toBeTruthy();
+    fireEvent.click(gameTab);
+
+    const monopolyCard = document.querySelector('[data-module-id="petMonopoly"]');
+    expect(monopolyCard).toBeTruthy();
+    fireEvent.click(monopolyCard);
+
+    expect(await screen.findByText(/寵物大富翁/, {}, { timeout: 5000 })).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('pet-monopoly-roll'));
+    expect((await screen.findAllByText(/英文挑戰/)).length).toBeGreaterThan(0);
+    expect(screen.getByTestId('pet-monopoly-overlay')).toHaveTextContent(/金幣公園/);
+
+    fireEvent.click(screen.getByTestId('pet-monopoly-choice-correct'));
+
+    expect(await screen.findByTestId('pet-monopoly-event')).toHaveTextContent(/事件/);
   }, 15000);
 
   it('shows pet care priorities and next-step hints without competition features', async () => {
