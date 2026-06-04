@@ -4086,10 +4086,18 @@ function getPetMonopolyYield(property){
   const level=Number(property?.level)||1;
   return{coins:5+level*5,xp:level*2,petExp:level*3};
 }
+function getPetMonopolyRent(tile,property){
+  const table={word:7,grammar:9,shop:8,training:8};
+  const level=Number(property?.level)||1;
+  return(table[tile?.type]||6)+(Math.max(0,level-1)*5);
+}
 function getPetMonopolyPropertyValue(tile,property){
   if(!tile||!property)return 0;
   const level=Number(property?.level)||1;
   return getPetMonopolyTileCost(tile)+(Math.max(0,level-1)*24);
+}
+function getPetMonopolyCpuOwner(computers,tileId,limit=3,excludeId=""){
+  return(computers||[]).slice(0,limit).find(cpu=>cpu?.id!==excludeId&&(cpu?.owned||[]).includes(tileId))||null;
 }
 function getPetMonopolyAffinityBonus(question,petDef){
   const focus=String(question?.word?.w||"").toLowerCase();
@@ -4147,12 +4155,14 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
   const[lastMove,setLastMove]=useState(null);
   const[feedback,setFeedback]=useState("你的回合");
   const[eventFlash,setEventFlash]=useState(null);
+  const[rentFlash,setRentFlash]=useState(null);
   const[score,setScore]=useState({correct:0,wrong:0,laps:0,boss:0});
   const[streak,setStreak]=useState(0);
   const[moving,setMoving]=useState(null);
   const[computerCount,setComputerCount]=useState(3);
   const[computers,setComputers]=useState(()=>PET_MONOPOLY_COMPUTERS.map((cpu,i)=>({...cpu,position:(i+3)%PET_MONOPOLY_TILES.length,coins:90,owned:[]})));
   const computersRef=useRef(computers);
+  const ownedRef=useRef(owned);
   const moveTimersRef=useRef([]);
   const selectedPet=pets?.[petIndex]||null;
   const selectedPetDef=selectedPet?getAdventurePetDef(selectedPet):null;
@@ -4173,6 +4183,7 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
     return()=>{cancelAnimationFrame(raf);clearTimeout(timer)};
   },[]);
   useEffect(()=>{if(pets.length&&petIndex>=pets.length)setPetIndex(0)},[pets.length,petIndex]);
+  useEffect(()=>{ownedRef.current=owned},[owned]);
   useEffect(()=>()=>{moveTimersRef.current.forEach(clearTimeout);moveTimersRef.current=[]},[]);
   const clearMoveTimers=()=>{moveTimersRef.current.forEach(clearTimeout);moveTimersRef.current=[]};
   const updateComputers=updater=>setComputers(prev=>{
@@ -4224,15 +4235,37 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
             return;
           }
           const current=computersRef.current[index]||cpu;
+          const playerProperty=ownedRef.current[tile.id];
+          const otherCpuOwner=getPetMonopolyCpuOwner(computersRef.current,tile.id,computerCount,current.id);
           const already=current.owned.includes(tile.id);
-          const canBuy=isPetMonopolyOwnable(tile)&&!already&&current.coins>=getPetMonopolyTileCost(tile);
+          const ownedByAny=!!playerProperty||!!otherCpuOwner||already;
+          const canBuy=isPetMonopolyOwnable(tile)&&!ownedByAny&&current.coins>=getPetMonopolyTileCost(tile);
           const cost=canBuy?getPetMonopolyTileCost(tile):0;
-          updateComputers(prev=>prev.map((item,i)=>i===index?{
-            ...item,
-            position:nextPos,
-            coins:Math.max(0,item.coins+(tile.type==="event"?6:3)-cost),
-            owned:canBuy?[...item.owned,tile.id]:item.owned,
-          }:item));
+          const tileBonus=tile.type==="event"?6:3;
+          let nextCoins=Math.max(0,current.coins+tileBonus-cost);
+          let rentPaid=0;
+          if(playerProperty){
+            rentPaid=Math.min(getPetMonopolyRent(tile,playerProperty),nextCoins);
+            nextCoins=Math.max(0,nextCoins-rentPaid);
+            if(rentPaid){
+              setCoins?.(v=>Math.max(0,(Number(v)||0)+rentPaid));
+              setRentFlash({title:"收租",text:`${current.name} +${rentPaid}`,color});
+            }
+          }else if(otherCpuOwner){
+            rentPaid=Math.min(getPetMonopolyRent(tile,{level:1}),nextCoins);
+            nextCoins=Math.max(0,nextCoins-rentPaid);
+            if(rentPaid)setRentFlash({title:"過路費",text:`${current.name} → ${otherCpuOwner.name} ${rentPaid}`,color:otherCpuOwner.color});
+          }
+          updateComputers(prev=>prev.map(item=>{
+            if(item.id===current.id)return{
+              ...item,
+              position:nextPos,
+              coins:nextCoins,
+              owned:canBuy?[...item.owned,tile.id]:item.owned,
+            };
+            if(otherCpuOwner&&item.id===otherCpuOwner.id&&rentPaid)return{...item,coins:item.coins+rentPaid};
+            return item;
+          }));
           setMoving({actor:"cpu",name:cpu.name,dice:rolled,to:tile.name,step:path.length,total:path.length,result:canBuy?"收購":tile.type==="event"?"事件":"停留"});
           const nextTimer=setTimeout(()=>playOne(index+1),260);
           moveTimersRef.current.push(nextTimer);
@@ -4253,6 +4286,7 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
     setDice(rolled);
     setLastMove(null);
     setEventFlash(null);
+    setRentFlash(null);
     setMoving({actor:"player",dice:rolled,to:tile.name,step:0,total:path.length});
     setFeedback(`前進 ${rolled} 格`);
     clearMoveTimers();
@@ -4276,7 +4310,8 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
     const correct=idx===pending.question.answer;
     if(correct){
       const baseReward=getPetMonopolyReward(pending.tile,pending.lapBonus);
-      const property=owned[pending.tile.id];
+      const property=ownedRef.current[pending.tile.id];
+      const cpuOwner=getPetMonopolyCpuOwner(computersRef.current,pending.tile.id,computerCount);
       const propertyYield=property?getPetMonopolyYield(property):{coins:0,xp:0,petExp:0};
       const affinity=getPetMonopolyAffinityBonus(pending.question,selectedPetDef);
       const nextStreak=streak+1;
@@ -4291,10 +4326,17 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
       };
       const totalXp=reward.xp;
       const totalCoins=reward.coins;
+      const rentPaid=cpuOwner?Math.min(getPetMonopolyRent(pending.tile,{level:1}),Math.max(0,(Number(coins)||0)+totalCoins)):0;
       setScore(s=>({correct:s.correct+1,wrong:s.wrong,laps:s.laps+(pending.lapBonus?1:0),boss:s.boss+(pending.tile.type==="boss"?1:0)}));
       setStreak(nextStreak);
       onXp?.(totalXp);
-      setCoins?.(v=>Math.max(0,(Number(v)||0)+totalCoins));
+      setCoins?.(v=>Math.max(0,(Number(v)||0)+totalCoins-rentPaid));
+      if(cpuOwner&&rentPaid){
+        updateComputers(prev=>prev.map(cpu=>cpu.id===cpuOwner.id?{...cpu,coins:cpu.coins+rentPaid}:cpu));
+        setRentFlash({title:"過路費",text:`${cpuOwner.name} +${rentPaid}`,color:cpuOwner.color});
+      }else{
+        setRentFlash(null);
+      }
       if(selectedPet&&setPets){
         setPets(prev=>(prev||[]).map((pet,i)=>i===petIndex?growPetFromMonopoly(pet,reward):pet));
       }
@@ -4316,16 +4358,26 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
         setEventFlash(null);
       }
       if(property){
-        setOwned(prev=>({...prev,[pending.tile.id]:{...prev[pending.tile.id],visits:(Number(prev[pending.tile.id]?.visits)||0)+1}}));
+        const nextOwned={...ownedRef.current,[pending.tile.id]:{...ownedRef.current[pending.tile.id],visits:(Number(ownedRef.current[pending.tile.id]?.visits)||0)+1}};
+        ownedRef.current=nextOwned;
+        setOwned(nextOwned);
       }
-      if(!property&&isPetMonopolyOwnable(pending.tile)){
+      if(!property&&!cpuOwner&&isPetMonopolyOwnable(pending.tile)){
         setOffer({tileId:pending.tile.id,cost:getPetMonopolyTileCost(pending.tile)});
       }else{
         playComputerRound();
       }
     }else{
       const penalty=Math.min(Math.max(2,pending.dice),Math.max(0,Number(coins)||0));
-      if(penalty)setCoins?.(v=>Math.max(0,(Number(v)||0)-penalty));
+      const cpuOwner=getPetMonopolyCpuOwner(computersRef.current,pending.tile.id,computerCount);
+      const rentPaid=cpuOwner?Math.min(getPetMonopolyRent(pending.tile,{level:1}),Math.max(0,(Number(coins)||0)-penalty)):0;
+      if(penalty||rentPaid)setCoins?.(v=>Math.max(0,(Number(v)||0)-penalty-rentPaid));
+      if(cpuOwner&&rentPaid){
+        updateComputers(prev=>prev.map(cpu=>cpu.id===cpuOwner.id?{...cpu,coins:cpu.coins+rentPaid}:cpu));
+        setRentFlash({title:"過路費",text:`${cpuOwner.name} +${rentPaid}`,color:cpuOwner.color});
+      }else{
+        setRentFlash(null);
+      }
       setScore(s=>({correct:s.correct,wrong:s.wrong+1,laps:s.laps,boss:s.boss}));
       setStreak(0);
       const msg=`失敗 -${penalty} 金幣｜答案：${pending.question.explain}`;
@@ -4345,7 +4397,9 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
       return;
     }
     setCoins?.(v=>Math.max(0,(Number(v)||0)-offer.cost));
-    setOwned(prev=>({...prev,[tile.id]:{level:1,visits:1}}));
+    const nextOwned={...ownedRef.current,[tile.id]:{level:1,visits:1}};
+    ownedRef.current=nextOwned;
+    setOwned(nextOwned);
     const msg=`已收購「${tile.name}」`;
     setFeedback(msg);
     setOffer(null);
@@ -4365,7 +4419,9 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
       return;
     }
     setCoins?.(v=>Math.max(0,(Number(v)||0)-cost));
-    setOwned(prev=>({...prev,[currentTile.id]:{...property,level:property.level+1}}));
+    const nextOwned={...ownedRef.current,[currentTile.id]:{...property,level:property.level+1}};
+    ownedRef.current=nextOwned;
+    setOwned(nextOwned);
     const msg=`${currentTile.name} Lv.${property.level+1}`;
     setFeedback(msg);
     playComputerRound();
@@ -4407,10 +4463,13 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
       .pm-board{position:relative;display:grid;grid-template-columns:repeat(7,minmax(76px,1fr));grid-template-rows:repeat(7,minmax(72px,1fr));gap:8px;border:1px solid color-mix(in srgb,var(--pm-accent) 28%,var(--pm-border));border-radius:28px;background:radial-gradient(circle at 22% 18%,rgba(14,165,233,.16),transparent 24%),radial-gradient(circle at 75% 78%,rgba(34,197,94,.15),transparent 25%),linear-gradient(135deg,#F7FFFC,var(--pm-card));padding:12px;box-shadow:0 22px 52px rgba(15,110,86,.11);min-height:710px}
       .pm-tile{position:relative;border:1px solid color-mix(in srgb,var(--tile-color) 34%,var(--pm-border));border-radius:14px;background:linear-gradient(135deg,var(--tile-soft),rgba(255,255,255,.92));padding:7px;text-align:left;overflow:hidden;min-height:72px}
       .pm-tile.is-active{box-shadow:0 0 0 3px color-mix(in srgb,var(--tile-color) 24%,transparent),0 12px 24px color-mix(in srgb,var(--tile-color) 18%,transparent);transform:translateY(-1px)}
+      .pm-tile.is-owned-by-player{box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--pm-accent) 50%,transparent)}
+      .pm-tile.is-owned-by-cpu{box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--owner-color) 50%,transparent)}
       .pm-tile-icon{font-size:20px;display:block}
       .pm-tile-name{display:block;font-size:11px;font-weight:1000;line-height:1.2;margin-top:4px}
       .pm-tile-type{display:inline-block;font-size:9px;font-weight:1000;color:var(--tile-color);background:color-mix(in srgb,var(--tile-color) 10%,#fff);border-radius:999px;padding:2px 6px;margin-top:5px}
       .pm-owner-badge{position:absolute;right:5px;top:5px;border-radius:999px;background:var(--tile-color);color:#fff;font-size:10px;font-weight:1000;padding:3px 6px;box-shadow:0 6px 14px color-mix(in srgb,var(--tile-color) 26%,transparent)}
+      .pm-owner-badge.cpu{background:var(--owner-color);box-shadow:0 6px 14px color-mix(in srgb,var(--owner-color) 26%,transparent)}
       .pm-token-stack{position:absolute;right:5px;bottom:5px;display:flex;gap:3px;align-items:center}
       .pm-token{width:32px;height:32px;border-radius:11px;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 18px rgba(0,0,0,.12);overflow:hidden;border:2px solid #fff;font-size:14px;font-weight:1000}
       .pm-token.cpu{background:var(--cpu-color);color:#fff}
@@ -4491,13 +4550,15 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
           const[posCol,posRow]=PET_MONOPOLY_GRID[i]||[1,1];
           const active=i===position;
           const property=owned[tile.id];
+          const cpuOwner=getPetMonopolyCpuOwner(activeComputers,tile.id,computerCount);
           const computerVisitors=activeComputers.filter(cpu=>cpu.position===i);
           return(
-            <div key={tile.id} className={`pm-tile ${active?"is-active":""}`} style={{"--tile-color":meta.color,"--tile-soft":meta.soft,gridColumn:posCol,gridRow:posRow}}>
+            <div key={tile.id} className={`pm-tile ${active?"is-active":""} ${property?"is-owned-by-player":cpuOwner?"is-owned-by-cpu":""}`} style={{"--tile-color":meta.color,"--tile-soft":meta.soft,"--owner-color":cpuOwner?.color||color,gridColumn:posCol,gridRow:posRow}}>
               <span className="pm-tile-icon">{tile.icon}</span>
               <span className="pm-tile-name">{tile.name}</span>
               <span className="pm-tile-type">{meta.label}</span>
               {property&&<span className="pm-owner-badge">Lv.{property.level}</span>}
+              {!property&&cpuOwner&&<span className="pm-owner-badge cpu" data-testid="pet-monopoly-cpu-owner">{cpuOwner.name.replace("電腦 ","C")}</span>}
               {(active||computerVisitors.length>0)&&(
                 <span className="pm-token-stack">
                   {active&&<span className="pm-token" aria-label="目前位置">{selectedPet?<PixelPet pet={selectedPet} size={32}/>:<span>🐾</span>}</span>}
@@ -4529,6 +4590,12 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
           </div>
           <div className="pm-overlay" data-testid="pet-monopoly-overlay">
             <div className="pm-feedback" data-testid="pet-monopoly-feedback">{feedback}</div>
+            {rentFlash&&(
+              <div className="pm-event-card" data-testid="pet-monopoly-rent" style={{"--event-color":rentFlash.color||color}}>
+                <b>{rentFlash.title}</b>
+                <span>{rentFlash.text}</span>
+              </div>
+            )}
             {eventFlash&&(
               <div className="pm-event-card" data-testid="pet-monopoly-event" style={{"--event-color":eventFlash.color}}>
                 <b>{eventFlash.title}</b>

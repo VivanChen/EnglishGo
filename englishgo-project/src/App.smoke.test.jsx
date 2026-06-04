@@ -100,6 +100,33 @@ function installMockSpeechRecognition() {
   };
 }
 
+function mockPetMonopolyDice(diceValues) {
+  const originalGetRandomValues = globalThis.crypto?.getRandomValues;
+  if (!globalThis.crypto || !originalGetRandomValues) return () => {};
+  let index = 0;
+  const spy = vi.spyOn(globalThis.crypto, 'getRandomValues').mockImplementation(arr => {
+    const dice = diceValues[Math.min(index, diceValues.length - 1)] || 1;
+    index += 1;
+    arr[0] = Math.max(0, dice - 1);
+    return arr;
+  });
+  return () => spy.mockRestore();
+}
+
+async function openElementaryPetMonopoly() {
+  await openElementaryMenu();
+
+  const gameTab = document.querySelector('[data-group-id="game"]');
+  expect(gameTab).toBeTruthy();
+  fireEvent.click(gameTab);
+
+  const monopolyCard = document.querySelector('[data-module-id="petMonopoly"]');
+  expect(monopolyCard).toBeTruthy();
+  fireEvent.click(monopolyCard);
+
+  expect(await screen.findByTestId('pet-monopoly-board', {}, { timeout: 5000 })).toBeInTheDocument();
+}
+
 describe('EnglishGo app smoke flow', () => {
   it('renders the landing page', () => {
     render(<App />);
@@ -980,6 +1007,47 @@ describe('EnglishGo app smoke flow', () => {
     fireEvent.click(screen.getByTestId('pet-monopoly-choice-correct'));
 
     expect(await screen.findByTestId('pet-monopoly-event')).toHaveTextContent(/事件/);
+  }, 15000);
+
+  it('collects rent when a computer lands on a player property in pet monopoly', async () => {
+    const restoreDice = mockPetMonopolyDice([4, 1, 1, 1]);
+    localStorage.setItem('eg_coins', JSON.stringify(120));
+    localStorage.setItem(
+      'eg_pets',
+      JSON.stringify([{ petId: 'bunny', rarity: 'N', level: 2, exp: 20, bond: 6, hunger: 70, clean: 80, energy: 90 }]),
+    );
+
+    await openElementaryPetMonopoly();
+
+    fireEvent.click(screen.getByTestId('pet-monopoly-roll'));
+    fireEvent.click(await screen.findByTestId('pet-monopoly-choice-correct'));
+    fireEvent.click(await screen.findByTestId('pet-monopoly-buy'));
+
+    expect(await screen.findByTestId('pet-monopoly-rent')).toHaveTextContent(/收租/);
+    restoreDice();
+  }, 15000);
+
+  it('charges rent when the player lands on a computer property in pet monopoly', async () => {
+    const restoreDice = mockPetMonopolyDice([1, 1, 1, 1, 3]);
+    localStorage.setItem('eg_coins', JSON.stringify(120));
+    localStorage.setItem(
+      'eg_pets',
+      JSON.stringify([{ petId: 'bunny', rarity: 'N', level: 2, exp: 20, bond: 6, hunger: 70, clean: 80, energy: 90 }]),
+    );
+
+    await openElementaryPetMonopoly();
+
+    fireEvent.click(screen.getByTestId('pet-monopoly-roll'));
+    fireEvent.click(await screen.findByTestId('pet-monopoly-choice-correct'));
+    fireEvent.click(await screen.findByTestId('pet-monopoly-buy'));
+    await waitFor(() => expect(screen.getByTestId('pet-monopoly-roll')).not.toBeDisabled(), { timeout: 5000 });
+
+    fireEvent.click(screen.getByTestId('pet-monopoly-roll'));
+    fireEvent.click(await screen.findByTestId('pet-monopoly-choice-correct'));
+
+    expect(await screen.findByTestId('pet-monopoly-rent')).toHaveTextContent(/過路費/);
+    expect(screen.queryByTestId('pet-monopoly-buy')).not.toBeInTheDocument();
+    restoreDice();
   }, 15000);
 
   it('shows pet care priorities and next-step hints without competition features', async () => {
