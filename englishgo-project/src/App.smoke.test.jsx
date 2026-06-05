@@ -113,7 +113,7 @@ function mockPetMonopolyDice(diceValues) {
   return () => spy.mockRestore();
 }
 
-async function openElementaryPetMonopoly() {
+async function openElementaryPetMonopoly({ cpuCount = 3, stake = 100 } = {}) {
   await openElementaryMenu();
 
   const gameTab = document.querySelector('[data-group-id="game"]');
@@ -124,6 +124,10 @@ async function openElementaryPetMonopoly() {
   expect(monopolyCard).toBeTruthy();
   fireEvent.click(monopolyCard);
 
+  expect(await screen.findByTestId('pet-monopoly-setup', {}, { timeout: 5000 })).toBeInTheDocument();
+  fireEvent.click(screen.getByTestId(`pet-monopoly-setup-cpu-${cpuCount}`));
+  fireEvent.click(screen.getByTestId(`pet-monopoly-setup-stake-${stake}`));
+  fireEvent.click(screen.getByTestId('pet-monopoly-start'));
   expect(await screen.findByTestId('pet-monopoly-board', {}, { timeout: 5000 })).toBeInTheDocument();
 }
 
@@ -950,7 +954,15 @@ describe('EnglishGo app smoke flow', () => {
     fireEvent.click(monopolyCard);
 
     expect(await screen.findByText(/寵物大富翁/, {}, { timeout: 5000 })).toBeInTheDocument();
+    expect(screen.getByTestId('pet-monopoly-setup')).toHaveTextContent(/開局設定/);
+    expect(screen.queryByTestId('pet-monopoly-board')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('pet-monopoly-setup-cpu-1'));
+    fireEvent.click(screen.getByTestId('pet-monopoly-setup-stake-100'));
+    fireEvent.click(screen.getByTestId('pet-monopoly-start'));
+
     expect(screen.getByTestId('pet-monopoly-board')).toBeInTheDocument();
+    expect(screen.getByTestId('pet-monopoly-game-hud')).toHaveTextContent(/投入 100/);
+    expect(screen.getByTestId('pet-monopoly-game-hud')).toHaveTextContent(/電腦 1/);
     expect(screen.getByText(/台灣學習島/)).toBeInTheDocument();
     expect(screen.getAllByText(/電腦 1/).length).toBeGreaterThan(0);
     expect(screen.queryByText('行動紀錄')).not.toBeInTheDocument();
@@ -1000,6 +1012,7 @@ describe('EnglishGo app smoke flow', () => {
     fireEvent.click(monopolyCard);
 
     expect(await screen.findByText(/寵物大富翁/, {}, { timeout: 5000 })).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('pet-monopoly-start'));
     fireEvent.click(screen.getByTestId('pet-monopoly-roll'));
     expect((await screen.findAllByText(/英文挑戰/)).length).toBeGreaterThan(0);
     expect(screen.getByTestId('pet-monopoly-overlay')).toHaveTextContent(/金幣公園/);
@@ -1020,13 +1033,73 @@ describe('EnglishGo app smoke flow', () => {
     expect(deckSize).toBeGreaterThanOrEqual(10);
   }, 15000);
 
+  it('starts pet monopoly only after choosing computers and stake', async () => {
+    localStorage.setItem('eg_coins', JSON.stringify(500));
+
+    await openElementaryMenu();
+
+    const gameTab = document.querySelector('[data-group-id="game"]');
+    expect(gameTab).toBeTruthy();
+    fireEvent.click(gameTab);
+
+    const monopolyCard = document.querySelector('[data-module-id="petMonopoly"]');
+    expect(monopolyCard).toBeTruthy();
+    fireEvent.click(monopolyCard);
+
+    expect(await screen.findByTestId('pet-monopoly-setup', {}, { timeout: 5000 })).toHaveTextContent(/開局設定/);
+    expect(screen.queryByTestId('pet-monopoly-board')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('pet-monopoly-setup-cpu-1'));
+    fireEvent.click(screen.getByTestId('pet-monopoly-setup-stake-100'));
+    fireEvent.click(screen.getByTestId('pet-monopoly-start'));
+
+    expect(await screen.findByTestId('pet-monopoly-board')).toBeInTheDocument();
+    expect(screen.getByTestId('pet-monopoly-game-hud')).toHaveTextContent(/投入 100/);
+    expect(screen.getByTestId('pet-monopoly-game-hud')).toHaveTextContent(/玩家 100/);
+    expect(screen.getByTestId('pet-monopoly-game-hud')).toHaveTextContent(/電腦 1.*100/);
+    expect(screen.queryByTestId('pet-monopoly-roster')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('pet-monopoly-hero')).not.toBeInTheDocument();
+  }, 15000);
+
+  it('does not pay coins or common cards for every normal pet monopoly word answer', async () => {
+    const restoreDice = mockPetMonopolyDice([1]);
+    localStorage.setItem('eg_coins', JSON.stringify(120));
+
+    await openElementaryPetMonopoly({ cpuCount: 1, stake: 100 });
+
+    fireEvent.click(screen.getByTestId('pet-monopoly-roll'));
+    fireEvent.click(await screen.findByTestId('pet-monopoly-choice-correct'));
+
+    expect(await screen.findByTestId('pet-monopoly-feedback')).toHaveTextContent(/答對/);
+    expect(screen.getByTestId('pet-monopoly-feedback')).not.toHaveTextContent(/\+\d+ 金幣/);
+    expect(screen.getByTestId('pet-monopoly-cards')).toHaveTextContent(/x0/);
+    restoreDice();
+  }, 15000);
+
+  it('shows a burst effect when pet monopoly cards are gained and used', async () => {
+    const restoreDice = mockPetMonopolyDice([3, 1, 1, 1, 1]);
+    localStorage.setItem('eg_coins', JSON.stringify(120));
+
+    await openElementaryPetMonopoly({ cpuCount: 1, stake: 100 });
+
+    fireEvent.click(screen.getByTestId('pet-monopoly-roll'));
+    fireEvent.click(await screen.findByTestId('pet-monopoly-choice-correct'));
+
+    expect(await screen.findByTestId('pet-monopoly-card-burst')).toHaveAttribute('data-effect', 'gain');
+    await waitFor(() => expect(screen.getByTestId('pet-monopoly-roll')).not.toBeDisabled(), { timeout: 5000 });
+
+    fireEvent.click(screen.getByTestId('pet-monopoly-card-boost'));
+
+    expect(await screen.findByTestId('pet-monopoly-card-burst')).toHaveAttribute('data-effect', 'use');
+    restoreDice();
+  }, 15000);
+
   it('varies nearby pet monopoly word challenges instead of repeating the same word prompt', async () => {
     const restoreDice = mockPetMonopolyDice([1, 2, 4]);
     localStorage.setItem('eg_coins', JSON.stringify(120));
 
     await openElementaryPetMonopoly();
 
-    fireEvent.click(screen.getByRole('button', { name: '1' }));
     fireEvent.click(screen.getByTestId('pet-monopoly-roll'));
 
     const firstWord = await screen.findByTestId('pet-monopoly-question-word');
@@ -1088,14 +1161,13 @@ describe('EnglishGo app smoke flow', () => {
   }, 15000);
 
   it('uses a boost card to add two steps to the next pet monopoly roll', async () => {
-    const restoreDice = mockPetMonopolyDice([1, 1, 1, 1, 1]);
+    const restoreDice = mockPetMonopolyDice([3, 1, 1, 1, 1]);
     localStorage.setItem('eg_coins', JSON.stringify(120));
 
     await openElementaryPetMonopoly();
 
     fireEvent.click(screen.getByTestId('pet-monopoly-roll'));
     fireEvent.click(await screen.findByTestId('pet-monopoly-choice-correct'));
-    fireEvent.click(await screen.findByTestId('pet-monopoly-buy'));
     await waitFor(() => expect(screen.getByTestId('pet-monopoly-roll')).not.toBeDisabled(), { timeout: 5000 });
 
     fireEvent.click(screen.getByTestId('pet-monopoly-card-boost'));
@@ -1144,7 +1216,7 @@ describe('EnglishGo app smoke flow', () => {
     restoreDice();
   }, 15000);
 
-  it('uses a portal event to move onto a buyable pet monopoly tile', async () => {
+  it('uses a chance event to award a pet monopoly tool', async () => {
     const restoreDice = mockPetMonopolyDice([3]);
     localStorage.setItem('eg_coins', JSON.stringify(120));
 
@@ -1153,8 +1225,8 @@ describe('EnglishGo app smoke flow', () => {
     fireEvent.click(screen.getByTestId('pet-monopoly-roll'));
     fireEvent.click(await screen.findByTestId('pet-monopoly-choice-correct'));
 
-    expect(await screen.findByTestId('pet-monopoly-event')).toHaveTextContent(/傳送門|前往/);
-    expect(await screen.findByTestId('pet-monopoly-deal')).toHaveTextContent(/收購機會/);
+    expect(await screen.findByTestId('pet-monopoly-event')).toHaveTextContent(/機會|命運|加速補給/);
+    expect(await screen.findByTestId('pet-monopoly-card-burst')).toHaveAttribute('data-effect', 'gain');
     restoreDice();
   }, 15000);
 
@@ -1162,9 +1234,7 @@ describe('EnglishGo app smoke flow', () => {
     const restoreDice = mockPetMonopolyDice([1, 2]);
     localStorage.setItem('eg_coins', JSON.stringify(120));
 
-    await openElementaryPetMonopoly();
-
-    fireEvent.click(screen.getByRole('button', { name: '1' }));
+    await openElementaryPetMonopoly({ cpuCount: 1, stake: 100 });
     fireEvent.click(screen.getByTestId('pet-monopoly-roll'));
     fireEvent.click(await screen.findByTestId('pet-monopoly-choice-correct'));
     fireEvent.click(await screen.findByTestId('pet-monopoly-buy'));
