@@ -1090,6 +1090,7 @@ describe('EnglishGo app smoke flow', () => {
     const petMonopolyStyles = Array.from(document.querySelectorAll('style'))
       .map(style => style.textContent || '')
       .join('\n');
+    expect(petMonopolyStyles).toMatch(/\.pm-overlay{[^}]*bottom:42px/);
     expect(petMonopolyStyles).toMatch(/\.pm-overlay\[data-state="idle"\][^{]*{[^}]*max-height:none[^}]*overflow:visible/);
 
     fireEvent.click(screen.getByTestId('pet-monopoly-roll'));
