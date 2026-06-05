@@ -1,6 +1,9 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import App from './App.jsx';
+import App, {
+  getPetMonopolyCpuBuyDecision,
+  settlePetMonopolyBankruptComputers,
+} from './App.jsx';
 
 async function openElementaryMenu() {
   localStorage.setItem(
@@ -1111,12 +1114,35 @@ describe('EnglishGo app smoke flow', () => {
     fireEvent.click(await findPetMonopolyCorrectChoice());
     fireEvent.click(await screen.findByTestId('pet-monopoly-buy'));
 
+    expect(screen.getByTestId('pet-monopoly-player-cash')).toHaveTextContent('70');
     expect(await screen.findByTestId('pet-monopoly-tile-pet-school')).toHaveAttribute('data-owner', 'player');
     expect(screen.getByTestId('pet-monopoly-tile-pet-school')).toHaveAttribute('data-owner-level', '1');
     expect(screen.getByTestId('pet-monopoly-screen-effect')).toHaveAttribute('data-effect', 'buy');
 
     expect(await findPetMonopolyRent()).toHaveAttribute('data-effect', 'rent-in');
     expect(screen.getByTestId('pet-monopoly-screen-effect')).toHaveAttribute('data-effect', 'rent-in');
+    restoreDice();
+  }, 15000);
+
+  it('pauses pet monopoly rent moments with a confirmation dialog', async () => {
+    const restoreDice = mockPetMonopolyDice([4, 1, 1, 1]);
+    localStorage.setItem('eg_coins', JSON.stringify(120));
+
+    await openElementaryPetMonopoly({ cpuCount: 1, stake: 100 });
+
+    fireEvent.click(screen.getByTestId('pet-monopoly-roll'));
+    fireEvent.click(await findPetMonopolyCorrectChoice());
+    fireEvent.click(await screen.findByTestId('pet-monopoly-buy'));
+
+    const rentDialog = await screen.findByTestId('pet-monopoly-rent-dialog', {}, { timeout: 7000 });
+    expect(rentDialog).toHaveAttribute('data-flow', 'paused');
+    expect(rentDialog).toHaveTextContent(/8/);
+    expect(screen.getByTestId('pet-monopoly-roll')).toBeDisabled();
+
+    fireEvent.click(screen.getByTestId('pet-monopoly-rent-confirm'));
+
+    await waitFor(() => expect(screen.getByTestId('pet-monopoly-roll')).not.toBeDisabled(), { timeout: 5000 });
+    expect(screen.queryByTestId('pet-monopoly-rent-dialog')).not.toBeInTheDocument();
     restoreDice();
   }, 15000);
 
@@ -1302,6 +1328,34 @@ describe('EnglishGo app smoke flow', () => {
     expect(screen.queryByTestId('pet-monopoly-cpu-owner')).not.toBeInTheDocument();
     restoreDice();
   }, 15000);
+
+  it('retires bankrupt pet monopoly computers and releases their properties', () => {
+    const settled = settlePetMonopolyBankruptComputers(
+      [
+        { id: 'cpu1', coins: 0, active: true, owned: ['pet-school', 'grammar-gate'] },
+        { id: 'cpu2', coins: 42, active: true, owned: ['word-harbor'] },
+      ],
+      2,
+    );
+
+    expect(settled.eliminated).toHaveLength(1);
+    expect(settled.next[0]).toMatchObject({ id: 'cpu1', coins: 0, active: false, owned: [] });
+    expect(settled.next[1]).toMatchObject({ id: 'cpu2', coins: 42, active: true, owned: ['word-harbor'] });
+  });
+
+  it('prevents pet monopoly computers from buying property when cash is below 50', () => {
+    const decision = getPetMonopolyCpuBuyDecision({
+      cpu: { id: 'cpu1', active: true, coins: 49, owned: [] },
+      tile: { id: 'pet-school', type: 'training' },
+      cost: 30,
+      availableCoins: 49,
+      playerPosition: 0,
+      tileIndex: 4,
+      total: 24,
+    });
+
+    expect(decision.buy).toBe(false);
+  });
 
   it('shows pet care priorities and next-step hints without competition features', async () => {
     const today = new Date().toDateString();

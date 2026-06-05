@@ -4022,6 +4022,7 @@ const PET_MONOPOLY_CARDS=[
 ];
 const PET_MONOPOLY_CARD_BY_ID=PET_MONOPOLY_CARDS.reduce((map,card)=>({...map,[card.id]:card}),{});
 const PET_MONOPOLY_STAKES=[100,300,500];
+const PET_MONOPOLY_GRAND_PRIZE={coins:80,xp:30,title:"勝利大禮包"};
 const PET_MONOPOLY_DICE_ROLL_MS=520;
 const PET_MONOPOLY_PLAYER_STEP_MS=190;
 const PET_MONOPOLY_CPU_STEP_MS=155;
@@ -4193,6 +4194,17 @@ function getPetMonopolyPropertyValue(tile,property){
 function getPetMonopolyCpuOwner(computers,tileId,limit=3,excludeId=""){
   return(computers||[]).slice(0,limit).find(cpu=>cpu?.id!==excludeId&&(cpu?.owned||[]).includes(tileId))||null;
 }
+export function settlePetMonopolyBankruptComputers(computers=[],limit=3){
+  const eliminated=[];
+  const next=(computers||[]).map((cpu,i)=>{
+    if(i<limit&&cpu?.active!==false&&(Number(cpu.coins)||0)<=0){
+      eliminated.push(cpu);
+      return{...cpu,coins:0,active:false,owned:[]};
+    }
+    return cpu;
+  });
+  return{next,eliminated};
+}
 function getPetMonopolyDistance(from,to,total){
   return((Number(to)||0)-(Number(from)||0)+total)%total;
 }
@@ -4207,8 +4219,8 @@ function getNextPetMonopolyOpenTile(tiles,fromIndex,owned={},computers=[],comput
   }
   return null;
 }
-function getPetMonopolyCpuBuyDecision({cpu,tile,cost,availableCoins,playerPosition,tileIndex,total}){
-  if(!cpu||!isPetMonopolyOwnable(tile)||!cost||availableCoins<cost)return{buy:false,reason:""};
+export function getPetMonopolyCpuBuyDecision({cpu,tile,cost,availableCoins,playerPosition,tileIndex,total}){
+  if(!cpu||cpu.active===false||!isPetMonopolyOwnable(tile)||!cost||availableCoins<cost||availableCoins<50)return{buy:false,reason:""};
   const priority={grammar:3,training:3,shop:2,word:1}[tile.type]||1;
   const afterBuy=availableCoins-cost;
   const distance=getPetMonopolyDistance(playerPosition,tileIndex,total);
@@ -4329,7 +4341,10 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
   const[feedback,setFeedback]=useState("你的回合");
   const[eventFlash,setEventFlash]=useState(null);
   const[rentFlash,setRentFlash]=useState(null);
+  const[rentDialog,setRentDialog]=useState(null);
   const[screenEffect,setScreenEffect]=useState(null);
+  const[grandPrize,setGrandPrize]=useState(null);
+  const[winner,setWinner]=useState(null);
   const[cardHand,setCardHand]=useState({boost:0,shield:0,rent:0});
   const[cardEffects,setCardEffects]=useState({boost:false,shield:false,rent:false});
   const[cardFlash,setCardFlash]=useState(null);
@@ -4341,13 +4356,15 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
   const[cpuBuyPause,setCpuBuyPause]=useState(0);
   const[upgradeDiscount,setUpgradeDiscount]=useState(0);
   const[recentQuestionWords,setRecentQuestionWords]=useState([]);
-  const[computers,setComputers]=useState(()=>PET_MONOPOLY_COMPUTERS.map((cpu,i)=>({...cpu,position:(i+3)%PET_MONOPOLY_TILES.length,coins:100,owned:[]})));
+  const[computers,setComputers]=useState(()=>PET_MONOPOLY_COMPUTERS.map((cpu,i)=>({...cpu,position:(i+3)%PET_MONOPOLY_TILES.length,coins:100,owned:[],active:true})));
   const computersRef=useRef(computers);
   const ownedRef=useRef(owned);
   const cardEffectsRef=useRef(cardEffects);
   const cpuBuyPauseRef=useRef(cpuBuyPause);
   const recentQuestionWordsRef=useRef(recentQuestionWords);
   const moveTimersRef=useRef([]);
+  const rentContinuationRef=useRef(null);
+  const grandPrizeClaimedRef=useRef(false);
   const selectedPet=pets?.[petIndex]||null;
   const selectedPetDef=selectedPet?getAdventurePetDef(selectedPet):null;
   useEffect(()=>{
@@ -4400,7 +4417,7 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
     setCoins?.(v=>Math.max(0,(Number(v)||0)-buyIn));
     setGameCoins(buyIn);
     setComputerCount(setupComputerCount);
-    const nextComputers=PET_MONOPOLY_COMPUTERS.map((cpu,i)=>({...cpu,position:(i+3)%PET_MONOPOLY_TILES.length,coins:buyIn,owned:[]}));
+    const nextComputers=PET_MONOPOLY_COMPUTERS.map((cpu,i)=>({...cpu,position:(i+3)%PET_MONOPOLY_TILES.length,coins:buyIn,owned:[],active:true}));
     computersRef.current=nextComputers;
     setComputers(nextComputers);
     setPosition(0);
@@ -4414,7 +4431,12 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
     setFeedback("你的回合");
     setEventFlash(null);
     setRentFlash(null);
+    setRentDialog(null);
+    rentContinuationRef.current=null;
     setScreenEffect(null);
+    setGrandPrize(null);
+    setWinner(null);
+    grandPrizeClaimedRef.current=false;
     setCardHand({boost:0,shield:0,rent:0});
     setCardEffects({boost:false,shield:false,rent:false});
     cardEffectsRef.current={boost:false,shield:false,rent:false};
@@ -4456,12 +4478,41 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
   };
   const useCard=cardId=>{
     const card=PET_MONOPOLY_CARD_BY_ID[cardId];
-    if(!card||moving||pending||cardUsedTurn===turn||(Number(cardHand[cardId])||0)<=0||cardEffects[cardId])return;
+    if(!card||moving||pending||rentDialog||grandPrize||cardUsedTurn===turn||(Number(cardHand[cardId])||0)<=0||cardEffects[cardId])return;
     setCardHand(prev=>({...prev,[cardId]:Math.max(0,(Number(prev[cardId])||0)-1)}));
     updateCardEffects(prev=>({...prev,[cardId]:true}));
     setCardUsedTurn(turn);
     setCardFlash({title:"\u5df2\u4f7f\u7528",text:`${card.name} ${card.desc}`,color:card.color,icon:card.icon,effect:"use"});
     showScreenEffect({kind:"card",effect:"use",source:"card",title:"使用道具",value:card.name,icon:card.icon,color:card.color});
+  };
+  const liveComputers=(list=computersRef.current)=>list.slice(0,computerCount).filter(cpu=>cpu?.active!==false);
+  const retireBankruptComputers=list=>settlePetMonopolyBankruptComputers(list,computerCount);
+  const claimGrandPrize=()=>{
+    if(grandPrizeClaimedRef.current)return;
+    grandPrizeClaimedRef.current=true;
+    setWinner("player");
+    setGrandPrize({...PET_MONOPOLY_GRAND_PRIZE,id:`grand-${Date.now()}`});
+    setCoins?.(v=>Math.max(0,(Number(v)||0)+PET_MONOPOLY_GRAND_PRIZE.coins));
+    onXp?.(PET_MONOPOLY_GRAND_PRIZE.xp);
+    showScreenEffect({kind:"grand-prize",title:PET_MONOPOLY_GRAND_PRIZE.title,value:`+${PET_MONOPOLY_GRAND_PRIZE.coins}`,icon:"🎁",color:"#D97706"});
+  };
+  const showRentMoment=(event,continuation)=>{
+    rentContinuationRef.current=continuation||null;
+    setRentDialog({
+      id:`rent-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      ...event,
+    });
+  };
+  const confirmRentMoment=()=>{
+    const dialog=rentDialog;
+    const continuation=rentContinuationRef.current;
+    rentContinuationRef.current=null;
+    setRentDialog(null);
+    if(dialog?.winner==="player"){
+      claimGrandPrize();
+      return;
+    }
+    continuation?.();
   };
   const currentTile=tiles[position];
   const currentProperty=owned[currentTile.id];
@@ -4472,7 +4523,7 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
   const currentUpgradeCost=currentProperty?Math.max(5,currentUpgradeBaseCost-upgradeDiscount):0;
   const offerTile=offer?tiles.find(t=>t.id===offer.tileId):null;
   const propertyCount=Object.keys(owned).length;
-  const activeComputers=computers.slice(0,computerCount);
+  const activeComputers=liveComputers(computers);
   const playerAssetValue=Object.entries(owned).reduce((sum,[tileId,property])=>sum+getPetMonopolyPropertyValue(tiles.find(t=>t.id===tileId),property),0);
   const rankings=[
     {id:"player",name:"玩家",emoji:"🐾",color,score:(Number(gameCoins)||0)+playerAssetValue,owned:propertyCount},
@@ -4496,7 +4547,7 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
         return;
       }
       const cpu=computersRef.current[index];
-      if(!cpu)return playOne(index+1);
+      if(!cpu||cpu.active===false)return playOne(index+1);
       const rolled=rollPetMonopolyDice();
       const nextPos=(cpu.position+rolled)%tiles.length;
       const tile=tiles[nextPos];
@@ -4555,7 +4606,7 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
               showScreenEffect({kind:"rent-cpu",title:"過路費",value:rentPaid,icon:"$",color:otherCpuOwner.color});
             }
           }
-          updateComputers(prev=>prev.map(item=>{
+          const updatedComputers=computersRef.current.map(item=>{
             if(item.id===current.id)return{
               ...item,
               position:nextPos,
@@ -4564,11 +4615,35 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
             };
             if(otherCpuOwner&&item.id===otherCpuOwner.id&&rentPaid)return{...item,coins:item.coins+rentPaid};
             return item;
-          }));
+          });
+          const settled=retireBankruptComputers(updatedComputers);
+          updateComputers(settled.next);
           if(canBuy)showScreenEffect({kind:"buy",title:cpu.name,value:tile.name,icon:tile.icon,color:current.color});
           setMoving({actor:"cpu",name:cpu.name,dice:rolled,to:tile.name,step:path.length,total:path.length,result:canBuy?"收購":tile.type==="event"?"事件":"停留",phase:"done"});
-          const nextTimer=setTimeout(()=>playOne(index+1),PET_MONOPOLY_CPU_GAP_MS);
-          moveTimersRef.current.push(nextTimer);
+          const playerWon=liveComputers(settled.next).length===0;
+          const continueCpuRound=()=>{
+            if(playerWon){
+              claimGrandPrize();
+              return;
+            }
+            const nextTimer=setTimeout(()=>playOne(index+1),PET_MONOPOLY_CPU_GAP_MS);
+            moveTimersRef.current.push(nextTimer);
+          };
+          if(rentPaid){
+            const payee=playerProperty?"玩家":otherCpuOwner?.name||"電腦";
+            showRentMoment({
+              kind:playerProperty?"rent-in":"rent-cpu",
+              payer:current.name,
+              payee,
+              amount:rentPaid,
+              tileName:tile.name,
+              color:playerProperty?color:otherCpuOwner?.color||color,
+              winner:playerWon?"player":"",
+              joke:playerProperty?"電腦摸摸口袋：這堂英文課怎麼還要付學費？":"電腦互收租金，裁判先喝口水。",
+            },continueCpuRound);
+          }else{
+            continueCpuRound();
+          }
         },PET_MONOPOLY_DICE_ROLL_MS+PET_MONOPOLY_CPU_STEP_MS*(step+1));
         moveTimersRef.current.push(timer);
       });
@@ -4576,12 +4651,18 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
     playOne(0);
   };
   const queueComputerRound=(delay=300)=>{
-    setMoving({actor:"cpu",name:activeComputers[0]?.name||"電腦 1",dice:"",to:"",step:0,total:0,phase:"waiting"});
+    if(winner||grandPrize)return;
+    const nextCpu=liveComputers()[0];
+    if(!nextCpu){
+      claimGrandPrize();
+      return;
+    }
+    setMoving({actor:"cpu",name:nextCpu.name||"電腦 1",dice:"",to:"",step:0,total:0,phase:"waiting"});
     const timer=setTimeout(playComputerRound,delay);
     moveTimersRef.current.push(timer);
   };
   const roll=()=>{
-    if(pending||offer||moving)return;
+    if(pending||offer||moving||rentDialog||grandPrize||winner)return;
     const baseRoll=rollPetMonopolyDice();
     const boostActive=!!cardEffectsRef.current.boost;
     const rolled=baseRoll+(boostActive?2:0);
@@ -4653,6 +4734,16 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
       const rentBase=cpuOwner?getPetMonopolyRent(pending.tile,{level:1}):0;
       const rentDue=shieldActive?Math.ceil(rentBase/2):rentBase;
       const rentPaid=cpuOwner?Math.min(rentDue,Math.max(0,(Number(gameCoins)||0)+totalCoins)):0;
+      const rentMoment=cpuOwner&&rentPaid?{
+        kind:"rent-out",
+        payer:"玩家",
+        payee:cpuOwner.name,
+        amount:rentPaid,
+        tileName:pending.tile.name,
+        color:cpuOwner.color,
+        joke:shieldActive?"護盾卡把帳單砍半，電腦只好小聲嘆氣。":"電腦拿出收據：這格地今天有點貴喔。",
+      }:null;
+      const continueAfterRent=fn=>rentMoment?showRentMoment(rentMoment,fn):fn();
       setScore(s=>({correct:s.correct+1,wrong:s.wrong,laps:s.laps+(pending.lapBonus?1:0),boss:s.boss+(pending.tile.type==="boss"?1:0)}));
       setStreak(nextStreak);
       onXp?.(totalXp);
@@ -4706,10 +4797,10 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
           if(isPetMonopolyOwnable(targetTile)&&!ownedRef.current[targetTile.id]&&!targetCpuOwner){
             setOffer({tileId:targetTile.id,cost:getPetMonopolyTileCost(targetTile)});
           }else{
-            queueComputerRound();
+            continueAfterRent(()=>queueComputerRound());
           }
         }else{
-          queueComputerRound();
+          continueAfterRent(()=>queueComputerRound());
         }
       }else{
         if(property){
@@ -4720,7 +4811,7 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
         if(!property&&!cpuOwner&&isPetMonopolyOwnable(pending.tile)){
           setOffer({tileId:pending.tile.id,cost:getPetMonopolyTileCost(pending.tile)});
         }else{
-          queueComputerRound();
+          continueAfterRent(()=>queueComputerRound());
         }
       }
     }else{
@@ -4730,6 +4821,15 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
       const rentBase=cpuOwner?getPetMonopolyRent(pending.tile,{level:1}):0;
       const rentDue=shieldActive?Math.ceil(rentBase/2):rentBase;
       const rentPaid=cpuOwner?Math.min(rentDue,Math.max(0,(Number(gameCoins)||0)-penalty)):0;
+      const rentMoment=cpuOwner&&rentPaid?{
+        kind:"rent-out",
+        payer:"玩家",
+        payee:cpuOwner.name,
+        amount:rentPaid,
+        tileName:pending.tile.name,
+        color:cpuOwner.color,
+        joke:"答錯已經很痛，電腦還補一張租金帳單。",
+      }:null;
       if(penalty||rentPaid)updateGameCoins(v=>v-penalty-rentPaid);
       if(cpuOwner&&rentPaid){
         updateComputers(prev=>prev.map(cpu=>cpu.id===cpuOwner.id?{...cpu,coins:cpu.coins+rentPaid}:cpu));
@@ -4748,7 +4848,8 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
       const msg=`失敗 -${penalty} 金幣｜答案：${pending.question.explain}`;
       setFeedback(msg);
       setEventFlash(null);
-      queueComputerRound();
+      if(rentMoment)showRentMoment(rentMoment,()=>queueComputerRound());
+      else queueComputerRound();
     }
     setTurn(t=>t+1);
     setPending(null);
@@ -4917,6 +5018,7 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
       .pm-screen-effect.is-dice .pm-effect-icon{animation:pmDiceTumble .68s ease-in-out both}
       .pm-screen-effect.is-rent-in .pm-effect-core,.pm-screen-effect.is-buy .pm-effect-core,.pm-screen-effect.is-upgrade .pm-effect-core{animation-name:pmEffectCoreWin}
       .pm-screen-effect.is-rent-out .pm-effect-core{animation-name:pmEffectCoreHit}
+      .pm-screen-effect.is-grand-prize .pm-effect-core{animation-name:pmGrandPrizePop}
       .pm-impact-toast{position:fixed;left:50%;top:84px;z-index:180;transform:translateX(-50%);pointer-events:none;display:grid;grid-template-columns:auto auto minmax(0,1fr);align-items:center;gap:8px;max-width:min(520px,calc(100vw - 28px));border:1px solid color-mix(in srgb,var(--impact-color) 38%,#fff);border-radius:999px;background:rgba(255,255,255,.82);backdrop-filter:blur(14px);box-shadow:0 20px 54px color-mix(in srgb,var(--impact-color) 20%,transparent);padding:8px 12px;animation:pmImpactToast 1.7s ease-out both}
       .pm-impact-toast b{color:var(--impact-color);font-size:13px}
       .pm-impact-toast span:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--pm-text);font-size:12px;font-weight:1000}
@@ -4930,8 +5032,21 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
       @keyframes pmEffectCore{0%{transform:scale(.72) rotate(-4deg);opacity:0}60%{transform:scale(1.08) rotate(1deg);opacity:1}100%{transform:scale(1) rotate(0)}}
       @keyframes pmEffectCoreWin{0%{transform:translateY(22px) scale(.7);opacity:0}55%{transform:translateY(-10px) scale(1.1);opacity:1}100%{transform:translateY(0) scale(1)}}
       @keyframes pmEffectCoreHit{0%{transform:translateX(-18px) scale(.76);opacity:0}32%{transform:translateX(14px) scale(1.06);opacity:1}54%{transform:translateX(-8px) scale(1)}100%{transform:translateX(0) scale(1)}}
+      @keyframes pmGrandPrizePop{0%{transform:scale(.45) rotate(-10deg);opacity:0}45%{transform:scale(1.18) rotate(4deg);opacity:1}70%{transform:scale(.96) rotate(-2deg)}100%{transform:scale(1) rotate(0)}}
       @keyframes pmDiceTumble{0%{transform:rotate(-24deg) scale(.72)}35%{transform:rotate(18deg) scale(1.12)}70%{transform:rotate(-10deg) scale(1.02)}100%{transform:rotate(0) scale(1)}}
       @keyframes pmImpactToast{0%{opacity:0;transform:translate(-50%,-16px) scale(.92)}18%{opacity:1;transform:translate(-50%,0) scale(1.03)}78%{opacity:1;transform:translate(-50%,0) scale(1)}100%{opacity:0;transform:translate(-50%,-12px) scale(.98)}}
+      .pm-rent-dialog,.pm-prize-dialog{position:fixed;inset:0;z-index:210;display:grid;place-items:center;padding:18px;background:radial-gradient(circle at 50% 36%,color-mix(in srgb,var(--dialog-color) 18%,transparent),transparent 34%),rgba(10,20,18,.22);backdrop-filter:blur(5px);animation:pmDialogFade .18s ease-out both}
+      .pm-rent-card,.pm-prize-card{position:relative;overflow:hidden;width:min(440px,calc(100vw - 30px));border:1px solid color-mix(in srgb,var(--dialog-color) 40%,#fff);border-radius:24px;background:linear-gradient(145deg,#fff,color-mix(in srgb,var(--dialog-color) 8%,#fff));box-shadow:0 28px 90px color-mix(in srgb,var(--dialog-color) 24%,transparent);padding:18px;display:grid;gap:12px;text-align:center}
+      .pm-rent-card:before,.pm-prize-card:before{content:"";position:absolute;inset:-40% -20% auto;height:90%;background:linear-gradient(120deg,transparent,rgba(255,255,255,.72),transparent);transform:rotate(10deg);animation:pmPrizeSweep 1.4s ease-out both;pointer-events:none}
+      .pm-rent-icon,.pm-prize-icon{width:72px;height:72px;border-radius:26px;margin:0 auto;display:grid;place-items:center;background:var(--dialog-color);color:#fff;font-size:38px;font-weight:1000;box-shadow:0 18px 42px color-mix(in srgb,var(--dialog-color) 28%,transparent);animation:pmDialogBounce .48s ease-out both}
+      .pm-rent-title,.pm-prize-title{font-size:22px;font-weight:1000;color:var(--dialog-color);line-height:1.18}
+      .pm-rent-amount,.pm-prize-reward{font-size:34px;font-weight:1000;color:var(--dialog-color);line-height:1}
+      .pm-rent-talk{border:1px dashed color-mix(in srgb,var(--dialog-color) 35%,var(--pm-border));border-radius:16px;background:rgba(255,255,255,.76);padding:10px 12px;font-size:13px;font-weight:900;color:var(--pm-text);line-height:1.55}
+      .pm-dialog-ok{border:0;border-radius:16px;background:var(--dialog-color);color:#fff;padding:12px 16px;font-size:15px;font-weight:1000;cursor:pointer;box-shadow:0 14px 28px color-mix(in srgb,var(--dialog-color) 22%,transparent)}
+      .pm-cpu-status-list{display:none}
+      @keyframes pmDialogFade{from{opacity:0}to{opacity:1}}
+      @keyframes pmDialogBounce{0%{transform:translateY(16px) scale(.7);opacity:0}70%{transform:translateY(-4px) scale(1.08);opacity:1}100%{transform:translateY(0) scale(1)}}
+      @keyframes pmPrizeSweep{0%{transform:translateX(-130%) rotate(10deg)}100%{transform:translateX(140%) rotate(10deg)}}
       .pm-action-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
       .pm-action{border:0;border-radius:12px;background:var(--pm-accent);color:#fff;padding:10px 12px;font-size:12px;font-weight:1000;cursor:pointer}
       .pm-action.secondary{background:var(--pm-surface);color:var(--pm-text);border:1px solid var(--pm-border)}
@@ -4973,10 +5088,13 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
     <>
     <section className="pm-game-hud" data-testid="pet-monopoly-game-hud">
       <div className="pm-hud-pill" style={{"--hud-color":"#D97706"}}>投入 <b>{stake}</b></div>
-      <div className="pm-hud-pill" style={{"--hud-color":color}}>玩家 <b>{gameCoins}</b></div>
-      <div className="pm-hud-pill" style={{"--hud-color":"#2563EB"}}>電腦 {computerCount} <b>{activeComputers.map(cpu=>cpu.coins).join(" / ")}</b></div>
+      <div className="pm-hud-pill" style={{"--hud-color":color}}>玩家 <b data-testid="pet-monopoly-player-cash">{gameCoins}</b></div>
+      <div className="pm-hud-pill" style={{"--hud-color":"#2563EB"}}>電腦 {activeComputers.length} <b>{activeComputers.map(cpu=>cpu.coins).join(" / ")||"全數退場"}</b></div>
       <div className="pm-hud-pill" data-testid="pet-monopoly-event-deck-size" data-event-count={PET_MONOPOLY_EVENT_DECK.length} style={{"--hud-color":"#D97706"}}>機會/命運 <b>{PET_MONOPOLY_EVENT_DECK.length}</b></div>
       <div className="pm-hud-pill" style={{"--hud-color":"#DB2777"}}>{goalText} <b>{propertyCount} 地產</b></div>
+      <div className="pm-cpu-status-list" aria-hidden="true">
+        {computers.slice(0,computerCount).map(cpu=><span key={cpu.id} data-testid={`pet-monopoly-cpu-status-${cpu.id}`} data-active={String(cpu.active!==false)}>{cpu.coins}</span>)}
+      </div>
     </section>
     {screenEffect&&(
       <div key={screenEffect.id} className={`pm-screen-effect is-${screenEffect.kind}`} data-testid="pet-monopoly-screen-effect" data-effect={screenEffect.kind} style={{"--effect-color":screenEffect.color||color}}>
@@ -4995,6 +5113,29 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
         <span className="pm-impact-icon">{rentFlash.icon||"$"}</span>
         <b>{rentFlash.title}</b>
         <span>{rentFlash.text}</span>
+      </div>
+    )}
+    {rentDialog&&(
+      <div className="pm-rent-dialog" data-testid="pet-monopoly-rent-dialog" data-flow="paused" data-winner={rentDialog.winner||""} style={{"--dialog-color":rentDialog.color||color}}>
+        <div className="pm-rent-card">
+          <div className="pm-rent-icon">$</div>
+          <div className="pm-rent-title">{rentDialog.kind==="rent-in"?`${rentDialog.payee}向${rentDialog.payer}收取租金`:`${rentDialog.payer}被${rentDialog.payee}收取租金`}</div>
+          <div className="pm-rent-amount">{rentDialog.kind==="rent-in"?"+":"-"}{rentDialog.amount}</div>
+          <div style={{fontSize:13,fontWeight:900,color:"var(--pm-muted)"}}>{rentDialog.tileName}</div>
+          <div className="pm-rent-talk">{rentDialog.joke}</div>
+          <button type="button" className="pm-dialog-ok" data-testid="pet-monopoly-rent-confirm" onClick={confirmRentMoment}>確定</button>
+        </div>
+      </div>
+    )}
+    {grandPrize&&(
+      <div className="pm-prize-dialog" data-testid="pet-monopoly-grand-prize" style={{"--dialog-color":"#D97706"}}>
+        <div className="pm-prize-card">
+          <div className="pm-prize-icon">🎁</div>
+          <div className="pm-prize-title">勝利大禮包</div>
+          <div className="pm-prize-reward">+{grandPrize.coins}</div>
+          <div className="pm-rent-talk">電腦玩家全數退場，寵物把彩帶拉到整張地圖都是。</div>
+          <button type="button" className="pm-dialog-ok" onClick={()=>setGrandPrize(null)}>收下</button>
+        </div>
       </div>
     )}
     {eventFlash&&(
@@ -5057,7 +5198,7 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
               {PET_MONOPOLY_CARDS.map(card=>{
                 const count=Number(cardHand[card.id])||0;
                 const active=!!cardEffects[card.id];
-                const disabled=!!moving||!!pending||cardUsedTurn===turn||count<=0||active;
+                const disabled=!!moving||!!pending||!!rentDialog||!!grandPrize||!!winner||cardUsedTurn===turn||count<=0||active;
                 return(
                   <button key={card.id} type="button" className={`pm-card-button ${active?"is-active":""}`} data-testid={`pet-monopoly-card-${card.id}`} style={{"--card-color":card.color}} disabled={disabled} onClick={()=>useCard(card.id)} aria-label={`${card.name} ${card.desc}`}>
                     <span className="pm-card-icon">{card.icon}</span>
@@ -5123,7 +5264,7 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
                 {canUpgradeCurrent&&<button type="button" className="pm-action" disabled={(Number(gameCoins)||0)<currentUpgradeCost} onClick={upgradeCurrentProperty}>升級 {currentUpgradeCost} 金幣</button>}
                 {!currentProperty&&isPetMonopolyOwnable(currentTile)&&<div className="pm-deal-text">答題後可收購</div>}
                 <div>
-                  <button className="pm-dice" data-testid="pet-monopoly-roll" disabled={!!moving||!!pending||!!offer} onClick={roll} aria-label="擲骰">{dice||"🎲"}</button>
+                  <button className="pm-dice" data-testid="pet-monopoly-roll" disabled={!!moving||!!pending||!!offer||!!rentDialog||!!grandPrize||!!winner} onClick={roll} aria-label="擲骰">{dice||"🎲"}</button>
                   <div style={{fontSize:13,fontWeight:1000,color:color,marginTop:8}}>{lastMove?lastMove.tile.name:"?"}</div>
                 </div>
               </div>
