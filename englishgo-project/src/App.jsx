@@ -4022,6 +4022,10 @@ const PET_MONOPOLY_CARDS=[
 ];
 const PET_MONOPOLY_CARD_BY_ID=PET_MONOPOLY_CARDS.reduce((map,card)=>({...map,[card.id]:card}),{});
 const PET_MONOPOLY_STAKES=[100,300,500];
+const PET_MONOPOLY_DICE_ROLL_MS=520;
+const PET_MONOPOLY_PLAYER_STEP_MS=190;
+const PET_MONOPOLY_CPU_STEP_MS=155;
+const PET_MONOPOLY_CPU_GAP_MS=420;
 const PET_MONOPOLY_EVENT_DECK=[
   {id:"portal",name:"傳送門",kind:"portal",coins:4,xp:2,petExp:0,bond:0,text:"前往最近無主地"},
   {id:"tailwind",name:"順風前進",kind:"move",steps:2,coins:6,xp:3,petExp:3,bond:1,text:"前進 2 格"},
@@ -4325,6 +4329,7 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
   const[feedback,setFeedback]=useState("你的回合");
   const[eventFlash,setEventFlash]=useState(null);
   const[rentFlash,setRentFlash]=useState(null);
+  const[screenEffect,setScreenEffect]=useState(null);
   const[cardHand,setCardHand]=useState({boost:0,shield:0,rent:0});
   const[cardEffects,setCardEffects]=useState({boost:false,shield:false,rent:false});
   const[cardFlash,setCardFlash]=useState(null);
@@ -4379,6 +4384,15 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
     cardEffectsRef.current=next;
     return next;
   });
+  const showScreenEffect=effect=>{
+    if(!effect)return;
+    setScreenEffect({
+      id:`${effect.kind||"effect"}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      color,
+      icon:"✦",
+      ...effect,
+    });
+  };
   const startGame=()=>{
     const buyIn=Number(stake)||0;
     if(buyIn<=0||walletCoins<buyIn)return;
@@ -4400,6 +4414,7 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
     setFeedback("你的回合");
     setEventFlash(null);
     setRentFlash(null);
+    setScreenEffect(null);
     setCardHand({boost:0,shield:0,rent:0});
     setCardEffects({boost:false,shield:false,rent:false});
     cardEffectsRef.current={boost:false,shield:false,rent:false};
@@ -4437,6 +4452,7 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
     if(!card)return;
     setCardHand(prev=>({...prev,[cardId]:Math.min(3,(Number(prev[cardId])||0)+1)}));
     setCardFlash({title:"\u7372\u5f97\u9053\u5177",text:`${card.name} ${card.desc}`,color:card.color,icon:card.icon,effect:"gain"});
+    showScreenEffect({kind:"card",effect:"gain",source:"card",title:"獲得道具",value:card.name,icon:card.icon,color:card.color});
   };
   const useCard=cardId=>{
     const card=PET_MONOPOLY_CARD_BY_ID[cardId];
@@ -4445,6 +4461,7 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
     updateCardEffects(prev=>({...prev,[cardId]:true}));
     setCardUsedTurn(turn);
     setCardFlash({title:"\u5df2\u4f7f\u7528",text:`${card.name} ${card.desc}`,color:card.color,icon:card.icon,effect:"use"});
+    showScreenEffect({kind:"card",effect:"use",source:"card",title:"使用道具",value:card.name,icon:card.icon,color:card.color});
   };
   const currentTile=tiles[position];
   const currentProperty=owned[currentTile.id];
@@ -4484,12 +4501,13 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
       const nextPos=(cpu.position+rolled)%tiles.length;
       const tile=tiles[nextPos];
       const path=getPetMonopolyMovePath(cpu.position,rolled,tiles.length);
-      setMoving({actor:"cpu",name:cpu.name,dice:rolled,to:tile.name,step:0,total:path.length});
+      setMoving({actor:"cpu",name:cpu.name,dice:rolled,to:tile.name,step:0,total:path.length,phase:"rolling"});
+      showScreenEffect({kind:"dice",title:cpu.name,value:rolled,icon:"🎲",color:cpu.color});
       path.forEach((pos,step)=>{
         const timer=setTimeout(()=>{
           updateComputers(prev=>prev.map((item,i)=>i===index?{...item,position:pos}:item));
           if(step+1<path.length){
-            setMoving({actor:"cpu",name:cpu.name,dice:rolled,to:tile.name,step:step+1,total:path.length});
+            setMoving({actor:"cpu",name:cpu.name,dice:rolled,to:tile.name,step:step+1,total:path.length,phase:"walking"});
             return;
           }
           const current=computersRef.current[index]||cpu;
@@ -4524,13 +4542,18 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
               if(rentBoostActive){
                 updateCardEffects(prev=>({...prev,rent:false}));
                 setCardFlash({title:"\u6536\u79df\u5361",text:`\u6536\u79df x2 +${rentPaid}`,color:PET_MONOPOLY_CARD_BY_ID.rent.color,icon:PET_MONOPOLY_CARD_BY_ID.rent.icon,effect:"use"});
+                showScreenEffect({kind:"card",effect:"use",source:"card",title:"收租卡",value:`+${rentPaid}`,icon:PET_MONOPOLY_CARD_BY_ID.rent.icon,color:PET_MONOPOLY_CARD_BY_ID.rent.color});
               }
-              setRentFlash({title:"\u6536\u79df",text:rentBoostActive?`${current.name} +${rentPaid}\uff5c\u6536\u79df\u5361 x2`:`${current.name} +${rentPaid}`,color});
+              setRentFlash({title:"\u6536\u79df",text:rentBoostActive?`${current.name} +${rentPaid}\uff5c\u6536\u79df\u5361 x2`:`${current.name} +${rentPaid}`,color,effect:"rent-in",amount:rentPaid,icon:"$"});
+              showScreenEffect({kind:"rent-in",title:"收租",value:`+${rentPaid}`,icon:"$",color});
             }
           }else if(otherCpuOwner){
             rentPaid=Math.min(getPetMonopolyRent(tile,{level:1}),nextCoins);
             nextCoins=Math.max(0,nextCoins-rentPaid);
-            if(rentPaid)setRentFlash({title:"過路費",text:`${current.name} → ${otherCpuOwner.name} ${rentPaid}`,color:otherCpuOwner.color});
+            if(rentPaid){
+              setRentFlash({title:"過路費",text:`${current.name} → ${otherCpuOwner.name} ${rentPaid}`,color:otherCpuOwner.color,effect:"rent-cpu",amount:rentPaid,icon:"$"});
+              showScreenEffect({kind:"rent-cpu",title:"過路費",value:rentPaid,icon:"$",color:otherCpuOwner.color});
+            }
           }
           updateComputers(prev=>prev.map(item=>{
             if(item.id===current.id)return{
@@ -4542,14 +4565,20 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
             if(otherCpuOwner&&item.id===otherCpuOwner.id&&rentPaid)return{...item,coins:item.coins+rentPaid};
             return item;
           }));
-          setMoving({actor:"cpu",name:cpu.name,dice:rolled,to:tile.name,step:path.length,total:path.length,result:canBuy?"收購":tile.type==="event"?"事件":"停留"});
-          const nextTimer=setTimeout(()=>playOne(index+1),260);
+          if(canBuy)showScreenEffect({kind:"buy",title:cpu.name,value:tile.name,icon:tile.icon,color:current.color});
+          setMoving({actor:"cpu",name:cpu.name,dice:rolled,to:tile.name,step:path.length,total:path.length,result:canBuy?"收購":tile.type==="event"?"事件":"停留",phase:"done"});
+          const nextTimer=setTimeout(()=>playOne(index+1),PET_MONOPOLY_CPU_GAP_MS);
           moveTimersRef.current.push(nextTimer);
-        },135*(step+1));
+        },PET_MONOPOLY_DICE_ROLL_MS+PET_MONOPOLY_CPU_STEP_MS*(step+1));
         moveTimersRef.current.push(timer);
       });
     };
     playOne(0);
+  };
+  const queueComputerRound=(delay=300)=>{
+    setMoving({actor:"cpu",name:activeComputers[0]?.name||"電腦 1",dice:"",to:"",step:0,total:0,phase:"waiting"});
+    const timer=setTimeout(playComputerRound,delay);
+    moveTimersRef.current.push(timer);
   };
   const roll=()=>{
     if(pending||offer||moving)return;
@@ -4571,21 +4600,22 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
     }else{
       setCardFlash(null);
     }
-    setMoving({actor:"player",dice:rolled,to:tile.name,step:0,total:path.length});
-    setFeedback(`前進 ${rolled} 格`);
+    showScreenEffect({kind:"dice",title:"玩家",value:rolled,icon:"🎲",color});
+    setMoving({actor:"player",dice:rolled,to:tile.name,step:0,total:path.length,phase:"rolling"});
+    setFeedback(`骰出 ${rolled}`);
     clearMoveTimers();
     path.forEach((pos,step)=>{
       const timer=setTimeout(()=>{
         setPosition(pos);
         if(step+1<path.length){
-          setMoving({actor:"player",dice:rolled,to:tile.name,step:step+1,total:path.length});
+          setMoving({actor:"player",dice:rolled,to:tile.name,step:step+1,total:path.length,phase:"walking"});
         }else{
           setMoving(null);
           setLastMove({dice:rolled,tile});
           setPending({dice:rolled,nextPos,tile,question,lapBonus});
           setFeedback(`到達「${tile.name}」`);
         }
-      },140*(step+1));
+      },PET_MONOPOLY_DICE_ROLL_MS+PET_MONOPOLY_PLAYER_STEP_MS*(step+1));
       moveTimersRef.current.push(timer);
     });
   };
@@ -4634,8 +4664,10 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
         if(shieldActive){
           updateCardEffects(prev=>({...prev,shield:false}));
           setCardFlash({title:"\u8b77\u76fe\u5361",text:`\u904e\u8def\u8cbb\u6e1b\u534a -${Math.max(0,rentBase-rentPaid)}`,color:PET_MONOPOLY_CARD_BY_ID.shield.color,icon:PET_MONOPOLY_CARD_BY_ID.shield.icon,effect:"use"});
+          showScreenEffect({kind:"card",effect:"use",source:"card",title:"護盾卡",value:"過路費 1/2",icon:PET_MONOPOLY_CARD_BY_ID.shield.icon,color:PET_MONOPOLY_CARD_BY_ID.shield.color});
         }
-        setRentFlash({title:"\u904e\u8def\u8cbb",text:shieldActive?`${cpuOwner.name} +${rentPaid}\uff5c\u8b77\u76fe\u6e1b\u534a`:`${cpuOwner.name} +${rentPaid}`,color:cpuOwner.color});
+        setRentFlash({title:"\u904e\u8def\u8cbb",text:shieldActive?`${cpuOwner.name} +${rentPaid}\uff5c\u8b77\u76fe\u6e1b\u534a`:`${cpuOwner.name} +${rentPaid}`,color:cpuOwner.color,effect:"rent-out",amount:rentPaid,icon:"$"});
+        showScreenEffect({kind:"rent-out",title:"過路費",value:`-${rentPaid}`,icon:"$",color:cpuOwner.color});
       }else{
         setRentFlash(null);
       }
@@ -4656,7 +4688,10 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
           title:pending.tile.type==="boss"?"Boss 寶箱":"機會 / 命運",
           text:twist.label.replace(/^命運卡：/,"").replace(/^Boss 戰利品：/,""),
           color:PET_MONOPOLY_TYPE_META[pending.tile.type]?.color||color,
+          effect:"event",
+          icon:pending.tile.icon,
         });
+        showScreenEffect({kind:"event",title:pending.tile.type==="boss"?"Boss 寶箱":"機會 / 命運",value:twist.name||pending.tile.name,icon:pending.tile.icon,color:PET_MONOPOLY_TYPE_META[pending.tile.type]?.color||color});
       }else{
         setEventFlash(null);
       }
@@ -4671,10 +4706,10 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
           if(isPetMonopolyOwnable(targetTile)&&!ownedRef.current[targetTile.id]&&!targetCpuOwner){
             setOffer({tileId:targetTile.id,cost:getPetMonopolyTileCost(targetTile)});
           }else{
-            playComputerRound();
+            queueComputerRound();
           }
         }else{
-          playComputerRound();
+          queueComputerRound();
         }
       }else{
         if(property){
@@ -4685,7 +4720,7 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
         if(!property&&!cpuOwner&&isPetMonopolyOwnable(pending.tile)){
           setOffer({tileId:pending.tile.id,cost:getPetMonopolyTileCost(pending.tile)});
         }else{
-          playComputerRound();
+          queueComputerRound();
         }
       }
     }else{
@@ -4701,8 +4736,10 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
         if(shieldActive){
           updateCardEffects(prev=>({...prev,shield:false}));
           setCardFlash({title:"\u8b77\u76fe\u5361",text:`\u904e\u8def\u8cbb\u6e1b\u534a -${Math.max(0,rentBase-rentPaid)}`,color:PET_MONOPOLY_CARD_BY_ID.shield.color,icon:PET_MONOPOLY_CARD_BY_ID.shield.icon,effect:"use"});
+          showScreenEffect({kind:"card",effect:"use",source:"card",title:"護盾卡",value:"過路費 1/2",icon:PET_MONOPOLY_CARD_BY_ID.shield.icon,color:PET_MONOPOLY_CARD_BY_ID.shield.color});
         }
-        setRentFlash({title:"\u904e\u8def\u8cbb",text:shieldActive?`${cpuOwner.name} +${rentPaid}\uff5c\u8b77\u76fe\u6e1b\u534a`:`${cpuOwner.name} +${rentPaid}`,color:cpuOwner.color});
+        setRentFlash({title:"\u904e\u8def\u8cbb",text:shieldActive?`${cpuOwner.name} +${rentPaid}\uff5c\u8b77\u76fe\u6e1b\u534a`:`${cpuOwner.name} +${rentPaid}`,color:cpuOwner.color,effect:"rent-out",amount:rentPaid,icon:"$"});
+        showScreenEffect({kind:"rent-out",title:"過路費",value:`-${rentPaid}`,icon:"$",color:cpuOwner.color});
       }else{
         setRentFlash(null);
       }
@@ -4711,7 +4748,7 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
       const msg=`失敗 -${penalty} 金幣｜答案：${pending.question.explain}`;
       setFeedback(msg);
       setEventFlash(null);
-      playComputerRound();
+      queueComputerRound();
     }
     setTurn(t=>t+1);
     setPending(null);
@@ -4730,13 +4767,14 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
     setOwned(nextOwned);
     const msg=`已收購「${tile.name}」`;
     setFeedback(msg);
+    showScreenEffect({kind:"buy",title:"收購地產",value:tile.name,icon:tile.icon,color});
     setOffer(null);
-    playComputerRound();
+    queueComputerRound();
   };
   const skipOffer=()=>{
     if(offer)setFeedback("略過收購");
     setOffer(null);
-    playComputerRound();
+    queueComputerRound();
   };
   const upgradeCurrentProperty=()=>{
     const property=owned[currentTile.id];
@@ -4753,7 +4791,8 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
     setOwned(nextOwned);
     const msg=`${currentTile.name} Lv.${property.level+1}`;
     setFeedback(msg);
-    playComputerRound();
+    showScreenEffect({kind:"upgrade",title:"地產升級",value:`Lv.${property.level+1}`,icon:currentTile.icon,color});
+    queueComputerRound();
   };
   const accuracy=Math.round((score.correct/Math.max(1,score.correct+score.wrong))*100);
   const goalDone=propertyCount>=4||score.boss>0;
@@ -4762,7 +4801,7 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
   return(<div className="pet-monopoly" style={{"--pm-accent":color,"--pm-accent-2":accent,"--pm-border":S.bd,"--pm-card":S.bg1,"--pm-surface":S.bg2,"--pm-text":S.t1,"--pm-muted":S.t2}}>
     <Hdr t="🎲 寵物大富翁" onBack={exitGame} cl={color}/>
     <style>{`
-      .pet-monopoly{display:grid;gap:12px;color:var(--pm-text)}
+      .pet-monopoly{position:relative;display:grid;gap:12px;color:var(--pm-text)}
       .pet-monopoly button{font-family:inherit}
       .pm-setup{border:1px solid color-mix(in srgb,var(--pm-accent) 28%,var(--pm-border));border-radius:24px;background:linear-gradient(135deg,#F7FFFC,var(--pm-card));padding:18px;display:grid;gap:16px;box-shadow:0 22px 52px rgba(15,110,86,.1)}
       .pm-setup-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap}
@@ -4793,10 +4832,10 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
       .pm-roster{order:2;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.2fr);gap:10px;align-items:stretch}
       .pm-player-card,.pm-cpu-box{border:1px solid color-mix(in srgb,var(--pm-accent) 20%,var(--pm-border));border-radius:16px;background:linear-gradient(135deg,color-mix(in srgb,var(--pm-accent) 7%,#fff),var(--pm-card));padding:10px}
       .pm-player-card{display:flex;align-items:center;gap:9px}
-      .pm-rank-box{position:absolute;left:50%;right:auto;top:14px;transform:translateX(-50%);z-index:2;width:min(560px,calc(100% - 28px));border:1px solid color-mix(in srgb,var(--pm-accent) 22%,var(--pm-border));border-radius:16px;background:rgba(255,255,255,.76);backdrop-filter:blur(10px);padding:8px 10px;text-align:left;box-shadow:0 14px 30px rgba(15,110,86,.12)}
-      .pm-rank-box .pm-section-title{text-align:center;font-size:12px}
-      .pm-rank-list{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:6px}
-      .pm-rank-row{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:6px;align-items:center;border:1px solid color-mix(in srgb,var(--rank-color) 26%,var(--pm-border));border-radius:11px;background:color-mix(in srgb,var(--rank-color) 7%,#fff);padding:6px 7px;font-size:11px;font-weight:1000;color:var(--pm-text)}
+      .pm-rank-box{position:absolute;left:12px;right:auto;top:12px;z-index:3;width:min(285px,calc(100% - 24px));border:1px solid color-mix(in srgb,var(--pm-accent) 22%,var(--pm-border));border-radius:14px;background:rgba(255,255,255,.7);backdrop-filter:blur(10px);padding:7px 8px;text-align:left;box-shadow:0 12px 26px rgba(15,110,86,.1)}
+      .pm-rank-box .pm-section-title{text-align:left;font-size:11px}
+      .pm-rank-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin-top:5px}
+      .pm-rank-row{display:grid;grid-template-columns:18px minmax(0,1fr) auto;gap:5px;align-items:center;border:1px solid color-mix(in srgb,var(--rank-color) 26%,var(--pm-border));border-radius:999px;background:color-mix(in srgb,var(--rank-color) 7%,#fff);padding:4px 6px;font-size:10px;font-weight:1000;color:var(--pm-text)}
       .pm-rank-row span:nth-child(2){overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
       .pm-rank-row b{color:var(--rank-color);font-size:12px}
       .pm-cpu-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:8px}
@@ -4806,29 +4845,34 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
       .pm-count-buttons button{border:1px solid var(--pm-border);background:var(--pm-card);border-radius:999px;padding:5px 9px;font-size:11px;font-weight:1000;cursor:pointer;color:var(--pm-text)}
       .pm-count-buttons button.is-active{background:var(--pm-accent);color:#fff;border-color:var(--pm-accent)}
       .pm-main{order:1;display:block}
-      .pm-board{position:relative;display:grid;grid-template-columns:repeat(7,minmax(68px,1fr));grid-template-rows:repeat(7,minmax(62px,1fr));gap:7px;border:1px solid color-mix(in srgb,var(--pm-accent) 28%,var(--pm-border));border-radius:24px;background:radial-gradient(circle at 22% 18%,rgba(14,165,233,.16),transparent 24%),radial-gradient(circle at 75% 78%,rgba(34,197,94,.15),transparent 25%),linear-gradient(135deg,#F7FFFC,var(--pm-card));padding:10px;box-shadow:0 18px 42px rgba(15,110,86,.1);min-height:620px}
-      .pm-tile{position:relative;border:1px solid color-mix(in srgb,var(--tile-color) 34%,var(--pm-border));border-radius:13px;background:linear-gradient(135deg,var(--tile-soft),rgba(255,255,255,.92));padding:6px;text-align:left;overflow:hidden;min-height:62px}
-      .pm-tile.is-active{box-shadow:0 0 0 3px color-mix(in srgb,var(--tile-color) 24%,transparent),0 12px 24px color-mix(in srgb,var(--tile-color) 18%,transparent);transform:translateY(-1px)}
-      .pm-tile.is-owned-by-player{box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--pm-accent) 50%,transparent)}
-      .pm-tile.is-owned-by-cpu{box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--owner-color) 50%,transparent)}
+      .pm-board{position:relative;display:grid;grid-template-columns:repeat(7,minmax(68px,1fr));grid-template-rows:repeat(7,minmax(62px,1fr));gap:7px;border:1px solid color-mix(in srgb,var(--pm-accent) 28%,var(--pm-border));border-radius:24px;background:radial-gradient(circle at 22% 18%,rgba(14,165,233,.16),transparent 24%),radial-gradient(circle at 75% 78%,rgba(34,197,94,.15),transparent 25%),linear-gradient(135deg,#F7FFFC,var(--pm-card));padding:10px;box-shadow:0 18px 42px rgba(15,110,86,.1);min-height:600px}
+      .pm-tile{position:relative;border:1px solid color-mix(in srgb,var(--tile-color) 34%,var(--pm-border));border-radius:13px;background:linear-gradient(135deg,var(--tile-soft),rgba(255,255,255,.92));padding:8px 6px 6px;text-align:left;overflow:hidden;min-height:62px;transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease,filter .22s ease}
+      .pm-tile.is-active{box-shadow:0 0 0 3px color-mix(in srgb,var(--tile-color) 26%,transparent),0 16px 30px color-mix(in srgb,var(--tile-color) 20%,transparent);transform:translateY(-3px) scale(1.015);animation:pmTilePulse .72s ease-out}
+      .pm-tile.is-owned-by-player{border-color:color-mix(in srgb,var(--pm-accent) 70%,var(--pm-border));box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--pm-accent) 55%,transparent),0 0 0 1px color-mix(in srgb,var(--pm-accent) 14%,transparent)}
+      .pm-tile.is-owned-by-cpu{border-color:color-mix(in srgb,var(--owner-color) 70%,var(--pm-border));box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--owner-color) 55%,transparent),0 0 0 1px color-mix(in srgb,var(--owner-color) 14%,transparent)}
+      .pm-owner-band{position:absolute;left:0;right:0;top:0;height:8px;background:linear-gradient(90deg,var(--owner-color),color-mix(in srgb,var(--owner-color) 55%,#fff));box-shadow:0 7px 18px color-mix(in srgb,var(--owner-color) 24%,transparent)}
       .pm-tile-icon{font-size:20px;display:block}
       .pm-tile-name{display:block;font-size:11px;font-weight:1000;line-height:1.2;margin-top:4px}
       .pm-tile-type{display:inline-block;font-size:9px;font-weight:1000;color:var(--tile-color);background:color-mix(in srgb,var(--tile-color) 10%,#fff);border-radius:999px;padding:2px 6px;margin-top:5px}
-      .pm-owner-badge{position:absolute;right:5px;top:5px;border-radius:999px;background:var(--tile-color);color:#fff;font-size:10px;font-weight:1000;padding:3px 6px;box-shadow:0 6px 14px color-mix(in srgb,var(--tile-color) 26%,transparent)}
+      .pm-owner-badge{position:absolute;right:5px;top:9px;border-radius:999px;background:var(--owner-color);color:#fff;font-size:10px;font-weight:1000;padding:3px 6px;box-shadow:0 8px 18px color-mix(in srgb,var(--owner-color) 30%,transparent);animation:pmOwnerPop .55s ease-out both}
       .pm-owner-badge.cpu{background:var(--owner-color);box-shadow:0 6px 14px color-mix(in srgb,var(--owner-color) 26%,transparent)}
       .pm-token-stack{position:absolute;right:5px;bottom:5px;display:flex;gap:3px;align-items:center}
-      .pm-token{width:32px;height:32px;border-radius:11px;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 18px rgba(0,0,0,.12);overflow:hidden;border:2px solid #fff;font-size:14px;font-weight:1000}
+      .pm-token{width:32px;height:32px;border-radius:11px;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 18px rgba(0,0,0,.12);overflow:hidden;border:2px solid #fff;font-size:14px;font-weight:1000;animation:pmTokenStep .36s ease-out both}
       .pm-token.cpu{background:var(--cpu-color);color:#fff}
       .pm-center{position:relative;grid-column:2 / 7;grid-row:2 / 7;border:1px dashed color-mix(in srgb,var(--pm-accent) 28%,var(--pm-border));border-radius:22px;background:linear-gradient(135deg,rgba(240,253,250,.72),rgba(255,255,255,.82));display:grid;place-items:center;text-align:center;padding:12px;overflow:hidden}
       .pm-island{position:absolute;inset:22px;border-radius:22px;background:radial-gradient(ellipse at 52% 46%,rgba(34,197,94,.34) 0 18%,transparent 19%),radial-gradient(ellipse at 50% 47%,rgba(20,184,166,.24) 0 29%,transparent 30%),linear-gradient(135deg,rgba(14,165,233,.12),rgba(250,204,21,.13));}
       .pm-island:before{content:"";position:absolute;left:48%;top:8%;width:112px;height:330px;border-radius:58% 44% 55% 45%;background:linear-gradient(160deg,#BFEFCC,#68D391 45%,#1D9E75);transform:rotate(17deg);box-shadow:0 18px 42px rgba(15,110,86,.22)}
       .pm-island-label{position:absolute;left:22px;top:20px;text-align:left;color:var(--pm-accent);font-weight:1000;font-size:18px}
       .pm-city{position:absolute;border-radius:999px;background:#fff;border:1px solid rgba(15,110,86,.2);padding:4px 8px;font-size:11px;font-weight:1000;color:#0F6E56;box-shadow:0 8px 20px rgba(15,110,86,.12)}
-      .pm-overlay{position:relative;z-index:2;width:min(430px,82%);border:1px solid rgba(15,110,86,.2);border-radius:18px;background:rgba(255,255,255,.84);backdrop-filter:blur(12px);box-shadow:0 18px 42px rgba(15,110,86,.16);padding:10px;display:grid;gap:8px}
-      .pm-dice{width:60px;height:60px;border:0;border-radius:18px;background:linear-gradient(135deg,var(--pm-accent),var(--pm-accent-2));color:#fff;font-size:28px;font-weight:1000;cursor:pointer;box-shadow:0 14px 26px color-mix(in srgb,var(--pm-accent) 24%,transparent)}
+      .pm-overlay{position:absolute;right:12px;bottom:12px;z-index:8;width:min(360px,calc(100% - 24px));max-height:min(292px,50%);overflow:auto;border:1px solid rgba(15,110,86,.18);border-radius:18px;background:rgba(255,255,255,.72);backdrop-filter:blur(16px);box-shadow:0 18px 42px rgba(15,110,86,.16);padding:9px;display:grid;gap:7px}
+      .pm-overlay[data-state="question"],.pm-overlay[data-state="offer"]{width:min(430px,calc(100% - 24px));max-height:min(342px,58%)}
+      .pm-overlay::-webkit-scrollbar{width:6px}
+      .pm-overlay::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--pm-accent) 30%,transparent);border-radius:999px}
+      .pm-dice{width:58px;height:58px;border:0;border-radius:18px;background:linear-gradient(135deg,var(--pm-accent),var(--pm-accent-2));color:#fff;font-size:28px;font-weight:1000;cursor:pointer;box-shadow:0 14px 26px color-mix(in srgb,var(--pm-accent) 24%,transparent);transition:transform .18s ease,box-shadow .18s ease}
+      .pm-dice:not(:disabled):hover{transform:translateY(-2px) rotate(-3deg);box-shadow:0 18px 34px color-mix(in srgb,var(--pm-accent) 28%,transparent)}
       .pm-dice:disabled{opacity:.55;cursor:not-allowed}
       .pm-section-title{font-size:14px;font-weight:1000;color:var(--pm-text)}
-      .pm-feedback{border:1px solid color-mix(in srgb,var(--pm-accent) 24%,var(--pm-border));border-radius:12px;background:linear-gradient(135deg,color-mix(in srgb,var(--pm-accent) 9%,#fff),rgba(255,255,255,.86));padding:8px;font-size:12px;font-weight:900;line-height:1.45;color:var(--pm-accent)}
+      .pm-feedback{border:1px solid color-mix(in srgb,var(--pm-accent) 20%,var(--pm-border));border-radius:12px;background:linear-gradient(135deg,color-mix(in srgb,var(--pm-accent) 8%,#fff),rgba(255,255,255,.78));padding:6px 8px;font-size:12px;font-weight:900;line-height:1.35;color:var(--pm-accent);max-height:40px;overflow:hidden}
       .pm-card-hand{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
       .pm-card-button{border:1px solid color-mix(in srgb,var(--card-color) 28%,var(--pm-border));border-radius:12px;background:linear-gradient(135deg,color-mix(in srgb,var(--card-color) 12%,#fff),rgba(255,255,255,.9));padding:6px;display:grid;grid-template-columns:20px minmax(0,1fr) auto;gap:4px;align-items:center;text-align:left;color:var(--pm-text);cursor:pointer;box-shadow:0 8px 16px color-mix(in srgb,var(--card-color) 10%,transparent)}
       .pm-card-button.is-active{outline:2px solid color-mix(in srgb,var(--card-color) 38%,transparent);background:linear-gradient(135deg,color-mix(in srgb,var(--card-color) 20%,#fff),#fff)}
@@ -4847,7 +4891,7 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
       .pm-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:8px}
       .pm-choice{border:1px solid color-mix(in srgb,var(--pm-accent) 22%,var(--pm-border));border-radius:12px;background:var(--pm-card);padding:9px;font-size:14px;font-weight:1000;cursor:pointer;color:var(--pm-text)}
       .pm-choice:hover{border-color:var(--pm-accent);background:color-mix(in srgb,var(--pm-accent) 8%,#fff)}
-      .pm-deal{border:1px solid color-mix(in srgb,var(--pm-accent) 28%,var(--pm-border));border-radius:14px;background:linear-gradient(135deg,color-mix(in srgb,var(--pm-accent) 10%,#fff),var(--pm-card));padding:10px;display:grid;gap:7px}
+      .pm-deal{border:1px solid color-mix(in srgb,var(--pm-accent) 28%,var(--pm-border));border-radius:14px;background:linear-gradient(135deg,color-mix(in srgb,var(--pm-accent) 10%,#fff),rgba(255,255,255,.82));padding:9px;display:grid;gap:6px}
       .pm-deal-text{font-size:12px;color:var(--pm-muted);line-height:1.55}
       .pm-event-card{border:1px solid color-mix(in srgb,var(--event-color) 34%,var(--pm-border));border-radius:14px;background:linear-gradient(135deg,color-mix(in srgb,var(--event-color) 14%,#fff),rgba(255,255,255,.9));padding:10px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px;align-items:center;text-align:left;box-shadow:0 12px 26px color-mix(in srgb,var(--event-color) 14%,transparent)}
       .pm-event-card b{font-size:12px;color:var(--event-color)}
@@ -4859,12 +4903,40 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
       .pm-burst-text{position:relative;z-index:1;display:grid;gap:2px}
       @keyframes pmBurst{0%{transform:scale(.86);filter:saturate(.8);opacity:.1}55%{transform:scale(1.04);filter:saturate(1.35);opacity:1}100%{transform:scale(1);filter:saturate(1)}}
       @keyframes pmSpin{to{transform:rotate(360deg)}}
+      .pm-screen-effect{position:fixed;inset:0;z-index:190;pointer-events:none;display:grid;place-items:center;overflow:hidden;animation:pmScreenFade 1.32s ease-out both}
+      .pm-screen-effect:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 46%,color-mix(in srgb,var(--effect-color) 24%,transparent),transparent 34%),rgba(255,255,255,.18);backdrop-filter:blur(1px)}
+      .pm-screen-rings{position:absolute;inset:0;display:grid;place-items:center}
+      .pm-screen-rings:before,.pm-screen-rings:after{content:"";position:absolute;width:210px;height:210px;border-radius:999px;border:3px solid color-mix(in srgb,var(--effect-color) 40%,transparent);animation:pmRingPop 1.1s ease-out both}
+      .pm-screen-rings:after{width:300px;height:300px;animation-delay:.12s;opacity:.65}
+      .pm-screen-rings span{position:absolute;left:50%;top:50%;width:10px;height:18px;border-radius:999px;background:var(--effect-color);box-shadow:0 0 18px color-mix(in srgb,var(--effect-color) 60%,transparent);transform:rotate(calc(var(--i)*25.7deg)) translateY(-120px);animation:pmParticle 1.1s ease-out both}
+      .pm-effect-core{position:relative;z-index:2;min-width:190px;min-height:150px;border-radius:34px;background:linear-gradient(135deg,color-mix(in srgb,var(--effect-color) 18%,#fff),rgba(255,255,255,.92));border:2px solid color-mix(in srgb,var(--effect-color) 42%,#fff);box-shadow:0 30px 90px color-mix(in srgb,var(--effect-color) 26%,transparent);display:grid;place-items:center;align-content:center;gap:6px;padding:20px 26px;text-align:center;animation:pmEffectCore .9s cubic-bezier(.2,1.2,.2,1) both}
+      .pm-effect-core b{font-size:15px;color:var(--effect-color)}
+      .pm-effect-core span:last-child{font-size:28px;font-weight:1000;color:var(--pm-text);line-height:1.05}
+      .pm-effect-icon{width:72px;height:72px;border-radius:26px;background:var(--effect-color);color:#fff;display:grid;place-items:center;font-size:38px;font-weight:1000;box-shadow:0 18px 38px color-mix(in srgb,var(--effect-color) 34%,transparent)}
+      .pm-screen-effect.is-dice .pm-effect-icon{animation:pmDiceTumble .68s ease-in-out both}
+      .pm-screen-effect.is-rent-in .pm-effect-core,.pm-screen-effect.is-buy .pm-effect-core,.pm-screen-effect.is-upgrade .pm-effect-core{animation-name:pmEffectCoreWin}
+      .pm-screen-effect.is-rent-out .pm-effect-core{animation-name:pmEffectCoreHit}
+      .pm-impact-toast{position:fixed;left:50%;top:84px;z-index:180;transform:translateX(-50%);pointer-events:none;display:grid;grid-template-columns:auto auto minmax(0,1fr);align-items:center;gap:8px;max-width:min(520px,calc(100vw - 28px));border:1px solid color-mix(in srgb,var(--impact-color) 38%,#fff);border-radius:999px;background:rgba(255,255,255,.82);backdrop-filter:blur(14px);box-shadow:0 20px 54px color-mix(in srgb,var(--impact-color) 20%,transparent);padding:8px 12px;animation:pmImpactToast 1.7s ease-out both}
+      .pm-impact-toast b{color:var(--impact-color);font-size:13px}
+      .pm-impact-toast span:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--pm-text);font-size:12px;font-weight:1000}
+      .pm-impact-icon{width:30px;height:30px;border-radius:12px;background:var(--impact-color);color:#fff;display:grid;place-items:center;font-size:16px;font-weight:1000}
+      @keyframes pmTilePulse{0%{filter:saturate(.85);transform:scale(.98)}62%{filter:saturate(1.35);transform:translateY(-4px) scale(1.03)}100%{filter:saturate(1);transform:translateY(-3px) scale(1.015)}}
+      @keyframes pmOwnerPop{0%{transform:scale(.7);opacity:0}70%{transform:scale(1.08);opacity:1}100%{transform:scale(1)}}
+      @keyframes pmTokenStep{0%{transform:translateY(8px) scale(.86);opacity:.45}65%{transform:translateY(-5px) scale(1.08);opacity:1}100%{transform:translateY(0) scale(1)}}
+      @keyframes pmScreenFade{0%{opacity:0}10%{opacity:1}74%{opacity:1}100%{opacity:0}}
+      @keyframes pmRingPop{0%{transform:scale(.32);opacity:0}38%{opacity:1}100%{transform:scale(1.58);opacity:0}}
+      @keyframes pmParticle{0%{opacity:0;transform:rotate(calc(var(--i)*25.7deg)) translateY(-42px) scale(.4)}30%{opacity:1}100%{opacity:0;transform:rotate(calc(var(--i)*25.7deg)) translateY(-188px) scale(1)}}
+      @keyframes pmEffectCore{0%{transform:scale(.72) rotate(-4deg);opacity:0}60%{transform:scale(1.08) rotate(1deg);opacity:1}100%{transform:scale(1) rotate(0)}}
+      @keyframes pmEffectCoreWin{0%{transform:translateY(22px) scale(.7);opacity:0}55%{transform:translateY(-10px) scale(1.1);opacity:1}100%{transform:translateY(0) scale(1)}}
+      @keyframes pmEffectCoreHit{0%{transform:translateX(-18px) scale(.76);opacity:0}32%{transform:translateX(14px) scale(1.06);opacity:1}54%{transform:translateX(-8px) scale(1)}100%{transform:translateX(0) scale(1)}}
+      @keyframes pmDiceTumble{0%{transform:rotate(-24deg) scale(.72)}35%{transform:rotate(18deg) scale(1.12)}70%{transform:rotate(-10deg) scale(1.02)}100%{transform:rotate(0) scale(1)}}
+      @keyframes pmImpactToast{0%{opacity:0;transform:translate(-50%,-16px) scale(.92)}18%{opacity:1;transform:translate(-50%,0) scale(1.03)}78%{opacity:1;transform:translate(-50%,0) scale(1)}100%{opacity:0;transform:translate(-50%,-12px) scale(.98)}}
       .pm-action-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
       .pm-action{border:0;border-radius:12px;background:var(--pm-accent);color:#fff;padding:10px 12px;font-size:12px;font-weight:1000;cursor:pointer}
       .pm-action.secondary{background:var(--pm-surface);color:var(--pm-text);border:1px solid var(--pm-border)}
       .pm-action:disabled{opacity:.5;cursor:not-allowed}
-      @media (max-width:900px){.pm-setup-grid,.pm-game-hud{grid-template-columns:1fr 1fr}.pm-board{grid-template-columns:repeat(7,minmax(44px,1fr));grid-template-rows:repeat(7,minmax(48px,1fr));gap:5px;min-height:540px;padding:8px}.pm-tile{min-height:48px;padding:5px}.pm-tile-name{font-size:9px}.pm-tile-type{display:none}.pm-token{width:25px;height:25px;border-radius:9px}.pm-center{padding:8px}.pm-overlay{width:86%;padding:9px}.pm-dice{width:54px;height:54px;font-size:24px}}
-      @media (max-width:520px){.pm-setup{padding:12px;border-radius:18px}.pm-setup-grid,.pm-game-hud{grid-template-columns:1fr}.pm-setup-title{font-size:23px}.pm-board{gap:3px;min-height:480px}.pm-tile-icon{font-size:15px}.pm-tile-name{font-size:8px}.pm-choices{grid-template-columns:1fr}.pm-island-label{font-size:14px}.pm-city{display:none}.pm-rank-box{left:50%;right:auto;top:6px;transform:translateX(-50%);width:min(260px,calc(100% - 16px));padding:4px 5px;border-radius:999px}.pm-rank-box .pm-section-title{display:none}.pm-rank-list{grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;margin-top:0}.pm-rank-row{display:flex;justify-content:center;padding:3px 4px;border-radius:999px;font-size:10px;line-height:1}.pm-rank-row span:nth-child(2){display:none}.pm-rank-row span:last-child{display:inline;font-size:10px}}
+      @media (max-width:900px){.pm-setup-grid,.pm-game-hud{grid-template-columns:1fr 1fr}.pm-board{grid-template-columns:repeat(7,minmax(44px,1fr));grid-template-rows:repeat(7,minmax(48px,1fr));gap:5px;min-height:540px;padding:8px}.pm-tile{min-height:48px;padding:7px 5px 5px}.pm-tile-name{font-size:9px}.pm-tile-type{display:none}.pm-token{width:25px;height:25px;border-radius:9px}.pm-center{padding:8px}.pm-overlay{right:8px;bottom:8px;width:min(340px,calc(100% - 16px));max-height:46%;padding:8px}.pm-overlay[data-state="question"],.pm-overlay[data-state="offer"]{width:min(370px,calc(100% - 16px));max-height:54%}.pm-dice{width:54px;height:54px;font-size:24px}}
+      @media (max-width:520px){.pm-setup{padding:12px;border-radius:18px}.pm-setup-grid,.pm-game-hud{grid-template-columns:1fr}.pm-setup-title{font-size:23px}.pm-board{gap:3px;min-height:500px}.pm-tile-icon{font-size:15px}.pm-tile-name{font-size:8px}.pm-choices{grid-template-columns:1fr}.pm-island-label{font-size:14px}.pm-city{display:none}.pm-rank-box{left:8px;right:auto;top:8px;transform:none;width:min(220px,calc(100% - 16px));padding:4px 5px;border-radius:999px}.pm-rank-box .pm-section-title{display:none}.pm-rank-list{grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;margin-top:0}.pm-rank-row{display:flex;justify-content:center;padding:3px 4px;border-radius:999px;font-size:10px;line-height:1}.pm-rank-row span:nth-child(2){display:none}.pm-rank-row span:last-child{display:inline;font-size:10px}.pm-overlay{left:8px;right:8px;bottom:8px;width:auto;max-height:45%}.pm-effect-core{min-width:150px;min-height:128px;padding:16px 20px}.pm-effect-icon{width:60px;height:60px;font-size:32px}.pm-effect-core span:last-child{font-size:22px}}
       @media (max-width:520px){.pm-card-hand{gap:5px}.pm-card-button{grid-template-columns:18px minmax(0,1fr);gap:4px;padding:6px 5px}.pm-card-icon{width:18px;height:18px;border-radius:7px;font-size:11px}.pm-card-name b{font-size:10px}.pm-card-name span{font-size:9px}.pm-card-count{display:none}.pm-card-active{font-size:11px;padding:5px 7px}}
     `}</style>
     {!gameStarted?(
@@ -4905,6 +4977,32 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
       <div className="pm-hud-pill" data-testid="pet-monopoly-event-deck-size" data-event-count={PET_MONOPOLY_EVENT_DECK.length} style={{"--hud-color":"#D97706"}}>機會/命運 <b>{PET_MONOPOLY_EVENT_DECK.length}</b></div>
       <div className="pm-hud-pill" style={{"--hud-color":"#DB2777"}}>{goalText} <b>{propertyCount} 地產</b></div>
     </section>
+    {screenEffect&&(
+      <div key={screenEffect.id} className={`pm-screen-effect is-${screenEffect.kind}`} data-testid="pet-monopoly-screen-effect" data-effect={screenEffect.kind} style={{"--effect-color":screenEffect.color||color}}>
+        <div className="pm-screen-rings" aria-hidden="true">
+          {Array.from({length:14}).map((_,i)=><span key={i} style={{"--i":i}}/>)}
+        </div>
+        <div className="pm-effect-core" data-testid={screenEffect.kind==="dice"?"pet-monopoly-dice-effect":screenEffect.source==="card"?"pet-monopoly-card-burst":undefined} data-effect={screenEffect.effect||screenEffect.kind}>
+          <span className="pm-effect-icon">{screenEffect.icon}</span>
+          <b>{screenEffect.title}</b>
+          <span>{screenEffect.value}</span>
+        </div>
+      </div>
+    )}
+    {rentFlash&&(
+      <div className={`pm-impact-toast ${rentFlash.effect||""}`} data-testid="pet-monopoly-rent" data-effect={rentFlash.effect||"rent"} style={{"--impact-color":rentFlash.color||color}}>
+        <span className="pm-impact-icon">{rentFlash.icon||"$"}</span>
+        <b>{rentFlash.title}</b>
+        <span>{rentFlash.text}</span>
+      </div>
+    )}
+    {eventFlash&&(
+      <div className="pm-impact-toast event" data-testid="pet-monopoly-event" data-effect={eventFlash.effect||"event"} style={{"--impact-color":eventFlash.color||color}}>
+        <span className="pm-impact-icon">{eventFlash.icon||"✦"}</span>
+        <b>{eventFlash.title}</b>
+        <span>{eventFlash.text}</span>
+      </div>
+    )}
     <section className="pm-main">
       <div className="pm-board" data-testid="pet-monopoly-board" aria-label="寵物大富翁棋盤">
         {tiles.map((tile,i)=>{
@@ -4914,12 +5012,14 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
           const property=owned[tile.id];
           const cpuOwner=getPetMonopolyCpuOwner(activeComputers,tile.id,computerCount);
           const computerVisitors=activeComputers.filter(cpu=>cpu.position===i);
+          const ownerId=property?"player":cpuOwner?.id||"none";
           return(
-            <div key={tile.id} className={`pm-tile ${active?"is-active":""} ${property?"is-owned-by-player":cpuOwner?"is-owned-by-cpu":""}`} style={{"--tile-color":meta.color,"--tile-soft":meta.soft,"--owner-color":cpuOwner?.color||color,gridColumn:posCol,gridRow:posRow}}>
+            <div key={tile.id} className={`pm-tile ${active?"is-active":""} ${property?"is-owned-by-player":cpuOwner?"is-owned-by-cpu":""}`} data-testid={`pet-monopoly-tile-${tile.id}`} data-owner={ownerId} data-owner-level={property?.level||(cpuOwner?1:0)} style={{"--tile-color":meta.color,"--tile-soft":meta.soft,"--owner-color":property?color:cpuOwner?.color||color,gridColumn:posCol,gridRow:posRow}}>
+              {(property||cpuOwner)&&<span className="pm-owner-band" aria-hidden="true"/>}
               <span className="pm-tile-icon">{tile.icon}</span>
               <span className="pm-tile-name">{tile.name}</span>
               <span className="pm-tile-type">{meta.label}</span>
-              {property&&<span className="pm-owner-badge">Lv.{property.level}</span>}
+              {property&&<span className="pm-owner-badge" data-testid="pet-monopoly-player-owner">P Lv.{property.level}</span>}
               {!property&&cpuOwner&&<span className="pm-owner-badge cpu" data-testid="pet-monopoly-cpu-owner">{cpuOwner.name.replace("電腦 ","C")}</span>}
               {(active||computerVisitors.length>0)&&(
                 <span className="pm-token-stack">
@@ -4950,7 +5050,7 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
               ))}
             </div>
           </div>
-          <div className="pm-overlay" data-testid="pet-monopoly-overlay">
+          <div className="pm-overlay pm-action-dock" data-testid="pet-monopoly-overlay" data-panel="dock" data-state={moving?"moving":pending?"question":offer?"offer":"idle"}>
             <div className="pm-feedback" data-testid="pet-monopoly-feedback">{feedback}</div>
             <div className="pm-card-hand" data-testid="pet-monopoly-cards">
               {PET_MONOPOLY_CARDS.map(card=>{
@@ -4972,32 +5072,11 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
                 {activeCards.map(card=><b key={card.id}>{card.name}</b>)}
               </div>
             )}
-            {cardFlash&&(
-              <div className="pm-event-card pm-card-burst" data-testid="pet-monopoly-card-burst" data-effect={cardFlash.effect||"gain"} style={{"--event-color":cardFlash.color||color}}>
-                <span className="pm-burst-icon">{cardFlash.icon||"★"}</span>
-                <span className="pm-burst-text">
-                  <b>{cardFlash.title}</b>
-                  <span>{cardFlash.text}</span>
-                </span>
-              </div>
-            )}
-            {rentFlash&&(
-              <div className="pm-event-card" data-testid="pet-monopoly-rent" style={{"--event-color":rentFlash.color||color}}>
-                <b>{rentFlash.title}</b>
-                <span>{rentFlash.text}</span>
-              </div>
-            )}
-            {eventFlash&&(
-              <div className="pm-event-card" data-testid="pet-monopoly-event" style={{"--event-color":eventFlash.color}}>
-                <b>{eventFlash.title}</b>
-                <span>{eventFlash.text}</span>
-              </div>
-            )}
             {moving&&(
               <div className="pm-deal" data-testid="pet-monopoly-moving">
-                <button className="pm-dice" data-testid="pet-monopoly-roll" disabled aria-label="擲骰">{dice||moving.dice}</button>
-                <div className="pm-section-title">{moving.actor==="cpu"?`${moving.name} 移動`:"玩家移動"}</div>
-                <div className="pm-deal-text">骰 {moving.dice} → {moving.to} · {moving.step}/{moving.total}</div>
+                <button className="pm-dice" data-testid="pet-monopoly-roll" disabled aria-label="擲骰">{moving.phase==="waiting"?"CPU":dice||moving.dice}</button>
+                <div className="pm-section-title">{moving.phase==="waiting"?`${moving.name} 回合`:moving.phase==="rolling"?moving.actor==="cpu"?`${moving.name} 擲骰`:"玩家移動":moving.actor==="cpu"?`${moving.name} 移動`:"玩家移動"}</div>
+                <div className="pm-deal-text">{moving.phase==="waiting"?"準備中":moving.phase==="rolling"?`骰出 ${moving.dice}`:`${moving.step}/${moving.total} → ${moving.to}`}</div>
               </div>
             )}
             {!moving&&pending&&(
