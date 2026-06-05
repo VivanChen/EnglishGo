@@ -1085,6 +1085,12 @@ describe('EnglishGo app smoke flow', () => {
 
     expect(screen.getByTestId('pet-monopoly-overlay')).toHaveAttribute('data-panel', 'dock');
     expect(screen.getByTestId('pet-monopoly-overlay')).toHaveClass('pm-action-dock');
+    expect(screen.getByTestId('pet-monopoly-overlay')).toHaveAttribute('data-state', 'idle');
+
+    const petMonopolyStyles = Array.from(document.querySelectorAll('style'))
+      .map(style => style.textContent || '')
+      .join('\n');
+    expect(petMonopolyStyles).toMatch(/\.pm-overlay\[data-state="idle"\][^{]*{[^}]*max-height:none[^}]*overflow:visible/);
 
     fireEvent.click(screen.getByTestId('pet-monopoly-roll'));
 
