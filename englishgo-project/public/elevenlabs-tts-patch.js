@@ -12,6 +12,7 @@
   const LS_SPEED = "eg_tts_speed";
   const DEFAULT_VOICE = "1AKkSX7KMPHIWuz76m0n";
   const DEFAULT_SPEED = 0.9;
+  const CHINESE_RE = /[\u3400-\u9FFF\uF900-\uFAFF]/;
   const VOICES = [
     { id: "1AKkSX7KMPHIWuz76m0n", label: "目前選用", accent: "custom" },
     { id: "EXAVITQu4vr4xnSDxMaL", label: "美式 Bella", accent: "US" },
@@ -40,9 +41,14 @@
       .toLowerCase();
   }
 
-  function isEligibleText(text) {
+  function isChineseLang(lang) {
+    return /^zh/i.test(String(lang || ""));
+  }
+
+  function isEligibleText(text, lang = "en-US") {
     const normalized = normalizeText(text);
-    return Boolean(normalized && normalized.length <= MAX_CHARS && /[A-Za-z]/.test(normalized));
+    if (!normalized || normalized.length > MAX_CHARS) return false;
+    return isChineseLang(lang) ? CHINESE_RE.test(normalized) : /[A-Za-z]/.test(normalized);
   }
 
   function getSettings() {
@@ -56,7 +62,7 @@
   }
 
   function makeCacheKey(text, settings) {
-    return `${settings.voiceId}|${normalizeText(text)}`;
+    return `${settings.lang || "en-US"}|${settings.voiceId || "server-default"}|${normalizeText(text)}`;
   }
 
   function stopActiveAudio() {
@@ -74,10 +80,10 @@
     const text = String(utterance?.text || "").trim();
     const lang = String(utterance?.lang || "en-US");
     if (!text || text.length > MAX_CHARS) return false;
-    if (!/^en/i.test(lang)) return false;
-    if (!/[A-Za-z]/.test(text)) return false;
     if (typeof utterance.onboundary === "function") return false;
-    return true;
+    if (/^en/i.test(lang)) return /[A-Za-z]/.test(text);
+    if (isChineseLang(lang)) return utterance?.__englishGoApiTts === true && CHINESE_RE.test(text);
+    return false;
   }
 
   function emitEnd(utterance) {
@@ -134,9 +140,16 @@
   }
 
   async function getAudioUrl(text, options = {}) {
-    const settings = { ...getSettings(), ...options };
+    const baseSettings = getSettings();
+    const lang = options.lang || "en-US";
+    const settings = {
+      ...baseSettings,
+      ...options,
+      lang,
+      voiceId: options.voiceId ?? (isChineseLang(lang) ? undefined : baseSettings.voiceId),
+    };
     const normalized = normalizeText(text);
-    if (!isEligibleText(normalized)) throw new Error("Text is not eligible for ElevenLabs TTS");
+    if (!isEligibleText(normalized, settings.lang)) throw new Error("Text is not eligible for ElevenLabs TTS");
     const cacheKey = makeCacheKey(normalized, settings);
     if (audioCache.has(cacheKey)) return audioCache.get(cacheKey);
     if (inflight.has(cacheKey)) return inflight.get(cacheKey);
@@ -144,7 +157,7 @@
     const promise = fetch("/.netlify/functions/elevenlabs-tts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: normalized, voiceId: settings.voiceId }),
+      body: JSON.stringify({ text: normalized, voiceId: settings.voiceId, lang: settings.lang, speed: settings.speed }),
     })
       .then(async (res) => {
         if (!res.ok) throw new Error(`ElevenLabs TTS failed: ${res.status}`);
@@ -178,7 +191,7 @@
 
     for (const item of rawItems) {
       const normalized = normalizeText(item);
-      if (!isEligibleText(normalized) || seen.has(normalized)) continue;
+      if (!isEligibleText(normalized, options.lang) || seen.has(normalized)) continue;
       seen.add(normalized);
       items.push(normalized);
       if (items.length >= limit) break;
@@ -313,7 +326,7 @@
     nativeCancel();
     const loadingToken = showTtsLoading(text);
 
-    getAudioUrl(text)
+    getAudioUrl(text, { lang: utterance.lang })
       .then((url) => {
         const audio = new Audio(url);
         activeAudio = audio;

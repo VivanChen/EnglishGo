@@ -76,10 +76,14 @@ function getBooleanEnv(name, fallback) {
   return /^(1|true|yes|on)$/i.test(value);
 }
 
-function makeCacheKey({ normalizedText, voiceId, modelId, outputFormat, voiceSettings }) {
+function isChineseLang(lang) {
+  return /^zh/i.test(String(lang || ""));
+}
+
+function makeCacheKey({ normalizedText, lang, voiceId, modelId, outputFormat, voiceSettings }) {
   const hash = crypto
     .createHash("sha256")
-    .update(JSON.stringify({ text: normalizedText, voiceId, modelId, outputFormat, voiceSettings, format: "mp3" }))
+    .update(JSON.stringify({ text: normalizedText, lang, voiceId, modelId, outputFormat, voiceSettings, format: "mp3" }))
     .digest("hex");
 
   return `${voiceId}/${hash}.mp3`;
@@ -196,7 +200,10 @@ export default async function handler(req, context = {}) {
 
   const originalText = String(payload.text || "").trim();
   const normalizedText = normalizeTextForTts(originalText);
-  const voiceId = getEnv("ELEVENLABS_VOICE_ID") || payload.voiceId || DEFAULT_VOICE_ID;
+  const lang = String(payload.lang || "en-US").trim();
+  const voiceId = isChineseLang(lang)
+    ? getEnv("ELEVENLABS_ZH_VOICE_ID")
+    : getEnv("ELEVENLABS_VOICE_ID") || payload.voiceId || DEFAULT_VOICE_ID;
   const modelId = getEnv("ELEVENLABS_MODEL_ID") || DEFAULT_MODEL_ID;
   const outputFormat = getEnv("ELEVENLABS_OUTPUT_FORMAT") || DEFAULT_OUTPUT_FORMAT;
   const playbackSpeed = clampNumber(payload.speed ?? getEnv("ELEVENLABS_SPEED"), 0.7, 1.2, 1);
@@ -214,17 +221,22 @@ export default async function handler(req, context = {}) {
     return jsonResponse(400, { error: "Missing text" });
   }
 
+  if (isChineseLang(lang) && !voiceId) {
+    return jsonResponse(500, { error: "Missing ELEVENLABS_ZH_VOICE_ID for Chinese TTS" });
+  }
+
   if (normalizedText.length > MAX_TEXT_LENGTH) {
     return jsonResponse(400, { error: `Text is too long. Max length is ${MAX_TEXT_LENGTH} characters.` });
   }
 
-  const cacheKey = makeCacheKey({ normalizedText, voiceId, modelId, outputFormat, voiceSettings });
+  const cacheKey = makeCacheKey({ normalizedText, lang, voiceId, modelId, outputFormat, voiceSettings });
   const debugHeaders = getBooleanEnv("TTS_DEBUG_HEADERS", false)
     ? {
         "X-TTS-Bucket": safeHeaderValue(bucket),
         "X-TTS-Cache-Key": safeHeaderValue(cacheKey),
         "X-TTS-Normalized-Text": safeHeaderValue(normalizedText),
         "X-TTS-Voice-Id": safeHeaderValue(voiceId),
+        "X-TTS-Lang": safeHeaderValue(lang),
         "X-TTS-Model-Id": safeHeaderValue(modelId),
         "X-TTS-Output-Format": safeHeaderValue(outputFormat),
         "X-TTS-Speaker-Boost": String(voiceSettings.use_speaker_boost),

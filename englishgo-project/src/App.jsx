@@ -1679,6 +1679,7 @@ function makeUtterance(t,l="en-US",r=0.9,opts={},token=_speechToken){
   u.onend=finish;
   u.onerror=e=>{unregisterCancel();if(token===_speechToken)opts.onerror?.(e)};
   if(opts.onboundary)u.onboundary=e=>{if(token===_speechToken)opts.onboundary?.(e)};
+  if(opts.apiTts)u.__englishGoApiTts=true;
   u.cancel=()=>{if(token===_speechToken)stopSpeech()};
   return u;
 }
@@ -1748,6 +1749,7 @@ function speakStory(sentences,opts={}){
     opts.onSentence?.(i-1,text,item);
     const u=makeUtterance(text,item?.lang||opts.lang||"en-US",item?.rate||opts.rate||0.88,{
       pitch:item?.pitch||opts.pitch||1.08,
+      apiTts:item?.apiTts??opts.apiTts,
       onend:()=>{
         if(cancelled||token!==_speechToken)return;
         if(isLast){unregisterCancel();opts.onFinish?.()}
