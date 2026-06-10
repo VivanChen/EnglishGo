@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import handler from "./elevenlabs-tts.js";
+import handler from "../netlify/functions/elevenlabs-tts.js";
 
 const ENV_KEYS = [
   "ELEVENLABS_API_KEY",
