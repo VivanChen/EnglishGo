@@ -132,11 +132,11 @@ Expected: 93 or more tests pass and build succeeds.
 
 At desktop and 390 px mobile widths verify forward/backward buttons, keyboard arrows, swipe turns, rapid-click locking, correct page landing, no text mirroring, no horizontal overflow, and no console errors.
 
-- [ ] **Step 3: Commit intended changes**
+- [x] **Step 3: Commit intended changes**
 
 Stage the immersive reader implementation, realistic page-turn implementation, tests, and plan documents. Exclude `vite-5178.*.log`.
 
-- [ ] **Step 4: Push `main`**
+- [x] **Step 4: Push `main`**
 
 Run:
 
