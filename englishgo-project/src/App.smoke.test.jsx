@@ -800,6 +800,63 @@ describe('EnglishGo app smoke flow', () => {
     expect(await screen.findByText('The Secret Forest Adventure', {}, { timeout: 5000 })).toBeInTheDocument();
   });
 
+  it('opens novel chapters in a wide immersive reading layout', async () => {
+    await openElementaryMenu();
+
+    clickFirstButtonWithText('閱讀聽力');
+    clickFirstButtonWithText('英文小說');
+
+    fireEvent.click(await screen.findByText('The Whispering Tree', {}, { timeout: 5000 }));
+
+    expect(await screen.findByTestId('novel-immersive-toolbar')).toBeInTheDocument();
+    expect(screen.getByTestId('novel-immersive-shell')).toHaveStyle({
+      width: 'min(1120px, calc(100vw - 32px))',
+    });
+    expect(screen.queryByTestId('novel-chapter-hero')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('novel-reading-settings')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('novel-chapter-nav')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '下一頁' }));
+    expect(await screen.findByText('Page 3')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '退出沉浸' }));
+    expect(await screen.findByTestId('novel-chapter-hero')).toBeInTheDocument();
+    expect(screen.getByTestId('novel-reading-settings')).toBeInTheDocument();
+    expect(screen.getByTestId('novel-chapter-nav')).toBeInTheDocument();
+    expect(screen.getByText('Page 3')).toBeInTheDocument();
+  });
+
+  it('uses a realistic novel page turn in both directions', async () => {
+    await openElementaryMenu();
+
+    clickFirstButtonWithText('閱讀聽力');
+    clickFirstButtonWithText('英文小說');
+
+    fireEvent.click(await screen.findByText('The Whispering Tree', {}, { timeout: 5000 }));
+    expect(await screen.findByTestId('novel-immersive-toolbar')).toBeInTheDocument();
+
+    const nextButton = screen.getByRole('button', { name: '下一頁' });
+    fireEvent.click(nextButton);
+
+    const forwardTurn = screen.getByTestId('novel-page-turn');
+    expect(forwardTurn).toHaveAttribute('data-direction', 'forward');
+    expect(nextButton).toBeDisabled();
+    expect(screen.getByText('Pages 1-2')).toBeInTheDocument();
+
+    fireEvent.animationEnd(forwardTurn);
+    expect(await screen.findByText('Page 3')).toBeInTheDocument();
+
+    const previousButton = screen.getByRole('button', { name: '上一頁' });
+    fireEvent.click(previousButton);
+
+    const backwardTurn = screen.getByTestId('novel-page-turn');
+    expect(backwardTurn).toHaveAttribute('data-direction', 'backward');
+    expect(previousButton).toBeDisabled();
+
+    fireEvent.animationEnd(backwardTurn);
+    expect(await screen.findByText('Page 1')).toBeInTheDocument();
+  });
+
   it('shows improved novel reading navigation inside a chapter', async () => {
     await openElementaryMenu();
 
@@ -808,6 +865,9 @@ describe('EnglishGo app smoke flow', () => {
 
     fireEvent.click(await screen.findByText('The Whispering Tree', {}, { timeout: 5000 }));
 
+    expect(await screen.findByTestId('novel-immersive-toolbar')).toBeInTheDocument();
+    expect(screen.getByText('Pages 1-2')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '退出沉浸' }));
     expect(await screen.findByText('閱讀控制台')).toBeInTheDocument();
     expect(screen.getByText('本頁進度')).toBeInTheDocument();
     expect(screen.getByText('章節概覽')).toBeInTheDocument();
@@ -822,16 +882,15 @@ describe('EnglishGo app smoke flow', () => {
 
     fireEvent.click(await screen.findByText('The Whispering Tree', {}, { timeout: 5000 }));
 
-    expect(await screen.findByText('閱讀控制台')).toBeInTheDocument();
+    const immersiveToolbar = await screen.findByTestId('novel-immersive-toolbar');
     expect(screen.queryByText('curious')).not.toBeInTheDocument();
     expect(screen.queryByText(/What did Lily find in the forest/)).not.toBeInTheDocument();
 
-    const novelSettings = screen.getByTestId('novel-reading-settings');
-    fireEvent.click(within(novelSettings).getByRole('button', { name: /重點單字/ }));
+    fireEvent.click(within(immersiveToolbar).getByRole('button', { name: /重點單字/ }));
     expect(screen.getByTestId('novel-side-panel')).toBeInTheDocument();
     expect(screen.getByText('curious')).toBeInTheDocument();
 
-    fireEvent.click(within(novelSettings).getByRole('button', { name: /章節測驗/ }));
+    fireEvent.click(within(immersiveToolbar).getByRole('button', { name: /章節測驗/ }));
     expect(await screen.findByText(/What did Lily find in the forest/)).toBeInTheDocument();
   });
 
@@ -842,7 +901,7 @@ describe('EnglishGo app smoke flow', () => {
     clickFirstButtonWithText('英文小說');
 
     fireEvent.click(await screen.findByText('The Whispering Tree', {}, { timeout: 5000 }));
-    expect(await screen.findByText('閱讀控制台')).toBeInTheDocument();
+    expect(await screen.findByTestId('novel-immersive-toolbar')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: '下一頁' }));
     expect(await screen.findByText('Page 3')).toBeInTheDocument();
@@ -867,7 +926,7 @@ describe('EnglishGo app smoke flow', () => {
 
     fireEvent.click(await screen.findByText('The Whispering Tree', {}, { timeout: 5000 }));
 
-    expect(await screen.findByText('閱讀設定')).toBeInTheDocument();
+    expect(await screen.findByTestId('novel-immersive-toolbar')).toBeInTheDocument();
     expect(screen.getByTestId('novel-book-spread')).toHaveStyle({
       gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
     });
@@ -885,8 +944,9 @@ describe('EnglishGo app smoke flow', () => {
     fireEvent.click(screen.getByRole('button', { name: '寬行距' }));
     expect((await screen.findAllByTestId('novel-reader-text'))[0]).toHaveStyle({ lineHeight: '1.9' });
 
-    fireEvent.click(screen.getByRole('button', { name: '專注模式' }));
-    expect(screen.queryByText('閱讀控制台')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '退出沉浸' }));
+    expect(await screen.findByText('閱讀設定')).toBeInTheDocument();
+    expect(screen.getByText('閱讀控制台')).toBeInTheDocument();
   });
 
   it('uses a mobile-safe novel reader layout on narrow screens', async () => {
@@ -898,11 +958,11 @@ describe('EnglishGo app smoke flow', () => {
 
     fireEvent.click(await screen.findByText('The Whispering Tree', {}, { timeout: 5000 }));
 
-    expect(await screen.findByTestId('novel-chapter-hero')).toHaveStyle({ gridTemplateColumns: '1fr' });
-    expect(screen.getByTestId('novel-hero-media')).toHaveStyle({ overflow: 'visible' });
-    expect(screen.getByTestId('novel-illustration-frame')).toHaveStyle({ height: '100%' });
-    expect(screen.getByTestId('novel-reading-settings')).toHaveStyle({ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' });
-    expect(screen.getByTestId('novel-chapter-nav')).toHaveStyle({ gridTemplateColumns: '1fr 1fr' });
+    expect(await screen.findByTestId('novel-immersive-toolbar')).toBeInTheDocument();
+    expect(screen.getByTestId('novel-immersive-shell')).toHaveStyle({ width: '100%' });
+    expect(screen.queryByTestId('novel-chapter-hero')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('novel-reading-settings')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('novel-chapter-nav')).not.toBeInTheDocument();
     expect(screen.getByTestId('novel-reader-panel')).toHaveStyle({
       overflowY: 'hidden',
       padding: '0 4px calc(18px + env(safe-area-inset-bottom))',
@@ -913,8 +973,15 @@ describe('EnglishGo app smoke flow', () => {
       paddingBottom: 'calc(10px + env(safe-area-inset-bottom))',
     });
 
-    fireEvent.click(within(screen.getByTestId('novel-reading-settings')).getByRole('button', { name: /章節測驗/ }));
+    fireEvent.click(within(screen.getByTestId('novel-immersive-toolbar')).getByRole('button', { name: /章節測驗/ }));
     expect(screen.getByTestId('novel-side-panel')).toHaveStyle({ paddingBottom: 'calc(14px + env(safe-area-inset-bottom))' });
+
+    fireEvent.click(screen.getByRole('button', { name: '退出沉浸' }));
+    expect(await screen.findByTestId('novel-chapter-hero')).toHaveStyle({ gridTemplateColumns: '1fr' });
+    expect(screen.getByTestId('novel-hero-media')).toHaveStyle({ overflow: 'visible' });
+    expect(screen.getByTestId('novel-illustration-frame')).toHaveStyle({ height: '100%' });
+    expect(screen.getByTestId('novel-reading-settings')).toHaveStyle({ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' });
+    expect(screen.getByTestId('novel-chapter-nav')).toHaveStyle({ gridTemplateColumns: '1fr 1fr' });
 
     setViewportWidth(1024);
   });
