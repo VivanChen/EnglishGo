@@ -845,18 +845,18 @@ describe('EnglishGo app smoke flow', () => {
     expect(await screen.findByText('閱讀控制台')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: '下一頁' }));
-    expect(await screen.findByText('Page 2')).toBeInTheDocument();
+    expect(await screen.findByText('Page 3')).toBeInTheDocument();
 
     fireEvent.click(screen.getByText('章節列表'));
 
     expect(await screen.findByText('繼續閱讀')).toBeInTheDocument();
-    expect(screen.getByText(/上次讀到 Chapter 1 · Page 2/)).toBeInTheDocument();
+    expect(screen.getByText(/上次讀到 Chapter 1 · Page 3/)).toBeInTheDocument();
     const firstChapterCard = screen.getByTestId('novel-chapter-card-1');
-    expect(within(firstChapterCard).getByText(/進行中 · Page 2/)).toBeInTheDocument();
+    expect(within(firstChapterCard).getByText(/進行中 · Page 3/)).toBeInTheDocument();
     expect(within(firstChapterCard).getByText(/測驗 0\/3/)).toBeInTheDocument();
 
     fireEvent.click(screen.getByText('繼續閱讀'));
-    expect(await screen.findByText('Page 2')).toBeInTheDocument();
+    expect(await screen.findByText('Page 3')).toBeInTheDocument();
   });
 
   it('adjusts novel reading comfort settings', async () => {
@@ -868,14 +868,22 @@ describe('EnglishGo app smoke flow', () => {
     fireEvent.click(await screen.findByText('The Whispering Tree', {}, { timeout: 5000 }));
 
     expect(await screen.findByText('閱讀設定')).toBeInTheDocument();
+    expect(screen.getByTestId('novel-book-spread')).toHaveStyle({
+      gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+    });
+    expect(screen.getAllByTestId('novel-book-page')).toHaveLength(2);
+    expect(screen.getByTestId('novel-reader-panel')).toHaveStyle({ overflowY: 'hidden' });
     const paragraphs = await screen.findAllByTestId('novel-reader-text');
     expect(paragraphs[0]).toHaveStyle({ fontSize: '16px' });
 
+    fireEvent.click(screen.getByRole('button', { name: '下一頁' }));
+    expect(await screen.findByText('Page 3')).toBeInTheDocument();
+
     fireEvent.click(screen.getByRole('button', { name: 'A+' }));
-    expect(paragraphs[0]).toHaveStyle({ fontSize: '18px' });
+    expect((await screen.findAllByTestId('novel-reader-text'))[0]).toHaveStyle({ fontSize: '18px' });
 
     fireEvent.click(screen.getByRole('button', { name: '寬行距' }));
-    expect(paragraphs[0]).toHaveStyle({ lineHeight: '1.9' });
+    expect((await screen.findAllByTestId('novel-reader-text'))[0]).toHaveStyle({ lineHeight: '1.9' });
 
     fireEvent.click(screen.getByRole('button', { name: '專注模式' }));
     expect(screen.queryByText('閱讀控制台')).not.toBeInTheDocument();
@@ -895,10 +903,13 @@ describe('EnglishGo app smoke flow', () => {
     expect(screen.getByTestId('novel-illustration-frame')).toHaveStyle({ height: '100%' });
     expect(screen.getByTestId('novel-reading-settings')).toHaveStyle({ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' });
     expect(screen.getByTestId('novel-chapter-nav')).toHaveStyle({ gridTemplateColumns: '1fr 1fr' });
-    expect(screen.getByTestId('novel-reader-panel')).toHaveStyle({ padding: '0 4px calc(18px + env(safe-area-inset-bottom))' });
+    expect(screen.getByTestId('novel-reader-panel')).toHaveStyle({
+      overflowY: 'hidden',
+      padding: '0 4px calc(18px + env(safe-area-inset-bottom))',
+    });
+    expect(screen.getByTestId('novel-book-spread')).toHaveStyle({ gridTemplateColumns: '1fr' });
+    expect(screen.getAllByTestId('novel-book-page')).toHaveLength(1);
     expect(screen.getByTestId('novel-page-actions')).toHaveStyle({
-      position: 'sticky',
-      bottom: '0',
       paddingBottom: 'calc(10px + env(safe-area-inset-bottom))',
     });
 
