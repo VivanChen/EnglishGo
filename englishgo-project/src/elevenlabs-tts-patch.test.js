@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const patchSource = readFileSync(path.join(process.cwd(), "public", "elevenlabs-tts-patch.js"), "utf8");
 
@@ -66,73 +66,24 @@ describe("ElevenLabs TTS patch", () => {
     const { nativeSpeak } = installPatchEnv();
     loadPatch();
 
-    const utterance = new SpeechSynthesisUtterance("這是中文測試。");
+    const utterance = new SpeechSynthesisUtterance("\u9019\u662f\u4e00\u53e5\u4e2d\u6587\u3002");
     utterance.lang = "zh-TW";
     window.speechSynthesis.speak(utterance);
 
     expect(nativeSpeak).toHaveBeenCalledWith(utterance);
   });
 
-  it("sends novel-marked Chinese speech to the Netlify TTS API", async () => {
+  it("keeps novel-marked Chinese speech native without calling the API", () => {
     const { nativeSpeak } = installPatchEnv();
-    const play = vi.fn(() => Promise.resolve());
-    globalThis.fetch = vi.fn(() =>
-      Promise.resolve(new Response(new Blob(["mp3"], { type: "audio/mpeg" }), { status: 200 })),
-    );
-    globalThis.Audio = vi.fn(() => ({
-      play,
-      pause: vi.fn(),
-      currentTime: 0,
-      playbackRate: 1,
-      volume: 1,
-    }));
-    globalThis.URL.createObjectURL = vi.fn(() => "blob:tts");
-
+    globalThis.fetch = vi.fn();
     loadPatch();
 
-    const utterance = new SpeechSynthesisUtterance("這是小說中文朗讀。");
+    const utterance = new SpeechSynthesisUtterance("\u9019\u662f\u5c0f\u8aaa\u7684\u4e2d\u6587\u65c1\u767d\u3002");
     utterance.lang = "zh-TW";
     utterance.__englishGoApiTts = true;
     window.speechSynthesis.speak(utterance);
 
-    await vi.waitFor(() => {
-      expect(globalThis.fetch).toHaveBeenCalledWith(
-        "/.netlify/functions/elevenlabs-tts",
-        expect.objectContaining({
-          method: "POST",
-          body: expect.stringContaining('"lang":"zh-TW"'),
-        }),
-      );
-    });
-    expect(nativeSpeak).not.toHaveBeenCalledWith(utterance);
-  });
-
-  it("plays Chinese novel narration at natural speed instead of the English preference", async () => {
-    installPatchEnv();
-    localStorage.setItem("eg_tts_speed", "0.9");
-    const audio = {
-      play: vi.fn(() => Promise.resolve()),
-      pause: vi.fn(),
-      currentTime: 0,
-      playbackRate: 0,
-      volume: 1,
-    };
-    globalThis.fetch = vi.fn(() =>
-      Promise.resolve(new Response(new Blob(["mp3"], { type: "audio/mpeg" }), { status: 200 })),
-    );
-    globalThis.Audio = vi.fn(() => audio);
-    globalThis.URL.createObjectURL = vi.fn(() => "blob:tts");
-
-    loadPatch();
-
-    const utterance = new SpeechSynthesisUtterance("莉莉走進了神祕森林。");
-    utterance.lang = "zh-TW";
-    utterance.__englishGoApiTts = true;
-    window.speechSynthesis.speak(utterance);
-
-    await vi.waitFor(() => expect(audio.play).toHaveBeenCalled());
-    expect(audio.playbackRate).toBe(1);
-    const [, init] = globalThis.fetch.mock.calls[0];
-    expect(JSON.parse(init.body).speed).toBe(1);
+    expect(nativeSpeak).toHaveBeenCalledWith(utterance);
+    expect(globalThis.fetch).not.toHaveBeenCalled();
   });
 });

@@ -82,7 +82,7 @@
     if (!text || text.length > MAX_CHARS) return false;
     if (typeof utterance.onboundary === "function") return false;
     if (/^en/i.test(lang)) return /[A-Za-z]/.test(text);
-    if (isChineseLang(lang)) return utterance?.__englishGoApiTts === true && CHINESE_RE.test(text);
+    if (isChineseLang(lang)) return false;
     return false;
   }
 
