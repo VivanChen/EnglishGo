@@ -931,9 +931,25 @@ describe('EnglishGo app smoke flow', () => {
       gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
     });
     expect(screen.getAllByTestId('novel-book-page')).toHaveLength(2);
-    expect(screen.getByTestId('novel-reader-panel')).toHaveStyle({ overflowY: 'hidden' });
+    expect(screen.getByTestId('novel-reader-panel')).toHaveStyle({
+      overflowY: 'hidden',
+      background: '#E8E4DA',
+    });
+    expect(screen.getByTestId('novel-book-spread')).toHaveAttribute(
+      'data-book-style',
+      'clean-paper',
+    );
+    expect(screen.getByTestId('novel-book-spine')).toBeInTheDocument();
     const paragraphs = await screen.findAllByTestId('novel-reader-text');
-    expect(paragraphs[0]).toHaveStyle({ fontSize: '16px' });
+    expect(paragraphs[0]).toHaveStyle({
+      fontSize: '16px',
+      fontFamily: 'Georgia, Cambria, "Times New Roman", serif',
+    });
+    const translations = screen.getAllByTestId('novel-reader-translation');
+    expect(translations[0]).toHaveStyle({
+      fontFamily: 'inherit',
+      borderLeft: '3px solid #D6B873',
+    });
 
     fireEvent.click(screen.getByRole('button', { name: '下一頁' }));
     expect(await screen.findByText('Page 3')).toBeInTheDocument();
