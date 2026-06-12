@@ -5,6 +5,8 @@ const ENV_KEYS = [
   "ELEVENLABS_API_KEY",
   "ELEVENLABS_VOICE_ID",
   "ELEVENLABS_ZH_VOICE_ID",
+  "ELEVENLABS_MODEL_ID",
+  "ELEVENLABS_ZH_MODEL_ID",
   "SUPABASE_URL",
   "VITE_SUPABASE_URL",
   "SUPABASE_SERVICE_ROLE_KEY",
@@ -59,6 +61,8 @@ describe("elevenlabs-tts function voice selection", () => {
   it("uses ELEVENLABS_ZH_VOICE_ID for Chinese requests", async () => {
     process.env.ELEVENLABS_VOICE_ID = "english-voice";
     process.env.ELEVENLABS_ZH_VOICE_ID = "mandarin-voice";
+    process.env.ELEVENLABS_MODEL_ID = "eleven_flash_v2_5";
+    process.env.ELEVENLABS_ZH_MODEL_ID = "eleven_multilingual_v2";
 
     const res = await handler(request({ text: "這是小說中文朗讀。", lang: "zh-TW" }));
 
@@ -66,5 +70,19 @@ describe("elevenlabs-tts function voice selection", () => {
     const [url, init] = globalThis.fetch.mock.calls[0];
     expect(String(url)).toBe("https://api.elevenlabs.io/v1/text-to-speech/mandarin-voice?output_format=mp3_44100_128");
     expect(init.method).toBe("POST");
+    expect(JSON.parse(init.body).model_id).toBe("eleven_multilingual_v2");
+  });
+
+  it("keeps the configured default model for English requests", async () => {
+    process.env.ELEVENLABS_VOICE_ID = "english-voice";
+    process.env.ELEVENLABS_ZH_VOICE_ID = "mandarin-voice";
+    process.env.ELEVENLABS_MODEL_ID = "eleven_flash_v2_5";
+    process.env.ELEVENLABS_ZH_MODEL_ID = "eleven_multilingual_v2";
+
+    const res = await handler(request({ text: "This is an English narration.", lang: "en-US" }));
+
+    expect(res.status).toBe(200);
+    const [, init] = globalThis.fetch.mock.calls[0];
+    expect(JSON.parse(init.body).model_id).toBe("eleven_flash_v2_5");
   });
 });

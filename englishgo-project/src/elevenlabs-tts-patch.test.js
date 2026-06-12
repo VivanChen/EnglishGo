@@ -106,4 +106,33 @@ describe("ElevenLabs TTS patch", () => {
     });
     expect(nativeSpeak).not.toHaveBeenCalledWith(utterance);
   });
+
+  it("plays Chinese novel narration at natural speed instead of the English preference", async () => {
+    installPatchEnv();
+    localStorage.setItem("eg_tts_speed", "0.9");
+    const audio = {
+      play: vi.fn(() => Promise.resolve()),
+      pause: vi.fn(),
+      currentTime: 0,
+      playbackRate: 0,
+      volume: 1,
+    };
+    globalThis.fetch = vi.fn(() =>
+      Promise.resolve(new Response(new Blob(["mp3"], { type: "audio/mpeg" }), { status: 200 })),
+    );
+    globalThis.Audio = vi.fn(() => audio);
+    globalThis.URL.createObjectURL = vi.fn(() => "blob:tts");
+
+    loadPatch();
+
+    const utterance = new SpeechSynthesisUtterance("莉莉走進了神祕森林。");
+    utterance.lang = "zh-TW";
+    utterance.__englishGoApiTts = true;
+    window.speechSynthesis.speak(utterance);
+
+    await vi.waitFor(() => expect(audio.play).toHaveBeenCalled());
+    expect(audio.playbackRate).toBe(1);
+    const [, init] = globalThis.fetch.mock.calls[0];
+    expect(JSON.parse(init.body).speed).toBe(1);
+  });
 });

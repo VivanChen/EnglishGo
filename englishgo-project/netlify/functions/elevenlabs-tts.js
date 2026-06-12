@@ -3,6 +3,7 @@ import crypto from "node:crypto";
 const DEFAULT_VOICE_ID = "1AKkSX7KMPHIWuz76m0n";
 const DEFAULT_BUCKET = "tts-cache";
 const DEFAULT_MODEL_ID = "eleven_flash_v2_5";
+const DEFAULT_ZH_MODEL_ID = "eleven_multilingual_v2";
 const DEFAULT_OUTPUT_FORMAT = "mp3_44100_128";
 const MAX_TEXT_LENGTH = 900;
 
@@ -204,7 +205,9 @@ export default async function handler(req, context = {}) {
   const voiceId = isChineseLang(lang)
     ? getEnv("ELEVENLABS_ZH_VOICE_ID")
     : getEnv("ELEVENLABS_VOICE_ID") || payload.voiceId || DEFAULT_VOICE_ID;
-  const modelId = getEnv("ELEVENLABS_MODEL_ID") || DEFAULT_MODEL_ID;
+  const modelId = isChineseLang(lang)
+    ? getEnv("ELEVENLABS_ZH_MODEL_ID") || DEFAULT_ZH_MODEL_ID
+    : getEnv("ELEVENLABS_MODEL_ID") || DEFAULT_MODEL_ID;
   const outputFormat = getEnv("ELEVENLABS_OUTPUT_FORMAT") || DEFAULT_OUTPUT_FORMAT;
   const playbackSpeed = clampNumber(payload.speed ?? getEnv("ELEVENLABS_SPEED"), 0.7, 1.2, 1);
   const bucket = getEnv("SUPABASE_TTS_BUCKET") || DEFAULT_BUCKET;

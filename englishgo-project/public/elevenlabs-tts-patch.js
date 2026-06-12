@@ -147,6 +147,7 @@
       ...options,
       lang,
       voiceId: options.voiceId ?? (isChineseLang(lang) ? undefined : baseSettings.voiceId),
+      speed: isChineseLang(lang) ? 1 : options.speed ?? baseSettings.speed,
     };
     const normalized = normalizeText(text);
     if (!isEligibleText(normalized, settings.lang)) throw new Error("Text is not eligible for ElevenLabs TTS");
@@ -331,7 +332,7 @@
         const audio = new Audio(url);
         activeAudio = audio;
         const settings = getSettings();
-        audio.playbackRate = settings.speed;
+        audio.playbackRate = isChineseLang(utterance.lang) ? 1 : settings.speed;
         audio.volume = typeof utterance.volume === "number" ? utterance.volume : 1;
         audio.oncanplay = () => hideTtsLoading(loadingToken);
         audio.onplaying = () => hideTtsLoading(loadingToken);
