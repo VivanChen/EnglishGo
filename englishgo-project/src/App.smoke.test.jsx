@@ -840,6 +840,9 @@ describe('EnglishGo app smoke flow', () => {
 
     const forwardTurn = screen.getByTestId('novel-page-turn');
     expect(forwardTurn).toHaveAttribute('data-direction', 'forward');
+    expect(forwardTurn).toHaveStyle({
+      animation: 'novel-sheet-forward 400ms cubic-bezier(.3,.05,.2,1) forwards',
+    });
     expect(nextButton).toBeDisabled();
     expect(screen.getByText('Pages 1-2')).toBeInTheDocument();
 
@@ -851,10 +854,19 @@ describe('EnglishGo app smoke flow', () => {
 
     const backwardTurn = screen.getByTestId('novel-page-turn');
     expect(backwardTurn).toHaveAttribute('data-direction', 'backward');
+    expect(backwardTurn).toHaveStyle({
+      animation: 'novel-sheet-backward 400ms cubic-bezier(.3,.05,.2,1) forwards',
+    });
     expect(previousButton).toBeDisabled();
 
     fireEvent.animationEnd(backwardTurn);
     expect(await screen.findByText('Page 1')).toBeInTheDocument();
+
+    const pageTurnStyles = screen.getByTestId('novel-page-turn-styles');
+    expect(pageTurnStyles.textContent).toContain('@media (prefers-reduced-motion:reduce)');
+    expect(pageTurnStyles.textContent).toContain(
+      'animation:novel-sheet-fade 120ms ease-out forwards!important',
+    );
   });
 
   it('shows improved novel reading navigation inside a chapter', async () => {
