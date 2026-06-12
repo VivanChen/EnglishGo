@@ -24,7 +24,7 @@ No content, TTS service, database, Supabase, or Netlify files change.
 **Files:**
 - Test: `englishgo-project/src/App.smoke.test.jsx`
 
-- [ ] **Step 1: Add failing clean-paper and typography assertions**
+- [x] **Step 1: Add failing clean-paper and typography assertions**
 
 Extend `adjusts novel reading comfort settings` after the reader opens:
 
@@ -50,7 +50,7 @@ expect(translations[0]).toHaveStyle({
 });
 ```
 
-- [ ] **Step 2: Run the focused test and verify RED**
+- [x] **Step 2: Run the focused test and verify RED**
 
 Run:
 
@@ -60,7 +60,7 @@ npm test -- src/App.smoke.test.jsx -t "adjusts novel reading comfort settings"
 
 Expected: FAIL because `data-book-style`, `novel-book-spine`, and `novel-reader-translation` do not yet exist and the old colors/fonts remain.
 
-- [ ] **Step 3: Commit the failing test**
+- [x] **Step 3: Commit the failing test**
 
 ```powershell
 git add -- englishgo-project/src/App.smoke.test.jsx
@@ -73,7 +73,7 @@ git commit -m "Test clean paper novel reader styling"
 - Modify: `englishgo-project/src/features/NovelM.jsx`
 - Test: `englishgo-project/src/App.smoke.test.jsx`
 
-- [ ] **Step 1: Add stable reading font constants**
+- [x] **Step 1: Add stable reading font constants**
 
 Near the novel block helpers, add:
 
@@ -83,7 +83,7 @@ const NOVEL_PAPER="#FFFEF9";
 const NOVEL_SURROUND="#E8E4DA";
 ```
 
-- [ ] **Step 2: Apply the English and Chinese typography split**
+- [x] **Step 2: Apply the English and Chinese typography split**
 
 Set English prose to:
 
@@ -103,7 +103,7 @@ borderRadius:"2px 7px 7px 2px"
 
 Keep the Chinese audio button and its `speakNovelText(b.zh,"zh-TW",1,b.i)` call unchanged.
 
-- [ ] **Step 3: Refine the page and surround surfaces**
+- [x] **Step 3: Refine the page and surround surfaces**
 
 Update `pageSheetStyle` to use `NOVEL_PAPER`, a neutral border, restrained outer shadow, and symmetrical inner-page shading. Update `novel-reader-panel` to use `NOVEL_SURROUND`.
 
@@ -136,7 +136,7 @@ Replace the anonymous desktop spine layer with:
 />
 ```
 
-- [ ] **Step 4: Ensure pagination remeasures after font availability**
+- [x] **Step 4: Ensure pagination remeasures after font availability**
 
 Add an effect that increments `layoutVersion` after `document.fonts.ready` resolves:
 
@@ -152,7 +152,7 @@ useEffect(()=>{
 
 The existing `useLayoutEffect` then reuses the measured block heights without changing the pagination model.
 
-- [ ] **Step 5: Run the focused test and verify GREEN**
+- [x] **Step 5: Run the focused test and verify GREEN**
 
 Run:
 
@@ -162,7 +162,7 @@ npm test -- src/App.smoke.test.jsx -t "adjusts novel reading comfort settings"
 
 Expected: PASS.
 
-- [ ] **Step 6: Run all novel smoke tests**
+- [x] **Step 6: Run all novel smoke tests**
 
 Run:
 
@@ -172,7 +172,7 @@ npm test -- src/App.smoke.test.jsx -t "novel"
 
 Expected: all novel tests pass.
 
-- [ ] **Step 7: Commit the implementation**
+- [x] **Step 7: Commit the implementation**
 
 ```powershell
 git add -- englishgo-project/src/features/NovelM.jsx englishgo-project/src/App.smoke.test.jsx
@@ -184,7 +184,7 @@ git commit -m "Refine novel reader with clean paper styling"
 **Files:**
 - Test: `englishgo-project/src/App.smoke.test.jsx`
 
-- [ ] **Step 1: Add a failing page-turn timing assertion**
+- [x] **Step 1: Add a failing page-turn timing assertion**
 
 In `uses a realistic novel page turn in both directions`, after locating `forwardTurn`, add:
 
@@ -213,7 +213,7 @@ expect(document.querySelector('style')?.textContent).toContain(
 );
 ```
 
-- [ ] **Step 2: Run the focused test and verify RED**
+- [x] **Step 2: Run the focused test and verify RED**
 
 Run:
 
@@ -229,7 +229,7 @@ Expected: FAIL because the current animation duration is 520 ms.
 - Modify: `englishgo-project/src/features/NovelM.jsx`
 - Test: `englishgo-project/src/App.smoke.test.jsx`
 
-- [ ] **Step 1: Change animation and fallback timing**
+- [x] **Step 1: Change animation and fallback timing**
 
 Change the page-turn layer to:
 
@@ -239,7 +239,7 @@ animation:`novel-sheet-${pageTurn.direction} 400ms cubic-bezier(.3,.05,.2,1) for
 
 Change the fallback timer from `620` to `480`.
 
-- [ ] **Step 2: Refine the keyframe shadow curve**
+- [x] **Step 2: Refine the keyframe shadow curve**
 
 Use:
 
@@ -258,7 +258,7 @@ Use:
 
 Keep the existing 120 ms reduced-motion fade.
 
-- [ ] **Step 3: Run the focused test and verify GREEN**
+- [x] **Step 3: Run the focused test and verify GREEN**
 
 Run:
 
@@ -268,7 +268,7 @@ npm test -- src/App.smoke.test.jsx -t "realistic novel page turn"
 
 Expected: PASS.
 
-- [ ] **Step 4: Run all novel smoke tests**
+- [x] **Step 4: Run all novel smoke tests**
 
 Run:
 
@@ -278,7 +278,7 @@ npm test -- src/App.smoke.test.jsx -t "novel"
 
 Expected: all novel tests pass.
 
-- [ ] **Step 5: Commit the motion change**
+- [x] **Step 5: Commit the motion change**
 
 ```powershell
 git add -- englishgo-project/src/features/NovelM.jsx englishgo-project/src/App.smoke.test.jsx
@@ -292,7 +292,7 @@ git commit -m "Speed up weighted novel page turns"
 - Verify: `englishgo-project/src/App.smoke.test.jsx`
 - Update: `docs/superpowers/plans/2026-06-12-novel-clean-paper-reading.md`
 
-- [ ] **Step 1: Run deterministic checks**
+- [x] **Step 1: Run deterministic checks**
 
 From `englishgo-project` run:
 
@@ -309,7 +309,7 @@ git diff --check
 
 Expected: zero test failures, successful Vite build, and no whitespace errors.
 
-- [ ] **Step 2: Run desktop browser QA**
+- [x] **Step 2: Run desktop browser QA**
 
 At a desktop viewport verify:
 
@@ -320,7 +320,7 @@ At a desktop viewport verify:
 - Rapid clicks remain locked during a turn.
 - No clipping, horizontal overflow, console errors, or failed local media.
 
-- [ ] **Step 3: Run mobile browser QA**
+- [x] **Step 3: Run mobile browser QA**
 
 At 390 x 844 verify:
 
@@ -329,18 +329,18 @@ At 390 x 844 verify:
 - Swipe and button turns remain inside the reader bounds.
 - No prose, translation, page metadata, or bottom action is clipped.
 
-- [ ] **Step 4: Mark this plan complete**
+- [x] **Step 4: Mark this plan complete**
 
 Change all remaining task checkboxes from `[ ]` to `[x]`.
 
-- [ ] **Step 5: Commit verification records**
+- [x] **Step 5: Commit verification records**
 
 ```powershell
 git add -- docs/superpowers/plans/2026-06-12-novel-clean-paper-reading.md
 git commit -m "Mark clean paper reader plan complete"
 ```
 
-- [ ] **Step 6: Push `main`**
+- [x] **Step 6: Push `main`**
 
 ```powershell
 git push origin main
