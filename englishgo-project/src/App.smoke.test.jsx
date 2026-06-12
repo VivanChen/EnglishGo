@@ -1000,6 +1000,10 @@ describe('EnglishGo app smoke flow', () => {
     expect(screen.getByTestId('novel-page-actions')).toHaveStyle({
       paddingBottom: 'calc(10px + env(safe-area-inset-bottom))',
     });
+    const measurementLayer = screen.getByTestId('novel-measurement-layer');
+    const measurementSpeakers = within(measurementLayer).getAllByTestId('novel-measure-speaker');
+    expect(measurementSpeakers[0]).toHaveStyle({ width: '34px', height: '34px' });
+    expect(measurementSpeakers[1]).toHaveStyle({ width: '30px', height: '30px' });
 
     fireEvent.click(within(screen.getByTestId('novel-immersive-toolbar')).getByRole('button', { name: /章節測驗/ }));
     expect(screen.getByTestId('novel-side-panel')).toHaveStyle({ paddingBottom: 'calc(14px + env(safe-area-inset-bottom))' });
