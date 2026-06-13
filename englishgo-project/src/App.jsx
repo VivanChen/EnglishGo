@@ -1683,20 +1683,21 @@ function makeUtterance(t,l="en-US",r=0.9,opts={},token=_speechToken){
   u.cancel=()=>{if(token===_speechToken)stopSpeech()};
   return u;
 }
-function startUtterance(u,token,delay=35){
+function startUtterance(u,token,delay=0){
   if(typeof window==="undefined"||!window.speechSynthesis||!u)return;
-  speechTimer(()=>{
+  const start=()=>{
     if(token!==_speechToken)return;
-    try{window.speechSynthesis.cancel()}catch{}
     try{window.speechSynthesis.resume?.()}catch{}
     window.speechSynthesis.speak(u);
-  },delay,token);
+  };
+  if(delay>0)speechTimer(start,delay,token);
+  else start();
 }
 function speak(t,l="en-US",r=0.9,opts={}){
   if(typeof window==="undefined"||!window.speechSynthesis||!t)return null;
   const token=stopSpeech();
   const u=makeUtterance(t,l,r,opts,token);
-  startUtterance(u,token,opts.delay??35);
+  startUtterance(u,token,opts.delay??0);
   return u;
 }
 function speakWebSpeech(t,l="en-US",r=0.9,opts={}){
@@ -1704,7 +1705,7 @@ function speakWebSpeech(t,l="en-US",r=0.9,opts={}){
   const token=stopSpeech();
   const u=makeUtterance(t,l,r,opts,token);
   u.__englishGoWebSpeechOnly=true;
-  startUtterance(u,token,opts.delay??35);
+  startUtterance(u,token,opts.delay??0);
   return u;
 }
 
@@ -1756,7 +1757,7 @@ function speakStory(sentences,opts={}){
         else{pendingTimer=speechTimer(playNext,400,token)}// 400ms natural pause between sentences
       },
     },token);
-    startUtterance(u,token,i===1?35:0);
+    startUtterance(u,token,i===1?(opts.delay??0):0);
   };
   playNext();
   return{

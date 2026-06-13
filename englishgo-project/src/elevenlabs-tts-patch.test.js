@@ -86,4 +86,26 @@ describe("ElevenLabs TTS patch", () => {
     expect(nativeSpeak).toHaveBeenCalledWith(utterance);
     expect(globalThis.fetch).not.toHaveBeenCalled();
   });
+
+  it("unlocks English audio during the click before the API response arrives", () => {
+    installPatchEnv();
+    globalThis.fetch = vi.fn(() => new Promise(() => {}));
+    const audio = {
+      play: vi.fn(() => Promise.resolve()),
+      pause: vi.fn(),
+      currentTime: 0,
+      playbackRate: 1,
+      volume: 1,
+    };
+    globalThis.Audio = vi.fn(() => audio);
+    loadPatch();
+
+    const utterance = new SpeechSynthesisUtterance("The forest is quiet.");
+    utterance.lang = "en-US";
+    window.speechSynthesis.speak(utterance);
+
+    expect(globalThis.fetch).toHaveBeenCalled();
+    expect(globalThis.Audio).toHaveBeenCalledTimes(1);
+    expect(audio.play).toHaveBeenCalledTimes(1);
+  });
 });

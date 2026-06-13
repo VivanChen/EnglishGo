@@ -103,6 +103,70 @@ function installMockSpeechRecognition() {
   };
 }
 
+function installMockSpeechSynthesis() {
+  const originalSynth = Object.getOwnPropertyDescriptor(window, 'speechSynthesis');
+  const originalWindowUtterance = Object.getOwnPropertyDescriptor(window, 'SpeechSynthesisUtterance');
+  const originalGlobalUtterance = Object.getOwnPropertyDescriptor(globalThis, 'SpeechSynthesisUtterance');
+  const events = [];
+  const cancel = vi.fn(() => events.push('cancel'));
+  const resume = vi.fn(() => events.push('resume'));
+  const speak = vi.fn(() => events.push('speak'));
+
+  class MockUtterance {
+    constructor(text) {
+      this.text = text;
+      this.lang = 'en-US';
+      this.rate = 1;
+      this.pitch = 1;
+      this.volume = 1;
+    }
+  }
+
+  Object.defineProperty(window, 'speechSynthesis', {
+    configurable: true,
+    value: {
+      cancel,
+      resume,
+      speak,
+      getVoices: () => [{
+        name: 'Chinese voice',
+        lang: 'zh-TW',
+        voiceURI: 'zh-test',
+      }],
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    },
+  });
+  Object.defineProperty(window, 'SpeechSynthesisUtterance', {
+    configurable: true,
+    value: MockUtterance,
+  });
+  Object.defineProperty(globalThis, 'SpeechSynthesisUtterance', {
+    configurable: true,
+    value: MockUtterance,
+  });
+
+  return {
+    cancel,
+    events,
+    speak,
+    restore() {
+      if (originalSynth) Object.defineProperty(window, 'speechSynthesis', originalSynth);
+      else delete window.speechSynthesis;
+      if (originalWindowUtterance) {
+        Object.defineProperty(window, 'SpeechSynthesisUtterance', originalWindowUtterance);
+      } else {
+        delete window.SpeechSynthesisUtterance;
+      }
+      if (originalGlobalUtterance) {
+        Object.defineProperty(globalThis, 'SpeechSynthesisUtterance', originalGlobalUtterance);
+      } else {
+        delete globalThis.SpeechSynthesisUtterance;
+      }
+    },
+  };
+}
+
 function mockPetMonopolyDice(diceValues) {
   const originalGetRandomValues = globalThis.crypto?.getRandomValues;
   if (!globalThis.crypto || !originalGetRandomValues) return () => {};
@@ -824,6 +888,41 @@ describe('EnglishGo app smoke flow', () => {
     expect(screen.getByTestId('novel-reading-settings')).toBeInTheDocument();
     expect(screen.getByTestId('novel-chapter-nav')).toBeInTheDocument();
     expect(screen.getByText('Page 3')).toBeInTheDocument();
+  });
+
+  it('starts novel speech without repeated cancellation immediately before playback', async () => {
+    const speech = installMockSpeechSynthesis();
+    try {
+      await openElementaryMenu();
+
+      fireEvent.click(document.querySelector('[data-group-id="read"]'));
+      fireEvent.click(document.querySelector('[data-module-id="novels"]'));
+
+      fireEvent.click(await screen.findByText('The Whispering Tree', {}, { timeout: 5000 }));
+      const chineseSpeakers = await screen.findAllByTitle('朗讀中文');
+      speech.cancel.mockClear();
+      speech.speak.mockClear();
+      speech.events.splice(0);
+      fireEvent.click(chineseSpeakers[0]);
+
+      expect(speech.speak).toHaveBeenCalledTimes(1);
+      expect(speech.cancel).toHaveBeenCalledTimes(1);
+      expect(speech.events).toEqual(['cancel', 'resume', 'speak']);
+
+      act(() => {
+        speech.speak.mock.calls[0][0].onend?.(new Event('end'));
+      });
+      speech.cancel.mockClear();
+      speech.speak.mockClear();
+      speech.events.splice(0);
+      fireEvent.click(screen.getByRole('button', { name: '英中本頁朗讀' }));
+
+      expect(speech.speak).toHaveBeenCalledTimes(1);
+      expect(speech.cancel).toHaveBeenCalledTimes(1);
+      expect(speech.events).toEqual(['cancel', 'resume', 'speak']);
+    } finally {
+      speech.restore();
+    }
   });
 
   it('uses a realistic novel page turn in both directions', async () => {

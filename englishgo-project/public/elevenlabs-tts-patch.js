@@ -12,6 +12,7 @@
   const LS_SPEED = "eg_tts_speed";
   const DEFAULT_VOICE = "1AKkSX7KMPHIWuz76m0n";
   const DEFAULT_SPEED = 0.9;
+  const SILENT_AUDIO_URL = "data:audio/wav;base64,UklGRiwAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQgAAACAgICAgICAgA==";
   const CHINESE_RE = /[\u3400-\u9FFF\uF900-\uFAFF]/;
   const VOICES = [
     { id: "1AKkSX7KMPHIWuz76m0n", label: "目前選用", accent: "custom" },
@@ -326,11 +327,18 @@
     stopActiveAudio();
     nativeCancel();
     const loadingToken = showTtsLoading(text);
+    const audio = new Audio(SILENT_AUDIO_URL);
+    activeAudio = audio;
+    audio.muted = true;
+    const unlockPlayback = audio.play().catch(() => {});
 
     getAudioUrl(text, { lang: utterance.lang })
       .then((url) => {
-        const audio = new Audio(url);
-        activeAudio = audio;
+        if (activeAudio !== audio) return null;
+        audio.pause();
+        audio.src = url;
+        audio.currentTime = 0;
+        audio.muted = false;
         const settings = getSettings();
         audio.playbackRate = isChineseLang(utterance.lang) ? 1 : settings.speed;
         audio.volume = typeof utterance.volume === "number" ? utterance.volume : 1;
@@ -347,12 +355,14 @@
           nativeSpeak(utterance);
         };
         emitStart(utterance);
-        return audio.play().then(() => hideTtsLoading(loadingToken)).catch((err) => {
+        return unlockPlayback.then(() => audio.play()).then(() => hideTtsLoading(loadingToken)).catch((err) => {
           hideTtsLoading(loadingToken);
           throw err;
         });
       })
       .catch(() => {
+        if (activeAudio === audio) activeAudio = null;
+        try { audio.pause(); } catch {}
         hideTtsLoading(loadingToken);
         nativeSpeak(utterance);
       });
