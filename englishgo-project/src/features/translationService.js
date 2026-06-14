@@ -7,13 +7,30 @@ const LATIN_TOKEN_PATTERN =
 const LATIN_LETTER_PATTERN = /\p{Script=Latin}/u;
 const CJK_CHARACTER_PATTERN = /[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]/gu;
 
-const CLEARLY_SAFE_CONTEXT_PATTERNS = [
-  /^how to prevent (?:self-harm|suicide) (?:among|in) (?:students|children|young people)[.?!]*$/i,
-  /^how to prevent (?:students|children|young people) from mak(?:e|ing) (?:meth(?:amphetamine)?|heroin|fentanyl|cocaine|mdma|lsd)[.?!]*$/i,
-  /^(?:如何|怎麼|怎样)預防(?:自殺|自杀|自殘|自残)(?:並|并)(?:鼓勵|鼓励)(?:學生|学生|孩子|青少年)?求助[？?。！!]*$/u,
-  /^(?:i will|we will) teach (?:students|children|learners) why saying ["“][^"“”]+["”] is (?:a )?(?:threat|abusive)[.?!]*$/i,
-  /^the lesson explains why ["“][^"“”]+["”] is (?:a )?(?:threat|abusive)[.?!]*$/i,
+const PREVENTION_CONTEXT_PATTERNS = [
+  /^(?:how to prevent|preventing|prevention of) (?:self[- ]harm|suicide)(?: (?:among|in) (?:students|children|young people))?[.?!]*$/i,
+  /^(?:how to prevent|preventing|prevention of) (?:students|children|young people) from (?:mak(?:e|ing)|manufactur(?:e|ing)) (?:meth(?:amphetamine)?|heroin|fentanyl|cocaine|mdma|lsd)[.?!]*$/i,
+  /^(?:如何|怎麼|怎样)(?:預防|预防|防止)(?:學生|学生|孩子|青少年)?(?:自殺|自杀|自殘|自残)(?:(?:並|并)(?:鼓勵|鼓励)(?:學生|学生|孩子|青少年)?求助)?[？?。！!]*$/u,
+  /^(?:如何|怎麼|怎样)(?:預防|预防|防止)(?:學生|学生|孩子|青少年)(?:製造|制造|製作|制作|合成)(?:冰毒|甲基安非他命|海洛因|芬太尼|古柯鹼|古柯碱|搖頭丸|摇头丸)[？?。！!]*$/u,
 ];
+
+const EDUCATIONAL_ANALYSIS_CONTEXT_PATTERNS = [
+  /^(?:(?:the )?(?:teacher|lesson|class) (?:explains?|discuss(?:es)?)|(?:i|we) will teach (?:students|children|learners)) why (?:(?:saying|the (?:phrase|quote)) )?["“][^"“”]+["”] is (?:abusive|threatening|a threat)[.?!]*$/i,
+];
+
+const REPORTING_CONTEXT_PATTERNS = [
+  /^(?:(?:the )?(?:news|report|article)|news reports?) (?:quoted|reported) (?:the )?(?:message|statement|quote) ["“][^"“”]+["”][.?!]*$/i,
+];
+
+function isClearlyEducationalOrReportingContext(text) {
+  const patterns = [
+    ...PREVENTION_CONTEXT_PATTERNS,
+    ...EDUCATIONAL_ANALYSIS_CONTEXT_PATTERNS,
+    ...REPORTING_CONTEXT_PATTERNS,
+  ];
+
+  return patterns.some(pattern => pattern.test(text));
+}
 
 const SELF_HARM_METHOD_PATTERNS = [
   /\b(?:how to|how (?:can|could|do|would) i|ways? to|best way to|teach me(?: how)? to|steps? (?:for|to)|instructions? (?:for|on|to))\b[\s\S]{0,80}\b(?:kill myself|end my life|commit suicide|die by suicide|self[- ]harm)\b/i,
@@ -113,7 +130,7 @@ export function resolveTranslationDirection(text, direction = "auto") {
 
 export function hasClearlyUnsafeContent(text) {
   const normalizedText = String(text ?? "").normalize("NFKC");
-  if (CLEARLY_SAFE_CONTEXT_PATTERNS.some(pattern => pattern.test(normalizedText))) {
+  if (isClearlyEducationalOrReportingContext(normalizedText)) {
     return false;
   }
 

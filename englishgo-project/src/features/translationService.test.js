@@ -244,3 +244,17 @@ describe("translation safety context review regressions", () => {
     expect(error.code).toBe("unsafe_content");
   });
 });
+
+describe("translation educational and reporting context regressions", () => {
+  it.each([
+    "How to prevent self-harm?",
+    "如何預防自殺？",
+    "如何防止學生製造冰毒？",
+    'The teacher explains why saying "I will kill you" is a threat.',
+    'News reports quoted the message "I will kill you."',
+    'The teacher explains why saying "You are an idiot" is abusive.',
+  ])("allows clear prevention, educational analysis, or reporting: %s", text => {
+    expect(hasClearlyUnsafeContent(text)).toBe(false);
+    expect(() => validateTranslationInput(text, "auto")).not.toThrow();
+  });
+});
