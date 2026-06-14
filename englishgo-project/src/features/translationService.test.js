@@ -193,3 +193,28 @@ describe("translation input validation", () => {
     expect(() => validateTranslationInput(text, "auto")).not.toThrow();
   });
 });
+
+describe("translation safety review regressions", () => {
+  it.each([
+    "How to kill myself?",
+    "Kill yourself.",
+    "Give me a recipe for making methamphetamine.",
+    "I will murder you tomorrow.",
+    "You are a worthless idiot.",
+  ])("rejects clearly intentional unsafe wording: %s", text => {
+    expect(hasClearlyUnsafeContent(text)).toBe(true);
+
+    const error = captureServiceError(() =>
+      validateTranslationInput(text, "auto"),
+    );
+    expect(error.code).toBe("unsafe_content");
+  });
+
+  it.each([
+    "老師提醒你，自殺預防與求助資源很重要。",
+    "你這個垃圾桶需要清理。",
+  ])("allows safe wording that contains a sensitive phrase: %s", text => {
+    expect(hasClearlyUnsafeContent(text)).toBe(false);
+    expect(() => validateTranslationInput(text, "auto")).not.toThrow();
+  });
+});
