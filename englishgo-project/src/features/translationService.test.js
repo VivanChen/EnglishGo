@@ -37,7 +37,7 @@ describe("translation input limits", () => {
 
     if (isValid) {
       expect(validateTranslationInput(text, "en-zh")).toEqual({
-        text,
+        sourceText: text,
         sourceLanguage: "en-US",
         targetLanguage: "zh-TW",
       });
@@ -64,7 +64,7 @@ describe("translation input limits", () => {
 
     if (isValid) {
       expect(validateTranslationInput(text, "zh-en")).toEqual({
-        text,
+        sourceText: text,
         sourceLanguage: "zh-TW",
         targetLanguage: "en-US",
       });
@@ -95,6 +95,10 @@ describe("source text counting", () => {
 
   it("does not count whitespace, punctuation, or purely numeric tokens", () => {
     expect(countEnglishWords(" \n\t... 123 45-67 ' -- !!!")).toBe(0);
+  });
+
+  it("normalizes decomposed Latin characters before counting words", () => {
+    expect(countEnglishWords("e\u0301clair")).toBe(1);
   });
 
   it("counts only the specified CJK Unicode ranges", () => {
@@ -145,7 +149,7 @@ describe("translation direction", () => {
 describe("translation input validation", () => {
   it("trims input before returning the validated request", () => {
     expect(validateTranslationInput("  Hello class. \n", "auto")).toEqual({
-      text: "Hello class.",
+      sourceText: "Hello class.",
       sourceLanguage: "en-US",
       targetLanguage: "zh-TW",
     });
@@ -157,6 +161,59 @@ describe("translation input validation", () => {
     );
 
     expect(error.code).toBe("empty_input");
+  });
+
+  it.each(["en-zh", "zh-en"])(
+    "rejects language-free input before applying the %s direction",
+    direction => {
+      const error = captureServiceError(() =>
+        validateTranslationInput("123...", direction),
+      );
+
+      expect(error.code).toBe("indeterminate_language");
+    },
+  );
+
+  it("rejects an overlong Chinese segment even when English is selected as source", () => {
+    const error = captureServiceError(() =>
+      validateTranslationInput("中".repeat(401), "en-zh"),
+    );
+
+    expect(error.code).toBe("source_too_long");
+    expect(error.details).toEqual({
+      count: 401,
+      max: 400,
+      sourceLanguage: "zh-TW",
+    });
+  });
+
+  it("rejects an overlong English segment even when Chinese is selected as source", () => {
+    const text = Array.from({ length: 201 }, () => "word").join(" ");
+    const error = captureServiceError(() =>
+      validateTranslationInput(text, "zh-en"),
+    );
+
+    expect(error.code).toBe("source_too_long");
+    expect(error.details).toEqual({
+      count: 201,
+      max: 200,
+      sourceLanguage: "en-US",
+    });
+  });
+
+  it("preserves manual direction for valid mixed-language input", () => {
+    const text = "Hello 中文";
+
+    expect(validateTranslationInput(text, "en-zh")).toEqual({
+      sourceText: text,
+      sourceLanguage: "en-US",
+      targetLanguage: "zh-TW",
+    });
+    expect(validateTranslationInput(text, "zh-en")).toEqual({
+      sourceText: text,
+      sourceLanguage: "zh-TW",
+      targetLanguage: "en-US",
+    });
   });
 
   it.each([
@@ -256,5 +313,30 @@ describe("translation educational and reporting context regressions", () => {
   ])("allows clear prevention, educational analysis, or reporting: %s", text => {
     expect(hasClearlyUnsafeContent(text)).toBe(false);
     expect(() => validateTranslationInput(text, "auto")).not.toThrow();
+  });
+});
+
+describe("translation quality review regressions", () => {
+  it.each([
+    "How to discuss self-harm with students?",
+    "自殺預防方法有哪些？",
+    "新聞報導冰毒製造案件的查緝成果。",
+    'In the story, Tom says, "You are an idiot."',
+  ])("allows naturally phrased educational or reporting context: %s", text => {
+    expect(hasClearlyUnsafeContent(text)).toBe(false);
+    expect(() => validateTranslationInput(text, "auto")).not.toThrow();
+  });
+
+  it.each([
+    "News: I will kill you.",
+    "Teacher says I will kill you.",
+    "Prevent this: I will kill you.",
+  ])("does not exempt a direct threat containing a context keyword: %s", text => {
+    expect(hasClearlyUnsafeContent(text)).toBe(true);
+
+    const error = captureServiceError(() =>
+      validateTranslationInput(text, "auto"),
+    );
+    expect(error.code).toBe("unsafe_content");
   });
 });

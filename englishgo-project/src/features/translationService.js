@@ -12,14 +12,18 @@ const PREVENTION_CONTEXT_PATTERNS = [
   /^(?:how to prevent|preventing|prevention of) (?:students|children|young people) from (?:mak(?:e|ing)|manufactur(?:e|ing)) (?:meth(?:amphetamine)?|heroin|fentanyl|cocaine|mdma|lsd)[.?!]*$/i,
   /^(?:如何|怎麼|怎样)(?:預防|预防|防止)(?:學生|学生|孩子|青少年)?(?:自殺|自杀|自殘|自残)(?:(?:並|并)(?:鼓勵|鼓励)(?:學生|学生|孩子|青少年)?求助)?[？?。！!]*$/u,
   /^(?:如何|怎麼|怎样)(?:預防|预防|防止)(?:學生|学生|孩子|青少年)(?:製造|制造|製作|制作|合成)(?:冰毒|甲基安非他命|海洛因|芬太尼|古柯鹼|古柯碱|搖頭丸|摇头丸)[？?。！!]*$/u,
+  /^(?:自殺|自杀|自殘|自残)(?:預防|预防|防止)(?:方法|方式|資源|资源)(?:有哪些|是什麼|是什么)?[？?。！!]*$/u,
 ];
 
 const EDUCATIONAL_ANALYSIS_CONTEXT_PATTERNS = [
   /^(?:(?:the )?(?:teacher|lesson|class) (?:explains?|discuss(?:es)?)|(?:i|we) will teach (?:students|children|learners)) why (?:(?:saying|the (?:phrase|quote)) )?["“][^"“”]+["”] is (?:abusive|threatening|a threat)[.?!]*$/i,
+  /^(?:how to|ways to) (?:discuss|talk about|teach about) (?:self[- ]harm|suicide) with (?:students|children|young people)[.?!]*$/i,
 ];
 
 const REPORTING_CONTEXT_PATTERNS = [
   /^(?:(?:the )?(?:news|report|article)|news reports?) (?:quoted|reported) (?:the )?(?:message|statement|quote) ["“][^"“”]+["”][.?!]*$/i,
+  /^(?:in (?:the )?(?:story|novel|book),?\s+)?[\p{L}][\p{L}'\u2019-]*(?:\s+[\p{L}][\p{L}'\u2019-]*)*\s+(?:says|said|writes|wrote),?\s+["“][^"“”]+["”][.?!]*$/iu,
+  /^(?:新聞|新闻)(?:報導|报道).{0,24}(?:冰毒|甲基安非他命|海洛因|芬太尼|古柯鹼|古柯碱|搖頭丸|摇头丸)(?:製造|制造|製作|制作|合成).{0,24}(?:案件|查緝|查缉|逮捕|判決|判决|成果).*[。！？!?]*$/u,
 ];
 
 function isClearlyEducationalOrReportingContext(text) {
@@ -33,7 +37,7 @@ function isClearlyEducationalOrReportingContext(text) {
 }
 
 const SELF_HARM_METHOD_PATTERNS = [
-  /\b(?:how to|how (?:can|could|do|would) i|ways? to|best way to|teach me(?: how)? to|steps? (?:for|to)|instructions? (?:for|on|to))\b[\s\S]{0,80}\b(?:kill myself|end my life|commit suicide|die by suicide|self[- ]harm)\b/i,
+  /\b(?:how to|how (?:can|could|do|would) i|ways? to|best way to|teach me(?: how)? to|steps? (?:for|to)|instructions? (?:for|on|to))\s+(?:(?:quickly|painlessly|secretly|safely)\s+)*(?:kill myself|end my life|commit suicide|die by suicide|self[- ]harm)\b/i,
   /(?:如何|怎麼|怎样|教我|方法|步驟|步骤|教程).{0,24}(?:自殺|自杀|自殘|自残|割腕|上吊|跳樓|跳楼|服毒)/u,
   /(?:自殺|自杀|自殘|自残|割腕|上吊|跳樓|跳楼|服毒).{0,16}(?:方法|步驟|步骤|教程|怎麼|怎样)/u,
 ];
@@ -80,7 +84,8 @@ export class TranslationServiceError extends Error {
 }
 
 export function countEnglishWords(text) {
-  const tokens = String(text ?? "").match(LATIN_TOKEN_PATTERN) ?? [];
+  const normalizedText = String(text ?? "").normalize("NFC");
+  const tokens = normalizedText.match(LATIN_TOKEN_PATTERN) ?? [];
   return tokens.filter(token => LATIN_LETTER_PATTERN.test(token)).length;
 }
 
@@ -151,6 +156,40 @@ export function validateTranslationInput(text, direction = "auto") {
     throw new TranslationServiceError("empty_input", "請輸入要翻譯的內容。");
   }
 
+  const englishCount = countEnglishWords(normalizedText);
+  const chineseCount = countChineseCharacters(normalizedText);
+
+  if (englishCount === 0 && chineseCount === 0) {
+    throw new TranslationServiceError(
+      "indeterminate_language",
+      "無法判斷輸入內容的語言。",
+    );
+  }
+
+  if (englishCount > MAX_ENGLISH_WORDS) {
+    throw new TranslationServiceError(
+      "source_too_long",
+      "輸入內容超過可處理的長度。",
+      {
+        count: englishCount,
+        max: MAX_ENGLISH_WORDS,
+        sourceLanguage: "en-US",
+      },
+    );
+  }
+
+  if (chineseCount > MAX_CHINESE_CHARACTERS) {
+    throw new TranslationServiceError(
+      "source_too_long",
+      "輸入內容超過可處理的長度。",
+      {
+        count: chineseCount,
+        max: MAX_CHINESE_CHARACTERS,
+        sourceLanguage: "zh-TW",
+      },
+    );
+  }
+
   const languages = resolveTranslationDirection(normalizedText, direction);
 
   if (hasClearlyUnsafeContent(normalizedText)) {
@@ -160,26 +199,8 @@ export function validateTranslationInput(text, direction = "auto") {
     );
   }
 
-  const isEnglish = languages.sourceLanguage === "en-US";
-  const count = isEnglish
-    ? countEnglishWords(normalizedText)
-    : countChineseCharacters(normalizedText);
-  const max = isEnglish ? MAX_ENGLISH_WORDS : MAX_CHINESE_CHARACTERS;
-
-  if (count > max) {
-    throw new TranslationServiceError(
-      "source_too_long",
-      "輸入內容超過可處理的長度。",
-      {
-        count,
-        max,
-        sourceLanguage: languages.sourceLanguage,
-      },
-    );
-  }
-
   return {
-    text: normalizedText,
+    sourceText: normalizedText,
     ...languages,
   };
 }
