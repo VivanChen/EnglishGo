@@ -218,3 +218,29 @@ describe("translation safety review regressions", () => {
     expect(() => validateTranslationInput(text, "auto")).not.toThrow();
   });
 });
+
+describe("translation safety context review regressions", () => {
+  it.each([
+    "How to prevent self-harm among students.",
+    "如何預防自殺並鼓勵求助？",
+    "How to prevent students from making methamphetamine.",
+    'I will teach students why saying "I will kill you" is a threat.',
+    'The lesson explains why "you are a worthless idiot" is abusive.',
+  ])("allows structured prevention or quoted analysis context: %s", text => {
+    expect(hasClearlyUnsafeContent(text)).toBe(false);
+    expect(() => validateTranslationInput(text, "auto")).not.toThrow();
+  });
+
+  it.each([
+    "I’m going to kill you.",
+    "You are an idiot.",
+    "你是白痴。",
+  ])("rejects explicit threats and targeted abuse: %s", text => {
+    expect(hasClearlyUnsafeContent(text)).toBe(true);
+
+    const error = captureServiceError(() =>
+      validateTranslationInput(text, "auto"),
+    );
+    expect(error.code).toBe("unsafe_content");
+  });
+});

@@ -7,6 +7,14 @@ const LATIN_TOKEN_PATTERN =
 const LATIN_LETTER_PATTERN = /\p{Script=Latin}/u;
 const CJK_CHARACTER_PATTERN = /[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]/gu;
 
+const CLEARLY_SAFE_CONTEXT_PATTERNS = [
+  /^how to prevent (?:self-harm|suicide) (?:among|in) (?:students|children|young people)[.?!]*$/i,
+  /^how to prevent (?:students|children|young people) from mak(?:e|ing) (?:meth(?:amphetamine)?|heroin|fentanyl|cocaine|mdma|lsd)[.?!]*$/i,
+  /^(?:如何|怎麼|怎样)預防(?:自殺|自杀|自殘|自残)(?:並|并)(?:鼓勵|鼓励)(?:學生|学生|孩子|青少年)?求助[？?。！!]*$/u,
+  /^(?:i will|we will) teach (?:students|children|learners) why saying ["“][^"“”]+["”] is (?:a )?(?:threat|abusive)[.?!]*$/i,
+  /^the lesson explains why ["“][^"“”]+["”] is (?:a )?(?:threat|abusive)[.?!]*$/i,
+];
+
 const SELF_HARM_METHOD_PATTERNS = [
   /\b(?:how to|how (?:can|could|do|would) i|ways? to|best way to|teach me(?: how)? to|steps? (?:for|to)|instructions? (?:for|on|to))\b[\s\S]{0,80}\b(?:kill myself|end my life|commit suicide|die by suicide|self[- ]harm)\b/i,
   /(?:如何|怎麼|怎样|教我|方法|步驟|步骤|教程).{0,24}(?:自殺|自杀|自殘|自残|割腕|上吊|跳樓|跳楼|服毒)/u,
@@ -30,7 +38,7 @@ const ILLEGAL_DRUG_INSTRUCTION_PATTERNS = [
 ];
 
 const CREDIBLE_VIOLENCE_THREAT_PATTERNS = [
-  /\b(?:i(?:'m| am) going to|i will|i'll|we will|we'll)\b[\s\S]{0,24}\b(?:kill|murder|shoot|stab|bomb|beat|blow up)\b[\s\S]{0,36}\b(?:you|him|her|them|your family|the school|my school|our school|the teacher|the class|everyone)\b/i,
+  /\b(?:i(?:['\u2019]m| am) going to|i will|i['\u2019]ll|we will|we['\u2019]ll)\b[\s\S]{0,24}\b(?:kill|murder|shoot|stab|bomb|beat|blow up)\b[\s\S]{0,36}\b(?:you|him|her|them|your family|the school|my school|our school|the teacher|the class|everyone)\b/i,
   /(?:我|我們|我们).{0,6}(?:要|會|会|一定會|一定会|打算|準備|准备).{0,10}(?:殺|杀|砍|炸|槍殺|枪杀|捅|打死).{0,18}(?:你|妳|他|她|他們|他们|學校|学校|老師|老师|同學|同学|全家|大家)/u,
   /(?:我|我們|我们).{0,6}(?:要|會|会|一定會|一定会|打算|準備|准备).{0,8}(?:把)?(?:你|妳|他|她|他們|他们|學校|学校|老師|老师|同學|同学|全家|大家).{0,10}(?:殺|杀|砍|炸|槍殺|枪杀|捅|打死)/u,
 ];
@@ -38,6 +46,8 @@ const CREDIBLE_VIOLENCE_THREAT_PATTERNS = [
 const TARGETED_ABUSE_PATTERNS = [
   /\b(?:you(?:'re| are)?|he is|she is|they are|that (?:girl|boy|woman|man|student|teacher|person) is)\s+(?:a\s+)?(?:(?:disgusting|filthy|dirty|fucking)\s+)*(?:slut|whore|cunt|bitch)\b/i,
   /\byou(?:'re| are)\s+(?:a\s+)?(?:worthless|useless|stupid)\s+(?:idiot|moron|loser)\b/i,
+  /\byou(?:['\u2019]re| are)\s+(?:an?\s+)?(?:idiot|moron)\b/i,
+  /(?:你|妳)(?:是|真是|就是|這個|这个|那個|那个)?白痴(?=$|[，。！？,.!?；;、\s])/u,
   /(?:你|妳)(?:真是|就是|這個|这个|這種|这种|是個|是个|根本是)?(?:一個|一个)?(?:廢物|废物|垃圾)(?=$|[，。！？,.!?；;、\s])/u,
   /(?:你|妳|他|她)(?:這個|这个|那個|那个|是個|是个|就是|真是|根本是)?(?:臭|死|爛|烂)?(?:婊子|賤貨|贱货|騷貨|骚货|賤女人|贱女人)/u,
   /(?:操|幹|干)你(?:媽|妈|娘)/u,
@@ -103,6 +113,10 @@ export function resolveTranslationDirection(text, direction = "auto") {
 
 export function hasClearlyUnsafeContent(text) {
   const normalizedText = String(text ?? "").normalize("NFKC");
+  if (CLEARLY_SAFE_CONTEXT_PATTERNS.some(pattern => pattern.test(normalizedText))) {
+    return false;
+  }
+
   const patterns = [
     ...SELF_HARM_METHOD_PATTERNS,
     ...SELF_HARM_ENCOURAGEMENT_PATTERNS,
