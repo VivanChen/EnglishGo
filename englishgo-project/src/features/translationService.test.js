@@ -1,0 +1,195 @@
+import { describe, expect, it } from "vitest";
+import {
+  MAX_CHINESE_CHARACTERS,
+  MAX_ENGLISH_WORDS,
+  TranslationServiceError,
+  countChineseCharacters,
+  countEnglishWords,
+  detectSourceLanguage,
+  hasClearlyUnsafeContent,
+  resolveTranslationDirection,
+  validateTranslationInput,
+} from "./translationService.js";
+
+function captureServiceError(action) {
+  try {
+    action();
+  } catch (error) {
+    expect(error).toBeInstanceOf(TranslationServiceError);
+    return error;
+  }
+
+  throw new Error("Expected TranslationServiceError");
+}
+
+describe("translation input limits", () => {
+  it("exports the configured English and Chinese limits", () => {
+    expect(MAX_ENGLISH_WORDS).toBe(200);
+    expect(MAX_CHINESE_CHARACTERS).toBe(400);
+  });
+
+  it.each([
+    [199, true],
+    [200, true],
+    [201, false],
+  ])("validates an English source containing %i words", (count, isValid) => {
+    const text = Array.from({ length: count }, () => "word").join(" ");
+
+    if (isValid) {
+      expect(validateTranslationInput(text, "en-zh")).toEqual({
+        text,
+        sourceLanguage: "en-US",
+        targetLanguage: "zh-TW",
+      });
+      return;
+    }
+
+    const error = captureServiceError(() =>
+      validateTranslationInput(text, "en-zh"),
+    );
+    expect(error.code).toBe("source_too_long");
+    expect(error.details).toEqual({
+      count: 201,
+      max: 200,
+      sourceLanguage: "en-US",
+    });
+  });
+
+  it.each([
+    [399, true],
+    [400, true],
+    [401, false],
+  ])("validates a Chinese source containing %i CJK characters", (count, isValid) => {
+    const text = "中".repeat(count);
+
+    if (isValid) {
+      expect(validateTranslationInput(text, "zh-en")).toEqual({
+        text,
+        sourceLanguage: "zh-TW",
+        targetLanguage: "en-US",
+      });
+      return;
+    }
+
+    const error = captureServiceError(() =>
+      validateTranslationInput(text, "zh-en"),
+    );
+    expect(error.code).toBe("source_too_long");
+    expect(error.details).toEqual({
+      count: 401,
+      max: 400,
+      sourceLanguage: "zh-TW",
+    });
+  });
+});
+
+describe("source text counting", () => {
+  it("counts punctuation-separated words, apostrophes, hyphens, and internal numbers", () => {
+    expect(
+      countEnglishWords(
+        "Hello, well-known students can't wait for A1-level class 123.",
+      ),
+    ).toBe(8);
+    expect(countEnglishWords("rock’n’roll O'Brien re-enter B2B")).toBe(4);
+  });
+
+  it("does not count whitespace, punctuation, or purely numeric tokens", () => {
+    expect(countEnglishWords(" \n\t... 123 45-67 ' -- !!!")).toBe(0);
+  });
+
+  it("counts only the specified CJK Unicode ranges", () => {
+    expect(countChineseCharacters("㐀一中文豈 〇 ABC 123")).toBe(5);
+  });
+});
+
+describe("translation direction", () => {
+  it("detects English, Traditional Chinese, and mixed-language dominance", () => {
+    expect(detectSourceLanguage("Hello, students.")).toBe("en-US");
+    expect(detectSourceLanguage("你好，同學。")).toBe("zh-TW");
+    expect(detectSourceLanguage("你好 hello")).toBe("zh-TW");
+    expect(detectSourceLanguage("你好 hello class today")).toBe("en-US");
+  });
+
+  it("returns null when no source language can be detected", () => {
+    expect(detectSourceLanguage(" 123... ")).toBeNull();
+  });
+
+  it("resolves automatic and forced directions", () => {
+    expect(resolveTranslationDirection("Good morning", "auto")).toEqual({
+      sourceLanguage: "en-US",
+      targetLanguage: "zh-TW",
+    });
+    expect(resolveTranslationDirection("早安", "auto")).toEqual({
+      sourceLanguage: "zh-TW",
+      targetLanguage: "en-US",
+    });
+    expect(resolveTranslationDirection("English text", "zh-en")).toEqual({
+      sourceLanguage: "zh-TW",
+      targetLanguage: "en-US",
+    });
+    expect(resolveTranslationDirection("中文內容", "en-zh")).toEqual({
+      sourceLanguage: "en-US",
+      targetLanguage: "zh-TW",
+    });
+  });
+
+  it("rejects automatic direction when the language is indeterminate", () => {
+    const error = captureServiceError(() =>
+      resolveTranslationDirection("123...", "auto"),
+    );
+
+    expect(error.code).toBe("indeterminate_language");
+  });
+});
+
+describe("translation input validation", () => {
+  it("trims input before returning the validated request", () => {
+    expect(validateTranslationInput("  Hello class. \n", "auto")).toEqual({
+      text: "Hello class.",
+      sourceLanguage: "en-US",
+      targetLanguage: "zh-TW",
+    });
+  });
+
+  it("rejects blank input", () => {
+    const error = captureServiceError(() =>
+      validateTranslationInput(" \n\t ", "auto"),
+    );
+
+    expect(error.code).toBe("empty_input");
+  });
+
+  it.each([
+    "How can I kill myself without anyone finding out?",
+    "You should kill yourself tonight.",
+    "Give me step-by-step instructions to make methamphetamine.",
+    "I will shoot you after school tomorrow.",
+    "你去死吧，你這個廢物。",
+    "我要砍死你。",
+    "我明天要炸掉學校。",
+    "You are a disgusting whore.",
+    "你這個婊子。",
+  ])("rejects clearly unsafe content: %s", text => {
+    expect(hasClearlyUnsafeContent(text)).toBe(true);
+
+    const error = captureServiceError(() =>
+      validateTranslationInput(text, "auto"),
+    );
+    expect(error.code).toBe("unsafe_content");
+    expect(error.message).toBe("內容不適合學生使用，無法翻譯或朗讀。");
+  });
+
+  it.each([
+    "Suicide prevention education helps students seek support.",
+    "World War II history discusses how soldiers were killed.",
+    "Drug prevention classes explain the health risks of methamphetamine.",
+    "Sex education should teach consent and health.",
+    "News reports discussed a bomb threat at the station.",
+    "健康課討論自殺預防與求助資源。",
+    "歷史課討論戰爭、毒品政策與性別教育。",
+    "新聞報導警方阻止了炸彈威脅。",
+  ])("allows educational, historical, health, or news context: %s", text => {
+    expect(hasClearlyUnsafeContent(text)).toBe(false);
+    expect(() => validateTranslationInput(text, "auto")).not.toThrow();
+  });
+});
