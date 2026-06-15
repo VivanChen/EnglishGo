@@ -3,6 +3,7 @@ import { getElementaryExample } from "./data/elementaryExamples.js";
 import { JUNIOR_SONGS } from "./data/juniorSongs.js";
 import { SENIOR_SONGS } from "./data/seniorSongs.js";
 import { RECENT_FEATURES } from "./data/recentFeatures.generated.js";
+import TranslationReader from "./features/TranslationReader.jsx";
 
 // ═══ SUPABASE CLIENT (lazy init, graceful fallback) ═════════════════
 let _sb = null;
@@ -2393,7 +2394,7 @@ export default function App(){
         <VoicePicker/>
         <button onClick={()=>setDark(!dark)} style={{background:"none",border:"none",fontSize:14,cursor:"pointer",minWidth:32,minHeight:32,display:"flex",alignItems:"center",justifyContent:"center"}}>{dark?"☀️":"🌙"}</button>
       </nav>
-      <div style={{maxWidth:!mod?940:mod==="petAdventure"?1280:mod==="petMonopoly"?1180:mod==="srs"?1080:760,margin:"0 auto",padding:mod==="petAdventure"||mod==="petMonopoly"?"14px 18px calc(20px + env(safe-area-inset-bottom, 0px))":"12px 12px calc(16px + env(safe-area-inset-bottom, 0px))"}}>
+      <div style={{maxWidth:!mod?940:mod==="petAdventure"?1280:mod==="petMonopoly"?1180:mod==="srs"?1080:mod==="translate"?960:760,margin:"0 auto",padding:mod==="petAdventure"||mod==="petMonopoly"?"14px 18px calc(20px + env(safe-area-inset-bottom, 0px))":"12px 12px calc(16px + env(safe-area-inset-bottom, 0px))"}}>
         {!mod?<MenuV2 lv={lv} onSelect={openModule} activeGroup={menuGroup} onGroupChange={setMenuGroup} daily={daily} c={c} xp={xp} coins={coins} streak={streak} achUnlocked={achUnlocked} weakWords={weakWords} isSponsor={isSponsor} pets={pets} eggs={eggs}/>:
          mod==="wordsearch"?<WordSearchM lv={lv} onBack={back} onOpenCard={(word,level)=>{setLv(level||lv);setSharedWord(word);setCustomDeck(null);setMod("srs")}}/>:
          mod==="exam"?<ExamReviewM lv={lv} onBack={back} c={c} apiKey={gemKey} onOpenSettings={()=>setMod("settings")} onStart={deck=>{setSharedWord(null);setCustomDeck(deck);setMod("srs")}}/>:
@@ -2411,6 +2412,7 @@ export default function App(){
          mod==="dictation"?<DictM lv={lv} onBack={back} onXp={addXp} onDone={()=>setStats(s=>({...s,dictDone:s.dictDone+1}))}/>:
          mod==="scramble"?<ScramM lv={lv} onBack={back} onXp={addXp} onDone={()=>setStats(s=>({...s,scramDone:s.scramDone+1}))}/>:
          mod==="ai"?<AIT lv={lv} onBack={back} apiKey={gemKey} onOpenSettings={()=>setMod("settings")}/>:
+         mod==="translate"?<TranslationReader apiKey={gemKey} onBack={back} onOpenSettings={()=>setMod("settings")} speak={speak} speakWebSpeech={speakWebSpeech} stopSpeech={stopSpeech} Header={Hdr} theme={{accent:c.cl,accentSoft:c.ac,surface:S.bg1,surfaceAlt:S.bg2,border:S.bd,text:S.t1,muted:S.t2}}/>:
          mod==="story"?<StoryMode lv={lv} onBack={back} apiKey={gemKey} pets={pets} c={c} onXp={addXp} trackWeak={trackWeak} onOpenSettings={()=>setMod("settings")}/>:
          mod==="achievements"?<AchPage onBack={back} unlocked={achUnlocked} c={c}/>:
          mod==="weak"?<WeakPage onBack={back} weakWords={weakWords} setWeakWords={setWeakWords} c={c} lv={lv}/>:
@@ -2747,6 +2749,7 @@ function MenuV2({lv,onSelect,activeGroup="learn",onGroupChange,daily,c,xp,coins,
     {id:"grammar",group:"learn",icon:"¶",t:"文法學堂",d:`${G?.[lv]?.length||0} 個文法主題`,tag:"句型理解"},
     {id:"speak",group:"learn",icon:"◉",t:"口說練習",d:"聽、念、比對發音",tag:"開口練習"},
     {id:"ai",group:"learn",icon:"AI",t:"AI 家教",d:"用 Gemini 問英文問題",tag:"個別指導"},
+    {id:"translate",group:"learn",icon:"⇄",t:"AI 翻譯朗讀",d:"中英互譯、內容檢核與朗讀",tag:"最多 200 words"},
     {id:"reading",group:"read",icon:"R",t:"閱讀理解",d:`${R?.[lv]?.length||0} 篇短文練習`,tag:"短文測驗"},
     {id:"novels",group:"read",icon:"N",t:"英文小說",d:lv==="junior"?"國中奇幻長篇":"小學插圖故事",tag:"故事閱讀"},
     {id:"songs",group:"read",icon:"♪",t:"英文歌曲",d:(SONGS?.[lv]?.length||0)?`${SONGS[lv].length} 首歌曲`:"尚未建立歌曲",tag:"聽唱學習"},
@@ -2980,6 +2983,7 @@ function Menu({lv,onSelect,daily,c,xp,coins,streak,achUnlocked,weakWords,isSpons
     {id:"grammar",group:"learn",icon:"🧠",t:"文法學堂",d:`${G[lv].length} 個重點`,tag:"句型觀念"},
     {id:"speak",group:"learn",icon:"🗣️",t:"口說練習",d:"唸出來！",tag:"開口訓練"},
     {id:"ai",group:"learn",icon:"🤖",t:"AI 家教",d:"Gemini 對話",tag:"問問題"},
+    {id:"translate",group:"learn",icon:"⇄",t:"AI 翻譯朗讀",d:"中英互譯與安全朗讀",tag:"最多 200 words"},
     {id:"reading",group:"read",icon:"📖",t:"閱讀理解",d:`${R[lv].length} 篇文章`,tag:"短文測驗"},
     {id:"novels",group:"read",icon:"📘",t:"英文小說",d:lv==="junior"?"16 章故事":`${NOVEL_COUNT} 章故事`,tag:"長篇閱讀"},
     {id:"songs",group:"read",icon:"🎵",t:"英文歌曲",d:(SONGS[lv]?.length||0)?`${SONGS[lv].length} 首歌`:"準備中",tag:"聽歌學英文"},

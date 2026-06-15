@@ -275,6 +275,31 @@ describe('EnglishGo app smoke flow', () => {
     expect(screen.getByText('可朗讀、可複製')).toBeInTheDocument();
   });
 
+  it('opens the safe AI translation reader from the learning menu', async () => {
+    localStorage.setItem('eg_gemkey', JSON.stringify('test-gemini-key'));
+    await openElementaryMenu();
+
+    const translationCard = document.querySelector('[data-module-id="translate"]');
+    expect(translationCard).toBeTruthy();
+    fireEvent.click(translationCard);
+
+    expect(await screen.findByRole('heading', { name: 'AI 翻譯朗讀' })).toBeInTheDocument();
+    expect(screen.getByLabelText('輸入要翻譯的句子')).toBeInTheDocument();
+    expect(screen.getByText('上限 200 English words / 400 中文字')).toBeInTheDocument();
+  });
+
+  it('opens shared API key settings from the translation reader', async () => {
+    localStorage.removeItem('eg_gemkey');
+    await openElementaryMenu();
+
+    const translationCard = document.querySelector('[data-module-id="translate"]');
+    expect(translationCard).toBeTruthy();
+    fireEvent.click(translationCard);
+
+    fireEvent.click(await screen.findByRole('button', { name: '前往 Key 設定' }));
+    expect(await screen.findByText('API Key 設定')).toBeInTheDocument();
+  });
+
   it('shows expanded grammar content with AI explanation for the current topic', async () => {
     localStorage.setItem('eg_gemkey', JSON.stringify('test-gemini-key'));
     localStorage.removeItem('grammar_ai_elementary%3ABe%20%E5%8B%95%E8%A9%9E');
