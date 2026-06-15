@@ -224,6 +224,9 @@ describe("Gemini translation contract", () => {
       "reason",
       "translation",
     ]);
+    expect(body.generationConfig.responseSchema).not.toHaveProperty(
+      "additionalProperties",
+    );
   });
 
   it("returns unsafe for local unsafe input without calling fetch", async () => {

@@ -394,7 +394,6 @@ function buildTranslationResponseSchema() {
       "reason",
       "translation",
     ],
-    additionalProperties: false,
   };
 }
 
