@@ -113,6 +113,8 @@ export default function TranslationReader({
 
   const submit = async event => {
     event.preventDefault();
+    stopSpeech?.();
+    setSpeaking(null);
     if (!apiKey?.trim()) {
       setResult(null);
       setStatus("error");
@@ -213,7 +215,13 @@ export default function TranslationReader({
 
   const handleCopy = async () => {
     if (!result || status !== "success") return;
-    await navigator.clipboard?.writeText(result.translation);
+    if (!navigator.clipboard?.writeText) return;
+    try {
+      await navigator.clipboard.writeText(result.translation);
+    } catch {
+      setCopied(false);
+      return;
+    }
     setCopied(true);
     if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
     copyTimerRef.current = setTimeout(() => setCopied(false), 1600);

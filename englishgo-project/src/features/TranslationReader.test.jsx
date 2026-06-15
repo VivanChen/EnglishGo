@@ -262,6 +262,33 @@ describe("TranslationReader", () => {
     expect(direction).toHaveValue("zh-en");
   });
 
+  it("stops stale speech before submitting another translation", async () => {
+    const translateText = vi.fn()
+      .mockResolvedValueOnce({
+        status: "safe",
+        sourceText: "我每天走路去學校。",
+        sourceLanguage: "zh-TW",
+        targetLanguage: "en-US",
+        translation: "I walk to school every day.",
+      })
+      .mockResolvedValueOnce({ status: "unsafe" });
+    const props = renderReader({ translateText });
+    const input = screen.getByLabelText("輸入要翻譯的句子");
+
+    fireEvent.change(input, { target: { value: "我每天走路去學校。" } });
+    fireEvent.click(screen.getByRole("button", { name: "AI 翻譯與檢核" }));
+    await screen.findByTestId("translation-results");
+    fireEvent.click(screen.getByRole("button", { name: "朗讀翻譯" }));
+    props.stopSpeech.mockClear();
+
+    fireEvent.click(screen.getByRole("button", { name: "AI 翻譯與檢核" }));
+
+    expect(props.stopSpeech).toHaveBeenCalledTimes(1);
+    expect(
+      await screen.findByText("內容不適合學生使用，無法翻譯或朗讀。"),
+    ).toBeInTheDocument();
+  });
+
   it("copies only the validated translation", async () => {
     const writeText = vi.fn().mockResolvedValue();
     Object.defineProperty(navigator, "clipboard", {
@@ -281,6 +308,25 @@ describe("TranslationReader", () => {
       expect(writeText).toHaveBeenCalledWith("I walk to school every day.");
     });
     expect(screen.getByText("已複製")).toBeInTheDocument();
+  });
+
+  it("does not report copy success when clipboard access fails", async () => {
+    const writeText = vi.fn().mockRejectedValue(new Error("clipboard denied"));
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText },
+    });
+    renderReader();
+
+    fireEvent.change(screen.getByLabelText("輸入要翻譯的句子"), {
+      target: { value: "我每天走路去學校。" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "AI 翻譯與檢核" }));
+    await screen.findByTestId("translation-results");
+    fireEvent.click(screen.getByRole("button", { name: "複製翻譯" }));
+
+    await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
+    expect(screen.queryByText("已複製")).not.toBeInTheDocument();
   });
 
   it("clears input, result, and active speech", async () => {
