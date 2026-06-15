@@ -88,10 +88,15 @@ export default function TranslationReader({
     setSpeaking(null);
   };
 
-  useEffect(() => () => {
-    requestRef.current?.abort();
-    if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
-    stopSpeech?.();
+  useEffect(() => {
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+
+    return () => {
+      requestRef.current?.abort();
+      if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+      stopSpeech?.();
+    };
   }, [stopSpeech]);
 
   const sourceLanguage = direction === "zh-en"
