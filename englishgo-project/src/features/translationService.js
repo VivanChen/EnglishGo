@@ -7,34 +7,10 @@ const LATIN_TOKEN_PATTERN =
 const LATIN_LETTER_PATTERN = /\p{Script=Latin}/u;
 const CJK_CHARACTER_PATTERN = /[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]/gu;
 
-const QUOTED_CONTEXT_RULES = [
-  {
-    marker:
-      /(?:^|[。！？!?;\n])\s*(?:(?:the )?(?:teacher|lesson|class)\s+(?:explains?|discuss(?:es)?)|(?:i|we)\s+will\s+teach\s+(?:students|children|learners))\s+why\s+(?:(?:saying|the (?:phrase|quote))\s+)?/iu,
-    quote: /"[^"]*"|“[^”]*”/g,
-  },
-  {
-    marker:
-      /(?:^|[。！？!?;\n])\s*(?:(?:the )?(?:news|report|article)|news reports?)\s+(?:quoted|reported)\s+(?:the )?(?:message|statement|quote)\s+/iu,
-    quote: /"[^"]*"|“[^”]*”/g,
-  },
-  {
-    marker:
-      /(?:^|[。！？!?;\n])\s*(?:in (?:the )?(?:story|novel|book),?\s+)?[\p{L}][\p{L}'\u2019-]*(?:\s+[\p{L}][\p{L}'\u2019-]*)*\s+(?:says|said|writes|wrote),?\s+/iu,
-    quote: /"[^"]*"|“[^”]*”/g,
-  },
-  {
-    marker:
-      /(?:^|[。！？!?;\n])\s*(?:老師|老师|課堂|课堂|新聞|新闻|報導|报导|報道|記者|记者).*(?:解釋|解释|說明|说明|指出|引用|報導|报导|報道|說|说|表示)/u,
-    quote: /"[^"]*"|“[^”]*”|「[^」]*」/g,
-  },
-];
-
 const SELF_HARM_METHOD_PATTERNS = [
   /\b(?:how to|how (?:can|could|do|would) i|ways? to|best way to|teach me(?: how)? to|steps? (?:for|to)|instructions? (?:for|on|to))\s+(?:(?:quickly|painlessly|secretly|safely)\s+)*(?:kill myself|end my life|commit suicide|die by suicide|self[- ]harm)\b/i,
-  /(?:如何|怎麼|怎样|教我|告訴我|告诉我|提供|有哪些|是什麼|是什么|步驟|步骤|教程)(?:(?!幫助|求助|預防|防止|阻止|念頭|想法|資源|协助|協助|支援)[^。！？.!?]){0,8}(?:快速|不痛苦地|秘密地|偷偷地|悄悄地|立即|馬上|直接|輕鬆地|無痛地|无痛地)?(?:自殺|自杀|自殘|自残|割腕|上吊|跳樓|跳楼|服毒)/u,
-  /(?:如何|怎麼|怎样|教我|告訴我|告诉我|提供|有哪些|是什麼|是什么|步驟|步骤|教程)(?:(?!幫助|求助|預防|防止|阻止|念頭|想法|資源|协助|協助|支援)[^。！？.!?]){0,12}(?:自殺|自杀|自殘|自残|割腕|上吊|跳樓|跳楼|服毒)(?:的)?(?:方法|步驟|步骤|教程)/u,
-  /(?:自殺|自杀|自殘|自残|割腕|上吊|跳樓|跳楼|服毒)(?:的)?(?:方法|步驟|步骤|教程)(?:(?!幫助|求助|預防|防止|阻止|念頭|想法|資源|协助|協助|支援)[^。！？.!?]){0,12}(?:是什麼|是什么|有哪些|怎麼|怎么|如何|教我|告訴我|告诉我|提供)/u,
+  /(?:如何|怎麼|怎样|教我|告訴我|告诉我|提供|有哪些|是什麼|是什么|步驟|步骤|方法|方式|教程)(?:[^。！？.!?]{0,12})?(?:快速|不痛苦地|秘密地|偷偷地|悄悄地|立即|馬上|直接|輕鬆地|無痛地|无痛地)?(?:自殺|自杀|自殘|自残|割腕|上吊|跳樓|跳楼|服毒)/u,
+  /(?:自殺|自杀|自殘|自残|割腕|上吊|跳樓|跳楼|服毒)(?:的)?(?:方法|步驟|步骤|教程|方式)(?:[^。！？.!?]{0,12})?(?:是什麼|是什么|有哪些|怎麼|怎么|如何|教我|告訴我|告诉我|提供)/u,
 ];
 
 const SELF_HARM_ENCOURAGEMENT_PATTERNS = [
@@ -47,11 +23,11 @@ const SELF_HARM_ENCOURAGEMENT_PATTERNS = [
 ];
 
 const ILLEGAL_DRUG_INSTRUCTION_PATTERNS = [
-  /\b(?:how (?:can|could|do|would) (?:i|we)|how to|teach me(?: how)? to|give me (?:a )?(?:step-by-step )?(?:guide|instructions?|recipe)|steps? (?:for|to))\b(?!\s*(?:prevent|preventing|prevention)\b)[\s\S]{0,100}\b(?:mak(?:e|ing)|cook|produce|manufacture|synthesize)\b[\s\S]{0,40}\b(?:meth(?:amphetamine)?|heroin|fentanyl|cocaine|mdma|lsd)\b/i,
-  /\b(?:how (?:can|could|do|would) (?:i|we)|how to|teach me|give me (?:a )?(?:guide|instructions?|recipe))\b(?!\s*(?:prevent|preventing|prevention)\b)[\s\S]{0,80}\b(?:meth(?:amphetamine)?|heroin|fentanyl|cocaine|mdma|lsd)\b[\s\S]{0,40}\b(?:mak(?:e|ing)|cook|produce|manufacture|synthesize)\b/i,
-  /(?:如何|怎麼|怎样|教我|告訴我|告诉我|提供|有哪些|是什麼|是什么|幫助|帮助|步驟|步骤|教程|配方)(?:(?!預防|防止|阻止|prevent|preventing|prevention)[^。！？.!?]){0,12}(?:製造|制造|製作|制作|合成|提煉|提炼)(?:(?!預防|防止|阻止|prevent|preventing|prevention)[^。！？.!?]){0,12}(?:冰毒|甲基安非他命|海洛因|芬太尼|古柯鹼|古柯碱|搖頭丸|摇头丸)/u,
-  /(?:如何|怎麼|怎样|教我|告訴我|告诉我|提供|有哪些|是什麼|是什么|幫助|帮助|步驟|步骤|教程|配方)(?:(?!預防|防止|阻止|prevent|preventing|prevention)[^。！？.!?]){0,12}(?:冰毒|甲基安非他命|海洛因|芬太尼|古柯鹼|古柯碱|搖頭丸|摇头丸)(?:(?!預防|防止|阻止|prevent|preventing|prevention)[^。！？.!?]){0,12}(?:製造|制造|製作|制作|合成|提煉|提炼)/u,
-  /(?:製造|制造|製作|制作|合成|提煉|提炼)(?:冰毒|甲基安非他命|海洛因|芬太尼|古柯鹼|古柯碱|搖頭丸|摇头丸)(?:的)?(?:方法|步驟|步骤|教程|配方)(?:(?!預防|防止|阻止|prevent|preventing|prevention)[^。！？.!?]){0,12}(?:是什麼|是什么|有哪些|怎麼|怎么|如何|教我|告訴我|告诉我|提供)/u,
+  /\b(?:how (?:can|could|do|would) (?:i|we)|how to|teach me(?: how)? to|give me (?:a )?(?:step-by-step )?(?:guide|instructions?|recipe)|steps? (?:for|to))\b[\s\S]{0,100}\b(?:mak(?:e|ing)|cook|produce|manufacture|synthesize)\b[\s\S]{0,40}\b(?:meth(?:amphetamine)?|heroin|fentanyl|cocaine|mdma|lsd)\b/i,
+  /\b(?:how (?:can|could|do|would) (?:i|we)|how to|teach me|give me (?:a )?(?:guide|instructions?|recipe))\b[\s\S]{0,80}\b(?:meth(?:amphetamine)?|heroin|fentanyl|cocaine|mdma|lsd)\b[\s\S]{0,40}\b(?:mak(?:e|ing)|cook|produce|manufacture|synthesize)\b/i,
+  /(?:如何|怎麼|怎样|教我|告訴我|告诉我|提供|有哪些|是什麼|是什么|幫助|帮助|步驟|步骤|教程|配方)(?:[^。！？.!?]{0,12})?(?:製造|制造|製作|制作|合成|提煉|提炼)(?:[^。！？.!?]{0,12})?(?:冰毒|甲基安非他命|海洛因|芬太尼|古柯鹼|古柯碱|搖頭丸|摇头丸)/u,
+  /(?:如何|怎麼|怎样|教我|告訴我|告诉我|提供|有哪些|是什麼|是什么|幫助|帮助|步驟|步骤|教程|配方)(?:[^。！？.!?]{0,12})?(?:冰毒|甲基安非他命|海洛因|芬太尼|古柯鹼|古柯碱|搖頭丸|摇头丸)(?:[^。！？.!?]{0,12})?(?:製造|制造|製作|制作|合成|提煉|提炼)/u,
+  /(?:製造|制造|製作|制作|合成|提煉|提炼)(?:冰毒|甲基安非他命|海洛因|芬太尼|古柯鹼|古柯碱|搖頭丸|摇头丸)(?:的)?(?:方法|步驟|步骤|教程|配方)(?:[^。！？.!?]{0,12})?(?:是什麼|是什么|有哪些|怎麼|怎么|如何|教我|告訴我|告诉我|提供)/u,
 ];
 
 const CREDIBLE_VIOLENCE_THREAT_PATTERNS = [
@@ -69,6 +45,42 @@ const TARGETED_ABUSE_PATTERNS = [
   /(?:你|妳)(?:真是|就是|這個|这个|這種|这种|是個|是个|根本是)?(?:一個|一个)?(?:廢物|废物|垃圾)(?=$|[，。！？,.!?；;、\s])/u,
   /(?:你|妳|他|她)(?:這個|这个|那個|那个|是個|是个|就是|真是|根本是)?(?:臭|死|爛|烂)?(?:婊子|賤貨|贱货|騷貨|骚货|賤女人|贱女人)/u,
   /(?:操|幹|干)你(?:媽|妈|娘)/u,
+];
+
+const SELF_HARM_SUPPORT_CONTEXT_PATTERNS = [
+  /^(?:how to prevent|preventing|prevention of) (?:self[- ]harm|suicide)(?: (?:among|in) (?:students|children|young people|people))?[.?!]*$/i,
+  /^(?:如何|怎麼|怎样|怎樣)預防(?:自殺|自我傷害)(?:[。！？?!\s]*|(?:[，,]\s*)?(?:並|和|與)\s*(?:鼓勵求助|求助資源|尋求幫助))?$/u,
+  /^(?:how to (?:help|support)|(?:help|support) (?:a|an)?(?: student|friend|child|person)|how can i help)\b.*(?:suicidal thoughts?|self[- ]harm|suicide)\b/i,
+  /^(?:如何|怎麼|怎样).*(?:幫助|帮助|協助|协助).*(?:有自殺念頭|自殺念頭|想自殺|suicidal thoughts?)/u,
+  /(?:自殺預防|自杀预防|求助資源|求助资源|鼓勵求助|鼓励求助)/u,
+];
+
+const DRUG_PREVENTION_CONTEXT_PATTERNS = [
+  /^(?:how to prevent|preventing|prevention of) (?:students|children|young people|people|a factory|an? underground factory|the factory) from (?:mak(?:e|ing)|manufactur(?:e|ing)) (?:meth(?:amphetamine)?|heroin|fentanyl|cocaine|mdma|lsd)[.?!]*$/i,
+  /^(?:如何|怎麼|怎样).*(?:防止|預防|阻止).*(?:學生|孩子|青少年|人|工廠|地下工廠).*(?:製造|制造|製作|制作|合成).*(?:冰毒|甲基安非他命|海洛因|芬太尼|古柯鹼|古柯碱|搖頭丸|摇头丸)/u,
+];
+
+const QUOTED_CONTEXT_RULES = [
+  {
+    marker:
+      /(?:^|[。！？!?;\n])\s*(?:(?:the )?(?:teacher|lesson|class)\s+(?:explains?|discuss(?:es)?)|(?:i|we)\s+will\s+teach\s+(?:students|children|learners))\s+why\s+(?:(?:saying|the (?:phrase|quote))\s+)?/iu,
+    quote: /"[^"]*"|“[^”]*”/,
+  },
+  {
+    marker:
+      /(?:^|[。！？!?;\n])\s*(?:(?:the )?(?:news|report|article)|news reports?)\s+(?:quoted|reported)\s+(?:the )?(?:message|statement|quote)\s+/iu,
+    quote: /"[^"]*"|“[^”]*”/,
+  },
+  {
+    marker:
+      /(?:^|[。！？!?;\n])\s*(?:in (?:the )?(?:story|novel|book),?\s+)?[\p{L}][\p{L}'\u2019-]*(?:\s+[\p{L}][\p{L}'\u2019-]*)*\s+(?:says|said|writes|wrote),?\s+/iu,
+    quote: /"[^"]*"|“[^”]*”/,
+  },
+  {
+    marker:
+      /(?:^|[。！？!?;\n])\s*(?:老師|老师|課堂|课堂|新聞|新闻|報導|报导|報道|記者|记者).*(?:解釋|解释|說明|说明|指出|引用|報導|报导|報道|說|说|表示)/u,
+    quote: /"[^"]*"|“[^”]*”|「[^」]*」/,
+  },
 ];
 
 export class TranslationServiceError extends Error {
@@ -166,30 +178,56 @@ function splitSafetySegments(text) {
   return segments;
 }
 
-function maskClearlyQuotedContext(segment) {
-  let masked = segment;
+function matchesAny(patterns, text) {
+  return patterns.some(pattern => pattern.test(text));
+}
 
+function isSelfHarmSupportOrPreventionContext(segment) {
+  return matchesAny(SELF_HARM_SUPPORT_CONTEXT_PATTERNS, segment);
+}
+
+function isDrugPreventionContext(segment) {
+  return matchesAny(DRUG_PREVENTION_CONTEXT_PATTERNS, segment);
+}
+
+function maskClearlyQuotedContext(segment) {
   for (const { marker, quote } of QUOTED_CONTEXT_RULES) {
-    if (!marker.test(masked)) continue;
-    masked = masked.replace(quote, match => " ".repeat(match.length));
+    if (!marker.test(segment)) continue;
+
+    const match = segment.match(quote);
+    if (!match) continue;
+
+    return segment.replace(match[0], " ".repeat(match[0].length));
   }
 
-  return masked;
+  return segment;
 }
 
 export function hasClearlyUnsafeContent(text) {
   const normalizedText = String(text ?? "").normalize("NFKC");
-  const patterns = [
-    ...SELF_HARM_METHOD_PATTERNS,
-    ...SELF_HARM_ENCOURAGEMENT_PATTERNS,
-    ...ILLEGAL_DRUG_INSTRUCTION_PATTERNS,
-    ...CREDIBLE_VIOLENCE_THREAT_PATTERNS,
-    ...TARGETED_ABUSE_PATTERNS,
-  ];
 
   return splitSafetySegments(normalizedText).some(segment => {
     const maskedSegment = maskClearlyQuotedContext(segment);
-    return patterns.some(pattern => pattern.test(maskedSegment));
+
+    if (matchesAny(SELF_HARM_ENCOURAGEMENT_PATTERNS, maskedSegment)) return true;
+    if (matchesAny(CREDIBLE_VIOLENCE_THREAT_PATTERNS, maskedSegment)) return true;
+    if (matchesAny(TARGETED_ABUSE_PATTERNS, maskedSegment)) return true;
+
+    if (
+      matchesAny(SELF_HARM_METHOD_PATTERNS, maskedSegment) &&
+      !isSelfHarmSupportOrPreventionContext(segment)
+    ) {
+      return true;
+    }
+
+    if (
+      matchesAny(ILLEGAL_DRUG_INSTRUCTION_PATTERNS, maskedSegment) &&
+      !isDrugPreventionContext(segment)
+    ) {
+      return true;
+    }
+
+    return false;
   });
 }
 
