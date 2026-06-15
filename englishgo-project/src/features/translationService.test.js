@@ -393,3 +393,29 @@ describe("translation Chinese intent boundary regressions", () => {
     expect(() => validateTranslationInput(text, "auto")).not.toThrow();
   });
 });
+
+describe("translation Chinese structural boundary regressions", () => {
+  it.each([
+    "老師說你不應該遲到，我要殺你。",
+    "如何幫助我製造冰毒？",
+    "如何幫助有自殺念頭的同學，我要殺你。",
+    "如何避開查緝製造冰毒？",
+  ])("rejects unsafe intent after a context marker: %s", text => {
+    expect(hasClearlyUnsafeContent(text)).toBe(true);
+
+    const error = captureServiceError(() =>
+      validateTranslationInput(text, "auto"),
+    );
+    expect(error.code).toBe("unsafe_content");
+  });
+
+  it.each([
+    "老師說自殺的方法不可取。",
+    "如何防止地下工廠製造冰毒？",
+    '老師說「自殺的方法」不可取。',
+    '新聞報導「冰毒製造案件」的查緝成果。',
+  ])("allows quoted educational or reporting context without follow-up threat: %s", text => {
+    expect(hasClearlyUnsafeContent(text)).toBe(false);
+    expect(() => validateTranslationInput(text, "auto")).not.toThrow();
+  });
+});
