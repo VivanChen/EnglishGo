@@ -281,11 +281,12 @@ describe('EnglishGo app smoke flow', () => {
 
     const translationCard = document.querySelector('[data-module-id="translate"]');
     expect(translationCard).toBeTruthy();
+    expect(translationCard).toHaveTextContent('每分鐘 1 次');
     fireEvent.click(translationCard);
 
     expect(await screen.findByRole('heading', { name: 'AI 翻譯朗讀' })).toBeInTheDocument();
     expect(screen.getByLabelText('輸入要翻譯的句子')).toBeInTheDocument();
-    expect(screen.getByText('上限 200 English words / 400 中文字')).toBeInTheDocument();
+    expect(screen.getByText('上限 20 English words / 20 中文字')).toBeInTheDocument();
   });
 
   it('opens shared API key settings from the translation reader', async () => {
