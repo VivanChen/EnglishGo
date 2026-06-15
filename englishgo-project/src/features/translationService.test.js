@@ -41,6 +41,16 @@ it("sends a student-safe Gemini request for a valid English source", async () =>
                     safe: true,
                     reason: "safe to translate",
                     translation: "你好，學生們。",
+                    explanation: "這句是向學生打招呼。",
+                    keyPhrases: [
+                      { english: "Hello students", meaning: "學生們好" },
+                    ],
+                    pronunciationSegments: [
+                      {
+                        text: "Hello students",
+                        stressedWords: ["Hello", "students"],
+                      },
+                    ],
                   }),
                 },
               ],
@@ -64,6 +74,16 @@ it("sends a student-safe Gemini request for a valid English source", async () =>
     sourceLanguage: "en-US",
     targetLanguage: "zh-TW",
     translation: "你好，學生們。",
+    explanation: "這句是向學生打招呼。",
+    keyPhrases: [
+      { english: "Hello students", meaning: "學生們好" },
+    ],
+    pronunciationSegments: [
+      {
+        text: "Hello students",
+        stressedWords: ["Hello", "students"],
+      },
+    ],
   });
 });
 
@@ -74,7 +94,16 @@ describe("Gemini translation contract", () => {
     translation,
     safe = true,
     reason = "ok",
+    explanation = "這句使用自然且適合日常對話的表達方式。",
+    keyPhrases,
+    pronunciationSegments,
+    extra = {},
   }) {
+    const englishText = targetLanguage === "en-US"
+      ? translation
+      : "Hello students";
+    const defaultPhrase = englishText.split(/\s+/).slice(0, 2).join(" ");
+    const defaultStress = englishText.match(/\p{Script=Latin}+/gu)?.slice(0, 2) ?? [];
     return {
       candidates: [
         {
@@ -87,6 +116,17 @@ describe("Gemini translation contract", () => {
                   safe,
                   reason,
                   translation,
+                  explanation,
+                  keyPhrases: keyPhrases ?? [
+                    { english: defaultPhrase, meaning: "重要英文片語" },
+                  ],
+                  pronunciationSegments: pronunciationSegments ?? [
+                    {
+                      text: englishText,
+                      stressedWords: defaultStress,
+                    },
+                  ],
+                  ...extra,
                 }),
               },
             ],
@@ -120,6 +160,16 @@ describe("Gemini translation contract", () => {
       sourceLanguage: "zh-TW",
       targetLanguage: "en-US",
       translation: "Hello, students.",
+      explanation: "這句使用自然且適合日常對話的表達方式。",
+      keyPhrases: [
+        { english: "Hello, students.", meaning: "重要英文片語" },
+      ],
+      pronunciationSegments: [
+        {
+          text: "Hello, students.",
+          stressedWords: ["Hello", "students"],
+        },
+      ],
     });
   });
 
@@ -147,6 +197,16 @@ describe("Gemini translation contract", () => {
       sourceLanguage: "en-US",
       targetLanguage: "zh-TW",
       translation: "你好，學生們。",
+      explanation: "這句使用自然且適合日常對話的表達方式。",
+      keyPhrases: [
+        { english: "Hello students", meaning: "重要英文片語" },
+      ],
+      pronunciationSegments: [
+        {
+          text: "Hello students",
+          stressedWords: ["Hello", "students"],
+        },
+      ],
     });
   });
 
@@ -210,7 +270,7 @@ describe("Gemini translation contract", () => {
       },
     ]);
     expect(body.generationConfig).toEqual({
-      maxOutputTokens: 1400,
+      maxOutputTokens: 700,
       temperature: 0.1,
       responseMimeType: "application/json",
       responseSchema: expect.objectContaining({
@@ -223,6 +283,9 @@ describe("Gemini translation contract", () => {
       "safe",
       "reason",
       "translation",
+      "explanation",
+      "keyPhrases",
+      "pronunciationSegments",
     ]);
     expect(body.generationConfig.responseSchema).not.toHaveProperty(
       "additionalProperties",
@@ -422,6 +485,9 @@ describe("Gemini translation contract", () => {
                       safe: false,
                       reason: "no translation",
                       translation: "你好。",
+                      explanation: "",
+                      keyPhrases: [],
+                      pronunciationSegments: [],
                     }),
                   },
                 ],
@@ -473,6 +539,9 @@ describe("Gemini translation contract", () => {
                       safe: false,
                       reason: "unsafe source",
                       translation: "   ",
+                      explanation: "",
+                      keyPhrases: [],
+                      pronunciationSegments: [],
                     }),
                   },
                 ],
@@ -511,7 +580,7 @@ describe("Gemini translation contract", () => {
   });
 
   it("rejects overlong English and Chinese translations", () => {
-    const longEnglish = Array.from({ length: 201 }, () => "word").join(" ");
+    const longEnglish = Array.from({ length: 21 }, () => "word").join(" ");
     expect(() =>
       translationService.parseTranslationResponse(
         createSafeResponse({
@@ -523,7 +592,7 @@ describe("Gemini translation contract", () => {
       ),
     ).toThrow(TranslationServiceError);
 
-    const longChinese = "銝".repeat(401);
+    const longChinese = "中".repeat(21);
     expect(() =>
       translationService.parseTranslationResponse(
         createSafeResponse({
@@ -678,18 +747,227 @@ describe("Gemini translation contract", () => {
       code: "missing_key",
     });
   });
+
+  it("returns concise translation learning guidance in one response", () => {
+    expect(
+      translationService.parseTranslationResponse(
+        createSafeResponse({
+          sourceLanguage: "zh-TW",
+          targetLanguage: "en-US",
+          translation: "I want to eat hot pot.",
+          explanation: "這句用 want to 表達想做某件事。",
+          keyPhrases: [
+            { english: "want to", meaning: "想要做某事" },
+            { english: "hot pot", meaning: "火鍋" },
+          ],
+          pronunciationSegments: [
+            {
+              text: "I want to eat hot pot.",
+              stressedWords: ["want", "hot", "pot"],
+            },
+          ],
+        }),
+        {
+          sourceText: "我想要吃火鍋。",
+          sourceLanguage: "zh-TW",
+          targetLanguage: "en-US",
+        },
+      ),
+    ).toEqual({
+      status: "safe",
+      sourceText: "我想要吃火鍋。",
+      sourceLanguage: "zh-TW",
+      targetLanguage: "en-US",
+      translation: "I want to eat hot pot.",
+      explanation: "這句用 want to 表達想做某件事。",
+      keyPhrases: [
+        { english: "want to", meaning: "想要做某事" },
+        { english: "hot pot", meaning: "火鍋" },
+      ],
+      pronunciationSegments: [
+        {
+          text: "I want to eat hot pot.",
+          stressedWords: ["want", "hot", "pot"],
+        },
+      ],
+    });
+  });
+
+  it.each([
+    ["blank explanation", { explanation: " " }],
+    ["explanation over 240 characters", { explanation: "說".repeat(241) }],
+    [
+      "more than three key phrases",
+      {
+        keyPhrases: Array.from({ length: 4 }, () => ({
+          english: "hot pot",
+          meaning: "火鍋",
+        })),
+      },
+    ],
+    [
+      "phrase values over 80 characters",
+      {
+        keyPhrases: [
+          {
+            english: `word ${"a".repeat(81)}`,
+            meaning: "意思",
+          },
+        ],
+      },
+    ],
+    [
+      "more than six pronunciation segments",
+      {
+        pronunciationSegments: Array.from({ length: 7 }, () => ({
+          text: "Hello",
+          stressedWords: ["Hello"],
+        })),
+      },
+    ],
+    [
+      "a segment outside the English sentence",
+      {
+        pronunciationSegments: [
+          {
+            text: "Unrelated sentence",
+            stressedWords: ["Unrelated"],
+          },
+        ],
+      },
+    ],
+    [
+      "a stressed word absent from its segment",
+      {
+        pronunciationSegments: [
+          {
+            text: "Hello students",
+            stressedWords: ["quickly"],
+          },
+        ],
+      },
+    ],
+    ["an unknown response field", { extra: "not allowed" }],
+  ])("rejects invalid teaching guidance: %s", (_label, overrides) => {
+    const { extra, ...fields } = overrides;
+    expect(() =>
+      translationService.parseTranslationResponse(
+        createSafeResponse({
+          sourceLanguage: "en-US",
+          targetLanguage: "zh-TW",
+          translation: "你好，學生們。",
+          ...fields,
+          extra: extra ? { extra } : {},
+        }),
+        {
+          sourceText: "Hello students.",
+          sourceLanguage: "en-US",
+          targetLanguage: "zh-TW",
+        },
+      ),
+    ).toThrow(TranslationServiceError);
+  });
+
+  it("fails closed when teaching guidance contains clearly unsafe text", () => {
+    expect(
+      translationService.parseTranslationResponse(
+        createSafeResponse({
+          sourceLanguage: "en-US",
+          targetLanguage: "zh-TW",
+          translation: "你好，學生們。",
+          explanation: "You should kill yourself tonight.",
+        }),
+        {
+          sourceText: "Hello students.",
+          sourceLanguage: "en-US",
+          targetLanguage: "zh-TW",
+        },
+      ),
+    ).toEqual({ status: "unsafe" });
+  });
+
+  it("notifies request start once before fetch and model fallback", async () => {
+    const onRequestStart = vi.fn();
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 429,
+        json: async () => ({ error: { message: "rate limited" } }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () =>
+          createSafeResponse({
+            sourceLanguage: "en-US",
+            targetLanguage: "zh-TW",
+            translation: "你好。",
+          }),
+      });
+
+    await translationService.translateStudentText({
+      text: "Hello students.",
+      direction: "en-zh",
+      apiKey: "test-key",
+      fetchImpl,
+      onRequestStart,
+    });
+
+    expect(onRequestStart).toHaveBeenCalledTimes(1);
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    expect(onRequestStart.mock.invocationCallOrder[0]).toBeLessThan(
+      fetchImpl.mock.invocationCallOrder[0],
+    );
+  });
+
+  it("does not notify request start when local checks reject work", async () => {
+    const missingKeyStart = vi.fn();
+    await expect(
+      translationService.translateStudentText({
+        text: "Hello.",
+        apiKey: "",
+        onRequestStart: missingKeyStart,
+        fetchImpl: vi.fn(),
+      }),
+    ).rejects.toMatchObject({ code: "missing_key" });
+    expect(missingKeyStart).not.toHaveBeenCalled();
+
+    const overlongStart = vi.fn();
+    await expect(
+      translationService.translateStudentText({
+        text: Array.from({ length: 21 }, () => "word").join(" "),
+        direction: "en-zh",
+        apiKey: "test-key",
+        onRequestStart: overlongStart,
+        fetchImpl: vi.fn(),
+      }),
+    ).rejects.toMatchObject({ code: "source_too_long" });
+    expect(overlongStart).not.toHaveBeenCalled();
+
+    const unsafeStart = vi.fn();
+    await expect(
+      translationService.translateStudentText({
+        text: "You should kill yourself.",
+        direction: "en-zh",
+        apiKey: "test-key",
+        onRequestStart: unsafeStart,
+        fetchImpl: vi.fn(),
+      }),
+    ).resolves.toEqual({ status: "unsafe" });
+    expect(unsafeStart).not.toHaveBeenCalled();
+  });
 });
 
 describe("translation input limits", () => {
   it("exports the configured English and Chinese limits", () => {
-    expect(MAX_ENGLISH_WORDS).toBe(200);
-    expect(MAX_CHINESE_CHARACTERS).toBe(400);
+    expect(MAX_ENGLISH_WORDS).toBe(20);
+    expect(MAX_CHINESE_CHARACTERS).toBe(20);
   });
 
   it.each([
-    [199, true],
-    [200, true],
-    [201, false],
+    [19, true],
+    [20, true],
+    [21, false],
   ])("validates an English source containing %i words", (count, isValid) => {
     const text = Array.from({ length: count }, () => "word").join(" ");
 
@@ -707,16 +985,16 @@ describe("translation input limits", () => {
     );
     expect(error.code).toBe("source_too_long");
     expect(error.details).toEqual({
-      count: 201,
-      max: 200,
+      count: 21,
+      max: 20,
       sourceLanguage: "en-US",
     });
   });
 
   it.each([
-    [399, true],
-    [400, true],
-    [401, false],
+    [19, true],
+    [20, true],
+    [21, false],
   ])("validates a Chinese source containing %i CJK characters", (count, isValid) => {
     const text = "中".repeat(count);
 
@@ -734,8 +1012,8 @@ describe("translation input limits", () => {
     );
     expect(error.code).toBe("source_too_long");
     expect(error.details).toEqual({
-      count: 401,
-      max: 400,
+      count: 21,
+      max: 20,
       sourceLanguage: "zh-TW",
     });
   });
@@ -839,27 +1117,27 @@ describe("translation input validation", () => {
 
   it("rejects an overlong Chinese segment even when English is selected as source", () => {
     const error = captureServiceError(() =>
-      validateTranslationInput("中".repeat(401), "en-zh"),
+      validateTranslationInput("中".repeat(21), "en-zh"),
     );
 
     expect(error.code).toBe("source_too_long");
     expect(error.details).toEqual({
-      count: 401,
-      max: 400,
+      count: 21,
+      max: 20,
       sourceLanguage: "zh-TW",
     });
   });
 
   it("rejects an overlong English segment even when Chinese is selected as source", () => {
-    const text = Array.from({ length: 201 }, () => "word").join(" ");
+    const text = Array.from({ length: 21 }, () => "word").join(" ");
     const error = captureServiceError(() =>
       validateTranslationInput(text, "zh-en"),
     );
 
     expect(error.code).toBe("source_too_long");
     expect(error.details).toEqual({
-      count: 201,
-      max: 200,
+      count: 21,
+      max: 20,
       sourceLanguage: "en-US",
     });
   });
