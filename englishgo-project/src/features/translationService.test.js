@@ -252,6 +252,17 @@ describe("Gemini translation contract", () => {
     ).toEqual({ status: "unsafe" });
   });
 
+  it("returns unsafe when Gemini provides any non-empty prompt feedback block reason", () => {
+    expect(
+      translationService.parseTranslationResponse(
+        {
+          promptFeedback: { blockReason: "BLOCKED_REASON_OTHER" },
+        },
+        { sourceLanguage: "en-US", targetLanguage: "zh-TW" },
+      ),
+    ).toEqual({ status: "unsafe" });
+  });
+
   it("returns unsafe when a candidate finishReason is safety", () => {
     expect(
       translationService.parseTranslationResponse(
@@ -329,6 +340,34 @@ describe("Gemini translation contract", () => {
     ).toThrow(TranslationServiceError);
   });
 
+  it("rejects extra response fields", () => {
+    expect(() =>
+      translationService.parseTranslationResponse(
+        {
+          candidates: [
+            {
+              content: {
+                parts: [
+                  {
+                    text: JSON.stringify({
+                      sourceLanguage: "en-US",
+                      targetLanguage: "zh-TW",
+                      safe: true,
+                      reason: "ok",
+                      translation: "雿末??",
+                      extra: "not allowed",
+                    }),
+                  },
+                ],
+              },
+            },
+          ],
+        },
+        { sourceLanguage: "en-US", targetLanguage: "zh-TW" },
+      ),
+    ).toThrow(TranslationServiceError);
+  });
+
   it("rejects wrong types, language mismatch, and contradictory responses", () => {
     expect(() =>
       translationService.parseTranslationResponse(
@@ -388,6 +427,30 @@ describe("Gemini translation contract", () => {
           ],
         },
         { sourceLanguage: "en-US", targetLanguage: "zh-TW" },
+      ),
+    ).toThrow(TranslationServiceError);
+  });
+
+  it("rejects safe translations that do not match the requested target language script", () => {
+    expect(() =>
+      translationService.parseTranslationResponse(
+        createSafeResponse({
+          sourceLanguage: "en-US",
+          targetLanguage: "zh-TW",
+          translation: "Hello students.",
+        }),
+        { sourceLanguage: "en-US", targetLanguage: "zh-TW" },
+      ),
+    ).toThrow(TranslationServiceError);
+
+    expect(() =>
+      translationService.parseTranslationResponse(
+        createSafeResponse({
+          sourceLanguage: "zh-TW",
+          targetLanguage: "en-US",
+          translation: "你好學生們。",
+        }),
+        { sourceLanguage: "zh-TW", targetLanguage: "en-US" },
       ),
     ).toThrow(TranslationServiceError);
   });
@@ -598,6 +661,19 @@ describe("Gemini translation contract", () => {
         fetchImpl,
       }),
     ).rejects.toBe(abortError);
+  });
+
+  it("requires an api key before validating unsafe text", async () => {
+    await expect(
+      translationService.translateStudentText({
+        text: "You should kill yourself.",
+        direction: "auto",
+        apiKey: "",
+        fetchImpl: vi.fn(),
+      }),
+    ).rejects.toMatchObject({
+      code: "missing_key",
+    });
   });
 });
 

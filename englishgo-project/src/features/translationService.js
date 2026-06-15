@@ -469,6 +469,13 @@ function validateSafeTranslationShape(parsed, expected) {
   }
 
   if (
+    Object.keys(parsed).length !== requiredKeys.length ||
+    Object.keys(parsed).some(key => !requiredKeys.includes(key))
+  ) {
+    throw createInvalidResponseError();
+  }
+
+  if (
     parsed.sourceLanguage !== expected.sourceLanguage ||
     parsed.targetLanguage !== expected.targetLanguage ||
     parsed.sourceLanguage === parsed.targetLanguage
@@ -507,25 +514,42 @@ function validateTranslatedOutput(translation, targetLanguage) {
     return { status: "unsafe" };
   }
 
+  const englishWordCount = countEnglishWords(trimmedTranslation);
+  const chineseCharacterCount = countChineseCharacters(trimmedTranslation);
+
+  if (targetLanguage === "zh-TW" && chineseCharacterCount === 0) {
+    throw createInvalidResponseError({
+      targetLanguage,
+      reason: "translation must contain CJK characters",
+    });
+  }
+
+  if (targetLanguage === "en-US" && englishWordCount === 0) {
+    throw createInvalidResponseError({
+      targetLanguage,
+      reason: "translation must contain English words",
+    });
+  }
+
   if (
     targetLanguage === "en-US" &&
-    countEnglishWords(trimmedTranslation) > MAX_ENGLISH_WORDS
+    englishWordCount > MAX_ENGLISH_WORDS
   ) {
     throw createTranslationTooLongError({
       targetLanguage,
       max: MAX_ENGLISH_WORDS,
-      count: countEnglishWords(trimmedTranslation),
+      count: englishWordCount,
     });
   }
 
   if (
     targetLanguage === "zh-TW" &&
-    countChineseCharacters(trimmedTranslation) > MAX_CHINESE_CHARACTERS
+    chineseCharacterCount > MAX_CHINESE_CHARACTERS
   ) {
     throw createTranslationTooLongError({
       targetLanguage,
       max: MAX_CHINESE_CHARACTERS,
-      count: countChineseCharacters(trimmedTranslation),
+      count: chineseCharacterCount,
     });
   }
 
@@ -533,7 +557,7 @@ function validateTranslatedOutput(translation, targetLanguage) {
 }
 
 export function parseTranslationResponse(data, expected) {
-  if (data?.promptFeedback?.blockReason === "SAFETY") {
+  if (data?.promptFeedback?.blockReason) {
     return { status: "unsafe" };
   }
 
@@ -622,6 +646,13 @@ export async function translateStudentText({
   signal,
   fetchImpl = fetch,
 }) {
+  if (!String(apiKey ?? "").trim()) {
+    throw new TranslationServiceError(
+      "missing_key",
+      "Gemini API key is required.",
+    );
+  }
+
   let validated;
   try {
     validated = validateTranslationInput(text, direction);
@@ -631,13 +662,6 @@ export async function translateStudentText({
     }
 
     throw error;
-  }
-
-  if (!String(apiKey ?? "").trim()) {
-    throw new TranslationServiceError(
-      "missing_key",
-      "Gemini API key is required.",
-    );
   }
 
   const requestBody = buildGeminiRequestBody(validated);
