@@ -57,7 +57,7 @@ const SELF_HARM_SUPPORT_CONTEXT_PATTERNS = [
 
 const DRUG_PREVENTION_CONTEXT_PATTERNS = [
   /^(?:how to prevent|preventing|prevention of) (?:students|children|young people|people|a factory|an? underground factory|the factory) from (?:mak(?:e|ing)|manufactur(?:e|ing)) (?:meth(?:amphetamine)?|heroin|fentanyl|cocaine|mdma|lsd)[.?!]*$/i,
-  /^(?:如何|怎麼|怎样).*(?:防止|預防|阻止).*(?:學生|孩子|青少年|人|工廠|地下工廠).*(?:製造|制造|製作|制作|合成).*(?:冰毒|甲基安非他命|海洛因|芬太尼|古柯鹼|古柯碱|搖頭丸|摇头丸)/u,
+  /^(?:如何|怎麼|怎样|怎樣)(?:防止|預防|阻止)(?:學生|孩子|青少年|人|工廠|地下工廠)(?:[的地\s、，,:：]*)?(?:製造|制造|製作|制作|合成)(?:冰毒|甲基安非他命|海洛因|芬太尼|古柯鹼|古柯碱|搖頭丸|摇头丸)[。！？?!\s]*$/u,
 ];
 
 const QUOTED_CONTEXT_RULES = [
@@ -147,7 +147,8 @@ function splitSafetySegments(text) {
   let current = "";
   let quote = null;
 
-  for (const character of text) {
+  for (let index = 0; index < text.length; index += 1) {
+    const character = text[index];
     current += character;
 
     if (quote) {
@@ -166,7 +167,17 @@ function splitSafetySegments(text) {
       continue;
     }
 
-    if (/[。！？.!?；;\n]/u.test(character)) {
+    if (/[。！？.!?；;，,:：\n]/u.test(character)) {
+      const rest = text.slice(index + 1);
+      const nextNonWhitespace = rest.match(/^\s*(.)/s)?.[1] ?? null;
+      if (
+        nextNonWhitespace === '"' ||
+        nextNonWhitespace === "“" ||
+        nextNonWhitespace === "「"
+      ) {
+        continue;
+      }
+
       const segment = current.trim();
       if (segment) segments.push(segment);
       current = "";
