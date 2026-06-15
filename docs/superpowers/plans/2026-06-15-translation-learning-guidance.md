@@ -35,7 +35,7 @@ No database, Supabase, Netlify Function, ElevenLabs function, or environment-var
 - Modify: `englishgo-project/src/features/translationService.test.js`
 - Modify: `englishgo-project/src/features/translationService.js`
 
-- [ ] **Step 1: Write failing 20-unit boundary tests**
+- [x] **Step 1: Write failing 20-unit boundary tests**
 
 Change the existing limit expectations and table rows:
 
@@ -64,7 +64,7 @@ it.each([
 
 Add the equivalent `19`, `20`, and `21` CJK-character test and update overlong translated-output tests to use `21`.
 
-- [ ] **Step 2: Run the limit tests and verify RED**
+- [x] **Step 2: Run the limit tests and verify RED**
 
 Run:
 
@@ -74,7 +74,7 @@ npx vitest run src/features/translationService.test.js --maxWorkers=1
 
 Expected: FAIL because the exported limits remain `200` and `400`.
 
-- [ ] **Step 3: Implement the 20-unit limits**
+- [x] **Step 3: Implement the 20-unit limits**
 
 Change:
 
@@ -85,7 +85,7 @@ export const MAX_CHINESE_CHARACTERS = 20;
 
 Keep the existing behavior that checks both English and Chinese counts in mixed input.
 
-- [ ] **Step 4: Add failing teaching-contract tests**
+- [x] **Step 4: Add failing teaching-contract tests**
 
 Update the safe response helper to return:
 
@@ -127,7 +127,7 @@ Add rejection tests for:
 
 Also test `explanation` over 240 characters, phrase values over 80 characters, more than six pronunciation segments, and unsafe teaching text.
 
-- [ ] **Step 5: Run the teaching tests and verify RED**
+- [x] **Step 5: Run the teaching tests and verify RED**
 
 Run:
 
@@ -137,7 +137,7 @@ npx vitest run src/features/translationService.test.js --maxWorkers=1
 
 Expected: FAIL because the service response schema and parser do not contain the new teaching fields.
 
-- [ ] **Step 6: Implement the teaching request and strict parser**
+- [x] **Step 6: Implement the teaching request and strict parser**
 
 Extend `buildTranslationResponseSchema()` with:
 
@@ -307,7 +307,7 @@ Return:
 
 For `safe: false`, require empty translation, empty explanation, and empty teaching arrays before returning `{ status: "unsafe" }`.
 
-- [ ] **Step 7: Add a failing request-start callback test**
+- [x] **Step 7: Add a failing request-start callback test**
 
 Assert:
 
@@ -330,7 +330,7 @@ expect(onRequestStart.mock.invocationCallOrder[0])
 
 Also assert `onRequestStart` is not called for missing keys, overlong input, or locally unsafe input, and is called only once when model fallback sends a second fetch.
 
-- [ ] **Step 8: Implement request-start notification**
+- [x] **Step 8: Implement request-start notification**
 
 Extend the service signature:
 
@@ -351,7 +351,7 @@ After local validation and before entering the model loop:
 onRequestStart?.();
 ```
 
-- [ ] **Step 9: Run all service tests and commit**
+- [x] **Step 9: Run all service tests and commit**
 
 Run:
 
@@ -374,7 +374,7 @@ git commit -m "feat: add concise translation learning guidance"
 - Modify: `englishgo-project/src/features/TranslationReader.test.jsx`
 - Modify: `englishgo-project/src/features/TranslationReader.jsx`
 
-- [ ] **Step 1: Update the component fixture and add failing guidance UI tests**
+- [x] **Step 1: Update the component fixture and add failing guidance UI tests**
 
 Extend the mock safe result with:
 
@@ -405,7 +405,7 @@ expect(screen.getByTestId("pronunciation-guide")).toHaveTextContent(
 
 Assert `walk`, `school`, `every`, and `day` render inside `<strong>` elements.
 
-- [ ] **Step 2: Run the guidance component test and verify RED**
+- [x] **Step 2: Run the guidance component test and verify RED**
 
 Run:
 
@@ -415,7 +415,7 @@ npx vitest run src/features/TranslationReader.test.jsx --maxWorkers=1
 
 Expected: FAIL because the learning guidance is not rendered.
 
-- [ ] **Step 3: Implement the direct-expanded learning section**
+- [x] **Step 3: Implement the direct-expanded learning section**
 
 Add CSS for an un-nested full-width learning area:
 
@@ -479,7 +479,7 @@ function PronunciationGuide({ segments }) {
 
 Import `Fragment` from React. The speech button continues to call `narrate` with the original full English string from `result.sourceText` or `result.translation`.
 
-- [ ] **Step 4: Add failing cooldown tests**
+- [x] **Step 4: Add failing cooldown tests**
 
 Use fake timers and a fixed system time. Assert:
 
@@ -502,7 +502,7 @@ vi.setSystemTime(new Date("2026-06-15T12:00:00Z"));
 
 Restore real timers after each test.
 
-- [ ] **Step 5: Run cooldown tests and verify RED**
+- [x] **Step 5: Run cooldown tests and verify RED**
 
 Run:
 
@@ -512,7 +512,7 @@ npx vitest run src/features/TranslationReader.test.jsx --maxWorkers=1
 
 Expected: FAIL because cooldown state and persistence do not exist.
 
-- [ ] **Step 6: Implement cooldown persistence and countdown**
+- [x] **Step 6: Implement cooldown persistence and countdown**
 
 Add:
 
@@ -551,7 +551,7 @@ Button label:
   : "AI 翻譯與檢核"}
 ```
 
-- [ ] **Step 7: Update limit copy and narration assertions**
+- [x] **Step 7: Update limit copy and narration assertions**
 
 Change visible copy and counts to `20 English words / 20 中文字`, `/20 words`, and `/20 字`.
 
@@ -568,7 +568,7 @@ expect(props.speak).toHaveBeenCalledWith(
 
 Do not narrate the slash-separated display string.
 
-- [ ] **Step 8: Run all component tests and commit**
+- [x] **Step 8: Run all component tests and commit**
 
 Run:
 
@@ -591,7 +591,7 @@ git commit -m "feat: add translation cooldown and learning UI"
 - Modify: `englishgo-project/src/App.smoke.test.jsx`
 - Modify: `englishgo-project/src/App.jsx`
 
-- [ ] **Step 1: Write failing App copy tests**
+- [x] **Step 1: Write failing App copy tests**
 
 Update the translation-reader smoke test to assert:
 
@@ -601,7 +601,7 @@ expect(screen.getByText("上限 20 English words / 20 中文字")).toBeInTheDocu
 
 Assert the learning-menu translation card no longer advertises `最多 200 words` and instead shows `每分鐘 1 次`.
 
-- [ ] **Step 2: Run focused smoke tests and verify RED**
+- [x] **Step 2: Run focused smoke tests and verify RED**
 
 Run:
 
@@ -611,7 +611,7 @@ npx vitest run src/App.smoke.test.jsx -t "translation reader" --maxWorkers=1
 
 Expected: FAIL because App metadata and component copy still use the old limits.
 
-- [ ] **Step 3: Update translation module metadata**
+- [x] **Step 3: Update translation module metadata**
 
 In both current and legacy menu definitions use:
 
@@ -626,7 +626,7 @@ In both current and legacy menu definitions use:
 }
 ```
 
-- [ ] **Step 4: Run focused smoke tests and commit**
+- [x] **Step 4: Run focused smoke tests and commit**
 
 Run:
 
@@ -649,7 +649,7 @@ git commit -m "feat: describe guided short translations"
 - Verify all modified source and test files.
 - Update: `docs/superpowers/plans/2026-06-15-translation-learning-guidance.md`
 
-- [ ] **Step 1: Run feature-focused tests**
+- [x] **Step 1: Run feature-focused tests**
 
 Run:
 
@@ -659,7 +659,7 @@ npx vitest run src/features/translationService.test.js src/features/TranslationR
 
 Expected: all focused tests pass.
 
-- [ ] **Step 2: Run the complete test suite**
+- [x] **Step 2: Run the complete test suite**
 
 Run:
 
@@ -669,7 +669,7 @@ npx vitest run --maxWorkers=1
 
 Expected: all test files pass with zero failures.
 
-- [ ] **Step 3: Run the production build**
+- [x] **Step 3: Run the production build**
 
 Run:
 
@@ -683,7 +683,7 @@ Expected: Vite exits `0`. If prebuild changes only the generated recent-feature 
 git restore -- src/data/recentFeatures.generated.js
 ```
 
-- [ ] **Step 4: Run desktop browser QA**
+- [x] **Step 4: Run desktop browser QA**
 
 At a desktop viewport verify:
 
@@ -694,7 +694,7 @@ At a desktop viewport verify:
 - Refreshing retains only cooldown, not source or result.
 - No console errors or horizontal overflow.
 
-- [ ] **Step 5: Run mobile browser QA**
+- [x] **Step 5: Run mobile browser QA**
 
 At `390 x 844` verify:
 
@@ -703,7 +703,7 @@ At `390 x 844` verify:
 - Countdown button, final guidance line, and footer are not clipped.
 - All controls remain tappable.
 
-- [ ] **Step 6: Verify privacy and request count**
+- [x] **Step 6: Verify privacy and request count**
 
 Inspect localStorage and network behavior:
 
@@ -712,7 +712,7 @@ Inspect localStorage and network behavior:
 - One successful action makes one Gemini request unless the existing model fallback is triggered.
 - A cooldown click makes zero Gemini requests.
 
-- [ ] **Step 7: Check diff and mark plan complete**
+- [x] **Step 7: Check diff and mark plan complete**
 
 Run:
 
@@ -723,17 +723,26 @@ git status --short
 
 Keep existing untracked `vite-*.log` files untouched. Mark completed plan checkboxes `[x]`.
 
-- [ ] **Step 8: Commit verification records**
+- [x] **Step 8: Commit verification records**
 
 ```powershell
 git add -- docs/superpowers/plans/2026-06-15-translation-learning-guidance.md
 git commit -m "docs: complete translation learning guidance plan"
 ```
 
-- [ ] **Step 9: Push and verify production**
+- [x] **Step 9: Push and verify production**
 
 ```powershell
 git push origin main
 ```
 
 Verify Netlify production at `https://englishgo-vevan.netlify.app` serves the new UI and the browser console has no errors.
+
+## Verification Record
+
+- Feature-focused tests: 217 passed.
+- Full suite on merged `main`: 260 passed.
+- Production build: succeeded with the existing bundle-size warning only.
+- Desktop and `390 x 844` browser checks: no horizontal overflow or console errors.
+- Netlify production deploy `6a2fb4e902380300086ab29f`: ready on commit `dbbfae0`.
+- Production browser had no saved Gemini key, so no live API request was sent; service response, learning UI, cooldown, persistence, and request-count behavior were verified by automated tests.
