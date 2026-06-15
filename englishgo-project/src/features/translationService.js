@@ -3,7 +3,7 @@ export const MAX_CHINESE_CHARACTERS = 400;
 
 const UNSAFE_CONTENT_MESSAGE = "內容不適合學生使用，無法翻譯或朗讀。";
 const LATIN_TOKEN_PATTERN =
-  /[\p{Script=Latin}0-9]+(?:['\u2018\u2019\u02bc\u2010-\u2015-][\p{Script=Latin}0-9]+)*/gu;
+  /(?:[\p{Script=Latin}0-9]\p{M}*)+(?:['\u2018\u2019\u02bc\u2010-\u2015-](?:[\p{Script=Latin}0-9]\p{M}*)+)*/gu;
 const LATIN_LETTER_PATTERN = /\p{Script=Latin}/u;
 const CJK_CHARACTER_PATTERN = /[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]/gu;
 
@@ -36,10 +36,40 @@ function isClearlyEducationalOrReportingContext(text) {
   return patterns.some(pattern => pattern.test(text));
 }
 
+function splitSafetySegments(text) {
+  const segments = [];
+  let current = "";
+  let quote = null;
+
+  for (const character of text) {
+    current += character;
+
+    if (quote) {
+      if (character === quote) quote = null;
+      continue;
+    }
+
+    if (character === '"' || character === "“") {
+      quote = character === "“" ? "”" : '"';
+      continue;
+    }
+
+    if (/[。！？.!?；;\n]/u.test(character)) {
+      const segment = current.trim();
+      if (segment) segments.push(segment);
+      current = "";
+    }
+  }
+
+  const remainder = current.trim();
+  if (remainder) segments.push(remainder);
+  return segments;
+}
+
 const SELF_HARM_METHOD_PATTERNS = [
   /\b(?:how to|how (?:can|could|do|would) i|ways? to|best way to|teach me(?: how)? to|steps? (?:for|to)|instructions? (?:for|on|to))\s+(?:(?:quickly|painlessly|secretly|safely)\s+)*(?:kill myself|end my life|commit suicide|die by suicide|self[- ]harm)\b/i,
-  /(?:如何|怎麼|怎样|教我|方法|步驟|步骤|教程).{0,24}(?:自殺|自杀|自殘|自残|割腕|上吊|跳樓|跳楼|服毒)/u,
-  /(?:自殺|自杀|自殘|自残|割腕|上吊|跳樓|跳楼|服毒).{0,16}(?:方法|步驟|步骤|教程|怎麼|怎样)/u,
+  /(?:如何|怎麼|怎样|教我)(?:才能|可以|應該|应该|要|去|用.{0,4})?(?:自殺|自杀|自殘|自残|割腕|上吊|跳樓|跳楼|服毒)/u,
+  /(?:自殺|自杀|自殘|自残|割腕|上吊|跳樓|跳楼|服毒)(?:的)?(?:方法|步驟|步骤|教程)/u,
 ];
 
 const SELF_HARM_ENCOURAGEMENT_PATTERNS = [
@@ -54,8 +84,9 @@ const SELF_HARM_ENCOURAGEMENT_PATTERNS = [
 const ILLEGAL_DRUG_INSTRUCTION_PATTERNS = [
   /\b(?:how (?:can|could|do|would) (?:i|we)|how to|teach me(?: how)? to|give me (?:a )?(?:step-by-step )?(?:guide|instructions?|recipe)|steps? (?:for|to))\b[\s\S]{0,100}\b(?:mak(?:e|ing)|cook|produce|manufacture|synthesize)\b[\s\S]{0,40}\b(?:meth(?:amphetamine)?|heroin|fentanyl|cocaine|mdma|lsd)\b/i,
   /\b(?:how (?:can|could|do|would) (?:i|we)|how to|teach me|give me (?:a )?(?:guide|instructions?|recipe))\b[\s\S]{0,80}\b(?:meth(?:amphetamine)?|heroin|fentanyl|cocaine|mdma|lsd)\b[\s\S]{0,40}\b(?:mak(?:e|ing)|cook|produce|manufacture|synthesize)\b/i,
-  /(?:如何|怎麼|怎样|教我|步驟|步骤|教程|配方).{0,30}(?:製造|制造|製作|制作|合成|提煉|提炼).{0,20}(?:冰毒|甲基安非他命|海洛因|芬太尼|古柯鹼|古柯碱|搖頭丸|摇头丸)/u,
-  /(?:冰毒|甲基安非他命|海洛因|芬太尼|古柯鹼|古柯碱|搖頭丸|摇头丸).{0,20}(?:如何|怎麼|怎样|製造|制造|製作|制作|合成|配方|教程)/u,
+  /(?:如何|怎麼|怎样|教我|步驟|步骤|教程|配方).{0,12}(?:製造|制造|製作|制作|合成|提煉|提炼).{0,12}(?:冰毒|甲基安非他命|海洛因|芬太尼|古柯鹼|古柯碱|搖頭丸|摇头丸)/u,
+  /(?:冰毒|甲基安非他命|海洛因|芬太尼|古柯鹼|古柯碱|搖頭丸|摇头丸).{0,12}(?:如何|怎麼|怎样).{0,8}(?:製造|制造|製作|制作|合成|提煉|提炼)/u,
+  /(?:製造|制造|製作|制作|合成|提煉|提炼).{0,8}(?:冰毒|甲基安非他命|海洛因|芬太尼|古柯鹼|古柯碱|搖頭丸|摇头丸).{0,8}(?:方法|步驟|步骤|教程|配方)/u,
 ];
 
 const CREDIBLE_VIOLENCE_THREAT_PATTERNS = [
@@ -135,10 +166,6 @@ export function resolveTranslationDirection(text, direction = "auto") {
 
 export function hasClearlyUnsafeContent(text) {
   const normalizedText = String(text ?? "").normalize("NFKC");
-  if (isClearlyEducationalOrReportingContext(normalizedText)) {
-    return false;
-  }
-
   const patterns = [
     ...SELF_HARM_METHOD_PATTERNS,
     ...SELF_HARM_ENCOURAGEMENT_PATTERNS,
@@ -147,7 +174,10 @@ export function hasClearlyUnsafeContent(text) {
     ...TARGETED_ABUSE_PATTERNS,
   ];
 
-  return patterns.some(pattern => pattern.test(normalizedText));
+  return splitSafetySegments(normalizedText).some(segment => {
+    if (isClearlyEducationalOrReportingContext(segment)) return false;
+    return patterns.some(pattern => pattern.test(segment));
+  });
 }
 
 export function validateTranslationInput(text, direction = "auto") {

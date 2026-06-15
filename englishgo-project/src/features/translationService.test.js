@@ -101,6 +101,11 @@ describe("source text counting", () => {
     expect(countEnglishWords("e\u0301clair")).toBe(1);
   });
 
+  it("keeps non-composing marks attached to a Latin word", () => {
+    expect(countEnglishWords("n\u0304ative")).toBe(1);
+    expect(countEnglishWords("\u0304")).toBe(0);
+  });
+
   it("counts only the specified CJK Unicode ranges", () => {
     expect(countChineseCharacters("㐀一中文豈 〇 ABC 123")).toBe(5);
   });
@@ -332,6 +337,30 @@ describe("translation quality review regressions", () => {
     "Teacher says I will kill you.",
     "Prevent this: I will kill you.",
   ])("does not exempt a direct threat containing a context keyword: %s", text => {
+    expect(hasClearlyUnsafeContent(text)).toBe(true);
+
+    const error = captureServiceError(() =>
+      validateTranslationInput(text, "auto"),
+    );
+    expect(error.code).toBe("unsafe_content");
+  });
+});
+
+describe("translation clause safety regressions", () => {
+  it.each([
+    "如何幫助有自殺念頭的同學？",
+    "老師介紹自殺預防方法與求助資源。",
+    "冰毒如何危害健康？",
+  ])("allows non-instructional health and prevention context: %s", text => {
+    expect(hasClearlyUnsafeContent(text)).toBe(false);
+    expect(() => validateTranslationInput(text, "auto")).not.toThrow();
+  });
+
+  it.each([
+    "新聞報導冰毒製造案件的查緝成果。我要殺你。",
+    "新聞報導冰毒製造案件的查緝成果。你去死吧。",
+    'News reports quoted the message "I will kill you." I will shoot you.',
+  ])("rejects an unsafe clause after safe reporting context: %s", text => {
     expect(hasClearlyUnsafeContent(text)).toBe(true);
 
     const error = captureServiceError(() =>
