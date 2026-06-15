@@ -1,5 +1,7 @@
-import { describe, expect, it } from "vitest";
-import {
+import { describe, expect, it, vi } from "vitest";
+import * as translationService from "./translationService.js";
+
+const {
   MAX_CHINESE_CHARACTERS,
   MAX_ENGLISH_WORDS,
   TranslationServiceError,
@@ -9,7 +11,7 @@ import {
   hasClearlyUnsafeContent,
   resolveTranslationDirection,
   validateTranslationInput,
-} from "./translationService.js";
+} = translationService;
 
 function captureServiceError(action) {
   try {
@@ -21,6 +23,583 @@ function captureServiceError(action) {
 
   throw new Error("Expected TranslationServiceError");
 }
+
+it("sends a student-safe Gemini request for a valid English source", async () => {
+  const fetchImpl = async (_url, init) => {
+    expect(init.method).toBe("POST");
+    return {
+      ok: true,
+      json: async () => ({
+        candidates: [
+          {
+            content: {
+              parts: [
+                {
+                  text: JSON.stringify({
+                    sourceLanguage: "en-US",
+                    targetLanguage: "zh-TW",
+                    safe: true,
+                    reason: "safe to translate",
+                    translation: "你好，學生們。",
+                  }),
+                },
+              ],
+            },
+          },
+        ],
+      }),
+    };
+  };
+
+  await expect(
+    translationService.translateStudentText({
+      text: "Hello students.",
+      direction: "en-zh",
+      apiKey: "test-key",
+      fetchImpl,
+    }),
+  ).resolves.toEqual({
+    status: "safe",
+    sourceText: "Hello students.",
+    sourceLanguage: "en-US",
+    targetLanguage: "zh-TW",
+    translation: "你好，學生們。",
+  });
+});
+
+describe("Gemini translation contract", () => {
+  function createSafeResponse({
+    sourceLanguage,
+    targetLanguage,
+    translation,
+    safe = true,
+    reason = "ok",
+  }) {
+    return {
+      candidates: [
+        {
+          content: {
+            parts: [
+              {
+                text: JSON.stringify({
+                  sourceLanguage,
+                  targetLanguage,
+                  safe,
+                  reason,
+                  translation,
+                }),
+              },
+            ],
+          },
+        },
+      ],
+    };
+  }
+
+  it("translates valid Chinese text to English", async () => {
+    const fetchImpl = vi.fn(async () => ({
+      ok: true,
+      json: async () =>
+        createSafeResponse({
+          sourceLanguage: "zh-TW",
+          targetLanguage: "en-US",
+          translation: "Hello, students.",
+        }),
+    }));
+
+    await expect(
+      translationService.translateStudentText({
+        text: "你好，學生們。",
+        direction: "zh-en",
+        apiKey: "test-key",
+        fetchImpl,
+      }),
+    ).resolves.toEqual({
+      status: "safe",
+      sourceText: "你好，學生們。",
+      sourceLanguage: "zh-TW",
+      targetLanguage: "en-US",
+      translation: "Hello, students.",
+    });
+  });
+
+  it("translates valid English text to Chinese", async () => {
+    const fetchImpl = vi.fn(async () => ({
+      ok: true,
+      json: async () =>
+        createSafeResponse({
+          sourceLanguage: "en-US",
+          targetLanguage: "zh-TW",
+          translation: "你好，學生們。",
+        }),
+    }));
+
+    await expect(
+      translationService.translateStudentText({
+        text: "Hello students.",
+        direction: "en-zh",
+        apiKey: "test-key",
+        fetchImpl,
+      }),
+    ).resolves.toEqual({
+      status: "safe",
+      sourceText: "Hello students.",
+      sourceLanguage: "en-US",
+      targetLanguage: "zh-TW",
+      translation: "你好，學生們。",
+    });
+  });
+
+  it("builds the Gemini request body with safety settings, schema, model URL, and signal", async () => {
+    const signal = { aborted: false };
+    const fetchImpl = vi.fn(async () => ({
+      ok: true,
+      json: async () =>
+        createSafeResponse({
+          sourceLanguage: "en-US",
+          targetLanguage: "zh-TW",
+          translation: "你好。",
+        }),
+    }));
+
+    await translationService.translateStudentText({
+      text: "Hello students.",
+      direction: "en-zh",
+      apiKey: "abc123",
+      signal,
+      fetchImpl,
+    });
+
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    const [url, init] = fetchImpl.mock.calls[0];
+    expect(url).toBe(
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=abc123",
+    );
+    expect(init.signal).toBe(signal);
+    expect(init.method).toBe("POST");
+    expect(init.headers["Content-Type"]).toBe("application/json");
+
+    const body = JSON.parse(init.body);
+    expect(body.systemInstruction.parts[0].text).toContain(
+      "student-safe",
+    );
+    expect(body.systemInstruction.parts[0].text).toContain("en-US");
+    expect(body.systemInstruction.parts[0].text).toContain("zh-TW");
+    expect(body.contents).toEqual([
+      {
+        role: "user",
+        parts: [{ text: "SOURCE TEXT:\nHello students." }],
+      },
+    ]);
+    expect(body.safetySettings).toEqual([
+      {
+        category: "HARM_CATEGORY_HARASSMENT",
+        threshold: "BLOCK_MEDIUM_AND_ABOVE",
+      },
+      {
+        category: "HARM_CATEGORY_HATE_SPEECH",
+        threshold: "BLOCK_MEDIUM_AND_ABOVE",
+      },
+      {
+        category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+        threshold: "BLOCK_MEDIUM_AND_ABOVE",
+      },
+      {
+        category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+        threshold: "BLOCK_MEDIUM_AND_ABOVE",
+      },
+    ]);
+    expect(body.generationConfig).toEqual({
+      maxOutputTokens: 1400,
+      temperature: 0.1,
+      responseMimeType: "application/json",
+      responseSchema: expect.objectContaining({
+        type: "OBJECT",
+      }),
+    });
+    expect(body.generationConfig.responseSchema.required).toEqual([
+      "sourceLanguage",
+      "targetLanguage",
+      "safe",
+      "reason",
+      "translation",
+    ]);
+  });
+
+  it("returns unsafe for local unsafe input without calling fetch", async () => {
+    const fetchImpl = vi.fn();
+
+    await expect(
+      translationService.translateStudentText({
+        text: "You should kill yourself.",
+        direction: "auto",
+        apiKey: "test-key",
+        fetchImpl,
+      }),
+    ).resolves.toEqual({ status: "unsafe" });
+
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it("returns unsafe when Gemini marks the source unsafe", () => {
+    expect(
+      translationService.parseTranslationResponse(
+        {
+          promptFeedback: { blockReason: "SAFETY" },
+        },
+        { sourceLanguage: "en-US", targetLanguage: "zh-TW" },
+      ),
+    ).toEqual({ status: "unsafe" });
+  });
+
+  it("returns unsafe when a candidate finishReason is safety", () => {
+    expect(
+      translationService.parseTranslationResponse(
+        {
+          candidates: [
+            {
+              finishReason: "SAFETY",
+              content: {
+                parts: [{ text: JSON.stringify({}) }],
+              },
+            },
+          ],
+        },
+        { sourceLanguage: "en-US", targetLanguage: "zh-TW" },
+      ),
+    ).toEqual({ status: "unsafe" });
+  });
+
+  it.each([
+    "not json",
+    "```json\n{\"sourceLanguage\":\"en-US\"}\n```",
+    '{"sourceLanguage":"en-US"} extra',
+    "",
+  ])("rejects invalid JSON-like Gemini output: %s", text => {
+    expect(() =>
+      translationService.parseTranslationResponse(
+        {
+          candidates: [
+            {
+              content: {
+                parts: [{ text }],
+              },
+            },
+          ],
+        },
+        { sourceLanguage: "en-US", targetLanguage: "zh-TW" },
+      ),
+    ).toThrow(TranslationServiceError);
+  });
+
+  it("rejects schema mismatch and missing fields", () => {
+    expect(() =>
+      translationService.parseTranslationResponse(
+        createSafeResponse({
+          sourceLanguage: "en-US",
+          targetLanguage: "zh-TW",
+          translation: "你好。",
+        }),
+        { sourceLanguage: "en-US", targetLanguage: "zh-TW" },
+      ),
+    ).not.toThrow();
+
+    expect(() =>
+      translationService.parseTranslationResponse(
+        {
+          candidates: [
+            {
+              content: {
+                parts: [
+                  {
+                    text: JSON.stringify({
+                      sourceLanguage: "en-US",
+                      targetLanguage: "zh-TW",
+                      safe: true,
+                      reason: "ok",
+                    }),
+                  },
+                ],
+              },
+            },
+          ],
+        },
+        { sourceLanguage: "en-US", targetLanguage: "zh-TW" },
+      ),
+    ).toThrow(TranslationServiceError);
+  });
+
+  it("rejects wrong types, language mismatch, and contradictory responses", () => {
+    expect(() =>
+      translationService.parseTranslationResponse(
+        {
+          candidates: [
+            {
+              content: {
+                parts: [
+                  {
+                    text: JSON.stringify({
+                      sourceLanguage: "en-US",
+                      targetLanguage: "zh-TW",
+                      safe: "true",
+                      reason: 123,
+                      translation: "你好。",
+                    }),
+                  },
+                ],
+              },
+            },
+          ],
+        },
+        { sourceLanguage: "en-US", targetLanguage: "zh-TW" },
+      ),
+    ).toThrow(TranslationServiceError);
+
+    expect(() =>
+      translationService.parseTranslationResponse(
+        createSafeResponse({
+          sourceLanguage: "zh-TW",
+          targetLanguage: "en-US",
+          translation: "Hello.",
+        }),
+        { sourceLanguage: "en-US", targetLanguage: "zh-TW" },
+      ),
+    ).toThrow(TranslationServiceError);
+
+    expect(() =>
+      translationService.parseTranslationResponse(
+        {
+          candidates: [
+            {
+              content: {
+                parts: [
+                  {
+                    text: JSON.stringify({
+                      sourceLanguage: "en-US",
+                      targetLanguage: "zh-TW",
+                      safe: false,
+                      reason: "no translation",
+                      translation: "你好。",
+                    }),
+                  },
+                ],
+              },
+            },
+          ],
+        },
+        { sourceLanguage: "en-US", targetLanguage: "zh-TW" },
+      ),
+    ).toThrow(TranslationServiceError);
+  });
+
+  it("returns unsafe for safe false with empty translation and rejects safe true empty translation", () => {
+    expect(
+      translationService.parseTranslationResponse(
+        {
+          candidates: [
+            {
+              content: {
+                parts: [
+                  {
+                    text: JSON.stringify({
+                      sourceLanguage: "en-US",
+                      targetLanguage: "zh-TW",
+                      safe: false,
+                      reason: "unsafe source",
+                      translation: "   ",
+                    }),
+                  },
+                ],
+              },
+            },
+          ],
+        },
+        { sourceLanguage: "en-US", targetLanguage: "zh-TW" },
+      ),
+    ).toEqual({ status: "unsafe" });
+
+    expect(() =>
+      translationService.parseTranslationResponse(
+        {
+          candidates: [
+            {
+              content: {
+                parts: [
+                  {
+                    text: JSON.stringify({
+                      sourceLanguage: "en-US",
+                      targetLanguage: "zh-TW",
+                      safe: true,
+                      reason: "ok",
+                      translation: " ",
+                    }),
+                  },
+                ],
+              },
+            },
+          ],
+        },
+        { sourceLanguage: "en-US", targetLanguage: "zh-TW" },
+      ),
+    ).toThrow(TranslationServiceError);
+  });
+
+  it("rejects overlong English and Chinese translations", () => {
+    const longEnglish = Array.from({ length: 201 }, () => "word").join(" ");
+    expect(() =>
+      translationService.parseTranslationResponse(
+        createSafeResponse({
+          sourceLanguage: "zh-TW",
+          targetLanguage: "en-US",
+          translation: longEnglish,
+        }),
+        { sourceLanguage: "zh-TW", targetLanguage: "en-US" },
+      ),
+    ).toThrow(TranslationServiceError);
+
+    const longChinese = "銝".repeat(401);
+    expect(() =>
+      translationService.parseTranslationResponse(
+        createSafeResponse({
+          sourceLanguage: "en-US",
+          targetLanguage: "zh-TW",
+          translation: longChinese,
+        }),
+        { sourceLanguage: "en-US", targetLanguage: "zh-TW" },
+      ),
+    ).toThrow(TranslationServiceError);
+  });
+
+  it("rejects obviously unsafe translated output", () => {
+    expect(
+      translationService.parseTranslationResponse(
+        createSafeResponse({
+          sourceLanguage: "en-US",
+          targetLanguage: "zh-TW",
+          translation: "你去死吧。",
+        }),
+        { sourceLanguage: "en-US", targetLanguage: "zh-TW" },
+      ),
+    ).toEqual({ status: "unsafe" });
+  });
+
+  it("falls back from 429 and 503 but not other statuses", async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 429,
+        json: async () => ({ error: { message: "rate limited" } }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () =>
+          createSafeResponse({
+            sourceLanguage: "en-US",
+            targetLanguage: "zh-TW",
+            translation: "你好。",
+          }),
+      });
+
+    await expect(
+      translationService.translateStudentText({
+        text: "Hello students.",
+        direction: "en-zh",
+        apiKey: "test-key",
+        fetchImpl,
+      }),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        status: "safe",
+      }),
+    );
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+
+    const retry503 = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 503,
+        json: async () => ({ error: { message: "unavailable" } }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () =>
+          createSafeResponse({
+            sourceLanguage: "en-US",
+            targetLanguage: "zh-TW",
+            translation: "你好。",
+          }),
+      });
+
+    await expect(
+      translationService.translateStudentText({
+        text: "Hello students.",
+        direction: "en-zh",
+        apiKey: "test-key",
+        fetchImpl: retry503,
+      }),
+    ).resolves.toEqual(expect.objectContaining({ status: "safe" }));
+
+    const fatalFetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 401,
+      json: async () => ({ error: { message: "unauthorized" } }),
+    });
+    await expect(
+      translationService.translateStudentText({
+        text: "Hello students.",
+        direction: "en-zh",
+        apiKey: "test-key",
+        fetchImpl: fatalFetch,
+      }),
+    ).rejects.toMatchObject({
+      code: "api_error",
+    });
+  });
+
+  it("fails after both models exhaust retryable errors", async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 503,
+        json: async () => ({ error: { message: "unavailable" } }),
+      })
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 429,
+        json: async () => ({ error: { message: "rate limited" } }),
+      });
+
+    await expect(
+      translationService.translateStudentText({
+        text: "Hello students.",
+        direction: "en-zh",
+        apiKey: "test-key",
+        fetchImpl,
+      }),
+    ).rejects.toMatchObject({
+      code: "api_error",
+    });
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
+
+  it("propagates abort errors from fetch", async () => {
+    const abortError = new DOMException("The operation was aborted.", "AbortError");
+    const fetchImpl = vi.fn(() => Promise.reject(abortError));
+
+    await expect(
+      translationService.translateStudentText({
+        text: "Hello students.",
+        direction: "en-zh",
+        apiKey: "test-key",
+        signal: new AbortController().signal,
+        fetchImpl,
+      }),
+    ).rejects.toBe(abortError);
+  });
+});
 
 describe("translation input limits", () => {
   it("exports the configured English and Chinese limits", () => {
