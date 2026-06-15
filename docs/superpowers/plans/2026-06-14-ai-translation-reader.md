@@ -1,6 +1,6 @@
-# AI Translation Reader Implementation Plan
+﻿# AI Translation Reader Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Add a student-safe Traditional Chinese and English translation workspace that validates content, limits English to 200 words and Chinese to 400 CJK characters, and exposes narration only for validated results.
 
@@ -41,7 +41,7 @@ No Supabase schema, Netlify function, ElevenLabs function, environment variable,
 - Create: `englishgo-project/src/features/translationService.test.js`
 - Create: `englishgo-project/src/features/translationService.js`
 
-- [ ] **Step 1: Write failing tests for counting and language detection**
+- [x] **Step 1: Write failing tests for counting and language detection**
 
 Create `translationService.test.js` with:
 
@@ -101,7 +101,7 @@ describe("translation input validation", () => {
 });
 ```
 
-- [ ] **Step 2: Run the focused tests and verify RED**
+- [x] **Step 2: Run the focused tests and verify RED**
 
 Run from `englishgo-project`:
 
@@ -111,7 +111,7 @@ npm test -- src/features/translationService.test.js
 
 Expected: FAIL because `translationService.js` does not exist.
 
-- [ ] **Step 3: Implement the counting and direction contract**
+- [x] **Step 3: Implement the counting and direction contract**
 
 Create `translationService.js` with these exports and constants:
 
@@ -181,7 +181,7 @@ export function validateTranslationInput(text, direction = "auto") {
 }
 ```
 
-- [ ] **Step 4: Run the focused tests and verify GREEN**
+- [x] **Step 4: Run the focused tests and verify GREEN**
 
 ```powershell
 npm test -- src/features/translationService.test.js
@@ -189,7 +189,7 @@ npm test -- src/features/translationService.test.js
 
 Expected: all counting and language tests pass.
 
-- [ ] **Step 5: Add failing local-safety tests**
+- [x] **Step 5: Add failing local-safety tests**
 
 Append:
 
@@ -216,7 +216,7 @@ describe("local student safety screening", () => {
 });
 ```
 
-- [ ] **Step 6: Run the safety tests and verify RED**
+- [x] **Step 6: Run the safety tests and verify RED**
 
 ```powershell
 npm test -- src/features/translationService.test.js -t "local student safety"
@@ -224,7 +224,7 @@ npm test -- src/features/translationService.test.js -t "local student safety"
 
 Expected: FAIL because `hasClearlyUnsafeContent` is not exported.
 
-- [ ] **Step 7: Implement narrow obvious-content patterns**
+- [x] **Step 7: Implement narrow obvious-content patterns**
 
 Add a focused, fail-fast scanner. Keep the patterns narrow enough that educational mentions remain for Gemini contextual review:
 
@@ -258,7 +258,7 @@ if (hasClearlyUnsafeContent(sourceText)) {
 }
 ```
 
-- [ ] **Step 8: Run all service validation tests**
+- [x] **Step 8: Run all service validation tests**
 
 ```powershell
 npm test -- src/features/translationService.test.js
@@ -266,7 +266,7 @@ npm test -- src/features/translationService.test.js
 
 Expected: all validation tests pass.
 
-- [ ] **Step 9: Commit the validation layer**
+- [x] **Step 9: Commit the validation layer**
 
 ```powershell
 git add -- englishgo-project/src/features/translationService.js englishgo-project/src/features/translationService.test.js
@@ -279,7 +279,7 @@ git commit -m "feat: validate translation input safely"
 - Modify: `englishgo-project/src/features/translationService.js`
 - Modify: `englishgo-project/src/features/translationService.test.js`
 
-- [ ] **Step 1: Add failing tests for safe structured responses**
+- [x] **Step 1: Add failing tests for safe structured responses**
 
 Append tests using a helper:
 
@@ -337,7 +337,7 @@ it("returns a validated Chinese-to-English translation", async () => {
 });
 ```
 
-- [ ] **Step 2: Run the focused Gemini test and verify RED**
+- [x] **Step 2: Run the focused Gemini test and verify RED**
 
 ```powershell
 npm test -- src/features/translationService.test.js -t "validated Chinese-to-English"
@@ -345,7 +345,7 @@ npm test -- src/features/translationService.test.js -t "validated Chinese-to-Eng
 
 Expected: FAIL because `translateStudentText` does not exist.
 
-- [ ] **Step 3: Implement prompt, schema, safety settings, and model fallback**
+- [x] **Step 3: Implement prompt, schema, safety settings, and model fallback**
 
 Add:
 
@@ -463,7 +463,7 @@ export async function translateStudentText({
 }
 ```
 
-- [ ] **Step 4: Add failing tests for unsafe and malformed responses**
+- [x] **Step 4: Add failing tests for unsafe and malformed responses**
 
 Add tests covering:
 
@@ -527,7 +527,7 @@ Also test:
 - A translated targeted threat caught by the local post-scan.
 - Obvious local unsafe input returns `{ status: "unsafe" }` and never calls `fetchImpl`.
 
-- [ ] **Step 5: Run the response-validation tests and verify RED**
+- [x] **Step 5: Run the response-validation tests and verify RED**
 
 ```powershell
 npm test -- src/features/translationService.test.js
@@ -535,7 +535,7 @@ npm test -- src/features/translationService.test.js
 
 Expected: new unsafe/malformed/limit tests fail because strict parsing is incomplete.
 
-- [ ] **Step 6: Implement strict response parsing**
+- [x] **Step 6: Implement strict response parsing**
 
 Add:
 
@@ -599,7 +599,7 @@ export function parseTranslationResponse(data, expected) {
 
 Use `parseTranslationResponse` inside `translateStudentText`.
 
-- [ ] **Step 7: Run all service tests and verify GREEN**
+- [x] **Step 7: Run all service tests and verify GREEN**
 
 ```powershell
 npm test -- src/features/translationService.test.js
@@ -607,7 +607,7 @@ npm test -- src/features/translationService.test.js
 
 Expected: all service tests pass.
 
-- [ ] **Step 8: Commit the Gemini contract**
+- [x] **Step 8: Commit the Gemini contract**
 
 ```powershell
 git add -- englishgo-project/src/features/translationService.js englishgo-project/src/features/translationService.test.js
@@ -620,7 +620,7 @@ git commit -m "feat: add safe Gemini translation contract"
 - Create: `englishgo-project/src/features/TranslationReader.test.jsx`
 - Create: `englishgo-project/src/features/TranslationReader.jsx`
 
-- [ ] **Step 1: Write failing component tests for the form and safe result**
+- [x] **Step 1: Write failing component tests for the form and safe result**
 
 Create `TranslationReader.test.jsx` using:
 
@@ -681,7 +681,7 @@ it("translates safe text and exposes source and result narration", async () => {
 });
 ```
 
-- [ ] **Step 2: Run the component test and verify RED**
+- [x] **Step 2: Run the component test and verify RED**
 
 ```powershell
 npm test -- src/features/TranslationReader.test.jsx
@@ -689,7 +689,7 @@ npm test -- src/features/TranslationReader.test.jsx
 
 Expected: FAIL because `TranslationReader.jsx` does not exist.
 
-- [ ] **Step 3: Implement the minimal form and safe-result state**
+- [x] **Step 3: Implement the minimal form and safe-result state**
 
 Create `TranslationReader.jsx` with this component API:
 
@@ -760,7 +760,7 @@ The direction selector contains:
 The swap button uses the familiar `⇄` symbol with
 `aria-label="交換翻譯方向"` and `title="交換翻譯方向"`.
 
-- [ ] **Step 4: Run the safe-result test and verify GREEN**
+- [x] **Step 4: Run the safe-result test and verify GREEN**
 
 ```powershell
 npm test -- src/features/TranslationReader.test.jsx -t "translates safe text"
@@ -768,7 +768,7 @@ npm test -- src/features/TranslationReader.test.jsx -t "translates safe text"
 
 Expected: PASS.
 
-- [ ] **Step 5: Add failing tests for unsafe, stale, key, privacy, and direction states**
+- [x] **Step 5: Add failing tests for unsafe, stale, key, privacy, and direction states**
 
 Add tests that assert:
 
@@ -870,7 +870,7 @@ it("aborts an in-flight translation before starting the next submission", async 
 });
 ```
 
-- [ ] **Step 6: Run the state tests and verify RED**
+- [x] **Step 6: Run the state tests and verify RED**
 
 ```powershell
 npm test -- src/features/TranslationReader.test.jsx
@@ -878,7 +878,7 @@ npm test -- src/features/TranslationReader.test.jsx
 
 Expected: unsafe/key/stale/direction/privacy tests fail until all state transitions are implemented.
 
-- [ ] **Step 7: Complete state transitions and mapped errors**
+- [x] **Step 7: Complete state transitions and mapped errors**
 
 Map errors without rendering provider details:
 
@@ -905,7 +905,7 @@ Implement:
   input is valid; the next click replaces the active request.
 - Copy uses `navigator.clipboard.writeText(result.translation)` and displays `已複製` briefly.
 
-- [ ] **Step 8: Run all component state tests and verify GREEN**
+- [x] **Step 8: Run all component state tests and verify GREEN**
 
 ```powershell
 npm test -- src/features/TranslationReader.test.jsx
@@ -913,7 +913,7 @@ npm test -- src/features/TranslationReader.test.jsx
 
 Expected: all state and privacy tests pass.
 
-- [ ] **Step 9: Commit the component workflow**
+- [x] **Step 9: Commit the component workflow**
 
 ```powershell
 git add -- englishgo-project/src/features/TranslationReader.jsx englishgo-project/src/features/TranslationReader.test.jsx
@@ -926,7 +926,7 @@ git commit -m "feat: add translation reader workspace"
 - Modify: `englishgo-project/src/features/TranslationReader.jsx`
 - Modify: `englishgo-project/src/features/TranslationReader.test.jsx`
 
-- [ ] **Step 1: Add failing speech-routing tests**
+- [x] **Step 1: Add failing speech-routing tests**
 
 Add:
 
@@ -991,7 +991,7 @@ it("uses the English path for an English source and browser speech for its Chine
 });
 ```
 
-- [ ] **Step 2: Run speech tests and verify RED**
+- [x] **Step 2: Run speech tests and verify RED**
 
 ```powershell
 npm test -- src/features/TranslationReader.test.jsx -t "speech"
@@ -999,7 +999,7 @@ npm test -- src/features/TranslationReader.test.jsx -t "speech"
 
 Expected: FAIL until narration handlers route by language.
 
-- [ ] **Step 3: Implement validated-result-only narration**
+- [x] **Step 3: Implement validated-result-only narration**
 
 Use one handler:
 
@@ -1022,7 +1022,7 @@ const narrate = (kind) => {
 Never pass raw `text` to `narrate`. Render narration buttons only inside
 `result && status === "success"`.
 
-- [ ] **Step 4: Add failing responsive-layout assertions**
+- [x] **Step 4: Add failing responsive-layout assertions**
 
 Assert:
 
@@ -1034,7 +1034,7 @@ expect(css).toContain("@media (max-width:680px)");
 expect(css).toContain("grid-template-columns:1fr");
 ```
 
-- [ ] **Step 5: Implement restrained responsive CSS**
+- [x] **Step 5: Implement restrained responsive CSS**
 
 Use a workspace, not nested decorative cards:
 
@@ -1057,7 +1057,7 @@ Use 8 px or smaller panel radii, stable button heights, visible focus styles, an
 `padding-bottom:calc(16px + env(safe-area-inset-bottom))`. Do not use gradient
 orbs, oversized hero text, or cards inside cards.
 
-- [ ] **Step 6: Run all component tests**
+- [x] **Step 6: Run all component tests**
 
 ```powershell
 npm test -- src/features/TranslationReader.test.jsx
@@ -1065,7 +1065,7 @@ npm test -- src/features/TranslationReader.test.jsx
 
 Expected: all speech and responsive tests pass.
 
-- [ ] **Step 7: Run the existing TTS patch tests**
+- [x] **Step 7: Run the existing TTS patch tests**
 
 ```powershell
 npm test -- src/elevenlabs-tts-patch.test.js
@@ -1073,7 +1073,7 @@ npm test -- src/elevenlabs-tts-patch.test.js
 
 Expected: Chinese remains native browser speech and English API playback tests pass.
 
-- [ ] **Step 8: Commit speech and responsive behavior**
+- [x] **Step 8: Commit speech and responsive behavior**
 
 ```powershell
 git add -- englishgo-project/src/features/TranslationReader.jsx englishgo-project/src/features/TranslationReader.test.jsx
@@ -1086,7 +1086,7 @@ git commit -m "feat: route safe translation narration"
 - Modify: `englishgo-project/src/App.smoke.test.jsx`
 - Modify: `englishgo-project/src/App.jsx`
 
-- [ ] **Step 1: Add a failing App navigation smoke test**
+- [x] **Step 1: Add a failing App navigation smoke test**
 
 Add:
 
@@ -1108,7 +1108,7 @@ it("opens the safe AI translation reader from the learning menu", async () => {
 Add another smoke test without `eg_gemkey` that opens the feature, clicks
 `前往 Key 設定`, and expects the existing `API Key 設定` page.
 
-- [ ] **Step 2: Run the App smoke tests and verify RED**
+- [x] **Step 2: Run the App smoke tests and verify RED**
 
 ```powershell
 npm test -- src/App.smoke.test.jsx -t "AI translation reader"
@@ -1116,7 +1116,7 @@ npm test -- src/App.smoke.test.jsx -t "AI translation reader"
 
 Expected: FAIL because no `translate` menu card or route exists.
 
-- [ ] **Step 3: Import and route the component**
+- [x] **Step 3: Import and route the component**
 
 At the top of `App.jsx` add:
 
@@ -1150,7 +1150,7 @@ mod==="translate"
     />
 ```
 
-- [ ] **Step 4: Add the learning menu card**
+- [x] **Step 4: Add the learning menu card**
 
 In `MenuV2` immediately after AI Tutor add:
 
@@ -1161,7 +1161,7 @@ In `MenuV2` immediately after AI Tutor add:
 Also add the same module metadata to the legacy `Menu` array to keep both menu
 implementations consistent.
 
-- [ ] **Step 5: Run the App smoke tests and verify GREEN**
+- [x] **Step 5: Run the App smoke tests and verify GREEN**
 
 ```powershell
 npm test -- src/App.smoke.test.jsx -t "AI translation reader"
@@ -1169,7 +1169,7 @@ npm test -- src/App.smoke.test.jsx -t "AI translation reader"
 
 Expected: both navigation and missing-key settings tests pass.
 
-- [ ] **Step 6: Run all feature-focused tests together**
+- [x] **Step 6: Run all feature-focused tests together**
 
 ```powershell
 npm test -- src/features/translationService.test.js src/features/TranslationReader.test.jsx src/App.smoke.test.jsx
@@ -1177,7 +1177,7 @@ npm test -- src/features/translationService.test.js src/features/TranslationRead
 
 Expected: all translation and App smoke tests pass.
 
-- [ ] **Step 7: Commit App integration**
+- [x] **Step 7: Commit App integration**
 
 ```powershell
 git add -- englishgo-project/src/App.jsx englishgo-project/src/App.smoke.test.jsx
@@ -1192,7 +1192,7 @@ git commit -m "feat: add AI translation reader to learning menu"
 - Verify: `englishgo-project/src/App.jsx`
 - Update: `docs/superpowers/plans/2026-06-14-ai-translation-reader.md`
 
-- [ ] **Step 1: Run the complete test suite**
+- [x] **Step 1: Run the complete test suite**
 
 From `englishgo-project`:
 
@@ -1202,7 +1202,7 @@ npm test -- --run
 
 Expected: all test files pass with zero failed tests.
 
-- [ ] **Step 2: Run the production build**
+- [x] **Step 2: Run the production build**
 
 ```powershell
 npm run build
@@ -1215,7 +1215,7 @@ if prebuild changes it without an intentional recent-feature entry:
 git restore -- src/data/recentFeatures.generated.js
 ```
 
-- [ ] **Step 3: Check the final diff**
+- [x] **Step 3: Check the final diff**
 
 From the repository root:
 
@@ -1227,7 +1227,7 @@ git status --short
 Expected: no whitespace errors; only intended source, test, and plan files are
 tracked. Existing `vite-*.log` files remain untracked and are not committed.
 
-- [ ] **Step 4: Run desktop browser QA**
+- [x] **Step 4: Run desktop browser QA**
 
 Start or reuse Vite, then at a desktop viewport verify:
 
@@ -1242,7 +1242,7 @@ Start or reuse Vite, then at a desktop viewport verify:
 - Editing, clearing, direction changes, and back navigation stop speech.
 - No console errors, stale results, or failed local assets appear.
 
-- [ ] **Step 5: Run mobile browser QA**
+- [x] **Step 5: Run mobile browser QA**
 
 At `390 x 844` verify:
 
@@ -1253,24 +1253,24 @@ At `390 x 844` verify:
 - Direction and narration controls remain tappable.
 - The software keyboard does not permanently hide the primary action after dismissal.
 
-- [ ] **Step 6: Verify privacy in the browser**
+- [x] **Step 6: Verify privacy in the browser**
 
 Before and after one safe and one rejected translation, inspect localStorage and
 confirm no source text, translation, rejection reason, or history key is added.
 Confirm no Supabase request is emitted by this feature.
 
-- [ ] **Step 7: Mark the plan complete**
+- [x] **Step 7: Mark the plan complete**
 
 Change completed plan checkboxes from `[ ]` to `[x]`.
 
-- [ ] **Step 8: Commit verification records**
+- [x] **Step 8: Commit verification records**
 
 ```powershell
 git add -- docs/superpowers/plans/2026-06-14-ai-translation-reader.md
 git commit -m "docs: complete AI translation reader plan"
 ```
 
-- [ ] **Step 9: Push `main`**
+- [x] **Step 9: Push `main`**
 
 ```powershell
 git push origin main
@@ -1279,7 +1279,7 @@ git push origin main
 Expected: remote `main` includes the service, component, integration, tests, and
 completed plan commits.
 
-- [ ] **Step 10: Deploy production to Netlify**
+- [x] **Step 10: Deploy production to Netlify**
 
 Verify Netlify project `englishgo-vevan` receives the new commit. If Git-based
 deployment does not start, deploy from `englishgo-project` using the linked
@@ -1291,3 +1291,4 @@ Expected:
 - `https://englishgo-vevan.netlify.app` serves the new module.
 - Production browser smoke check can open `AI 翻譯朗讀`.
 - Chinese narration produces no ElevenLabs function request.
+
