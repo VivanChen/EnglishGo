@@ -10,20 +10,21 @@ const CJK_CHARACTER_PATTERN = /[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]/gu;
 const PREVENTION_CONTEXT_PATTERNS = [
   /^(?:how to prevent|preventing|prevention of) (?:self[- ]harm|suicide)(?: (?:among|in) (?:students|children|young people))?[.?!]*$/i,
   /^(?:how to prevent|preventing|prevention of) (?:students|children|young people) from (?:mak(?:e|ing)|manufactur(?:e|ing)) (?:meth(?:amphetamine)?|heroin|fentanyl|cocaine|mdma|lsd)[.?!]*$/i,
-  /^(?:如何|怎麼|怎样)(?:預防|预防|防止)(?:學生|学生|孩子|青少年)?(?:自殺|自杀|自殘|自残)(?:(?:並|并)(?:鼓勵|鼓励)(?:學生|学生|孩子|青少年)?求助)?[？?。！!]*$/u,
-  /^(?:如何|怎麼|怎样)(?:預防|预防|防止)(?:學生|学生|孩子|青少年)(?:製造|制造|製作|制作|合成)(?:冰毒|甲基安非他命|海洛因|芬太尼|古柯鹼|古柯碱|搖頭丸|摇头丸)[？?。！!]*$/u,
-  /^(?:自殺|自杀|自殘|自残)(?:預防|预防|防止)(?:方法|方式|資源|资源)(?:有哪些|是什麼|是什么)?[？?。！!]*$/u,
+  /^(?:如何|怎麼|怎样)(?:幫助|协助|協助|求助|預防|防止|阻止).*(?:自殺|自杀|自殘|自残|製造|制造|製作|制作|合成|冰毒|甲基安非他命).*[。！？!?]*$/u,
+  /^(?:如何|怎麼|怎样)(?:預防|防止|阻止).*(?:自殺|自杀|自殘|自残|製造|制造|製作|制作|合成|冰毒|甲基安非他命).*[。！？!?]*$/u,
+  /^(?:自殺|自杀|自殘|自残)(?:預防|防止|方法|方式|資源|资源)(?:有哪些|是什麼|是什么)?[？?。！!]*$/u,
 ];
 
 const EDUCATIONAL_ANALYSIS_CONTEXT_PATTERNS = [
   /^(?:(?:the )?(?:teacher|lesson|class) (?:explains?|discuss(?:es)?)|(?:i|we) will teach (?:students|children|learners)) why (?:(?:saying|the (?:phrase|quote)) )?["“][^"“”]+["”] is (?:abusive|threatening|a threat)[.?!]*$/i,
   /^(?:how to|ways to) (?:discuss|talk about|teach about) (?:self[- ]harm|suicide) with (?:students|children|young people)[.?!]*$/i,
+  /^(?:老師|教师|老师说|老師說|課堂|课堂).*(?:自殺的方法不可取|自杀的方法不可取|不應該|不应该|不可取).*[。！？!?]*$/u,
 ];
 
 const REPORTING_CONTEXT_PATTERNS = [
   /^(?:(?:the )?(?:news|report|article)|news reports?) (?:quoted|reported) (?:the )?(?:message|statement|quote) ["“][^"“”]+["”][.?!]*$/i,
   /^(?:in (?:the )?(?:story|novel|book),?\s+)?[\p{L}][\p{L}'\u2019-]*(?:\s+[\p{L}][\p{L}'\u2019-]*)*\s+(?:says|said|writes|wrote),?\s+["“][^"“”]+["”][.?!]*$/iu,
-  /^(?:新聞|新闻)(?:報導|报道).{0,24}(?:冰毒|甲基安非他命|海洛因|芬太尼|古柯鹼|古柯碱|搖頭丸|摇头丸)(?:製造|制造|製作|制作|合成).{0,24}(?:案件|查緝|查缉|逮捕|判決|判决|成果).*[。！？!?]*$/u,
+  /^(?:新聞報導|報導|記者(?:報導|指出|表示)|新聞(?:報導|指出|表示))(?:[^\s，,。！？!?]{0,24})?(?:「[^」]*」|"[^"]*")?[。！？!?]*$/u,
 ];
 
 function isClearlyEducationalOrReportingContext(text) {
@@ -45,12 +46,18 @@ function splitSafetySegments(text) {
     current += character;
 
     if (quote) {
-      if (character === quote) quote = null;
+      if (
+        (quote === '"' && character === '"') ||
+        (quote === "“" && character === "”") ||
+        (quote === "「" && character === "」")
+      ) {
+        quote = null;
+      }
       continue;
     }
 
-    if (character === '"' || character === "“") {
-      quote = character === "“" ? "”" : '"';
+    if (character === '"' || character === "“" || character === "「") {
+      quote = character;
       continue;
     }
 
@@ -68,8 +75,9 @@ function splitSafetySegments(text) {
 
 const SELF_HARM_METHOD_PATTERNS = [
   /\b(?:how to|how (?:can|could|do|would) i|ways? to|best way to|teach me(?: how)? to|steps? (?:for|to)|instructions? (?:for|on|to))\s+(?:(?:quickly|painlessly|secretly|safely)\s+)*(?:kill myself|end my life|commit suicide|die by suicide|self[- ]harm)\b/i,
-  /(?:如何|怎麼|怎样|教我)(?:才能|可以|應該|应该|要|去|用.{0,4})?(?:自殺|自杀|自殘|自残|割腕|上吊|跳樓|跳楼|服毒)/u,
-  /(?:自殺|自杀|自殘|自残|割腕|上吊|跳樓|跳楼|服毒)(?:的)?(?:方法|步驟|步骤|教程)/u,
+  /(?:如何|怎麼|怎样|教我|告訴我|告诉我|提供|有哪些|是什麼|是什么|步驟|步骤|教程)(?:(?!幫助|求助|預防|防止|阻止|念頭|想法|資源|协助|協助|支援)[^。！？.!?]){0,8}(?:快速|不痛苦地|秘密地|偷偷地|悄悄地|立即|馬上|直接|輕鬆地|無痛地|无痛地)?(?:自殺|自杀|自殘|自残|割腕|上吊|跳樓|跳楼|服毒)/u,
+  /(?:如何|怎麼|怎样|教我|告訴我|告诉我|提供|有哪些|是什麼|是什么|步驟|步骤|教程)(?:(?!幫助|求助|預防|防止|阻止|念頭|想法|資源|协助|協助|支援)[^。！？.!?]){0,12}(?:自殺|自杀|自殘|自残|割腕|上吊|跳樓|跳楼|服毒)(?:的)?(?:方法|步驟|步骤|教程)/u,
+  /(?:自殺|自杀|自殘|自残|割腕|上吊|跳樓|跳楼|服毒)(?:的)?(?:方法|步驟|步骤|教程)(?:(?!幫助|求助|預防|防止|阻止|念頭|想法|資源|协助|協助|支援)[^。！？.!?]){0,12}(?:是什麼|是什么|有哪些|怎麼|怎么|如何|教我|告訴我|告诉我|提供)/u,
 ];
 
 const SELF_HARM_ENCOURAGEMENT_PATTERNS = [
@@ -84,15 +92,16 @@ const SELF_HARM_ENCOURAGEMENT_PATTERNS = [
 const ILLEGAL_DRUG_INSTRUCTION_PATTERNS = [
   /\b(?:how (?:can|could|do|would) (?:i|we)|how to|teach me(?: how)? to|give me (?:a )?(?:step-by-step )?(?:guide|instructions?|recipe)|steps? (?:for|to))\b[\s\S]{0,100}\b(?:mak(?:e|ing)|cook|produce|manufacture|synthesize)\b[\s\S]{0,40}\b(?:meth(?:amphetamine)?|heroin|fentanyl|cocaine|mdma|lsd)\b/i,
   /\b(?:how (?:can|could|do|would) (?:i|we)|how to|teach me|give me (?:a )?(?:guide|instructions?|recipe))\b[\s\S]{0,80}\b(?:meth(?:amphetamine)?|heroin|fentanyl|cocaine|mdma|lsd)\b[\s\S]{0,40}\b(?:mak(?:e|ing)|cook|produce|manufacture|synthesize)\b/i,
-  /(?:如何|怎麼|怎样|教我|步驟|步骤|教程|配方).{0,12}(?:製造|制造|製作|制作|合成|提煉|提炼).{0,12}(?:冰毒|甲基安非他命|海洛因|芬太尼|古柯鹼|古柯碱|搖頭丸|摇头丸)/u,
-  /(?:冰毒|甲基安非他命|海洛因|芬太尼|古柯鹼|古柯碱|搖頭丸|摇头丸).{0,12}(?:如何|怎麼|怎样).{0,8}(?:製造|制造|製作|制作|合成|提煉|提炼)/u,
-  /(?:製造|制造|製作|制作|合成|提煉|提炼).{0,8}(?:冰毒|甲基安非他命|海洛因|芬太尼|古柯鹼|古柯碱|搖頭丸|摇头丸).{0,8}(?:方法|步驟|步骤|教程|配方)/u,
+  /(?:如何|怎麼|怎样|教我|告訴我|告诉我|提供|有哪些|是什麼|是什么|步驟|步骤|教程|配方)(?:(?!預防|防止|阻止|查緝)[^。！？.!?]){0,12}(?:製造|制造|製作|制作|合成|提煉|提炼)(?:(?!預防|防止|阻止|查緝)[^。！？.!?]){0,12}(?:冰毒|甲基安非他命|海洛因|芬太尼|古柯鹼|古柯碱|搖頭丸|摇头丸)/u,
+  /(?:如何|怎麼|怎样|教我|告訴我|告诉我|提供|有哪些|是什麼|是什么|步驟|步骤|教程|配方)(?:(?!預防|防止|阻止|查緝)[^。！？.!?]){0,12}(?:冰毒|甲基安非他命|海洛因|芬太尼|古柯鹼|古柯碱|搖頭丸|摇头丸)(?:(?!預防|防止|阻止|查緝)[^。！？.!?]){0,12}(?:製造|制造|製作|制作|合成|提煉|提炼)/u,
+  /(?:製造|制造|製作|制作|合成|提煉|提炼)(?:冰毒|甲基安非他命|海洛因|芬太尼|古柯鹼|古柯碱|搖頭丸|摇头丸)(?:的)?(?:方法|步驟|步骤|教程|配方)(?:(?!預防|防止|阻止|查緝)[^。！？.!?]){0,12}(?:是什麼|是什么|有哪些|怎麼|怎么|如何|教我|告訴我|告诉我|提供)/u,
 ];
 
 const CREDIBLE_VIOLENCE_THREAT_PATTERNS = [
   /\b(?:i(?:['\u2019]m| am) going to|i will|i['\u2019]ll|we will|we['\u2019]ll)\b[\s\S]{0,24}\b(?:kill|murder|shoot|stab|bomb|beat|blow up)\b[\s\S]{0,36}\b(?:you|him|her|them|your family|the school|my school|our school|the teacher|the class|everyone)\b/i,
   /(?:我|我們|我们).{0,6}(?:要|會|会|一定會|一定会|打算|準備|准备).{0,10}(?:殺|杀|砍|炸|槍殺|枪杀|捅|打死).{0,18}(?:你|妳|他|她|他們|他们|學校|学校|老師|老师|同學|同学|全家|大家)/u,
   /(?:我|我們|我们).{0,6}(?:要|會|会|一定會|一定会|打算|準備|准备).{0,8}(?:把)?(?:你|妳|他|她|他們|他们|學校|学校|老師|老师|同學|同学|全家|大家).{0,10}(?:殺|杀|砍|炸|槍殺|枪杀|捅|打死)/u,
+  /(?:你|妳).{0,6}(?:去死)(?:吧|啦|啊|！|!|。|$)/u,
 ];
 
 const TARGETED_ABUSE_PATTERNS = [
