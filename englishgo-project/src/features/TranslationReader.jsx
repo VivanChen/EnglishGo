@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import {
   countChineseCharacters,
   countEnglishWords,
@@ -7,6 +7,8 @@ import {
 } from "./translationService.js";
 
 const UNSAFE_MESSAGE = "內容不適合學生使用，無法翻譯或朗讀。";
+const TRANSLATION_COOLDOWN_MS = 60_000;
+const TRANSLATION_LAST_REQUEST_KEY = "eg_translation_last_request_at";
 const TRANSLATION_READER_STYLES = `
 .translation-reader{display:grid;gap:12px;color:var(--tr-text);padding-bottom:calc(16px + env(safe-area-inset-bottom))}
 .translation-reader-form{display:grid;gap:10px}
@@ -33,13 +35,81 @@ const TRANSLATION_READER_STYLES = `
 .translation-reader-panel h2{margin:0 0 10px;font-size:16px;letter-spacing:0}
 .translation-reader-text{min-height:96px;margin:0 0 14px;overflow-wrap:anywhere;white-space:pre-wrap;line-height:1.8}
 .translation-reader-copied{color:var(--tr-accent);font-size:13px;font-weight:700}
+.translation-reader-learning{grid-column:1/-1;display:grid;gap:16px;padding:16px 0;border-top:1px solid var(--tr-border)}
+.translation-reader-learning h2{margin:0 0 6px;font-size:16px;letter-spacing:0}
+.translation-reader-learning p{margin:0;line-height:1.75}
+.translation-reader-phrases{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.translation-reader-phrase{min-width:0;padding:10px 12px;border-left:3px solid var(--tr-accent);background:var(--tr-surface-alt)}
+.translation-reader-phrase strong,.translation-reader-phrase span{display:block;overflow-wrap:anywhere}
+.translation-reader-phrase span{margin-top:4px;color:var(--tr-muted);font-size:14px}
+.translation-reader-pronunciation{font-size:18px;line-height:1.9;overflow-wrap:anywhere}
+.translation-reader-pronunciation strong{color:var(--tr-accent)}
 @media (max-width:680px){
   .translation-reader-results{grid-template-columns:1fr}
+  .translation-reader-phrases{grid-template-columns:1fr}
   .translation-reader-input{min-height:150px}
   .translation-reader-primary{width:100%}
   .translation-reader-controls{align-items:stretch}
 }
 `;
+
+function readActiveCooldown(now = Date.now()) {
+  try {
+    const stored = Number(localStorage.getItem(TRANSLATION_LAST_REQUEST_KEY));
+    if (
+      !Number.isFinite(stored) ||
+      stored <= 0 ||
+      stored > now + 5_000 ||
+      stored + TRANSLATION_COOLDOWN_MS <= now
+    ) {
+      localStorage.removeItem(TRANSLATION_LAST_REQUEST_KEY);
+      return 0;
+    }
+    return stored + TRANSLATION_COOLDOWN_MS;
+  } catch {
+    return 0;
+  }
+}
+
+function normalizeStressToken(token) {
+  return String(token ?? "")
+    .normalize("NFKC")
+    .toLocaleLowerCase("en-US")
+    .replace(/[^\p{Script=Latin}0-9'\u2019]/gu, "");
+}
+
+function PronunciationGuide({ segments }) {
+  return (
+    <p
+      className="translation-reader-pronunciation"
+      data-testid="pronunciation-guide"
+    >
+      {segments.map((segment, segmentIndex) => {
+        const stressed = new Set(
+          segment.stressedWords.map(normalizeStressToken),
+        );
+        return (
+          <Fragment key={`${segment.text}-${segmentIndex}`}>
+            {segment.text.split(/(\s+)/).map((token, tokenIndex) => {
+              const normalizedToken = normalizeStressToken(token);
+              const content = normalizedToken && stressed.has(normalizedToken)
+                ? <strong>{token}</strong>
+                : token;
+              return (
+                <Fragment key={`${segmentIndex}-${tokenIndex}`}>
+                  {content}
+                </Fragment>
+              );
+            })}
+            {segmentIndex < segments.length - 1 ? (
+              <span aria-label="短暫停頓"> / </span>
+            ) : null}
+          </Fragment>
+        );
+      })}
+    </p>
+  );
+}
 
 function getTranslationErrorMessage(error) {
   if (error?.code === "unsafe_content") return UNSAFE_MESSAGE;
@@ -73,6 +143,10 @@ export default function TranslationReader({
   const requestRef = useRef(null);
   const [copied, setCopied] = useState(false);
   const [speaking, setSpeaking] = useState(null);
+  const [now, setNow] = useState(() => Date.now());
+  const [cooldownUntil, setCooldownUntil] = useState(
+    () => readActiveCooldown(Date.now()),
+  );
   const copyTimerRef = useRef(null);
 
   const abortRequest = () => {
@@ -99,6 +173,27 @@ export default function TranslationReader({
     };
   }, [stopSpeech]);
 
+  useEffect(() => {
+    if (cooldownUntil <= Date.now()) return undefined;
+
+    setNow(Date.now());
+    const intervalId = setInterval(() => {
+      const currentTime = Date.now();
+      setNow(currentTime);
+      if (currentTime < cooldownUntil) return;
+
+      clearInterval(intervalId);
+      setCooldownUntil(0);
+      try {
+        localStorage.removeItem(TRANSLATION_LAST_REQUEST_KEY);
+      } catch {
+        // Cooldown still expires in memory when storage is unavailable.
+      }
+    }, 1_000);
+
+    return () => clearInterval(intervalId);
+  }, [cooldownUntil]);
+
   const sourceLanguage = direction === "zh-en"
     ? "zh-TW"
     : direction === "en-zh"
@@ -108,8 +203,26 @@ export default function TranslationReader({
     ? countChineseCharacters(text)
     : countEnglishWords(text);
   const countLabel = sourceLanguage === "zh-TW"
-    ? `${count}/400 字`
-    : `${count}/200 words`;
+    ? `${count}/20 字`
+    : `${count}/20 words`;
+  const cooldownSeconds = Math.max(
+    0,
+    Math.ceil((cooldownUntil - now) / 1_000),
+  );
+
+  const startCooldown = () => {
+    const startedAt = Date.now();
+    try {
+      localStorage.setItem(
+        TRANSLATION_LAST_REQUEST_KEY,
+        String(startedAt),
+      );
+    } catch {
+      // The in-memory cooldown still prevents accidental repeated requests.
+    }
+    setNow(startedAt);
+    setCooldownUntil(startedAt + TRANSLATION_COOLDOWN_MS);
+  };
 
   const submit = async event => {
     event.preventDefault();
@@ -119,6 +232,10 @@ export default function TranslationReader({
       setResult(null);
       setStatus("error");
       setMessage("需要 Gemini API Key。");
+      return;
+    }
+    if (cooldownUntil > Date.now()) {
+      setNow(Date.now());
       return;
     }
     abortRequest();
@@ -134,6 +251,7 @@ export default function TranslationReader({
         direction,
         apiKey,
         signal: controller.signal,
+        onRequestStart: startCooldown,
       });
 
       if (requestRef.current !== controller || controller.signal.aborted) return;
@@ -305,16 +423,18 @@ export default function TranslationReader({
           onChange={handleTextChange}
         />
         <div className="translation-reader-meta">
-          <span>上限 200 English words / 400 中文字</span>
+          <span>上限 20 English words / 20 中文字</span>
           <span data-testid="translation-count">{countLabel}</span>
         </div>
         <div className="translation-reader-actions">
           <button
             className="translation-reader-button translation-reader-primary"
             type="submit"
-            disabled={!text.trim()}
+            disabled={!text.trim() || cooldownSeconds > 0}
           >
-            AI 翻譯與檢核
+            {cooldownSeconds > 0
+              ? `請等待 ${cooldownSeconds} 秒`
+              : "AI 翻譯與檢核"}
           </button>
           <button
             className="translation-reader-button"
@@ -396,6 +516,37 @@ export default function TranslationReader({
                 複製翻譯
               </button>
               {copied ? <span className="translation-reader-copied">已複製</span> : null}
+            </div>
+          </section>
+          <section
+            className="translation-reader-learning"
+            data-testid="translation-learning"
+          >
+            <div>
+              <h2>為什麼這樣翻</h2>
+              <p>{result.explanation}</p>
+            </div>
+            {result.keyPhrases?.length ? (
+              <div>
+                <h2>重要片語</h2>
+                <div className="translation-reader-phrases">
+                  {result.keyPhrases.map((phrase, index) => (
+                    <div
+                      className="translation-reader-phrase"
+                      key={`${phrase.english}-${index}`}
+                    >
+                      <strong>{phrase.english}</strong>
+                      <span>{phrase.meaning}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+            <div>
+              <h2>英文怎麼念</h2>
+              <PronunciationGuide
+                segments={result.pronunciationSegments ?? []}
+              />
             </div>
           </section>
         </div>

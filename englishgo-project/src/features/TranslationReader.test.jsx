@@ -1,6 +1,8 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import TranslationReader from "./TranslationReader.jsx";
+
+const TRANSLATION_LAST_REQUEST_KEY = "eg_translation_last_request_at";
 
 const Header = ({ t, onBack }) => (
   <header>
@@ -33,6 +35,21 @@ function renderReader(overrides = {}) {
       sourceLanguage: "zh-TW",
       targetLanguage: "en-US",
       translation: "I walk to school every day.",
+      explanation: "這句使用 every day 表達每天固定發生的事情。",
+      keyPhrases: [
+        { english: "walk to school", meaning: "走路去學校" },
+        { english: "every day", meaning: "每天" },
+      ],
+      pronunciationSegments: [
+        {
+          text: "I walk to school",
+          stressedWords: ["walk", "school"],
+        },
+        {
+          text: "every day.",
+          stressedWords: ["every", "day"],
+        },
+      ],
     }),
     Header,
     theme,
@@ -53,6 +70,11 @@ function createDeferred() {
   return { promise, resolve, reject };
 }
 
+afterEach(() => {
+  vi.useRealTimers();
+  localStorage.removeItem(TRANSLATION_LAST_REQUEST_KEY);
+});
+
 describe("TranslationReader", () => {
   it("translates safe text and exposes validated result actions", async () => {
     const props = renderReader();
@@ -61,7 +83,7 @@ describe("TranslationReader", () => {
       target: { value: "我每天走路去學校。" },
     });
 
-    expect(screen.getByTestId("translation-count")).toHaveTextContent("8/400 字");
+    expect(screen.getByTestId("translation-count")).toHaveTextContent("8/20 字");
 
     fireEvent.click(screen.getByRole("button", { name: "AI 翻譯與檢核" }));
 
@@ -69,6 +91,18 @@ describe("TranslationReader", () => {
     expect(screen.getByRole("button", { name: "朗讀原文" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "朗讀翻譯" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "複製翻譯" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "為什麼這樣翻" })).toBeInTheDocument();
+    expect(
+      screen.getByText("這句使用 every day 表達每天固定發生的事情。"),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "重要片語" })).toBeInTheDocument();
+    expect(screen.getByText("walk to school")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "英文怎麼念" })).toBeInTheDocument();
+    expect(screen.getByTestId("pronunciation-guide")).toHaveTextContent(
+      "I walk to school / every day.",
+    );
+    expect(screen.getByTestId("pronunciation-guide").querySelectorAll("strong"))
+      .toHaveLength(4);
     expect(props.translateText).toHaveBeenCalledWith(expect.objectContaining({
       text: "我每天走路去學校。",
       direction: "auto",
@@ -174,10 +208,10 @@ describe("TranslationReader", () => {
     const input = screen.getByLabelText("輸入要翻譯的句子");
 
     fireEvent.change(input, { target: { value: "One well-known student reads." } });
-    expect(screen.getByTestId("translation-count")).toHaveTextContent("4/200 words");
+    expect(screen.getByTestId("translation-count")).toHaveTextContent("4/20 words");
 
     fireEvent.change(input, { target: { value: "我每天走路去學校。" } });
-    expect(screen.getByTestId("translation-count")).toHaveTextContent("8/400 字");
+    expect(screen.getByTestId("translation-count")).toHaveTextContent("8/20 字");
   });
 
   it("clears a prior result and stops speech when source text changes", async () => {
@@ -440,6 +474,111 @@ describe("TranslationReader", () => {
     );
   });
 
+  it("starts a persistent 60-second cooldown when the API request starts", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-06-15T12:00:00Z"));
+    const translateText = vi.fn(({ onRequestStart }) => {
+      onRequestStart();
+      return Promise.resolve({ status: "unsafe" });
+    });
+    renderReader({ translateText });
+
+    fireEvent.change(screen.getByLabelText("輸入要翻譯的句子"), {
+      target: { value: "Hello students." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "AI 翻譯與檢核" }));
+    await act(async () => {});
+
+    expect(translateText).toHaveBeenCalledWith(expect.objectContaining({
+      onRequestStart: expect.any(Function),
+    }));
+    expect(localStorage.getItem(TRANSLATION_LAST_REQUEST_KEY)).toBe(
+      String(Date.now()),
+    );
+    expect(screen.getByRole("button", { name: "請等待 60 秒" })).toBeDisabled();
+
+    act(() => {
+      vi.advanceTimersByTime(30_000);
+    });
+    expect(screen.getByRole("button", { name: "請等待 30 秒" })).toBeDisabled();
+
+    act(() => {
+      vi.advanceTimersByTime(30_000);
+    });
+    expect(screen.getByRole("button", { name: "AI 翻譯與檢核" })).toBeEnabled();
+  });
+
+  it("restores an active cooldown after remounting", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-06-15T12:00:00Z"));
+    localStorage.setItem(TRANSLATION_LAST_REQUEST_KEY, String(Date.now()));
+
+    const first = renderReader();
+    expect(screen.getByRole("button", { name: "請等待 60 秒" })).toBeDisabled();
+    first.unmount();
+
+    renderReader();
+    expect(screen.getByRole("button", { name: "請等待 60 秒" })).toBeDisabled();
+  });
+
+  it("keeps cooldown after an API error because a request was sent", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-06-15T12:00:00Z"));
+    const translateText = vi.fn(({ onRequestStart }) => {
+      onRequestStart();
+      return Promise.reject({ code: "api_error" });
+    });
+    renderReader({ translateText });
+
+    fireEvent.change(screen.getByLabelText("輸入要翻譯的句子"), {
+      target: { value: "Hello students." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "AI 翻譯與檢核" }));
+    await act(async () => {});
+
+    expect(screen.getByText("AI 翻譯暫時無法使用，請稍後再試。")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "請等待 60 秒" })).toBeDisabled();
+  });
+
+  it("does not start cooldown when work is rejected before fetch", async () => {
+    const translateText = vi.fn().mockRejectedValue({
+      code: "source_too_long",
+      message: "英文最多 20 words，目前 21 words。",
+    });
+    renderReader({ translateText });
+
+    fireEvent.change(screen.getByLabelText("輸入要翻譯的句子"), {
+      target: { value: "A sentence rejected by local validation." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "AI 翻譯與檢核" }));
+
+    expect(
+      await screen.findByText("英文最多 20 words，目前 21 words。"),
+    ).toBeInTheDocument();
+    expect(localStorage.getItem(TRANSLATION_LAST_REQUEST_KEY)).toBeNull();
+    expect(screen.getByRole("button", { name: "AI 翻譯與檢核" })).toBeEnabled();
+  });
+
+  it("stores only the cooldown timestamp after a request starts", async () => {
+    const before = Object.keys(localStorage).sort();
+    const translateText = vi.fn(({ onRequestStart }) => {
+      onRequestStart();
+      return Promise.resolve({ status: "unsafe" });
+    });
+    renderReader({ translateText });
+
+    fireEvent.change(screen.getByLabelText("輸入要翻譯的句子"), {
+      target: { value: "Hello students." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "AI 翻譯與檢核" }));
+    await screen.findByText("內容不適合學生使用，無法翻譯或朗讀。");
+
+    expect(Object.keys(localStorage).sort()).toEqual(
+      [...before, TRANSLATION_LAST_REQUEST_KEY].sort(),
+    );
+    expect(localStorage.getItem(TRANSLATION_LAST_REQUEST_KEY)).toMatch(/^\d+$/);
+  });
+
   it("renders responsive workspace classes and restrained panel CSS", async () => {
     renderReader();
 
@@ -459,6 +598,8 @@ describe("TranslationReader", () => {
     expect(css).toContain("grid-template-columns:repeat(2,minmax(0,1fr))");
     expect(css).toContain("@media (max-width:680px)");
     expect(css).toContain("grid-template-columns:1fr");
+    expect(css).toContain(".translation-reader-learning");
+    expect(css).toContain(".translation-reader-phrases");
     expect(css).toContain("border-radius:8px");
   });
 });
