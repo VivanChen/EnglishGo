@@ -46,6 +46,10 @@ function novelBlockPairs(enText,zhText){
   const len=Math.max(en.length,zh.length);
   return Array.from({length:len},(_,i)=>({en:en[i]||"",zh:zh[i]||"",i}));
 }
+function isNovelReaderControlTarget(target,currentTarget){
+  const control=target?.closest?.("button,a,input,select,textarea,[role='button'],[role='tab'],[contenteditable='true']");
+  return Boolean(control&&currentTarget?.contains?.(control));
+}
 export default function NovelM({lv,onBack,onXp,deps}){
   const {LV,S,useLS,readingWords,playSound,stopSpeech,speak,speakStory,Hdr}=deps;
   const c=LV[lv];const[novelData,setNovelData]=useState(null);const[ni,setNi]=useState(0);const[ci,setCi]=useState(null);const[page,setPage]=useState(0);const[activeBlock,setActiveBlock]=useState(null);const[activeVocab,setActiveVocab]=useState(null);const[sidePanel,setSidePanel]=useState(null);const[showZh,setShowZh]=useState(true);const[immersive,setImmersive]=useState(true);const[done,setDone]=useLS("novelDone",{});const[quizAns,setQuizAns]=useLS("novelQuiz",{});const[readingProgress,setReadingProgress]=useLS("novelReadingProgress",{});const[readingPrefs,setReadingPrefs]=useLS("novelReadingPrefs",{fontSize:16,lineHeight:1.66});const[measuredPages,setMeasuredPages]=useState([]);const[layoutVersion,setLayoutVersion]=useState(0);const[pageTurn,setPageTurn]=useState(null);const rewarded=useRef({});const pendingPageRef=useRef(0);const novelSpeechRef=useRef(null);const novelPanelRef=useRef(null);const novelSpreadRef=useRef(null);const novelBlockRefs=useRef({});const measureBlockRefs=useRef({});const swipeStartRef=useRef(null);const pageTurnTimerRef=useRef(null);
@@ -195,7 +199,14 @@ export default function NovelM({lv,onBack,onXp,deps}){
   const goPreviousPage=()=>turnPage(previousSpreadStart(pageNow,visiblePageCount),"backward");
   const goNextPage=()=>turnPage(nextSpreadStart(pageNow,pages.length,visiblePageCount),"forward");
   const handleReaderKeyDown=e=>{if(pageTurn)return;if(e.key==="ArrowLeft"&&canPrevPage){e.preventDefault();goPreviousPage()}if(e.key==="ArrowRight"&&canNextPage){e.preventDefault();goNextPage()}};
-  const handlePointerDown=e=>{swipeStartRef.current={x:e.clientX,y:e.clientY,id:e.pointerId};e.currentTarget.setPointerCapture?.(e.pointerId)};
+  const handlePointerDown=e=>{
+    if(isNovelReaderControlTarget(e.target,e.currentTarget)){
+      swipeStartRef.current=null;
+      return;
+    }
+    swipeStartRef.current={x:e.clientX,y:e.clientY,id:e.pointerId};
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+  };
   const handlePointerUp=e=>{const start=swipeStartRef.current;swipeStartRef.current=null;if(!start||pageTurn)return;const dx=e.clientX-start.x;const dy=e.clientY-start.y;if(Math.abs(dx)<48||Math.abs(dx)<Math.abs(dy)*1.25)return;if(dx<0&&canNextPage)goNextPage();if(dx>0&&canPrevPage)goPreviousPage()};
   const renderNovelBlock=(b,measuring=false)=><section key={`${measuring?"measure":"read"}-${b.i}`} ref={el=>{if(measuring){if(el)measureBlockRefs.current[b.i]=el}else if(el)novelBlockRefs.current[b.i]=el}} onClick={measuring?undefined:()=>speakNovelText(b.en,"en-US",0.78,b.i)} style={{padding:"9px 10px",borderRadius:8,background:!measuring&&activeBlock===b.i?"#E6F7F0":"transparent",border:`1px solid ${!measuring&&activeBlock===b.i?c.cl:"transparent"}`,transition:"background .18s,border-color .18s",cursor:measuring?"default":"pointer"}}>
     <div style={{display:"flex",gap:8,alignItems:"flex-start"}}><p data-testid={measuring?undefined:"novel-reader-text"} style={{flex:1,margin:0,fontSize:readerFontSize,lineHeight:readerLineHeight,color:S.t1,fontFamily:NOVEL_READING_FONT,fontWeight:/^“|^[A-Z][a-z]+[?!]?$/.test(b.en)?800:650,whiteSpace:"pre-line",overflowWrap:"anywhere"}}>{b.en}</p>{measuring?<span data-testid="novel-measure-speaker" aria-hidden="true" style={{width:34,height:34,flexShrink:0}}/>:<button aria-label="朗讀英文" onClick={e=>{e.stopPropagation();e.currentTarget.blur();speakNovelText(b.en,"en-US",0.78,b.i)}} style={{width:34,height:34,border:`1px solid ${S.bd}`,background:S.bg1,borderRadius:10,padding:0,fontSize:13,cursor:"pointer",fontFamily:"inherit",color:c.cl,flexShrink:0}}>🔊</button>}</div>

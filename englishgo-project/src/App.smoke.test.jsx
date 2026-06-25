@@ -916,6 +916,34 @@ describe('EnglishGo app smoke flow', () => {
     expect(screen.getByText('Page 3')).toBeInTheDocument();
   });
 
+  it('does not capture pointer gestures that start on novel reader buttons', async () => {
+    await openElementaryMenu();
+
+    clickFirstButtonWithText('閱讀聽力');
+    clickFirstButtonWithText('英文小說');
+
+    fireEvent.click(await screen.findByText('The Whispering Tree', {}, { timeout: 5000 }));
+
+    const panel = await screen.findByTestId('novel-reader-panel');
+    panel.setPointerCapture = vi.fn();
+
+    fireEvent.pointerDown(screen.getByRole('button', { name: '下一頁' }), {
+      pointerId: 1,
+      clientX: 900,
+      clientY: 620,
+    });
+
+    expect(panel.setPointerCapture).not.toHaveBeenCalled();
+
+    fireEvent.pointerDown(screen.getAllByLabelText('朗讀英文')[0], {
+      pointerId: 2,
+      clientX: 850,
+      clientY: 220,
+    });
+
+    expect(panel.setPointerCapture).not.toHaveBeenCalled();
+  });
+
   it('starts novel speech without repeated cancellation immediately before playback', async () => {
     const speech = installMockSpeechSynthesis();
     try {
