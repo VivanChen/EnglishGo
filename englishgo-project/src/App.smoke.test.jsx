@@ -644,7 +644,7 @@ describe('EnglishGo app smoke flow', () => {
     }
   });
 
-  it('shows a Giphy GIF on SRS cards when a GIF key is configured', async () => {
+  it('requests and shows a Giphy GIF for abstract SRS words when a GIF key is configured', async () => {
     const gifUrl = 'https://media.giphy.com/media/englishgo-test.gif';
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
       ok: true,
@@ -660,13 +660,14 @@ describe('EnglishGo app smoke flow', () => {
     localStorage.setItem('eg_gifkey', JSON.stringify('test-key'));
 
     try {
-      await openElementaryMenu();
+      await openJuniorMenu();
       clickFirstModuleCard();
 
       expect(await screen.findByRole('heading', { name: /SRS/ })).toBeInTheDocument();
 
       await waitFor(() => {
         expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('api.giphy.com/v1/gifs/translate'));
+        expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('s=accomplish'));
       });
 
       await waitFor(() => {
