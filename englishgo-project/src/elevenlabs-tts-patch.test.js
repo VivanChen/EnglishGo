@@ -62,6 +62,19 @@ describe("ElevenLabs TTS patch", () => {
     expect(() => loadPatch()).not.toThrow();
   });
 
+  it("renders an accessible keyboard-operable settings toggle", () => {
+    installPatchEnv();
+    loadPatch();
+
+    const toggle=document.querySelector("#eg-tts-panel .eg-head");
+    expect(toggle?.tagName).toBe("BUTTON");
+    expect(toggle).toHaveAttribute("aria-controls","eg-tts-body");
+    expect(toggle).toHaveAttribute("aria-expanded","false");
+
+    toggle.click();
+    expect(toggle).toHaveAttribute("aria-expanded","true");
+  });
+
   it("keeps unmarked Chinese speech on native browser speech", () => {
     const { nativeSpeak } = installPatchEnv();
     loadPatch();

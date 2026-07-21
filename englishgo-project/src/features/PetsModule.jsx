@@ -11,6 +11,12 @@ function propsWithoutDeps(props){
   return rest;
 }
 
+export function formatPetTaskDate(value=new Date()){
+  const date=value instanceof Date?value:new Date(value);
+  if(Number.isNaN(date.getTime()))return String(value||"");
+  return new Intl.DateTimeFormat("zh-TW",{year:"numeric",month:"long",day:"numeric",weekday:"short"}).format(date);
+}
+
 function GachaCeremony({rarity,mode}){
   // 不同稀有度的視覺差異
   const config={
@@ -3610,7 +3616,7 @@ body.eg-anim-off [data-pet-card] { animation: none !important; }
           {pets.length>0&&Math.max(...pets.map(p=>p.bond||0))>=150&&<span style={{color:"#1D9E75",fontWeight:600}}>💖 親密寵物加成：獎勵 +20%</span>}
         </div>
         <div style={{marginTop:8,display:"flex",gap:4,alignItems:"center",fontSize:11,color:S.t3}}>
-          <span>📅 {today}</span>
+          <span>📅 {formatPetTaskDate()}</span>
           <span style={{marginLeft:"auto"}}>已完成 {claimedToday.length}/{DAILY_TASK_DEFS.length}</span>
         </div>
       </div>

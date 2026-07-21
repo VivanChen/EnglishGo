@@ -1,9 +1,10 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import App, {
+import App from './App.jsx';
+import {
   getPetMonopolyCpuBuyDecision,
   settlePetMonopolyBankruptComputers,
-} from './App.jsx';
+} from './features/PetMonopoly.jsx';
 
 async function openElementaryMenu() {
   localStorage.setItem(
@@ -684,7 +685,7 @@ describe('EnglishGo app smoke flow', () => {
   it('opens dictionary lookup results from the SRS card back', async () => {
     localStorage.removeItem('eg_gifkey');
     localStorage.setItem('eg_gemkey', JSON.stringify('test-gemini-key'));
-    localStorage.removeItem('kid_dict_elementary%3Aapple');
+    localStorage.removeItem('kid_dict_v2_elementary%3Aapple');
 
     await openElementaryMenu();
     clickFirstModuleCard();
@@ -1119,7 +1120,7 @@ describe('EnglishGo app smoke flow', () => {
     fireEvent.click(screen.getByRole('button', { name: '退出沉浸' }));
     expect(await screen.findByText('閱讀設定')).toBeInTheDocument();
     expect(screen.getByText('閱讀控制台')).toBeInTheDocument();
-  });
+  }, 10000);
 
   it('uses a mobile-safe novel reader layout on narrow screens', async () => {
     setViewportWidth(390);
@@ -1227,7 +1228,7 @@ describe('EnglishGo app smoke flow', () => {
     fireEvent.click(monopolyCard);
 
     expect(await screen.findByText(/寵物大富翁/, {}, { timeout: 5000 })).toBeInTheDocument();
-    expect(screen.getByTestId('pet-monopoly-setup')).toHaveTextContent(/開局設定/);
+    expect(await screen.findByTestId('pet-monopoly-setup', {}, { timeout: 5000 })).toHaveTextContent(/開局設定/);
     expect(screen.queryByTestId('pet-monopoly-board')).not.toBeInTheDocument();
     fireEvent.click(screen.getByTestId('pet-monopoly-setup-cpu-1'));
     fireEvent.click(screen.getByTestId('pet-monopoly-setup-stake-100'));

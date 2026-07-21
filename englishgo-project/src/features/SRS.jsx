@@ -2,6 +2,9 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 
 const _gifCache = new Map();
 const _kidDictCache = new Map();
+const KID_DICT_CACHE_VERSION = 2;
+const HAS_CJK = /[\u3400-\u9fff]/;
+const HAS_LATIN = /[a-z]/i;
 
 async function fetchGif(word,apiKey){
   const key=String(apiKey||"").trim();
@@ -30,14 +33,26 @@ function extractJson(text){
   return JSON.parse(s);
 }
 
-function normalizeKidDictionary(raw,word,meaning,pos){
+function partOfSpeechToZh(pos){
+  const value=String(pos||"").toLowerCase();
+  if(value.includes("noun")||value.includes("n."))return "名詞";
+  if(value.includes("verb")||value.includes("v."))return "動詞";
+  if(value.includes("adj"))return "形容詞";
+  if(value.includes("adv"))return "副詞";
+  if(value.includes("prep"))return "介系詞";
+  if(value.includes("conj"))return "連接詞";
+  if(value.includes("pron"))return "代名詞";
+  return "單字";
+}
+
+export function normalizeKidDictionary(raw={},word,meaning,pos){
   const pickArr=v=>Array.isArray(v)?v.filter(Boolean).slice(0,6):[];
   return {
     word:raw.word||word,
     headlineZh:raw.headlineZh||meaning,
     shortMeaning:raw.shortMeaning||meaning,
     kidExplanation:raw.kidExplanation||`${word} 的意思是「${meaning}」。`,
-    partOfSpeechZh:raw.partOfSpeechZh||pos||"",
+    partOfSpeechZh:raw.partOfSpeechZh||partOfSpeechToZh(pos),
     forms:pickArr(raw.forms).map(x=>({word:x.word||"",note:x.note||x.zh||""})).filter(x=>x.word||x.note),
     collocations:pickArr(raw.collocations).map(x=>({phrase:x.phrase||"",zh:x.zh||x.note||""})).filter(x=>x.phrase||x.zh),
     examples:pickArr(raw.examples).map(x=>({en:x.en||"",zh:x.zh||""})).filter(x=>x.en||x.zh).slice(0,3),
@@ -46,17 +61,40 @@ function normalizeKidDictionary(raw,word,meaning,pos){
   };
 }
 
+export function validateKidDictionary(data){
+  if(!data||typeof data!=="object")return false;
+  const requiredZh=[data.headlineZh,data.shortMeaning,data.kidExplanation,data.partOfSpeechZh];
+  if(requiredZh.some(value=>!HAS_CJK.test(String(value||""))))return false;
+  if(!HAS_LATIN.test(String(data.word||"")))return false;
+  const arrays=["forms","collocations","examples","synonyms","tips"];
+  if(arrays.some(key=>!Array.isArray(data[key])))return false;
+  if(data.forms.some(item=>item?.note&&!HAS_CJK.test(String(item.note))))return false;
+  if(data.collocations.some(item=>!HAS_LATIN.test(String(item?.phrase||""))||(item?.zh&&!HAS_CJK.test(String(item.zh)))))return false;
+  if(data.examples.some(item=>!HAS_LATIN.test(String(item?.en||""))||!HAS_CJK.test(String(item?.zh||""))))return false;
+  if(data.synonyms.some(item=>!HAS_LATIN.test(String(item?.word||""))||(item?.zh&&!HAS_CJK.test(String(item.zh)))))return false;
+  if(data.tips.some(item=>!HAS_CJK.test(String(item||""))))return false;
+  return true;
+}
+
 async function generateKidDictionary(word,meaning,pos,level,apiKey){
   const cleanKey=String(word||"").trim().toLowerCase();
-  const key=`${level}:${cleanKey}`;
+  const key=`v${KID_DICT_CACHE_VERSION}:${level}:${cleanKey}`;
+  const storageKey=`kid_dict_v${KID_DICT_CACHE_VERSION}_${encodeURIComponent(`${level}:${cleanKey}`)}`;
   if(!cleanKey||!apiKey)return null;
-  if(_kidDictCache.has(key))return _kidDictCache.get(key);
+  if(_kidDictCache.has(key)){
+    const cached=_kidDictCache.get(key);
+    if(validateKidDictionary(cached))return cached;
+    _kidDictCache.delete(key);
+  }
   try{
-    const cached=localStorage.getItem(`kid_dict_${encodeURIComponent(key)}`);
+    const cached=localStorage.getItem(storageKey);
     if(cached){
       const obj=JSON.parse(cached);
-      _kidDictCache.set(key,obj);
-      return obj;
+      if(validateKidDictionary(obj)){
+        _kidDictCache.set(key,obj);
+        return obj;
+      }
+      localStorage.removeItem(storageKey);
     }
   }catch{}
   const levelName=level==="elementary"?"國小":level==="junior"?"國中":"高中";
@@ -67,7 +105,9 @@ async function generateKidDictionary(word,meaning,pos,level,apiKey){
 詞性: ${pos}
 
 要求:
-- 使用繁體中文，語氣簡單清楚，適合學生自學。
+- 所有 headlineZh、shortMeaning、kidExplanation、partOfSpeechZh、note、zh、tips 欄位都必須使用台灣繁體中文。
+- 除英文單字、搭配與例句外，不得出現葡萄牙文、西班牙文或其他語言。
+- 語氣簡單清楚，適合學生自學。
 - 不要給太艱深、宗教、成人或太抽象的解釋。
 - 英文例句要短、自然、生活化。
 - 常見搭配要像 Yahoo 字典一樣實用。
@@ -92,15 +132,16 @@ JSON 格式:
       const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey.trim())}`,{
         method:"POST",
         headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:900,temperature:0.45,responseMimeType:"application/json"}}),
+        body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:900,temperature:0.25,responseMimeType:"application/json"}}),
       });
       const data=await res.json();
       if(data?.error)continue;
       const text=data?.candidates?.[0]?.content?.parts?.[0]?.text;
       if(!text)continue;
       const parsed=normalizeKidDictionary(extractJson(text),word,meaning,pos);
+      if(!validateKidDictionary(parsed))continue;
       _kidDictCache.set(key,parsed);
-      try{localStorage.setItem(`kid_dict_${encodeURIComponent(key)}`,JSON.stringify(parsed))}catch{}
+      try{localStorage.setItem(storageKey,JSON.stringify(parsed))}catch{}
       return parsed;
     }catch{}
   }
@@ -177,8 +218,9 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
   useEffect(()=>{setDictOpen(false);setDictData(null);setDictError("")},[cur?.w]);
   useEffect(()=>{setMediaError("")},[cur?.w]);
   useEffect(()=>{let active=true;if(!dictOpen||!cur){setDictLoading(false);return()=>{active=false}}if(!apiKey?.trim()){setDictLoading(false);setDictData(null);setDictError("");return()=>{active=false}}setDictLoading(true);setDictError("");generateKidDictionary(cur.w,cur.m,cur.p,lv,apiKey).then(data=>{if(!active)return;setDictData(data);setDictLoading(false)}).catch(()=>{if(!active)return;setDictData(null);setDictError("AI 字典目前產生失敗，請稍後再試，或使用 Yahoo 查詢。");setDictLoading(false)});return()=>{active=false}},[dictOpen,cur?.w,apiKey,lv]);
-  // Fetch GIF for current word
-  useEffect(()=>{let active=true;setGifUrl(null);if(!cur||!gifKey){setGifLoading(false);return()=>{active=false}}setGifLoading(true);fetchGif(cur.w,gifKey).then(url=>{if(!active)return;setGifUrl(url);setGifLoading(false)}).catch(()=>{if(active)setGifLoading(false)});return()=>{active=false}},[cur?.w,gifKey]);
+  // Only request a GIF when the word has a curated visual match. Abstract words
+  // otherwise produce unrelated search results that hurt learning more than help.
+  useEffect(()=>{let active=true;setGifUrl(null);const safeVisual=cur?getWordImg(cur.w):null;if(!cur||!gifKey||!safeVisual){setGifLoading(false);return()=>{active=false}}setGifLoading(true);fetchGif(cur.w,gifKey).then(url=>{if(!active)return;setGifUrl(url);setGifLoading(false)}).catch(()=>{if(active)setGifLoading(false)});return()=>{active=false}},[cur?.w,gifKey,getWordImg]);
   // Static image — always available regardless of Giphy key
   useEffect(()=>{if(cur){setImgUrl(getWordImg(cur.w));const upcoming=deck.queue.slice(0,4).map(i=>cards[i]).filter(Boolean);preloadImgs(upcoming,0,upcoming.length)}else setImgUrl(null)},[cur?.w,left,cards]);
   // Auto-detect bad examples and replace with AI-generated ones (when API key set)
@@ -227,11 +269,11 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
   const showImg=Boolean(imgUrl?.type!=="emoji"&&imgUrl?.value&&mediaError!=="image");
   const showEmoji=Boolean(imgUrl?.type==="emoji");
   const mediaLabel=showGif?"GIF 動圖":showImg?"內建圖片":showEmoji?"內建圖示":"備用圖示";
-  return(<div className={`srs-page ${dictOpen&&flip?"has-dict":""}`} style={{"--srs-accent":c.cl,"--srs-accent-2":c.ac,"--srs-soft":c.bg,"--srs-card":S.bg1,"--srs-surface":S.bg2,"--srs-border":S.bd,"--srs-text":S.t1,"--srs-muted":S.t2,"--srs-faint":S.t3}}><Hdr t="🃏 SRS 單字卡" onBack={onBack} cl={c.cl} extra={<div style={{display:"flex",gap:4}}><button onClick={()=>setInfo(!info)} style={{background:"none",border:`1px solid ${S.bd}`,borderRadius:8,padding:"2px 6px",fontSize:12,cursor:"pointer",color:S.t2}}>ⓘ</button><label style={{background:"none",border:`1px solid ${S.bd}`,borderRadius:8,padding:"2px 6px",fontSize:12,cursor:"pointer",color:S.t2}}>📥<input ref={fr} type="file" accept=".csv" onChange={handleCSV} style={{display:"none"}}/></label></div>}/>
+  return(<div className={`srs-page ${dictOpen&&flip?"has-dict":""}`} style={{"--srs-accent":c.cl,"--srs-accent-2":c.ac,"--srs-soft":c.bg,"--srs-card":S.bg1,"--srs-surface":S.bg2,"--srs-border":S.bd,"--srs-text":S.t1,"--srs-muted":S.t2,"--srs-faint":S.t3}}><Hdr t="🃏 SRS 單字卡" onBack={onBack} cl={c.cl} extra={<div style={{display:"flex",gap:4}}><button type="button" onClick={()=>setInfo(!info)} aria-label={info?"關閉操作說明":"開啟操作說明"} title="操作說明" style={{background:"none",border:`1px solid ${S.bd}`,borderRadius:8,padding:"2px 6px",fontSize:12,cursor:"pointer",color:S.t2,minWidth:44,minHeight:44}}>ⓘ</button><label aria-label="匯入 CSV 單字卡" title="匯入 CSV 單字卡" style={{background:"none",border:`1px solid ${S.bd}`,borderRadius:8,padding:"2px 6px",fontSize:12,cursor:"pointer",color:S.t2,minWidth:44,minHeight:44,display:"inline-flex",alignItems:"center",justifyContent:"center"}}>📥<input ref={fr} aria-label="選擇 CSV 單字卡檔案" type="file" accept=".csv" onChange={handleCSV} style={{display:"none"}}/></label></div>}/>
     {info&&<div style={{...S.card,padding:"12px 16px",marginBottom:10,fontSize:13,color:S.t2,lineHeight:1.7}}>💻 <b>Space</b> 翻牌/翻回 · <b>Enter</b> 朗讀 · <b>1</b>Again <b>2</b>Hard <b>3</b>Good <b>4</b>Easy<br/>📱 <b>點擊</b>翻牌 · 點 <b>🔙翻回</b> · <b>按鈕</b>評分<br/>🔎 <b>查字典</b>：翻到背面後點 <b>查字典</b>，可在右側查看小朋友版解釋、例句與常見搭配<div style={{marginTop:4,fontSize:11,color:S.t3}}>來源：{src} {gifKey?"· 🖼️ GIF 已啟用":""}</div>
       <div style={{borderTop:`1px solid ${S.bd}`,marginTop:8,paddingTop:8}}>
         <div style={{fontWeight:700,fontSize:12,color:S.t1,marginBottom:4}}>🖼️ 單字動圖 (Giphy，可選)</div>
-        <div style={{fontSize:11,color:S.t3,marginBottom:6,lineHeight:1.7}}>未設定也能使用內建圖片與表情符號；貼上 Giphy API Key 後，單字卡會依目前單字自動顯示相關 GIF。<a href="/learn/gif-guide.html" target="_blank" rel="noreferrer" style={{color:c.cl,fontWeight:700}}>看效果與申請教學</a></div>
+        <div style={{fontSize:11,color:S.t3,marginBottom:6,lineHeight:1.7}}>未設定也能使用內建圖片與表情符號；貼上 Giphy API Key 後，具體且有可靠圖片對應的單字會顯示相關 GIF，抽象字則保留中性圖示。<a href="/learn/gif-guide.html" target="_blank" rel="noreferrer" style={{color:c.cl,fontWeight:700}}>看效果與申請教學</a></div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(2,minmax(0,1fr))",gap:6,marginBottom:7}}>
           <div style={{background:S.bg2,border:`1px solid ${S.bd}`,borderRadius:8,padding:"7px 8px",fontSize:11,color:S.t2}}><b style={{color:S.t1}}>未啟用</b><br/>顯示內建圖片 / emoji</div>
           <div style={{background:c.bg,border:`1px solid ${c.cl}33`,borderRadius:8,padding:"7px 8px",fontSize:11,color:S.t2}}><b style={{color:c.cl}}>啟用後</b><br/>依單字搜尋 GIF 動圖</div>
@@ -264,7 +306,7 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
       .srs-front-emoji{font-size:110px;line-height:1;filter:drop-shadow(0 6px 16px rgba(0,0,0,.16))}
       .srs-media-badge{position:absolute;left:10px;top:10px;background:rgba(255,255,255,.82);border:1px solid color-mix(in srgb,var(--srs-accent) 22%,var(--srs-border));border-radius:999px;padding:4px 8px;color:var(--srs-accent);font-size:11px;font-weight:950;backdrop-filter:blur(10px)}
       .srs-media-fallback{display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--srs-muted);font-size:12px;font-weight:800}
-      .srs-media-fallback strong{font-size:72px;line-height:1;filter:drop-shadow(0 6px 14px rgba(0,0,0,.14))}
+      .srs-media-fallback strong{font-size:52px;line-height:1;filter:drop-shadow(0 6px 14px rgba(0,0,0,.14))}
       .srs-front-word{position:relative;z-index:1;font-size:42px;font-weight:950;color:var(--srs-text);letter-spacing:0;line-height:1.1;display:inline-flex;align-items:center;justify-content:center;gap:6px}
       .srs-sound-btn{background:rgba(255,255,255,.64);border:1px solid var(--srs-border);border-radius:999px;color:var(--srs-accent);cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;justify-content:center;min-width:36px;min-height:36px;padding:4px;font-size:20px}
       .srs-front-ph{position:relative;z-index:1;font-size:14px;color:var(--srs-faint);margin-top:5px}
@@ -321,6 +363,7 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
         .srs-card-shell.is-back{min-height:0;padding:13px}
         .srs-front-media{height:150px;width:min(82%,260px);margin-bottom:10px}
         .srs-front-emoji{font-size:88px}
+        .srs-media-fallback strong{font-size:44px}
         .srs-front-word{font-size:35px}
         .srs-flow-hint{margin-top:12px;padding:8px 14px;font-size:12px}
         .srs-flow-hint span{display:none}

@@ -1,7 +1,8 @@
 // EnglishGo Service Worker - offline-first PWA
-const CACHE_VERSION = 'englishgo-v1.1.0';
+const CACHE_VERSION = 'englishgo-v1.2.0';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
+const DYNAMIC_CACHE_LIMIT = 160;
 
 const STATIC_ASSETS = [
   '/',
@@ -9,7 +10,22 @@ const STATIC_ASSETS = [
   '/manifest.json',
   '/icon-192.png',
   '/icon-512.png',
+  '/elevenlabs-tts-patch.js',
 ];
+
+async function trimCache(cacheName, maxEntries = DYNAMIC_CACHE_LIMIT) {
+  const cache = await caches.open(cacheName);
+  const keys = await cache.keys();
+  const overflow = keys.length - maxEntries;
+  if (overflow > 0) await Promise.all(keys.slice(0, overflow).map((key) => cache.delete(key)));
+}
+
+async function cacheDynamicResponse(request, response) {
+  if (!response?.ok) return;
+  const cache = await caches.open(DYNAMIC_CACHE);
+  await cache.put(request, response.clone());
+  await trimCache(DYNAMIC_CACHE);
+}
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -47,18 +63,19 @@ self.addEventListener('fetch', (event) => {
                 url.pathname.startsWith('/api/');
   if (isAPI) return;
 
-  // Images/fonts: cache-first
+  // Images/fonts: stale-while-revalidate so same-path media can still be updated.
   if (request.destination === 'image' || request.destination === 'font') {
+    const networkResponse = fetch(request).then(async (response) => {
+      await cacheDynamicResponse(request, response);
+      return response;
+    });
     event.respondWith(
       caches.match(request).then((cached) => {
-        if (cached) return cached;
-        return fetch(request).then((response) => {
-          if (response.ok) {
-            const clone = response.clone();
-            caches.open(DYNAMIC_CACHE).then((cache) => cache.put(request, clone));
-          }
-          return response;
-        }).catch(() => caches.match('/icon-192.png'));
+        if (cached) {
+          event.waitUntil(networkResponse.catch(() => null));
+          return cached;
+        }
+        return networkResponse.catch(() => caches.match('/icon-192.png'));
       })
     );
     return;
@@ -67,10 +84,9 @@ self.addEventListener('fetch', (event) => {
   // HTML/JS/CSS: network-first
   event.respondWith(
     fetch(request)
-      .then((response) => {
+      .then(async (response) => {
         if (response.ok && url.origin === location.origin) {
-          const clone = response.clone();
-          caches.open(DYNAMIC_CACHE).then((cache) => cache.put(request, clone));
+          await cacheDynamicResponse(request, response);
         }
         return response;
       })
