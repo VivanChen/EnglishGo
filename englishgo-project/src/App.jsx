@@ -2403,7 +2403,7 @@ export default function App(){
         {!mod?<MenuV2 lv={lv} onSelect={openModule} activeGroup={menuGroup} onGroupChange={setMenuGroup} daily={daily} c={c} xp={xp} coins={coins} streak={streak} achUnlocked={achUnlocked} weakWords={weakWords} isSponsor={isSponsor} pets={pets} eggs={eggs}/>:
          mod==="wordsearch"?<WordSearchM lv={lv} onBack={back} onOpenCard={(word,level)=>{setLv(level||lv);setSharedWord(word);setCustomDeck(null);setMod("srs")}}/>:
          mod==="exam"?<ExamReviewM lv={lv} onBack={back} c={c} apiKey={gemKey} onOpenSettings={()=>setMod("settings")} onStart={deck=>{setSharedWord(null);setCustomDeck(deck);setMod("srs")}}/>:
-         mod==="srs"?<SRS lv={lv} onBack={back} onXp={n=>addXpWithTask(n,"srsToday")} onDone={()=>setStats(s=>({...s,srsRounds:s.srsRounds+1}))} trackWeak={trackWeak} gifKey={gifKey} sharedWord={sharedWord} apiKey={gemKey} weakWords={weakWords} customCards={customDeck?.cards||null} customSource={customDeck?.source||""} onOpenSettings={()=>setMod("settings")}/>:
+         mod==="srs"?<SRS lv={lv} onBack={back} onLevelChange={nextLv=>{setLv(nextLv);setSharedWord(null);setCustomDeck(null)}} onXp={n=>addXpWithTask(n,"srsToday")} onDone={()=>setStats(s=>({...s,srsRounds:s.srsRounds+1}))} trackWeak={trackWeak} gifKey={gifKey} sharedWord={sharedWord} apiKey={gemKey} weakWords={weakWords} customCards={customDeck?.cards||null} customSource={customDeck?.source||""} onOpenSettings={()=>setMod("settings")}/>:
          mod==="quiz"?<QuizM lv={lv} onBack={back} onXp={n=>addXpWithTask(n,"quizToday")} onPerfect={()=>setStats(s=>({...s,perfectQuiz:s.perfectQuiz+1}))} trackWeak={trackWeak}/>:
          mod==="speak"?<SpeakM lv={lv} onBack={back} onXp={n=>addXpWithTask(n,"speakToday")} apiKey={gemKey} onOpenSettings={()=>setMod("settings")}/>:
          mod==="whack"?<WhackM lv={lv} onBack={back} onXp={addXp}/>:
@@ -3314,7 +3314,7 @@ function WordSearchM({lv,onBack,onOpenCard}){
 const _gifCache={};
 const LazySRS=lazy(()=>import("./features/SRS.jsx"));
 function SRS(props){
-  const deps={V,LV,S,fetchCloudVocab,fetchCloudWord,findAnyWord,sortCardsForStudy,createDeck,rateDeck,getWordImg,preloadImgs,isPlaceholderExample,exampleCache:_exampleCache,generateExample,preloadTts,speak,speakWebSpeech,speechTimer,playSound,triggerRewardBurst,parseCSV,Hdr,Confetti};
+  const deps={V,LV,S,fetchCloudVocab,fetchCloudWord,findAnyWord,loadExtraWords,shuffleCopy,sortCardsForStudy,createDeck,rateDeck,getWordImg,preloadImgs,isPlaceholderExample,exampleCache:_exampleCache,generateExample,preloadTts,speak,speakWebSpeech,speechTimer,playSound,triggerRewardBurst,parseCSV,Hdr,Confetti};
   return <Suspense fallback={<div style={{textAlign:"center",padding:"48px 16px",color:S.t3}}>??????...</div>}><LazySRS {...props} deps={deps}/></Suspense>;
 }
 

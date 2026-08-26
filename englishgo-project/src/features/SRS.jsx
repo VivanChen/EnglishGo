@@ -1,4 +1,11 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import {
+  VOCABULARY_TOPIC_TARGET,
+  VOCABULARY_TOPICS,
+  filterCardsByTopic,
+  getVocabularyTopicCatalog,
+  mergeUniqueWordCards,
+} from "../data/vocabularyTopics.js";
 
 const _gifCache = new Map();
 const _kidDictCache = new Map();
@@ -188,11 +195,66 @@ function Mascot({mood}){
   return(<div style={{position:"absolute",top:8,right:12,fontSize:22,animation:mood==="happy"||mood==="great"?"mascotJump .5s ease-out":"mascotIdle 2s ease-in-out infinite",zIndex:1}}>{faces[mood]||faces.idle}</div>);
 }
 
+function VocabularyTopicPicker({lv,levelPools,onLevelChange,onBack,onStart,LV,S,Hdr}){
+  const c=LV[lv];
+  const catalog=getVocabularyTopicCatalog(levelPools[lv]||[]);
+  const gaps=catalog.filter(topic=>topic.id!=="all"&&topic.status!=="ready");
+  const levelOrder=["elementary","junior","senior"];
+  return(<div className="srs-topic-page" style={{"--topic-accent":c.cl,"--topic-accent-2":c.ac,"--topic-soft":c.bg,"--topic-card":S.bg1,"--topic-surface":S.bg2,"--topic-border":S.bd,"--topic-text":S.t1,"--topic-muted":S.t2,"--topic-faint":S.t3}}>
+    <Hdr t="🃏 類型複習" onBack={onBack} cl={c.cl}/>
+    <section className="srs-topic-hero">
+      <div className="srs-topic-hero-icon">🧭</div>
+      <div><h2>先選年級，再選今天想練的主題</h2><p>每輪最多 {VOCABULARY_TOPIC_TARGET} 張。分類少於 5 字時會先標示「待補」，避免孩子一直抽到重複單字。</p></div>
+    </section>
+    <div className="srs-grade-tabs" aria-label="選擇單字年級">
+      {levelOrder.map(level=>{const item=LV[level];const count=(levelPools[level]||[]).length;const active=level===lv;return <button type="button" key={level} aria-pressed={active} onClick={()=>{if(!active)onLevelChange?.(level)}} className={active?"is-active":""} style={{"--grade-color":item.cl,"--grade-soft":item.bg}}><span>{item.ic} {item.l}</span><small>{count} 字</small></button>})}
+    </div>
+    <div className="srs-topic-summary">
+      <div><b>{c.ic} {c.l}本機字庫</b><span>{(levelPools[lv]||[]).length} 個不重複單字</span></div>
+      {gaps.length===0?<p className="is-good">✅ 所有主題都已達到每類 {VOCABULARY_TOPIC_TARGET} 字，可安心分類練習。</p>:<p>📋 仍建議補充：{gaps.map(topic=>`${topic.label} ${topic.count} 字${topic.gap?`（缺 ${topic.gap}）`:""}`).join("、")}。</p>}
+    </div>
+    <div className="srs-topic-grid">
+      {catalog.map(topic=>{const disabled=!topic.ready;const statusText=topic.id==="all"?"完整字庫":topic.status==="ready"?"數量充足":topic.status==="limited"?`可練習 · 尚缺 ${topic.gap} 字`:topic.count?`僅 ${topic.count} 字 · 待補`:"尚無單字 · 待補";return <button type="button" key={topic.id} disabled={disabled} onClick={()=>onStart(topic.id)} className={`srs-topic-card is-${topic.status}`} aria-label={`${topic.label}，${topic.count} 個單字${disabled?"，目前單字不足":""}`}>
+        <span className="srs-topic-icon">{topic.icon}</span>
+        <span className="srs-topic-copy"><b>{topic.label}</b><small>{topic.description}</small></span>
+        <span className="srs-topic-count"><strong>{topic.count}</strong><small>個單字</small></span>
+        <span className="srs-topic-status">{statusText}</span>
+      </button>})}
+    </div>
+    <div className="srs-topic-legend"><span><i className="ready"/>20 字以上：充足</span><span><i className="limited"/>5–19 字：可練習，建議補充</span><span><i className="missing"/>少於 5 字：暫不開放</span></div>
+    <style>{`
+      .srs-topic-page{padding-bottom:20px;color:var(--topic-text)}
+      .srs-topic-hero{display:flex;align-items:center;gap:14px;padding:18px;margin-bottom:12px;border:1px solid color-mix(in srgb,var(--topic-accent) 24%,var(--topic-border));border-radius:20px;background:linear-gradient(135deg,var(--topic-soft),var(--topic-card));box-shadow:0 14px 34px rgba(20,66,52,.08)}
+      .srs-topic-hero-icon{font-size:42px;line-height:1}
+      .srs-topic-hero h2{margin:0 0 5px;font-size:20px;color:var(--topic-text)}
+      .srs-topic-hero p{margin:0;color:var(--topic-muted);font-size:13px;line-height:1.6}
+      .srs-grade-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:12px}
+      .srs-grade-tabs button{min-width:0;min-height:58px;border:1px solid var(--topic-border);border-radius:15px;background:var(--topic-card);color:var(--topic-muted);font:inherit;font-weight:900;cursor:pointer;padding:9px 10px;display:flex;align-items:center;justify-content:space-between;gap:7px}
+      .srs-grade-tabs button small{font-size:11px;font-weight:800;color:var(--topic-faint);white-space:nowrap}
+      .srs-grade-tabs button.is-active{border:2px solid var(--grade-color);background:var(--grade-soft);color:var(--grade-color);box-shadow:0 8px 20px color-mix(in srgb,var(--grade-color) 14%,transparent)}
+      .srs-topic-summary{padding:12px 14px;margin-bottom:12px;border:1px solid var(--topic-border);border-radius:15px;background:var(--topic-surface)}
+      .srs-topic-summary>div{display:flex;justify-content:space-between;gap:10px;align-items:center;font-size:13px}.srs-topic-summary>div span{font-size:12px;color:var(--topic-faint)}
+      .srs-topic-summary p{margin:7px 0 0;font-size:12px;line-height:1.65;color:#9A6700}.srs-topic-summary p.is-good{color:#0F6E56}
+      .srs-topic-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+      .srs-topic-card{position:relative;min-width:0;min-height:112px;padding:15px 14px 34px;border:1px solid var(--topic-border);border-radius:18px;background:var(--topic-card);color:var(--topic-text);font:inherit;text-align:left;cursor:pointer;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:11px;align-items:center;box-shadow:0 10px 24px rgba(20,66,52,.06);transition:transform .15s ease,border-color .15s ease,box-shadow .15s ease}
+      .srs-topic-card:not(:disabled):hover{transform:translateY(-2px);border-color:var(--topic-accent);box-shadow:0 14px 30px rgba(20,66,52,.12)}
+      .srs-topic-card:disabled{cursor:not-allowed;opacity:.62;background:var(--topic-surface)}
+      .srs-topic-icon{font-size:34px;line-height:1}.srs-topic-copy{min-width:0;display:flex;flex-direction:column;gap:4px}.srs-topic-copy b{font-size:16px}.srs-topic-copy small{font-size:11px;line-height:1.5;color:var(--topic-muted)}
+      .srs-topic-count{text-align:right;display:flex;flex-direction:column}.srs-topic-count strong{font-size:24px;color:var(--topic-accent);line-height:1}.srs-topic-count small{margin-top:3px;font-size:10px;color:var(--topic-faint)}
+      .srs-topic-status{position:absolute;left:14px;bottom:10px;border-radius:999px;padding:3px 8px;background:color-mix(in srgb,var(--topic-accent) 10%,var(--topic-card));color:var(--topic-accent);font-size:10px;font-weight:900}.srs-topic-card.is-limited .srs-topic-status{background:#FFF3CD;color:#8A5A00}.srs-topic-card.is-missing .srs-topic-status{background:#FCEBEB;color:#A12B2A}
+      .srs-topic-legend{display:flex;flex-wrap:wrap;gap:8px 14px;margin-top:12px;padding:0 3px;color:var(--topic-faint);font-size:11px}.srs-topic-legend span{display:flex;align-items:center;gap:5px}.srs-topic-legend i{width:8px;height:8px;border-radius:50%;background:#1D9E75}.srs-topic-legend i.limited{background:#EF9F27}.srs-topic-legend i.missing{background:#E24B4A}
+      @media(max-width:620px){.srs-topic-hero{padding:14px;align-items:flex-start}.srs-topic-hero-icon{font-size:34px}.srs-topic-hero h2{font-size:17px}.srs-grade-tabs button{min-height:66px;flex-direction:column;justify-content:center;gap:3px;padding:7px 4px}.srs-grade-tabs button span{font-size:13px}.srs-topic-grid{grid-template-columns:1fr}.srs-topic-card{min-height:104px}.srs-topic-summary>div{align-items:flex-start;flex-direction:column;gap:3px}}
+    `}</style>
+  </div>);
+}
+
 // ═══ SRS FLASHCARD (Gamified) ═══════════════════════════════════
 
-export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,apiKey,weakWords=[],customCards=null,customSource="",onOpenSettings,deps}){
-  const {V,LV,S,fetchCloudVocab,fetchCloudWord,findAnyWord,sortCardsForStudy,createDeck,rateDeck,getWordImg,preloadImgs,isPlaceholderExample,exampleCache:_exampleCache,generateExample,preloadTts,speak,speakWebSpeech,speechTimer,playSound,triggerRewardBurst,parseCSV,Hdr,Confetti}=deps;
-  const built=V[lv];const[cards,setCards]=useState(built);const[deck,setDeck]=useState(()=>createDeck(built));const[flip,setFlip]=useState(false);const[info,setInfo]=useState(false);const[loading,setLoading]=useState(true);const[src,setSrc]=useState("built-in");const c=LV[lv];const fr=useRef();const completedRef=useRef(false);
+export default function SRS({lv,onBack,onLevelChange,onXp,onDone,trackWeak,gifKey,sharedWord,apiKey,weakWords=[],customCards=null,customSource="",onOpenSettings,deps}){
+  const {V,LV,S,fetchCloudVocab,fetchCloudWord,findAnyWord,loadExtraWords,shuffleCopy,sortCardsForStudy,createDeck,rateDeck,getWordImg,preloadImgs,isPlaceholderExample,exampleCache:_exampleCache,generateExample,preloadTts,speak,speakWebSpeech,speechTimer,playSound,triggerRewardBurst,parseCSV,Hdr,Confetti}=deps;
+  const built=V[lv];const[cards,setCards]=useState([]);const[deck,setDeck]=useState(()=>createDeck([]));const[flip,setFlip]=useState(false);const[info,setInfo]=useState(false);const[loading,setLoading]=useState(true);const[src,setSrc]=useState("built-in");const c=LV[lv];const fr=useRef();const completedRef=useRef(false);
+  const[levelPools,setLevelPools]=useState(()=>Object.fromEntries(Object.keys(V).map(level=>[level,mergeUniqueWordCards(V[level]||[])])));
+  const[selectedTopic,setSelectedTopic]=useState(null);
   const[combo,setCombo]=useState(0);const[maxCombo,setMaxCombo]=useState(0);const[comboAnim,setComboAnim]=useState(false);const[showConfetti,setShowConfetti]=useState(false);const[flipAnim,setFlipAnim]=useState(false);const[mascotMood,setMascotMood]=useState("idle");
   const[gifUrl,setGifUrl]=useState(null);const[gifLoading,setGifLoading]=useState(false);
   const[imgUrl,setImgUrl]=useState(null);
@@ -201,7 +263,7 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
   const[dictData,setDictData]=useState(null);const[dictLoading,setDictLoading]=useState(false);const[dictError,setDictError]=useState("");
   const[aiExample,setAiExample]=useState(null);// AI-generated example {en, zh}
   const[exampleLoading,setExampleLoading]=useState(false);
-  useEffect(()=>{let active=true;(async()=>{setLoading(true);completedRef.current=false;setFlip(false);setFlipAnim(false);setCombo(0);setMaxCombo(0);if(Array.isArray(customCards)&&customCards.length){const ordered=sortCardsForStudy(customCards,weakWords,sharedWord);setCards(ordered);setDeck(createDeck(ordered));setSrc(customSource||`考試範圍 (${ordered.length}字)`);setLoading(false);return}const cloud=await fetchCloudVocab(lv,20);if(!active)return;if(cloud&&cloud.length>0){
+  useEffect(()=>{let active=true;(async()=>{setLoading(true);completedRef.current=false;setFlip(false);setFlipAnim(false);setCombo(0);setMaxCombo(0);setSelectedTopic(null);const extra=await loadExtraWords();if(!active)return;const pools=Object.fromEntries(Object.keys(V).map(level=>[level,mergeUniqueWordCards(V[level]||[],extra[level]||[])]));setLevelPools(pools);if(Array.isArray(customCards)&&customCards.length){const ordered=sortCardsForStudy(customCards,weakWords,sharedWord);setCards(ordered);setDeck(createDeck(ordered));setSelectedTopic("direct");setSrc(customSource||`考試範圍 (${ordered.length}字)`);setLoading(false);return}if(!sharedWord){setCards([]);setDeck(createDeck([]));setSrc(`${LV[lv].l}分類字庫`);setLoading(false);return}const cloud=await fetchCloudVocab(lv,20);if(!active)return;if(cloud&&cloud.length>0){
     // If sharedWord, put it first in the deck
     let ordered=cloud;
     if(sharedWord){const si=cloud.findIndex(w=>w.w.toLowerCase()===sharedWord.toLowerCase());if(si>0){ordered=[cloud[si],...cloud.slice(0,si),...cloud.slice(si+1)]}else if(si<0){
@@ -212,20 +274,25 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
       else{const local=await findAnyWord(lv,sharedWord);if(!active)return;if(local)ordered=[local,...cloud.slice(0,19)]}
     }}
     ordered=sortCardsForStudy(ordered,weakWords,sharedWord);
-    setCards(ordered);setDeck(createDeck(ordered));setSrc(`cloud (${ordered.length}字)`);
-  }else{let base=built;if(sharedWord){const target=await findAnyWord(lv,sharedWord);if(!active)return;if(target){const key=String(target.w).toLowerCase();base=[target,...built.filter(w=>String(w.w).toLowerCase()!==key)]}}const ordered=sortCardsForStudy(base,weakWords,sharedWord);setCards(ordered);setDeck(createDeck(ordered));setSrc("built-in ("+ordered.length+"字)")}setLoading(false)})();return()=>{active=false}},[lv,sharedWord,customCards,customSource]);
+    setCards(ordered);setDeck(createDeck(ordered));setSelectedTopic("direct");setSrc(`cloud (${ordered.length}字)`);
+  }else{let base=pools[lv]||built;const target=await findAnyWord(lv,sharedWord);if(!active)return;if(target){const key=String(target.w).toLowerCase();base=[target,...base.filter(w=>String(w.w).toLowerCase()!==key)]}const ordered=sortCardsForStudy(base.slice(0,20),weakWords,sharedWord);setCards(ordered);setDeck(createDeck(ordered));setSelectedTopic("direct");setSrc("built-in ("+ordered.length+"字)")}setLoading(false)})();return()=>{active=false}},[lv,sharedWord,customCards,customSource]);
+  const topicCatalog=getVocabularyTopicCatalog(levelPools[lv]||[]);
+  const selectedTopicMeta=VOCABULARY_TOPICS.find(topic=>topic.id===selectedTopic);
+  const studyActive=selectedTopic!==null;
+  const startTopic=topicId=>{const option=topicCatalog.find(topic=>topic.id===topicId);if(!option?.ready)return;const matches=filterCardsByTopic(levelPools[lv]||[],topicId);const picked=shuffleCopy(matches).slice(0,VOCABULARY_TOPIC_TARGET);const ordered=sortCardsForStudy(picked,weakWords,sharedWord);completedRef.current=false;setCards(ordered);setDeck(createDeck(ordered));setSelectedTopic(topicId);setSrc(`${LV[lv].l} · ${option.label} (${matches.length}字中抽 ${ordered.length}字)`);setFlip(false);setFlipAnim(false);setInfo(false);setCombo(0);setMaxCombo(0);setShowConfetti(false)};
+  const leaveStudy=()=>{if(selectedTopicMeta){setSelectedTopic(null);setCards([]);setDeck(createDeck([]));setFlip(false);setFlipAnim(false);setShowConfetti(false);completedRef.current=false;return}onBack()};
   const cur=deck.queue[0]!==undefined?cards[deck.queue[0]]:null;const left=deck.queue.length;const done=left===0;const spokenExample=cur?(aiExample?.en||(!isPlaceholderExample(cur.ex,cur.w)?cur.ex:"")):"";
   useEffect(()=>{setDictOpen(false);setDictData(null);setDictError("")},[cur?.w]);
   useEffect(()=>{setMediaError("")},[cur?.w]);
-  useEffect(()=>{let active=true;if(!dictOpen||!cur){setDictLoading(false);return()=>{active=false}}if(!apiKey?.trim()){setDictLoading(false);setDictData(null);setDictError("");return()=>{active=false}}setDictLoading(true);setDictError("");generateKidDictionary(cur.w,cur.m,cur.p,lv,apiKey).then(data=>{if(!active)return;setDictData(data);setDictLoading(false)}).catch(()=>{if(!active)return;setDictData(null);setDictError("AI 字典目前產生失敗，請稍後再試，或使用 Yahoo 查詢。");setDictLoading(false)});return()=>{active=false}},[dictOpen,cur?.w,apiKey,lv]);
+  useEffect(()=>{let active=true;if(!studyActive||!dictOpen||!cur){setDictLoading(false);return()=>{active=false}}if(!apiKey?.trim()){setDictLoading(false);setDictData(null);setDictError("");return()=>{active=false}}setDictLoading(true);setDictError("");generateKidDictionary(cur.w,cur.m,cur.p,lv,apiKey).then(data=>{if(!active)return;setDictData(data);setDictLoading(false)}).catch(()=>{if(!active)return;setDictData(null);setDictError("AI 字典目前產生失敗，請稍後再試，或使用 Yahoo 查詢。");setDictLoading(false)});return()=>{active=false}},[studyActive,dictOpen,cur?.w,apiKey,lv]);
   // When Giphy is enabled, search every word — including abstract vocabulary.
-  useEffect(()=>{let active=true;setGifUrl(null);if(!cur||!gifKey){setGifLoading(false);return()=>{active=false}}setGifLoading(true);fetchGif(cur.w,gifKey).then(url=>{if(!active)return;setGifUrl(url);setGifLoading(false)}).catch(()=>{if(active)setGifLoading(false)});return()=>{active=false}},[cur?.w,gifKey]);
+  useEffect(()=>{let active=true;setGifUrl(null);if(!studyActive||!cur||!gifKey){setGifLoading(false);return()=>{active=false}}setGifLoading(true);fetchGif(cur.w,gifKey).then(url=>{if(!active)return;setGifUrl(url);setGifLoading(false)}).catch(()=>{if(active)setGifLoading(false)});return()=>{active=false}},[studyActive,cur?.w,gifKey]);
   // Static image — always available regardless of Giphy key
-  useEffect(()=>{if(cur){setImgUrl(getWordImg(cur.w));const upcoming=deck.queue.slice(0,4).map(i=>cards[i]).filter(Boolean);preloadImgs(upcoming,0,upcoming.length)}else setImgUrl(null)},[cur?.w,left,cards]);
+  useEffect(()=>{if(studyActive&&cur){setImgUrl(getWordImg(cur.w));const upcoming=deck.queue.slice(0,4).map(i=>cards[i]).filter(Boolean);preloadImgs(upcoming,0,upcoming.length)}else setImgUrl(null)},[studyActive,cur?.w,left,cards]);
   // Auto-detect bad examples and replace with AI-generated ones (when API key set)
   useEffect(()=>{
     let active=true;
-    if(!cur){setAiExample(null);setExampleLoading(false);return()=>{active=false}};
+    if(!studyActive||!cur){setAiExample(null);setExampleLoading(false);return()=>{active=false}};
     setAiExample(null);
     setExampleLoading(false);
     if(!isPlaceholderExample(cur.ex,cur.w)){return}// Original example is good, use it
@@ -241,24 +308,25 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
       }).finally(()=>{if(active)setExampleLoading(false)});
     }
     return()=>{active=false};
-  },[cur?.w,apiKey]);
+  },[studyActive,cur?.w,apiKey]);
   useEffect(()=>{
-    if(!cur||loading)return;
+    if(!studyActive||!cur||loading)return;
     const upcoming=deck.queue.slice(0,5).map(i=>cards[i]?.w).filter(Boolean);
     preloadTts([cur.w,...upcoming],{limit:5,concurrency:2});
     if(!spokenExample)return;
     const timer=window.setTimeout(()=>preloadTts(spokenExample,{limit:1,concurrency:1}),300);
     return()=>window.clearTimeout(timer);
-  },[cur?.w,spokenExample,deck.queue,loading,cards]);
-  useEffect(()=>{if(cur&&!flip&&!loading)speak(cur.w)},[cur?.w,flip,loading]);
+  },[studyActive,cur?.w,spokenExample,deck.queue,loading,cards]);
+  useEffect(()=>{if(studyActive&&cur&&!flip&&!loading)speak(cur.w)},[studyActive,cur?.w,flip,loading]);
   const rate=useCallback(a=>{if((a==="again"||a==="hard")&&cur)trackWeak(cur.w);if(a==="easy"||a==="good"){onXp();setMascotMood(a==="easy"?"great":"happy");setCombo(cb=>{const nc=cb+1;setMaxCombo(mc=>Math.max(mc,nc));if(nc>=3){playSound("combo");setComboAnim(true);setTimeout(()=>setComboAnim(false),600);if(typeof triggerRewardBurst==="function"){triggerRewardBurst({text:`COMBO ×${nc}！`,fromX:window.innerWidth/2,fromY:"35%",textColor:nc>=10?"#FF1493":nc>=5?"#FFD700":"#FFA500",textSize:nc>=10?42:nc>=5?38:32,duration:1300});if(nc%5===0){triggerRewardBurst({emoji:"⭐",count:6,fromX:window.innerWidth/2,fromY:window.innerHeight*0.4,size:24,duration:1200})}}}else playSound("good");return nc})}else if(a==="again"){setCombo(0);setMascotMood("sad");playSound("bad")}else{setMascotMood("think");playSound("flip")}setTimeout(()=>setMascotMood("idle"),1500);setDeck(d=>rateDeck(d,a));setFlip(false);setFlipAnim(false)},[onXp,cur,trackWeak]);
-  useEffect(()=>{const h=e=>{if(done)return;if(e.code==="Space"){e.preventDefault();if(!flip){setFlip(true);setFlipAnim(true);playSound("flip");if(spokenExample)speechTimer(()=>speak(spokenExample),350)}else{setFlip(false);setFlipAnim(false)}}if(flip){if(e.key==="1")rate("again");if(e.key==="2")rate("hard");if(e.key==="3")rate("good");if(e.key==="4")rate("easy")}if(e.key==="Enter"){e.preventDefault();if(cur)speak(flip?(spokenExample||cur.w):cur.w)}};window.addEventListener("keydown",h);return()=>window.removeEventListener("keydown",h)},[flip,done,cur,rate,spokenExample]);
+  useEffect(()=>{const h=e=>{if(!studyActive||done)return;if(e.code==="Space"){e.preventDefault();if(!flip){setFlip(true);setFlipAnim(true);playSound("flip");if(spokenExample)speechTimer(()=>speak(spokenExample),350)}else{setFlip(false);setFlipAnim(false)}}if(flip){if(e.key==="1")rate("again");if(e.key==="2")rate("hard");if(e.key==="3")rate("good");if(e.key==="4")rate("easy")}if(e.key==="Enter"){e.preventDefault();if(cur)speak(flip?(spokenExample||cur.w):cur.w)}};window.addEventListener("keydown",h);return()=>window.removeEventListener("keydown",h)},[studyActive,flip,done,cur,rate,spokenExample]);
   const handleCardTap=()=>{if(!flip){setFlip(true);setFlipAnim(true);playSound("flip");if(spokenExample)speechTimer(()=>speak(spokenExample),350)}};
   const handleCSV=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{const p=parseCSV(ev.target.result);if(p.length){setCards(p);setDeck(createDeck(p));setFlip(false)}};r.readAsText(f,"utf-8")};
-  useEffect(()=>{if(done&&!loading&&!completedRef.current){completedRef.current=true;onDone();playSound("done");setShowConfetti(true);setTimeout(()=>setShowConfetti(false),3500)}},[done,loading]);
-  const restartRound=async()=>{setLoading(true);completedRef.current=false;setShowConfetti(false);setCombo(0);setMaxCombo(0);if(Array.isArray(customCards)&&customCards.length){const next=sortCardsForStudy(customCards,weakWords,sharedWord);setCards(next);setDeck(createDeck(next));setFlip(false);setSrc(customSource||`考試範圍 (${next.length}字)`);setLoading(false);return}const cloud=await fetchCloudVocab(lv,20);const next=sortCardsForStudy(cloud?.length?cloud:cards,weakWords,sharedWord);setCards(next);setDeck(createDeck(next));setFlip(false);setLoading(false)};
-  if(loading)return(<div><Hdr t="🃏 SRS 單字卡" onBack={onBack} cl={c.cl}/><div style={{textAlign:"center",padding:"48px 16px",color:S.t3,fontSize:14}}><div style={{fontSize:40,animation:"emojiBounce 1s infinite"}}>📚</div><div style={{marginTop:8}}>從雲端載入單字庫...</div><div style={{width:120,height:4,background:S.bg2,borderRadius:2,margin:"12px auto",overflow:"hidden"}}><div style={{width:"60%",height:"100%",background:`linear-gradient(90deg,${c.cl},${c.ac})`,borderRadius:2,animation:"pulse 1s infinite"}}/></div></div></div>);
-  if(done){const{stats,total}=deck;const attempts=stats.again+stats.hard+stats.good+stats.easy;const goodPct=Math.round(((stats.good+stats.easy)/total)*100);return(<div>{showConfetti&&<Confetti/>}<Hdr t="🃏 SRS 單字卡" onBack={onBack} cl={c.cl}/><div style={{textAlign:"center",padding:"32px 16px"}}><div style={{fontSize:56,animation:"bounceIn .5s ease-out"}}>{goodPct>=80?"🏆":goodPct>=60?"🎉":"💪"}</div><h2 style={{fontSize:22,fontWeight:700,color:S.t1,marginTop:8}}>練習完成！共 {total} 張</h2>{maxCombo>=3&&<div style={{fontSize:13,color:"#EF9F27",fontWeight:600,marginTop:4}}>🔥 最高 {maxCombo} 連擊！</div>}<div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,maxWidth:400,margin:"16px auto"}}>{[["😅 Again",stats.again,"#E24B4A"],["🤔 Hard",stats.hard,"#EF9F27"],["😊 Good",stats.good,"#1D9E75"],["🤩 Easy",stats.easy,"#185FA5"]].map(([l,v,cl])=>(<div key={l} style={{...S.card,padding:"12px 6px",textAlign:"center",borderTop:`3px solid ${cl}`}}><div style={{fontSize:26,fontWeight:700,color:cl}}>{v}</div><div style={{fontSize:11,color:S.t3,marginTop:2}}>{l}</div></div>))}</div><div style={{textAlign:"center",fontSize:13,color:S.t2,margin:"8px 0"}}>掌握率 {goodPct}% · 答題 {attempts} 次</div><div style={{fontSize:14,color:S.t2,marginBottom:14}}>{goodPct>=80?"太厲害了！🌟":goodPct>=60?"表現不錯！繼續加油 💪":"多練習幾次會更好！📖"}</div><button onClick={restartRound} style={{...S.btn,background:c.cl,color:"#fff",marginRight:8,fontSize:14}}>🔄 新一輪</button><button onClick={onBack} style={{...S.btn,background:S.bg2,color:S.t1,fontSize:14}}>返回</button></div></div>)}
+  useEffect(()=>{if(studyActive&&done&&!loading&&!completedRef.current){completedRef.current=true;onDone();playSound("done");setShowConfetti(true);setTimeout(()=>setShowConfetti(false),3500)}},[studyActive,done,loading]);
+  const restartRound=async()=>{setLoading(true);completedRef.current=false;setShowConfetti(false);setCombo(0);setMaxCombo(0);if(selectedTopicMeta){const matches=filterCardsByTopic(levelPools[lv]||[],selectedTopicMeta.id);const next=sortCardsForStudy(shuffleCopy(matches).slice(0,VOCABULARY_TOPIC_TARGET),weakWords,sharedWord);setCards(next);setDeck(createDeck(next));setFlip(false);setLoading(false);return}if(Array.isArray(customCards)&&customCards.length){const next=sortCardsForStudy(customCards,weakWords,sharedWord);setCards(next);setDeck(createDeck(next));setFlip(false);setSrc(customSource||`考試範圍 (${next.length}字)`);setLoading(false);return}const cloud=await fetchCloudVocab(lv,20);const next=sortCardsForStudy(cloud?.length?cloud:cards,weakWords,sharedWord);setCards(next);setDeck(createDeck(next));setFlip(false);setLoading(false)};
+  if(loading)return(<div><Hdr t="🃏 SRS 單字卡" onBack={onBack} cl={c.cl}/><div style={{textAlign:"center",padding:"48px 16px",color:S.t3,fontSize:14}}><div style={{fontSize:40,animation:"emojiBounce 1s infinite"}}>📚</div><div style={{marginTop:8}}>整理年級與主題字庫...</div><div style={{width:120,height:4,background:S.bg2,borderRadius:2,margin:"12px auto",overflow:"hidden"}}><div style={{width:"60%",height:"100%",background:`linear-gradient(90deg,${c.cl},${c.ac})`,borderRadius:2,animation:"pulse 1s infinite"}}/></div></div></div>);
+  if(!studyActive)return <VocabularyTopicPicker lv={lv} levelPools={levelPools} onLevelChange={onLevelChange} onBack={onBack} onStart={startTopic} LV={LV} S={S} Hdr={Hdr}/>;
+  if(done){const{stats,total}=deck;const attempts=stats.again+stats.hard+stats.good+stats.easy;const goodPct=Math.round(((stats.good+stats.easy)/total)*100);return(<div>{showConfetti&&<Confetti/>}<Hdr t="🃏 SRS 單字卡" onBack={leaveStudy} cl={c.cl}/><div style={{textAlign:"center",padding:"32px 16px"}}><div style={{fontSize:56,animation:"bounceIn .5s ease-out"}}>{goodPct>=80?"🏆":goodPct>=60?"🎉":"💪"}</div><h2 style={{fontSize:22,fontWeight:700,color:S.t1,marginTop:8}}>練習完成！共 {total} 張</h2>{selectedTopicMeta&&<div style={{fontSize:13,color:c.cl,fontWeight:800,marginTop:4}}>{selectedTopicMeta.icon} {selectedTopicMeta.label} · {LV[lv].l}</div>}{maxCombo>=3&&<div style={{fontSize:13,color:"#EF9F27",fontWeight:600,marginTop:4}}>🔥 最高 {maxCombo} 連擊！</div>}<div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,maxWidth:400,margin:"16px auto"}}>{[["😅 Again",stats.again,"#E24B4A"],["🤔 Hard",stats.hard,"#EF9F27"],["😊 Good",stats.good,"#1D9E75"],["🤩 Easy",stats.easy,"#185FA5"]].map(([l,v,cl])=>(<div key={l} style={{...S.card,padding:"12px 6px",textAlign:"center",borderTop:`3px solid ${cl}`}}><div style={{fontSize:26,fontWeight:700,color:cl}}>{v}</div><div style={{fontSize:11,color:S.t3,marginTop:2}}>{l}</div></div>))}</div><div style={{textAlign:"center",fontSize:13,color:S.t2,margin:"8px 0"}}>掌握率 {goodPct}% · 答題 {attempts} 次</div><div style={{fontSize:14,color:S.t2,marginBottom:14}}>{goodPct>=80?"太厲害了！🌟":goodPct>=60?"表現不錯！繼續加油 💪":"多練習幾次會更好！📖"}</div><button onClick={restartRound} style={{...S.btn,background:c.cl,color:"#fff",marginRight:8,fontSize:14}}>🔄 新一輪</button>{selectedTopicMeta&&<button onClick={leaveStudy} style={{...S.btn,background:S.bg2,color:c.cl,marginRight:8,fontSize:14}}>🧭 換分類</button>}<button onClick={onBack} style={{...S.btn,background:S.bg2,color:S.t1,fontSize:14}}>返回</button></div></div>)}
   const pct=Math.round(((deck.total-left)/deck.total)*100);
   const speakDict=speakWebSpeech||speak;
   const rateTooltip=deck.total-left===0?"第一張卡片！加油 💪":"";const comboLabel=combo>=10?"🔥🔥🔥 UNSTOPPABLE!":combo>=7?"🔥🔥 ON FIRE!":combo>=5?"🔥 COMBO x"+combo:combo>=3?"✨ "+combo+" 連擊！":"";
@@ -268,7 +336,8 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
   const showImg=Boolean(imgUrl?.type!=="emoji"&&imgUrl?.value&&mediaError!=="image");
   const showEmoji=Boolean(imgUrl?.type==="emoji");
   const mediaLabel=showGif?"GIF 動圖":showImg?"內建圖片":showEmoji?"內建圖示":"備用圖示";
-  return(<div className={`srs-page ${dictOpen&&flip?"has-dict":""}`} style={{"--srs-accent":c.cl,"--srs-accent-2":c.ac,"--srs-soft":c.bg,"--srs-card":S.bg1,"--srs-surface":S.bg2,"--srs-border":S.bd,"--srs-text":S.t1,"--srs-muted":S.t2,"--srs-faint":S.t3}}><Hdr t="🃏 SRS 單字卡" onBack={onBack} cl={c.cl} extra={<div style={{display:"flex",gap:4}}><button type="button" onClick={()=>setInfo(!info)} aria-label={info?"關閉操作說明":"開啟操作說明"} title="操作說明" style={{background:"none",border:`1px solid ${S.bd}`,borderRadius:8,padding:"2px 6px",fontSize:12,cursor:"pointer",color:S.t2,minWidth:44,minHeight:44}}>ⓘ</button><label aria-label="匯入 CSV 單字卡" title="匯入 CSV 單字卡" style={{background:"none",border:`1px solid ${S.bd}`,borderRadius:8,padding:"2px 6px",fontSize:12,cursor:"pointer",color:S.t2,minWidth:44,minHeight:44,display:"inline-flex",alignItems:"center",justifyContent:"center"}}>📥<input ref={fr} aria-label="選擇 CSV 單字卡檔案" type="file" accept=".csv" onChange={handleCSV} style={{display:"none"}}/></label></div>}/>
+  return(<div className={`srs-page ${dictOpen&&flip?"has-dict":""}`} style={{"--srs-accent":c.cl,"--srs-accent-2":c.ac,"--srs-soft":c.bg,"--srs-card":S.bg1,"--srs-surface":S.bg2,"--srs-border":S.bd,"--srs-text":S.t1,"--srs-muted":S.t2,"--srs-faint":S.t3}}><Hdr t="🃏 SRS 單字卡" onBack={leaveStudy} cl={c.cl} extra={<div style={{display:"flex",gap:4}}><button type="button" onClick={()=>setInfo(!info)} aria-label={info?"關閉操作說明":"開啟操作說明"} title="操作說明" style={{background:"none",border:`1px solid ${S.bd}`,borderRadius:8,padding:"2px 6px",fontSize:12,cursor:"pointer",color:S.t2,minWidth:44,minHeight:44}}>ⓘ</button><label aria-label="匯入 CSV 單字卡" title="匯入 CSV 單字卡" style={{background:"none",border:`1px solid ${S.bd}`,borderRadius:8,padding:"2px 6px",fontSize:12,cursor:"pointer",color:S.t2,minWidth:44,minHeight:44,display:"inline-flex",alignItems:"center",justifyContent:"center"}}>📥<input ref={fr} aria-label="選擇 CSV 單字卡檔案" type="file" accept=".csv" onChange={handleCSV} style={{display:"none"}}/></label></div>}/>
+    {selectedTopicMeta&&<div style={{marginBottom:10,padding:"9px 12px",border:`1px solid ${c.cl}33`,background:c.bg,borderRadius:12,color:S.t2,fontSize:12,display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,flexWrap:"wrap"}}><b style={{color:c.cl}}>{selectedTopicMeta.icon} {LV[lv].l} · {selectedTopicMeta.label}</b><button type="button" onClick={leaveStudy} style={{border:"none",background:"transparent",color:c.cl,font: "inherit",fontSize:12,fontWeight:900,cursor:"pointer",minHeight:32,padding:"4px 7px"}}>換分類</button></div>}
     {info&&<div style={{...S.card,padding:"12px 16px",marginBottom:10,fontSize:13,color:S.t2,lineHeight:1.7}}>💻 <b>Space</b> 翻牌/翻回 · <b>Enter</b> 朗讀 · <b>1</b>Again <b>2</b>Hard <b>3</b>Good <b>4</b>Easy<br/>📱 <b>點擊</b>翻牌 · 點 <b>🔙翻回</b> · <b>按鈕</b>評分<br/>🔎 <b>查字典</b>：翻到背面後點 <b>查字典</b>，可在右側查看小朋友版解釋、例句與常見搭配<div style={{marginTop:4,fontSize:11,color:S.t3}}>來源：{src} {gifKey?"· 🖼️ GIF 已啟用":""}</div>
       <div style={{borderTop:`1px solid ${S.bd}`,marginTop:8,paddingTop:8}}>
         <div style={{fontWeight:700,fontSize:12,color:S.t1,marginBottom:4}}>🖼️ 單字動圖 (Giphy，可選)</div>

@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "generate:recent-features": "node scripts/recentFeatures.mjs",
+    "generate:themed-review-seed": "node scripts/generateThemedReviewSeed.mjs",
     "build": "vite build",
     "build:refresh-features": "npm run generate:recent-features && vite build",
     "preview": "vite preview",

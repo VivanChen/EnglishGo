@@ -75,6 +75,12 @@ function clickFirstModuleCard() {
   fireEvent.click(target);
 }
 
+async function startAllWordsSrsRound() {
+  const allWords = await screen.findByRole('button', { name: /全部單字，\d+ 個單字/ });
+  fireEvent.click(allWords);
+  return screen.findByTestId('srs-card');
+}
+
 function setViewportWidth(width) {
   act(() => {
     Object.defineProperty(window, 'innerWidth', { configurable: true, writable: true, value: width });
@@ -355,7 +361,26 @@ describe('EnglishGo app smoke flow', () => {
 
     clickFirstButtonWithText('單字卡');
 
-    expect(await screen.findByText(/SRS 單字卡/)).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /類型複習/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /交通工具，35 個單字/ })).toBeEnabled();
+  });
+
+  it('shows complete grade-aware topic coverage before starting SRS', async () => {
+    await openElementaryMenu();
+    clickFirstButtonWithText('單字卡');
+
+    fireEvent.click(await screen.findByRole('button', { name: /國中 209 字/ }));
+
+    expect(await screen.findByText(/所有主題都已達到每類 20 字/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /交通工具，21 個單字/ })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /食物飲料，21 個單字/ })).toBeEnabled();
+
+    fireEvent.click(screen.getByRole('button', { name: /高中 126 字/ }));
+
+    expect(await screen.findByText(/所有主題都已達到每類 20 字/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /學校學習，26 個單字/ })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /家庭人物，21 個單字/ })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /動物自然，22 個單字/ })).toBeEnabled();
   });
 
   it('opens speaking practice and scores a recognized word without crashing', async () => {
@@ -658,10 +683,12 @@ describe('EnglishGo app smoke flow', () => {
     });
 
     localStorage.setItem('eg_gifkey', JSON.stringify('test-key'));
+    const randomMock = vi.spyOn(Math, 'random').mockReturnValue(0.999999);
 
     try {
       await openJuniorMenu();
       clickFirstModuleCard();
+      await startAllWordsSrsRound();
 
       expect(await screen.findByRole('heading', { name: /SRS/ })).toBeInTheDocument();
 
@@ -679,6 +706,7 @@ describe('EnglishGo app smoke flow', () => {
       const backMedia = await screen.findByTestId('srs-back-media');
       expect(backMedia.querySelector(`img[src="${gifUrl}"]`)).toBeTruthy();
     } finally {
+      randomMock.mockRestore();
       fetchMock.mockRestore();
     }
   });
@@ -687,11 +715,7 @@ describe('EnglishGo app smoke flow', () => {
     localStorage.removeItem('eg_gifkey');
     localStorage.setItem('eg_gemkey', JSON.stringify('test-gemini-key'));
     localStorage.removeItem('kid_dict_v2_elementary%3Aapple');
-
-    await openElementaryMenu();
-    clickFirstModuleCard();
-
-    fireEvent.click(await screen.findByTestId('srs-card'));
+    const randomMock = vi.spyOn(Math, 'random').mockReturnValue(0.999999);
 
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
       ok: true,
@@ -718,6 +742,10 @@ describe('EnglishGo app smoke flow', () => {
     });
 
     try {
+      await openElementaryMenu();
+      clickFirstModuleCard();
+      fireEvent.click(await startAllWordsSrsRound());
+
       fireEvent.click(await screen.findByText('🔎 查字典'));
 
       expect(await screen.findByRole('complementary', { name: 'Dictionary results' })).toBeInTheDocument();
@@ -732,6 +760,7 @@ describe('EnglishGo app smoke flow', () => {
       expect(screen.getByLabelText('播放相似字 fruit')).toBeInTheDocument();
       expect(document.querySelector('iframe')).toBeNull();
     } finally {
+      randomMock.mockRestore();
       fetchMock.mockRestore();
     }
   });
@@ -742,6 +771,7 @@ describe('EnglishGo app smoke flow', () => {
 
     await openElementaryMenu();
     clickFirstModuleCard();
+    await startAllWordsSrsRound();
 
     expect(await screen.findByTestId('srs-study-guidance')).toHaveTextContent('點卡片看答案');
 
