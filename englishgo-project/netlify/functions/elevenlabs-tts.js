@@ -1,8 +1,13 @@
 import crypto from "node:crypto";
 
-const DEFAULT_VOICE_ID = "1AKkSX7KMPHIWuz76m0n";
+const DEFAULT_VOICE_ID = "21m00Tcm4TlvDq8ikWAM";
+const ALLOWED_ENGLISH_VOICE_IDS = new Set([
+  "21m00Tcm4TlvDq8ikWAM",
+  "EXAVITQu4vr4xnSDxMaL",
+  "ErXwobaYiN019PkySvjV",
+]);
 const DEFAULT_BUCKET = "tts-cache";
-const DEFAULT_MODEL_ID = "eleven_flash_v2_5";
+const DEFAULT_MODEL_ID = "eleven_multilingual_v2";
 const DEFAULT_ZH_MODEL_ID = "eleven_multilingual_v2";
 const DEFAULT_OUTPUT_FORMAT = "mp3_44100_128";
 const MAX_TEXT_LENGTH = 900;
@@ -61,11 +66,11 @@ function normalizeTextForTts(rawText) {
     .replace(/[\u201C\u201D]/g, '"')
     .replace(/\s+/g, " ")
     .trim()
-    .replace(/^['"“”‘’]+|['"“”‘’.,!?;:，。！？；：]+$/g, "")
-    .toLowerCase();
+    .replace(/^['"“”‘’]+|['"“”‘’]+$/g, "");
 }
 
 function clampNumber(value, min, max, fallback) {
+  if (value == null || value === "") return fallback;
   const n = Number(value);
   if (!Number.isFinite(n)) return fallback;
   return Math.min(max, Math.max(min, n));
@@ -79,6 +84,16 @@ function getBooleanEnv(name, fallback) {
 
 function isChineseLang(lang) {
   return /^zh/i.test(String(lang || ""));
+}
+
+function getEnglishVoiceId(requestedVoiceId) {
+  const requested = String(requestedVoiceId || "").trim();
+  if (ALLOWED_ENGLISH_VOICE_IDS.has(requested)) return requested;
+
+  const configured = getEnv("ELEVENLABS_VOICE_ID").trim();
+  if (ALLOWED_ENGLISH_VOICE_IDS.has(configured)) return configured;
+
+  return DEFAULT_VOICE_ID;
 }
 
 function makeCacheKey({ normalizedText, lang, voiceId, modelId, outputFormat, voiceSettings }) {
@@ -204,7 +219,7 @@ export default async function handler(req, context = {}) {
   const lang = String(payload.lang || "en-US").trim();
   const voiceId = isChineseLang(lang)
     ? getEnv("ELEVENLABS_ZH_VOICE_ID")
-    : getEnv("ELEVENLABS_VOICE_ID") || payload.voiceId || DEFAULT_VOICE_ID;
+    : getEnglishVoiceId(payload.voiceId);
   const modelId = isChineseLang(lang)
     ? getEnv("ELEVENLABS_ZH_MODEL_ID") || DEFAULT_ZH_MODEL_ID
     : getEnv("ELEVENLABS_MODEL_ID") || DEFAULT_MODEL_ID;
@@ -214,10 +229,11 @@ export default async function handler(req, context = {}) {
   const hasSupabaseUrl = Boolean(getSupabaseUrl());
   const hasSupabaseKey = Boolean(getSupabaseKey());
   const voiceSettings = {
-    stability: clampNumber(getEnv("ELEVENLABS_STABILITY"), 0, 1, 0.55),
-    similarity_boost: clampNumber(getEnv("ELEVENLABS_SIMILARITY_BOOST"), 0, 1, 0.85),
+    stability: clampNumber(getEnv("ELEVENLABS_STABILITY"), 0, 1, 0.65),
+    similarity_boost: clampNumber(getEnv("ELEVENLABS_SIMILARITY_BOOST"), 0, 1, 0.75),
     style: clampNumber(getEnv("ELEVENLABS_STYLE"), 0, 1, 0),
     use_speaker_boost: getBooleanEnv("ELEVENLABS_USE_SPEAKER_BOOST", false),
+    speed: playbackSpeed,
   };
 
   if (!normalizedText) {

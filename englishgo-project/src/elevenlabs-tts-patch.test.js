@@ -43,6 +43,14 @@ function installPatchEnv() {
     configurable: true,
     value: TestUtterance,
   });
+  Object.defineProperty(URL, "createObjectURL", {
+    configurable: true,
+    value: vi.fn(() => "blob:test-audio"),
+  });
+  Object.defineProperty(URL, "revokeObjectURL", {
+    configurable: true,
+    value: vi.fn(),
+  });
 
   return { nativeSpeak, nativeCancel };
 }
@@ -73,6 +81,40 @@ describe("ElevenLabs TTS patch", () => {
 
     toggle.click();
     expect(toggle).toHaveAttribute("aria-expanded","true");
+  });
+
+  it("migrates the old custom voice to the clear recommended voice at natural speed", () => {
+    installPatchEnv();
+    localStorage.setItem("eg_tts_voice_id", "1AKkSX7KMPHIWuz76m0n");
+    loadPatch();
+
+    expect(window.EnglishGoTTS.getSettings()).toEqual({
+      voiceId: "21m00Tcm4TlvDq8ikWAM",
+      speed: 1,
+    });
+    expect(document.querySelector("#eg-tts-voice")?.value).toBe("21m00Tcm4TlvDq8ikWAM");
+    expect(document.querySelector("#eg-tts-panel")?.textContent).not.toContain("目前選用");
+  });
+
+  it("ignores unapproved voice ids", () => {
+    installPatchEnv();
+    loadPatch();
+
+    window.EnglishGoTTS.setSettings({ voiceId: "unknown-cloned-voice" });
+
+    expect(window.EnglishGoTTS.getSettings().voiceId).toBe("21m00Tcm4TlvDq8ikWAM");
+  });
+
+  it("preserves capitalization and sentence punctuation in API requests", async () => {
+    installPatchEnv();
+    globalThis.fetch = vi.fn(() => Promise.resolve(new Response(new Blob(["mp3"], { type: "audio/mpeg" }))));
+    loadPatch();
+
+    await window.EnglishGoTTS.getAudioUrl("Do I take the US bus?");
+
+    const payload = JSON.parse(globalThis.fetch.mock.calls[0][1].body);
+    expect(payload.text).toBe("Do I take the US bus?");
+    expect(payload.speed).toBe(1);
   });
 
   it("keeps unmarked Chinese speech on native browser speech", () => {

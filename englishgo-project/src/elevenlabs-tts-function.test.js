@@ -74,7 +74,7 @@ describe("elevenlabs-tts function voice selection", () => {
   });
 
   it("keeps the configured default model for English requests", async () => {
-    process.env.ELEVENLABS_VOICE_ID = "english-voice";
+    process.env.ELEVENLABS_VOICE_ID = "21m00Tcm4TlvDq8ikWAM";
     process.env.ELEVENLABS_ZH_VOICE_ID = "mandarin-voice";
     process.env.ELEVENLABS_MODEL_ID = "eleven_flash_v2_5";
     process.env.ELEVENLABS_ZH_MODEL_ID = "eleven_multilingual_v2";
@@ -84,5 +84,41 @@ describe("elevenlabs-tts function voice selection", () => {
     expect(res.status).toBe(200);
     const [, init] = globalThis.fetch.mock.calls[0];
     expect(JSON.parse(init.body).model_id).toBe("eleven_flash_v2_5");
+  });
+
+  it("uses the approved voice selected by the learner instead of the old configured custom voice", async () => {
+    process.env.ELEVENLABS_VOICE_ID = "1AKkSX7KMPHIWuz76m0n";
+
+    const res = await handler(request({
+      text: "I packed three apples for our train ride this morning.",
+      lang: "en-US",
+      voiceId: "21m00Tcm4TlvDq8ikWAM",
+    }));
+
+    expect(res.status).toBe(200);
+    const [url] = globalThis.fetch.mock.calls[0];
+    expect(String(url)).toContain("/text-to-speech/21m00Tcm4TlvDq8ikWAM?");
+  });
+
+  it("defaults English learning audio to the higher-quality multilingual model", async () => {
+    delete process.env.ELEVENLABS_VOICE_ID;
+    delete process.env.ELEVENLABS_MODEL_ID;
+
+    const res = await handler(request({ text: "The bus arrives at seven thirty.", lang: "en-US" }));
+
+    expect(res.status).toBe(200);
+    const [url, init] = globalThis.fetch.mock.calls[0];
+    expect(String(url)).toContain("/text-to-speech/21m00Tcm4TlvDq8ikWAM?");
+    const body = JSON.parse(init.body);
+    expect(body.model_id).toBe("eleven_multilingual_v2");
+    expect(body.voice_settings.speed).toBe(1);
+  });
+
+  it("preserves capitalization and punctuation sent to ElevenLabs", async () => {
+    const res = await handler(request({ text: "Do I take the US bus?", lang: "en-US" }));
+
+    expect(res.status).toBe(200);
+    const [, init] = globalThis.fetch.mock.calls[0];
+    expect(JSON.parse(init.body).text).toBe("Do I take the US bus?");
   });
 });

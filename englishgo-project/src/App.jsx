@@ -1776,21 +1776,28 @@ function speakStory(sentences,opts={}){
 function VoicePicker(){
   const[voices,setVoices]=useState([]);
   const[cur,setCur]=useState(_voiceUri||"");
+  const[cloudTts,setCloudTts]=useState(()=>Boolean(window.EnglishGoTTS));
   useEffect(()=>{
     const load=()=>{const v=getVoices();if(v.length)setVoices(v)};
+    const detectCloudTts=()=>setCloudTts(Boolean(window.EnglishGoTTS));
     load();
+    detectCloudTts();
     window.speechSynthesis?.addEventListener?.("voiceschanged",load);
-    return()=>window.speechSynthesis?.removeEventListener?.("voiceschanged",load);
+    window.addEventListener("englishgo:tts-installed",detectCloudTts);
+    return()=>{
+      window.speechSynthesis?.removeEventListener?.("voiceschanged",load);
+      window.removeEventListener("englishgo:tts-installed",detectCloudTts);
+    };
   },[]);
-  if(!voices.length)return null;
+  if(cloudTts||!voices.length)return null;
   // Mark top 3 voices with ⭐ (high quality)
   const topScores=voices.slice(0,3).map(v=>v.voiceURI);
-  return(<select aria-label="選擇英文發音" value={cur} onChange={e=>{
+  return(<select aria-label="選擇備援英文發音" value={cur} onChange={e=>{
     _voiceUri=e.target.value||null;setCur(e.target.value);
     try{localStorage.setItem("eg_voice",e.target.value)}catch{};
     if(e.target.value){const v=voices.find(x=>x.voiceURI===e.target.value);if(v)speak("Hello! Let me tell you a story.","en-US",0.9,{pitch:1.08})}
   }} style={{padding:"3px 4px",borderRadius:6,border:`1px solid var(--color-border-tertiary,#e0dfd9)`,fontSize:11,background:"var(--color-background-primary,#fff)",color:"var(--color-text-secondary,#73726c)",maxWidth:130,minHeight:44,fontFamily:"inherit"}}>
-    <option value="">🎤 自動選最佳</option>
+    <option value="">🎤 備援自動選擇</option>
     {voices.map(v=>{
       const star=topScores.includes(v.voiceURI)?"⭐ ":"";
       const flag=v.lang.includes("GB")?" 🇬🇧":v.lang.includes("AU")?" 🇦🇺":v.lang.includes("US")?" 🇺🇸":"";
