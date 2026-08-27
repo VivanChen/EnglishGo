@@ -13,6 +13,9 @@ export const VOCABULARY_TOPICS = [
   { id: "business", label: "商用職場", icon: "💼", description: "工作、公司、金錢、購物與服務情境" },
 ];
 
+const VALID_TOPIC_IDS = new Set(VOCABULARY_TOPICS.map(topic => topic.id).filter(id => id !== "all"));
+const THEMED_REVIEW_PREFIX = /^ThemedReview:/i;
+
 const TOPIC_WORDS = {
   daily: [
     "little","small","large","long","short","tall","young","old","new","good","bad","cute","kind","nice","clean","dirty","hot","cold","warm","cool","easy","hard","fast","slow","early","late","full","hungry","thirsty","tired","sick","funny","quiet","loud","beautiful","favorite",
@@ -61,6 +64,59 @@ const TOPIC_SETS = Object.fromEntries(
 
 function normalizeWord(value) {
   return String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+export function parseVocabularyTopics(category) {
+  const value = String(category || "").trim();
+  if (!THEMED_REVIEW_PREFIX.test(value)) return [];
+  return [...new Set(
+    value.replace(THEMED_REVIEW_PREFIX, "")
+      .split(",")
+      .map(topic => topic.trim().toLowerCase())
+      .filter(topic => VALID_TOPIC_IDS.has(topic)),
+  )];
+}
+
+function getWeaknessMap(weakWords) {
+  const weakness = new Map();
+  (Array.isArray(weakWords) ? weakWords : []).forEach(item => {
+    const key = normalizeWord(item?.w);
+    if (!key) return;
+    weakness.set(key, Math.max(weakness.get(key) || 0, Number(item?.n) || 1));
+  });
+  return weakness;
+}
+
+export function countWeakVocabularyCards(cards, weakWords) {
+  const weakness = getWeaknessMap(weakWords);
+  return mergeUniqueWordCards(cards).filter(card => weakness.has(normalizeWord(card?.w))).length;
+}
+
+export function selectVocabularyTopicRound(cards, {
+  weakWords = [],
+  previousWords = [],
+  limit = VOCABULARY_TOPIC_TARGET,
+  random = Math.random,
+} = {}) {
+  const weakness = getWeaknessMap(weakWords);
+  const previous = new Set((Array.isArray(previousWords) ? previousWords : []).map(item => (
+    normalizeWord(typeof item === "string" ? item : item?.w)
+  )).filter(Boolean));
+  const max = Math.max(0, Number(limit) || 0);
+
+  return mergeUniqueWordCards(cards)
+    .map((card, index) => ({ card, index, tie: random() }))
+    .sort((a, b) => {
+      const aKey = normalizeWord(a.card?.w);
+      const bKey = normalizeWord(b.card?.w);
+      const weakDiff = (weakness.get(bKey) || 0) - (weakness.get(aKey) || 0);
+      if (weakDiff) return weakDiff;
+      const freshDiff = Number(previous.has(aKey)) - Number(previous.has(bKey));
+      if (freshDiff) return freshDiff;
+      return a.tie - b.tie || a.index - b.index;
+    })
+    .slice(0, max)
+    .map(item => item.card);
 }
 
 export function mergeUniqueWordCards(...groups) {

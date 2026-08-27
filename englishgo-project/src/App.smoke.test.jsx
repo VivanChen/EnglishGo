@@ -383,6 +383,21 @@ describe('EnglishGo app smoke flow', () => {
     expect(screen.getByRole('button', { name: /動物自然，22 個單字/ })).toBeEnabled();
   });
 
+  it('recommends the topic with weak words and puts the weakest card first', async () => {
+    localStorage.setItem('eg_weak', JSON.stringify([
+      { w: 'commute', n: 3 },
+      { w: 'route', n: 1 },
+    ]));
+    await openJuniorMenu();
+    clickFirstButtonWithText('單字卡');
+
+    expect(await screen.findByText(/建議先練：交通工具（2 個待加強）/)).toBeInTheDocument();
+    const transport = screen.getByRole('button', { name: /交通工具，21 個單字，2 個待加強/ });
+    fireEvent.click(transport);
+
+    expect(await screen.findByText('commute')).toBeInTheDocument();
+  });
+
   it('opens speaking practice and scores a recognized word without crashing', async () => {
     const OriginalSpeechRecognition = window.SpeechRecognition;
     const OriginalWebkitSpeechRecognition = window.webkitSpeechRecognition;
@@ -1258,8 +1273,8 @@ describe('EnglishGo app smoke flow', () => {
     expect(monopolyCard).toBeTruthy();
     fireEvent.click(monopolyCard);
 
-    expect(await screen.findByText(/寵物大富翁/, {}, { timeout: 5000 })).toBeInTheDocument();
     expect(await screen.findByTestId('pet-monopoly-setup', {}, { timeout: 5000 })).toHaveTextContent(/開局設定/);
+    expect(screen.getByRole('heading', { name: /寵物大富翁/ })).toBeInTheDocument();
     expect(screen.queryByTestId('pet-monopoly-board')).not.toBeInTheDocument();
     fireEvent.click(screen.getByTestId('pet-monopoly-setup-cpu-1'));
     fireEvent.click(screen.getByTestId('pet-monopoly-setup-stake-100'));
@@ -1316,7 +1331,8 @@ describe('EnglishGo app smoke flow', () => {
     expect(monopolyCard).toBeTruthy();
     fireEvent.click(monopolyCard);
 
-    expect(await screen.findByText(/寵物大富翁/, {}, { timeout: 5000 })).toBeInTheDocument();
+    expect(await screen.findByTestId('pet-monopoly-setup', {}, { timeout: 5000 })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /寵物大富翁/ })).toBeInTheDocument();
     fireEvent.click(screen.getByTestId('pet-monopoly-start'));
     fireEvent.click(screen.getByTestId('pet-monopoly-roll'));
     expect((await findPetMonopolyChallengeLabel()).length).toBeGreaterThan(0);

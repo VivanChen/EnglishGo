@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { EXTRA_WORDS } from "./extraWords.js";
 import {
+  countWeakVocabularyCards,
   filterCardsByTopic,
   getVocabularyTopicCatalog,
   mergeUniqueWordCards,
+  parseVocabularyTopics,
+  selectVocabularyTopicRound,
 } from "./vocabularyTopics.js";
 
 function byId(cards) {
@@ -18,6 +21,24 @@ describe("vocabulary topic coverage", () => {
     );
 
     expect(merged.map(card=>card.w)).toEqual(["Apple","bus","train"]);
+  });
+
+  it("restores valid topic tags from Supabase themed categories",()=>{
+    expect(parseVocabularyTopics("ThemedReview:transport,people,transport,unknown")).toEqual(["transport","people"]);
+    expect(parseVocabularyTopics("Supplemental")).toEqual([]);
+  });
+
+  it("prioritizes weak words, then brings fresh cards into the next round",()=>{
+    const cards=["weak","old","fresh one","fresh two"].map(w=>({w}));
+    const picked=selectVocabularyTopicRound(cards,{
+      weakWords:[{w:"weak",n:3}],
+      previousWords:["weak","old"],
+      limit:3,
+      random:()=>0.5,
+    });
+
+    expect(picked.map(card=>card.w)).toEqual(["weak","fresh one","fresh two"]);
+    expect(countWeakVocabularyCards([...cards,{w:"WEAK"}],[{w:"weak",n:3}])).toBe(1);
   });
 
   it("has enough elementary food and transport words for full topic rounds", () => {

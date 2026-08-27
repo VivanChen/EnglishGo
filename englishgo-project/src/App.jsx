@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense } fro
 import { getElementaryExample } from "./data/elementaryExamples.js";
 import { JUNIOR_SONGS } from "./data/juniorSongs.js";
 import { SENIOR_SONGS } from "./data/seniorSongs.js";
+import { parseVocabularyTopics } from "./data/vocabularyTopics.js";
 
 const TranslationReader=lazy(()=>import("./features/TranslationReader.jsx"));
 const PetMonopolyM=lazy(()=>import("./features/PetMonopoly.jsx"));
@@ -124,7 +125,7 @@ function mapWord(r){
   try{return{w:r.word,ph:r.phonetic||'',p:r.pos||'',m:r.meaning,
     f:typeof r.forms==='string'?JSON.parse(r.forms||'[]'):(r.forms||[]),
     c:typeof r.collocations==='string'?JSON.parse(r.collocations||'[]'):(r.collocations||[]),
-    ex:localExample?.ex||r.example||'',ez:localExample?.ez||r.example_zh||'',img:'',level:r.level,category:r.category||'',ceecLevel:r.ceec_level}}catch{return null}
+    ex:localExample?.ex||r.example||'',ez:localExample?.ez||r.example_zh||'',img:'',level:r.level,category:r.category||'',topics:parseVocabularyTopics(r.category),ceecLevel:r.ceec_level}}catch{return null}
 }
 
 const WORD_SELECT="id,word,phonetic,pos,meaning,forms,collocations,example,example_zh,category,ceec_level,level";
