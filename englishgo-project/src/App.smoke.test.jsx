@@ -392,10 +392,32 @@ describe('EnglishGo app smoke flow', () => {
     clickFirstButtonWithText('單字卡');
 
     expect(await screen.findByText(/建議先練：交通工具（2 個待加強）/)).toBeInTheDocument();
-    const transport = screen.getByRole('button', { name: /交通工具，21 個單字，2 個待加強/ });
-    fireEvent.click(transport);
+    document.documentElement.scrollTop = 500;
+    fireEvent.click(screen.getByRole('button', { name: '開始複習推薦主題：交通工具' }));
 
     expect(await screen.findByText('commute')).toBeInTheDocument();
+    await waitFor(() => expect(document.documentElement.scrollTop).toBe(0));
+
+    document.documentElement.scrollTop = 500;
+    fireEvent.click(screen.getByRole('button', { name: '換分類' }));
+    expect(await screen.findByText(/建議先練：交通工具（2 個待加強）/)).toBeInTheDocument();
+    await waitFor(() => expect(document.documentElement.scrollTop).toBe(0));
+  });
+
+  it('removes a mastered word from topic recommendations after a good answer', async () => {
+    localStorage.setItem('eg_weak', JSON.stringify([{ w: 'commute', n: 1 }]));
+    await openJuniorMenu();
+    clickFirstButtonWithText('單字卡');
+
+    fireEvent.click(await screen.findByRole('button', { name: '開始複習推薦主題：交通工具' }));
+    expect(await screen.findByText('commute')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('srs-card'));
+    fireEvent.click(await screen.findByRole('button', { name: /Good 3/ }));
+    fireEvent.click(screen.getByRole('button', { name: '換分類' }));
+
+    expect(await screen.findByRole('heading', { name: /類型複習/ })).toBeInTheDocument();
+    expect(screen.queryByText(/建議先練：交通工具/)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /交通工具，21 個單字$/ })).toBeEnabled();
   });
 
   it('opens speaking practice and scores a recognized word without crashing', async () => {

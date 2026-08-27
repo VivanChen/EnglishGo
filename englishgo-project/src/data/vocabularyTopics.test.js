@@ -7,6 +7,7 @@ import {
   mergeUniqueWordCards,
   parseVocabularyTopics,
   selectVocabularyTopicRound,
+  updateWeakVocabulary,
 } from "./vocabularyTopics.js";
 
 function byId(cards) {
@@ -39,6 +40,18 @@ describe("vocabulary topic coverage", () => {
 
     expect(picked.map(card=>card.w)).toEqual(["weak","fresh one","fresh two"]);
     expect(countWeakVocabularyCards([...cards,{w:"WEAK"}],[{w:"weak",n:3}])).toBe(1);
+  });
+
+  it("adds, reduces, and clears weak vocabulary without case-sensitive duplicates",()=>{
+    const added=updateWeakVocabulary([],"Commute",1);
+    const repeated=updateWeakVocabulary(added,"commute",1);
+    const improved=updateWeakVocabulary(repeated,"COMMUTE",-1);
+    const mastered=updateWeakVocabulary(improved,"commute",-2);
+
+    expect(repeated).toEqual([{w:"Commute",n:2}]);
+    expect(improved).toEqual([{w:"Commute",n:1}]);
+    expect(mastered).toEqual([]);
+    expect(updateWeakVocabulary([],"commute",-1)).toEqual([]);
   });
 
   it("has enough elementary food and transport words for full topic rounds", () => {

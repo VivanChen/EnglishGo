@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense } fro
 import { getElementaryExample } from "./data/elementaryExamples.js";
 import { JUNIOR_SONGS } from "./data/juniorSongs.js";
 import { SENIOR_SONGS } from "./data/seniorSongs.js";
-import { parseVocabularyTopics } from "./data/vocabularyTopics.js";
+import { parseVocabularyTopics, updateWeakVocabulary } from "./data/vocabularyTopics.js";
 
 const TranslationReader=lazy(()=>import("./features/TranslationReader.jsx"));
 const PetMonopolyM=lazy(()=>import("./features/PetMonopoly.jsx"));
@@ -2236,7 +2236,7 @@ export default function App(){
     addXp(n);
     if(taskKey)incrTask(taskKey);
   };
-  const trackWeak=(word)=>{setWeakWords(w=>{const e=w.find(x=>x.w===word);if(e)return w.map(x=>x.w===word?{...x,n:x.n+1}:x);return[...w,{w:word,n:1}].slice(-50)})};
+  const trackWeak=(word,amount=1)=>setWeakWords(words=>updateWeakVocabulary(words,word,amount));
 
   useEffect(()=>{
     const r=document.documentElement.style;

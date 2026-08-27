@@ -87,6 +87,25 @@ function getWeaknessMap(weakWords) {
   return weakness;
 }
 
+export function updateWeakVocabulary(weakWords, word, amount = 1, limit = 50) {
+  const list = Array.isArray(weakWords) ? weakWords : [];
+  const cleanWord = String(word || "").trim();
+  const key = normalizeWord(cleanWord);
+  if (!key) return list;
+
+  const delta = Number.isFinite(Number(amount)) ? Number(amount) : 1;
+  const currentIndex = list.findIndex(item => normalizeWord(item?.w) === key);
+  if (currentIndex < 0) {
+    if (delta <= 0) return list;
+    return [...list, { w: cleanWord, n: Math.max(1, delta) }].slice(-Math.max(1, Number(limit) || 50));
+  }
+
+  const current = list[currentIndex];
+  const nextCount = Math.max(0, (Number(current?.n) || 0) + delta);
+  if (nextCount === 0) return list.filter((_, index) => index !== currentIndex);
+  return list.map((item, index) => index === currentIndex ? { ...item, n: nextCount } : item);
+}
+
 export function countWeakVocabularyCards(cards, weakWords) {
   const weakness = getWeaknessMap(weakWords);
   return mergeUniqueWordCards(cards).filter(card => weakness.has(normalizeWord(card?.w))).length;
