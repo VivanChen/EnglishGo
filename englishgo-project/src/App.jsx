@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense } fro
 import { getElementaryExample } from "./data/elementaryExamples.js";
 import { JUNIOR_SONGS } from "./data/juniorSongs.js";
 import { SENIOR_SONGS } from "./data/seniorSongs.js";
-import { parseVocabularyTopics, updateWeakVocabulary } from "./data/vocabularyTopics.js";
+import { getWeakVocabularyForLevel, parseVocabularyTopics, updateWeakVocabulary } from "./data/vocabularyTopics.js";
 
 const TranslationReader=lazy(()=>import("./features/TranslationReader.jsx"));
 const PetMonopolyM=lazy(()=>import("./features/PetMonopoly.jsx"));
@@ -2134,6 +2134,9 @@ export default function App(){
   const[sharedWord,setSharedWord]=useState(null);
   const[customDeck,setCustomDeck]=useState(null);
   const isSponsor=sponsor.active;
+  const levelWeakWords=useMemo(()=>getWeakVocabularyForLevel(weakWords,lv),[weakWords,lv]);
+
+  useEffect(()=>{if(!lv)return;setWeakWords(words=>{const list=Array.isArray(words)?words:[];let changed=false;const migrated=list.map(item=>{if(item?.w&&!item.level){changed=true;return{...item,level:lv}}return item});return changed?migrated:words})},[lv]);
 
   // Deep link: detect ?word=xxx&lv=xxx from shared URL
   useEffect(()=>{
@@ -2236,7 +2239,7 @@ export default function App(){
     addXp(n);
     if(taskKey)incrTask(taskKey);
   };
-  const trackWeak=(word,amount=1)=>setWeakWords(words=>updateWeakVocabulary(words,word,amount));
+  const trackWeak=(word,amount=1)=>setWeakWords(words=>updateWeakVocabulary(words,word,amount,50,lv));
 
   useEffect(()=>{
     const r=document.documentElement.style;
@@ -2401,10 +2404,10 @@ export default function App(){
         <button type="button" aria-label={dark?"切換為淺色模式":"切換為深色模式"} onClick={()=>setDark(!dark)} style={{background:"none",border:"none",fontSize:14,cursor:"pointer",minWidth:44,minHeight:44,display:"flex",alignItems:"center",justifyContent:"center"}}>{dark?"☀️":"🌙"}</button>
       </nav>
       <div style={{maxWidth:!mod?940:mod==="petAdventure"?1280:mod==="petMonopoly"?1180:mod==="srs"?1080:mod==="translate"?960:760,margin:"0 auto",padding:mod==="petAdventure"||mod==="petMonopoly"?"14px 18px calc(20px + env(safe-area-inset-bottom, 0px))":"12px 12px calc(16px + env(safe-area-inset-bottom, 0px))"}}>
-        {!mod?<MenuV2 lv={lv} onSelect={openModule} activeGroup={menuGroup} onGroupChange={setMenuGroup} daily={daily} c={c} xp={xp} coins={coins} streak={streak} achUnlocked={achUnlocked} weakWords={weakWords} isSponsor={isSponsor} pets={pets} eggs={eggs}/>:
+        {!mod?<MenuV2 lv={lv} onSelect={openModule} activeGroup={menuGroup} onGroupChange={setMenuGroup} daily={daily} c={c} xp={xp} coins={coins} streak={streak} achUnlocked={achUnlocked} weakWords={levelWeakWords} isSponsor={isSponsor} pets={pets} eggs={eggs}/>:
          mod==="wordsearch"?<WordSearchM lv={lv} onBack={back} onOpenCard={(word,level)=>{setLv(level||lv);setSharedWord(word);setCustomDeck(null);setMod("srs")}}/>:
          mod==="exam"?<ExamReviewM lv={lv} onBack={back} c={c} apiKey={gemKey} onOpenSettings={()=>setMod("settings")} onStart={deck=>{setSharedWord(null);setCustomDeck(deck);setMod("srs")}}/>:
-         mod==="srs"?<SRS lv={lv} onBack={back} onLevelChange={nextLv=>{setLv(nextLv);setSharedWord(null);setCustomDeck(null)}} onXp={n=>addXpWithTask(n,"srsToday")} onDone={()=>setStats(s=>({...s,srsRounds:s.srsRounds+1}))} trackWeak={trackWeak} gifKey={gifKey} sharedWord={sharedWord} apiKey={gemKey} weakWords={weakWords} customCards={customDeck?.cards||null} customSource={customDeck?.source||""} onOpenSettings={()=>setMod("settings")}/>:
+         mod==="srs"?<SRS lv={lv} onBack={back} onLevelChange={nextLv=>{setLv(nextLv);setSharedWord(null);setCustomDeck(null)}} onXp={n=>addXpWithTask(n,"srsToday")} onDone={()=>setStats(s=>({...s,srsRounds:s.srsRounds+1}))} trackWeak={trackWeak} gifKey={gifKey} sharedWord={sharedWord} apiKey={gemKey} weakWords={levelWeakWords} customCards={customDeck?.cards||null} customSource={customDeck?.source||""} onOpenSettings={()=>setMod("settings")}/>:
          mod==="quiz"?<QuizM lv={lv} onBack={back} onXp={n=>addXpWithTask(n,"quizToday")} onPerfect={()=>setStats(s=>({...s,perfectQuiz:s.perfectQuiz+1}))} trackWeak={trackWeak}/>:
          mod==="speak"?<SpeakM lv={lv} onBack={back} onXp={n=>addXpWithTask(n,"speakToday")} apiKey={gemKey} onOpenSettings={()=>setMod("settings")}/>:
          mod==="whack"?<WhackM lv={lv} onBack={back} onXp={addXp}/>:
@@ -2421,8 +2424,8 @@ export default function App(){
          mod==="translate"?<Suspense fallback={<ModuleLoading label="載入翻譯朗讀..."/>}><TranslationReader apiKey={gemKey} onBack={back} onOpenSettings={()=>setMod("settings")} speak={speak} speakWebSpeech={speakWebSpeech} stopSpeech={stopSpeech} Header={Hdr} theme={{accent:c.cl,accentSoft:c.ac,surface:S.bg1,surfaceAlt:S.bg2,border:S.bd,text:S.t1,muted:S.t2}}/></Suspense>:
          mod==="story"?<StoryMode lv={lv} onBack={back} apiKey={gemKey} pets={pets} c={c} onXp={addXp} trackWeak={trackWeak} onOpenSettings={()=>setMod("settings")}/>:
          mod==="achievements"?<AchPage onBack={back} unlocked={achUnlocked} c={c}/>:
-         mod==="weak"?<WeakPage onBack={back} weakWords={weakWords} setWeakWords={setWeakWords} c={c} lv={lv}/>:
-         mod==="dashboard"?<Dashboard onBack={back} c={c} xp={xp} streak={streak} stats={stats} daily={daily} weakWords={weakWords} history={history} achUnlocked={achUnlocked} lv={lv} isSponsor={isSponsor}/>:
+         mod==="weak"?<WeakPage onBack={back} weakWords={levelWeakWords} setWeakWords={setWeakWords} c={c} lv={lv}/>:
+         mod==="dashboard"?<Dashboard onBack={back} c={c} xp={xp} streak={streak} stats={stats} daily={daily} weakWords={levelWeakWords} history={history} achUnlocked={achUnlocked} lv={lv} isSponsor={isSponsor}/>:
          mod==="settings"?<SettingsPage onBack={back} c={c} gemKey={gemKey} setGemKey={setGemKey} gifKey={gifKey} setGifKey={setGifKey}/>:
          mod==="gacha"?<GachaPage onBack={back} c={c} coins={coins} setCoins={setCoins} eggs={eggs} setEggs={setEggs} pets={pets} setPets={setPets}/>:
          mod==="pets"?<PetsGuard onBack={back} c={c} pets={pets} setPets={setPets} eggs={eggs} setEggs={setEggs} coins={coins} setCoins={setCoins} inventory={inventory} setInventory={setInventory} petAccount={petAccount} setPetAccount={setPetAccount} petTasks={petTasks} setPetTasks={setPetTasks} incrTask={incrTask}/>:
@@ -5946,11 +5949,11 @@ function WeakPage({onBack,weakWords,setWeakWords,c,lv}){
     }catch{}
   })();return()=>{active=false}},[weakWords]);
 
-  const removeWord=(w)=>setWeakWords(ws=>ws.filter(x=>x.w!==w));
+  const removeWord=(w)=>{const key=String(w||"").trim().toLowerCase();setWeakWords(ws=>ws.filter(x=>{const same=String(x?.w||"").trim().toLowerCase()===key;const belongs=!x?.level||x.level===lv;return !(same&&belongs)}))};
   const[confirmClear,setConfirmClear]=useState(false);
-  const clearAll=()=>{if(confirmClear){setWeakWords([]);setConfirmClear(false)}else setConfirmClear(true)};
+  const clearAll=()=>{if(confirmClear){setWeakWords(ws=>ws.filter(x=>x?.level&&x.level!==lv));setConfirmClear(false)}else setConfirmClear(true)};
 
-  if(sorted.length===0)return(<div><Hdr t="📕 錯題本" onBack={onBack} cl={c.cl}/><div style={{textAlign:"center",padding:"48px 16px"}}><div style={{fontSize:48,marginBottom:8}}>🎉</div><div style={{fontSize:16,fontWeight:600,color:S.t1}}>太棒了！沒有錯題</div><div style={{fontSize:13,color:S.t2,marginTop:4}}>繼續加油，保持零錯題！</div></div></div>);
+  if(sorted.length===0)return(<div><Hdr t="📕 錯題本" onBack={onBack} cl={c.cl}/><div style={{textAlign:"center",padding:"48px 16px"}}><div style={{fontSize:48,marginBottom:8}}>🎉</div><div style={{fontSize:16,fontWeight:600,color:S.t1}}>太棒了！{LV[lv]?.l||"這個年級"}沒有錯題</div><div style={{fontSize:13,color:S.t2,marginTop:4}}>繼續加油，保持零錯題！</div></div></div>);
 
   if(mode==="review"){
     const w=sorted[ri];const info=cloudData[w?.w]||{};
@@ -5981,7 +5984,7 @@ function WeakPage({onBack,weakWords,setWeakWords,c,lv}){
   return(<div><Hdr t="📕 錯題本" onBack={onBack} cl={c.cl} extra={<div style={{display:"flex",gap:4}}><button onClick={()=>{setRi(0);setFlip(false);setMode("review")}} style={{...S.btn,background:c.cl,color:"#fff",padding:"4px 12px",fontSize:12}}>📖 開始複習</button></div>}/>
     <div style={{...S.card,padding:"12px 16px",marginBottom:10}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-        <div style={{fontSize:14,fontWeight:600,color:S.t1}}>共 {sorted.length} 個弱點單字</div>
+        <div style={{fontSize:14,fontWeight:600,color:S.t1}}>{LV[lv]?.l||"目前年級"} · 共 {sorted.length} 個弱點單字</div>
         <button onClick={clearAll} style={{background:confirmClear?"#E24B4A":"none",border:confirmClear?"none":`1px solid #E24B4A`,borderRadius:8,padding:"4px 10px",fontSize:12,color:confirmClear?"#fff":"#E24B4A",cursor:"pointer",transition:"all .2s"}}>{confirmClear?"⚠️ 確定清空？再點一次":"🗑️ 清空"}</button>
       </div>
     </div>

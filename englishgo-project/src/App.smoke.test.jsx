@@ -391,6 +391,10 @@ describe('EnglishGo app smoke flow', () => {
     await openJuniorMenu();
     clickFirstButtonWithText('單字卡');
 
+    await waitFor(() => expect(JSON.parse(localStorage.getItem('eg_weak'))).toEqual([
+      { w: 'commute', n: 3, level: 'junior' },
+      { w: 'route', n: 1, level: 'junior' },
+    ]));
     expect(await screen.findByText(/建議先練：交通工具（2 個待加強）/)).toBeInTheDocument();
     document.documentElement.scrollTop = 500;
     fireEvent.click(screen.getByRole('button', { name: '開始複習推薦主題：交通工具' }));
@@ -418,6 +422,42 @@ describe('EnglishGo app smoke flow', () => {
     expect(await screen.findByRole('heading', { name: /類型複習/ })).toBeInTheDocument();
     expect(screen.queryByText(/建議先練：交通工具/)).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /交通工具，21 個單字$/ })).toBeEnabled();
+  });
+
+  it('keeps grade-specific weak recommendations out of other grade views', async () => {
+    localStorage.setItem('eg_weak', JSON.stringify([{ w: 'station', n: 2, level: 'junior' }]));
+    await openElementaryMenu();
+    clickFirstButtonWithText('單字卡');
+
+    expect(await screen.findByRole('heading', { name: /類型複習/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /開始複習推薦主題/ })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /國中 209 字/ }));
+    expect(await screen.findByRole('button', { name: '開始複習推薦主題：交通工具' })).toBeEnabled();
+    expect(screen.getByText(/建議先練：交通工具（1 個待加強）/)).toBeInTheDocument();
+  });
+
+  it('shows and clears weak words only for the current grade', async () => {
+    localStorage.setItem('eg_weak', JSON.stringify([
+      { w: 'apple', n: 1, level: 'elementary' },
+      { w: 'station', n: 2, level: 'junior' },
+    ]));
+    await openElementaryMenu();
+
+    fireEvent.click(document.querySelector('[data-group-id="tools"]'));
+    fireEvent.click(document.querySelector('[data-module-id="weak"]'));
+
+    expect(await screen.findByText('小學 · 共 1 個弱點單字')).toBeInTheDocument();
+    expect(screen.getByText('apple')).toBeInTheDocument();
+    expect(screen.queryByText('station')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '🗑️ 清空' }));
+    fireEvent.click(screen.getByRole('button', { name: /確定清空/ }));
+
+    expect(await screen.findByText('太棒了！小學沒有錯題')).toBeInTheDocument();
+    await waitFor(() => expect(JSON.parse(localStorage.getItem('eg_weak'))).toEqual([
+      { w: 'station', n: 2, level: 'junior' },
+    ]));
   });
 
   it('opens speaking practice and scores a recognized word without crashing', async () => {

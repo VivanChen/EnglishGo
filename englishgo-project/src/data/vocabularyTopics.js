@@ -87,23 +87,61 @@ function getWeaknessMap(weakWords) {
   return weakness;
 }
 
-export function updateWeakVocabulary(weakWords, word, amount = 1, limit = 50) {
+export function getWeakVocabularyForLevel(weakWords, level) {
+  const list = Array.isArray(weakWords) ? weakWords : [];
+  const targetLevel = String(level || "").trim();
+  if (!targetLevel) return list;
+
+  const scopedWords = new Set(list
+    .filter(item => item?.level === targetLevel)
+    .map(item => normalizeWord(item?.w))
+    .filter(Boolean));
+  const seen = new Set();
+  return list.filter(item => {
+    const key = normalizeWord(item?.w);
+    if (!key || seen.has(key)) return false;
+    const itemLevel = String(item?.level || "").trim();
+    if (itemLevel && itemLevel !== targetLevel) return false;
+    if (!itemLevel && scopedWords.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+export function updateWeakVocabulary(weakWords, word, amount = 1, limit = 50, level = "") {
   const list = Array.isArray(weakWords) ? weakWords : [];
   const cleanWord = String(word || "").trim();
   const key = normalizeWord(cleanWord);
   if (!key) return list;
 
   const delta = Number.isFinite(Number(amount)) ? Number(amount) : 1;
-  const currentIndex = list.findIndex(item => normalizeWord(item?.w) === key);
-  if (currentIndex < 0) {
+  const targetLevel = String(level || "").trim();
+  const matchingIndexes = list.map((item, index) => ({ item, index })).filter(({ item }) => (
+    normalizeWord(item?.w) === key
+    && (!targetLevel || !item?.level || item.level === targetLevel)
+  )).map(({ index }) => index);
+  if (!matchingIndexes.length) {
     if (delta <= 0) return list;
-    return [...list, { w: cleanWord, n: Math.max(1, delta) }].slice(-Math.max(1, Number(limit) || 50));
+    const next = { w: cleanWord, n: Math.max(1, delta) };
+    if (targetLevel) next.level = targetLevel;
+    const withNext = [...list, next];
+    const max = Math.max(1, Number(limit) || 50);
+    if (!targetLevel) return withNext.slice(-max);
+    const scopedIndexes = withNext.map((item, index) => ({ item, index }))
+      .filter(({ item }) => item?.level === targetLevel)
+      .map(({ index }) => index);
+    const expired = new Set(scopedIndexes.slice(0, Math.max(0, scopedIndexes.length - max)));
+    return withNext.filter((_, index) => !expired.has(index));
   }
 
-  const current = list[currentIndex];
-  const nextCount = Math.max(0, (Number(current?.n) || 0) + delta);
-  if (nextCount === 0) return list.filter((_, index) => index !== currentIndex);
-  return list.map((item, index) => index === currentIndex ? { ...item, n: nextCount } : item);
+  const currentIndex = matchingIndexes.find(index => list[index]?.level === targetLevel) ?? matchingIndexes[0];
+  const currentCount = Math.max(...matchingIndexes.map(index => Number(list[index]?.n) || 0));
+  const nextCount = Math.max(0, currentCount + delta);
+  if (nextCount === 0) return list.filter((_, index) => !matchingIndexes.includes(index));
+  return list.flatMap((item, index) => {
+    if (index === currentIndex) return [{ ...item, ...(targetLevel ? { level: targetLevel } : {}), n: nextCount }];
+    return matchingIndexes.includes(index) ? [] : [item];
+  });
 }
 
 export function countWeakVocabularyCards(cards, weakWords) {

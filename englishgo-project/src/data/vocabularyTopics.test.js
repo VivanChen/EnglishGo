@@ -3,6 +3,7 @@ import { EXTRA_WORDS } from "./extraWords.js";
 import {
   countWeakVocabularyCards,
   filterCardsByTopic,
+  getWeakVocabularyForLevel,
   getVocabularyTopicCatalog,
   mergeUniqueWordCards,
   parseVocabularyTopics,
@@ -52,6 +53,29 @@ describe("vocabulary topic coverage", () => {
     expect(improved).toEqual([{w:"Commute",n:1}]);
     expect(mastered).toEqual([]);
     expect(updateWeakVocabulary([],"commute",-1)).toEqual([]);
+  });
+
+  it("keeps new weak vocabulary isolated by grade and migrates legacy entries on review",()=>{
+    const junior=updateWeakVocabulary([],"station",1,50,"junior");
+    const both=updateWeakVocabulary(junior,"station",2,50,"elementary");
+    const legacy=[{w:"Ticket",n:2}];
+    const migrated=updateWeakVocabulary(legacy,"ticket",-1,50,"junior");
+
+    expect(getWeakVocabularyForLevel(both,"junior")).toEqual([{w:"station",n:1,level:"junior"}]);
+    expect(getWeakVocabularyForLevel(both,"elementary")).toEqual([{w:"station",n:2,level:"elementary"}]);
+    expect(migrated).toEqual([{w:"Ticket",n:1,level:"junior"}]);
+    expect(getWeakVocabularyForLevel(migrated,"elementary")).toEqual([]);
+  });
+
+  it("keeps the weak-word limit separate for each grade",()=>{
+    const junior=Array.from({length:50},(_,index)=>({w:`junior ${index}`,n:1,level:"junior"}));
+    const elementary=[{w:"apple",n:1,level:"elementary"}];
+    const next=updateWeakVocabulary([...elementary,...junior],"new junior",1,50,"junior");
+
+    expect(getWeakVocabularyForLevel(next,"elementary")).toEqual(elementary);
+    expect(getWeakVocabularyForLevel(next,"junior")).toHaveLength(50);
+    expect(getWeakVocabularyForLevel(next,"junior").map(item=>item.w)).not.toContain("junior 0");
+    expect(getWeakVocabularyForLevel(next,"junior").map(item=>item.w)).toContain("new junior");
   });
 
   it("has enough elementary food and transport words for full topic rounds", () => {
