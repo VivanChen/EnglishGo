@@ -3,7 +3,6 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const REPO_URL = "https://github.com/VivanChen/EnglishGo";
 const OUTPUT_PATH = resolve(dirname(fileURLToPath(import.meta.url)), "../src/data/recentFeatures.generated.js");
 
 const FEATURE_RULES = [
@@ -80,7 +79,6 @@ const FALLBACK_UPDATES = [
     targetLevel: "senior",
     targetModule: "songs",
     date: "2026-05-21",
-    href: `${REPO_URL}/commits/main`,
   },
   {
     title: "國中歌曲新增",
@@ -92,7 +90,6 @@ const FALLBACK_UPDATES = [
     targetLevel: "junior",
     targetModule: "songs",
     date: "2026-05-21",
-    href: `${REPO_URL}/commits/main`,
   },
   {
     title: "考試範圍複習",
@@ -104,7 +101,6 @@ const FALLBACK_UPDATES = [
     targetLevel: "elementary",
     targetModule: "exam",
     date: "2026-05-21",
-    href: `${REPO_URL}/commits/main`,
   },
 ];
 
@@ -118,10 +114,6 @@ export function parseGitLog(raw) {
       return { hash, date, subject: subjectParts.join("\t") };
     })
     .filter((commit) => commit.hash && commit.date && commit.subject);
-}
-
-function commitHref(hash) {
-  return `${REPO_URL}/commit/${hash}`;
 }
 
 function genericFeature(commit) {
@@ -166,7 +158,6 @@ export function collectRecentFeatureUpdates(commits, { limit = 4 } = {}) {
     updates.push({
       ...feature,
       date: commit.date,
-      href: commit.hash ? commitHref(commit.hash) : `${REPO_URL}/commits/main`,
     });
 
     if (updates.length >= limit) break;

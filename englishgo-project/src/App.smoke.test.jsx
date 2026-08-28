@@ -235,6 +235,18 @@ describe('EnglishGo app smoke flow', () => {
     expect(screen.queryByText('國中歌曲新增')).not.toBeInTheDocument();
     expect(screen.queryByText('查看 GitHub 更新')).not.toBeInTheDocument();
     expect(screen.queryByText('AI 小朋友字典')).not.toBeInTheDocument();
+    expect(screen.queryByText('支持 EnglishGo')).not.toBeInTheDocument();
+    expect(document.querySelector('a[href="/learn/sponsor.html"]')).toBeNull();
+  });
+
+  it('removes retired sponsorship state from the browser', async () => {
+    localStorage.setItem('eg_sponsor', JSON.stringify({ active: true, name: '測試姓名' }));
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(localStorage.getItem('eg_sponsor')).toBeNull();
+    });
   });
 
   it('opens the main menu after selecting a level', async () => {
@@ -255,6 +267,17 @@ describe('EnglishGo app smoke flow', () => {
     expect(await screen.findByText('API Key 設定')).toBeInTheDocument();
     expect(screen.getByText('Gemini API Key')).toBeInTheDocument();
     expect(screen.getByText('Giphy API Key')).toBeInTheDocument();
+  });
+
+  it('does not show sponsorship in the tools menu', async () => {
+    await openElementaryMenu();
+
+    const toolsTab = document.querySelector('[data-group-id="tools"]');
+    expect(toolsTab).toBeTruthy();
+    fireEvent.click(toolsTab);
+
+    expect(screen.queryByText(/贊助|支持 EnglishGo/)).not.toBeInTheDocument();
+    expect(document.querySelector('[data-module-id="sponsor"]')).toBeNull();
   });
 
   it('opens AI tutor with polished practice starters', async () => {

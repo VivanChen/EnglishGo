@@ -29,12 +29,12 @@ describe("recent feature updates", () => {
       level: "高中",
       targetLevel: "senior",
       targetModule: "songs",
-      href: "https://github.com/VivanChen/EnglishGo/commit/aaaaaaaa",
     });
     expect(updates.find((item) => item.title === "考試範圍複習")).toMatchObject({
       targetLevel: "elementary",
       targetModule: "exam",
     });
     expect(updates[0]).not.toHaveProperty("match");
+    expect(updates[0]).not.toHaveProperty("href");
   });
 });

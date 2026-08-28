@@ -11,8 +11,7 @@ export const RECENT_FEATURES = [
     "tone": "#D85A30",
     "targetLevel": "senior",
     "targetModule": "songs",
-    "date": "2026-05-20",
-    "href": "https://github.com/VivanChen/EnglishGo/commit/4ca331bfeecc74570337254e4cc2d3c5426ec612"
+    "date": "2026-05-20"
   },
   {
     "title": "國中歌曲新增",
@@ -23,8 +22,7 @@ export const RECENT_FEATURES = [
     "tone": "#6366F1",
     "targetLevel": "junior",
     "targetModule": "songs",
-    "date": "2026-05-20",
-    "href": "https://github.com/VivanChen/EnglishGo/commit/129de970d2d57ec7bde94f5bdf3f3748daada812"
+    "date": "2026-05-20"
   },
   {
     "title": "考試範圍複習",
@@ -35,8 +33,7 @@ export const RECENT_FEATURES = [
     "tone": "#10B981",
     "targetLevel": "elementary",
     "targetModule": "exam",
-    "date": "2026-05-19",
-    "href": "https://github.com/VivanChen/EnglishGo/commit/7a2807d1a70aa48b5121748e31c7496d6fb818e5"
+    "date": "2026-05-19"
   },
   {
     "title": "AI 小朋友字典",
@@ -47,7 +44,6 @@ export const RECENT_FEATURES = [
     "tone": "#8B5CF6",
     "targetLevel": "elementary",
     "targetModule": "srs",
-    "date": "2026-05-18",
-    "href": "https://github.com/VivanChen/EnglishGo/commit/59f2c4d669643ffa0218349c4f155c7b50352c48"
+    "date": "2026-05-18"
   }
 ];

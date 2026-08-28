@@ -53,8 +53,7 @@ englishgo-project/
 │   ├── icon-512.png           # PWA 圖示
 │   ├── manifest.json          # PWA 資訊清單
 │   ├── sw.js                  # Service Worker (離線支援)
-│   └── learn/
-│       └── sponsor.html       # 支持頁面 (請填入收款資訊)
+│   └── learn/                 # 英語學習與設定教學頁
 ├── src/
 │   ├── App.jsx                # 主應用程式 (5,317 行)
 │   └── main.jsx               # 進入點 (註冊 SW)
@@ -92,12 +91,5 @@ CREATE TABLE pet_users (
 ## 📝 待辦事項
 
 部署前請完成：
-- [ ] 編輯 `public/learn/sponsor.html` 填入：
-  - LINE Pay QR Code
-  - 街口 QR Code
-  - 銀行帳號（玉山/中信...）
-  - Email 聯絡方式
-  - LINE ID
-  - Buy Me a Coffee 連結
 - [ ] Netlify 環境變數設定 Supabase keys
 - [ ] 執行 fix-examples.js 批次優化單字例句

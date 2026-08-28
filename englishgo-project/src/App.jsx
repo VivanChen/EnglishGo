@@ -101,24 +101,6 @@ async function petCloudSave(username,pinHash,payload){
   }catch{return false}
 }
 
-async function submitSponsorMessage(name,message){
-  const sb=await getSb();
-  if(!sb)return{ok:false,err:"目前無法連線到雲端資料庫，請稍後再試。"};
-  const n=(name||"").trim();
-  const m=(message||"").trim();
-  if(!n)return{ok:false,err:"請先填寫姓名。"};
-  if(n.length>60)return{ok:false,err:"姓名請控制在 60 字以內。"};
-  if(m.length>500)return{ok:false,err:"留言請控制在 500 字以內。"};
-  try{
-    const{error}=await sb.from("sponsor_messages").insert({name:n,message:m});
-    if(error)return{ok:false,err:"留言送出失敗："+error.message};
-    return{ok:true};
-  }catch{
-    return{ok:false,err:"留言送出失敗，請稍後再試。"};
-  }
-}
-
-
 function mapWord(r){
   const localExample=r?.level==="elementary"&&r?.category==="Supplemental"
     ?getElementaryExample(r.word,r.meaning,r.pos)
@@ -2165,22 +2147,23 @@ export default function App(){
   const[gifKey,setGifKey]=useLS("gifkey","");
   const[weakWords,setWeakWords]=useLS("weak",[]);
   const[history,setHistory]=useLS("hist",[]);
-  const[sponsor,setSponsor]=useLS("sponsor",{code:"",active:false,name:""});
   const[showAch,setShowAch]=useState(null);
   const[sharedWord,setSharedWord]=useState(null);
   const[customDeck,setCustomDeck]=useState(null);
-  const isSponsor=sponsor.active;
   const levelWeakWords=useMemo(()=>getWeakVocabularyForLevel(weakWords,lv),[weakWords,lv]);
+
+  useEffect(()=>{
+    try{localStorage.removeItem("eg_sponsor")}catch{}
+  },[]);
 
   useEffect(()=>{if(!lv)return;setWeakWords(words=>{const list=Array.isArray(words)?words:[];let changed=false;const migrated=list.map(item=>{if(item?.w&&!item.level){changed=true;return{...item,level:lv}}return item});return changed?migrated:words})},[lv]);
 
   // Deep link: detect ?word=xxx&lv=xxx from shared URL
   useEffect(()=>{
     const p=new URLSearchParams(window.location.search);
-    const w=p.get("word"),l=p.get("lv"),support=p.get("support");
+    const w=p.get("word"),l=p.get("lv");
     if(w&&l&&LV[l]){setMenuGroup("learn");setLv(l);setMod("srs");setSharedWord(w)}
-    if(support){setMenuGroup("tools");setLv(LV[l]?l:"elementary");setMod("sponsor")}
-    if(w||support)window.history.replaceState({},"",window.location.pathname);
+    if(w)window.history.replaceState({},"",window.location.pathname);
   },[]);
 
   // Check streak & daily reset + log history
@@ -2440,7 +2423,7 @@ export default function App(){
         <button type="button" aria-label={dark?"切換為淺色模式":"切換為深色模式"} onClick={()=>setDark(!dark)} style={{background:"none",border:"none",fontSize:14,cursor:"pointer",minWidth:44,minHeight:44,display:"flex",alignItems:"center",justifyContent:"center"}}>{dark?"☀️":"🌙"}</button>
       </nav>
       <div style={{maxWidth:!mod?940:mod==="petAdventure"?1280:mod==="petMonopoly"?1180:mod==="srs"?1080:mod==="translate"?960:760,margin:"0 auto",padding:mod==="petAdventure"||mod==="petMonopoly"?"14px 18px calc(20px + env(safe-area-inset-bottom, 0px))":"12px 12px calc(16px + env(safe-area-inset-bottom, 0px))"}}>
-        {!mod?<MenuV2 lv={lv} onSelect={openModule} activeGroup={menuGroup} onGroupChange={setMenuGroup} daily={daily} c={c} xp={xp} coins={coins} streak={streak} achUnlocked={achUnlocked} weakWords={levelWeakWords} isSponsor={isSponsor} pets={pets} eggs={eggs}/>:
+        {!mod?<MenuV2 lv={lv} onSelect={openModule} activeGroup={menuGroup} onGroupChange={setMenuGroup} daily={daily} c={c} xp={xp} coins={coins} streak={streak} achUnlocked={achUnlocked} weakWords={levelWeakWords} pets={pets} eggs={eggs}/>:
          mod==="wordsearch"?<WordSearchM lv={lv} onBack={back} onOpenCard={(word,level)=>{setLv(level||lv);setSharedWord(word);setCustomDeck(null);setMod("srs")}}/>:
          mod==="exam"?<ExamReviewM lv={lv} onBack={back} c={c} apiKey={gemKey} onOpenSettings={()=>setMod("settings")} onStart={deck=>{setSharedWord(null);setCustomDeck(deck);setMod("srs")}}/>:
          mod==="srs"?<SRS lv={lv} onBack={back} onLevelChange={nextLv=>{setLv(nextLv);setSharedWord(null);setCustomDeck(null)}} onXp={n=>addXpWithTask(n,"srsToday")} onDone={()=>setStats(s=>({...s,srsRounds:s.srsRounds+1}))} trackWeak={trackWeak} gifKey={gifKey} sharedWord={sharedWord} apiKey={gemKey} weakWords={levelWeakWords} customCards={customDeck?.cards||null} customSource={customDeck?.source||""} onOpenSettings={()=>setMod("settings")}/>:
@@ -2461,21 +2444,18 @@ export default function App(){
          mod==="story"?<StoryMode lv={lv} onBack={back} apiKey={gemKey} pets={pets} c={c} onXp={addXp} trackWeak={trackWeak} onOpenSettings={()=>setMod("settings")}/>:
          mod==="achievements"?<AchPage onBack={back} unlocked={achUnlocked} c={c}/>:
          mod==="weak"?<WeakPage onBack={back} weakWords={levelWeakWords} setWeakWords={setWeakWords} c={c} lv={lv}/>:
-         mod==="dashboard"?<Dashboard onBack={back} c={c} xp={xp} streak={streak} stats={stats} daily={daily} weakWords={levelWeakWords} history={history} achUnlocked={achUnlocked} lv={lv} isSponsor={isSponsor}/>:
+         mod==="dashboard"?<Dashboard onBack={back} c={c} xp={xp} streak={streak} stats={stats} daily={daily} weakWords={levelWeakWords} history={history} achUnlocked={achUnlocked} lv={lv}/>:
          mod==="settings"?<SettingsPage onBack={back} c={c} gemKey={gemKey} setGemKey={setGemKey} gifKey={gifKey} setGifKey={setGifKey}/>:
          mod==="gacha"?<GachaPage onBack={back} c={c} coins={coins} setCoins={setCoins} eggs={eggs} setEggs={setEggs} pets={pets} setPets={setPets}/>:
          mod==="pets"?<PetsGuard onBack={back} c={c} pets={pets} setPets={setPets} eggs={eggs} setEggs={setEggs} coins={coins} setCoins={setCoins} inventory={inventory} setInventory={setInventory} petAccount={petAccount} setPetAccount={setPetAccount} petTasks={petTasks} setPetTasks={setPetTasks} incrTask={incrTask}/>:
-         mod==="petAdventure"?<PetAdventurePage lv={lv} onBack={back} c={c} pets={pets} setPets={setPets} eggs={eggs} setEggs={setEggs} coins={coins} setCoins={setCoins} inventory={inventory} setInventory={setInventory}/>:
-         mod==="sponsor"?<SponsorPage onBack={back} c={c} sponsor={sponsor} setSponsor={setSponsor}/>:null}
-        {/* Ad Banner — hidden for sponsors */}
-        {/* No ads — pure learning experience */}
+         mod==="petAdventure"?<PetAdventurePage lv={lv} onBack={back} c={c} pets={pets} setPets={setPets} eggs={eggs} setEggs={setEggs} coins={coins} setCoins={setCoins} inventory={inventory} setInventory={setInventory}/>:null}
       </div>
       {/* Footer */}
       <footer style={{textAlign:"center",padding:"20px 16px calc(28px + env(safe-area-inset-bottom, 0px))",fontSize:11,color:S.t3,lineHeight:1.8,borderTop:`1px solid ${S.bd}`,marginTop:16}}>
         <div style={{maxWidth:480,margin:"0 auto"}}>
           <div style={{fontWeight:600,fontSize:12,color:S.t2,marginBottom:6}}>📘 如何使用 EnglishGo</div>
           <div style={{marginBottom:8}}>選擇等級（小學／國中／高中）後，透過 SRS 單字卡記憶單字，搭配口說練習、打地鼠拼字、配對翻牌等遊戲強化學習。AI 家教可即時回答英文問題。每天練習 10 題即可累積經驗值與成就徽章！</div>
-          <div style={{marginBottom:8,display:"flex",alignItems:"center",justifyContent:"center",gap:4,flexWrap:"wrap"}}><button onClick={()=>{setMenuGroup("tools");setMod("settings")}} style={{background:"none",border:"none",padding:"8px 4px",minHeight:44,color:c.cl,textDecoration:"underline",font:"inherit",cursor:"pointer"}}>🔑 Key 設定</button><span aria-hidden="true">·</span><a href="/learn/api-keys.html" style={{color:c.cl,textDecoration:"underline",display:"inline-flex",alignItems:"center",minHeight:44,padding:"0 4px"}}>API Key 申請教學</a><span aria-hidden="true">·</span><a href="/learn/gif-guide.html" style={{color:c.cl,textDecoration:"underline",display:"inline-flex",alignItems:"center",minHeight:44,padding:"0 4px"}}>🖼️ 單字動圖說明</a><span aria-hidden="true">·</span><button onClick={()=>{setMenuGroup("tools");setMod("sponsor")}} style={{background:"none",border:"none",padding:"8px 4px",minHeight:44,color:c.cl,textDecoration:"underline",font:"inherit",cursor:"pointer"}}>☕ 支持我們</button></div>
+          <div style={{marginBottom:8,display:"flex",alignItems:"center",justifyContent:"center",gap:4,flexWrap:"wrap"}}><button onClick={()=>{setMenuGroup("tools");setMod("settings")}} style={{background:"none",border:"none",padding:"8px 4px",minHeight:44,color:c.cl,textDecoration:"underline",font:"inherit",cursor:"pointer"}}>🔑 Key 設定</button><span aria-hidden="true">·</span><a href="/learn/api-keys.html" style={{color:c.cl,textDecoration:"underline",display:"inline-flex",alignItems:"center",minHeight:44,padding:"0 4px"}}>API Key 申請教學</a><span aria-hidden="true">·</span><a href="/learn/gif-guide.html" style={{color:c.cl,textDecoration:"underline",display:"inline-flex",alignItems:"center",minHeight:44,padding:"0 4px"}}>🖼️ 單字動圖說明</a></div>
           <div style={{display:"inline-block",fontSize:10,color:"#1D9E75",fontWeight:600,padding:"3px 10px",background:"#E1F5EE",borderRadius:10,marginBottom:6}}>✨ 100% 無廣告 · 純淨學習空間</div>
           <div>AI Tutor powered by <b>Gemini</b> · Speech by <b>Web Speech API</b></div>
           <div>© {new Date().getFullYear()} EnglishGo · 專為台灣學生設計</div>
@@ -2577,7 +2557,6 @@ function Landing({onSelect,dark,setDark,keyMissing=false}){
     {href:"/learn/vocabulary-guide.html",t:"會考單字攻略",d:"國中 1200 字準備法",ic:"📚",tone:"#F59E0B"},
     {href:"/learn/api-keys.html",t:"API Key 教學",d:keyMissing?"尚有 Key 未設定，點這裡查看":"Gemini 與動圖設定",ic:"🔑",tone:"#8B5CF6",highlight:keyMissing},
     {href:"/learn/gif-guide.html",t:"單字動圖效果",d:"申請前先看差異",ic:"🖼️",tone:"#EC4899"},
-    {href:"/?support=1",t:"支持 EnglishGo",d:"銀行轉帳與留言",ic:"☕",tone:"#0F766E"},
   ];
   return(<div className={`eg-landing ${dark?"is-dark":"is-light"}`}>
     <style>{`
@@ -2703,7 +2682,7 @@ function Landing({onSelect,dark,setDark,keyMissing=false}){
   </div>);
 }
 
-function MenuV2({lv,onSelect,activeGroup="learn",onGroupChange,daily,c,xp,coins,streak,achUnlocked,weakWords,isSponsor,pets,eggs}){
+function MenuV2({lv,onSelect,activeGroup="learn",onGroupChange,daily,c,xp,coins,streak,achUnlocked,weakWords,pets,eggs}){
   const target=Math.max(1,daily?.target||1);
   const pct=Math.min(100,Math.round(((daily?.done||0)/target)*100));
   const todayKey=dateKey();
@@ -2770,14 +2749,13 @@ function MenuV2({lv,onSelect,activeGroup="learn",onGroupChange,daily,c,xp,coins,
     {id:"weak",group:"tools",icon:"!",t:"弱點單字",d:weakWords.length?`${weakWords.length} 個需要複習`:"目前沒有弱點紀錄",tag:"補強清單"},
     {id:"dashboard",group:"tools",icon:"▤",t:"學習報告",d:"查看 XP、連續天數與紀錄",tag:"進度分析"},
     {id:"settings",group:"tools",icon:"Key",t:"API Key 設定",d:"Gemini 與 Giphy 統一管理",tag:"Key 管理"},
-    {id:"sponsor",group:"tools",icon:"♡",t:isSponsor?"支持紀錄":"支持我們",d:isSponsor?"已留下支持資訊":"銀行轉帳與留言",tag:"支持專案"},
   ];
   const groups=[
     {id:"learn",icon:"▣",t:"學習",d:"單字、文法、口說",color:gradeTheme.groups?.learn||c.cl},
     {id:"read",icon:"R",t:"閱讀聽力",d:"短文、小說、歌曲",color:gradeTheme.groups?.read||"#185FA5"},
     {id:"game",icon:"▶",t:"遊戲",d:"用遊戲加強反應",color:gradeTheme.groups?.game||"#D97706"},
     {id:"pet",icon:"P",t:"寵物",d:"扭蛋、培養、冒險",color:gradeTheme.groups?.pet||"#DB2777"},
-    {id:"tools",icon:"▤",t:"工具",d:"報告、弱點、支持",color:gradeTheme.groups?.tools||"#7C3AED"},
+    {id:"tools",icon:"▤",t:"工具",d:"報告、弱點、設定",color:gradeTheme.groups?.tools||"#7C3AED"},
   ];
   const activeGroupData=groups.find(g=>g.id===activeGroup)||groups[0];
   const activeModules=modules.filter(m=>m.group===activeGroup);
@@ -2974,7 +2952,7 @@ function MenuV2({lv,onSelect,activeGroup="learn",onGroupChange,daily,c,xp,coins,
 }
 
 // ═══ MENU ═══════════════════════════════════════════════════════════
-function Menu({lv,onSelect,daily,c,xp,coins,streak,achUnlocked,weakWords,isSponsor,pets,eggs}){
+function Menu({lv,onSelect,daily,c,xp,coins,streak,achUnlocked,weakWords,pets,eggs}){
   const pct=Math.round((daily.done/daily.target)*100);
   const todayKey=dateKey();
   const fallbackToday=V[lv][hashText(`${todayKey}:${lv}:fallback`)%V[lv].length];
@@ -3006,14 +2984,13 @@ function Menu({lv,onSelect,daily,c,xp,coins,streak,achUnlocked,weakWords,isSpons
     {id:"achievements",group:"tools",icon:"🏆",t:"成就徽章",d:`${achUnlocked.length}/${ACH_DEFS.length} 已解鎖`,tag:"收集"},
     {id:"weak",group:"tools",icon:"📕",t:"錯題本",d:weakWords.length?`${weakWords.length} 字需加強`:"還沒有錯題",tag:"複習"},
     {id:"dashboard",group:"tools",icon:"📊",t:"學習報告",d:"數據分析",tag:"進度"},
-    {id:"sponsor",group:"tools",icon:"☕",t:isSponsor?"支持者 ✓":"支持我們",d:isSponsor?"感謝您的支持！":"銀行轉帳與留言",tag:"支持"},
   ];
   const groups=[
     {id:"learn",icon:"📚",t:"學習",d:"單字、文法、口說",color:c.cl},
     {id:"read",icon:"🎧",t:"閱讀聽力",d:"文章、小說、歌曲",color:"#185FA5"},
     {id:"game",icon:"🎮",t:"遊戲",d:"拼字與記憶",color:"#D97706"},
     {id:"pet",icon:"🐾",t:"寵物",d:"扭蛋、培養、冒險",color:"#DB2777"},
-    {id:"tools",icon:"🧰",t:"工具",d:"錯題、報告、支援",color:"#7C3AED"},
+    {id:"tools",icon:"🧰",t:"工具",d:"錯題、報告、設定",color:"#7C3AED"},
   ];
   const activeGroupData=groups.find(g=>g.id===activeGroup)||groups[0];
   const activeModules=modules.filter(m=>m.group===activeGroup);
@@ -6133,167 +6110,6 @@ function PetAdventurePage(props){return <Suspense fallback={<PetFeatureFallback/
 function GachaPage(props){return <Suspense fallback={<PetFeatureFallback/>}><LazyGachaPage {...props} deps={getPetsModuleDeps()}/></Suspense>}
 function PetsGuard(props){return <Suspense fallback={<PetFeatureFallback/>}><LazyPetsGuard {...props} deps={getPetsModuleDeps()}/></Suspense>}
 
-function SponsorPage({onBack,c,sponsor,setSponsor}){
-  const[name,setName]=useState(sponsor.name&&sponsor.name!=="支持者"?sponsor.name:"");
-  const[note,setNote]=useState("");
-  const[msg,setMsg]=useState(null);
-  const[copied,setCopied]=useState("");
-  const[busy,setBusy]=useState(false);
-  const bankRows=[
-    {label:"戶名",value:"陳韋安",copy:"陳韋安"},
-    {label:"銀行",value:"華南銀行",meta:"代號 008",copy:"008"},
-    {label:"帳號",value:"1132 0096 8044",copy:"113200968044",mono:true},
-  ];
-  const tiers=[
-    {amt:"NT$50",label:"小小鼓勵"},
-    {amt:"NT$100",label:"一份早餐"},
-    {amt:"NT$300",label:"營運支援"},
-    {amt:"自由決定",label:"量力而為"},
-  ];
-  const copyBank=async(text,label)=>{
-    try{
-      await navigator.clipboard.writeText(text);
-      setCopied(label);
-      setMsg({type:"ok",text:`已複製${label}`});
-      playSound("done");
-      window.setTimeout(()=>setCopied(v=>v===label?"":v),1600);
-    }catch{
-      setMsg({type:"warn",text:`${label}：${text}`});
-    }
-  };
-  const copyAll=()=>copyBank("戶名：陳韋安\n銀行：華南銀行（代號 008）\n帳號：113200968044","全部資訊");
-  const submit=async(e)=>{
-    e?.preventDefault?.();
-    if(busy)return;
-    const cleanName=name.trim();
-    if(!cleanName){
-      setMsg({type:"err",text:"請先輸入姓名"});
-      return;
-    }
-    setBusy(true);
-    setMsg(null);
-    const r=await submitSponsorMessage(cleanName,note);
-    setBusy(false);
-    if(r.ok){
-      setSponsor({active:true,name:cleanName,date:new Date().toISOString()});
-      setNote("");
-      setMsg({type:"ok",text:"已收到您的姓名與留言，謝謝支持。"});
-      playSound("done");
-    }else{
-      setMsg({type:"err",text:r.err});
-      playSound("bad");
-    }
-  };
-  const resetSupporter=()=>{setSponsor({active:false,name:""});setMsg(null);setName("");setNote("")};
-  const msgColor=msg?.type==="err"?"#D83A34":msg?.type==="warn"?"#9A6400":"#0F7A5D";
-
-  return(<div className="sponsor-page">
-    <style>{`
-      .sponsor-page{--accent:${c.cl};--support-bg:${c.bg};}
-      .support-hero{position:relative;overflow:hidden;border:1px solid color-mix(in srgb,var(--accent) 28%,#d8d8d8);border-top:4px solid var(--accent);border-radius:18px;padding:22px;background:linear-gradient(135deg,var(--support-bg),var(--color-background-primary,#fff) 62%);box-shadow:0 16px 38px rgba(15,110,86,.10);margin-bottom:14px}
-      .support-hero h2{font-size:26px;line-height:1.15;margin:0 0 8px;color:${S.t1}}
-      .support-hero p{font-size:14px;line-height:1.75;color:${S.t2};margin:0;max-width:620px}
-      .support-pill-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
-      .support-pill{display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(15,110,86,.18);background:rgba(29,158,117,.10);color:#0F6E56;border-radius:999px;padding:7px 11px;font-size:12px;font-weight:800}
-      .support-grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(280px,.95fr);gap:14px;align-items:start}
-      .support-card{border:1px solid ${S.bd};border-radius:16px;background:${S.bg1};padding:16px}
-      .support-card-title{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:16px;font-weight:900;color:${S.t1};margin-bottom:12px}
-      .support-copy-all{border:1px solid rgba(15,110,86,.22);background:rgba(29,158,117,.10);color:var(--accent);border-radius:10px;padding:8px 10px;font-size:12px;font-weight:900;font-family:inherit;cursor:pointer}
-      .support-copy-all.is-copied{background:var(--accent);border-color:var(--accent);color:white}
-      .support-bank-row{display:grid;grid-template-columns:64px minmax(0,1fr) auto;gap:10px;align-items:center;padding:12px;border:1px solid ${S.bd};border-radius:12px;background:${S.bg2};margin-bottom:8px}
-      .support-bank-label{font-size:12px;color:${S.t3};font-weight:900}
-      .support-bank-value{min-width:0;color:${S.t1};font-size:16px;font-weight:900;word-break:break-word}
-      .support-bank-meta{display:block;font-size:11px;color:${S.t3};font-weight:700;margin-top:2px}
-      .support-mono{font-family:"SFMono-Regular","Consolas",monospace;letter-spacing:.04em}
-      .support-copy-btn{border:1px solid ${S.bd};background:${S.bg1};color:var(--accent);border-radius:9px;padding:7px 9px;font-size:12px;font-weight:900;font-family:inherit;cursor:pointer;white-space:nowrap}
-      .support-copy-btn.is-copied{background:var(--accent);border-color:var(--accent);color:white}
-      .support-note{border-radius:12px;background:rgba(239,159,39,.10);border:1px solid rgba(239,159,39,.24);padding:11px 12px;color:#7A5200;font-size:12px;line-height:1.7;margin-top:10px}
-      .support-tier-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
-      .support-tier{border:1px solid ${S.bd};border-radius:12px;background:${S.bg2};padding:11px 8px;text-align:center}
-      .support-tier strong{display:block;color:var(--accent);font-size:14px;margin-bottom:2px}
-      .support-tier span{font-size:11px;color:${S.t3};font-weight:800}
-      .support-form{display:grid;gap:11px}
-      .support-field{display:grid;gap:6px;font-size:12px;color:${S.t2};font-weight:900}
-      .support-input{width:100%;border:1px solid ${S.bd};border-radius:12px;background:${S.bg2};color:${S.t1};font:inherit;font-size:14px;padding:12px 13px;outline:none}
-      .support-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(29,158,117,.12);background:${S.bg1}}
-      .support-submit{border:0;border-radius:12px;background:var(--accent);color:white;font:inherit;font-size:14px;font-weight:900;padding:13px 16px;cursor:pointer}
-      .support-submit:disabled{opacity:.48;cursor:not-allowed}
-      .support-status{border-radius:12px;padding:10px 12px;font-size:13px;font-weight:900;text-align:center;background:rgba(29,158,117,.10)}
-      .support-thanks{border:1px solid rgba(239,159,39,.28);background:linear-gradient(135deg,#FFF5D8,#fff);border-radius:16px;padding:15px 16px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:12px}
-      .support-thanks b{display:block;color:#7A5200;font-size:16px}
-      .support-thanks span{font-size:12px;color:#856404}
-      .support-privacy{margin-top:14px;border:1px solid ${S.bd};border-radius:14px;background:${S.bg2};padding:12px 14px;color:${S.t3};font-size:12px;line-height:1.8}
-      @media(max-width:760px){
-        .support-hero{padding:18px 16px;border-radius:16px}
-        .support-hero h2{font-size:22px}
-        .support-grid{grid-template-columns:1fr}
-        .support-bank-row{grid-template-columns:54px minmax(0,1fr) auto;padding:10px}
-        .support-bank-value{font-size:14px}
-        .support-tier-grid{grid-template-columns:repeat(2,1fr)}
-        .support-thanks{align-items:flex-start;flex-direction:column}
-      }
-    `}</style>
-    <Hdr t="☕ 支持我們" onBack={onBack} cl={c.cl} extra={<a href="/learn/sponsor.html" target="_blank" rel="noreferrer" style={{fontSize:12,color:c.cl,textDecoration:"none",fontWeight:800,padding:"6px 8px",border:`1px solid ${S.bd}`,borderRadius:8}}>說明頁</a>}/>
-
-    <section className="support-hero">
-      <h2>支持 EnglishGo 持續免費</h2>
-      <p>EnglishGo 目前維持無廣告、無付費牆。若這個網站對你或孩子有幫助，可以用銀行轉帳支持營運；不需要寄信、不需要上傳匯款證明，也不用留下帳號資訊。</p>
-      <div className="support-pill-row">
-        <span className="support-pill">無廣告承諾</span>
-        <span className="support-pill">銀行轉帳即可</span>
-        <span className="support-pill">只記錄姓名與留言</span>
-      </div>
-    </section>
-
-    {sponsor.active&&(<section className="support-thanks">
-      <div>
-        <b>謝謝您的支持</b>
-        <span>{sponsor.name?`${sponsor.name}，`:''}您的留言已記錄，可以隨時重新填寫。</span>
-      </div>
-      <button type="button" onClick={resetSupporter} className="support-copy-btn">重新填寫</button>
-    </section>)}
-
-    <div className="support-grid">
-      <section className="support-card">
-        <div className="support-card-title">
-          <span>銀行轉帳資訊</span>
-          <button type="button" onClick={copyAll} className={`support-copy-all ${copied==="全部資訊"?"is-copied":""}`}>{copied==="全部資訊"?"已複製":"複製全部"}</button>
-        </div>
-        {bankRows.map(row=><div key={row.label} className="support-bank-row">
-          <div className="support-bank-label">{row.label}</div>
-          <div className={`support-bank-value ${row.mono?"support-mono":""}`}>
-            {row.value}
-            {row.meta&&<span className="support-bank-meta">{row.meta}</span>}
-          </div>
-          <button type="button" onClick={()=>copyBank(row.copy,row.label)} className={`support-copy-btn ${copied===row.label?"is-copied":""}`}>{copied===row.label?"已複製":"複製"}</button>
-        </div>)}
-        <div className="support-note">轉帳完成後不用通知我。若願意讓我知道是誰支持，可以在右側留下姓名與一句話。</div>
-        <div className="support-tier-grid">
-          {tiers.map(tier=><div key={tier.amt} className="support-tier"><strong>{tier.amt}</strong><span>{tier.label}</span></div>)}
-        </div>
-      </section>
-
-      <section className="support-card">
-        <div className="support-card-title"><span>留下姓名與留言</span></div>
-        <form onSubmit={submit} className="support-form">
-          <label className="support-field">你的姓名（必填）
-            <input className="support-input" value={name} onChange={e=>setName(e.target.value)} maxLength={60} placeholder="例如：陳小明、某某家長"/>
-          </label>
-          <label className="support-field">想對我說的話（選填）
-            <textarea className="support-input" value={note} onChange={e=>setNote(e.target.value)} maxLength={500} rows={5} placeholder="可以留下鼓勵、建議，或希望 EnglishGo 增加的功能。" style={{resize:"vertical",lineHeight:1.65}}/>
-          </label>
-          <div style={{fontSize:11,color:S.t3,textAlign:"right"}}>{note.length}/500</div>
-          <button className="support-submit" type="submit" disabled={busy||!name.trim()}>{busy?"送出中...":"送出留言"}</button>
-        </form>
-        {msg&&<div className="support-status" style={{color:msgColor,marginTop:12}}>{msg.text}</div>}
-      </section>
-    </div>
-
-    <div className="support-privacy">
-      <b>資料說明：</b>系統只記錄你填寫的姓名與留言，用來知道誰支持 EnglishGo。請不要填寫匯款帳號、Email、電話或其他敏感資訊。
-    </div>
-  </div>);
-}
 
 function Hdr({t,onBack,cl,extra}){return(<div style={{display:"flex",alignItems:"center",gap:4,marginBottom:8}}><button type="button" onClick={onBack} style={{background:"none",border:"none",fontSize:12,color:cl,cursor:"pointer",fontWeight:600,fontFamily:"inherit",padding:"6px 8px",minHeight:44,borderRadius:8,WebkitTapHighlightColor:"transparent"}}>← 返回</button><h2 style={{fontSize:16,fontWeight:700,color:S.t1,margin:0,flex:1}}>{t}</h2>{extra}</div>)}
 function PB({v,mx,cl}){return(<div style={{display:"flex",alignItems:"center",gap:6,marginBottom:10,fontSize:12}}><div style={{flex:1,height:4,background:S.bg2,borderRadius:2}}><div style={{height:"100%",width:`${(v/mx)*100}%`,background:cl,borderRadius:2,transition:"width .3s"}}/></div><span style={{color:S.t3}}>{v+1}/{mx}</span></div>)}

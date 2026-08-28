@@ -4016,8 +4016,6 @@ body.eg-anim-off [data-pet-card] { animation: none !important; }
   </div>);
 }
 
-// ═══ SPONSOR PAGE (支持頁面 - 銀行轉帳與留言) ══════════════════════
-
 export function PetAdventurePage(props){
   return <PetAdventurePageInner {...propsWithoutDeps(props)}/>;
 }

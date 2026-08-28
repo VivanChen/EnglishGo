@@ -230,22 +230,6 @@ button:not(:disabled):active {
   margin-top: 10px !important;
 }
 
-.sponsor-page .support-hero,
-.sponsor-page .support-card,
-.sponsor-page .support-thanks {
-  box-shadow: var(--eg-shadow-soft);
-}
-
-.sponsor-page .support-input {
-  transition: border-color .16s ease, box-shadow .16s ease, background .16s ease;
-}
-
-.sponsor-page .support-submit:not(:disabled):active,
-.sponsor-page .support-copy-btn:not(:disabled):active,
-.sponsor-page .support-copy-all:not(:disabled):active {
-  transform: translateY(1px) scale(.995);
-}
-
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
