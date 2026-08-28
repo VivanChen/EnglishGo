@@ -237,6 +237,8 @@ describe('EnglishGo app smoke flow', () => {
     expect(screen.queryByText('AI 小朋友字典')).not.toBeInTheDocument();
     expect(screen.queryByText('支持 EnglishGo')).not.toBeInTheDocument();
     expect(document.querySelector('a[href="/learn/sponsor.html"]')).toBeNull();
+    expect(screen.getByText('GIPHY')).toBeInTheDocument();
+    expect(screen.getByText('GIPHY').closest('div')).toHaveTextContent('GIFs powered by GIPHY');
   });
 
   it('removes retired sponsorship state from the browser', async () => {

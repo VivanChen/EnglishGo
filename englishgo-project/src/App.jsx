@@ -2457,7 +2457,7 @@ export default function App(){
           <div style={{marginBottom:8}}>選擇等級（小學／國中／高中）後，透過 SRS 單字卡記憶單字，搭配口說練習、打地鼠拼字、配對翻牌等遊戲強化學習。AI 家教可即時回答英文問題。每天練習 10 題即可累積經驗值與成就徽章！</div>
           <div style={{marginBottom:8,display:"flex",alignItems:"center",justifyContent:"center",gap:4,flexWrap:"wrap"}}><button onClick={()=>{setMenuGroup("tools");setMod("settings")}} style={{background:"none",border:"none",padding:"8px 4px",minHeight:44,color:c.cl,textDecoration:"underline",font:"inherit",cursor:"pointer"}}>🔑 Key 設定</button><span aria-hidden="true">·</span><a href="/learn/api-keys.html" style={{color:c.cl,textDecoration:"underline",display:"inline-flex",alignItems:"center",minHeight:44,padding:"0 4px"}}>API Key 申請教學</a><span aria-hidden="true">·</span><a href="/learn/gif-guide.html" style={{color:c.cl,textDecoration:"underline",display:"inline-flex",alignItems:"center",minHeight:44,padding:"0 4px"}}>🖼️ 單字動圖說明</a></div>
           <div style={{display:"inline-block",fontSize:10,color:"#1D9E75",fontWeight:600,padding:"3px 10px",background:"#E1F5EE",borderRadius:10,marginBottom:6}}>✨ 100% 無廣告 · 純淨學習空間</div>
-          <div>AI Tutor powered by <b>Gemini</b> · Speech by <b>Web Speech API</b></div>
+          <div>AI Tutor powered by <b>Gemini</b> · GIFs powered by <b>GIPHY</b> · Speech by <b>Web Speech API</b></div>
           <div>© {new Date().getFullYear()} EnglishGo · 專為台灣學生設計</div>
         </div>
       </footer>
@@ -2675,7 +2675,7 @@ function Landing({onSelect,dark,setDark,keyMissing=false}){
         </div>
       </section>
       <footer className="eg-landing-footer">
-        <div>AI Tutor powered by <b>Gemini</b> · Speech by <b>Web Speech API</b></div>
+        <div>AI Tutor powered by <b>Gemini</b> · GIFs powered by <b>GIPHY</b> · Speech by <b>Web Speech API</b></div>
         <div>© {new Date().getFullYear()} EnglishGo · 專為台灣學生設計</div>
       </footer>
     </main>
