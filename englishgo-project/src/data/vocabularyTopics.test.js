@@ -27,6 +27,9 @@ describe("vocabulary topic coverage", () => {
 
   it("restores valid topic tags from Supabase themed categories",()=>{
     expect(parseVocabularyTopics("ThemedReview:transport,people,transport,unknown")).toEqual(["transport","people"]);
+    expect(parseVocabularyTopics("Food")).toEqual(["food"]);
+    expect(parseVocabularyTopics("Academic")).toEqual(["school"]);
+    expect(parseVocabularyTopics("Money")).toEqual(["business"]);
     expect(parseVocabularyTopics("Supplemental")).toEqual([]);
   });
 

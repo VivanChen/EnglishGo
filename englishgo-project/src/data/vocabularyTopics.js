@@ -15,6 +15,43 @@ export const VOCABULARY_TOPICS = [
 
 const VALID_TOPIC_IDS = new Set(VOCABULARY_TOPICS.map(topic => topic.id).filter(id => id !== "all"));
 const THEMED_REVIEW_PREFIX = /^ThemedReview:/i;
+const LEGACY_CATEGORY_TOPICS = {
+  actions: ["daily"],
+  adjectives: ["daily"],
+  basic: ["daily"],
+  body: ["daily"],
+  colors: ["daily"],
+  feelings: ["daily"],
+  health: ["daily"],
+  home: ["daily"],
+  life: ["daily"],
+  objects: ["daily"],
+  places: ["daily"],
+  sports: ["daily"],
+  numbers: ["numbers"],
+  time: ["numbers"],
+  food: ["food"],
+  transport: ["transport"],
+  travel: ["transport"],
+  academic: ["school"],
+  art: ["school"],
+  communication: ["school"],
+  history: ["school"],
+  school: ["school"],
+  science: ["school"],
+  technology: ["school"],
+  family: ["people"],
+  jobs: ["people"],
+  people: ["people"],
+  personality: ["people"],
+  animals: ["nature"],
+  environment: ["nature"],
+  nature: ["nature"],
+  weather: ["nature"],
+  business: ["business"],
+  money: ["business"],
+  shopping: ["business"],
+};
 
 const TOPIC_WORDS = {
   daily: [
@@ -68,13 +105,12 @@ function normalizeWord(value) {
 
 export function parseVocabularyTopics(category) {
   const value = String(category || "").trim();
-  if (!THEMED_REVIEW_PREFIX.test(value)) return [];
-  return [...new Set(
-    value.replace(THEMED_REVIEW_PREFIX, "")
-      .split(",")
-      .map(topic => topic.trim().toLowerCase())
-      .filter(topic => VALID_TOPIC_IDS.has(topic)),
-  )];
+  if (!value) return [];
+  if (!THEMED_REVIEW_PREFIX.test(value)) return LEGACY_CATEGORY_TOPICS[value.toLowerCase()] || [];
+  return [...new Set(value.replace(THEMED_REVIEW_PREFIX, "")
+    .split(",")
+    .map(topic => topic.trim().toLowerCase())
+    .filter(topic => VALID_TOPIC_IDS.has(topic)))];
 }
 
 function getWeaknessMap(weakWords) {

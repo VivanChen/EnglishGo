@@ -3,6 +3,7 @@ import { getElementaryExample } from "./data/elementaryExamples.js";
 import { JUNIOR_SONGS } from "./data/juniorSongs.js";
 import { SENIOR_SONGS } from "./data/seniorSongs.js";
 import { getWeakVocabularyForLevel, parseVocabularyTopics, updateWeakVocabulary } from "./data/vocabularyTopics.js";
+import { fetchAllCloudVocabularyRows } from "./data/cloudVocabulary.js";
 
 const TranslationReader=lazy(()=>import("./features/TranslationReader.jsx"));
 const PetMonopolyM=lazy(()=>import("./features/PetMonopoly.jsx"));
@@ -132,6 +133,8 @@ const WORD_SELECT="id,word,phonetic,pos,meaning,forms,collocations,example,examp
 const VOCAB_POOL_TTL=5*60*1000;
 const _cloudCountCache={};
 const _cloudVocabPools={};
+const _cloudVocabularyCatalogs={};
+const _cloudVocabularyCatalogPromises={};
 const _cloudWordCache={};
 const _cloudSearchCache={};
 const _dailyWordCache={};
@@ -2047,6 +2050,32 @@ function ModuleLoading({label="載入功能中..."}){
   return <div role="status" aria-live="polite" style={{textAlign:"center",padding:"48px 16px",color:S.t3,fontSize:14}}>⏳ {label}</div>;
 }
 
+async function fetchCloudVocabularyCatalog(level) {
+  const sb=await getSb();
+  if(!sb)return null;
+  const now=Date.now();
+  const cached=_cloudVocabularyCatalogs[level];
+  if(cached&&now-cached.t<VOCAB_POOL_TTL)return cached.words;
+  if(_cloudVocabularyCatalogPromises[level])return _cloudVocabularyCatalogPromises[level];
+
+  const promise=(async()=>{
+    try{
+      const rows=await fetchAllCloudVocabularyRows(sb,level,WORD_SELECT);
+      if(!rows)return null;
+      const words=rows.map(mapWord).filter(Boolean);
+      _cloudVocabularyCatalogs[level]={t:Date.now(),words};
+      words.forEach(word=>{
+        const key=`${level}:${String(word.w||"").toLowerCase()}`;
+        _cloudWordCache[key]=word;
+      });
+      return words;
+    }catch{return null}
+    finally{delete _cloudVocabularyCatalogPromises[level]}
+  })();
+  _cloudVocabularyCatalogPromises[level]=promise;
+  return promise;
+}
+
 // ═══ GLOBAL REWARD BURST (V20 跨模組爽感) ════════════════════════════
 // 從任意位置噴出粒子，可飛向目標座標（例如金幣計數器）
 // 用法：window.__rewardBurst({emoji:"🪙",count:5,fromX,fromY,toX,toY})
@@ -3325,7 +3354,7 @@ function WordSearchM({lv,onBack,onOpenCard}){
 const _gifCache={};
 const LazySRS=lazy(()=>import("./features/SRS.jsx"));
 function SRS(props){
-  const deps={V,LV,S,fetchCloudVocab,fetchCloudWord,findAnyWord,loadExtraWords,shuffleCopy,sortCardsForStudy,createDeck,rateDeck,getWordImg,preloadImgs,isPlaceholderExample,exampleCache:_exampleCache,generateExample,preloadTts,speak,speakWebSpeech,speechTimer,playSound,triggerRewardBurst,parseCSV,Hdr,Confetti};
+  const deps={V,LV,S,fetchCloudVocab,fetchCloudVocabularyCatalog,fetchCloudWord,findAnyWord,loadExtraWords,shuffleCopy,sortCardsForStudy,createDeck,rateDeck,getWordImg,preloadImgs,isPlaceholderExample,exampleCache:_exampleCache,generateExample,preloadTts,speak,speakWebSpeech,speechTimer,playSound,triggerRewardBurst,parseCSV,Hdr,Confetti};
   return <Suspense fallback={<div style={{textAlign:"center",padding:"48px 16px",color:S.t3}}>??????...</div>}><LazySRS {...props} deps={deps}/></Suspense>;
 }
 
