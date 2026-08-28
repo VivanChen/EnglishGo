@@ -362,21 +362,28 @@ describe('EnglishGo app smoke flow', () => {
     clickFirstButtonWithText('單字卡');
 
     expect(await screen.findByRole('heading', { name: /類型複習/ })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /小學主題複習/ })).toBeInTheDocument();
+    expect(screen.queryByLabelText('選擇單字年級')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /交通工具，35 個單字/ })).toBeEnabled();
   });
 
-  it('shows complete grade-aware topic coverage before starting SRS', async () => {
-    await openElementaryMenu();
+  it('uses the junior grade selected outside SRS for topic coverage', async () => {
+    await openJuniorMenu();
     clickFirstButtonWithText('單字卡');
 
-    fireEvent.click(await screen.findByRole('button', { name: /國中 209 字/ }));
-
+    expect(await screen.findByRole('heading', { name: /國中主題複習/ })).toBeInTheDocument();
+    expect(screen.queryByLabelText('選擇單字年級')).not.toBeInTheDocument();
     expect(await screen.findByText(/所有主題都已達到每類 20 字/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /交通工具，21 個單字/ })).toBeEnabled();
     expect(screen.getByRole('button', { name: /食物飲料，21 個單字/ })).toBeEnabled();
+  });
 
-    fireEvent.click(screen.getByRole('button', { name: /高中 126 字/ }));
+  it('uses the senior grade selected outside SRS for topic coverage', async () => {
+    await openSeniorMenu();
+    clickFirstButtonWithText('單字卡');
 
+    expect(await screen.findByRole('heading', { name: /高中主題複習/ })).toBeInTheDocument();
+    expect(screen.queryByLabelText('選擇單字年級')).not.toBeInTheDocument();
     expect(await screen.findByText(/所有主題都已達到每類 20 字/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /學校學習，26 個單字/ })).toBeEnabled();
     expect(screen.getByRole('button', { name: /家庭人物，21 個單字/ })).toBeEnabled();
@@ -424,17 +431,14 @@ describe('EnglishGo app smoke flow', () => {
     expect(screen.getByRole('button', { name: /交通工具，21 個單字$/ })).toBeEnabled();
   });
 
-  it('keeps grade-specific weak recommendations out of other grade views', async () => {
+  it('keeps junior weak recommendations out of the outer-selected elementary topic view', async () => {
     localStorage.setItem('eg_weak', JSON.stringify([{ w: 'station', n: 2, level: 'junior' }]));
     await openElementaryMenu();
     clickFirstButtonWithText('單字卡');
 
     expect(await screen.findByRole('heading', { name: /類型複習/ })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /開始複習推薦主題/ })).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: /國中 209 字/ }));
-    expect(await screen.findByRole('button', { name: '開始複習推薦主題：交通工具' })).toBeEnabled();
-    expect(screen.getByText(/建議先練：交通工具（1 個待加強）/)).toBeInTheDocument();
+    expect(screen.queryByLabelText('選擇單字年級')).not.toBeInTheDocument();
   });
 
   it('shows and clears weak words only for the current grade', async () => {
