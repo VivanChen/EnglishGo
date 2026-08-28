@@ -362,7 +362,10 @@ describe('EnglishGo app smoke flow', () => {
     clickFirstButtonWithText('單字卡');
 
     expect(await screen.findByRole('heading', { name: /類型複習/ })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /小學主題複習/ })).toBeInTheDocument();
+    const overview = screen.getByTestId('srs-topic-overview');
+    expect(within(overview).getByRole('heading', { name: '今天想練哪一類？' })).toBeInTheDocument();
+    expect(within(overview).getByText('🌱 小學')).toBeInTheDocument();
+    expect(within(overview).getByText('每輪 20 張')).toBeInTheDocument();
     expect(screen.queryByLabelText('選擇單字年級')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /交通工具，35 個單字/ })).toBeEnabled();
   });
@@ -371,9 +374,10 @@ describe('EnglishGo app smoke flow', () => {
     await openJuniorMenu();
     clickFirstButtonWithText('單字卡');
 
-    expect(await screen.findByRole('heading', { name: /國中主題複習/ })).toBeInTheDocument();
+    const overview = await screen.findByTestId('srs-topic-overview');
+    expect(within(overview).getByText('📚 國中')).toBeInTheDocument();
     expect(screen.queryByLabelText('選擇單字年級')).not.toBeInTheDocument();
-    expect(await screen.findByText(/所有主題都已達到每類 20 字/)).toBeInTheDocument();
+    expect(await screen.findByText(/所有主題都能開始練習/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /交通工具，21 個單字/ })).toBeEnabled();
     expect(screen.getByRole('button', { name: /食物飲料，21 個單字/ })).toBeEnabled();
   });
@@ -382,9 +386,10 @@ describe('EnglishGo app smoke flow', () => {
     await openSeniorMenu();
     clickFirstButtonWithText('單字卡');
 
-    expect(await screen.findByRole('heading', { name: /高中主題複習/ })).toBeInTheDocument();
+    const overview = await screen.findByTestId('srs-topic-overview');
+    expect(within(overview).getByText('🎓 高中')).toBeInTheDocument();
     expect(screen.queryByLabelText('選擇單字年級')).not.toBeInTheDocument();
-    expect(await screen.findByText(/所有主題都已達到每類 20 字/)).toBeInTheDocument();
+    expect(await screen.findByText(/所有主題都能開始練習/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /學校學習，26 個單字/ })).toBeEnabled();
     expect(screen.getByRole('button', { name: /家庭人物，21 個單字/ })).toBeEnabled();
     expect(screen.getByRole('button', { name: /動物自然，22 個單字/ })).toBeEnabled();
