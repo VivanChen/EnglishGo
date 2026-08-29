@@ -1553,7 +1553,13 @@ function levelUpPet(pet){
 
 
 // ═══ CONFIG ═════════════════════════════════════════════════════════
-const LV={elementary:{l:"小學",en:"Elementary",cl:"#0F6E56",bg:"#E1F5EE",ac:"#1D9E75",ic:"🌱",wd:"300字"},junior:{l:"國中",en:"Junior High",cl:"#534AB7",bg:"#EEEDFE",ac:"#7F77DD",ic:"📚",wd:"1200字"},senior:{l:"高中",en:"Senior High",cl:"#993C1D",bg:"#FAECE7",ac:"#D85A30",ic:"🎓",wd:"4500+字"}};
+const LV={elementary:{l:"小學",en:"Elementary",cl:"#0F6E56",bg:"#E1F5EE",ac:"#1D9E75",ic:"🌱"},junior:{l:"國中",en:"Junior High",cl:"#534AB7",bg:"#EEEDFE",ac:"#7F77DD",ic:"📚"},senior:{l:"高中",en:"Senior High",cl:"#993C1D",bg:"#FAECE7",ac:"#D85A30",ic:"🎓"}};
+
+export function formatLandingVocabularyBadge(count,ready){
+  if(!ready)return"查詢字庫…";
+  const total=Math.max(0,Number(count)||0);
+  return total?`${total.toLocaleString("zh-TW")} 字可練`:"離線也能練";
+}
 let _voiceUri = null; // selected English voice URI
 try{_voiceUri=localStorage.getItem("eg_voice")||null}catch{}
 
@@ -2543,6 +2549,14 @@ function SettingsPage({onBack,c,gemKey,setGemKey,gifKey,setGifKey}){
 // ═══ LANDING ════════════════════════════════════════════════════════
 function Landing({onSelect,dark,setDark,keyMissing=false}){
   const[hov,setHov]=useState(null);
+  const[levelCounts,setLevelCounts]=useState(null);
+  useEffect(()=>{
+    let active=true;
+    Promise.all(Object.keys(LV).map(async level=>[level,await fetchCloudCount(level)]))
+      .then(entries=>{if(active)setLevelCounts(Object.fromEntries(entries))})
+      .catch(()=>{if(active)setLevelCounts({})});
+    return()=>{active=false};
+  },[]);
   const features=[
     {i:"🃏",t:"SRS 記憶",d:"間隔重複背單字",tone:"#10B981"},
     {i:"🎧",t:"聽說練習",d:"朗讀、聽寫、口說",tone:"#3B82F6"},
@@ -2623,7 +2637,7 @@ function Landing({onSelect,dark,setDark,keyMissing=false}){
         .eg-landing-brand strong{font-size:18px}
         .eg-theme-toggle{padding:8px 10px}
         .eg-level-card{grid-template-columns:auto 1fr;padding:14px}
-        .eg-level-badge{grid-column:2}
+        .eg-level-badge{grid-column:2;justify-self:start}
       }
     `}</style>
     <main className="eg-landing-shell">
@@ -2645,7 +2659,7 @@ function Landing({onSelect,dark,setDark,keyMissing=false}){
                 <span className="eg-level-title">{level.l}</span>
                 <span className="eg-level-sub">{level.en}</span>
               </span>
-              <span className="eg-level-badge">{level.wd}</span>
+              <span className="eg-level-badge">{formatLandingVocabularyBadge(levelCounts?.[k],levelCounts!==null)}</span>
             </button>
           ))}
         </div>

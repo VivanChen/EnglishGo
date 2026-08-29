@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import App from './App.jsx';
+import App, { formatLandingVocabularyBadge } from './App.jsx';
 import {
   getPetMonopolyCpuBuyDecision,
   settlePetMonopolyBankruptComputers,
@@ -222,7 +222,14 @@ function findPetMonopolyRent() {
 }
 
 describe('EnglishGo app smoke flow', () => {
-  it('renders the landing page', () => {
+  it('formats live vocabulary counts for the landing grade cards', () => {
+    expect(formatLandingVocabularyBadge(974, true)).toBe('974 字可練');
+    expect(formatLandingVocabularyBadge(2839, true)).toBe('2,839 字可練');
+    expect(formatLandingVocabularyBadge(0, true)).toBe('離線也能練');
+    expect(formatLandingVocabularyBadge(0, false)).toBe('查詢字庫…');
+  });
+
+  it('renders the landing page', async () => {
     render(<App />);
 
     expect(screen.getByText('EnglishGo')).toBeInTheDocument();
@@ -239,6 +246,12 @@ describe('EnglishGo app smoke flow', () => {
     expect(document.querySelector('a[href="/learn/sponsor.html"]')).toBeNull();
     expect(screen.getByText('GIPHY')).toBeInTheDocument();
     expect(screen.getByText('GIPHY').closest('div')).toHaveTextContent('GIFs powered by GIPHY');
+    expect(screen.queryByText('300字')).not.toBeInTheDocument();
+    expect(screen.queryByText('1200字')).not.toBeInTheDocument();
+    expect(screen.queryByText('4500+字')).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getAllByText('離線也能練')).toHaveLength(3);
+    });
   });
 
   it('removes retired sponsorship state from the browser', async () => {
