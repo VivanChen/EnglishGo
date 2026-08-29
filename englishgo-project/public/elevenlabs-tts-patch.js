@@ -88,7 +88,9 @@
     if (!text || text.length > MAX_CHARS) return false;
     if (typeof utterance.onboundary === "function") return false;
     if (/^en/i.test(lang)) return /[A-Za-z]/.test(text);
-    if (isChineseLang(lang)) return false;
+    if (isChineseLang(lang)) {
+      return utterance?.__englishGoApiTts === true && CHINESE_RE.test(text);
+    }
     return false;
   }
 
@@ -359,7 +361,6 @@
         audio.src = url;
         audio.currentTime = 0;
         audio.muted = false;
-        const settings = getSettings();
         audio.playbackRate = 1;
         audio.volume = typeof utterance.volume === "number" ? utterance.volume : 1;
         audio.oncanplay = () => hideTtsLoading(loadingToken);

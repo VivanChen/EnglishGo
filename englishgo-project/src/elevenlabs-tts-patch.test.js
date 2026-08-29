@@ -128,9 +128,17 @@ describe("ElevenLabs TTS patch", () => {
     expect(nativeSpeak).toHaveBeenCalledWith(utterance);
   });
 
-  it("keeps novel-marked Chinese speech native without calling the API", () => {
+  it("routes novel-marked Chinese speech through the fixed API voice", () => {
     const { nativeSpeak } = installPatchEnv();
-    globalThis.fetch = vi.fn();
+    globalThis.fetch = vi.fn(() => new Promise(() => {}));
+    const audio = {
+      play: vi.fn(() => Promise.resolve()),
+      pause: vi.fn(),
+      currentTime: 0,
+      playbackRate: 1,
+      volume: 1,
+    };
+    globalThis.Audio = vi.fn(() => audio);
     loadPatch();
 
     const utterance = new SpeechSynthesisUtterance("\u9019\u662f\u5c0f\u8aaa\u7684\u4e2d\u6587\u65c1\u767d\u3002");
@@ -138,8 +146,16 @@ describe("ElevenLabs TTS patch", () => {
     utterance.__englishGoApiTts = true;
     window.speechSynthesis.speak(utterance);
 
-    expect(nativeSpeak).toHaveBeenCalledWith(utterance);
-    expect(globalThis.fetch).not.toHaveBeenCalled();
+    expect(nativeSpeak).not.toHaveBeenCalled();
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+    const payload = JSON.parse(globalThis.fetch.mock.calls[0][1].body);
+    expect(payload).toMatchObject({
+      text: "\u9019\u662f\u5c0f\u8aaa\u7684\u4e2d\u6587\u65c1\u767d\u3002",
+      lang: "zh-TW",
+      speed: 1,
+    });
+    expect(payload).not.toHaveProperty("voiceId");
+    expect(audio.play).toHaveBeenCalledTimes(1);
   });
 
   it("unlocks English audio during the click before the API response arrives", () => {

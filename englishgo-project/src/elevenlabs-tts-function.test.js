@@ -64,7 +64,7 @@ describe("elevenlabs-tts function voice selection", () => {
     process.env.ELEVENLABS_MODEL_ID = "eleven_flash_v2_5";
     process.env.ELEVENLABS_ZH_MODEL_ID = "eleven_multilingual_v2";
 
-    const res = await handler(request({ text: "這是小說中文朗讀。", lang: "zh-TW" }));
+    const res = await handler(request({ text: "這是小說中文朗讀。", lang: "zh-TW", voiceId: "payload-voice" }));
 
     expect(res.status).toBe(200);
     const [url, init] = globalThis.fetch.mock.calls[0];

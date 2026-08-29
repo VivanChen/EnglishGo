@@ -1338,10 +1338,18 @@ describe('EnglishGo app smoke flow', () => {
     expect(screen.queryByTestId('novel-chapter-nav')).not.toBeInTheDocument();
     expect(screen.getByTestId('novel-reader-panel')).toHaveStyle({
       overflowY: 'hidden',
-      padding: '0 4px calc(18px + env(safe-area-inset-bottom))',
+      padding: '0 4px calc(14px + env(safe-area-inset-bottom))',
     });
+    expect(screen.getByTestId('novel-immersive-toolbar')).toHaveStyle({ flexDirection: 'column' });
+    expect(screen.getByTestId('novel-toolbar-actions')).toHaveStyle({
+      overflowX: 'auto',
+      flexWrap: 'nowrap',
+    });
+    expect(screen.getByText('中文真人聲')).toBeInTheDocument();
     expect(screen.getByTestId('novel-book-spread')).toHaveStyle({ gridTemplateColumns: '1fr' });
     expect(screen.getAllByTestId('novel-book-page')).toHaveLength(1);
+    expect(screen.getAllByTestId('novel-reader-text').length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByTestId('novel-page-content')).toHaveStyle({ overflowY: 'auto' });
     expect(screen.getByTestId('novel-page-actions')).toHaveStyle({
       paddingBottom: 'calc(10px + env(safe-area-inset-bottom))',
     });

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   findPageForBlock,
   nextSpreadStart,
+  normalizeMeasuredHeights,
   paginateByHeight,
   previousSpreadStart,
   spreadStartForPage,
@@ -23,6 +24,19 @@ describe("novel pagination", () => {
     expect(paginateByHeight(blocks, [400, 80], 250, 10)).toEqual([
       [blocks[0]],
       [blocks[1]],
+    ]);
+  });
+
+  it("falls back to text estimates when a mobile browser reports page-sized blocks", () => {
+    expect(normalizeMeasuredHeights([530, 168, 0], [140, 160, 120])).toEqual([140, 168, 120]);
+  });
+
+  it("keeps at least two short reading blocks on a mobile page", () => {
+    const blocks = [{ i: 0 }, { i: 1 }, { i: 2 }];
+
+    expect(paginateByHeight(blocks, [240, 320, 120], 500, 6, 2)).toEqual([
+      [blocks[0], blocks[1]],
+      [blocks[2]],
     ]);
   });
 

@@ -38,6 +38,8 @@ npm run build
 VITE_SUPABASE_URL=<你的 Supabase Project URL>
 VITE_SUPABASE_ANON_KEY=<你的 anon key>
 ELEVENLABS_API_KEY=<你的 ElevenLabs API key>
+ELEVENLABS_ZH_VOICE_ID=<固定的中文小說聲線 ID>
+ELEVENLABS_ZH_MODEL_ID=eleven_multilingual_v2
 SUPABASE_SERVICE_ROLE_KEY=<你的 Supabase service_role key>
 SUPABASE_TTS_BUCKET=tts-cache
 ```
