@@ -267,7 +267,24 @@ describe('EnglishGo app smoke flow', () => {
   });
 
   it('opens the main menu after selecting a level', async () => {
-    await openElementaryMenu();
+    localStorage.setItem(
+      'eg_loginBonus',
+      JSON.stringify({ lastDate: new Date().toDateString(), streak: 1, claimed: true }),
+    );
+    render(<App />);
+
+    const elementaryButton = screen.getByText('Elementary').closest('button');
+    await waitFor(() => {
+      expect(elementaryButton.querySelector('.eg-level-badge')).toHaveTextContent(/^\d[\d,]* 字可練$/);
+    });
+    const landingCount = elementaryButton.querySelector('.eg-level-badge').textContent.match(/[\d,]+/)[0];
+
+    fireEvent.click(elementaryButton);
+
+    await waitFor(() => {
+      const srsCards = [...document.querySelectorAll('[data-module-id="srs"]')];
+      expect(srsCards.some(card => card.textContent.includes(`目前 ${landingCount} 個單字可練習`))).toBe(true);
+    });
   });
 
   it('opens unified API key settings from the tools menu', async () => {

@@ -2102,17 +2102,28 @@ function writeLandingVocabularyCountCache(counts){
   try{localStorage.setItem(LANDING_VOCAB_COUNT_CACHE_KEY,JSON.stringify({t:Date.now(),counts}))}catch{}
 }
 
-async function fetchLandingVocabularyCounts(fallbackCounts={}){
+async function fetchMergedVocabularyCount(level,fallbackCount=0,extraWords=null){
+  const extra=extraWords||await loadExtraWords();
+  const localCards=mergeUniqueWordCards(V[level]||[],extra[level]||[]);
+  const cloudCards=await fetchCloudVocabularyNames(level);
+  return cloudCards
+    ?mergeUniqueWordCards(localCards,cloudCards).length
+    :Math.max(Number(fallbackCount)||0,localCards.length);
+}
+
+async function fetchLandingVocabularyCounts(fallbackCounts={},shouldContinue=()=>true){
   const extra=await loadExtraWords();
   const counts={};
   for(const level of Object.keys(LV)){
-    const localCards=mergeUniqueWordCards(V[level]||[],extra[level]||[]);
-    const cloudCards=await fetchCloudVocabularyNames(level);
-    counts[level]=cloudCards
-      ?mergeUniqueWordCards(localCards,cloudCards).length
-      :Math.max(Number(fallbackCounts[level])||0,localCards.length);
+    if(!shouldContinue())return null;
+    counts[level]=await fetchMergedVocabularyCount(level,fallbackCounts[level],extra);
   }
   return counts;
+}
+
+function writeLandingVocabularyCount(level,count){
+  const cached=readLandingVocabularyCountCache()||{};
+  writeLandingVocabularyCountCache({...cached,[level]:count});
 }
 
 // ═══ GLOBAL REWARD BURST (V20 跨模組爽感) ════════════════════════════
@@ -2604,8 +2615,8 @@ function Landing({onSelect,dark,setDark,keyMissing=false}){
   useEffect(()=>{
     let active=true;
     const fallback=readLandingVocabularyCountCache()||{};
-    fetchLandingVocabularyCounts(fallback).then(counts=>{
-      if(!active)return;
+    fetchLandingVocabularyCounts(fallback,()=>active).then(counts=>{
+      if(!active||!counts)return;
       setLevelCounts(counts);
       writeLandingVocabularyCountCache(counts);
     }).catch(()=>{if(active)setLevelCounts(fallback)});
@@ -2757,7 +2768,7 @@ function MenuV2({lv,onSelect,activeGroup="learn",onGroupChange,daily,c,xp,coins,
   const vocab=V[lv]||[];
   const fallbackToday=vocab[hashText(`${todayKey}:${lv}:fallback`)%Math.max(1,vocab.length)]||{w:"learn",m:"學習",p:"v."};
   const[todayWord,setTodayWord]=useState(fallbackToday);
-  const[cloudCount,setCloudCount]=useState(0);
+  const[vocabularyCount,setVocabularyCount]=useState(()=>readLandingVocabularyCountCache()?.[lv]||0);
   const setActiveGroup=onGroupChange||(()=>{});
   const gradeTheme=({
     elementary:{
@@ -2785,14 +2796,19 @@ function MenuV2({lv,onSelect,activeGroup="learn",onGroupChange,daily,c,xp,coins,
   useEffect(()=>{
     let active=true;
     setTodayWord(fallbackToday);
-    setCloudCount(0);
-    fetchCloudCount(lv).then(n=>{if(active)setCloudCount(n||0)});
+    const cachedCount=readLandingVocabularyCountCache()?.[lv]||0;
+    setVocabularyCount(cachedCount);
+    fetchMergedVocabularyCount(lv,cachedCount).then(n=>{
+      if(!active)return;
+      setVocabularyCount(n||0);
+      writeLandingVocabularyCount(lv,n||0);
+    });
     fetchDailyCloudWord(lv,fallbackToday).then(w=>{if(active&&w)setTodayWord(w)});
     return()=>{active=false};
   },[lv,todayKey]);
 
   const modules=[
-    {id:"srs",group:"learn",icon:"▣",t:"單字卡",d:cloudCount?`目前 ${cloudCount} 個單字可練習`:"用間隔重複記單字",tag:"每日核心"},
+    {id:"srs",group:"learn",icon:"▣",t:"單字卡",d:vocabularyCount?`目前 ${Number(vocabularyCount).toLocaleString("zh-TW")} 個單字可練習`:"用間隔重複記單字",tag:"每日核心"},
     {id:"exam",group:"learn",icon:"📝",t:"考試複習",d:"輸入考試範圍自訂一輪",tag:"範圍複習"},
     {id:"wordsearch",group:"learn",icon:"⌕",t:"單字查詢",d:"查英文、中文、變化形",tag:"快速查找"},
     {id:"quiz",group:"learn",icon:"✓",t:"單字測驗",d:"選擇題確認理解",tag:"檢查記憶"},
@@ -3025,11 +3041,11 @@ function Menu({lv,onSelect,daily,c,xp,coins,streak,achUnlocked,weakWords,pets,eg
   const todayKey=dateKey();
   const fallbackToday=V[lv][hashText(`${todayKey}:${lv}:fallback`)%V[lv].length];
   const[todayWord,setTodayWord]=useState(fallbackToday);
-  const[cloudCount,setCloudCount]=useState(0);
+  const[vocabularyCount,setVocabularyCount]=useState(()=>readLandingVocabularyCountCache()?.[lv]||0);
   const[activeGroup,setActiveGroup]=useState("learn");
-  useEffect(()=>{let active=true;setTodayWord(fallbackToday);setCloudCount(0);fetchCloudCount(lv).then(n=>{if(active)setCloudCount(n||0)});fetchDailyCloudWord(lv,fallbackToday).then(w=>{if(active&&w)setTodayWord(w)});return()=>{active=false}},[lv,todayKey]);
+  useEffect(()=>{let active=true;const cachedCount=readLandingVocabularyCountCache()?.[lv]||0;setTodayWord(fallbackToday);setVocabularyCount(cachedCount);fetchMergedVocabularyCount(lv,cachedCount).then(n=>{if(!active)return;setVocabularyCount(n||0);writeLandingVocabularyCount(lv,n||0)});fetchDailyCloudWord(lv,fallbackToday).then(w=>{if(active&&w)setTodayWord(w)});return()=>{active=false}},[lv,todayKey]);
   const modules=[
-    {id:"srs",group:"learn",icon:"🃏",t:"SRS 單字卡",d:cloudCount?`雲端 ${cloudCount} 字`:"間隔重複",tag:"每日核心"},
+    {id:"srs",group:"learn",icon:"🃏",t:"SRS 單字卡",d:vocabularyCount?`完整字庫 ${Number(vocabularyCount).toLocaleString("zh-TW")} 字`:"間隔重複",tag:"每日核心"},
     {id:"wordsearch",group:"learn",icon:"🔎",t:"單字查詢",d:"搜尋並開卡",tag:"快速查字"},
     {id:"quiz",group:"learn",icon:"📝",t:"單字測驗",d:"四選一",tag:"檢查記憶"},
     {id:"grammar",group:"learn",icon:"🧠",t:"文法學堂",d:`${G[lv].length} 個重點`,tag:"句型觀念"},
