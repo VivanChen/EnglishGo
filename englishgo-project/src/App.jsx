@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense } fro
 import { getElementaryExample } from "./data/elementaryExamples.js";
 import { JUNIOR_SONGS } from "./data/juniorSongs.js";
 import { SENIOR_SONGS } from "./data/seniorSongs.js";
-import { getWeakVocabularyForLevel, parseVocabularyTopics, updateWeakVocabulary } from "./data/vocabularyTopics.js";
+import { getWeakVocabularyForLevel, mergeUniqueWordCards, parseVocabularyTopics, updateWeakVocabulary } from "./data/vocabularyTopics.js";
 import { fetchAllCloudVocabularyRows } from "./data/cloudVocabulary.js";
 
 const TranslationReader=lazy(()=>import("./features/TranslationReader.jsx"));
@@ -117,6 +117,8 @@ const _cloudCountCache={};
 const _cloudVocabPools={};
 const _cloudVocabularyCatalogs={};
 const _cloudVocabularyCatalogPromises={};
+const _cloudVocabularyNameCatalogs={};
+const _cloudVocabularyNamePromises={};
 const _cloudWordCache={};
 const _cloudSearchCache={};
 const _dailyWordCache={};
@@ -2064,6 +2066,55 @@ async function fetchCloudVocabularyCatalog(level) {
   return promise;
 }
 
+async function fetchCloudVocabularyNames(level){
+  const sb=await getSb();
+  if(!sb)return null;
+  const now=Date.now();
+  const cached=_cloudVocabularyNameCatalogs[level];
+  if(cached&&now-cached.t<VOCAB_POOL_TTL)return cached.words;
+  if(_cloudVocabularyNamePromises[level])return _cloudVocabularyNamePromises[level];
+  const promise=(async()=>{
+    try{
+      const rows=await fetchAllCloudVocabularyRows(sb,level,"word");
+      if(!rows)return null;
+      const words=rows.map(row=>({w:String(row?.word||"").trim()})).filter(card=>card.w);
+      _cloudVocabularyNameCatalogs[level]={t:Date.now(),words};
+      return words;
+    }catch{return null}
+    finally{delete _cloudVocabularyNamePromises[level]}
+  })();
+  _cloudVocabularyNamePromises[level]=promise;
+  return promise;
+}
+
+const LANDING_VOCAB_COUNT_CACHE_KEY="eg_landing_vocab_counts_v1";
+const LANDING_VOCAB_COUNT_CACHE_TTL=24*60*60*1000;
+
+function readLandingVocabularyCountCache(){
+  try{
+    const cached=JSON.parse(localStorage.getItem(LANDING_VOCAB_COUNT_CACHE_KEY)||"null");
+    if(cached?.counts&&Date.now()-Number(cached.t||0)<LANDING_VOCAB_COUNT_CACHE_TTL)return cached.counts;
+  }catch{}
+  return null;
+}
+
+function writeLandingVocabularyCountCache(counts){
+  try{localStorage.setItem(LANDING_VOCAB_COUNT_CACHE_KEY,JSON.stringify({t:Date.now(),counts}))}catch{}
+}
+
+async function fetchLandingVocabularyCounts(fallbackCounts={}){
+  const extra=await loadExtraWords();
+  const counts={};
+  for(const level of Object.keys(LV)){
+    const localCards=mergeUniqueWordCards(V[level]||[],extra[level]||[]);
+    const cloudCards=await fetchCloudVocabularyNames(level);
+    counts[level]=cloudCards
+      ?mergeUniqueWordCards(localCards,cloudCards).length
+      :Math.max(Number(fallbackCounts[level])||0,localCards.length);
+  }
+  return counts;
+}
+
 // ═══ GLOBAL REWARD BURST (V20 跨模組爽感) ════════════════════════════
 // 從任意位置噴出粒子，可飛向目標座標（例如金幣計數器）
 // 用法：window.__rewardBurst({emoji:"🪙",count:5,fromX,fromY,toX,toY})
@@ -2549,12 +2600,15 @@ function SettingsPage({onBack,c,gemKey,setGemKey,gifKey,setGifKey}){
 // ═══ LANDING ════════════════════════════════════════════════════════
 function Landing({onSelect,dark,setDark,keyMissing=false}){
   const[hov,setHov]=useState(null);
-  const[levelCounts,setLevelCounts]=useState(null);
+  const[levelCounts,setLevelCounts]=useState(()=>readLandingVocabularyCountCache());
   useEffect(()=>{
     let active=true;
-    Promise.all(Object.keys(LV).map(async level=>[level,await fetchCloudCount(level)]))
-      .then(entries=>{if(active)setLevelCounts(Object.fromEntries(entries))})
-      .catch(()=>{if(active)setLevelCounts({})});
+    const fallback=readLandingVocabularyCountCache()||{};
+    fetchLandingVocabularyCounts(fallback).then(counts=>{
+      if(!active)return;
+      setLevelCounts(counts);
+      writeLandingVocabularyCountCache(counts);
+    }).catch(()=>{if(active)setLevelCounts(fallback)});
     return()=>{active=false};
   },[]);
   const features=[

@@ -250,7 +250,9 @@ describe('EnglishGo app smoke flow', () => {
     expect(screen.queryByText('1200字')).not.toBeInTheDocument();
     expect(screen.queryByText('4500+字')).not.toBeInTheDocument();
     await waitFor(() => {
-      expect(screen.getAllByText('離線也能練')).toHaveLength(3);
+      const badges = [...document.querySelectorAll('.eg-level-badge')];
+      expect(badges).toHaveLength(3);
+      badges.forEach((badge) => expect(badge).toHaveTextContent(/^\d[\d,]* 字可練$/));
     });
   });
 
