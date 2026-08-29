@@ -51,9 +51,14 @@ function isNovelReaderControlTarget(target,currentTarget){
   const control=target?.closest?.("button,a,input,select,textarea,[role='button'],[role='tab'],[contenteditable='true']");
   return Boolean(control&&currentTarget?.contains?.(control));
 }
+function savedNovelBlock(progress){
+  if(progress?.blockIndex==null)return null;
+  const value=Number(progress.blockIndex);
+  return Number.isFinite(value)&&value>=0?Math.floor(value):null;
+}
 export default function NovelM({lv,onBack,onXp,deps}){
   const {LV,S,useLS,readingWords,playSound,stopSpeech,speak,speakStory,Hdr}=deps;
-  const c=LV[lv];const[novelData,setNovelData]=useState(null);const[ni,setNi]=useState(0);const[ci,setCi]=useState(null);const[page,setPage]=useState(0);const[activeBlock,setActiveBlock]=useState(null);const[activeVocab,setActiveVocab]=useState(null);const[sidePanel,setSidePanel]=useState(null);const[showZh,setShowZh]=useState(true);const[immersive,setImmersive]=useState(true);const[done,setDone]=useLS("novelDone",{});const[quizAns,setQuizAns]=useLS("novelQuiz",{});const[readingProgress,setReadingProgress]=useLS("novelReadingProgress",{});const[readingPrefs,setReadingPrefs]=useLS("novelReadingPrefs",{fontSize:16,lineHeight:1.66});const[measuredPages,setMeasuredPages]=useState([]);const[layoutVersion,setLayoutVersion]=useState(0);const[pageTurn,setPageTurn]=useState(null);const rewarded=useRef({});const pendingPageRef=useRef(0);const novelSpeechRef=useRef(null);const novelPanelRef=useRef(null);const novelSpreadRef=useRef(null);const novelBlockRefs=useRef({});const measureBlockRefs=useRef({});const swipeStartRef=useRef(null);const pageTurnTimerRef=useRef(null);
+  const c=LV[lv];const[novelData,setNovelData]=useState(null);const[ni,setNi]=useState(0);const[ci,setCi]=useState(null);const[page,setPage]=useState(0);const[activeBlock,setActiveBlock]=useState(null);const[activeVocab,setActiveVocab]=useState(null);const[sidePanel,setSidePanel]=useState(null);const[showZh,setShowZh]=useState(true);const[immersive,setImmersive]=useState(true);const[done,setDone]=useLS("novelDone",{});const[quizAns,setQuizAns]=useLS("novelQuiz",{});const[readingProgress,setReadingProgress]=useLS("novelReadingProgress",{});const[readingPrefs,setReadingPrefs]=useLS("novelReadingPrefs",{fontSize:16,lineHeight:1.66});const[measuredPages,setMeasuredPages]=useState([]);const[layoutVersion,setLayoutVersion]=useState(0);const[pageTurn,setPageTurn]=useState(null);const rewarded=useRef({});const pendingPageRef=useRef(0);const readingAnchorRef=useRef(null);const novelSpeechRef=useRef(null);const novelPanelRef=useRef(null);const novelSpreadRef=useRef(null);const novelBlockRefs=useRef({});const measureBlockRefs=useRef({});const swipeStartRef=useRef(null);const pageTurnTimerRef=useRef(null);
   const[viewportWidth,setViewportWidth]=useState(()=>typeof window==="undefined"?1024:window.innerWidth||1024);
   useEffect(()=>{let active=true;import("../data/novels.js").then(m=>{if(active)setNovelData(m.NOVELS)}).catch(()=>{if(active)setNovelData({elementary:[]})});return()=>{active=false}},[]);
   useEffect(()=>()=>{novelSpeechRef.current?.cancel?.();window.clearTimeout?.(pageTurnTimerRef.current)},[]);
@@ -88,8 +93,14 @@ export default function NovelM({lv,onBack,onXp,deps}){
   const visiblePages=pagesAt(pageNow);
   const pageBlocks=visiblePages.flatMap(item=>item.blocks);
   const pageStart=pageBlocks.length?Math.min(...pageBlocks.map(block=>block.i)):0;
+  useLayoutEffect(()=>{
+    const anchor=readingAnchorRef.current;
+    if(anchor==null||!chapter||!pages.length)return;
+    const anchoredPage=spreadStartForPage(findPageForBlock(pages,anchor),visiblePageCount);
+    if(anchoredPage!==pageNow){window.clearTimeout?.(pageTurnTimerRef.current);pageTurnTimerRef.current=null;setPageTurn(null);setPage(anchoredPage)}
+  },[chapter?.no,pages,visiblePageCount]);
+  useEffect(()=>{if(chapter&&pageBlocks.length)readingAnchorRef.current=pageStart},[chapter?.no,pageNow]);
   useEffect(()=>{if(activeBlock!=null){const targetPage=findPageForBlock(pages,activeBlock);if(targetPage<pageNow||targetPage>=pageNow+visiblePageCount)turnPage(targetPage,targetPage>pageNow?"forward":"backward",false)}},[activeBlock,pageNow,pages,visiblePageCount]);
-  useEffect(()=>{setMeasuredPages([]);measureBlockRefs.current={}},[chapter?.no,isMobile,readerFontSize,readerLineHeight,readingFocus,showZh]);
   useEffect(()=>{
     const panel=novelPanelRef.current;
     if(!panel||typeof ResizeObserver==="undefined")return;
@@ -120,24 +131,25 @@ export default function NovelM({lv,onBack,onXp,deps}){
     });
     return()=>window.cancelAnimationFrame(frame);
   },[chapter?.no]);
-  useEffect(()=>{if(!novel||!chapter||ci==null||!pages.length)return;setReadingProgress(d=>({...d,[novel.id]:{chapterNo:chapter.no,chapterIndex:ci,page:pageNow,pageCount:pages.length,updatedAt:Date.now()}}))},[novel?.id,chapter?.no,ci,pageNow,pages.length]);
+  useEffect(()=>{if(!novel||!chapter||ci==null||!pages.length)return;setReadingProgress(d=>({...d,[novel.id]:{chapterNo:chapter.no,chapterIndex:ci,page:pageNow,pageCount:pages.length,blockIndex:pageStart,blockCount:blockPairs.length,updatedAt:Date.now()}}))},[novel?.id,chapter?.no,ci,pageNow,pageStart,pages.length,blockPairs.length]);
   const quiz=chapter?chapter.quiz||[]:[];const quizKey=chapter?`${novel.id}:${chapter.no}`:"";const quizState=quizAns[quizKey]||{};const quizAnswered=quiz.filter((_,i)=>quizState[i]!=null).length;const quizDone=!quiz.length||quiz.every((_,i)=>quizState[i]!=null);
   const chooseQuiz=(qi,oi)=>setQuizAns(d=>({...d,[quizKey]:{...(d[quizKey]||{}),[qi]:oi}}));
   const completeChapter=()=>{if(!chapter)return;if(!quizDone){playSound("wrong");return}const key=`${novel.id}:${chapter.no}`;if(!completed.includes(chapter.no)){setDone(d=>({...d,[novel.id]:[...new Set([...(d[novel.id]||[]),chapter.no])]}));if(!rewarded.current[key]){rewarded.current[key]=true;onXp?.(15);playSound("done")}}};
   const stopNovelSpeech=()=>{novelSpeechRef.current?.cancel?.();novelSpeechRef.current=null;setActiveBlock(null);setActiveVocab(null);stopSpeech()};
   const startNovelStory=(items,options)=>{setActiveBlock(null);setActiveVocab(null);const handle=speakStory(items,options);novelSpeechRef.current=handle;return handle};
+  const preloadNovelChinese=texts=>{if(typeof window==="undefined")return;const items=texts.filter(Boolean).slice(0,8);if(!items.length)return;window.EnglishGoTTS?.preloadMany?.(items,{lang:"zh-TW",limit:items.length,concurrency:2})};
   const showBlockPage=bi=>setPage(spreadStartForPage(findPageForBlock(pages,bi),visiblePageCount));
   const readChapter=()=>{if(!chapter||!enBlocks.length)return;startNovelStory([chapter.title,...enBlocks],{rate:0.78,onSentence:i=>{const bi=i-1;if(bi>=0){setActiveBlock(bi);showBlockPage(bi)}},onFinish:()=>{novelSpeechRef.current=null;setActiveBlock(null)},oncancel:()=>{novelSpeechRef.current=null;setActiveBlock(null)}})};
   const readPage=()=>{if(!pageBlocks.length)return;startNovelStory(pageBlocks.map(b=>b.en),{rate:0.78,onSentence:i=>setActiveBlock(pageBlocks[i]?.i),onFinish:()=>{novelSpeechRef.current=null;setActiveBlock(null)},oncancel:()=>{novelSpeechRef.current=null;setActiveBlock(null)}})};
-  const readChapterZh=()=>{if(!chapter||!zhBlocks.length)return;startNovelStory([chapter.zhTitle,...zhBlocks],{lang:"zh-TW",rate:1,apiTts:true,onSentence:i=>{const bi=i-1;if(bi>=0){setActiveBlock(bi);showBlockPage(bi)}},onFinish:()=>{novelSpeechRef.current=null;setActiveBlock(null)},oncancel:()=>{novelSpeechRef.current=null;setActiveBlock(null)}})};
-  const readPageZh=()=>{const items=pageBlocks.filter(b=>b.zh);if(!items.length)return;startNovelStory(items.map(b=>b.zh),{lang:"zh-TW",rate:1,apiTts:true,onSentence:i=>setActiveBlock(items[i]?.i),onFinish:()=>{novelSpeechRef.current=null;setActiveBlock(null)},oncancel:()=>{novelSpeechRef.current=null;setActiveBlock(null)}})};
+  const readChapterZh=()=>{if(!chapter||!zhBlocks.length)return;const items=[chapter.zhTitle,...zhBlocks];preloadNovelChinese(items);startNovelStory(items,{lang:"zh-TW",rate:1,apiTts:true,onSentence:i=>{const bi=i-1;if(bi>=0){setActiveBlock(bi);showBlockPage(bi)}},onFinish:()=>{novelSpeechRef.current=null;setActiveBlock(null)},oncancel:()=>{novelSpeechRef.current=null;setActiveBlock(null)}})};
+  const readPageZh=()=>{const items=pageBlocks.filter(b=>b.zh);if(!items.length)return;const texts=items.map(b=>b.zh);preloadNovelChinese(texts);startNovelStory(texts,{lang:"zh-TW",rate:1,apiTts:true,onSentence:i=>setActiveBlock(items[i]?.i),onFinish:()=>{novelSpeechRef.current=null;setActiveBlock(null)},oncancel:()=>{novelSpeechRef.current=null;setActiveBlock(null)}})};
   const bilingualChapterItems=()=>[{text:chapter.title,lang:"en-US",rate:0.78},{text:chapter.zhTitle,lang:"zh-TW",rate:1,apiTts:true},...enBlocks.flatMap((en,i)=>[{text:en,lang:"en-US",rate:0.78,blockIndex:i},{text:zhBlocks[i],lang:"zh-TW",rate:1,apiTts:true,blockIndex:i}].filter(x=>x.text))];
   const bilingualPageItems=()=>pageBlocks.flatMap(b=>[{text:b.en,lang:"en-US",rate:0.78,blockIndex:b.i},{text:b.zh,lang:"zh-TW",rate:1,apiTts:true,blockIndex:b.i}].filter(x=>x.text));
-  const readBilingualChapter=()=>{if(!chapter||!enBlocks.length)return;startNovelStory(bilingualChapterItems(),{onSentence:(_,__,item)=>{const bi=item?.blockIndex;if(bi!=null){setActiveBlock(bi);showBlockPage(bi)}},onFinish:()=>{novelSpeechRef.current=null;setActiveBlock(null)},oncancel:()=>{novelSpeechRef.current=null;setActiveBlock(null)}})};
-  const readBilingualPage=()=>{const items=bilingualPageItems();if(!items.length)return;startNovelStory(items,{onSentence:(_,__,item)=>{if(item?.blockIndex!=null)setActiveBlock(item.blockIndex)},onFinish:()=>{novelSpeechRef.current=null;setActiveBlock(null)},oncancel:()=>{novelSpeechRef.current=null;setActiveBlock(null)}})};
+  const readBilingualChapter=()=>{if(!chapter||!enBlocks.length)return;preloadNovelChinese([chapter.zhTitle,...zhBlocks]);startNovelStory(bilingualChapterItems(),{onSentence:(_,__,item)=>{const bi=item?.blockIndex;if(bi!=null){setActiveBlock(bi);showBlockPage(bi)}},onFinish:()=>{novelSpeechRef.current=null;setActiveBlock(null)},oncancel:()=>{novelSpeechRef.current=null;setActiveBlock(null)}})};
+  const readBilingualPage=()=>{const items=bilingualPageItems();if(!items.length)return;preloadNovelChinese(pageBlocks.map(b=>b.zh));startNovelStory(items,{onSentence:(_,__,item)=>{if(item?.blockIndex!=null)setActiveBlock(item.blockIndex)},onFinish:()=>{novelSpeechRef.current=null;setActiveBlock(null)},oncancel:()=>{novelSpeechRef.current=null;setActiveBlock(null)}})};
   const speakNovelText=(text,lang="en-US",rate=0.78,idx=null)=>{const utterance=speak(text,lang,rate,{apiTts:/^zh/i.test(lang),onend:()=>setActiveBlock(null)});if(!utterance)return;novelSpeechRef.current=null;setActiveVocab(null);setActiveBlock(idx)};
   const speakNovelVocab=(word)=>{const utterance=speak(word,"en-US",0.86,{onend:()=>setActiveVocab(null)});if(!utterance)return;novelSpeechRef.current=null;setActiveBlock(null);setActiveVocab(word)};
-  const goChapter=(i,startPage=0)=>{stopNovelSpeech();pendingPageRef.current=Math.max(0,Number(startPage)||0);setImmersive(true);setCi(i);setPage(Math.max(0,Number(startPage)||0));if(typeof navigator==="undefined"||!/jsdom/i.test(navigator.userAgent||"")){try{window.scrollTo?.({top:0,behavior:"smooth"})}catch{}}};
+  const goChapter=(i,startPage=0,startBlock=null)=>{stopNovelSpeech();const safePage=Math.max(0,Number(startPage)||0);pendingPageRef.current=safePage;readingAnchorRef.current=startBlock==null?null:Math.max(0,Number(startBlock)||0);setImmersive(true);setCi(i);setPage(safePage);if(typeof navigator==="undefined"||!/jsdom/i.test(navigator.userAgent||"")){try{window.scrollTo?.({top:0,behavior:"smooth"})}catch{}}};
   const backToList=()=>{stopNovelSpeech();setCi(null)};
   if(!novelData)return(<div><Hdr t="📘 英文小說" onBack={onBack} cl={c.cl}/><div style={{textAlign:"center",padding:"48px",color:S.t3}}>載入小說中...</div></div>);
   if(!novel)return(<div><Hdr t="📘 英文小說" onBack={onBack} cl={c.cl}/><div style={{...S.card,padding:"28px 18px",textAlign:"center",color:S.t2}}>這個年級的小說準備中</div></div>);
@@ -146,6 +158,7 @@ export default function NovelM({lv,onBack,onXp,deps}){
   const resumeChapter=resumeIndex>=0?novel.chapters[resumeIndex]:null;
   const resumePageCount=resumeChapter?Math.max(1,Number(resumeProgress?.pageCount)||Math.ceil(novelBlockPairs(resumeChapter.en,resumeChapter.zh).length/2)):1;
   const resumePage=Math.max(0,Math.min(Number(resumeProgress?.page)||0,resumePageCount-1));
+  const resumeBlock=savedNovelBlock(resumeProgress);
   if(ci==null)return(<div><Hdr t="📘 英文小說" onBack={onBack} cl={c.cl}/>
     <div style={{...S.card,padding:0,overflow:"hidden",marginBottom:12,borderTop:`4px solid ${c.cl}`}}>
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(min(100%,240px),1fr))",gap:0,background:"linear-gradient(135deg,#0C382E,#175B48 48%,#7ECBA9)",color:"#fff"}}>
@@ -164,14 +177,14 @@ export default function NovelM({lv,onBack,onXp,deps}){
         <div style={{minWidth:0,flex:"1 1 260px"}}>
           <div style={{fontSize:12,fontWeight:900,color:c.cl,marginBottom:3}}>閱讀進度</div>
           <div style={{fontSize:16,fontWeight:900,color:S.t1,lineHeight:1.3}}>{resumeChapter.title}</div>
-          <div style={{fontSize:12,color:S.t2,marginTop:3}}>上次讀到 Chapter {resumeChapter.no} · Page {resumePage+1}</div>
+          <div style={{fontSize:12,color:S.t2,marginTop:3}}>上次讀到 Chapter {resumeChapter.no} · {resumeBlock==null?`Page ${resumePage+1}`:`段落 ${resumeBlock+1}`}</div>
         </div>
-        <button onClick={()=>goChapter(resumeIndex,resumePage)} style={{...S.btn,background:c.cl,color:"#fff",padding:"10px 16px",fontSize:13,flex:"0 0 auto"}}>繼續閱讀</button>
+        <button onClick={()=>goChapter(resumeIndex,resumePage,resumeBlock)} style={{...S.btn,background:c.cl,color:"#fff",padding:"10px 16px",fontSize:13,flex:"0 0 auto"}}>繼續閱讀</button>
       </div>
     </div>}
     {novels.length>1&&<div style={{display:"flex",gap:6,overflowX:"auto",marginBottom:10}}>{novels.map((n,i)=><button key={n.id} onClick={()=>{setNi(i);setCi(null)}} style={{flexShrink:0,padding:"8px 12px",border:"none",borderRadius:12,background:i===ni?c.cl:S.bg2,color:i===ni?"#fff":S.t1,fontWeight:700,fontSize:12,fontFamily:"inherit",cursor:"pointer"}}>{n.title}</button>)}</div>}
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(min(100%,158px),1fr))",gap:10}}>
-      {novel.chapters.map((ch,i)=>{const isDone=completed.includes(ch.no);const chProgress=readingProgress[novel.id]?.chapterNo===ch.no?readingProgress[novel.id]:null;const chPageCount=Math.max(1,Number(chProgress?.pageCount)||Math.ceil(novelBlockPairs(ch.en,ch.zh).length/2));const chPage=Math.max(0,Math.min(Number(chProgress?.page)||0,chPageCount-1));const chQuiz=ch.quiz||[];const chQuizState=quizAns[`${novel.id}:${ch.no}`]||{};const chQuizAnswered=chQuiz.filter((_,qi)=>chQuizState[qi]!=null).length;const statusText=isDone?"已完成":chProgress?`進行中 · Page ${chPage+1}/${chPageCount}`:"尚未開始";return(<div key={ch.no} data-testid={`novel-chapter-card-${ch.no}`} onClick={()=>goChapter(i,chProgress?chPage:0)} style={{...S.card,padding:0,overflow:"hidden",cursor:"pointer",border:`1px solid ${isDone?"#1D9E75":chProgress?c.cl:S.bd}`,boxShadow:chProgress?`0 10px 24px ${c.cl}22`:S.card.boxShadow}}>
+      {novel.chapters.map((ch,i)=>{const isDone=completed.includes(ch.no);const chProgress=readingProgress[novel.id]?.chapterNo===ch.no?readingProgress[novel.id]:null;const chPageCount=Math.max(1,Number(chProgress?.pageCount)||Math.ceil(novelBlockPairs(ch.en,ch.zh).length/2));const chPage=Math.max(0,Math.min(Number(chProgress?.page)||0,chPageCount-1));const chBlock=savedNovelBlock(chProgress);const chQuiz=ch.quiz||[];const chQuizState=quizAns[`${novel.id}:${ch.no}`]||{};const chQuizAnswered=chQuiz.filter((_,qi)=>chQuizState[qi]!=null).length;const statusText=isDone?"已完成":chProgress?`進行中 · ${chBlock==null?`Page ${chPage+1}/${chPageCount}`:`段落 ${chBlock+1}`}`:"尚未開始";return(<div key={ch.no} data-testid={`novel-chapter-card-${ch.no}`} onClick={()=>goChapter(i,chProgress?chPage:0,chBlock)} style={{...S.card,padding:0,overflow:"hidden",cursor:"pointer",border:`1px solid ${isDone?"#1D9E75":chProgress?c.cl:S.bd}`,boxShadow:chProgress?`0 10px 24px ${c.cl}22`:S.card.boxShadow}}>
         <div style={{position:"relative",color:"#fff"}}>
           <NovelIllustration chapter={ch.no} small imageBase={novelImageBase} title={novel.title}/>
           <div style={{position:"absolute",top:8,left:8,width:28,height:28,borderRadius:"50%",background:"rgba(255,255,255,.9)",color:c.cl,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:900}}>{ch.no}</div>

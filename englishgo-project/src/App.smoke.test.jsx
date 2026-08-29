@@ -1138,6 +1138,9 @@ describe('EnglishGo app smoke flow', () => {
 
   it('starts novel speech without repeated cancellation immediately before playback', async () => {
     const speech = installMockSpeechSynthesis();
+    const previousTts = window.EnglishGoTTS;
+    const preloadMany = vi.fn(() => Promise.resolve([]));
+    window.EnglishGoTTS = { preloadMany };
     try {
       await openElementaryMenu();
 
@@ -1166,7 +1169,13 @@ describe('EnglishGo app smoke flow', () => {
       expect(speech.speak).toHaveBeenCalledTimes(1);
       expect(speech.cancel).toHaveBeenCalledTimes(1);
       expect(speech.events).toEqual(['cancel', 'resume', 'speak']);
+      expect(preloadMany).toHaveBeenCalledWith(
+        expect.arrayContaining(['莉莉是一個充滿好奇心的女孩。\n她喜歡探索新的地方。']),
+        expect.objectContaining({ lang: 'zh-TW', concurrency: 2 }),
+      );
     } finally {
+      if (previousTts) window.EnglishGoTTS = previousTts;
+      else delete window.EnglishGoTTS;
       speech.restore();
     }
   });
@@ -1251,7 +1260,7 @@ describe('EnglishGo app smoke flow', () => {
     expect(await screen.findByText(/What did Lily find in the forest/)).toBeInTheDocument();
   });
 
-  it('resumes a novel from the last read page', async () => {
+  it('resumes a novel from the same paragraph across desktop and mobile layouts', async () => {
     await openElementaryMenu();
 
     clickFirstButtonWithText('閱讀聽力');
@@ -1262,20 +1271,38 @@ describe('EnglishGo app smoke flow', () => {
 
     fireEvent.click(screen.getByRole('button', { name: '下一頁' }));
     expect(await screen.findByText('Page 3')).toBeInTheDocument();
+    const resumePageTurn = screen.queryByTestId('novel-page-turn');
+    if (resumePageTurn) fireEvent.animationEnd(resumePageTurn);
+
+    const anchorText = screen.getAllByTestId('novel-reader-text')[0].textContent;
+    let savedProgress;
+    await waitFor(() => {
+      savedProgress = JSON.parse(localStorage.getItem('eg_novelReadingProgress'))['secret-forest-adventure'];
+      expect(savedProgress.blockIndex).toBeGreaterThan(0);
+    });
 
     fireEvent.click(screen.getByText('章節列表'));
 
     expect(await screen.findByText('繼續閱讀')).toBeInTheDocument();
-    expect(screen.getByText(/上次讀到 Chapter 1 · Page 3/)).toBeInTheDocument();
+    expect(screen.getByText(new RegExp(`上次讀到 Chapter 1 · 段落 ${savedProgress.blockIndex+1}`))).toBeInTheDocument();
     const firstChapterCard = screen.getByTestId('novel-chapter-card-1');
-    expect(within(firstChapterCard).getByText(/進行中 · Page 3/)).toBeInTheDocument();
+    expect(within(firstChapterCard).getByText(new RegExp(`進行中 · 段落 ${savedProgress.blockIndex+1}`))).toBeInTheDocument();
     expect(within(firstChapterCard).getByText(/測驗 0\/3/)).toBeInTheDocument();
 
-    fireEvent.click(screen.getByText('繼續閱讀'));
-    expect(await screen.findByText('Page 3')).toBeInTheDocument();
+    setViewportWidth(390);
+    try {
+      fireEvent.click(screen.getByText('繼續閱讀'));
+      await waitFor(() => {
+        expect(screen.getAllByTestId('novel-reader-text').some(node => node.textContent === anchorText)).toBe(true);
+      });
+      expect(screen.getByTestId('novel-book-spread')).toHaveStyle({ gridTemplateColumns: '1fr' });
+    } finally {
+      setViewportWidth(1024);
+    }
   });
 
   it('adjusts novel reading comfort settings', async () => {
+    setViewportWidth(1024);
     await openElementaryMenu();
 
     clickFirstButtonWithText('閱讀聽力');
@@ -1310,12 +1337,17 @@ describe('EnglishGo app smoke flow', () => {
 
     fireEvent.click(screen.getByRole('button', { name: '下一頁' }));
     expect(await screen.findByText('Page 3')).toBeInTheDocument();
+    const settingsPageTurn = screen.queryByTestId('novel-page-turn');
+    if (settingsPageTurn) fireEvent.animationEnd(settingsPageTurn);
+    const readingAnchor = screen.getAllByTestId('novel-reader-text')[0].textContent;
 
     fireEvent.click(screen.getByRole('button', { name: 'A+' }));
     expect((await screen.findAllByTestId('novel-reader-text'))[0]).toHaveStyle({ fontSize: '18px' });
+    expect(screen.getAllByTestId('novel-reader-text').some(node => node.textContent === readingAnchor)).toBe(true);
 
     fireEvent.click(screen.getByRole('button', { name: '寬行距' }));
     expect((await screen.findAllByTestId('novel-reader-text'))[0]).toHaveStyle({ lineHeight: '1.9' });
+    expect(screen.getAllByTestId('novel-reader-text').some(node => node.textContent === readingAnchor)).toBe(true);
 
     fireEvent.click(screen.getByRole('button', { name: '退出沉浸' }));
     expect(await screen.findByText('閱讀設定')).toBeInTheDocument();
