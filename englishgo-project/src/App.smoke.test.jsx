@@ -287,6 +287,32 @@ describe('EnglishGo app smoke flow', () => {
     });
   });
 
+  it('uses browser back navigation for modules and the grade menu', async () => {
+    await openElementaryMenu();
+    clickFirstButtonWithText('單字卡');
+
+    expect(await screen.findByRole('heading', { name: /類型複習/ })).toBeInTheDocument();
+
+    await act(async () => {
+      window.history.back();
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+    await waitFor(() => {
+      expect(document.querySelector('[data-module-id="srs"]')).toBeTruthy();
+      expect(screen.queryByRole('heading', { name: /類型複習/ })).not.toBeInTheDocument();
+    });
+
+    await act(async () => {
+      window.history.back();
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+    await waitFor(() => {
+      expect(screen.getByText('Elementary')).toBeInTheDocument();
+      expect(screen.getByText('Junior High')).toBeInTheDocument();
+      expect(screen.getByText('Senior High')).toBeInTheDocument();
+    });
+  });
+
   it('opens unified API key settings from the tools menu', async () => {
     await openElementaryMenu();
 
@@ -1371,10 +1397,12 @@ describe('EnglishGo app smoke flow', () => {
     expect(await screen.findByText(/寵物冒險/, {}, { timeout: 5000 })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '← 返回' }));
 
-    const returnedPetTab = document.querySelector('[data-group-id="pet"]');
-    expect(returnedPetTab).toHaveAttribute('aria-selected', 'true');
-    expect(screen.getByText('扭蛋機')).toBeInTheDocument();
-    expect(screen.getByText('寵物圖鑑')).toBeInTheDocument();
+    await waitFor(() => {
+      const returnedPetTab = document.querySelector('[data-group-id="pet"]');
+      expect(returnedPetTab).toHaveAttribute('aria-selected', 'true');
+      expect(screen.getByText('扭蛋機')).toBeInTheDocument();
+      expect(screen.getByText('寵物圖鑑')).toBeInTheDocument();
+    });
   }, 15000);
 
   it('opens pet monopoly and rewards an English answer', async () => {

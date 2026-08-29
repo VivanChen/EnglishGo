@@ -2,6 +2,7 @@ import '@testing-library/jest-dom/vitest';
 
 beforeEach(() => {
   localStorage.clear();
+  window.history.replaceState({}, '', '/');
 });
 
 Object.defineProperty(window.navigator, 'onLine', {

@@ -1557,6 +1557,26 @@ function levelUpPet(pet){
 // ═══ CONFIG ═════════════════════════════════════════════════════════
 const LV={elementary:{l:"小學",en:"Elementary",cl:"#0F6E56",bg:"#E1F5EE",ac:"#1D9E75",ic:"🌱"},junior:{l:"國中",en:"Junior High",cl:"#534AB7",bg:"#EEEDFE",ac:"#7F77DD",ic:"📚"},senior:{l:"高中",en:"Senior High",cl:"#993C1D",bg:"#FAECE7",ac:"#D85A30",ic:"🎓"}};
 
+const ENGLISHGO_HISTORY_KEY="englishGoNavigation";
+const ENGLISHGO_MENU_GROUPS=new Set(["learn","read","game","pet","tools"]);
+
+function normalizeEnglishGoNavigation(value={}){
+  const level=value?.lv&&LV[value.lv]?value.lv:null;
+  return{
+    lv:level,
+    mod:level&&typeof value?.mod==="string"?value.mod:null,
+    menuGroup:ENGLISHGO_MENU_GROUPS.has(value?.menuGroup)?value.menuGroup:"learn",
+    sharedWord:level&&typeof value?.sharedWord==="string"?value.sharedWord:null,
+    customDeck:level&&value?.customDeck&&typeof value.customDeck==="object"?value.customDeck:null,
+    depth:Math.max(0,Number(value?.depth)||0),
+  };
+}
+
+function readEnglishGoNavigation(state){
+  const saved=state?.[ENGLISHGO_HISTORY_KEY];
+  return saved&&typeof saved==="object"?normalizeEnglishGoNavigation(saved):null;
+}
+
 export function formatLandingVocabularyBadge(count,ready){
   if(!ready)return"查詢字庫…";
   const total=Math.max(0,Number(count)||0);
@@ -2193,8 +2213,14 @@ function getEventCenter(e){
 
 // ═══ MAIN APP ═══════════════════════════════════════════════════════
 export default function App(){
-  const[lv,setLv]=useState(null),[mod,setMod]=useState(null);
-  const[menuGroup,setMenuGroup]=useState("learn");
+  const initialNavigation=useMemo(()=>{
+    const params=new URLSearchParams(window.location.search);
+    const shared=params.get("word"),sharedLevel=params.get("lv");
+    if(shared&&sharedLevel&&LV[sharedLevel])return normalizeEnglishGoNavigation({lv:sharedLevel,mod:"srs",menuGroup:"learn",sharedWord:shared,depth:0});
+    return readEnglishGoNavigation(window.history.state)||normalizeEnglishGoNavigation();
+  },[]);
+  const[lv,setLv]=useState(initialNavigation.lv),[mod,setMod]=useState(initialNavigation.mod);
+  const[menuGroup,setMenuGroup]=useState(initialNavigation.menuGroup);
   const[xp,setXp]=useLS("xp",0);
   const[coins,setCoins]=useLS("coins",0);
   const[pets,setPets]=useLS("pets",[]);
@@ -2216,9 +2242,37 @@ export default function App(){
   const[weakWords,setWeakWords]=useLS("weak",[]);
   const[history,setHistory]=useLS("hist",[]);
   const[showAch,setShowAch]=useState(null);
-  const[sharedWord,setSharedWord]=useState(null);
-  const[customDeck,setCustomDeck]=useState(null);
+  const[sharedWord,setSharedWord]=useState(initialNavigation.sharedWord);
+  const[customDeck,setCustomDeck]=useState(initialNavigation.customDeck);
+  const navigationRef=useRef(initialNavigation);
   const levelWeakWords=useMemo(()=>getWeakVocabularyForLevel(weakWords,lv),[weakWords,lv]);
+
+  const applyNavigation=useCallback(next=>{
+    const navigation=normalizeEnglishGoNavigation(next);
+    navigationRef.current=navigation;
+    setMenuGroup(navigation.menuGroup);
+    setLv(navigation.lv);
+    setMod(navigation.mod);
+    setSharedWord(navigation.sharedWord);
+    setCustomDeck(navigation.customDeck);
+  },[]);
+
+  const navigateEnglishGo=useCallback((changes,{replace=false,url=null}={})=>{
+    const current=navigationRef.current||normalizeEnglishGoNavigation();
+    const navigation=normalizeEnglishGoNavigation({
+      ...current,
+      ...changes,
+      depth:replace?current.depth:current.depth+1,
+    });
+    const state={...(window.history.state||{}),[ENGLISHGO_HISTORY_KEY]:navigation};
+    window.history[replace?"replaceState":"pushState"](state,"",url||window.location.href);
+    applyNavigation(navigation);
+  },[applyNavigation]);
+
+  const backEnglishGo=useCallback(fallback=>{
+    if((navigationRef.current?.depth||0)>0){window.history.back();return}
+    navigateEnglishGo(fallback,{replace:true});
+  },[navigateEnglishGo]);
 
   useEffect(()=>{
     try{localStorage.removeItem("eg_sponsor")}catch{}
@@ -2226,13 +2280,18 @@ export default function App(){
 
   useEffect(()=>{if(!lv)return;setWeakWords(words=>{const list=Array.isArray(words)?words:[];let changed=false;const migrated=list.map(item=>{if(item?.w&&!item.level){changed=true;return{...item,level:lv}}return item});return changed?migrated:words})},[lv]);
 
-  // Deep link: detect ?word=xxx&lv=xxx from shared URL
+  // Keep browser Back / iOS swipe-back aligned with EnglishGo's screen hierarchy.
   useEffect(()=>{
-    const p=new URLSearchParams(window.location.search);
-    const w=p.get("word"),l=p.get("lv");
-    if(w&&l&&LV[l]){setMenuGroup("learn");setLv(l);setMod("srs");setSharedWord(w)}
-    if(w)window.history.replaceState({},"",window.location.pathname);
-  },[]);
+    const params=new URLSearchParams(window.location.search);
+    const cleanSharedUrl=params.has("word")?window.location.pathname:window.location.href;
+    window.history.replaceState({...(window.history.state||{}),[ENGLISHGO_HISTORY_KEY]:initialNavigation},"",cleanSharedUrl);
+    const handlePopState=event=>{
+      const navigation=readEnglishGoNavigation(event.state);
+      if(navigation)applyNavigation(navigation);
+    };
+    window.addEventListener("popstate",handlePopState);
+    return()=>window.removeEventListener("popstate",handlePopState);
+  },[applyNavigation,initialNavigation]);
 
   // Check streak & daily reset + log history
   useEffect(()=>{const today=new Date().toDateString();if(daily.date!==today){
@@ -2382,13 +2441,16 @@ export default function App(){
     return()=>{if(frame!==null&&typeof cancelAnimationFrame==="function")cancelAnimationFrame(frame)};
   },[lv,mod]);
 
-  if(!lv)return<Landing onSelect={nextLv=>{setMenuGroup("learn");setLv(nextLv)}} dark={dark} setDark={setDark} keyMissing={!gemKey?.trim()||!gifKey?.trim()}/>;
-  const c=LV[lv],back=()=>setMod(null);
+  if(!lv)return<Landing onSelect={nextLv=>navigateEnglishGo({lv:nextLv,mod:null,menuGroup:"learn",sharedWord:null,customDeck:null})} dark={dark} setDark={setDark} keyMissing={!gemKey?.trim()||!gifKey?.trim()}/>;
+  const c=LV[lv],back=()=>backEnglishGo({lv,mod:null,menuGroup,sharedWord:null,customDeck:null});
   const openModule=(nextMod,group)=>{
-    setSharedWord(null);
-    setCustomDeck(null);
-    if(group)setMenuGroup(group);
-    setMod(nextMod);
+    navigateEnglishGo({lv,mod:nextMod,menuGroup:group||menuGroup,sharedWord:null,customDeck:null});
+  };
+  const changeMenuGroup=nextGroup=>navigateEnglishGo({menuGroup:nextGroup},{replace:true});
+  const returnToLevelSelection=()=>{
+    const depth=navigationRef.current?.depth||0;
+    if(depth>0){window.history.go(-depth);return}
+    navigateEnglishGo({lv:null,mod:null,menuGroup:"learn",sharedWord:null,customDeck:null},{replace:true});
   };
 
   return(
@@ -2479,7 +2541,7 @@ export default function App(){
       {showAch&&<div onClick={()=>setShowAch(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.5)",zIndex:999,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}><div style={{...S.card,padding:"32px 40px",textAlign:"center",animation:"fadeUp .4s ease-out"}}><div style={{fontSize:56}}>{showAch.icon}</div><div style={{fontSize:22,fontWeight:700,color:S.t1,marginTop:8}}>成就解鎖！</div><div style={{fontSize:16,fontWeight:600,color:c.cl,marginTop:4}}>{showAch.name}</div><div style={{fontSize:13,color:S.t2,marginTop:4}}>{showAch.desc}</div><div style={{fontSize:11,color:S.t3,marginTop:12}}>點擊關閉</div></div></div>}
       <RewardBurstHost/>
       <nav style={{background:"var(--eg-nav-background,var(--color-background-primary,#fff))",backdropFilter:"blur(14px)",WebkitBackdropFilter:"blur(14px)",borderBottom:`1px solid ${S.bd}`,boxShadow:"0 8px 24px rgba(0,0,0,.06)",padding:"8px 12px",paddingTop:"calc(8px + env(safe-area-inset-top, 0px))",display:"flex",alignItems:"center",gap:6,position:"sticky",top:0,zIndex:100}}>
-        <button type="button" aria-label="返回學習階段選擇" onClick={()=>{setMenuGroup("learn");setLv(null);setMod(null)}} style={{background:"none",border:"none",fontSize:18,cursor:"pointer",padding:"4px",minWidth:44,minHeight:44,display:"flex",alignItems:"center",justifyContent:"center"}}>←</button>
+        <button type="button" aria-label="返回學習階段選擇" onClick={returnToLevelSelection} style={{background:"none",border:"none",fontSize:18,cursor:"pointer",padding:"4px",minWidth:44,minHeight:44,display:"flex",alignItems:"center",justifyContent:"center"}}>←</button>
         <span style={{fontSize:14}}>{c.ic}</span>
         <span style={{fontWeight:600,color:c.cl,fontSize:14,flex:1}}>{c.l}</span>
         <div style={{display:"flex",alignItems:"center",gap:4,fontSize:11,color:S.t3}}>
@@ -2491,25 +2553,25 @@ export default function App(){
         <button type="button" aria-label={dark?"切換為淺色模式":"切換為深色模式"} onClick={()=>setDark(!dark)} style={{background:"none",border:"none",fontSize:14,cursor:"pointer",minWidth:44,minHeight:44,display:"flex",alignItems:"center",justifyContent:"center"}}>{dark?"☀️":"🌙"}</button>
       </nav>
       <div style={{maxWidth:!mod?940:mod==="petAdventure"?1280:mod==="petMonopoly"?1180:mod==="srs"?1080:mod==="translate"?960:760,margin:"0 auto",padding:mod==="petAdventure"||mod==="petMonopoly"?"14px 18px calc(20px + env(safe-area-inset-bottom, 0px))":"12px 12px calc(16px + env(safe-area-inset-bottom, 0px))"}}>
-        {!mod?<MenuV2 lv={lv} onSelect={openModule} activeGroup={menuGroup} onGroupChange={setMenuGroup} daily={daily} c={c} xp={xp} coins={coins} streak={streak} achUnlocked={achUnlocked} weakWords={levelWeakWords} pets={pets} eggs={eggs}/>:
-         mod==="wordsearch"?<WordSearchM lv={lv} onBack={back} onOpenCard={(word,level)=>{setLv(level||lv);setSharedWord(word);setCustomDeck(null);setMod("srs")}}/>:
-         mod==="exam"?<ExamReviewM lv={lv} onBack={back} c={c} apiKey={gemKey} onOpenSettings={()=>setMod("settings")} onStart={deck=>{setSharedWord(null);setCustomDeck(deck);setMod("srs")}}/>:
-         mod==="srs"?<SRS lv={lv} onBack={back} onLevelChange={nextLv=>{setLv(nextLv);setSharedWord(null);setCustomDeck(null)}} onXp={n=>addXpWithTask(n,"srsToday")} onDone={()=>setStats(s=>({...s,srsRounds:s.srsRounds+1}))} trackWeak={trackWeak} gifKey={gifKey} sharedWord={sharedWord} apiKey={gemKey} weakWords={levelWeakWords} customCards={customDeck?.cards||null} customSource={customDeck?.source||""} onOpenSettings={()=>setMod("settings")}/>:
+        {!mod?<MenuV2 lv={lv} onSelect={openModule} activeGroup={menuGroup} onGroupChange={changeMenuGroup} daily={daily} c={c} xp={xp} coins={coins} streak={streak} achUnlocked={achUnlocked} weakWords={levelWeakWords} pets={pets} eggs={eggs}/>:
+         mod==="wordsearch"?<WordSearchM lv={lv} onBack={back} onOpenCard={(word,level)=>navigateEnglishGo({lv:level||lv,mod:"srs",menuGroup:"learn",sharedWord:word,customDeck:null})}/>:
+         mod==="exam"?<ExamReviewM lv={lv} onBack={back} c={c} apiKey={gemKey} onOpenSettings={()=>openModule("settings","tools")} onStart={deck=>navigateEnglishGo({lv,mod:"srs",menuGroup:"learn",sharedWord:null,customDeck:deck})}/>:
+         mod==="srs"?<SRS lv={lv} onBack={back} onLevelChange={nextLv=>navigateEnglishGo({lv:nextLv,sharedWord:null,customDeck:null},{replace:true})} onXp={n=>addXpWithTask(n,"srsToday")} onDone={()=>setStats(s=>({...s,srsRounds:s.srsRounds+1}))} trackWeak={trackWeak} gifKey={gifKey} sharedWord={sharedWord} apiKey={gemKey} weakWords={levelWeakWords} customCards={customDeck?.cards||null} customSource={customDeck?.source||""} onOpenSettings={()=>openModule("settings","tools")}/>:
          mod==="quiz"?<QuizM lv={lv} onBack={back} onXp={n=>addXpWithTask(n,"quizToday")} onPerfect={()=>setStats(s=>({...s,perfectQuiz:s.perfectQuiz+1}))} trackWeak={trackWeak}/>:
-         mod==="speak"?<SpeakM lv={lv} onBack={back} onXp={n=>addXpWithTask(n,"speakToday")} apiKey={gemKey} onOpenSettings={()=>setMod("settings")}/>:
+         mod==="speak"?<SpeakM lv={lv} onBack={back} onXp={n=>addXpWithTask(n,"speakToday")} apiKey={gemKey} onOpenSettings={()=>openModule("settings","tools")}/>:
          mod==="whack"?<WhackM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="match"?<MatchM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="bomb"?<BombM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="petMonopoly"?<Suspense fallback={<ModuleLoading label="載入寵物大富翁..."/>}><PetMonopolyM lv={lv} onBack={back} onXp={addXp} c={c} pets={pets} setPets={setPets} coins={coins} setCoins={setCoins} deps={{G,Hdr,S,V,escapeRegexSafe,getAdventurePetDef,levelUpPet,shuffleCopy}}/></Suspense>:
-         mod==="grammar"?<GrammarM lv={lv} onBack={back} onXp={addXp} apiKey={gemKey} onOpenSettings={()=>setMod("settings")}/>:
+         mod==="grammar"?<GrammarM lv={lv} onBack={back} onXp={addXp} apiKey={gemKey} onOpenSettings={()=>openModule("settings","tools")}/>:
          mod==="reading"?<ReadingM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="novels"?<NovelM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="songs"?<SongsM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="dictation"?<DictM lv={lv} onBack={back} onXp={addXp} onDone={()=>setStats(s=>({...s,dictDone:s.dictDone+1}))}/>:
          mod==="scramble"?<ScramM lv={lv} onBack={back} onXp={addXp} onDone={()=>setStats(s=>({...s,scramDone:s.scramDone+1}))}/>:
-         mod==="ai"?<AIT lv={lv} onBack={back} apiKey={gemKey} onOpenSettings={()=>setMod("settings")}/>:
-         mod==="translate"?<Suspense fallback={<ModuleLoading label="載入翻譯朗讀..."/>}><TranslationReader apiKey={gemKey} onBack={back} onOpenSettings={()=>setMod("settings")} speak={speak} speakWebSpeech={speakWebSpeech} stopSpeech={stopSpeech} Header={Hdr} theme={{accent:c.cl,accentSoft:c.ac,surface:S.bg1,surfaceAlt:S.bg2,border:S.bd,text:S.t1,muted:S.t2}}/></Suspense>:
-         mod==="story"?<StoryMode lv={lv} onBack={back} apiKey={gemKey} pets={pets} c={c} onXp={addXp} trackWeak={trackWeak} onOpenSettings={()=>setMod("settings")}/>:
+         mod==="ai"?<AIT lv={lv} onBack={back} apiKey={gemKey} onOpenSettings={()=>openModule("settings","tools")}/>:
+         mod==="translate"?<Suspense fallback={<ModuleLoading label="載入翻譯朗讀..."/>}><TranslationReader apiKey={gemKey} onBack={back} onOpenSettings={()=>openModule("settings","tools")} speak={speak} speakWebSpeech={speakWebSpeech} stopSpeech={stopSpeech} Header={Hdr} theme={{accent:c.cl,accentSoft:c.ac,surface:S.bg1,surfaceAlt:S.bg2,border:S.bd,text:S.t1,muted:S.t2}}/></Suspense>:
+         mod==="story"?<StoryMode lv={lv} onBack={back} apiKey={gemKey} pets={pets} c={c} onXp={addXp} trackWeak={trackWeak} onOpenSettings={()=>openModule("settings","tools")}/>:
          mod==="achievements"?<AchPage onBack={back} unlocked={achUnlocked} c={c}/>:
          mod==="weak"?<WeakPage onBack={back} weakWords={levelWeakWords} setWeakWords={setWeakWords} c={c} lv={lv}/>:
          mod==="dashboard"?<Dashboard onBack={back} c={c} xp={xp} streak={streak} stats={stats} daily={daily} weakWords={levelWeakWords} history={history} achUnlocked={achUnlocked} lv={lv}/>:
@@ -2523,7 +2585,7 @@ export default function App(){
         <div style={{maxWidth:480,margin:"0 auto"}}>
           <div style={{fontWeight:600,fontSize:12,color:S.t2,marginBottom:6}}>📘 如何使用 EnglishGo</div>
           <div style={{marginBottom:8}}>選擇等級（小學／國中／高中）後，透過 SRS 單字卡記憶單字，搭配口說練習、打地鼠拼字、配對翻牌等遊戲強化學習。AI 家教可即時回答英文問題。每天練習 10 題即可累積經驗值與成就徽章！</div>
-          <div style={{marginBottom:8,display:"flex",alignItems:"center",justifyContent:"center",gap:4,flexWrap:"wrap"}}><button onClick={()=>{setMenuGroup("tools");setMod("settings")}} style={{background:"none",border:"none",padding:"8px 4px",minHeight:44,color:c.cl,textDecoration:"underline",font:"inherit",cursor:"pointer"}}>🔑 Key 設定</button><span aria-hidden="true">·</span><a href="/learn/api-keys.html" style={{color:c.cl,textDecoration:"underline",display:"inline-flex",alignItems:"center",minHeight:44,padding:"0 4px"}}>API Key 申請教學</a><span aria-hidden="true">·</span><a href="/learn/gif-guide.html" style={{color:c.cl,textDecoration:"underline",display:"inline-flex",alignItems:"center",minHeight:44,padding:"0 4px"}}>🖼️ 單字動圖說明</a></div>
+          <div style={{marginBottom:8,display:"flex",alignItems:"center",justifyContent:"center",gap:4,flexWrap:"wrap"}}><button onClick={()=>openModule("settings","tools")} style={{background:"none",border:"none",padding:"8px 4px",minHeight:44,color:c.cl,textDecoration:"underline",font:"inherit",cursor:"pointer"}}>🔑 Key 設定</button><span aria-hidden="true">·</span><a href="/learn/api-keys.html" style={{color:c.cl,textDecoration:"underline",display:"inline-flex",alignItems:"center",minHeight:44,padding:"0 4px"}}>API Key 申請教學</a><span aria-hidden="true">·</span><a href="/learn/gif-guide.html" style={{color:c.cl,textDecoration:"underline",display:"inline-flex",alignItems:"center",minHeight:44,padding:"0 4px"}}>🖼️ 單字動圖說明</a></div>
           <div style={{display:"inline-block",fontSize:10,color:"#1D9E75",fontWeight:600,padding:"3px 10px",background:"#E1F5EE",borderRadius:10,marginBottom:6}}>✨ 100% 無廣告 · 純淨學習空間</div>
           <div>AI Tutor powered by <b>Gemini</b> · GIFs powered by <b>GIPHY</b> · Speech by <b>Web Speech API</b></div>
           <div>© {new Date().getFullYear()} EnglishGo · 專為台灣學生設計</div>
