@@ -11,7 +11,7 @@ const valueFor = (name, fallback = "") => {
 };
 const hasFlag = name => args.includes(name);
 const baseUrl = valueFor("--base-url", process.env.NOVEL_AUDIO_BASE_URL || "https://englishgo-vevan.netlify.app").replace(/\/$/, "");
-const concurrency = Math.max(1, Math.min(4, Number(valueFor("--concurrency", "2")) || 2));
+const concurrency = Math.max(1, Math.min(6, Number(valueFor("--concurrency", "2")) || 2));
 const limit = Math.max(0, Number(valueFor("--limit", "0")) || 0);
 const language = valueFor("--lang", "").toLowerCase();
 const novelFilter = valueFor("--novel", "").toLowerCase();
