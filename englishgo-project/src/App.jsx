@@ -2831,6 +2831,7 @@ function MenuV2({lv,onSelect,activeGroup="learn",onGroupChange,daily,c,xp,coins,
   const fallbackToday=vocab[hashText(`${todayKey}:${lv}:fallback`)%Math.max(1,vocab.length)]||{w:"learn",m:"學習",p:"v."};
   const[todayWord,setTodayWord]=useState(fallbackToday);
   const[vocabularyCount,setVocabularyCount]=useState(()=>readLandingVocabularyCountCache()?.[lv]||0);
+  const[showRewards,setShowRewards]=useState(false);
   const setActiveGroup=onGroupChange||(()=>{});
   const gradeTheme=({
     elementary:{
@@ -2910,7 +2911,7 @@ function MenuV2({lv,onSelect,activeGroup="learn",onGroupChange,daily,c,xp,coins,
   const statItems=[
     {label:"連續",value:`${streak} 天`,hint:"保持節奏",tone:"#E24B4A"},
     {label:"XP",value:xp,hint:"累積學習量",tone:"#D97706"},
-    {label:"金幣",value:coins,hint:"可用於寵物",tone:"#C47A12",action:"gacha",group:"pet"},
+    {label:"金幣",value:coins,hint:"查看怎麼賺、怎麼用",tone:"#C47A12",action:"rewards"},
     {label:"寵物",value:pets.length,hint:eggs.length?`${eggs.length} 顆蛋待孵化`:"培養夥伴",tone:gradeTheme.groups?.pet||c.cl,action:"pets",group:"pet"},
   ];
   const ModuleCard=({m})=>{
@@ -2963,11 +2964,30 @@ function MenuV2({lv,onSelect,activeGroup="learn",onGroupChange,daily,c,xp,coins,
         .eg-menu-stat-label{display:block;font-size:11px;color:var(--tone);font-weight:1000}
         .eg-menu-stat-value{display:block;font-size:22px;color:var(--text);font-weight:1000;margin-top:8px;line-height:1.05}
         .eg-menu-stat-hint{display:block;font-size:11px;color:var(--faint);margin-top:6px;line-height:1.35}
+        .eg-menu-rewards{position:relative;overflow:hidden;border:1px solid color-mix(in srgb,#C47A12 34%,var(--border));border-radius:24px;background:linear-gradient(135deg,color-mix(in srgb,#F59E0B 12%,var(--card)),color-mix(in srgb,var(--accent) 5%,var(--surface)));padding:16px;box-shadow:0 14px 32px rgba(196,122,18,.10)}
+        .eg-menu-rewards:before{content:"";position:absolute;inset:0 0 auto;height:4px;background:linear-gradient(90deg,#F59E0B,#FACC15,var(--accent));pointer-events:none}
+        .eg-menu-reward-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding-right:24px}
+        .eg-menu-reward-title{font-size:17px;font-weight:1000;color:var(--text)}
+        .eg-menu-reward-sub{font-size:12px;color:var(--muted);line-height:1.55;margin-top:4px}
+        .eg-menu-reward-balance{flex:0 0 auto;border-radius:16px;background:color-mix(in srgb,#F59E0B 14%,var(--card));border:1px solid color-mix(in srgb,#C47A12 28%,var(--border));padding:10px 12px;text-align:right}
+        .eg-menu-reward-balance span{display:block;font-size:10px;font-weight:900;color:#9A6700}
+        .eg-menu-reward-balance strong{display:block;font-size:22px;color:#9A6700;line-height:1.15;margin-top:2px}
+        .eg-menu-reward-close{position:absolute;top:9px;right:9px;border:0;background:transparent;color:var(--faint);font-size:20px;line-height:1;cursor:pointer;padding:4px}
+        .eg-menu-reward-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:14px}
+        .eg-menu-reward-block{border:1px solid var(--border);border-radius:17px;background:color-mix(in srgb,var(--card) 92%,transparent);padding:12px;min-height:105px}
+        .eg-menu-reward-block-title{font-size:12px;font-weight:1000;color:var(--text);margin-bottom:8px}
+        .eg-menu-reward-line{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;font-size:11px;color:var(--muted);line-height:1.45;padding:4px 0}
+        .eg-menu-reward-line strong{color:#9A6700;white-space:nowrap}
+        .eg-menu-spend-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px}
+        .eg-menu-spend-action{border:1px solid color-mix(in srgb,var(--spend-color) 30%,var(--border));border-radius:15px;background:color-mix(in srgb,var(--spend-color) 9%,var(--card));padding:10px;text-align:left;color:var(--text);cursor:pointer;min-height:70px}
+        .eg-menu-spend-action strong{display:block;font-size:12px;color:var(--spend-color)}
+        .eg-menu-spend-action span{display:block;font-size:10px;color:var(--muted);line-height:1.4;margin-top:4px}
+        .eg-menu-reward-rule{display:flex;align-items:flex-start;gap:9px;margin-top:12px;border-radius:15px;background:color-mix(in srgb,var(--accent) 8%,var(--card));border:1px solid color-mix(in srgb,var(--accent) 20%,var(--border));padding:10px 12px;font-size:11px;color:var(--muted);line-height:1.55}
+        .eg-menu-reward-rule strong{color:var(--accent)}
         .eg-menu-section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin:2px 2px 10px}
         .eg-menu-section-title{font-size:16px;font-weight:1000;color:var(--text)}
         .eg-menu-section-sub{font-size:12px;color:var(--faint);margin-top:3px;line-height:1.45}
-        .eg-menu-quick-row{position:relative;z-index:1;display:flex;align-items:center;gap:7px;margin-top:10px;overflow-x:auto;padding:1px 0 3px;scrollbar-width:none}
-        .eg-menu-quick-row::-webkit-scrollbar{display:none}
+        .eg-menu-quick-row{position:relative;z-index:1;display:flex;align-items:center;gap:7px;margin-top:10px;overflow:visible;flex-wrap:wrap;padding:1px 0 3px}
         .eg-menu-quick-label{flex:0 0 auto;font-size:11px;font-weight:1000;color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--card));border:1px solid color-mix(in srgb,var(--accent) 18%,transparent);border-radius:999px;padding:7px 9px}
         .eg-menu-quick-action{flex:0 0 auto;border:1px solid color-mix(in srgb,var(--module-color) 26%,var(--border));border-radius:999px;background:color-mix(in srgb,var(--module-color) 8%,var(--card));color:var(--text);display:inline-flex;align-items:center;gap:7px;min-height:44px;max-width:210px;padding:6px 10px;cursor:pointer;transition:transform .14s ease,box-shadow .14s ease,border-color .14s ease}
         .eg-menu-quick-action:hover{transform:translateY(-1px);box-shadow:0 8px 18px color-mix(in srgb,var(--module-color) 14%,transparent);border-color:color-mix(in srgb,var(--module-color) 52%,var(--border))}
@@ -2975,7 +2995,9 @@ function MenuV2({lv,onSelect,activeGroup="learn",onGroupChange,daily,c,xp,coins,
         .eg-menu-quick-text{min-width:0;display:flex;align-items:baseline;gap:6px}
         .eg-menu-quick-title{font-size:12px;font-weight:1000;line-height:1.1;color:var(--text);white-space:nowrap}
         .eg-menu-quick-tag{font-size:10px;font-weight:900;color:var(--module-color);white-space:nowrap}
-        .eg-menu-swipe-hint{display:none}
+        .eg-menu-group-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 4px -9px}
+        .eg-menu-group-heading strong{font-size:14px;color:var(--text)}
+        .eg-menu-group-heading span{font-size:11px;font-weight:850;color:var(--faint)}
         .eg-menu-groups{position:relative;z-index:2;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;padding:8px;border:1px solid color-mix(in srgb,var(--accent) 18%,var(--border));border-radius:22px;background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 6%,var(--card)),color-mix(in srgb,var(--accent-3) 5%,var(--surface)));box-shadow:0 12px 26px rgba(15,110,86,.06)}
         .eg-menu-group{position:relative;overflow:hidden;border:1px solid transparent;border-radius:16px;background:transparent;padding:11px 10px;text-align:left;cursor:pointer;min-height:74px;color:var(--text);transition:transform .14s ease,box-shadow .14s ease,border-color .14s ease,background .14s ease}
         .eg-menu-group:hover{transform:translateY(-1px);background:color-mix(in srgb,var(--group-color) 7%,var(--card));border-color:color-mix(in srgb,var(--group-color) 18%,transparent)}
@@ -3004,15 +3026,29 @@ function MenuV2({lv,onSelect,activeGroup="learn",onGroupChange,daily,c,xp,coins,
         .eg-menu-alert-action{border:0;background:#E24B4A;color:#fff;border-radius:999px;padding:8px 12px;font-size:12px;font-weight:900;cursor:pointer;white-space:nowrap}
         @media (max-width:760px){
           .eg-menu{gap:14px}
-          .eg-menu-hero{grid-template-columns:1fr;padding:16px;border-radius:20px}
-          .eg-menu-stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;overflow:visible;padding-bottom:0}
-          .eg-menu-stat{min-width:78px;min-height:74px;padding:10px}
+          .eg-menu-hero{grid-template-columns:minmax(0,1fr);padding:16px;border-radius:20px}
+          .eg-menu-hero>div{min-width:0;max-width:100%}
+          .eg-menu-stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;overflow:visible;padding-bottom:0;width:100%;min-width:0;max-width:100%}
+          .eg-menu-stat{min-width:0;min-height:74px;padding:10px}
           .eg-menu-stat-value{font-size:17px}
           .eg-menu-stat-hint{display:none}
-          .eg-menu-swipe-hint{display:flex;align-items:center;justify-content:flex-end;margin:-5px 6px -8px;color:var(--faint);font-size:11px;font-weight:850}
-          .eg-menu-groups{display:flex;overflow-x:auto;padding:7px;border-radius:18px;scroll-snap-type:x proximity;scroll-padding-inline:7px}
-          .eg-menu-group{min-width:112px;min-height:62px;padding:10px;scroll-snap-align:start}
+          .eg-menu-stat.has-action .eg-menu-stat-hint{display:block}
+          .eg-menu-quick-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));overflow:visible;gap:7px;padding-bottom:0}
+          .eg-menu-quick-label{grid-column:1 / -1;width:max-content}
+          .eg-menu-quick-action{width:100%;max-width:none;min-width:0}
+          .eg-menu-quick-text{overflow:hidden}
+          .eg-menu-quick-title,.eg-menu-quick-tag{overflow:hidden;text-overflow:ellipsis}
+          .eg-menu-groups{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));overflow:visible;padding:7px;gap:6px;border-radius:18px}
+          .eg-menu-group{grid-column:span 2;min-width:0;min-height:60px;padding:8px 7px}
+          .eg-menu-group:nth-child(4){grid-column:2 / span 2}
+          .eg-menu-group:nth-child(5){grid-column:4 / span 2}
+          .eg-menu-group-top{gap:5px}
+          .eg-menu-group-icon{width:25px;height:25px;border-radius:8px}
+          .eg-menu-group-title{font-size:12px}
           .eg-menu-group-desc{display:none}
+          .eg-menu-reward-grid,.eg-menu-spend-actions{grid-template-columns:1fr}
+          .eg-menu-reward-block{min-height:0}
+          .eg-menu-spend-action{min-height:0}
           .eg-menu-module-grid{grid-template-columns:1fr}
           .eg-menu-module{min-height:88px}
           .eg-menu-section-head{align-items:flex-start}
@@ -3045,7 +3081,7 @@ function MenuV2({lv,onSelect,activeGroup="learn",onGroupChange,daily,c,xp,coins,
         </div>
         <div className="eg-menu-stats">
           {statItems.map(item=>(
-            <button key={item.label} type="button" disabled={!item.action} onClick={()=>item.action&&onSelect(item.action,item.group)} className={`eg-menu-stat ${item.action?"has-action":""}`} style={{"--tone":item.tone}}>
+            <button key={item.label} type="button" disabled={!item.action} onClick={()=>item.action==="rewards"?setShowRewards(open=>!open):item.action&&onSelect(item.action,item.group)} aria-expanded={item.action==="rewards"?showRewards:undefined} aria-controls={item.action==="rewards"?"eg-menu-reward-center":undefined} className={`eg-menu-stat ${item.action?"has-action":""}`} style={{"--tone":item.tone}}>
               <span className="eg-menu-stat-label">{item.label}</span>
               <span className="eg-menu-stat-value">{item.value}</span>
               <span className="eg-menu-stat-hint">{item.hint}</span>
@@ -3053,6 +3089,49 @@ function MenuV2({lv,onSelect,activeGroup="learn",onGroupChange,daily,c,xp,coins,
           ))}
         </div>
       </section>
+
+      {showRewards&&(
+        <section id="eg-menu-reward-center" className="eg-menu-rewards" data-testid="reward-center" aria-label="金幣與獎勵中心">
+          <div className="eg-menu-reward-head">
+            <div style={{minWidth:0}}>
+              <div className="eg-menu-reward-title">金幣與獎勵中心</div>
+              <div className="eg-menu-reward-sub">學習功能永遠免費。金幣只用在寵物培養與自選遊戲，不會限制孩子讀書。</div>
+            </div>
+            <div style={{display:"flex",alignItems:"flex-start",gap:5}}>
+              <div className="eg-menu-reward-balance"><span>目前金幣</span><strong>{coins}</strong></div>
+              <button type="button" className="eg-menu-reward-close" onClick={()=>setShowRewards(false)} aria-label="關閉獎勵中心">×</button>
+            </div>
+          </div>
+
+          <div className="eg-menu-reward-grid">
+            <div className="eg-menu-reward-block">
+              <div className="eg-menu-reward-block-title">怎麼獲得</div>
+              <div className="eg-menu-reward-line"><span>完成一個學習動作</span><strong>至少 +1</strong></div>
+              <div className="eg-menu-reward-line"><span>完成每日任務</span><strong>+10～25</strong></div>
+              <div className="eg-menu-reward-line"><span>每日登入與連續紀錄</span><strong>+20～200</strong></div>
+            </div>
+            <div className="eg-menu-reward-block">
+              <div className="eg-menu-reward-block-title">現在可以做什麼</div>
+              <div className="eg-menu-reward-line"><span>寵物食物</span><strong>{coins>=8?"可以購買":`還差 ${8-coins}`}</strong></div>
+              <div className="eg-menu-reward-line"><span>寵物扭蛋（50／次）</span><strong>{coins>=50?`可抽 ${Math.floor(coins/50)} 次`:`還差 ${50-coins}`}</strong></div>
+              <div className="eg-menu-reward-line"><span>大富翁（100 起）</span><strong>{coins>=100?"可以參加":`還差 ${100-coins}`}</strong></div>
+            </div>
+            <div className="eg-menu-reward-block">
+              <div className="eg-menu-reward-block-title">答錯會怎樣</div>
+              <div className="eg-menu-reward-line"><span>一般練習</span><strong>不扣金幣</strong></div>
+              <div className="eg-menu-reward-line"><span>學習連擊</span><strong>重新累積</strong></div>
+              <div className="eg-menu-reward-line"><span>不熟的題目</span><strong>加入弱點複習</strong></div>
+            </div>
+          </div>
+
+          <div className="eg-menu-spend-actions" aria-label="金幣使用入口">
+            <button type="button" className="eg-menu-spend-action" aria-label="前往寵物照顧" style={{"--spend-color":"#0F9F7A"}} onClick={()=>onSelect("pets","pet")}><strong>前往寵物照顧</strong><span>進入後可開食物商店，8 金幣起並順便學生活單字。</span></button>
+            <button type="button" className="eg-menu-spend-action" aria-label="前往扭蛋" style={{"--spend-color":"#DB2777"}} onClick={()=>onSelect("gacha","pet")}><strong>前往扭蛋</strong><span>每次 50 金幣，取得寵物蛋並用學習進度孵化。</span></button>
+            <button type="button" className="eg-menu-spend-action" aria-label="前往寵物大富翁" style={{"--spend-color":"#D97706"}} onClick={()=>onSelect("petMonopoly","game")}><strong>前往寵物大富翁</strong><span>自選投入 100 金幣起，離開時帶回本局剩餘金幣。</span></button>
+          </div>
+          <div className="eg-menu-reward-rule"><span aria-hidden="true">✓</span><span><strong>保護規則：</strong>一般學習答錯不倒扣主錢包；只有主動進入大富翁後，答錯才會影響本局金幣，而且總額不會變成負數。</span></div>
+        </section>
+      )}
 
       {weakWords.length>0&&(
         <section className="eg-menu-alert">
@@ -3065,8 +3144,8 @@ function MenuV2({lv,onSelect,activeGroup="learn",onGroupChange,daily,c,xp,coins,
         </section>
       )}
 
-      <div className="eg-menu-swipe-hint" aria-hidden="true">左右滑動查看更多 →</div>
-      <section className="eg-menu-groups" role="tablist" aria-label="功能分類，可左右滑動查看更多">
+      <div className="eg-menu-group-heading"><strong>功能分類</strong><span>5 項都可直接點選</span></div>
+      <section className="eg-menu-groups" role="tablist" aria-label="功能分類，五項皆可直接點選">
         {groups.map(g=>{
           const active=g.id===activeGroup;
           return(

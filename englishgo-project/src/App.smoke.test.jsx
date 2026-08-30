@@ -1430,11 +1430,35 @@ describe('EnglishGo app smoke flow', () => {
     setViewportWidth(1024);
   });
 
-  it('opens the lazy gacha module from the coin stat', async () => {
+  it('shows every mobile function category without swipe-only navigation', async () => {
+    setViewportWidth(390);
+    await openElementaryMenu();
+
+    const categoryTabs = screen.getByRole('tablist', { name: '功能分類，五項皆可直接點選' });
+    expect(within(categoryTabs).getAllByRole('tab')).toHaveLength(5);
+    expect(screen.getByText('5 項都可直接點選')).toBeInTheDocument();
+    expect(screen.queryByText(/左右滑動查看更多/)).not.toBeInTheDocument();
+
+    ['學習', '閱讀聽力', '遊戲', '寵物', '工具'].forEach(label => {
+      expect(within(categoryTabs).getByRole('tab', { name: new RegExp(label) })).toBeInTheDocument();
+    });
+    setViewportWidth(1024);
+  });
+
+  it('explains coin earning, spending, and child-safe penalties before opening gacha', async () => {
     await openElementaryMenu();
 
     clickMenuStat('金幣');
 
+    const rewardCenter = screen.getByTestId('reward-center');
+    expect(rewardCenter).toHaveTextContent('學習功能永遠免費');
+    expect(rewardCenter).toHaveTextContent('完成一個學習動作');
+    expect(rewardCenter).toHaveTextContent('寵物食物');
+    expect(rewardCenter).toHaveTextContent('一般練習');
+    expect(rewardCenter).toHaveTextContent('不扣金幣');
+    expect(rewardCenter).toHaveTextContent('答錯才會影響本局金幣');
+
+    fireEvent.click(within(rewardCenter).getByRole('button', { name: '前往扭蛋' }));
     expect(await screen.findByText(/扭蛋機/, {}, { timeout: 5000 })).toBeInTheDocument();
   });
 
