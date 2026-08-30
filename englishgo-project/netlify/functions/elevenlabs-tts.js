@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { NOVEL_AUDIO_CATALOG } from "./novel-audio-catalog.js";
 
 const DEFAULT_VOICE_ID = "21m00Tcm4TlvDq8ikWAM";
 const ALLOWED_ENGLISH_VOICE_IDS = new Set([
@@ -11,6 +12,9 @@ const DEFAULT_MODEL_ID = "eleven_multilingual_v2";
 const DEFAULT_ZH_MODEL_ID = "eleven_multilingual_v2";
 const DEFAULT_OUTPUT_FORMAT = "mp3_44100_128";
 const MAX_TEXT_LENGTH = 900;
+const NOVEL_ENGLISH_SPEED = 0.9;
+const NOVEL_CHINESE_SPEED = 1;
+const ONE_YEAR_SECONDS = 31536000;
 
 function getEnv(name) {
   try {
@@ -40,12 +44,20 @@ function safeHeaderValue(value) {
   return String(value ?? "").replace(/[\r\n]/g, " ").slice(0, 240);
 }
 
-function audioResponse(audioBuffer, source = "elevenlabs", extraHeaders = {}) {
+function audioResponse(audioBuffer, source = "elevenlabs", extraHeaders = {}, fixedAsset = false) {
   return new Response(audioBuffer, {
     status: 200,
     headers: {
       "Content-Type": "audio/mpeg",
-      "Cache-Control": "public, max-age=86400",
+      "Cache-Control": fixedAsset
+        ? `public, max-age=${ONE_YEAR_SECONDS}, immutable`
+        : "public, max-age=86400",
+      ...(fixedAsset
+        ? {
+            "Netlify-CDN-Cache-Control": `public, durable, max-age=${ONE_YEAR_SECONDS}, immutable`,
+            "Netlify-Vary": "query=novel",
+          }
+        : {}),
       "X-TTS-Source": source,
       ...extraHeaders,
     },
@@ -167,7 +179,7 @@ async function tryReadFromSupabaseStorage({ bucket, cacheKey }) {
   }
 }
 
-async function tryUploadToSupabaseStorage({ bucket, cacheKey, audioBuffer }) {
+async function tryUploadToSupabaseStorage({ bucket, cacheKey, audioBuffer, fixedAsset = false }) {
   const supabaseUrl = getSupabaseUrl();
   const supabaseKey = getSupabaseKey();
 
@@ -181,7 +193,7 @@ async function tryUploadToSupabaseStorage({ bucket, cacheKey, audioBuffer }) {
       method: "POST",
       headers: supabaseHeaders(supabaseKey, {
         "Content-Type": "audio/mp3",
-        "Cache-Control": "86400",
+        "Cache-Control": fixedAsset ? String(ONE_YEAR_SECONDS) : "86400",
         "x-upsert": "true",
       }),
       body: audioBuffer,
@@ -197,8 +209,22 @@ async function tryUploadToSupabaseStorage({ bucket, cacheKey, audioBuffer }) {
 }
 
 export default async function handler(req, context = {}) {
-  if (req.method !== "POST") {
+  if (req.method !== "POST" && req.method !== "GET") {
     return jsonResponse(405, { error: "Method not allowed" });
+  }
+
+  const isFixedNovelAsset = req.method === "GET";
+  let novelAssetId = "";
+  let payload;
+
+  if (isFixedNovelAsset) {
+    try {
+      novelAssetId = new URL(req.url).searchParams.get("novel") || "";
+    } catch {
+      return jsonResponse(400, { error: "Invalid novel audio URL" });
+    }
+    payload = NOVEL_AUDIO_CATALOG[novelAssetId];
+    if (!payload) return jsonResponse(404, { error: "Unknown novel audio asset" });
   }
 
   const apiKey = getEnv("ELEVENLABS_API_KEY");
@@ -206,12 +232,13 @@ export default async function handler(req, context = {}) {
     return jsonResponse(500, { error: "Missing ELEVENLABS_API_KEY" });
   }
 
-  let payload;
-  try {
-    const body = await req.text();
-    payload = JSON.parse(body || "{}");
-  } catch {
-    return jsonResponse(400, { error: "Invalid JSON body" });
+  if (!isFixedNovelAsset) {
+    try {
+      const body = await req.text();
+      payload = JSON.parse(body || "{}");
+    } catch {
+      return jsonResponse(400, { error: "Invalid JSON body" });
+    }
   }
 
   const originalText = String(payload.text || "").trim();
@@ -219,12 +246,16 @@ export default async function handler(req, context = {}) {
   const lang = String(payload.lang || "en-US").trim();
   const voiceId = isChineseLang(lang)
     ? getEnv("ELEVENLABS_ZH_VOICE_ID")
-    : getEnglishVoiceId(payload.voiceId);
+    : isFixedNovelAsset
+      ? DEFAULT_VOICE_ID
+      : getEnglishVoiceId(payload.voiceId);
   const modelId = isChineseLang(lang)
     ? getEnv("ELEVENLABS_ZH_MODEL_ID") || DEFAULT_ZH_MODEL_ID
     : getEnv("ELEVENLABS_MODEL_ID") || DEFAULT_MODEL_ID;
   const outputFormat = getEnv("ELEVENLABS_OUTPUT_FORMAT") || DEFAULT_OUTPUT_FORMAT;
-  const playbackSpeed = clampNumber(payload.speed ?? getEnv("ELEVENLABS_SPEED"), 0.7, 1.2, 1);
+  const playbackSpeed = isFixedNovelAsset
+    ? (isChineseLang(lang) ? NOVEL_CHINESE_SPEED : NOVEL_ENGLISH_SPEED)
+    : clampNumber(payload.speed ?? getEnv("ELEVENLABS_SPEED"), 0.7, 1.2, 1);
   const bucket = getEnv("SUPABASE_TTS_BUCKET") || DEFAULT_BUCKET;
   const hasSupabaseUrl = Boolean(getSupabaseUrl());
   const hasSupabaseKey = Boolean(getSupabaseKey());
@@ -262,6 +293,7 @@ export default async function handler(req, context = {}) {
         "X-TTS-Playback-Speed": safeHeaderValue(playbackSpeed),
         "X-TTS-Has-Supabase-Url": String(hasSupabaseUrl),
         "X-TTS-Has-Supabase-Key": String(hasSupabaseKey),
+        ...(isFixedNovelAsset ? { "X-TTS-Novel-Asset": safeHeaderValue(novelAssetId) } : {}),
       }
     : {};
 
@@ -271,7 +303,7 @@ export default async function handler(req, context = {}) {
       ...debugHeaders,
       "X-TTS-Cache-Read": "hit",
       "X-TTS-Cache-Upload": "skipped-hit",
-    });
+    }, isFixedNovelAsset);
   }
 
   try {
@@ -290,16 +322,16 @@ export default async function handler(req, context = {}) {
 
     const awaitUpload = getEnv("TTS_AWAIT_CACHE_UPLOAD") === "true";
     if (awaitUpload) {
-      const upload = await tryUploadToSupabaseStorage({ bucket, cacheKey, audioBuffer });
+      const upload = await tryUploadToSupabaseStorage({ bucket, cacheKey, audioBuffer, fixedAsset: isFixedNovelAsset });
       return audioResponse(audioBuffer, "elevenlabs", {
         ...debugHeaders,
         "X-TTS-Cache-Read": safeHeaderValue(cached.reason),
         "X-TTS-Cache-Upload": upload.ok ? "ok" : "failed",
         "X-TTS-Cache-Upload-Detail": safeHeaderValue(upload.reason),
-      });
+      }, isFixedNovelAsset);
     }
 
-    const uploadPromise = tryUploadToSupabaseStorage({ bucket, cacheKey, audioBuffer })
+    const uploadPromise = tryUploadToSupabaseStorage({ bucket, cacheKey, audioBuffer, fixedAsset: isFixedNovelAsset })
       .then((upload) => {
         if (!upload.ok) console.warn("TTS cache upload failed:", upload.reason);
         return upload;
@@ -317,7 +349,7 @@ export default async function handler(req, context = {}) {
       "X-TTS-Cache-Read": safeHeaderValue(cached.reason),
       "X-TTS-Cache-Upload": "queued",
       "X-TTS-Cache-Upload-Detail": typeof context.waitUntil === "function" ? "waitUntil" : "best-effort",
-    });
+    }, isFixedNovelAsset);
   } catch (err) {
     return jsonResponse(500, { error: err?.message || String(err) });
   }

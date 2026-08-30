@@ -117,6 +117,34 @@ describe("ElevenLabs TTS patch", () => {
     expect(payload.speed).toBe(1);
   });
 
+  it("loads fixed novel narration through its immutable GET URL", async () => {
+    installPatchEnv();
+    globalThis.fetch = vi.fn(() => Promise.resolve(new Response(new Blob(["mp3"], { type: "audio/mpeg" }))));
+    loadPatch();
+    const audioUrl = "/.netlify/functions/elevenlabs-tts?novel=v1-story-c1-en-block-0-hash";
+
+    await window.EnglishGoTTS.getAudioUrl("The forest is quiet.", { lang: "en-US", audioUrl });
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(audioUrl, expect.objectContaining({
+      method: "GET",
+      cache: "force-cache",
+    }));
+  });
+
+  it("preloads object-based English and Chinese novel audio items", async () => {
+    installPatchEnv();
+    globalThis.fetch = vi.fn(() => Promise.resolve(new Response(new Blob(["mp3"], { type: "audio/mpeg" }))));
+    loadPatch();
+
+    await window.EnglishGoTTS.preloadMany([
+      { text: "The forest is quiet.", lang: "en-US", audioUrl: "/audio-en" },
+      { text: "森林很安靜。", lang: "zh-TW", audioUrl: "/audio-zh" },
+    ], { limit: 2, concurrency: 2 });
+
+    expect(globalThis.fetch).toHaveBeenCalledTimes(2);
+    expect(globalThis.fetch.mock.calls.map(([url]) => url)).toEqual(expect.arrayContaining(["/audio-en", "/audio-zh"]));
+  });
+
   it("keeps unmarked Chinese speech on native browser speech", () => {
     const { nativeSpeak } = installPatchEnv();
     loadPatch();

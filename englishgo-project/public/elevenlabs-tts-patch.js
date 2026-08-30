@@ -68,6 +68,7 @@
   }
 
   function makeCacheKey(text, settings) {
+    if (settings.audioUrl) return `asset|${settings.audioUrl}`;
     return `${settings.lang || "en-US"}|${settings.voiceId || "server-default"}|${settings.speed || DEFAULT_SPEED}|${normalizeText(text)}`;
   }
 
@@ -86,6 +87,7 @@
     const text = String(utterance?.text || "").trim();
     const lang = String(utterance?.lang || "en-US");
     if (!text || text.length > MAX_CHARS) return false;
+    if (utterance?.__englishGoAudioUrl) return true;
     if (typeof utterance.onboundary === "function") return false;
     if (/^en/i.test(lang)) return /[A-Za-z]/.test(text);
     if (isChineseLang(lang)) {
@@ -163,11 +165,17 @@
     if (audioCache.has(cacheKey)) return audioCache.get(cacheKey);
     if (inflight.has(cacheKey)) return inflight.get(cacheKey);
 
-    const promise = fetch("/.netlify/functions/elevenlabs-tts", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: normalized, voiceId: settings.voiceId, lang: settings.lang, speed: settings.speed }),
-    })
+    const fixedAudioUrl = String(options.audioUrl || "").trim();
+    const requestUrl = fixedAudioUrl || "/.netlify/functions/elevenlabs-tts";
+    const requestOptions = fixedAudioUrl
+      ? { method: "GET", cache: "force-cache", headers: { Accept: "audio/mpeg" } }
+      : {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: normalized, voiceId: settings.voiceId, lang: settings.lang, speed: settings.speed }),
+        };
+
+    const promise = fetch(requestUrl, requestOptions)
       .then(async (res) => {
         if (!res.ok) throw new Error(`ElevenLabs TTS failed: ${res.status}`);
         const blob = await res.blob();
@@ -193,16 +201,19 @@
 
   async function preloadMany(texts, options = {}) {
     const rawItems = Array.isArray(texts) ? texts : [texts];
-    const limit = clamp(options.limit, 1, 12, 5);
+    const hasFixedAssets = rawItems.some(item => item && typeof item === "object" && item.audioUrl);
+    const limit = clamp(options.limit, 1, hasFixedAssets ? 24 : 12, 5);
     const concurrency = clamp(options.concurrency, 1, 3, 2);
     const seen = new Set();
     const items = [];
 
     for (const item of rawItems) {
-      const normalized = normalizeText(item);
-      if (!isEligibleText(normalized, options.lang) || seen.has(normalized)) continue;
-      seen.add(normalized);
-      items.push(normalized);
+      const itemOptions = item && typeof item === "object" ? { ...options, ...item } : options;
+      const normalized = normalizeText(item && typeof item === "object" ? item.text : item);
+      const uniqueKey = itemOptions.audioUrl || `${itemOptions.lang || "en-US"}|${normalized}`;
+      if (!isEligibleText(normalized, itemOptions.lang) || seen.has(uniqueKey)) continue;
+      seen.add(uniqueKey);
+      items.push({ text: normalized, options: itemOptions });
       if (items.length >= limit) break;
     }
 
@@ -210,7 +221,7 @@
     const workers = Array.from({ length: Math.min(concurrency, items.length) }, async () => {
       while (index < items.length) {
         const next = items[index++];
-        await preload(next, options);
+        await preload(next.text, next.options);
       }
     });
 
@@ -354,7 +365,7 @@
     audio.muted = true;
     const unlockPlayback = audio.play().catch(() => {});
 
-    getAudioUrl(text, { lang: utterance.lang })
+    getAudioUrl(text, { lang: utterance.lang, audioUrl: utterance.__englishGoAudioUrl })
       .then((url) => {
         if (activeAudio !== audio) return null;
         audio.pause();

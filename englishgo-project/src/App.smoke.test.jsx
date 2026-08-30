@@ -1184,6 +1184,9 @@ describe('EnglishGo app smoke flow', () => {
       expect(speech.speak).toHaveBeenCalledTimes(1);
       expect(speech.cancel).toHaveBeenCalledTimes(1);
       expect(speech.events).toEqual(['cancel', 'resume', 'speak']);
+      expect(speech.speak.mock.calls[0][0].__englishGoAudioUrl).toMatch(
+        /^\/\.netlify\/functions\/elevenlabs-tts\?novel=v1-secret-forest-adventure-c1-zh-block-0-/,
+      );
 
       act(() => {
         speech.speak.mock.calls[0][0].onend?.(new Event('end'));
@@ -1196,9 +1199,8 @@ describe('EnglishGo app smoke flow', () => {
       expect(speech.speak).toHaveBeenCalledTimes(1);
       expect(speech.cancel).toHaveBeenCalledTimes(1);
       expect(speech.events).toEqual(['cancel', 'resume', 'speak']);
-      expect(preloadMany).toHaveBeenCalledWith(
-        expect.arrayContaining(['莉莉是一個充滿好奇心的女孩。\n她喜歡探索新的地方。']),
-        expect.objectContaining({ lang: 'zh-TW', concurrency: 2 }),
+      expect(speech.speak.mock.calls[0][0].__englishGoAudioUrl).toMatch(
+        /^\/\.netlify\/functions\/elevenlabs-tts\?novel=v1-secret-forest-adventure-c1-en-block-0-/,
       );
     } finally {
       if (previousTts) window.EnglishGoTTS = previousTts;
@@ -1404,7 +1406,7 @@ describe('EnglishGo app smoke flow', () => {
       overflowX: 'auto',
       flexWrap: 'nowrap',
     });
-    expect(screen.getByText('中文真人聲')).toBeInTheDocument();
+    expect(screen.getByText('真人旁白預載')).toBeInTheDocument();
     expect(screen.getByTestId('novel-book-spread')).toHaveStyle({ gridTemplateColumns: '1fr' });
     expect(screen.getAllByTestId('novel-book-page')).toHaveLength(1);
     expect(screen.getAllByTestId('novel-reader-text').length).toBeGreaterThanOrEqual(2);

@@ -46,6 +46,16 @@ SUPABASE_TTS_BUCKET=tts-cache
 
 > 注意：不要另外設定 `SUPABASE_URL`。此專案前端需要公開的 `VITE_SUPABASE_URL`，Netlify Secrets Scanning 可能會把相同值誤判為 `SUPABASE_URL` 外洩。
 
+### 小說固定真人語音
+
+建置時會由 `src/data/novels.js` 自動產生固定小說語音清單。部署後可執行以下指令，分批建立全部英中旁白；進度會寫入本機狀態檔，若中斷可直接用相同指令續傳：
+
+```bash
+npm run prewarm:novel-audio
+```
+
+小說播放器只預載目前頁與下一頁，不會把近七千段音檔一次下載到手機。固定音檔由既有的私人 `tts-cache` bucket 保存，並透過版本化 GET 網址與 Netlify CDN 長效快取，因此不需要新增 Supabase SQL 或公開 Storage bucket。
+
 ## 📋 專案結構
 
 ```

@@ -1696,6 +1696,7 @@ function makeUtterance(t,l="en-US",r=0.9,opts={},token=_speechToken){
   u.onerror=e=>{unregisterCancel();if(token===_speechToken)opts.onerror?.(e)};
   if(opts.onboundary)u.onboundary=e=>{if(token===_speechToken)opts.onboundary?.(e)};
   if(opts.apiTts)u.__englishGoApiTts=true;
+  if(opts.audioUrl)u.__englishGoAudioUrl=opts.audioUrl;
   u.cancel=()=>{if(token===_speechToken)stopSpeech()};
   return u;
 }
@@ -1767,6 +1768,7 @@ function speakStory(sentences,opts={}){
     const u=makeUtterance(text,item?.lang||opts.lang||"en-US",item?.rate||opts.rate||0.88,{
       pitch:item?.pitch||opts.pitch||1.08,
       apiTts:item?.apiTts??opts.apiTts,
+      audioUrl:item?.audioUrl??opts.audioUrl,
       onend:()=>{
         if(cancelled||token!==_speechToken)return;
         if(isLast){unregisterCancel();opts.onFinish?.()}

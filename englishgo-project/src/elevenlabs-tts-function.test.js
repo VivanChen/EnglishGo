@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import handler from "../netlify/functions/elevenlabs-tts.js";
+import { NOVEL_AUDIO_CATALOG } from "../netlify/functions/novel-audio-catalog.js";
 
 const ENV_KEYS = [
   "ELEVENLABS_API_KEY",
@@ -26,6 +27,12 @@ function request(payload) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
+  });
+}
+
+function novelRequest(assetId) {
+  return new Request(`http://localhost/.netlify/functions/elevenlabs-tts?novel=${encodeURIComponent(assetId)}`, {
+    method: "GET",
   });
 }
 
@@ -120,5 +127,30 @@ describe("elevenlabs-tts function voice selection", () => {
     expect(res.status).toBe(200);
     const [, init] = globalThis.fetch.mock.calls[0];
     expect(JSON.parse(init.body).text).toBe("Do I take the US bus?");
+  });
+
+  it("serves fixed English novel narration from a versioned immutable GET URL", async () => {
+    process.env.ELEVENLABS_VOICE_ID = "ErXwobaYiN019PkySvjV";
+    const [assetId, asset] = Object.entries(NOVEL_AUDIO_CATALOG).find(([, entry]) => entry.lang === "en-US");
+
+    const res = await handler(novelRequest(assetId));
+
+    expect(res.status).toBe(200);
+    expect(res.headers.get("cache-control")).toContain("max-age=31536000");
+    expect(res.headers.get("netlify-cdn-cache-control")).toContain("durable");
+    expect(res.headers.get("netlify-vary")).toBe("query=novel");
+    const [url, init] = globalThis.fetch.mock.calls[0];
+    expect(String(url)).toContain("/text-to-speech/21m00Tcm4TlvDq8ikWAM?");
+    expect(JSON.parse(init.body)).toMatchObject({
+      text: asset.text,
+      voice_settings: expect.objectContaining({ speed: 0.9 }),
+    });
+  });
+
+  it("rejects GET requests for content outside the generated novel catalog", async () => {
+    const res = await handler(novelRequest("v1-not-in-the-catalog"));
+
+    expect(res.status).toBe(404);
+    expect(globalThis.fetch).not.toHaveBeenCalled();
   });
 });

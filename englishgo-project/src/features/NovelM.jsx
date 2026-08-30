@@ -7,46 +7,13 @@ import {
   previousSpreadStart,
   spreadStartForPage,
 } from "./novelPagination.js";
+import { makeNovelAudioItem, novelBlockPairs } from "../data/novelAudio.js";
 
 const NOVEL_READING_FONT='Georgia, Cambria, "Times New Roman", serif';
 const NOVEL_PAPER="#FFFEF9";
 const NOVEL_SURROUND="#E8E4DA";
 const LazyNovelIllustration=lazy(()=>import("../components/NovelIllustration.jsx"));
 function NovelIllustration(props){return <Suspense fallback={<div data-testid={props.fill?"novel-illustration-frame":undefined} style={{height:props.fill?"100%":props.small?150:props.cover?240:360,width:props.fill?"100%":undefined,borderRadius:props.small?0:18,background:"linear-gradient(135deg,#0B3F35,#77C79D)"}}/>}><LazyNovelIllustration {...props}/></Suspense>}
-function novelBlocks(text){
-  const raw=String(text||"").trim();
-  if(!raw)return[];
-  const blankBlocks=raw.split(/\n\s*\n/).map(s=>s.trim()).filter(Boolean);
-  const lineBlocks=raw.split(/\n+/).map(s=>s.trim()).filter(Boolean);
-  return blankBlocks.length<=1&&lineBlocks.length>1?lineBlocks:blankBlocks;
-}
-function compactNovelBlocks(blocks,target){
-  const out=[...blocks];
-  const mergeAt=idx=>{out[idx]=`${out[idx]}\n${out[idx+1]}`;out.splice(idx+1,1)};
-  while(out.length>target&&out.length>1){
-    const halfSentence=out.findIndex((b,i)=>i<out.length-1&&/[\uFF0C,]$/.test(String(b).trim()));
-    if(halfSentence>=0){mergeAt(halfSentence);continue}
-    let idx=0,best=Infinity;
-    out.forEach((b,i)=>{const score=String(b).replace(/\s+/g,"").length;if(score<best){best=score;idx=i}});
-    if(idx===0){out[1]=`${out[0]}\n${out[1]}`;out.splice(0,1)}
-    else if(idx===out.length-1){out[idx-1]=`${out[idx-1]}\n${out[idx]}`;out.splice(idx,1)}
-    else{
-      const prev=String(out[idx-1]).length,next=String(out[idx+1]).length;
-      if(prev<=next){out[idx-1]=`${out[idx-1]}\n${out[idx]}`;out.splice(idx,1)}
-      else{out[idx+1]=`${out[idx]}\n${out[idx+1]}`;out.splice(idx,1)}
-    }
-  }
-  return out;
-}
-function novelBlockPairs(enText,zhText){
-  let en=novelBlocks(enText),zh=novelBlocks(zhText);
-  if(en.length&&zh.length&&en.length!==zh.length){
-    if(en.length>zh.length)en=compactNovelBlocks(en,zh.length);
-    else zh=compactNovelBlocks(zh,en.length);
-  }
-  const len=Math.max(en.length,zh.length);
-  return Array.from({length:len},(_,i)=>({en:en[i]||"",zh:zh[i]||"",i}));
-}
 function isNovelReaderControlTarget(target,currentTarget){
   const control=target?.closest?.("button,a,input,select,textarea,[role='button'],[role='tab'],[contenteditable='true']");
   return Boolean(control&&currentTarget?.contains?.(control));
@@ -93,6 +60,7 @@ export default function NovelM({lv,onBack,onXp,deps}){
   const visiblePages=pagesAt(pageNow);
   const pageBlocks=visiblePages.flatMap(item=>item.blocks);
   const pageStart=pageBlocks.length?Math.min(...pageBlocks.map(block=>block.i)):0;
+  const novelAudioItem=(text,lang="en-US",kind="block",blockIndex=0)=>makeNovelAudioItem({novelId:novel?.id,chapterNo:chapter?.no,lang,kind,blockIndex,text});
   useLayoutEffect(()=>{
     const anchor=readingAnchorRef.current;
     if(anchor==null||!chapter||!pages.length)return;
@@ -132,22 +100,48 @@ export default function NovelM({lv,onBack,onXp,deps}){
     return()=>window.cancelAnimationFrame(frame);
   },[chapter?.no]);
   useEffect(()=>{if(!novel||!chapter||ci==null||!pages.length)return;setReadingProgress(d=>({...d,[novel.id]:{chapterNo:chapter.no,chapterIndex:ci,page:pageNow,pageCount:pages.length,blockIndex:pageStart,blockCount:blockPairs.length,updatedAt:Date.now()}}))},[novel?.id,chapter?.no,ci,pageNow,pageStart,pages.length,blockPairs.length]);
+  useEffect(()=>{
+    if(!novel||!chapter||typeof window==="undefined"||/jsdom/i.test(navigator.userAgent||""))return;
+    const nextStart=nextSpreadStart(pageNow,pages.length,visiblePageCount);
+    const blocks=[...pageBlocks,...(nextStart!==pageNow?pagesAt(nextStart).flatMap(item=>item.blocks):[])];
+    const seen=new Set();
+    const uniqueBlocks=blocks.filter(block=>{if(seen.has(block.i))return false;seen.add(block.i);return true});
+    const items=[
+      novelAudioItem(chapter.title,"en-US","title"),
+      novelAudioItem(chapter.zhTitle,"zh-TW","title"),
+      ...uniqueBlocks.flatMap(block=>[
+        block.en?novelAudioItem(block.en,"en-US","block",block.i):null,
+        block.zh?novelAudioItem(block.zh,"zh-TW","block",block.i):null,
+      ].filter(Boolean)),
+    ];
+    const preload=()=>window.EnglishGoTTS?.preloadMany?.(items,{limit:items.length,concurrency:2});
+    if(window.EnglishGoTTS)preload();
+    else window.addEventListener("englishgo:tts-installed",preload,{once:true});
+    return()=>window.removeEventListener("englishgo:tts-installed",preload);
+  },[novel?.id,chapter?.no,pageNow,pages,visiblePageCount]);
   const quiz=chapter?chapter.quiz||[]:[];const quizKey=chapter?`${novel.id}:${chapter.no}`:"";const quizState=quizAns[quizKey]||{};const quizAnswered=quiz.filter((_,i)=>quizState[i]!=null).length;const quizDone=!quiz.length||quiz.every((_,i)=>quizState[i]!=null);
   const chooseQuiz=(qi,oi)=>setQuizAns(d=>({...d,[quizKey]:{...(d[quizKey]||{}),[qi]:oi}}));
   const completeChapter=()=>{if(!chapter)return;if(!quizDone){playSound("wrong");return}const key=`${novel.id}:${chapter.no}`;if(!completed.includes(chapter.no)){setDone(d=>({...d,[novel.id]:[...new Set([...(d[novel.id]||[]),chapter.no])]}));if(!rewarded.current[key]){rewarded.current[key]=true;onXp?.(15);playSound("done")}}};
   const stopNovelSpeech=()=>{novelSpeechRef.current?.cancel?.();novelSpeechRef.current=null;setActiveBlock(null);setActiveVocab(null);stopSpeech()};
   const startNovelStory=(items,options)=>{setActiveBlock(null);setActiveVocab(null);const handle=speakStory(items,options);novelSpeechRef.current=handle;return handle};
-  const preloadNovelChinese=texts=>{if(typeof window==="undefined")return;const items=texts.filter(Boolean).slice(0,8);if(!items.length)return;window.EnglishGoTTS?.preloadMany?.(items,{lang:"zh-TW",limit:items.length,concurrency:2})};
   const showBlockPage=bi=>setPage(spreadStartForPage(findPageForBlock(pages,bi),visiblePageCount));
-  const readChapter=()=>{if(!chapter||!enBlocks.length)return;startNovelStory([chapter.title,...enBlocks],{rate:0.78,onSentence:i=>{const bi=i-1;if(bi>=0){setActiveBlock(bi);showBlockPage(bi)}},onFinish:()=>{novelSpeechRef.current=null;setActiveBlock(null)},oncancel:()=>{novelSpeechRef.current=null;setActiveBlock(null)}})};
-  const readPage=()=>{if(!pageBlocks.length)return;startNovelStory(pageBlocks.map(b=>b.en),{rate:0.78,onSentence:i=>setActiveBlock(pageBlocks[i]?.i),onFinish:()=>{novelSpeechRef.current=null;setActiveBlock(null)},oncancel:()=>{novelSpeechRef.current=null;setActiveBlock(null)}})};
-  const readChapterZh=()=>{if(!chapter||!zhBlocks.length)return;const items=[chapter.zhTitle,...zhBlocks];preloadNovelChinese(items);startNovelStory(items,{lang:"zh-TW",rate:1,apiTts:true,onSentence:i=>{const bi=i-1;if(bi>=0){setActiveBlock(bi);showBlockPage(bi)}},onFinish:()=>{novelSpeechRef.current=null;setActiveBlock(null)},oncancel:()=>{novelSpeechRef.current=null;setActiveBlock(null)}})};
-  const readPageZh=()=>{const items=pageBlocks.filter(b=>b.zh);if(!items.length)return;const texts=items.map(b=>b.zh);preloadNovelChinese(texts);startNovelStory(texts,{lang:"zh-TW",rate:1,apiTts:true,onSentence:i=>setActiveBlock(items[i]?.i),onFinish:()=>{novelSpeechRef.current=null;setActiveBlock(null)},oncancel:()=>{novelSpeechRef.current=null;setActiveBlock(null)}})};
-  const bilingualChapterItems=()=>[{text:chapter.title,lang:"en-US",rate:0.78},{text:chapter.zhTitle,lang:"zh-TW",rate:1,apiTts:true},...enBlocks.flatMap((en,i)=>[{text:en,lang:"en-US",rate:0.78,blockIndex:i},{text:zhBlocks[i],lang:"zh-TW",rate:1,apiTts:true,blockIndex:i}].filter(x=>x.text))];
-  const bilingualPageItems=()=>pageBlocks.flatMap(b=>[{text:b.en,lang:"en-US",rate:0.78,blockIndex:b.i},{text:b.zh,lang:"zh-TW",rate:1,apiTts:true,blockIndex:b.i}].filter(x=>x.text));
-  const readBilingualChapter=()=>{if(!chapter||!enBlocks.length)return;preloadNovelChinese([chapter.zhTitle,...zhBlocks]);startNovelStory(bilingualChapterItems(),{onSentence:(_,__,item)=>{const bi=item?.blockIndex;if(bi!=null){setActiveBlock(bi);showBlockPage(bi)}},onFinish:()=>{novelSpeechRef.current=null;setActiveBlock(null)},oncancel:()=>{novelSpeechRef.current=null;setActiveBlock(null)}})};
-  const readBilingualPage=()=>{const items=bilingualPageItems();if(!items.length)return;preloadNovelChinese(pageBlocks.map(b=>b.zh));startNovelStory(items,{onSentence:(_,__,item)=>{if(item?.blockIndex!=null)setActiveBlock(item.blockIndex)},onFinish:()=>{novelSpeechRef.current=null;setActiveBlock(null)},oncancel:()=>{novelSpeechRef.current=null;setActiveBlock(null)}})};
-  const speakNovelText=(text,lang="en-US",rate=0.78,idx=null)=>{const utterance=speak(text,lang,rate,{apiTts:/^zh/i.test(lang),onend:()=>setActiveBlock(null)});if(!utterance)return;novelSpeechRef.current=null;setActiveVocab(null);setActiveBlock(idx)};
+  const englishChapterItems=()=>[novelAudioItem(chapter.title,"en-US","title"),...blockPairs.filter(block=>block.en).map(block=>novelAudioItem(block.en,"en-US","block",block.i))];
+  const chineseChapterItems=()=>[novelAudioItem(chapter.zhTitle,"zh-TW","title"),...blockPairs.filter(block=>block.zh).map(block=>novelAudioItem(block.zh,"zh-TW","block",block.i))];
+  const readChapter=()=>{if(!chapter||!enBlocks.length)return;startNovelStory(englishChapterItems(),{onSentence:i=>{const bi=i-1;if(bi>=0){setActiveBlock(bi);showBlockPage(bi)}},onFinish:()=>{novelSpeechRef.current=null;setActiveBlock(null)},oncancel:()=>{novelSpeechRef.current=null;setActiveBlock(null)}})};
+  const readPage=()=>{if(!pageBlocks.length)return;startNovelStory(pageBlocks.filter(b=>b.en).map(b=>novelAudioItem(b.en,"en-US","block",b.i)),{onSentence:i=>setActiveBlock(pageBlocks[i]?.i),onFinish:()=>{novelSpeechRef.current=null;setActiveBlock(null)},oncancel:()=>{novelSpeechRef.current=null;setActiveBlock(null)}})};
+  const readChapterZh=()=>{if(!chapter||!zhBlocks.length)return;startNovelStory(chineseChapterItems(),{onSentence:i=>{const bi=i-1;if(bi>=0){setActiveBlock(bi);showBlockPage(bi)}},onFinish:()=>{novelSpeechRef.current=null;setActiveBlock(null)},oncancel:()=>{novelSpeechRef.current=null;setActiveBlock(null)}})};
+  const readPageZh=()=>{const items=pageBlocks.filter(b=>b.zh).map(b=>novelAudioItem(b.zh,"zh-TW","block",b.i));if(!items.length)return;startNovelStory(items,{onSentence:i=>setActiveBlock(items[i]?.blockIndex),onFinish:()=>{novelSpeechRef.current=null;setActiveBlock(null)},oncancel:()=>{novelSpeechRef.current=null;setActiveBlock(null)}})};
+  const bilingualChapterItems=()=>[novelAudioItem(chapter.title,"en-US","title"),novelAudioItem(chapter.zhTitle,"zh-TW","title"),...blockPairs.flatMap(block=>[
+    block.en?novelAudioItem(block.en,"en-US","block",block.i):null,
+    block.zh?novelAudioItem(block.zh,"zh-TW","block",block.i):null,
+  ].filter(Boolean))];
+  const bilingualPageItems=()=>pageBlocks.flatMap(block=>[
+    block.en?novelAudioItem(block.en,"en-US","block",block.i):null,
+    block.zh?novelAudioItem(block.zh,"zh-TW","block",block.i):null,
+  ].filter(Boolean));
+  const readBilingualChapter=()=>{if(!chapter||!enBlocks.length)return;startNovelStory(bilingualChapterItems(),{onSentence:(_,__,item)=>{const bi=item?.blockIndex;if(bi!=null){setActiveBlock(bi);showBlockPage(bi)}},onFinish:()=>{novelSpeechRef.current=null;setActiveBlock(null)},oncancel:()=>{novelSpeechRef.current=null;setActiveBlock(null)}})};
+  const readBilingualPage=()=>{const items=bilingualPageItems();if(!items.length)return;startNovelStory(items,{onSentence:(_,__,item)=>{if(item?.blockIndex!=null)setActiveBlock(item.blockIndex)},onFinish:()=>{novelSpeechRef.current=null;setActiveBlock(null)},oncancel:()=>{novelSpeechRef.current=null;setActiveBlock(null)}})};
+  const speakNovelText=(text,lang="en-US",rate=0.78,idx=null)=>{const item=novelAudioItem(text,lang,"block",idx);const utterance=speak(item.text,item.lang,item.rate,{apiTts:item.apiTts,audioUrl:item.audioUrl,onend:()=>setActiveBlock(null)});if(!utterance)return;novelSpeechRef.current=null;setActiveVocab(null);setActiveBlock(idx)};
   const speakNovelVocab=(word)=>{const utterance=speak(word,"en-US",0.86,{onend:()=>setActiveVocab(null)});if(!utterance)return;novelSpeechRef.current=null;setActiveBlock(null);setActiveVocab(word)};
   const goChapter=(i,startPage=0,startBlock=null)=>{stopNovelSpeech();const safePage=Math.max(0,Number(startPage)||0);pendingPageRef.current=safePage;readingAnchorRef.current=startBlock==null?null:Math.max(0,Number(startBlock)||0);setImmersive(true);setCi(i);setPage(safePage);if(typeof navigator==="undefined"||!/jsdom/i.test(navigator.userAgent||"")){try{window.scrollTo?.({top:0,behavior:"smooth"})}catch{}}};
   const backToList=()=>{stopNovelSpeech();setCi(null)};
@@ -275,7 +269,7 @@ export default function NovelM({lv,onBack,onXp,deps}){
       <div style={{display:"flex",alignItems:"center",gap:9,minWidth:0,flex:isMobile?"0 0 auto":"1 1 230px",width:isMobile?"100%":undefined}}>
         <div style={{width:32,height:32,borderRadius:"50%",background:c.cl,color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:900,flexShrink:0}}>{chapter.no}</div>
         <div style={{minWidth:0,flex:1}}><div style={{fontSize:13,fontWeight:900,color:S.t1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{chapter.title}</div><div style={{fontSize:10,color:S.t3,fontWeight:800}}>{isMobile?`Page ${pageNow+1}`:`Pages ${pageNow+1}-${Math.min(pageNow+2,pages.length)}`} · {chapterPct}%</div></div>
-        {isMobile&&<span style={{fontSize:10,fontWeight:900,color:c.cl,background:c.bg,borderRadius:999,padding:"4px 7px",whiteSpace:"nowrap"}}>中文真人聲</span>}
+        {isMobile&&<span style={{fontSize:10,fontWeight:900,color:c.cl,background:c.bg,borderRadius:999,padding:"4px 7px",whiteSpace:"nowrap"}}>真人旁白預載</span>}
       </div>
       <div style={{height:6,background:S.bg2,borderRadius:999,overflow:"hidden",flex:isMobile?"0 0 auto":"0 1 120px",width:isMobile?"100%":undefined,minWidth:isMobile?0:80}}><div style={{height:"100%",width:`${chapterPct}%`,background:c.cl,borderRadius:999}}/></div>
       <div data-testid="novel-toolbar-actions" aria-label="小說閱讀工具" style={{display:"flex",gap:7,alignItems:"center",overflowX:isMobile?"auto":"visible",flexWrap:isMobile?"nowrap":"wrap",width:isMobile?"100%":undefined,maxWidth:"100%",paddingBottom:isMobile?2:0,scrollbarWidth:"thin"}}>

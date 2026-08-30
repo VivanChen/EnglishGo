@@ -5,10 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "generate:novel-audio": "node scripts/generateNovelAudioCatalog.mjs",
+    "prewarm:novel-audio": "node scripts/prewarmNovelAudio.mjs",
     "generate:recent-features": "node scripts/recentFeatures.mjs",
     "generate:themed-review-seed": "node scripts/generateThemedReviewSeed.mjs",
-    "build": "vite build",
-    "build:refresh-features": "npm run generate:recent-features && vite build",
+    "build": "npm run generate:novel-audio && vite build",
+    "build:refresh-features": "npm run generate:recent-features && npm run build",
     "preview": "vite preview",
     "test": "vitest run",
     "check": "npm run test && npm run build"
