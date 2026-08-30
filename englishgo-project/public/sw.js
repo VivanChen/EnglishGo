@@ -1,5 +1,5 @@
 // EnglishGo Service Worker - offline-first PWA
-const CACHE_VERSION = 'englishgo-v1.2.2';
+const CACHE_VERSION = 'englishgo-v1.2.3';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 const DYNAMIC_CACHE_LIMIT = 160;
@@ -21,7 +21,10 @@ async function trimCache(cacheName, maxEntries = DYNAMIC_CACHE_LIMIT) {
 }
 
 async function cacheDynamicResponse(request, response) {
-  if (!response?.ok) return;
+  // Cache Storage rejects 206 Partial Content responses. Media elements use
+  // byte-range requests, so attempting to cache one would turn a successful
+  // network response into a rejected fetch chain.
+  if (!response?.ok || response.status === 206) return;
   const cache = await caches.open(DYNAMIC_CACHE);
   await cache.put(request, response.clone());
   await trimCache(DYNAMIC_CACHE);
@@ -62,6 +65,16 @@ self.addEventListener('fetch', (event) => {
                 url.hostname.includes('loremflickr.com') ||
                 url.pathname.startsWith('/api/');
   if (isAPI) return;
+
+  // Let the browser handle streaming media and every byte-range request
+  // directly. This preserves seeking and prevents valid 206 responses from
+  // being replaced by the generic offline fallback below.
+  const isRangeRequest = request.headers?.has?.('range');
+  const isStreamingMedia = request.destination === 'audio' || request.destination === 'video';
+  if (isRangeRequest || isStreamingMedia) {
+    event.respondWith(fetch(request));
+    return;
+  }
 
   // Images/fonts: stale-while-revalidate so same-path media can still be updated.
   if (request.destination === 'image' || request.destination === 'font') {

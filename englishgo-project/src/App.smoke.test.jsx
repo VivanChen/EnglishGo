@@ -1082,6 +1082,33 @@ describe('EnglishGo app smoke flow', () => {
     expect(await screen.findByText('The Secret Forest Adventure', {}, { timeout: 5000 })).toBeInTheDocument();
   });
 
+  it('shows a recoverable error when a song cannot start playing', async () => {
+    await openElementaryMenu();
+
+    clickFirstButtonWithText('閱讀聽力');
+    clickFirstButtonWithText('英文歌曲');
+
+    expect(await screen.findByRole('button', { name: /Step by Step/ })).toBeInTheDocument();
+    const audio = document.querySelector('audio');
+    expect(audio).toBeTruthy();
+    const play = vi.fn()
+      .mockRejectedValueOnce(new DOMException('blocked', 'NotAllowedError'))
+      .mockResolvedValueOnce();
+    const pause = vi.fn();
+    const load = vi.fn();
+    Object.defineProperty(audio, 'play', { configurable: true, value: play });
+    Object.defineProperty(audio, 'pause', { configurable: true, value: pause });
+    Object.defineProperty(audio, 'load', { configurable: true, value: load });
+
+    fireEvent.click(screen.getByRole('button', { name: '播放' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('歌曲無法播放');
+    fireEvent.click(screen.getByRole('button', { name: '重新載入' }));
+    expect(load).toHaveBeenCalledTimes(1);
+    expect(play).toHaveBeenCalledTimes(2);
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
   it('opens novel chapters in a wide immersive reading layout', async () => {
     await openElementaryMenu();
 
