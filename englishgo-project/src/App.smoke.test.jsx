@@ -1270,6 +1270,51 @@ describe('EnglishGo app smoke flow', () => {
     }
   });
 
+  it('turns the mobile novel page only when chapter narration reaches a new page', async () => {
+    setViewportWidth(390);
+    const speech = installMockSpeechSynthesis();
+    try {
+      await openElementaryMenu();
+
+      clickFirstButtonWithText('閱讀聽力');
+      clickFirstButtonWithText('英文小說');
+      fireEvent.click(await screen.findByText('The Whispering Tree', {}, { timeout: 5000 }));
+
+      const pageRange = screen.getByText(/左右滑動 · 段落/).textContent;
+      const firstPageBlockCount = Number(pageRange.match(/段落 1-(\d+)/)?.[1]);
+      expect(firstPageBlockCount).toBeGreaterThan(0);
+      fireEvent.click(screen.getByRole('button', { name: '展開閱讀工具' }));
+      fireEvent.click(screen.getByRole('button', { name: '整章朗讀' }));
+
+      const advanceNarration = async () => {
+        const utterance = speech.speak.mock.calls.at(-1)?.[0];
+        expect(utterance).toBeTruthy();
+        await act(async () => {
+          utterance.onend?.(new Event('end'));
+          await new Promise(resolve => setTimeout(resolve, 430));
+        });
+      };
+
+      await advanceNarration(); // English title → Chinese title
+      await advanceNarration(); // Chinese title → first English block
+      expect(screen.queryByTestId('novel-page-turn')).not.toBeInTheDocument();
+
+      for (let step = 0; step < firstPageBlockCount * 2 - 1; step += 1) {
+        await advanceNarration();
+        expect(screen.queryByTestId('novel-page-turn')).not.toBeInTheDocument();
+      }
+
+      await advanceNarration();
+      const automaticTurn = screen.getByTestId('novel-page-turn');
+      expect(automaticTurn).toHaveAttribute('data-direction', 'forward');
+      fireEvent.animationEnd(automaticTurn);
+      fireEvent.click(screen.getByRole('button', { name: '停止小說朗讀' }));
+    } finally {
+      setViewportWidth(1024);
+      speech.restore();
+    }
+  }, 10000);
+
   it('uses a realistic novel page turn in both directions', async () => {
     await openElementaryMenu();
 
