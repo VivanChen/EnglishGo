@@ -50,7 +50,16 @@ async function saveState() {
 
 async function warm(id, attempt = 1) {
   const url = `${baseUrl}/.netlify/functions/elevenlabs-tts?novel=${encodeURIComponent(id)}`;
-  const response = await fetch(url, { headers: { Accept: "audio/mpeg" } });
+  let response;
+  try {
+    response = await fetch(url, { headers: { Accept: "audio/mpeg" } });
+  } catch (error) {
+    if (attempt < 5) {
+      await new Promise(resolvePromise => setTimeout(resolvePromise, Math.min(20_000, 1000 * (2 ** attempt))));
+      return warm(id, attempt + 1);
+    }
+    throw error;
+  }
   if (response.ok && (response.headers.get("content-type") || "").includes("audio")) {
     await response.arrayBuffer();
     return response.headers.get("x-tts-source") || "cdn";
