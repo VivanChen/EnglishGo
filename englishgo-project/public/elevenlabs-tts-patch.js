@@ -5,6 +5,8 @@
   const synth = window.speechSynthesis;
   const nativeSpeak = synth.speak.bind(synth);
   const nativeCancel = synth.cancel.bind(synth);
+  const nativePause = typeof synth.pause === "function" ? synth.pause.bind(synth) : null;
+  const nativeResume = typeof synth.resume === "function" ? synth.resume.bind(synth) : null;
   const audioCache = new Map();
   const inflight = new Map();
   const MAX_CHARS = 350;
@@ -22,6 +24,7 @@
   ];
   const ALLOWED_VOICE_IDS = new Set(VOICES.map(voice => voice.id));
   let activeAudio = null;
+  let activeAudioPaused = false;
   let loadingToast = null;
   let loadingButton = null;
   let loadingCounter = 0;
@@ -78,6 +81,7 @@
         activeAudio.pause();
         activeAudio.currentTime = 0;
         activeAudio = null;
+        activeAudioPaused = false;
       }
     } catch {}
   }
@@ -261,7 +265,9 @@
         #eg-tts-panel.eg-mini .eg-head span:first-child:before{content:"🎧";font-size:21px}
         #eg-tts-panel.eg-mini #eg-tts-toggle{display:none}
         body[data-eg-module="srs"] #eg-tts-panel{display:none}
+        body[data-eg-module="novels"] #eg-tts-panel{display:none}
         body[data-eg-module="srs"] #eg-tts-loading-toast{bottom:calc(112px + env(safe-area-inset-bottom,0px))}
+        body[data-eg-module="novels"] #eg-tts-loading-toast{bottom:calc(76px + env(safe-area-inset-bottom,0px))}
       }
       @keyframes egTtsSpin{to{transform:rotate(360deg)}}
       @keyframes egTtsPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.18)}}
@@ -350,6 +356,22 @@
     return nativeCancel();
   };
 
+  synth.pause = function patchedPause() {
+    if (activeAudio) {
+      activeAudioPaused = true;
+      try { activeAudio.pause(); } catch {}
+    }
+    return nativePause?.();
+  };
+
+  synth.resume = function patchedResume() {
+    if (activeAudio) {
+      activeAudioPaused = false;
+      try { activeAudio.play()?.catch?.(() => {}); } catch {}
+    }
+    return nativeResume?.();
+  };
+
   synth.speak = function patchedSpeak(utterance) {
     if (!shouldUseElevenLabs(utterance)) {
       stopActiveAudio();
@@ -364,6 +386,7 @@
     const loadingToken = showTtsLoading(text);
     const audio = new Audio(SILENT_AUDIO_URL);
     activeAudio = audio;
+    activeAudioPaused = false;
     audio.muted = true;
     const unlockPlayback = audio.play().catch(() => {});
 
@@ -379,23 +402,32 @@
         audio.oncanplay = () => hideTtsLoading(loadingToken);
         audio.onplaying = () => hideTtsLoading(loadingToken);
         audio.onended = () => {
-          if (activeAudio === audio) activeAudio = null;
+          if (activeAudio === audio) {
+            activeAudio = null;
+            activeAudioPaused = false;
+          }
           hideTtsLoading(loadingToken);
           emitEnd(utterance);
         };
         audio.onerror = () => {
-          if (activeAudio === audio) activeAudio = null;
+          if (activeAudio === audio) {
+            activeAudio = null;
+            activeAudioPaused = false;
+          }
           hideTtsLoading(loadingToken);
           nativeSpeak(utterance);
         };
         emitStart(utterance);
-        return unlockPlayback.then(() => audio.play()).then(() => hideTtsLoading(loadingToken)).catch((err) => {
+        return unlockPlayback.then(() => activeAudioPaused ? null : audio.play()).then(() => hideTtsLoading(loadingToken)).catch((err) => {
           hideTtsLoading(loadingToken);
           throw err;
         });
       })
       .catch(() => {
-        if (activeAudio === audio) activeAudio = null;
+        if (activeAudio === audio) {
+          activeAudio = null;
+          activeAudioPaused = false;
+        }
         try { audio.pause(); } catch {}
         hideTtsLoading(loadingToken);
         nativeSpeak(utterance);

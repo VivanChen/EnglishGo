@@ -1745,33 +1745,48 @@ function preloadTts(texts,opts={}){
 }
 
 // Speak multiple sentences with natural pauses between them (story narration)
-// Returns a control handle with cancel() for cleanup
+// Returns a control handle for cleanup and real pause/resume playback.
 function speakStory(sentences,opts={}){
-  if(typeof window==="undefined"||!window.speechSynthesis||!sentences||!sentences.length)return{cancel:()=>{}};
+  if(typeof window==="undefined"||!window.speechSynthesis||!sentences||!sentences.length)return{cancel:()=>{},pause:()=>false,resume:()=>false};
   const token=stopSpeech();
   let i=0;
   let cancelled=false;
+  let paused=false;
+  let utteranceActive=false;
+  let resumePending=false;
   let pendingTimer=null;
+  const clearPendingTimer=()=>{
+    if(pendingTimer==null)return false;
+    clearTimeout(pendingTimer);
+    _speechTimers.delete(pendingTimer);
+    pendingTimer=null;
+    return true;
+  };
   const unregisterCancel=registerSpeechCanceler(()=>{
     cancelled=true;
-    if(pendingTimer)clearTimeout(pendingTimer);
+    clearPendingTimer();
     opts.oncancel?.();
   });
   const playNext=()=>{
     if(cancelled||token!==_speechToken)return;
+    pendingTimer=null;
+    if(paused){resumePending=true;return}
     if(i>=sentences.length){unregisterCancel();opts.onFinish?.();return}
     const item=sentences[i];
     const text=typeof item==="string"?item:item?.text;
     const isLast=i===sentences.length-1;
     i++;
     opts.onSentence?.(i-1,text,item);
+    utteranceActive=true;
     const u=makeUtterance(text,item?.lang||opts.lang||"en-US",item?.rate||opts.rate||0.88,{
       pitch:item?.pitch||opts.pitch||1.08,
       apiTts:item?.apiTts??opts.apiTts,
       audioUrl:item?.audioUrl??opts.audioUrl,
       onend:()=>{
+        utteranceActive=false;
         if(cancelled||token!==_speechToken)return;
         if(isLast){unregisterCancel();opts.onFinish?.()}
+        else if(paused){resumePending=true}
         else{pendingTimer=speechTimer(playNext,400,token)}// 400ms natural pause between sentences
       },
     },token);
@@ -1781,10 +1796,29 @@ function speakStory(sentences,opts={}){
   return{
     cancel:()=>{
       cancelled=true;
-      if(pendingTimer)clearTimeout(pendingTimer);
+      clearPendingTimer();
       unregisterCancel();
       opts.oncancel?.();
       stopSpeech();
+    },
+    pause:()=>{
+      if(cancelled||paused||token!==_speechToken)return false;
+      paused=true;
+      if(clearPendingTimer())resumePending=true;
+      if(utteranceActive){try{window.speechSynthesis.pause?.()}catch{}}
+      opts.onpause?.();
+      return true;
+    },
+    resume:()=>{
+      if(cancelled||!paused||token!==_speechToken)return false;
+      paused=false;
+      try{window.speechSynthesis.resume?.()}catch{}
+      if(resumePending){
+        resumePending=false;
+        pendingTimer=speechTimer(playNext,80,token);
+      }
+      opts.onresume?.();
+      return true;
     },
   };
 }

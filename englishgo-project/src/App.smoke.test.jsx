@@ -116,6 +116,7 @@ function installMockSpeechSynthesis() {
   const originalGlobalUtterance = Object.getOwnPropertyDescriptor(globalThis, 'SpeechSynthesisUtterance');
   const events = [];
   const cancel = vi.fn(() => events.push('cancel'));
+  const pause = vi.fn(() => events.push('pause'));
   const resume = vi.fn(() => events.push('resume'));
   const speak = vi.fn(() => events.push('speak'));
 
@@ -133,6 +134,7 @@ function installMockSpeechSynthesis() {
     configurable: true,
     value: {
       cancel,
+      pause,
       resume,
       speak,
       getVoices: () => [{
@@ -156,6 +158,8 @@ function installMockSpeechSynthesis() {
   return {
     cancel,
     events,
+    pause,
+    resume,
     speak,
     restore() {
       if (originalSynth) Object.defineProperty(window, 'speechSynthesis', originalSynth);
@@ -1161,6 +1165,12 @@ describe('EnglishGo app smoke flow', () => {
     });
 
     expect(panel.setPointerCapture).not.toHaveBeenCalled();
+
+    panel.releasePointerCapture = vi.fn();
+    fireEvent.pointerDown(panel, { pointerId: 3, clientX: 800, clientY: 300 });
+    fireEvent.pointerCancel(panel, { pointerId: 3, clientX: 800, clientY: 300 });
+    fireEvent.pointerUp(panel, { pointerId: 3, clientX: 100, clientY: 300 });
+    expect(screen.queryByTestId('novel-page-turn')).not.toBeInTheDocument();
   });
 
   it('starts novel speech without repeated cancellation immediately before playback', async () => {
@@ -1185,6 +1195,12 @@ describe('EnglishGo app smoke flow', () => {
       expect(speech.cancel).toHaveBeenCalledTimes(1);
       expect(speech.events).toEqual(['cancel', 'resume', 'speak']);
       expect(screen.getByRole('button', { name: '停止小說朗讀' })).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: '暫停小說朗讀' }));
+      expect(speech.pause).toHaveBeenCalledTimes(1);
+      expect(screen.getByRole('button', { name: '繼續小說朗讀' })).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: '繼續小說朗讀' }));
+      expect(speech.resume).toHaveBeenCalledTimes(2);
+      expect(screen.getByRole('button', { name: '暫停小說朗讀' })).toBeInTheDocument();
       expect(speech.speak.mock.calls[0][0].__englishGoAudioUrl).toMatch(
         /^\/\.netlify\/functions\/elevenlabs-tts\?novel=v2-secret-forest-adventure-c1-zh-block-0-/,
       );
@@ -1204,6 +1220,12 @@ describe('EnglishGo app smoke flow', () => {
       expect(speech.speak.mock.calls[0][0].__englishGoAudioUrl).toMatch(
         /^\/\.netlify\/functions\/elevenlabs-tts\?novel=v1-secret-forest-adventure-c1-en-block-0-/,
       );
+      const pauseCalls = speech.pause.mock.calls.length;
+      const resumeCalls = speech.resume.mock.calls.length;
+      fireEvent.click(screen.getByRole('button', { name: '暫停小說朗讀' }));
+      expect(speech.pause).toHaveBeenCalledTimes(pauseCalls + 1);
+      fireEvent.click(screen.getByRole('button', { name: '繼續小說朗讀' }));
+      expect(speech.resume).toHaveBeenCalledTimes(resumeCalls + 1);
     } finally {
       if (previousTts) window.EnglishGoTTS = previousTts;
       else delete window.EnglishGoTTS;
@@ -1225,11 +1247,14 @@ describe('EnglishGo app smoke flow', () => {
 
     const forwardTurn = screen.getByTestId('novel-page-turn');
     expect(forwardTurn).toHaveAttribute('data-direction', 'forward');
+    const transitionId = forwardTurn.getAttribute('data-transition-id');
     expect(forwardTurn).toHaveStyle({
       animation: 'novel-sheet-forward 400ms cubic-bezier(.3,.05,.2,1) forwards',
     });
     expect(nextButton).toBeDisabled();
     expect(screen.getByText('Pages 1-2')).toBeInTheDocument();
+    fireEvent.keyDown(screen.getByTestId('novel-reader-panel'), { key: 'ArrowRight' });
+    expect(screen.getByTestId('novel-page-turn')).toHaveAttribute('data-transition-id', transitionId);
 
     fireEvent.animationEnd(forwardTurn);
     expect(await screen.findByText('Page 3')).toBeInTheDocument();
@@ -1404,12 +1429,21 @@ describe('EnglishGo app smoke flow', () => {
       padding: '0 4px calc(14px + env(safe-area-inset-bottom))',
     });
     expect(screen.getByTestId('novel-immersive-toolbar')).toHaveStyle({ flexDirection: 'column' });
+    expect(screen.queryByTestId('novel-toolbar-actions')).not.toBeInTheDocument();
+    const toolToggle = screen.getByRole('button', { name: '展開閱讀工具' });
+    expect(toolToggle).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByTestId('novel-reader-panel')).toHaveStyle({
+      height: 'clamp(540px, calc(100svh - 210px), 780px)',
+    });
+    fireEvent.click(toolToggle);
+    expect(screen.getByRole('button', { name: '收合閱讀工具' })).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getByTestId('novel-toolbar-actions')).toHaveStyle({
       display: 'grid',
       gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
       overflowX: 'visible',
     });
-    expect(screen.getByText('固定真人旁白')).toBeInTheDocument();
+    expect(screen.getByTestId('novel-audio-status')).toHaveAttribute('title', '固定真人旁白');
+    expect(screen.getByTestId('novel-audio-status')).toHaveTextContent('真人旁白');
     expect(screen.getByTestId('novel-book-spread')).toHaveStyle({ gridTemplateColumns: '1fr' });
     expect(screen.getAllByTestId('novel-book-page')).toHaveLength(1);
     expect(screen.getAllByTestId('novel-reader-text').length).toBeGreaterThanOrEqual(2);
@@ -1425,6 +1459,8 @@ describe('EnglishGo app smoke flow', () => {
     fireEvent.click(within(screen.getByTestId('novel-immersive-toolbar')).getByRole('button', { name: /章節測驗/ }));
     expect(screen.getByTestId('novel-side-panel')).toHaveStyle({ paddingBottom: 'calc(14px + env(safe-area-inset-bottom))' });
 
+    fireEvent.click(screen.getByRole('button', { name: '關閉工具面板' }));
+    fireEvent.click(screen.getByRole('button', { name: '展開閱讀工具' }));
     fireEvent.click(screen.getByRole('button', { name: '退出沉浸' }));
     expect(await screen.findByTestId('novel-chapter-hero')).toHaveStyle({ gridTemplateColumns: '1fr' });
     expect(screen.getByTestId('novel-hero-media')).toHaveStyle({ overflow: 'visible' });

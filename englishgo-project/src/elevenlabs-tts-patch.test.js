@@ -11,6 +11,7 @@ function installPatchEnv() {
 
   const nativeSpeak = vi.fn();
   const nativeCancel = vi.fn();
+  const nativePause = vi.fn();
   const nativeResume = vi.fn();
 
   Object.defineProperty(window, "speechSynthesis", {
@@ -18,6 +19,7 @@ function installPatchEnv() {
     value: {
       speak: nativeSpeak,
       cancel: nativeCancel,
+      pause: nativePause,
       resume: nativeResume,
       getVoices: () => [],
       addEventListener: vi.fn(),
@@ -52,7 +54,7 @@ function installPatchEnv() {
     value: vi.fn(),
   });
 
-  return { nativeSpeak, nativeCancel };
+  return { nativeSpeak, nativeCancel, nativePause, nativeResume };
 }
 
 function loadPatch() {
@@ -81,6 +83,15 @@ describe("ElevenLabs TTS patch", () => {
 
     toggle.click();
     expect(toggle).toHaveAttribute("aria-expanded","true");
+  });
+
+  it("keeps the floating voice panel away from the mobile novel reader", () => {
+    installPatchEnv();
+    loadPatch();
+
+    const styles = Array.from(document.querySelectorAll("style")).map(style => style.textContent).join("\n");
+    expect(styles).toContain('body[data-eg-module="novels"] #eg-tts-panel{display:none}');
+    expect(styles).toContain('body[data-eg-module="novels"] #eg-tts-loading-toast{bottom:calc(76px + env(safe-area-inset-bottom,0px))}');
   });
 
   it("migrates the old custom voice to the clear recommended voice at natural speed", () => {
@@ -222,5 +233,29 @@ describe("ElevenLabs TTS patch", () => {
     expect(globalThis.fetch).toHaveBeenCalled();
     expect(globalThis.Audio).toHaveBeenCalledTimes(1);
     expect(audio.play).toHaveBeenCalledTimes(1);
+  });
+
+  it("pauses and resumes active cloud audio instead of only native speech", () => {
+    const { nativePause, nativeResume } = installPatchEnv();
+    globalThis.fetch = vi.fn(() => new Promise(() => {}));
+    const audio = {
+      play: vi.fn(() => Promise.resolve()),
+      pause: vi.fn(),
+      currentTime: 0,
+      playbackRate: 1,
+      volume: 1,
+    };
+    globalThis.Audio = vi.fn(() => audio);
+    loadPatch();
+
+    const utterance = new SpeechSynthesisUtterance("The forest is quiet.");
+    window.speechSynthesis.speak(utterance);
+    window.speechSynthesis.pause();
+    window.speechSynthesis.resume();
+
+    expect(audio.pause).toHaveBeenCalledTimes(1);
+    expect(audio.play).toHaveBeenCalledTimes(2);
+    expect(nativePause).toHaveBeenCalledTimes(1);
+    expect(nativeResume).toHaveBeenCalledTimes(1);
   });
 });
