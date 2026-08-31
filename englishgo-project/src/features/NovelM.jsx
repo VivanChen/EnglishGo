@@ -25,7 +25,7 @@ function savedNovelBlock(progress){
 }
 export default function NovelM({lv,onBack,onXp,deps}){
   const {LV,S,useLS,readingWords,playSound,stopSpeech,speak,speakStory,Hdr}=deps;
-  const c=LV[lv];const[novelData,setNovelData]=useState(null);const[ni,setNi]=useState(0);const[ci,setCi]=useState(null);const[page,setPage]=useState(0);const[activeBlock,setActiveBlock]=useState(null);const[activeVocab,setActiveVocab]=useState(null);const[sidePanel,setSidePanel]=useState(null);const[showZh,setShowZh]=useState(true);const[immersive,setImmersive]=useState(true);const[done,setDone]=useLS("novelDone",{});const[quizAns,setQuizAns]=useLS("novelQuiz",{});const[readingProgress,setReadingProgress]=useLS("novelReadingProgress",{});const[readingPrefs,setReadingPrefs]=useLS("novelReadingPrefs",{fontSize:16,lineHeight:1.66});const[measuredPages,setMeasuredPages]=useState([]);const[layoutVersion,setLayoutVersion]=useState(0);const[pageTurn,setPageTurn]=useState(null);const rewarded=useRef({});const pendingPageRef=useRef(0);const readingAnchorRef=useRef(null);const novelSpeechRef=useRef(null);const novelPanelRef=useRef(null);const novelSpreadRef=useRef(null);const novelBlockRefs=useRef({});const measureBlockRefs=useRef({});const swipeStartRef=useRef(null);const pageTurnTimerRef=useRef(null);
+  const c=LV[lv];const[novelData,setNovelData]=useState(null);const[ni,setNi]=useState(0);const[ci,setCi]=useState(null);const[page,setPage]=useState(0);const[activeBlock,setActiveBlock]=useState(null);const[activeVocab,setActiveVocab]=useState(null);const[sidePanel,setSidePanel]=useState(null);const[showZh,setShowZh]=useState(true);const[immersive,setImmersive]=useState(true);const[isNarrating,setIsNarrating]=useState(false);const[audioPreload,setAudioPreload]=useState({status:"idle",ready:0,total:0});const[done,setDone]=useLS("novelDone",{});const[quizAns,setQuizAns]=useLS("novelQuiz",{});const[readingProgress,setReadingProgress]=useLS("novelReadingProgress",{});const[readingPrefs,setReadingPrefs]=useLS("novelReadingPrefs",{fontSize:16,lineHeight:1.66});const[measuredPages,setMeasuredPages]=useState([]);const[layoutVersion,setLayoutVersion]=useState(0);const[pageTurn,setPageTurn]=useState(null);const rewarded=useRef({});const pendingPageRef=useRef(0);const readingAnchorRef=useRef(null);const novelSpeechRef=useRef(null);const novelPanelRef=useRef(null);const novelSpreadRef=useRef(null);const novelBlockRefs=useRef({});const measureBlockRefs=useRef({});const swipeStartRef=useRef(null);const pageTurnTimerRef=useRef(null);
   const[viewportWidth,setViewportWidth]=useState(()=>typeof window==="undefined"?1024:window.innerWidth||1024);
   useEffect(()=>{let active=true;import("../data/novels.js").then(m=>{if(active)setNovelData(m.NOVELS)}).catch(()=>{if(active)setNovelData({elementary:[]})});return()=>{active=false}},[]);
   useEffect(()=>()=>{novelSpeechRef.current?.cancel?.();window.clearTimeout?.(pageTurnTimerRef.current)},[]);
@@ -114,16 +114,25 @@ export default function NovelM({lv,onBack,onXp,deps}){
         block.zh?novelAudioItem(block.zh,"zh-TW","block",block.i):null,
       ].filter(Boolean)),
     ];
-    const preload=()=>window.EnglishGoTTS?.preloadMany?.(items,{limit:items.length,concurrency:2});
+    let cancelled=false;
+    setAudioPreload({status:"loading",ready:0,total:items.length});
+    const preload=async()=>{
+      const preloadMany=window.EnglishGoTTS?.preloadMany;
+      if(typeof preloadMany!=="function"){if(!cancelled)setAudioPreload({status:"unavailable",ready:0,total:items.length});return}
+      try{
+        const ready=Number(await preloadMany(items,{limit:items.length,concurrency:2}))||0;
+        if(!cancelled)setAudioPreload({status:ready>=items.length?"ready":"partial",ready,total:items.length});
+      }catch{if(!cancelled)setAudioPreload({status:"partial",ready:0,total:items.length})}
+    };
     if(window.EnglishGoTTS)preload();
     else window.addEventListener("englishgo:tts-installed",preload,{once:true});
-    return()=>window.removeEventListener("englishgo:tts-installed",preload);
+    return()=>{cancelled=true;window.removeEventListener("englishgo:tts-installed",preload)};
   },[novel?.id,chapter?.no,pageNow,pages,visiblePageCount]);
   const quiz=chapter?chapter.quiz||[]:[];const quizKey=chapter?`${novel.id}:${chapter.no}`:"";const quizState=quizAns[quizKey]||{};const quizAnswered=quiz.filter((_,i)=>quizState[i]!=null).length;const quizDone=!quiz.length||quiz.every((_,i)=>quizState[i]!=null);
   const chooseQuiz=(qi,oi)=>setQuizAns(d=>({...d,[quizKey]:{...(d[quizKey]||{}),[qi]:oi}}));
   const completeChapter=()=>{if(!chapter)return;if(!quizDone){playSound("wrong");return}const key=`${novel.id}:${chapter.no}`;if(!completed.includes(chapter.no)){setDone(d=>({...d,[novel.id]:[...new Set([...(d[novel.id]||[]),chapter.no])]}));if(!rewarded.current[key]){rewarded.current[key]=true;onXp?.(15);playSound("done")}}};
-  const stopNovelSpeech=()=>{novelSpeechRef.current?.cancel?.();novelSpeechRef.current=null;setActiveBlock(null);setActiveVocab(null);stopSpeech()};
-  const startNovelStory=(items,options)=>{setActiveBlock(null);setActiveVocab(null);const handle=speakStory(items,options);novelSpeechRef.current=handle;return handle};
+  const stopNovelSpeech=()=>{novelSpeechRef.current?.cancel?.();novelSpeechRef.current=null;setActiveBlock(null);setActiveVocab(null);setIsNarrating(false);stopSpeech()};
+  const startNovelStory=(items,options={})=>{setActiveBlock(null);setActiveVocab(null);setIsNarrating(true);const handle=speakStory(items,{...options,onFinish:()=>{setIsNarrating(false);options.onFinish?.()},oncancel:()=>{setIsNarrating(false);options.oncancel?.()}});novelSpeechRef.current=handle;return handle};
   const showBlockPage=bi=>setPage(spreadStartForPage(findPageForBlock(pages,bi),visiblePageCount));
   const englishChapterItems=()=>[novelAudioItem(chapter.title,"en-US","title"),...blockPairs.filter(block=>block.en).map(block=>novelAudioItem(block.en,"en-US","block",block.i))];
   const chineseChapterItems=()=>[novelAudioItem(chapter.zhTitle,"zh-TW","title"),...blockPairs.filter(block=>block.zh).map(block=>novelAudioItem(block.zh,"zh-TW","block",block.i))];
@@ -141,8 +150,8 @@ export default function NovelM({lv,onBack,onXp,deps}){
   ].filter(Boolean));
   const readBilingualChapter=()=>{if(!chapter||!enBlocks.length)return;startNovelStory(bilingualChapterItems(),{onSentence:(_,__,item)=>{const bi=item?.blockIndex;if(bi!=null){setActiveBlock(bi);showBlockPage(bi)}},onFinish:()=>{novelSpeechRef.current=null;setActiveBlock(null)},oncancel:()=>{novelSpeechRef.current=null;setActiveBlock(null)}})};
   const readBilingualPage=()=>{const items=bilingualPageItems();if(!items.length)return;startNovelStory(items,{onSentence:(_,__,item)=>{if(item?.blockIndex!=null)setActiveBlock(item.blockIndex)},onFinish:()=>{novelSpeechRef.current=null;setActiveBlock(null)},oncancel:()=>{novelSpeechRef.current=null;setActiveBlock(null)}})};
-  const speakNovelText=(text,lang="en-US",rate=0.78,idx=null)=>{const item=novelAudioItem(text,lang,"block",idx);const utterance=speak(item.text,item.lang,item.rate,{apiTts:item.apiTts,audioUrl:item.audioUrl,onend:()=>setActiveBlock(null)});if(!utterance)return;novelSpeechRef.current=null;setActiveVocab(null);setActiveBlock(idx)};
-  const speakNovelVocab=(word)=>{const utterance=speak(word,"en-US",0.86,{onend:()=>setActiveVocab(null)});if(!utterance)return;novelSpeechRef.current=null;setActiveBlock(null);setActiveVocab(word)};
+  const speakNovelText=(text,lang="en-US",rate=0.78,idx=null)=>{const item=novelAudioItem(text,lang,"block",idx);const finish=()=>{setActiveBlock(null);setIsNarrating(false)};const utterance=speak(item.text,item.lang,item.rate,{apiTts:item.apiTts,audioUrl:item.audioUrl,onend:finish,onerror:finish,oncancel:finish});if(!utterance)return;novelSpeechRef.current=null;setActiveVocab(null);setActiveBlock(idx);setIsNarrating(true)};
+  const speakNovelVocab=(word)=>{const finish=()=>{setActiveVocab(null);setIsNarrating(false)};const utterance=speak(word,"en-US",0.86,{onend:finish,onerror:finish,oncancel:finish});if(!utterance)return;novelSpeechRef.current=null;setActiveBlock(null);setActiveVocab(word);setIsNarrating(true)};
   const goChapter=(i,startPage=0,startBlock=null)=>{stopNovelSpeech();const safePage=Math.max(0,Number(startPage)||0);pendingPageRef.current=safePage;readingAnchorRef.current=startBlock==null?null:Math.max(0,Number(startBlock)||0);setImmersive(true);setCi(i);setPage(safePage);if(typeof navigator==="undefined"||!/jsdom/i.test(navigator.userAgent||"")){try{window.scrollTo?.({top:0,behavior:"smooth"})}catch{}}};
   const backToList=()=>{stopNovelSpeech();setCi(null)};
   if(!novelData)return(<div><Hdr t="📘 英文小說" onBack={onBack} cl={c.cl}/><div style={{textAlign:"center",padding:"48px",color:S.t3}}>載入小說中...</div></div>);
@@ -203,6 +212,7 @@ export default function NovelM({lv,onBack,onXp,deps}){
   const updateReadingPrefs=patch=>setReadingPrefs(d=>({...d,...patch}));
   const panelIsVocab=sidePanel==="vocab";
   const panelTitle=panelIsVocab?"重點單字":`章節測驗 ${quizAnswered}/${quiz.length}`;
+  const audioPreloadLabel=audioPreload.status==="loading"?`語音準備中 0/${audioPreload.total}`:audioPreload.status==="ready"?"✓ 本頁語音已就緒":audioPreload.status==="partial"?`語音待連線 ${audioPreload.ready}/${audioPreload.total}`:audioPreload.status==="unavailable"?"語音服務待連線":"固定真人旁白";
   const panelTop=isMobile?"auto":"76px";
   const panelStyle={position:"fixed",zIndex:130,left:isMobile?0:"max(12px, calc((100vw - 760px) / 2 - 304px))",right:isMobile?0:"auto",top:panelTop,bottom:isMobile?0:18,width:isMobile?"auto":286,maxHeight:isMobile?"calc(72vh - env(safe-area-inset-bottom))":"calc(100vh - 94px)",overflowY:"auto",background:S.bg1,border:`1px solid ${c.cl}55`,borderRadius:isMobile?"18px 18px 0 0":16,boxShadow:"0 20px 48px rgba(15,110,86,.22)",padding:14,paddingBottom:isMobile?"calc(14px + env(safe-area-inset-bottom))":14};
   const pageActionsStyle={display:"flex",gap:8,alignItems:"center",paddingTop:10,paddingBottom:isMobile?"calc(10px + env(safe-area-inset-bottom))":"10px",flex:"0 0 auto"};
@@ -269,12 +279,13 @@ export default function NovelM({lv,onBack,onXp,deps}){
       <div style={{display:"flex",alignItems:"center",gap:9,minWidth:0,flex:isMobile?"0 0 auto":"1 1 230px",width:isMobile?"100%":undefined}}>
         <div style={{width:32,height:32,borderRadius:"50%",background:c.cl,color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:900,flexShrink:0}}>{chapter.no}</div>
         <div style={{minWidth:0,flex:1}}><div style={{fontSize:13,fontWeight:900,color:S.t1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{chapter.title}</div><div style={{fontSize:10,color:S.t3,fontWeight:800}}>{isMobile?`Page ${pageNow+1}`:`Pages ${pageNow+1}-${Math.min(pageNow+2,pages.length)}`} · {chapterPct}%</div></div>
-        {isMobile&&<span style={{fontSize:10,fontWeight:900,color:c.cl,background:c.bg,borderRadius:999,padding:"4px 7px",whiteSpace:"nowrap"}}>真人旁白預載</span>}
+        <span data-testid="novel-audio-status" role="status" aria-live="polite" style={{fontSize:10,fontWeight:900,color:audioPreload.status==="partial"||audioPreload.status==="unavailable"?"#9A6410":c.cl,background:audioPreload.status==="partial"||audioPreload.status==="unavailable"?"#FFF4D8":c.bg,borderRadius:999,padding:"4px 7px",whiteSpace:"nowrap"}}>{audioPreloadLabel}</span>
       </div>
       <div style={{height:6,background:S.bg2,borderRadius:999,overflow:"hidden",flex:isMobile?"0 0 auto":"0 1 120px",width:isMobile?"100%":undefined,minWidth:isMobile?0:80}}><div style={{height:"100%",width:`${chapterPct}%`,background:c.cl,borderRadius:999}}/></div>
-      <div data-testid="novel-toolbar-actions" aria-label="小說閱讀工具" style={{display:"flex",gap:7,alignItems:"center",overflowX:isMobile?"auto":"visible",flexWrap:isMobile?"nowrap":"wrap",width:isMobile?"100%":undefined,maxWidth:"100%",paddingBottom:isMobile?2:0,scrollbarWidth:"thin"}}>
+      <div data-testid="novel-toolbar-actions" aria-label="小說閱讀工具" style={{display:isMobile?"grid":"flex",gridTemplateColumns:isMobile?"repeat(3, minmax(0, 1fr))":undefined,gap:7,alignItems:"center",overflowX:"visible",flexWrap:isMobile?undefined:"wrap",width:isMobile?"100%":undefined,maxWidth:"100%",paddingBottom:isMobile?2:0}}>
         <button onClick={readBilingualPage} disabled={!pageBlocks.some(b=>b.zh)} aria-label="英中本頁朗讀" style={{...S.btn,background:c.cl,color:"#fff",padding:"8px 10px",fontSize:11,opacity:pageBlocks.some(b=>b.zh)?1:.45,flexShrink:0}}>🎧 本頁</button>
         <button onClick={readBilingualChapter} disabled={!zhBlocks.length} aria-label="整章朗讀" style={{...S.btn,background:c.bg,color:c.cl,padding:"8px 10px",fontSize:11,opacity:zhBlocks.length?1:.45,flexShrink:0}}>▶ 整章</button>
+        {isNarrating&&<button onClick={stopNovelSpeech} aria-label="停止小說朗讀" style={{...S.btn,background:"#FFF0F0",color:"#B54848",border:"1px solid #E9B8B8",padding:"8px 10px",fontSize:11,flexShrink:0}}>■ 停止</button>}
         <button onClick={()=>setShowZh(z=>!z)} aria-label={showZh?"隱藏中文":"顯示中文"} style={{...S.btn,background:showZh?"#FFF7E6":S.bg2,color:S.t1,padding:"8px 10px",fontSize:11,flexShrink:0}}>{showZh?"中✓":"中文"}</button>
         <button onClick={()=>updateReadingPrefs({fontSize:Math.max(14,readerFontSize-2)})} aria-label="A-" style={{...S.btn,background:S.bg2,color:S.t1,padding:"8px 10px",fontSize:11,minWidth:38,flexShrink:0}}>A-</button>
         <button onClick={()=>updateReadingPrefs({fontSize:Math.min(22,readerFontSize+2)})} aria-label="A+" style={{...S.btn,background:S.bg2,color:S.t1,padding:"8px 10px",fontSize:11,minWidth:38,flexShrink:0}}>A+</button>

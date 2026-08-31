@@ -1184,6 +1184,7 @@ describe('EnglishGo app smoke flow', () => {
       expect(speech.speak).toHaveBeenCalledTimes(1);
       expect(speech.cancel).toHaveBeenCalledTimes(1);
       expect(speech.events).toEqual(['cancel', 'resume', 'speak']);
+      expect(screen.getByRole('button', { name: '停止小說朗讀' })).toBeInTheDocument();
       expect(speech.speak.mock.calls[0][0].__englishGoAudioUrl).toMatch(
         /^\/\.netlify\/functions\/elevenlabs-tts\?novel=v1-secret-forest-adventure-c1-zh-block-0-/,
       );
@@ -1191,6 +1192,7 @@ describe('EnglishGo app smoke flow', () => {
       act(() => {
         speech.speak.mock.calls[0][0].onend?.(new Event('end'));
       });
+      expect(screen.queryByRole('button', { name: '停止小說朗讀' })).not.toBeInTheDocument();
       speech.cancel.mockClear();
       speech.speak.mockClear();
       speech.events.splice(0);
@@ -1403,10 +1405,11 @@ describe('EnglishGo app smoke flow', () => {
     });
     expect(screen.getByTestId('novel-immersive-toolbar')).toHaveStyle({ flexDirection: 'column' });
     expect(screen.getByTestId('novel-toolbar-actions')).toHaveStyle({
-      overflowX: 'auto',
-      flexWrap: 'nowrap',
+      display: 'grid',
+      gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+      overflowX: 'visible',
     });
-    expect(screen.getByText('真人旁白預載')).toBeInTheDocument();
+    expect(screen.getByText('固定真人旁白')).toBeInTheDocument();
     expect(screen.getByTestId('novel-book-spread')).toHaveStyle({ gridTemplateColumns: '1fr' });
     expect(screen.getAllByTestId('novel-book-page')).toHaveLength(1);
     expect(screen.getAllByTestId('novel-reader-text').length).toBeGreaterThanOrEqual(2);

@@ -136,13 +136,29 @@ describe("ElevenLabs TTS patch", () => {
     globalThis.fetch = vi.fn(() => Promise.resolve(new Response(new Blob(["mp3"], { type: "audio/mpeg" }))));
     loadPatch();
 
-    await window.EnglishGoTTS.preloadMany([
+    const readyCount = await window.EnglishGoTTS.preloadMany([
       { text: "The forest is quiet.", lang: "en-US", audioUrl: "/audio-en" },
       { text: "森林很安靜。", lang: "zh-TW", audioUrl: "/audio-zh" },
     ], { limit: 2, concurrency: 2 });
 
     expect(globalThis.fetch).toHaveBeenCalledTimes(2);
     expect(globalThis.fetch.mock.calls.map(([url]) => url)).toEqual(expect.arrayContaining(["/audio-en", "/audio-zh"]));
+    expect(readyCount).toBe(2);
+  });
+
+  it("reports only successfully prepared audio items", async () => {
+    installPatchEnv();
+    globalThis.fetch = vi.fn(url => url === "/audio-ok"
+      ? Promise.resolve(new Response(new Blob(["mp3"], { type: "audio/mpeg" })))
+      : Promise.resolve(new Response("missing", { status: 404 })));
+    loadPatch();
+
+    const readyCount = await window.EnglishGoTTS.preloadMany([
+      { text: "The forest is quiet.", lang: "en-US", audioUrl: "/audio-ok" },
+      { text: "The river is quiet.", lang: "en-US", audioUrl: "/audio-missing" },
+    ], { limit: 2, concurrency: 2 });
+
+    expect(readyCount).toBe(1);
   });
 
   it("keeps unmarked Chinese speech on native browser speech", () => {

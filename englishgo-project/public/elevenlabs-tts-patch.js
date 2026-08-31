@@ -218,15 +218,17 @@
     }
 
     let index = 0;
+    let readyCount = 0;
     const workers = Array.from({ length: Math.min(concurrency, items.length) }, async () => {
       while (index < items.length) {
         const next = items[index++];
-        await preload(next.text, next.options);
+        const url = await preload(next.text, next.options);
+        if (url) readyCount += 1;
       }
     });
 
     await Promise.allSettled(workers);
-    return items.length;
+    return readyCount;
   }
 
   function renderPanel() {
