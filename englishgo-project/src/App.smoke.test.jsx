@@ -1122,6 +1122,7 @@ describe('EnglishGo app smoke flow', () => {
     fireEvent.click(await screen.findByText('The Whispering Tree', {}, { timeout: 5000 }));
 
     expect(await screen.findByTestId('novel-immersive-toolbar')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '📘 英文小說' })).toBeInTheDocument();
     expect(screen.getByTestId('novel-immersive-shell')).toHaveStyle({
       width: 'min(1120px, calc(100vw - 32px))',
     });
@@ -1420,6 +1421,8 @@ describe('EnglishGo app smoke flow', () => {
     fireEvent.click(await screen.findByText('The Whispering Tree', {}, { timeout: 5000 }));
 
     expect(await screen.findByTestId('novel-immersive-toolbar')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: '📘 英文小說' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '返回章節列表' })).toBeInTheDocument();
     expect(screen.getByTestId('novel-immersive-shell')).toHaveStyle({ width: '100%' });
     expect(screen.queryByTestId('novel-chapter-hero')).not.toBeInTheDocument();
     expect(screen.queryByTestId('novel-reading-settings')).not.toBeInTheDocument();
@@ -1451,6 +1454,7 @@ describe('EnglishGo app smoke flow', () => {
     expect(screen.getByTestId('novel-page-actions')).toHaveStyle({
       paddingBottom: 'calc(10px + env(safe-area-inset-bottom))',
     });
+    expect(screen.getByText(/左右滑動 · 段落/)).toBeInTheDocument();
     const measurementLayer = screen.getByTestId('novel-measurement-layer');
     const measurementSpeakers = within(measurementLayer).getAllByTestId('novel-measure-speaker');
     expect(measurementSpeakers[0]).toHaveStyle({ width: '34px', height: '34px' });
@@ -1462,6 +1466,7 @@ describe('EnglishGo app smoke flow', () => {
     fireEvent.click(screen.getByRole('button', { name: '關閉工具面板' }));
     fireEvent.click(screen.getByRole('button', { name: '展開閱讀工具' }));
     fireEvent.click(screen.getByRole('button', { name: '退出沉浸' }));
+    expect(screen.getByRole('heading', { name: '📘 英文小說' })).toBeInTheDocument();
     expect(await screen.findByTestId('novel-chapter-hero')).toHaveStyle({ gridTemplateColumns: '1fr' });
     expect(screen.getByTestId('novel-hero-media')).toHaveStyle({ overflow: 'visible' });
     expect(screen.getByTestId('novel-illustration-frame')).toHaveStyle({ height: '100%' });
