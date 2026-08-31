@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { NOVEL_AUDIO_CATALOG } from "./novel-audio-catalog.js";
+import { NOVEL_AUDIO_CATALOG, NOVEL_AUDIO_CONFIG } from "./novel-audio-catalog.js";
 
 const DEFAULT_VOICE_ID = "21m00Tcm4TlvDq8ikWAM";
 const ALLOWED_ENGLISH_VOICE_IDS = new Set([
@@ -12,8 +12,8 @@ const DEFAULT_MODEL_ID = "eleven_multilingual_v2";
 const DEFAULT_ZH_MODEL_ID = "eleven_multilingual_v2";
 const DEFAULT_OUTPUT_FORMAT = "mp3_44100_128";
 const MAX_TEXT_LENGTH = 900;
-const NOVEL_ENGLISH_SPEED = 0.9;
-const NOVEL_CHINESE_SPEED = 1;
+const NOVEL_ENGLISH_SPEED = NOVEL_AUDIO_CONFIG.englishRate;
+const NOVEL_CHINESE_SPEED = NOVEL_AUDIO_CONFIG.chineseRate;
 const ONE_YEAR_SECONDS = 31536000;
 
 function getEnv(name) {
@@ -245,7 +245,7 @@ export default async function handler(req, context = {}) {
   const normalizedText = normalizeTextForTts(originalText);
   const lang = String(payload.lang || "en-US").trim();
   const voiceId = isChineseLang(lang)
-    ? getEnv("ELEVENLABS_ZH_VOICE_ID")
+    ? (isFixedNovelAsset ? NOVEL_AUDIO_CONFIG.chineseVoiceId : getEnv("ELEVENLABS_ZH_VOICE_ID"))
     : isFixedNovelAsset
       ? DEFAULT_VOICE_ID
       : getEnglishVoiceId(payload.voiceId);

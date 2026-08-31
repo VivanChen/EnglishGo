@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import handler from "../netlify/functions/elevenlabs-tts.js";
-import { NOVEL_AUDIO_CATALOG } from "../netlify/functions/novel-audio-catalog.js";
+import { NOVEL_AUDIO_CATALOG, NOVEL_AUDIO_CONFIG } from "../netlify/functions/novel-audio-catalog.js";
 
 const ENV_KEYS = [
   "ELEVENLABS_API_KEY",
@@ -144,6 +144,24 @@ describe("elevenlabs-tts function voice selection", () => {
     expect(JSON.parse(init.body)).toMatchObject({
       text: asset.text,
       voice_settings: expect.objectContaining({ speed: 0.9 }),
+    });
+  });
+
+  it("always serves fixed Chinese novel narration with the selected Mandarin voice", async () => {
+    process.env.ELEVENLABS_ZH_VOICE_ID = "old-mandarin-voice";
+    const [assetId, asset] = Object.entries(NOVEL_AUDIO_CATALOG).find(([, entry]) => entry.lang === "zh-TW");
+
+    const res = await handler(novelRequest(assetId));
+
+    expect(res.status).toBe(200);
+    expect(assetId).toMatch(/^v2-.*-zh-/);
+    const [url, init] = globalThis.fetch.mock.calls[0];
+    expect(String(url)).toContain(`/text-to-speech/${NOVEL_AUDIO_CONFIG.chineseVoiceId}?`);
+    expect(String(url)).not.toContain("old-mandarin-voice");
+    expect(JSON.parse(init.body)).toMatchObject({
+      text: asset.text,
+      model_id: "eleven_multilingual_v2",
+      voice_settings: expect.objectContaining({ speed: 1 }),
     });
   });
 

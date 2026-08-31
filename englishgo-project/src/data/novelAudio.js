@@ -1,4 +1,6 @@
 export const NOVEL_AUDIO_VERSION = "v1";
+export const NOVEL_CHINESE_AUDIO_VERSION = "v2";
+export const NOVEL_CHINESE_VOICE_ID = "fQj4gJSexpu8RDE2Ii5m";
 export const NOVEL_ENGLISH_RATE = 0.9;
 export const NOVEL_CHINESE_RATE = 1;
 
@@ -87,10 +89,11 @@ function cleanIdPart(value) {
 
 export function makeNovelAudioAssetId({ novelId, chapterNo, lang, kind = "block", blockIndex = 0, text }) {
   const language = /^zh/i.test(String(lang || "")) ? "zh" : "en";
+  const version = language === "zh" ? NOVEL_CHINESE_AUDIO_VERSION : NOVEL_AUDIO_VERSION;
   const rate = language === "zh" ? NOVEL_CHINESE_RATE : NOVEL_ENGLISH_RATE;
   const position = kind === "title" ? "title" : `block-${Math.max(0, Number(blockIndex) || 0)}`;
-  const hash = contentHash(JSON.stringify({ version: NOVEL_AUDIO_VERSION, language, rate, text: String(text || "") }));
-  return `${NOVEL_AUDIO_VERSION}-${cleanIdPart(novelId)}-c${Math.max(1, Number(chapterNo) || 1)}-${language}-${position}-${hash}`;
+  const hash = contentHash(JSON.stringify({ version, language, rate, text: String(text || "") }));
+  return `${version}-${cleanIdPart(novelId)}-c${Math.max(1, Number(chapterNo) || 1)}-${language}-${position}-${hash}`;
 }
 
 export function getNovelAudioUrl(input) {

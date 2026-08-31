@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { NOVELS } from "./data/novels.js";
 import {
+  NOVEL_CHINESE_AUDIO_VERSION,
+  NOVEL_CHINESE_VOICE_ID,
   getNovelAudioUrl,
   makeNovelAudioAssetId,
   makeNovelAudioItem,
   novelBlockPairs,
 } from "./data/novelAudio.js";
-import { NOVEL_AUDIO_CATALOG } from "../netlify/functions/novel-audio-catalog.js";
+import { NOVEL_AUDIO_CATALOG, NOVEL_AUDIO_CONFIG } from "../netlify/functions/novel-audio-catalog.js";
 
 describe("fixed novel audio catalog", () => {
   it("contains every English and Chinese chapter title and aligned reading block", () => {
@@ -54,6 +56,10 @@ describe("fixed novel audio catalog", () => {
 
     expect(chinese).toMatchObject({ lang: "zh-TW", rate: 1, apiTts: true });
     expect(english).toMatchObject({ lang: "en-US", rate: 0.9, apiTts: false });
+    expect(NOVEL_AUDIO_CONFIG.chineseVoiceId).toBe(NOVEL_CHINESE_VOICE_ID);
+    expect(NOVEL_AUDIO_CONFIG.chineseAudioVersion).toBe(NOVEL_CHINESE_AUDIO_VERSION);
+    expect(chinese.audioUrl).toContain(`novel=${NOVEL_CHINESE_AUDIO_VERSION}-`);
+    expect(english.audioUrl).toContain("novel=v1-");
     expect(chinese.audioUrl).toContain("-zh-block-0-");
     expect(english.audioUrl).toContain("-en-block-0-");
   });

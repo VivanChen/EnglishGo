@@ -1186,7 +1186,7 @@ describe('EnglishGo app smoke flow', () => {
       expect(speech.events).toEqual(['cancel', 'resume', 'speak']);
       expect(screen.getByRole('button', { name: '停止小說朗讀' })).toBeInTheDocument();
       expect(speech.speak.mock.calls[0][0].__englishGoAudioUrl).toMatch(
-        /^\/\.netlify\/functions\/elevenlabs-tts\?novel=v1-secret-forest-adventure-c1-zh-block-0-/,
+        /^\/\.netlify\/functions\/elevenlabs-tts\?novel=v2-secret-forest-adventure-c1-zh-block-0-/,
       );
 
       act(() => {
