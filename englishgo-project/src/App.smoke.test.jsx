@@ -1234,6 +1234,42 @@ describe('EnglishGo app smoke flow', () => {
     }
   });
 
+  it('keeps the mobile novel page stable while narration controls appear', async () => {
+    setViewportWidth(390);
+    const speech = installMockSpeechSynthesis();
+    try {
+      await openElementaryMenu();
+
+      clickFirstButtonWithText('閱讀聽力');
+      clickFirstButtonWithText('英文小說');
+      fireEvent.click(await screen.findByText('The Whispering Tree', {}, { timeout: 5000 }));
+
+      const reader = await screen.findByTestId('novel-reader-panel');
+      expect(reader).toHaveStyle({ height: 'clamp(540px, calc(100svh - 210px), 780px)' });
+      fireEvent.click((await screen.findAllByTitle('朗讀中文'))[0]);
+
+      const playbackControls = screen.getByTestId('novel-playback-controls');
+      expect(playbackControls).toHaveStyle({ display: 'flex' });
+      expect(screen.getByTestId('novel-mobile-progress-row')).toContainElement(playbackControls);
+      expect(screen.getByTestId('novel-audio-status')).toHaveTextContent('朗讀中');
+      expect(reader).toHaveStyle({ height: 'clamp(540px, calc(100svh - 210px), 780px)' });
+
+      fireEvent.click(screen.getByRole('button', { name: '暫停小說朗讀' }));
+      expect(screen.getByTestId('novel-audio-status')).toHaveTextContent('已暫停');
+      expect(screen.getByRole('button', { name: '繼續小說朗讀' })).toBeInTheDocument();
+      expect(reader).toHaveStyle({ height: 'clamp(540px, calc(100svh - 210px), 780px)' });
+
+      fireEvent.click(screen.getByRole('button', { name: '繼續小說朗讀' }));
+      expect(screen.getByTestId('novel-audio-status')).toHaveTextContent('朗讀中');
+      fireEvent.click(screen.getByRole('button', { name: '停止小說朗讀' }));
+      expect(screen.queryByTestId('novel-playback-controls')).not.toBeInTheDocument();
+      expect(reader).toHaveStyle({ height: 'clamp(540px, calc(100svh - 210px), 780px)' });
+    } finally {
+      setViewportWidth(1024);
+      speech.restore();
+    }
+  });
+
   it('uses a realistic novel page turn in both directions', async () => {
     await openElementaryMenu();
 
