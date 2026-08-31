@@ -38,7 +38,7 @@ npm run build
 VITE_SUPABASE_URL=<你的 Supabase Project URL>
 VITE_SUPABASE_ANON_KEY=<你的 anon key>
 ELEVENLABS_API_KEY=<你的 ElevenLabs API key>
-ELEVENLABS_ZH_VOICE_ID=<固定的中文小說聲線 ID>
+ELEVENLABS_ZH_VOICE_ID=<非小說動態中文朗讀聲線 ID（如有使用）>
 ELEVENLABS_ZH_MODEL_ID=eleven_multilingual_v2
 SUPABASE_SERVICE_ROLE_KEY=<你的 Supabase service_role key>
 SUPABASE_TTS_BUCKET=tts-cache
@@ -48,7 +48,7 @@ SUPABASE_TTS_BUCKET=tts-cache
 
 ### 小說固定真人語音
 
-建置時會由 `src/data/novels.js` 自動產生固定小說語音清單。部署後可執行以下指令，分批建立全部英中旁白；進度會寫入本機狀態檔，若中斷可直接用相同指令續傳：
+建置時會由 `src/data/novels.js` 自動產生固定小說語音清單。小說中文固定使用 `fQj4gJSexpu8RDE2Ii5m`，目前中文資產版本為 `v2`，不受 Netlify 的 `ELEVENLABS_ZH_VOICE_ID` 設定影響。部署後可執行以下指令，分批建立全部英中旁白；進度會寫入本機狀態檔，若中斷可直接用相同指令續傳：
 
 ```bash
 npm run prewarm:novel-audio
