@@ -2676,7 +2676,8 @@ function SettingsPage({onBack,c,gemKey,setGemKey,gifKey,setGifKey}){
       <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center",marginTop:10}}>
         <button onClick={saveGem} style={{...S.btn,background:c.cl,color:"#fff",padding:"10px 16px",fontSize:13}}>儲存 Gemini Key</button>
         <button onClick={clearGem} style={{...S.btn,background:S.bg2,color:S.t2,padding:"10px 14px",fontSize:13}}>清除</button>
-        <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" style={{fontSize:12,color:c.cl,fontWeight:900,textDecoration:"underline"}}>Google AI Studio</a>
+        <a href="/learn/api-keys.html#google" target="_blank" rel="noopener noreferrer" style={{fontSize:12,color:c.cl,fontWeight:900,textDecoration:"underline"}}>圖解申請教學</a>
+        <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" style={{fontSize:12,color:S.t3,fontWeight:800,textDecoration:"underline"}}>直接開啟 AI Studio</a>
         {(saved==="gem"||saved==="gem-clear")&&<span style={{fontSize:12,color:c.cl,fontWeight:900}}>已更新</span>}
       </div>
     </section>
