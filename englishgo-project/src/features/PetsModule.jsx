@@ -1200,7 +1200,8 @@ function playNoise(ctx,opts){
 }
 
 function playPetSound(petId){
-  if(typeof window==="undefined")return;
+  if(typeof window==="undefined"||typeof document==="undefined")return;
+  if(document.documentElement.dataset.egQuiet==="true")return;
   if(!window.AudioContext&&!window.webkitAudioContext)return;
   let ctx;
   try{ctx=new (window.AudioContext||window.webkitAudioContext)()}catch{return}
@@ -1312,6 +1313,8 @@ function playPetSound(petId){
 
 // Action-specific sound effects (when feeding, playing, etc)
 function playActionSound(action){
+  if(typeof window==="undefined"||typeof document==="undefined")return;
+  if(document.documentElement.dataset.egQuiet==="true")return;
   if(!window.AudioContext&&!window.webkitAudioContext)return;
   let ctx;
   try{ctx=new (window.AudioContext||window.webkitAudioContext)()}catch{return}
@@ -2500,6 +2503,8 @@ function PlaygroundView({pets,setPets,setCoins,c,onBack,incrTask}){
 
 // ═══ PETS PAGE (寵物圖鑑 v2 - 養成系統) ════════════════════════════
 function PetsPage({onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,setInventory,petAccount,setPetAccount,petTasks,setPetTasks,incrTask}){
+  const reactionTimer=useRef(null);
+  useEffect(()=>()=>clearTimeout(reactionTimer.current),[]);
   const[tab,setTab]=useState("tasks");
   const[selectedPet,setSelectedPet]=useState(null);
   const[actionModal,setActionModal]=useState(null);// {pet,action}
@@ -2904,7 +2909,8 @@ function PetsPage({onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,s
     setCoins(co=>co+5+(cultivationBonus?.coins||0));// reward for caring
     // Play action sound + pet's own voice for personality
     playActionSound(actionKey);
-    setTimeout(()=>playPetSound(pet.petId),400);// pet reacts happily after action
+    clearTimeout(reactionTimer.current);
+    reactionTimer.current=setTimeout(()=>playPetSound(pet.petId),400);// cancel the reaction when leaving pet care
 
     // 觸發粒子慶祝動畫 (P0-2 視覺優化)
     setActionModal(null);

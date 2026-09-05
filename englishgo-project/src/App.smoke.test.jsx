@@ -793,7 +793,7 @@ describe('EnglishGo app smoke flow', () => {
     expect(screen.getByText(/已合併\/忽略 1 筆/)).toBeInTheDocument();
     fireEvent.click(screen.getByText('開始這輪複習'));
 
-    expect(await screen.findByText(/SRS 單字卡/)).toBeInTheDocument();
+    expect(await screen.findByText(/單字小花園/)).toBeInTheDocument();
     expect(await screen.findByText('考試範圍模式')).toBeInTheDocument();
     expect(screen.getByText('2 個單字')).toBeInTheDocument();
   });
@@ -863,7 +863,7 @@ describe('EnglishGo app smoke flow', () => {
       clickFirstModuleCard();
       await startAllWordsSrsRound();
 
-      expect(await screen.findByRole('heading', { name: /SRS/ })).toBeInTheDocument();
+      expect(await screen.findByRole('heading', { name: /單字小花園/ })).toBeInTheDocument();
 
       await waitFor(() => {
         expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('api.giphy.com/v1/gifs/translate'));

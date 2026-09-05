@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#185FA5" />
+    <meta name="theme-color" content="#356a50" />
     <meta name="description" content="EnglishGo 英語學習平台 - 專為台灣學生設計 · AI 驅動英語學習" />
 
     <!-- PWA -->
@@ -26,13 +26,13 @@
 
     <title>EnglishGo 英語學習平台</title>
     <style>
-      html, body { margin: 0; padding: 0; height: 100%; overflow-x: hidden; }
-      body { font-family: 'Noto Sans TC', 'Segoe UI', sans-serif; background: #091825; }
+      html, body { margin: 0; padding: 0; min-height: 100%; overflow-x: clip; }
+      body { font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif; background: #fafaf6; }
       #root { min-height: 100vh; }
       #root:empty::before {
         content: '📘 EnglishGo 載入中...';
         position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
-        color: #fff; font-size: 16px; letter-spacing: 1px;
+        color: #356a50; font-size: 16px; letter-spacing: 1px;
       }
     </style>
   </head>
