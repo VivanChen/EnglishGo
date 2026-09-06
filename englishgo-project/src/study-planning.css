@@ -1,0 +1,73 @@
+.exam-planner,.achievement-garden,.progress-journal { scroll-margin-top: 130px; }
+.exam-planner .workshop-stepper { grid-template-columns: repeat(2,minmax(0,1fr)); }
+.exam-planner label { display: block; font-size: 14px; font-weight: 700; color: var(--garden-ink); margin: 12px 0 7px; }
+.exam-planner textarea,.exam-planner input:not([type=checkbox]),.exam-planner select,.journal-sharing textarea { width: 100%; min-width: 0; padding: 13px 15px; border: 1px solid var(--garden-line); border-radius: 13px; color: var(--garden-ink); background: var(--garden-paper); font: inherit; line-height: 1.75; }
+.exam-planner textarea { min-height: 170px; resize: vertical; }
+.exam-planner .practice-actions { margin: 20px 0; }
+.exam-count { display: flex; gap: 12px; align-items: baseline; margin-top: 14px; color: var(--garden-muted); }
+.exam-count b { font-size: 32px; color: var(--garden-green); }
+.exam-word-chips { display: flex; flex-wrap: wrap; gap: 8px; max-height: 250px; overflow-y: auto; padding: 5px; }
+.exam-word-chips button { display: flex; gap: 12px; align-items: center; font-size: 15px; }
+.exam-word-chips button>span:last-child { color: var(--garden-muted); }
+.exam-ai-controls { display: grid; grid-template-columns: minmax(0,2fr) minmax(0,1fr); gap: 14px; margin-bottom: 18px; }
+.exam-ai-controls select { margin-top: 6px; min-height: 48px; }
+.exam-review-list { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; margin: 24px 0; }
+.exam-review-row { padding: 16px; border: 1px solid var(--garden-line); border-radius: 16px; }
+.exam-review-row>label { display: flex; align-items: center; gap: 14px; margin: 0; cursor: pointer; }
+.exam-review-row input[type=checkbox] { width: 24px; height: 24px; accent-color: var(--garden-green); flex-shrink: 0; margin: 10px 0; }
+.exam-review-row>label>span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.exam-review-row b { display: block; font-size: 21px; }
+.exam-review-row label span span { display: block; color: var(--garden-muted); font-size: 15px; font-weight: 500; }
+.exam-review-row small { display: block; color: var(--garden-green); font-size: 12px; }
+.exam-review-row.is-pending { background: var(--garden-paper); border-style: dashed; }
+.exam-meaning { border-top: 1px solid var(--garden-line); margin-top: 16px; padding-top: 6px; }
+.exam-meaning button { margin-top: 10px; }
+.exam-library summary,.journal-sharing summary { padding: 12px 0; min-height: 46px; cursor: pointer; color: var(--garden-green); font-weight: 750; }
+.exam-saved-row { display: flex; gap: 10px; align-items: center; margin: 10px 0; }
+.exam-saved-row>button:first-child { flex: 1; text-align: left; }
+.exam-saved-row small { display: block; color: var(--garden-muted); font-size: 12px; margin-top: 6px; }
+.badge-featured { display: flex; gap: 14px; align-items: center; padding-top: 8px; }
+.badge-featured>span { font-size: 42px; }
+.badge-featured small,.badge-featured b { display: block; }
+.badge-featured small { font-size: 12px; color: var(--garden-muted); }
+.badge-featured b { font-size: 20px; color: var(--garden-green); }
+.badge-filters { margin: 28px 0 20px; }
+.badge-grid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 16px; margin: 24px 0; }
+.practice-world .badge-card { display: flex; flex-direction: column; gap: 10px; align-items: center; padding: 24px 16px; color: var(--garden-ink); text-align: center; border-radius: 22px; }
+.badge-card.is-earned { background: var(--garden-green-soft); }
+.badge-card[aria-expanded=true] { outline: 2px solid var(--garden-green); outline-offset: 3px; }
+.badge-illustration { width: 104px; height: 112px; display: grid; place-items: center; background: var(--garden-paper); border: 1px dashed var(--garden-line); border-radius: 48% 48% 42% 42%; margin: 4px 0 12px; position: relative; }
+.is-earned .badge-illustration { background: #f5e4b4; border: 3px double #b59d66; box-shadow: 0 5px 0 #c5b788; }
+.badge-illustration>span { font-size: 43px; }
+.badge-card strong { font-size: 18px; }
+.badge-description { font-size: 13px; color: var(--garden-muted); flex: 1; }
+.badge-card progress,.achievement-garden .practice-resume progress { width: 100%; height: 8px; accent-color: var(--garden-green); margin-top: 6px; }
+.badge-state { font-size: 12px; color: var(--garden-green); font-weight: 750; }
+.badge-detail h3 { scroll-margin-top: 135px; }
+.badge-detail h3:focus { outline: none; }
+.journal-today,.journal-section-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.journal-today { color: var(--garden-green); font-size: 15px; margin-bottom: 24px; }
+.journal-section-heading { flex-wrap: wrap; }
+.journal-section-heading h3 { margin: 7px 0; }
+.journal-section-heading>b { color: var(--garden-green); font-size: 14px; }
+.journal-calendar { display: grid; grid-template-columns: repeat(7,minmax(0,1fr)); gap: 10px; margin: 25px 0; }
+.practice-world .journal-calendar button { display: flex; flex-direction: column; align-items: center; padding: 14px 8px; color: var(--garden-muted); gap: 7px; font-size: 13px; }
+.journal-calendar button[aria-pressed=true] { background: var(--garden-green-soft); border: 2px solid var(--garden-green); }
+.journal-bar-space { width: 100%; height: 70px; display: flex; justify-content: center; align-items: flex-end; }
+.journal-bar-space i { display: block; width: min(70%,32px); background: var(--garden-green); border-radius: 8px 8px 3px 3px; transition: height .3s ease; }
+.journal-calendar small { font-size: 11px; }
+.journal-day-detail { display: flex; flex-wrap: wrap; gap: 8px 20px; background: var(--garden-paper); padding: 16px; border-radius: 14px; font-size: 14px; }
+.journal-day-detail span { color: var(--garden-muted); }
+.journal-next-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 18px; }
+.journal-next-grid h3 { margin-top: 12px; }
+.journal-word-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0; }
+.journal-word-chips>span { padding: 7px 12px; border-radius: 10px; background: var(--garden-green-soft); color: var(--garden-green); font-size: 17px; }
+.journal-metrics { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; margin: 25px 0; }
+.journal-metrics>div { padding: 18px 12px; background: var(--garden-paper); border-radius: 16px; text-align: center; }
+.journal-metrics b { display: block; font-size: 32px; color: var(--garden-green); }
+.journal-metrics span { display: block; font-size: 13px; color: var(--garden-muted); }
+.journal-sharing textarea { min-height: 245px; resize: vertical; margin: 8px 0 20px; }
+html[data-eg-theme=dark] .is-earned .badge-illustration { background: #554c2a; border-color: #baa86b; box-shadow: 0 5px 0 #766d43; }
+@media(max-width:850px) { .badge-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } .journal-next-grid { grid-template-columns: 1fr; gap: 0; } }
+@media(max-width:620px) { .exam-review-list,.exam-ai-controls { grid-template-columns: 1fr; } .badge-grid { gap: 10px; } .practice-world .badge-card { padding: 20px 10px; } .badge-illustration { width: 80px; height: 88px; } .badge-illustration>span { font-size: 35px; } .journal-metrics { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+@media(max-width:480px) { .journal-calendar { grid-template-columns: repeat(4,minmax(0,1fr)); gap: 8px; } .journal-bar-space { height: 45px; } .exam-saved-row { align-items: stretch; } .badge-card strong { font-size: 16px; } }

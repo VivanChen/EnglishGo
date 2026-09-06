@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense } from "react";
 import { Brand, ComfortControls, LearningDashboard, WelcomeScreen } from "./components/LearningExperience.jsx";
 import ReadingPractice from "./features/ReadingPractice.jsx";
+import { archiveStudyDay, dailyProgress, learningStreak, localDay } from "./data/studyProgress.js";
 import { buildDailyMiniDeck } from "./data/learningJourney.js";
 import { getElementaryExample } from "./data/elementaryExamples.js";
 import { JUNIOR_SONGS } from "./data/juniorSongs.js";
@@ -10,6 +11,14 @@ import { fetchAllCloudVocabularyRows } from "./data/cloudVocabulary.js";
 
 const TranslationReader=lazy(()=>import("./features/TranslationReader.jsx"));
 const PetMonopolyM=lazy(()=>import("./features/PetMonopoly.jsx"));
+const LearningPractice=lazy(()=>import("./features/LearningPractice.jsx"));
+const ReviewGarden=lazy(()=>import("./features/ReviewGarden.jsx"));
+const GrammarWorkshop=lazy(()=>import("./features/GrammarWorkshop.jsx"));
+const SpeakingStudio=lazy(()=>import("./features/SpeakingStudio.jsx"));
+const SongsStudio=lazy(()=>import("./features/SongsStudio.jsx"));
+const ExamPlanner=lazy(()=>import("./features/ExamPlanner.jsx"));
+const AchievementGarden=lazy(()=>import("./features/AchievementGarden.jsx"));
+const ProgressJournal=lazy(()=>import("./features/ProgressJournal.jsx"));
 
 // ═══ SUPABASE CLIENT (lazy init, graceful fallback) ═════════════════
 let _sb = null;
@@ -729,14 +738,14 @@ const SCRAM = {
 };
 // ═══ ACHIEVEMENTS ═══════════════════════════════════════════════════
 const ACH_DEFS = [
-  {id:"first_card",name:"初心者",desc:"完成第一次 SRS 練習",icon:"🌟",check:s=>s.srsRounds>=1},
-  {id:"streak3",name:"三日不懈",desc:"連續學習 3 天",icon:"🔥",check:s=>s.streak>=3},
-  {id:"streak7",name:"一週達人",desc:"連續學習 7 天",icon:"💎",check:s=>s.streak>=7},
-  {id:"xp100",name:"經驗滿載",desc:"累積 100 XP",icon:"⭐",check:s=>s.xp>=100},
-  {id:"xp500",name:"學霸之路",desc:"累積 500 XP",icon:"🏆",check:s=>s.xp>=500},
-  {id:"quiz_perfect",name:"零失誤",desc:"測驗拿滿分",icon:"💯",check:s=>s.perfectQuiz>=1},
-  {id:"dict5",name:"聽力新手",desc:"完成 5 次聽寫",icon:"🎧",check:s=>s.dictDone>=5},
-  {id:"scram5",name:"語序大師",desc:"完成 5 次句子重組",icon:"🧩",check:s=>s.scramDone>=5},
+  {id:"first_card",name:"初心者",desc:"完成第一輪單字卡練習",icon:"🌟",metric:"srsRounds",target:1,unit:"輪",module:"srs",group:"learn",action:"練一輪 5 張單字卡",check:s=>s.srsRounds>=1},
+  {id:"streak3",name:"三日不懈",desc:"連續學習 3 天",icon:"🔥",metric:"streak",target:3,unit:"天",module:"srs",group:"learn",action:"留下今天的小腳印",check:s=>s.streak>=3},
+  {id:"streak7",name:"一週達人",desc:"連續學習 7 天",icon:"💎",metric:"streak",target:7,unit:"天",module:"srs",group:"learn",action:"留下今天的小腳印",check:s=>s.streak>=7},
+  {id:"xp100",name:"經驗滿載",desc:"累積 100 XP",icon:"⭐",metric:"xp",target:100,unit:"XP",module:"srs",group:"learn",action:"做一份單字小任務",check:s=>s.xp>=100},
+  {id:"xp500",name:"學霸之路",desc:"累積 500 XP",icon:"🏆",metric:"xp",target:500,unit:"XP",module:"srs",group:"learn",action:"做一份單字小任務",check:s=>s.xp>=500},
+  {id:"quiz_perfect",name:"零失誤",desc:"測驗拿滿分",icon:"💯",metric:"perfectQuiz",target:1,unit:"次",module:"quiz",group:"learn",action:"試試單字小測驗",check:s=>s.perfectQuiz>=1},
+  {id:"dict5",name:"聽力新手",desc:"完成 5 次聽寫",icon:"🎧",metric:"dictDone",target:5,unit:"次",module:"dictation",group:"read",action:"聽一段短句",check:s=>s.dictDone>=5},
+  {id:"scram5",name:"語序大師",desc:"完成 5 次句子重組",icon:"🧩",metric:"scramDone",target:5,unit:"次",module:"scramble",group:"game",action:"組一個英文句子",check:s=>s.scramDone>=5},
 ];
 
 
@@ -2259,6 +2268,7 @@ export default function App(){
     if(shared&&sharedLevel&&LV[sharedLevel])return normalizeEnglishGoNavigation({lv:sharedLevel,mod:"srs",menuGroup:"learn",sharedWord:shared,depth:0});
     return readEnglishGoNavigation(window.history.state)||normalizeEnglishGoNavigation();
   },[]);
+  const[petStartTab,setPetStartTab]=useState("home");
   const[lv,setLv]=useState(initialNavigation.lv),[mod,setMod]=useState(initialNavigation.mod);
   const[menuGroup,setMenuGroup]=useState(initialNavigation.menuGroup);
   const[xp,setXp]=useLS("xp",0);
@@ -2340,15 +2350,31 @@ export default function App(){
     return()=>window.removeEventListener("popstate",handlePopState);
   },[applyNavigation,initialNavigation]);
 
-  // Check streak & daily reset + log history
-  useEffect(()=>{const today=new Date().toDateString();if(daily.date!==today){
-    // Save yesterday's data to history
-    if(daily.date&&daily.done>0)setHistory(h=>[...h,{date:daily.date,xp:daily.done*5,done:daily.done}].slice(-60));
-    const yesterday=new Date();yesterday.setDate(yesterday.getDate()-1);if(daily.date===yesterday.toDateString()&&daily.done>0)setStreak(s=>s+1);else setStreak(1);setDaily({target:10,done:0,date:today})}},[]);
+  // Roll each local day once, including a page left open overnight.
+  const dailyRef=useRef(daily);dailyRef.current=daily;
+  const rollStudyDay=useCallback(()=>{
+    const now=new Date(),previous=dailyRef.current;
+    if(localDay(previous?.date)===localDay(now))return;
+    const yesterday=new Date(now);yesterday.setDate(yesterday.getDate()-1);
+    const next={target:dailyProgress(previous).target,done:0,date:now.toDateString()};
+    dailyRef.current=next;
+    setHistory(current=>archiveStudyDay(current,previous));
+    setStreak(current=>localDay(previous?.date)===localDay(yesterday)&&dailyProgress(previous).done>0?Math.max(1,Number(current)||1)+1:1);
+    setDaily(next);
+  },[setHistory,setStreak,setDaily]);
+  useEffect(()=>{
+    rollStudyDay();const timer=setInterval(rollStudyDay,60000);
+    const visible=()=>{if(!document.hidden)rollStudyDay()};
+    window.addEventListener("focus",rollStudyDay);document.addEventListener("visibilitychange",visible);
+    return()=>{clearInterval(timer);window.removeEventListener("focus",rollStudyDay);document.removeEventListener("visibilitychange",visible)};
+  },[rollStudyDay]);
 
-  // Check achievements
-  useEffect(()=>{const s={xp,streak,...stats};ACH_DEFS.forEach(a=>{if(!achUnlocked.includes(a.id)&&a.check(s)){setAchUnlocked(u=>[...u,a.id]);setShowAch(a)}});},[xp,streak,stats]);
-
+  // Returning alone does not complete a learning-day achievement. Keep earned badges forever.
+  useEffect(()=>{
+    const values={...stats,xp,streak:learningStreak(streak,daily)};
+    const earned=ACH_DEFS.filter(a=>!achUnlocked.includes(a.id)&&a.check(values));
+    if(earned.length){setAchUnlocked(current=>[...new Set([...current,...earned.map(a=>a.id)])]);setShowAch(earned.at(-1))}
+  },[xp,streak,stats,daily.done,daily.date,achUnlocked]);
 
   // PWA: listen for install prompt and online/offline
   useEffect(()=>{
@@ -2416,9 +2442,10 @@ export default function App(){
   },[pets,eggs,inventory,coins,petAccount]);
 
   const addXp=(n=5)=>{
+    rollStudyDay();
     setXp(x=>x+n);
     setCoins(co=>co+Math.max(1,Math.floor(n/3)));// 1-5 coins per action
-    setDaily(d=>({...d,done:Math.min(d.done+1,d.target)}));
+    setDaily(d=>{const current=dailyProgress(d);return{...d,target:current.target,done:Math.min(current.done+1,current.target)}});
     // Progress eggs
     setEggs(es=>es.map(e=>e.progress<EGG_HATCH_TASKS[e.rarity]?{...e,progress:e.progress+1}:e));
   };
@@ -2505,9 +2532,11 @@ export default function App(){
   if(!lv)return<Landing onSelect={nextLv=>navigateEnglishGo({lv:nextLv,mod:null,menuGroup:"learn",sharedWord:null,customDeck:null})} comfort={comfort} lastLevel={lastLevel}/>;
   const c=LV[lv],back=()=>backEnglishGo({lv,mod:null,menuGroup,sharedWord:null,customDeck:null});
   const openModule=(nextMod,group)=>{
+    if(nextMod==="pets")setPetStartTab("home");
     setLastActivity({id:nextMod,lv});
     navigateEnglishGo({lv,mod:nextMod,menuGroup:group||menuGroup,sharedWord:null,customDeck:null});
   };
+  const navigatePet=(nextMod,tab="home")=>{openModule(nextMod,nextMod==="srs"?"learn":nextMod==="petMonopoly"?"game":"pet");setPetStartTab(tab)};
   const changeMenuGroup=nextGroup=>navigateEnglishGo({menuGroup:nextGroup},{replace:true});
   const openHome=()=>{if(!mod){window.scrollTo({top:0,behavior:"auto"});return}navigateEnglishGo({lv,mod:null,sharedWord:null,customDeck:null})};
   const startMiniMission=()=>{
@@ -2568,13 +2597,13 @@ export default function App(){
       <RewardBurstHost/>
       <a className="eg-skip" href="#learning-content">跳到學習內容</a>
       <nav className="eg-app-nav" aria-label="網站導覽"><Brand onClick={openHome}/><div className="eg-nav-spacer"/><button type="button" className="eg-level-switch" onClick={returnToLevelSelection} aria-label="返回學習階段選擇"> {c.l} · 換階段</button><ComfortControls {...comfort}/></nav>
-      <main id="learning-content" className={`eg-app-content ${mod?`is-module module-${mod}`:""}`} style={{maxWidth:!mod?940:mod==="petAdventure"?1280:mod==="petMonopoly"?1180:mod==="srs"?1080:mod==="translate"?960:760,margin:"0 auto",padding:mod==="petAdventure"||mod==="petMonopoly"?"14px 18px calc(20px + env(safe-area-inset-bottom, 0px))":"12px 12px calc(16px + env(safe-area-inset-bottom, 0px))"}}>
+      <main id="learning-content" className={`eg-app-content ${mod?`is-module module-${mod}`:""}`} style={{maxWidth:!mod?940:mod==="petAdventure"?1280:mod==="petMonopoly"?1180:["srs","pets","gacha"].includes(mod)?1080:mod==="translate"?960:760,margin:"0 auto",padding:mod==="petAdventure"||mod==="petMonopoly"?"14px 18px calc(20px + env(safe-area-inset-bottom, 0px))":"12px 12px calc(16px + env(safe-area-inset-bottom, 0px))"}}>
       {!mod&&showAch&&<div className="eg-achievement-toast" role="status"><span aria-hidden="true">{showAch.icon}</span><div><b>新成就 · {showAch.name}</b><small>你的努力，已經收藏在成就牆。</small></div><button type="button" onClick={()=>setShowAch(null)} aria-label="關閉成就提醒">×</button></div>}
-        {!mod?<MenuV2 lv={lv} onSelect={openModule} activeGroup={menuGroup} onGroupChange={changeMenuGroup} daily={daily} c={c} xp={xp} coins={coins} streak={streak} achUnlocked={achUnlocked} weakWords={levelWeakWords} pets={pets} eggs={eggs} onQuickStart={startMiniMission} lastActivity={lastActivity} loginGift={loginBonusModal} claimGift={claimLoginBonus}/>:
+        {!mod?<MenuV2 lv={lv} onSelect={openModule} activeGroup={menuGroup} onGroupChange={changeMenuGroup} daily={daily} c={c} xp={xp} coins={coins} streak={learningStreak(streak,daily)} achUnlocked={achUnlocked} weakWords={levelWeakWords} pets={pets} eggs={eggs} onQuickStart={startMiniMission} lastActivity={lastActivity} loginGift={loginBonusModal} claimGift={claimLoginBonus}/>:
          mod==="wordsearch"?<WordSearchM lv={lv} onBack={back} onOpenCard={(word,level)=>navigateEnglishGo({lv:level||lv,mod:"srs",menuGroup:"learn",sharedWord:word,customDeck:null})}/>:
          mod==="exam"?<ExamReviewM lv={lv} onBack={back} c={c} apiKey={gemKey} onOpenSettings={()=>openModule("settings","tools")} onStart={deck=>navigateEnglishGo({lv,mod:"srs",menuGroup:"learn",sharedWord:null,customDeck:deck})}/>:
          mod==="srs"?<SRS lv={lv} onBack={back} onLevelChange={nextLv=>navigateEnglishGo({lv:nextLv,sharedWord:null,customDeck:null},{replace:true})} onXp={n=>addXpWithTask(n,"srsToday")} onDone={()=>setStats(s=>({...s,srsRounds:s.srsRounds+1}))} trackWeak={trackWeak} gifKey={gifKey} sharedWord={sharedWord} apiKey={gemKey} weakWords={levelWeakWords} customCards={customDeck?.cards||null} customSource={customDeck?.source||""} onOpenSettings={()=>openModule("settings","tools")}/>:
-         mod==="quiz"?<QuizM lv={lv} onBack={back} onXp={n=>addXpWithTask(n,"quizToday")} onPerfect={()=>setStats(s=>({...s,perfectQuiz:s.perfectQuiz+1}))} trackWeak={trackWeak}/>:
+         mod==="quiz"?<QuizM lv={lv} onBack={back} onXp={n=>addXpWithTask(n,"quizToday")} onPerfect={()=>setStats(s=>({...s,perfectQuiz:s.perfectQuiz+1}))} trackWeak={trackWeak} onReviewWords={cards=>navigateEnglishGo({lv,mod:"srs",menuGroup:"learn",sharedWord:null,customDeck:{cards,source:"小任務複習"}})}/>:
          mod==="speak"?<SpeakM lv={lv} onBack={back} onXp={n=>addXpWithTask(n,"speakToday")} apiKey={gemKey} onOpenSettings={()=>openModule("settings","tools")}/>:
          mod==="whack"?<WhackM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="match"?<MatchM lv={lv} onBack={back} onXp={addXp}/>:
@@ -2589,13 +2618,13 @@ export default function App(){
          mod==="ai"?<AIT lv={lv} onBack={back} apiKey={gemKey} onOpenSettings={()=>openModule("settings","tools")}/>:
          mod==="translate"?<Suspense fallback={<ModuleLoading label="載入翻譯朗讀..."/>}><TranslationReader apiKey={gemKey} onBack={back} onOpenSettings={()=>openModule("settings","tools")} speak={speak} speakWebSpeech={speakWebSpeech} stopSpeech={stopSpeech} Header={Hdr} theme={{accent:c.cl,accentSoft:c.ac,surface:S.bg1,surfaceAlt:S.bg2,border:S.bd,text:S.t1,muted:S.t2}}/></Suspense>:
          mod==="story"?<StoryMode lv={lv} onBack={back} apiKey={gemKey} pets={pets} c={c} onXp={addXp} trackWeak={trackWeak} onOpenSettings={()=>openModule("settings","tools")}/>:
-         mod==="achievements"?<AchPage onBack={back} unlocked={achUnlocked} c={c}/>:
-         mod==="weak"?<WeakPage onBack={back} weakWords={levelWeakWords} setWeakWords={setWeakWords} c={c} lv={lv}/>:
-         mod==="dashboard"?<Dashboard onBack={back} c={c} xp={xp} streak={streak} stats={stats} daily={daily} weakWords={levelWeakWords} history={history} achUnlocked={achUnlocked} lv={lv}/>:
+         mod==="achievements"?<AchPage onBack={back} onOpen={openModule} onQuickStart={startMiniMission} unlocked={achUnlocked} values={{...stats,xp,streak:learningStreak(streak,daily)}} c={c}/>:
+         mod==="weak"?<WeakPage onBack={back} weakWords={levelWeakWords} allWeakWords={weakWords} setWeakWords={setWeakWords} c={c} lv={lv} onCards={cards=>navigateEnglishGo({lv,mod:"srs",menuGroup:"learn",sharedWord:null,customDeck:{cards,source:"單字再練一次"}})} onSearch={()=>openModule("wordsearch","learn")}/>:
+         mod==="dashboard"?<Dashboard onBack={back} onOpen={openModule} onQuickStart={startMiniMission} c={c} xp={xp} streak={learningStreak(streak,daily)} stats={stats} daily={daily} weakWords={levelWeakWords} history={history} achUnlocked={achUnlocked} lv={lv}/>:
          mod==="settings"?<SettingsPage onBack={back} c={c} gemKey={gemKey} setGemKey={setGemKey} gifKey={gifKey} setGifKey={setGifKey}/>:
-         mod==="gacha"?<GachaPage onBack={back} c={c} coins={coins} setCoins={setCoins} eggs={eggs} setEggs={setEggs} pets={pets} setPets={setPets}/>:
-         mod==="pets"?<PetsGuard onBack={back} c={c} pets={pets} setPets={setPets} eggs={eggs} setEggs={setEggs} coins={coins} setCoins={setCoins} inventory={inventory} setInventory={setInventory} petAccount={petAccount} setPetAccount={setPetAccount} petTasks={petTasks} setPetTasks={setPetTasks} incrTask={incrTask}/>:
-         mod==="petAdventure"?<PetAdventurePage lv={lv} onBack={back} c={c} pets={pets} setPets={setPets} eggs={eggs} setEggs={setEggs} coins={coins} setCoins={setCoins} inventory={inventory} setInventory={setInventory}/>:null}
+         mod==="gacha"?<GachaPage onBack={back} onNavigate={navigatePet} c={c} coins={coins} setCoins={setCoins} eggs={eggs} setEggs={setEggs} pets={pets} setPets={setPets}/>:
+         mod==="pets"?<PetsGuard onBack={back} onNavigate={navigatePet} initialTab={petStartTab} c={c} pets={pets} setPets={setPets} eggs={eggs} setEggs={setEggs} coins={coins} setCoins={setCoins} inventory={inventory} setInventory={setInventory} petAccount={petAccount} setPetAccount={setPetAccount} petTasks={petTasks} setPetTasks={setPetTasks} incrTask={incrTask}/>:
+         mod==="petAdventure"?<PetAdventurePage lv={lv} onBack={back} onNavigate={navigatePet} c={c} pets={pets} setPets={setPets} eggs={eggs} setEggs={setEggs} coins={coins} setCoins={setCoins} inventory={inventory} setInventory={setInventory}/>:null}
       </main>
       <footer className="eg-app-footer"><div>🌱 每天一點點，讓英文慢慢長大。</div><button type="button" onClick={()=>openModule("settings","tools")}>家長與老師設定</button><div>EnglishGo · 無廣告的學習小天地</div></footer>
     </div>
@@ -2844,127 +2873,7 @@ async function generateExamAiWords({term,lv,apiKey,count=10}){
   }
   throw new Error("AI 單字暫時產生失敗，請稍後再試。");
 }
-function ExamReviewM({lv,onBack,c,onStart,apiKey,onOpenSettings}){
-  const sample=lv==="elementary"?"apple school water happy run":lv==="junior"?"environment experience communicate opportunity improve":"comprehensive phenomenon sustainable ambiguous facilitate";
-  const[text,setText]=useLS(`exam_${lv}`,"");
-  const[aiTerm,setAiTerm]=useLS(`exam_ai_term_${lv}`,defaultExamTerm(lv));
-  const[aiCount,setAiCount]=useLS(`exam_ai_count_${lv}`,10);
-  const[aiNote,setAiNote]=useState("");
-  const[aiBusy,setAiBusy]=useState(false);
-  const[aiErr,setAiErr]=useState("");
-  const[busy,setBusy]=useState(false);
-  const[err,setErr]=useState("");
-  const[progress,setProgress]=useState("");
-  const words=useMemo(()=>parseExamWords(text),[text]);
-  const rawCount=useMemo(()=>countExamRawItems(text),[text]);
-  const ignoredCount=Math.max(0,rawCount-words.length);
-  const start=async()=>{
-    setErr("");
-    setProgress("");
-    if(words.length<1){setErr("請先輸入至少 1 個英文單字。");return}
-    setBusy(true);
-    try{
-      let done=0;
-      const resolved=await Promise.all(words.map(async word=>{
-        const [cloud,local]=await Promise.all([fetchCloudWord(lv,word),findAnyWord(lv,word)]);
-        const found=cloud||local;
-        done+=1;
-        setProgress(`${done}/${words.length}`);
-        if(found)return{...found,w:found.w||word};
-        return{w:word,ph:"",p:"",m:"待查字義",f:[],c:["使用查字典補上解釋"],ex:`I am reviewing ${word}.`,ez:"我正在複習這個單字。",source:"自訂輸入",customMissing:true};
-      }));
-      const cards=orderExamCards(resolved,lv);
-      const missing=cards.filter(x=>x.customMissing).map(x=>x.w);
-      onStart?.({cards,missing,source:`考試範圍 (${cards.length}字${missing.length?`，${missing.length}字待查`:''})`});
-    }catch{
-      setErr("整理單字時發生問題，請稍後再試。");
-    }finally{
-      setBusy(false);
-      setProgress("");
-    }
-  };
-  const generateAi=async()=>{
-    setAiErr("");
-    setAiNote("");
-    if(!apiKey?.trim()){setAiErr("請先到設定填入 Gemini API Key。");onOpenSettings?.();return}
-    setAiBusy(true);
-    try{
-      const count=Number(aiCount)||10;
-      const generated=await generateExamAiWords({term:aiTerm,lv,apiKey,count});
-      setText(generated.join(" "));
-      setAiNote(`已產生 ${generated.length} 個單字並填入上方範圍。`);
-    }
-    catch(e){setAiErr(e?.message||"AI 單字暫時產生失敗。")}
-    finally{setAiBusy(false)}
-  };
-  return(<div>
-    <Hdr t="📝 考試範圍複習" onBack={onBack} cl={c.cl}/>
-    <section style={{...S.card,padding:18,border:`1px solid ${c.cl}55`,background:`linear-gradient(135deg,${c.bg},${S.bg1})`,boxShadow:"0 18px 42px rgba(20,66,52,.10)"}}>
-      <div className="eg-exam-grid" style={{display:"grid",gridTemplateColumns:"minmax(0,1fr) 220px",gap:14,alignItems:"stretch"}}>
-        <div>
-          <div style={{display:"inline-flex",alignItems:"center",gap:8,padding:"6px 10px",borderRadius:999,background:S.bg2,border:`1px solid ${S.bd}`,fontSize:12,fontWeight:900,color:c.cl,marginBottom:10}}>考前自訂一輪</div>
-          <h3 style={{fontSize:22,lineHeight:1.25,margin:"0 0 8px",color:S.t1}}>貼上老師指定的單字範圍</h3>
-          <p style={{fontSize:13,lineHeight:1.7,color:S.t2,margin:"0 0 14px"}}>可用空格、逗號或換行分隔。系統會自動整理並打散順序，練習時不會照輸入順序出題。</p>
-          <textarea value={text} onChange={e=>setText(e.target.value)} placeholder={`例如：\n${sample}`} disabled={busy} style={{width:"100%",minHeight:190,resize:"vertical",border:`1px solid ${S.bd}`,borderRadius:16,background:S.bg1,color:S.t1,padding:"13px 14px",fontSize:16,lineHeight:1.6,fontFamily:"inherit",outline:"none",boxShadow:"inset 0 1px 4px rgba(0,0,0,.04)",opacity:busy?0.82:1}}/>
-          <div style={{display:"flex",justifyContent:"space-between",gap:10,flexWrap:"wrap",marginTop:7,fontSize:12,color:S.t3}}>
-            <span>已自動儲存這份範圍</span>
-            <span>{ignoredCount?`已合併/忽略 ${ignoredCount} 筆重複或無效內容`:"重複單字會自動合併"}</span>
-          </div>
-          <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap",marginTop:12}}>
-            <button onClick={start} disabled={busy||words.length<1} style={{...S.btn,background:busy||words.length<1?S.bg2:c.cl,color:busy||words.length<1?S.t3:"#fff",padding:"11px 18px",fontSize:14,minHeight:44,cursor:busy||words.length<1?"not-allowed":"pointer"}}>{busy?`整理中 ${progress}`:"開始這輪複習"}</button>
-            <button onClick={()=>setText(sample)} disabled={busy} style={{...S.btn,background:S.bg2,color:c.cl,padding:"11px 14px",fontSize:13,minHeight:44}}>填入範例</button>
-            {text&&<button onClick={()=>setText("")} disabled={busy} style={{...S.btn,background:S.bg2,color:S.t2,padding:"11px 14px",fontSize:13,minHeight:44}}>清空</button>}
-          </div>
-          {err&&<div style={{marginTop:10,padding:"9px 11px",borderRadius:12,background:"#fff4f4",border:"1px solid #f2c7c7",color:"#9f2f2f",fontSize:13}}>{err}</div>}
-          {words.length>0&&<div style={{marginTop:14,padding:12,border:`1px solid ${S.bd}`,borderRadius:16,background:S.bg1}}>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,marginBottom:8}}>
-              <div style={{fontSize:12,fontWeight:900,color:S.t2}}>本輪單字清單</div>
-              <div style={{fontSize:11,color:S.t3}}>只確認範圍，不代表出題順序</div>
-            </div>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(110px,1fr))",gap:6,maxHeight:150,overflow:"auto"}}>
-              {words.map(w=><span key={w} style={{fontSize:12,color:S.t1,background:S.bg2,border:`1px solid ${S.bd}`,borderRadius:10,padding:"6px 8px",fontWeight:800,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{w}</span>)}
-            </div>
-          </div>}
-          <div style={{marginTop:16,padding:14,border:"1px solid #DDD6FE",borderRadius:18,background:"#F5F3FF"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12,marginBottom:10,flexWrap:"wrap"}}>
-              <div>
-                <div style={{fontSize:12,fontWeight:1000,color:"#6D28D9",marginBottom:4}}>AI 產生單字</div>
-                <div style={{fontSize:15,fontWeight:900,color:S.t1}}>依學年、學期與數量填入單字範圍</div>
-                <div style={{fontSize:12,color:S.t2,lineHeight:1.6,marginTop:3}}>選好程度與單字數量後，AI 會把單字放進上方輸入框，再用原本流程開始複習。</div>
-              </div>
-              <button onClick={generateAi} disabled={aiBusy} style={{...S.btn,background:"#6D28D9",color:"#fff",padding:"10px 14px",fontSize:13,minHeight:42,opacity:aiBusy ? .65 : 1}}>{aiBusy?"AI 產生中...":"AI 產生單字"}</button>
-            </div>
-            <div className="eg-exam-ai-controls" style={{display:"grid",gridTemplateColumns:"minmax(0,1fr) 132px",gap:8}}>
-              <select data-testid="exam-ai-term" value={aiTerm} onChange={e=>setAiTerm(e.target.value)} disabled={aiBusy} style={{width:"100%",border:"1px solid #C4B5FD",borderRadius:12,background:S.bg1,color:S.t1,padding:"10px 12px",fontSize:14,fontWeight:800,fontFamily:"inherit",outline:"none"}}>
-                {EXAM_AI_TERMS.map(([id,label])=><option key={id} value={id}>{label}</option>)}
-              </select>
-              <select data-testid="exam-ai-count" value={aiCount} onChange={e=>setAiCount(Number(e.target.value))} disabled={aiBusy} style={{width:"100%",border:"1px solid #C4B5FD",borderRadius:12,background:S.bg1,color:S.t1,padding:"10px 12px",fontSize:14,fontWeight:800,fontFamily:"inherit",outline:"none"}}>
-                {EXAM_AI_COUNTS.map(n=><option key={n} value={n}>{n} 字</option>)}
-              </select>
-            </div>
-            {aiErr&&<div style={{marginTop:10,padding:"9px 11px",borderRadius:12,background:"#FFF7E6",border:"1px solid #F0D59A",color:"#8A5A00",fontSize:13,lineHeight:1.55}}>{aiErr}</div>}
-            {aiNote&&<div style={{marginTop:10,padding:"9px 11px",borderRadius:12,background:"#EDE9FE",border:"1px solid #C4B5FD",color:"#5B21B6",fontSize:13,fontWeight:850,lineHeight:1.55}}>{aiNote}</div>}
-          </div>
-        </div>
-        <aside style={{border:`1px solid ${S.bd}`,borderRadius:18,background:S.bg1,padding:14,display:"flex",flexDirection:"column",gap:12}}>
-          <div>
-            <div style={{fontSize:12,fontWeight:900,color:S.t2}}>已讀取單字</div>
-            <div style={{fontSize:34,fontWeight:1000,color:c.cl,lineHeight:1,marginTop:6}}>{words.length}</div>
-            <div style={{fontSize:12,color:S.t3,marginTop:5}}>最多 80 個，重複會自動合併</div>
-            {ignoredCount>0&&<div style={{fontSize:11,color:"#BA7517",marginTop:5}}>已排除 {ignoredCount} 筆重複或無效項目</div>}
-          </div>
-          <div style={{height:1,background:S.bd}}/>
-          <div>
-            <div style={{fontSize:12,fontWeight:900,color:S.t2,marginBottom:7}}>系統規則</div>
-            {["保留你輸入的所有單字","優先使用雲端字庫資料","未收錄字可進 SRS 後查字典","練習順序由系統決定"].map(x=><div key={x} style={{display:"flex",gap:7,alignItems:"flex-start",fontSize:12,color:S.t2,lineHeight:1.55,marginBottom:6}}><span style={{color:c.cl,fontWeight:900}}>✓</span><span>{x}</span></div>)}
-          </div>
-          {words.length>0&&<div style={{fontSize:11,color:S.t3,lineHeight:1.6,padding:"9px 10px",background:S.bg2,borderRadius:12}}>開始後會先整理字義與例句，找不到的字仍會放進本輪，翻到背面可用「查字典」補充。</div>}
-        </aside>
-      </div>
-    </section>
-    <style>{`@media (max-width: 780px){.eg-exam-grid{grid-template-columns:1fr!important}}@media (max-width: 520px){.eg-exam-ai-controls{grid-template-columns:1fr!important}} textarea:focus{border-color:${c.cl}!important;box-shadow:0 0 0 3px ${c.cl}22!important}`}</style>
-  </div>);
-}
+function ExamReviewM(props){return <Suspense fallback={<ModuleLoading label="準備考前小書包..."/>}><ExamPlanner key={props.lv} {...props} deps={{Hdr,c:props.c,useLS,terms:EXAM_AI_TERMS,counts:EXAM_AI_COUNTS,defaultTerm:defaultExamTerm,generateWords:generateExamAiWords,fetchCloudWord,findAnyWord,orderCards:orderExamCards}}/></Suspense>}
 
 function WordSearchM({lv,onBack,onOpenCard}){
   const c=LV[lv];const[q,setQ]=useState("");const[results,setResults]=useState([]);const[loading,setLoading]=useState(false);const[searched,setSearched]=useState(false);
@@ -3407,214 +3316,7 @@ ${analysisBlock}
 }
 
 function speakPassThreshold(item){return item?.type==="word"?80:70}
-function SpeakM({lv,onBack,onXp,apiKey,onOpenSettings}){
-  const c=LV[lv];
-  const[speakMode,setSpeakMode]=useLS(`speak_mode_${lv}`,"mixed");
-  const[sourceItems,setSourceItems]=useState([]);
-  const[items,setItems]=useState([]);const[loading,setLoading]=useState(true);
-  const[si,setSi]=useState(0);const[phase,setPhase]=useState("ready");
-  const[listening,setListening]=useState(false);const[spoken,setSpoken]=useState("");const[interim,setInterim]=useState("");
-  const[comparison,setComparison]=useState(null);const[records,setRecords]=useState({});
-  const[combo,setCombo]=useState(0);const[maxCombo,setMaxCombo]=useState(0);
-  const[showConfetti,setShowConfetti]=useState(false);const[showSuccess,setShowSuccess]=useState(false);
-  const[noSupport,setNoSupport]=useState(false);const[tip,setTip]=useState("");
-  const[pronGuide,setPronGuide]=useState(null);const[pronBusy,setPronBusy]=useState(false);const[pronErr,setPronErr]=useState("");
-  const recogRef=useRef(null);const finalRef=useRef("");const interimRef=useRef("");const rewardedRef=useRef(new Set());
-
-  const resetRound=useCallback((nextItems)=>{
-    setItems(nextItems);setSi(0);setPhase("ready");setSpoken("");setInterim("");setComparison(null);setRecords({});setCombo(0);setMaxCombo(0);setTip("");rewardedRef.current=new Set();
-  },[]);
-  const loadItems=useCallback(async(mode=speakMode)=>{
-    setLoading(true);stopSpeech();
-    try{recogRef.current?.abort?.()}catch{}
-    const r=await fetchSpeakItems(lv,12);
-    setSourceItems(r);
-    resetRound(selectSpeakItemsByMode(r,mode));
-    setLoading(false);
-  },[lv,resetRound,speakMode]);
-  useEffect(()=>{loadItems(speakMode)},[lv]);
-
-  const cur=items[si];const currentRecord=records[si];const score=Object.values(records).filter(r=>r.passed).length;const attemptsTotal=Object.values(records).reduce((n,r)=>n+(r.attempts||0),0);
-  const localGuide=useMemo(()=>localPronunciationGuide(cur,lv),[cur?.en,cur?.zh,cur?.keyword,cur?.type,lv]);
-  const guide=pronGuide||localGuide;
-  useEffect(()=>{setPronGuide(null);setPronErr("");setPronBusy(false)},[cur?.en,cur?.keyword,lv]);
-
-  useEffect(()=>{
-    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-    if(!SR){setNoSupport(true);return}
-    const r=new SR();r.lang="en-US";r.interimResults=true;r.maxAlternatives=3;r.continuous=false;
-    r.onresult=e=>{
-      let final="",live="";
-      for(let i=e.resultIndex;i<e.results.length;i++){
-        let best="",bestConf=-1;
-        for(let j=0;j<e.results[i].length;j++){const alt=e.results[i][j];if((alt.confidence??0)>bestConf){bestConf=alt.confidence??0;best=alt.transcript}}
-        if(e.results[i].isFinal)final+=` ${best}`;else live+=` ${best}`;
-      }
-      if(final.trim())finalRef.current=`${finalRef.current} ${final}`.trim();
-      interimRef.current=live.trim();setInterim(interimRef.current||finalRef.current);
-    };
-    r.onerror=e=>{setListening(false);setPhase("ready");setSpoken(e.error==="not-allowed"?"[請允許麥克風權限後再試一次]":"[沒有聽到聲音，再試一次]")};
-    r.onend=()=>{
-      setListening(false);
-      const heard=(finalRef.current||interimRef.current).trim();
-      finalRef.current="";interimRef.current="";
-      if(heard){setSpoken(heard);setInterim("")}
-    };
-    recogRef.current=r;
-    return()=>{try{r.abort()}catch{}};
-  },[]);
-
-  useEffect(()=>{if(phase==="ready"&&cur&&!loading){const t=speechTimer(()=>speak(cur.en,"en-US",0.85),400);return()=>clearTimeout(t)}},[si,phase,loading,cur?.en]);
-
-  useEffect(()=>{
-    if(!spoken||spoken.startsWith("[")||!cur)return;
-    const comp=compareWords(cur.en,spoken);const threshold=speakPassThreshold(cur);const passed=comp.pct>=threshold;
-    setComparison(comp);setPhase("result");setTip("");
-    setRecords(prev=>{
-      const old=prev[si]||{attempts:0,bestPct:0,passed:false};
-      return{...prev,[si]:{...old,attempts:(old.attempts||0)+1,bestPct:Math.max(old.bestPct||0,comp.pct),passed:old.passed||passed,lastPct:comp.pct,lastSpoken:spoken,comparison:comp,item:cur}};
-    });
-    if(passed){
-      setCombo(cb=>{const nc=cb+1;setMaxCombo(mc=>Math.max(mc,nc));return nc});
-      setShowSuccess(true);speechTimer(()=>setShowSuccess(false),1200);
-      if(!rewardedRef.current.has(si)){rewardedRef.current.add(si);onXp?.(comp.pct>=90?15:10)}
-      playSound(comp.pct>=90?"combo":"good");
-    }else{
-      setCombo(0);playSound("bad");
-      const miss=comp.result.filter(x=>!x.ok).map(x=>x.word).slice(0,3).join(", ");
-      setTip(miss?`先練這些字：${miss}`:"再聽一次示範，注意重音和節奏。");
-    }
-  },[spoken,cur,si,onXp]);
-
-  const startListening=()=>{
-    if(!recogRef.current||listening)return;
-    stopSpeech();setSpoken("");setInterim("");setComparison(null);setTip("");setPhase("listen");setListening(true);finalRef.current="";interimRef.current="";
-    try{recogRef.current.abort?.()}catch{}
-    speechTimer(()=>{try{recogRef.current.start()}catch{}},80);
-  };
-  const stopListening=()=>{if(recogRef.current&&listening){try{recogRef.current.stop()}catch{}}};
-  const demo=()=>cur&&speak(cur.en,"en-US",0.85);
-  const buildPronunciationContext=()=>{
-    const comp=comparison||currentRecord?.comparison;
-    const heard=(spoken&&!spoken.startsWith("[")?spoken:currentRecord?.lastSpoken||"").trim();
-    if(!comp||!heard)return null;
-    return {
-      heard,
-      pct:comp.pct,
-      missing:(comp.result||[]).filter(x=>!x.ok).map(x=>x.word).slice(0,6),
-      extra:(comp.extra||[]).slice(0,6),
-    };
-  };
-  const pronunciationContext=buildPronunciationContext();
-  const aiPronLabel="AI 分析這次發音";
-  const loadAiPronunciation=async()=>{
-    setPronErr("");
-    if(!apiKey?.trim()){setPronErr("設定 Gemini Key 後，可以依目前題目或這次錄音產生補強練習。");onOpenSettings?.();return}
-    setPronBusy(true);
-    try{setPronGuide(await generatePronunciationGuide(cur,lv,apiKey,pronunciationContext))}
-    catch(e){setPronErr(e?.message||"AI 發音提示暫時產生失敗。")}
-    finally{setPronBusy(false)}
-  };
-  const retryAndListen=()=>{retry();speechTimer(startListening,120)};
-  const nextItem=()=>{
-    if(si+1>=items.length){playSound("done");setShowConfetti(true);setTimeout(()=>setShowConfetti(false),3500);setPhase("done");return}
-    setSi(s=>s+1);setPhase("ready");setSpoken("");setInterim("");setComparison(null);setTip("");
-  };
-  const retry=()=>{setPhase("ready");setSpoken("");setInterim("");setComparison(null);setTip("")};
-  const restart=()=>loadItems();
-  const changeSpeakMode=mode=>{
-    setSpeakMode(mode);
-    const source=sourceItems.length?sourceItems:SPEAK_FALLBACK[lv]||items;
-    resetRound(selectSpeakItemsByMode(source,mode));
-  };
-  const retryWeak=()=>{
-    const weak=items.map((item,i)=>({item,i,record:records[i]})).filter(x=>!x.record?.passed);
-    if(!weak.length)return;
-    setItems(weak.map(x=>x.item));setSi(0);setPhase("ready");setSpoken("");setInterim("");setComparison(null);setRecords({});setCombo(0);setTip("");rewardedRef.current=new Set();
-  };
-
-  const comboLabel=combo>=7?"🔥🔥 ON FIRE!":combo>=5?"🔥 COMBO x"+combo:combo>=3?"✨ "+combo+" 連擊！":"";
-  if(noSupport)return(<div><Hdr t="🗣️ 口說練習" onBack={onBack} cl={c.cl}/><div style={{...S.card,padding:"24px 16px",textAlign:"center"}}><div style={{fontSize:40,marginBottom:10}}>😔</div><div style={{fontSize:14,color:S.t1,fontWeight:600}}>瀏覽器不支援語音辨識</div><div style={{fontSize:12,color:S.t2,marginTop:6}}>請使用 Chrome 或 Edge 瀏覽器</div></div></div>);
-  if(loading||!cur)return(<div><Hdr t="🗣️ 口說練習" onBack={onBack} cl={c.cl}/><div style={{textAlign:"center",padding:"48px",color:S.t3}}>載入中...</div></div>);
-
-  if(phase==="done"){const total=items.length;const finalPct=Math.round(score/Math.max(total,1)*100);const weak=items.map((item,i)=>({item,i,record:records[i]})).filter(x=>!x.record?.passed);return(<div>{showConfetti&&<Confetti/>}<Hdr t="🗣️ 口說練習" onBack={onBack} cl={c.cl}/><div style={{textAlign:"center",padding:"28px 12px"}}><div style={{fontSize:56,animation:"bounceIn .5s ease-out"}}>{finalPct>=80?"🏆":finalPct>=50?"🎉":"💪"}</div><h2 style={{fontSize:22,fontWeight:700,color:S.t1,marginTop:8}}>口說練習完成！</h2><div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,maxWidth:420,margin:"16px auto"}}>{[["通過",`${score}/${total}`,c.cl],["掌握率",`${finalPct}%`,finalPct>=80?"#1D9E75":"#EF9F27"],["嘗試",attemptsTotal,"#185FA5"]].map(([l,v,cl])=><div key={l} style={{...S.card,padding:"12px 8px",borderTop:`3px solid ${cl}`}}><div style={{fontSize:22,fontWeight:800,color:cl}}>{v}</div><div style={{fontSize:11,color:S.t3,marginTop:2}}>{l}</div></div>)}</div>{maxCombo>=3&&<div style={{fontSize:13,color:"#EF9F27",fontWeight:600,marginTop:4}}>🔥 最高 {maxCombo} 連擊！</div>}<div style={{fontSize:14,color:S.t2,margin:"8px 0 14px"}}>{finalPct>=80?"口說節奏很好，可以挑戰更長句子。":"建議聽示範後，把未通過項目逐字跟讀。"}</div>{weak.length>0&&<div style={{...S.card,padding:"12px 14px",maxWidth:540,margin:"0 auto 14px",textAlign:"left"}}><div style={{fontSize:13,fontWeight:800,color:"#E24B4A",marginBottom:8}}>需要再練</div><div style={{display:"grid",gap:7}}>{weak.map(({item,i,record})=><button key={`${item.en}-${i}`} onClick={()=>speak(item.en,"en-US",0.85)} style={{border:`1px solid ${S.bd}`,background:S.bg1,borderRadius:12,padding:"9px 11px",textAlign:"left",cursor:"pointer",fontFamily:"inherit"}}><div style={{fontSize:14,fontWeight:800,color:S.t1}}>{item.en}</div><div style={{fontSize:12,color:S.t2,marginTop:2}}>{item.zh} · 最高 {record?.bestPct||0}%</div></button>)}</div></div>}<button onClick={weak.length?retryWeak:restart} style={{...S.btn,background:c.cl,color:"#fff",marginRight:8,fontSize:14}}>{weak.length?"只練未通過":"換一批"}</button><button onClick={onBack} style={{...S.btn,background:S.bg2,color:S.t1,fontSize:14}}>返回</button></div></div>)}
-
-  const pct=Math.round((si/items.length)*100);const threshold=speakPassThreshold(cur);const best=currentRecord?.bestPct||0;const attempts=currentRecord?.attempts||0;const isSentence=cur.type==="sentence";
-  return(<div><Hdr t="🗣️ 口說練習" onBack={onBack} cl={c.cl}/>
-    <section style={{...S.card,padding:"12px 14px",marginBottom:10,background:`linear-gradient(135deg,${c.bg},${S.bg1})`,border:`1px solid ${c.cl}33`}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,flexWrap:"wrap",marginBottom:9}}>
-        <div><div style={{fontSize:13,fontWeight:1000,color:S.t1}}>練習模式</div><div style={{fontSize:12,color:S.t2,marginTop:2}}>先聽一次，再按麥克風跟讀。</div></div>
-        <button onClick={()=>loadItems(speakMode)} style={{...S.btn,background:S.bg2,color:c.cl,padding:"8px 11px",fontSize:12}}>換一批</button>
-      </div>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(118px,1fr))",gap:7}}>
-        {SPEAK_MODE_OPTIONS.map(opt=>{
-          const active=speakMode===opt.id;
-          return <button key={opt.id} aria-label={opt.label} onClick={()=>changeSpeakMode(opt.id)} style={{border:`1px solid ${active?c.cl:S.bd}`,background:active?c.bg:S.bg1,color:active?c.cl:S.t1,borderRadius:12,padding:"9px 10px",textAlign:"left",fontFamily:"inherit",cursor:"pointer",boxShadow:active?`0 8px 18px ${c.cl}14`:"none"}}>
-            <div style={{fontSize:13,fontWeight:1000,lineHeight:1.2}}>{opt.label}</div>
-            <div style={{fontSize:11,color:active?c.cl:S.t3,lineHeight:1.4,marginTop:3}}>{opt.desc}</div>
-          </button>;
-        })}
-      </div>
-    </section>
-    <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:8,fontSize:12}}><div style={{flex:1,height:7,background:S.bg2,borderRadius:999,overflow:"hidden"}}><div style={{height:"100%",width:`${pct}%`,background:`linear-gradient(90deg,${c.cl},${c.ac})`,borderRadius:999,transition:"width .3s"}}/></div><span style={{color:S.t3,minWidth:44,textAlign:"right"}}>{si+1}/{items.length}</span><span style={{color:"#1D9E75",fontWeight:800,minWidth:32,textAlign:"right"}}>{score}✓</span></div>
-    {comboLabel&&<div style={{textAlign:"center",fontSize:14,fontWeight:700,color:"#EF9F27",marginBottom:6,animation:"comboFlash .5s"}}>{comboLabel}</div>}
-    {showSuccess&&<div style={{background:"linear-gradient(90deg,#2ECC71,#27AE60)",borderRadius:12,padding:"10px 16px",marginBottom:8,textAlign:"center",animation:"bounceIn .3s ease-out"}}><span style={{color:"#fff",fontWeight:700,fontSize:16}}>通過了！🎉</span></div>}
-
-    <div style={{...S.card,padding:0,overflow:"hidden",marginBottom:12,borderTop:`4px solid ${c.cl}`}}>
-      <div style={{background:`linear-gradient(135deg,${c.bg},var(--color-background-primary,#fff))`,padding:"18px 16px",textAlign:"center",borderBottom:`1px solid ${S.bd}`}}>
-        <div style={{display:"flex",justifyContent:"center",gap:7,flexWrap:"wrap",marginBottom:8}}><span style={{fontSize:12,fontWeight:800,color:c.cl,background:"#fff",border:`1px solid ${c.cl}33`,borderRadius:999,padding:"5px 9px"}}>{isSentence?"句子":"單字"}</span><span style={{fontSize:12,fontWeight:800,color:best>=threshold?"#1D9E75":S.t3,background:best>=threshold?"#E1F5EE":S.bg2,borderRadius:999,padding:"5px 9px"}}>本題最高 {best}%</span><span style={{fontSize:12,fontWeight:800,color:S.t3,background:S.bg2,borderRadius:999,padding:"5px 9px"}}>已試 {attempts} 次</span><span style={{fontSize:12,fontWeight:800,color:S.t3,background:S.bg2,borderRadius:999,padding:"5px 9px"}}>通過 {threshold}%</span></div>
-        <div style={{fontSize:15,color:S.t3,marginBottom:4}}>{isSentence?"看中文，唸出完整英文句子":"看中文，唸出英文單字"}</div>
-        <div style={{fontSize:isSentence?23:32,fontWeight:800,color:S.t1,lineHeight:1.45}}>{cur.zh}</div>{cur.pos&&<div style={{fontSize:11,color:S.t3,marginTop:3}}>({cur.pos})</div>}
-      </div>
-      <div style={{padding:"20px 17px",textAlign:"center"}}>
-        <div style={{fontSize:isSentence?25:42,fontWeight:800,color:c.cl,lineHeight:1.55,letterSpacing:0}}>{cur.en}</div>
-        {cur.keyword&&!isSentence&&<div style={{fontSize:11,color:S.t3,marginTop:5}}>重點單字：<b style={{color:c.cl}}>{cur.keyword}</b></div>}
-        {isSentence&&<div style={{display:"flex",gap:5,justifyContent:"center",flexWrap:"wrap",marginTop:10}}>{normalizeText(cur.en).split(" ").map(w=><span key={w} style={{fontSize:12,color:S.t2,background:S.bg2,borderRadius:999,padding:"4px 8px"}}>{w}</span>)}</div>}
-        {guide?.target&&<div style={{margin:"16px auto 0",maxWidth:560,textAlign:"left",border:`1px solid ${c.cl}33`,background:`linear-gradient(135deg,${c.bg},${S.bg1})`,borderRadius:16,padding:"13px 14px",boxShadow:`0 10px 24px ${c.cl}10`}}>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,flexWrap:"wrap",marginBottom:10}}>
-            <div>
-              <div style={{fontSize:14,fontWeight:1000,color:S.t1}}>發音小老師</div>
-              <div style={{fontSize:11,color:S.t3,marginTop:2}}>先聽英文示範，再用分段、重音和口型練習。</div>
-            </div>
-            {pronunciationContext&&<button onClick={loadAiPronunciation} disabled={pronBusy} aria-label={aiPronLabel} style={{...S.btn,background:guide.source==="ai"?c.cl:S.bg1,color:guide.source==="ai"?"#fff":c.cl,border:`1px solid ${c.cl}44`,padding:"7px 10px",fontSize:12,opacity:pronBusy?0.65:1}}>{pronBusy?"AI 整理中":aiPronLabel}</button>}
-          </div>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(128px,1fr))",gap:8,marginBottom:10}}>
-            {(isSentence?[["分段跟讀",guide.syllables],["語調提醒",guide.stress]]:[["音節",guide.syllables],["重音",guide.stress]]).map(([label,value])=><div key={label} style={{background:S.bg1,border:`1px solid ${S.bd}`,borderRadius:12,padding:"8px 10px"}}>
-              <div style={{fontSize:11,color:S.t3,fontWeight:800,marginBottom:3}}>{label}</div>
-              <div style={{fontSize:14,color:S.t1,fontWeight:1000,lineHeight:1.35}}>{value}</div>
-            </div>)}
-          </div>
-          <div style={{display:"grid",gap:7,fontSize:12,lineHeight:1.6,color:S.t2}}>
-            <div><b style={{color:S.t1}}>嘴型：</b>{guide.mouth}</div>
-            <div><b style={{color:S.t1}}>常見卡點：</b>{guide.mistake}</div>
-          </div>
-          {guide.steps?.length>0&&<div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:10}}>{guide.steps.map((step,i)=><button key={`${step}-${i}`} onClick={()=>speak(step,"zh-TW",0.95)} style={{border:`1px solid ${c.cl}22`,background:S.bg1,color:S.t2,borderRadius:999,padding:"5px 8px",fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}><span>{i+1}. </span><span>{step}</span></button>)}</div>}
-          {pronErr&&<div style={{marginTop:9,fontSize:12,color:"#8A5A00",background:"#FFF7E6",border:"1px solid #F0D59A",borderRadius:10,padding:"7px 9px"}}>{pronErr}</div>}
-        </div>}
-      </div>
-      <div style={{padding:"0 16px 16px",display:"flex",gap:8,justifyContent:"center",flexWrap:"wrap"}}><button onClick={demo} style={{...S.btn,background:c.bg,color:c.cl,padding:"9px 14px",fontSize:13}}>🔊 聽示範</button><button onClick={startListening} disabled={listening} style={{...S.btn,background:c.cl,color:"#fff",padding:"9px 14px",fontSize:13,opacity:listening?0.55:1}}>🎤 直接開說</button><button onClick={()=>window.open(`https://youglish.com/pronounce/${encodeURIComponent(cur.en)}/english`,"_blank")} style={{...S.btn,background:`${c.cl}22`,color:c.cl,padding:"9px 14px",fontSize:13,border:`1px solid ${c.cl}44`}}>🎬 真人發音</button></div>
-    </div>
-
-    {phase!=="result"&&<div style={{textAlign:"center",marginBottom:12}}>
-      {!listening?(
-        <button onClick={startListening} style={{width:92,height:92,borderRadius:"50%",border:"none",background:`linear-gradient(135deg,${c.cl},${c.ac})`,color:"#fff",fontSize:38,cursor:"pointer",boxShadow:`0 7px 24px ${c.cl}50`,transition:"transform .15s",WebkitTapHighlightColor:"transparent"}} onTouchStart={e=>{e.currentTarget.style.transform="scale(0.88)"}} onTouchEnd={e=>{e.currentTarget.style.transform="scale(1)"}}>🎤</button>
-      ):(
-        <button onClick={stopListening} style={{width:92,height:92,borderRadius:"50%",border:"none",background:"#E24B4A",color:"#fff",fontSize:36,cursor:"pointer",animation:"micPulse 1.2s ease-in-out infinite"}}>⏹</button>
-      )}
-      <div style={{fontSize:13,color:listening?"#E24B4A":S.t3,marginTop:8,fontWeight:listening?800:500}}>{listening?"正在聽，說完可按停止":"按下麥克風開始說"}</div>
-      {(interim||spoken.startsWith("["))&&<div style={{...S.card,padding:"10px 12px",marginTop:10,fontSize:12,color:spoken.startsWith("[")?"#EF9F27":S.t2,textAlign:"center"}}>{spoken.startsWith("[")?spoken:`聽到：${interim}`}</div>}
-    </div>}
-
-    {phase==="result"&&comparison&&<div style={{...S.card,padding:"16px",marginBottom:12}}>
-      <div style={{textAlign:"center",marginBottom:10}}><div style={{fontSize:42}}>{comparison.pct>=90?"🌟":comparison.pct>=threshold?"👍":comparison.pct>=40?"🤔":"😅"}</div><div style={{fontSize:15,fontWeight:800,color:comparison.pct>=threshold?"#1D9E75":"#E24B4A",marginTop:4}}>{comparison.pct>=threshold?"通過":"再練一次"}</div><div style={{margin:"9px auto",maxWidth:210}}><div style={{height:9,background:S.bg2,borderRadius:999,overflow:"hidden"}}><div style={{height:"100%",width:`${comparison.pct}%`,background:comparison.pct>=threshold?"linear-gradient(90deg,#1D9E75,#5DCAA5)":"linear-gradient(90deg,#E24B4A,#EF9F27)",borderRadius:999,transition:"width .5s"}}/></div><div style={{fontSize:11,color:S.t2,marginTop:4}}>準確度 {comparison.pct}% · 門檻 {threshold}%</div></div></div>
-      <div style={{fontSize:17,lineHeight:2.25,textAlign:"center",margin:"8px 0"}}>{comparison.result.map((r,i)=><span key={i} title={r.heard?`聽到：${r.heard}`:"未聽到"} style={{display:"inline-block",padding:"3px 7px",borderRadius:8,margin:"2px",fontWeight:800,background:r.ok?"#E1F5EE":"#FCEBEB",color:r.ok?"#1D9E75":"#E24B4A"}}>{r.word}</span>)}</div>
-      {comparison.result.some(r=>!r.ok)&&<div style={{display:"flex",gap:6,justifyContent:"center",flexWrap:"wrap",margin:"2px 0 10px"}}>{comparison.result.filter(r=>!r.ok).map(r=><button key={r.word} onClick={()=>speak(r.word,"en-US",0.85)} style={{border:"1px solid #F0D59A",background:"#FFF7E6",color:"#8A5A00",borderRadius:999,padding:"6px 10px",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>練 {r.word} 🔊</button>)}</div>}
-      {tip&&<div style={{fontSize:12,color:"#8A5A00",background:"#FFF7E6",border:"1px solid #F0D59A",borderRadius:10,padding:"8px 10px",marginBottom:8,textAlign:"center"}}>{tip}</div>}
-      <div style={{fontSize:12,color:S.t2,textAlign:"center",padding:"8px 10px",background:S.bg2,borderRadius:10}}>你說的是：{spoken}{comparison.extra?.length?` · 多聽到：${comparison.extra.join(", ")}`:""}</div>
-      <div style={{display:"flex",gap:8,justifyContent:"center",marginTop:12,flexWrap:"wrap"}}><button onClick={demo} style={{...S.btn,background:S.bg2,color:S.t1,padding:"10px 14px",fontSize:12,minHeight:42}}>聽示範</button><button onClick={retryAndListen} style={{...S.btn,background:"#FAEEDA",color:"#8A5A00",padding:"10px 14px",fontSize:12,minHeight:42}}>重說一次</button><button onClick={nextItem} style={{...S.btn,background:c.cl,color:"#fff",padding:"10px 14px",fontSize:12,minHeight:42}}>{si+1>=items.length?"完成":"下一個"}</button></div>
-    </div>}
-  </div>);
-}
+function SpeakM(props){return <Suspense fallback={<ModuleLoading label="準備口說小練習..."/>}><SpeakingStudio key={props.lv} {...props} deps={{fallback:SPEAK_FALLBACK[props.lv],fetchSpeakItems,selectSpeakItemsByMode,modes:SPEAK_MODE_OPTIONS,localPronunciationGuide,generatePronunciationGuide,compareWords,speakPassThreshold,normalizeText,speak,stopSpeech,playSound,Hdr,c:LV[props.lv]}}/></Suspense>}
 // ═══ ILLUSTRATED ARCADE ════════════════════════════════════════
 const LazyArcadeGames=lazy(()=>import("./features/ArcadeGames.jsx"));
 function ArcadeM({game,...props}){
@@ -3626,82 +3328,8 @@ function MatchM(props){return <ArcadeM game="match" {...props}/>}
 function BombM(props){return <ArcadeM game="bomb" {...props}/>}
 
 // ═══ QUIZ ═══════════════════════════════════════════════════════════
-function QuizM({lv,onBack,onXp,onPerfect,trackWeak}){
-  const built=V[lv];const c=LV[lv];const QUIZ_SIZE=10;
-  const[words,setWords]=useState(built);const[loading,setLoading]=useState(true);const[mode,setMode]=useState("en2zh");
-  const[session,setSession]=useState(0);const[qi,setQi]=useState(0);const[score,setScore]=useState(0);const[sel,setSel]=useState(null);const[done,setDone]=useState(false);
-  const[combo,setCombo]=useState(0);const[maxCombo,setMaxCombo]=useState(0);const[showConfetti,setShowConfetti]=useState(false);const[review,setReview]=useState([]);
-  useEffect(()=>{let active=true;setLoading(true);setWords(built);setQi(0);setScore(0);setSel(null);setDone(false);setReview([]);setCombo(0);setMaxCombo(0);(async()=>{const cloud=await fetchCloudVocab(lv,30);if(active&&cloud?.length)setWords(cloud);if(active)setLoading(false)})();return()=>{active=false}},[lv,built]);
-  const buildQuestion=(w,i,kind)=>{
-    const askEn=kind==="en2zh";
-    const others=shuffleCopy(words.filter((_,j)=>j!==i)).slice(0,3);
-    return{item:w,kind,prompt:askEn?w.w:w.m,answer:askEn?w.m:w.w,opts:shuffleCopy([...others.map(x=>askEn?x.m:x.w),askEn?w.m:w.w])};
-  };
-  const qs=useMemo(()=>{
-    const usable=words.filter(w=>w?.w&&w?.m);
-    return shuffleCopy(usable).slice(0,Math.min(QUIZ_SIZE,usable.length)).map((w,i)=>{
-      const realIdx=words.indexOf(w);
-      const kind=mode==="mix"?(i%2===0?"en2zh":"zh2en"):mode;
-      return buildQuestion(w,realIdx>=0?realIdx:i,kind);
-    });
-  },[words,mode,session]);
-  const resetQuiz=(nextMode=mode)=>{setMode(nextMode);setSession(s=>s+1);setQi(0);setScore(0);setSel(null);setDone(false);setCombo(0);setMaxCombo(0);setReview([]);setShowConfetti(false)};
-  const finish=(finalScore)=>{setDone(true);if(finalScore>=qs.length)onPerfect?.();playSound("done");setShowConfetti(true);setTimeout(()=>setShowConfetti(false),3500)};
-  const pick=o=>{if(sel!==null||!qs.length)return;const q=qs[qi];setSel(o);const ok=o===q.answer;const nextScore=score+(ok?1:0);
-    if(ok){setScore(nextScore);onXp?.(10);playSound("good");setCombo(cb=>{const nc=cb+1;setMaxCombo(mc=>Math.max(mc,nc));return nc})}
-    else{trackWeak?.(q.item.w);setReview(r=>r.some(x=>x.item.w===q.item.w)?r:[...r,{...q,picked:o}]);playSound("bad");setCombo(0)}
-  };
-  const next=()=>{setSel(null);if(qi+1>=qs.length)finish(score);else setQi(q=>q+1)};
-  const comboLabel=combo>=7?"🔥🔥 ON FIRE!":combo>=5?"🔥 COMBO x"+combo:combo>=3?"✨ "+combo+" 連擊！":"";
-  if(loading)return(<div><Hdr t="📝 單字測驗" onBack={onBack} cl={c.cl}/><div style={{textAlign:"center",padding:"48px 16px",color:S.t3,fontSize:14}}>載入中...</div></div>);
-  if(!qs.length)return(<div><Hdr t="📝 單字測驗" onBack={onBack} cl={c.cl}/><div style={{...S.card,padding:"28px 18px",textAlign:"center",color:S.t2}}>目前沒有可測驗的單字</div></div>);
-  if(done){const pct=Math.round((score/qs.length)*100);return(<div>{showConfetti&&<Confetti/>}<Hdr t="📝 單字測驗" onBack={onBack} cl={c.cl}/><div style={{textAlign:"center",padding:"30px 14px"}}><div style={{fontSize:56,animation:"bounceIn .5s ease-out"}}>{pct>=90?"🏆":pct>=70?"🎉":pct>=50?"👏":"💪"}</div><h2 style={{fontSize:22,fontWeight:700,color:S.t1,marginTop:8}}>測驗完成！</h2><div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,maxWidth:420,margin:"16px auto"}}>{[["答對",`${score}/${qs.length}`,c.cl],["掌握率",`${pct}%`,pct>=80?"#1D9E75":"#EF9F27"],["待複習",review.length,"#E24B4A"]].map(([l,v,cl])=><div key={l} style={{...S.card,padding:"12px 8px",borderTop:`3px solid ${cl}`}}><div style={{fontSize:22,fontWeight:800,color:cl}}>{v}</div><div style={{fontSize:11,color:S.t3,marginTop:2}}>{l}</div></div>)}</div>{maxCombo>=3&&<div style={{fontSize:13,color:"#EF9F27",fontWeight:600,marginTop:4}}>🔥 最高 {maxCombo} 連擊！</div>}<div style={{fontSize:14,color:S.t2,margin:"8px 0 14px"}}>{pct>=90?"單字掌握度很好，可以挑戰反向測驗。":pct>=70?"不錯，建議把錯題再聽一次。":"先從錯題複習開始，再測一輪。"}</div>{review.length>0&&<div style={{...S.card,padding:"12px 14px",maxWidth:560,margin:"0 auto 14px",textAlign:"left"}}><div style={{fontSize:13,fontWeight:800,color:"#E24B4A",marginBottom:8}}>錯題複習</div><div style={{display:"grid",gap:7}}>{review.map(r=><button key={`${r.item.w}-${r.kind}`} onClick={()=>speak(r.item.w)} style={{border:`1px solid ${S.bd}`,background:S.bg1,borderRadius:12,padding:"9px 11px",textAlign:"left",cursor:"pointer",fontFamily:"inherit"}}><div style={{fontSize:15,fontWeight:900,color:S.t1}}>{r.item.w} <span style={{fontSize:12,color:S.t3,fontWeight:600}}>{r.item.ph||""}</span></div><div style={{fontSize:12,color:S.t2,marginTop:2}}>正解：{r.item.m} · 你的答案：{r.picked}</div></button>)}</div></div>}<button onClick={()=>resetQuiz(mode)} style={{...S.btn,background:c.cl,color:"#fff",marginRight:8,fontSize:14}}>再測一次</button><button onClick={()=>resetQuiz(mode==="en2zh"?"zh2en":"en2zh")} style={{...S.btn,background:S.bg2,color:S.t1,marginRight:8,fontSize:14}}>切換方向</button><button onClick={onBack} style={{...S.btn,background:S.bg2,color:S.t1,fontSize:14}}>返回</button></div></div>)}
-  const q=qs[qi];
-  const progressPct=((qi+(sel!==null?1:0))/qs.length)*100;
-  return(<div><Hdr t="📝 單字測驗" onBack={onBack} cl={c.cl}/>
-    <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8,fontSize:12}}><div style={{flex:1,height:7,background:S.bg2,borderRadius:999,overflow:"hidden"}}><div style={{height:"100%",width:`${progressPct}%`,background:`linear-gradient(90deg,${c.cl},${c.ac})`,borderRadius:999,transition:"width .3s"}}/></div><span style={{color:S.t3,minWidth:44,textAlign:"right"}}>{qi+1}/{qs.length}</span><span style={{color:"#1D9E75",fontWeight:800,minWidth:32,textAlign:"right"}}>{score}✓</span></div>
-    <div style={{display:"flex",gap:6,marginBottom:8,overflowX:"auto",paddingBottom:2}}>{[{k:"en2zh",l:"英選中"},{k:"zh2en",l:"中選英"},{k:"mix",l:"混合"}].map(m=><button key={m.k} onClick={()=>resetQuiz(m.k)} style={{flexShrink:0,padding:"7px 11px",borderRadius:999,border:"none",background:mode===m.k?c.cl:S.bg2,color:mode===m.k?"#fff":S.t2,fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>{m.l}</button>)}</div>
-    {comboLabel&&<div style={{textAlign:"center",fontSize:14,fontWeight:700,color:"#EF9F27",marginBottom:4,animation:"comboFlash .5s"}}>{comboLabel}</div>}
-    <div style={{...S.card,padding:"22px 18px",textAlign:"center",borderTop:`4px solid ${c.cl}`}}>
-      <div style={{fontSize:12,color:S.t3,marginBottom:6}}>{q.kind==="en2zh"?"選出正確中文意思":"選出正確英文單字"}</div>
-      <div style={{fontSize:q.kind==="en2zh"?36:24,fontWeight:900,color:S.t1,lineHeight:1.35,animation:"fadeUp .3s"}}>{q.prompt}</div>
-      <div style={{fontSize:13,color:S.t3,marginTop:5,minHeight:18}}>{q.kind==="en2zh"?q.item.ph:""}</div>
-      <button onClick={()=>speak(q.item.w)} style={{background:S.bg2,border:`1px solid ${S.bd}`,borderRadius:999,fontSize:13,cursor:"pointer",margin:"10px 0 14px",padding:"7px 12px",fontFamily:"inherit",color:S.t2}}>🔊 {q.kind==="en2zh"?"聽單字":"聽正解"}</button>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:8}}>{q.opts.map((o,i)=>{const ok=o===q.answer,pk=sel===o;let bg=S.bg2,bd=`1px solid ${S.bd}`,cl=S.t1,anim="";if(sel!==null){if(ok){bg="#E1F5EE";bd="2px solid #1D9E75";cl="#146B45";anim="bounceIn .3s"}else if(pk){bg="#FCEBEB";bd="2px solid #E24B4A";cl="#A12F2F";anim="moleShake .3s"}}return<button key={i} onClick={()=>pick(o)} disabled={sel!==null} style={{padding:"14px 12px",borderRadius:14,background:bg,border:bd,cursor:sel!==null?"default":"pointer",fontSize:14,fontFamily:"inherit",color:cl,fontWeight:sel!==null&&ok?900:700,transition:"all .15s",animation:anim,minHeight:54,WebkitTapHighlightColor:"transparent",textAlign:"left",display:"flex",gap:9,alignItems:"center"}} onTouchStart={e=>{if(sel===null)e.currentTarget.style.transform="scale(0.95)"}} onTouchEnd={e=>e.currentTarget.style.transform="scale(1)"}><span style={{width:24,height:24,borderRadius:"50%",background:sel!==null&&ok?"#1D9E75":S.bg1,color:sel!==null&&ok?"#fff":S.t3,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:900,flexShrink:0}}>{String.fromCharCode(65+i)}</span><span>{o}</span></button>})}</div>
-      {sel!==null&&<div style={{marginTop:12,padding:"11px 12px",borderRadius:12,background:sel===q.answer?"#E1F5EE":"#FFF3CD",fontSize:13,color:S.t2,lineHeight:1.65,textAlign:"left"}}><div style={{fontWeight:900,color:sel===q.answer?"#1D9E75":"#E24B4A",marginBottom:3}}>{sel===q.answer?"答對了":"答錯了"}</div><div><b style={{color:S.t1}}>{q.item.w}</b>{q.item.ph?` ${q.item.ph}`:""} · {q.item.m}</div>{q.item.ex&&<div style={{marginTop:4,color:S.t2}}>例句：{q.item.ex}</div>}</div>}
-      {sel!==null&&<button onClick={next} style={{...S.btn,background:c.cl,color:"#fff",width:"100%",padding:"12px",fontSize:14,marginTop:12}}>{qi+1>=qs.length?"看成績":"下一題"}</button>}
-    </div>
-  </div>);
-}
-// ═══ DICTATION ══════════════════════════════════════════════════════
-function DictM({lv,onBack,onXp,onDone}){
-  const sents=DICT[lv];const c=LV[lv];
-  const[qi,setQi]=useState(0);const[inp,setInp]=useState("");const[result,setResult]=useState(null);const[score,setScore]=useState(0);const[done,setDone]=useState(false);
-  const current=sents[qi];
-  useEffect(()=>{if(!done&&!result){const t=speechTimer(()=>speak(current,undefined,0.75),300);return()=>clearTimeout(t)}},[qi,result]);
-  const check=()=>{if(!inp.trim())return;const clean=s=>s.toLowerCase().replace(/[^a-z0-9\s]/g,"").trim();const correct=clean(current)===clean(inp);if(correct){setScore(s=>s+1);onXp(10)}setResult(correct)};
-  const next=()=>{setResult(null);setInp("");if(qi+1>=sents.length){setDone(true);onDone()}else setQi(qi+1)};
-  if(done){const pct=Math.round((score/sents.length)*100);return(<div><Hdr t="🎧 聽寫訓練" onBack={onBack} cl={c.cl}/><div style={{textAlign:"center",padding:"32px 16px"}}><div style={{fontSize:56,animation:"bounceIn .5s ease-out"}}>{pct>=80?"🏆":pct>=60?"🎉":"💪"}</div><h2 style={{fontSize:22,fontWeight:700,color:S.t1,marginTop:8}}>聽寫完成！</h2><div style={{fontSize:18,color:c.cl,fontWeight:600,marginTop:6}}>{score}/{sents.length} 正確 ({pct}%)</div><div style={{fontSize:14,color:S.t2,marginTop:8,marginBottom:16}}>{pct>=80?"聽力超棒！🌟":"多聽幾次會更好！💪"}</div><button onClick={()=>{setQi(0);setInp("");setResult(null);setScore(0);setDone(false)}} style={{...S.btn,background:c.cl,color:"#fff",marginRight:8,fontSize:14}}>🔄 再練</button><button onClick={onBack} style={{...S.btn,background:S.bg2,color:S.t1,fontSize:14}}>返回</button></div></div>)}
-  return(<div><Hdr t="🎧 聽寫訓練" onBack={onBack} cl={c.cl}/><PB v={qi} mx={sents.length} cl={c.cl}/>
-    <div style={{...S.card,padding:"28px 20px",textAlign:"center"}}>
-      <div style={{fontSize:14,color:S.t3,marginBottom:14}}>仔細聽，然後打出你聽到的英文句子</div>
-      <div style={{display:"flex",gap:8,justifyContent:"center",marginBottom:16}}>
-        <button onClick={()=>speak(current,"en-US",0.6)} style={{...S.btn,background:S.bg2,color:S.t1,fontSize:12,padding:"8px 14px"}}>🐢 慢速</button>
-        <button onClick={()=>speak(current,"en-US",0.85)} style={{...S.btn,background:c.cl,color:"#fff",fontSize:12,padding:"8px 14px"}}>🔊 正常</button>
-        <button onClick={()=>speak(current,"en-US",1.1)} style={{...S.btn,background:S.bg2,color:S.t1,fontSize:12,padding:"8px 14px"}}>🐇 快速</button>
-      </div>
-      <input value={inp} onChange={e=>setInp(e.target.value)} onKeyDown={e=>e.key==="Enter"&&(result===null?check():next())} placeholder="在這裡打出你聽到的..." disabled={result!==null} style={{width:"100%",padding:"14px 16px",borderRadius:12,border:`2px solid ${result===null?S.bd:result?"#639922":"#E24B4A"}`,fontSize:16,fontFamily:"inherit",background:S.bg1,color:S.t1,outline:"none",textAlign:"center"}}/>
-      {result===null?
-        <button onClick={check} disabled={!inp.trim()} style={{...S.btn,background:c.cl,color:"#fff",marginTop:12,opacity:inp.trim()?1:.5}}>送出答案</button>:
-        <div style={{marginTop:12}}>
-          <div style={{fontSize:16,fontWeight:600,color:result?"#1D9E75":"#E24B4A",animation:result?"bounceIn .3s":"moleShake .3s"}}>{result?"✅ 正確！太棒了！":"❌ 不太對..."}</div>
-          {!result&&<div style={{fontSize:13,color:S.t1,marginTop:6,padding:"8px 12px",background:"#EAF3DE",borderRadius:8}}>正確答案：{current}</div>}
-          <button onClick={next} style={{...S.btn,background:c.cl,color:"#fff",marginTop:10,fontSize:12}}>下一題 →</button>
-        </div>
-      }
-    </div>
-  </div>);
-}
+function QuizM(props){return <Suspense fallback={<ModuleLoading label="準備小任務..."/>}><LearningPractice key={`quiz-${props.lv}`} kind="quiz" {...props} deps={{words:V[props.lv],fetchCloudVocab,speak,stopSpeech,playSound,Hdr,c:LV[props.lv]}}/></Suspense>}
+function DictM(props){return <Suspense fallback={<ModuleLoading label="準備聽力練習..."/>}><LearningPractice key={`listening-${props.lv}`} kind="listening" {...props} deps={{sentences:DICT[props.lv],speak,stopSpeech,playSound,Hdr,c:LV[props.lv]}}/></Suspense>}
 // ═══ SENTENCE SCRAMBLE (句子重組 v2) ═══════════════════════════════
 function ScramM(props){return <ArcadeM game="scramble" {...props}/>}
 
@@ -3838,148 +3466,7 @@ function grammarCloze(sentence,fill,cl){
   const parts=String(sentence||"").split("___");
   return parts.map((p,i)=><span key={i}>{p}{i<parts.length-1&&<span style={{display:"inline-block",minWidth:76,borderBottom:`3px solid ${cl}`,textAlign:"center",fontWeight:800,color:cl,padding:"0 6px",margin:"0 2px"}}>{fill||"？"}</span>}</span>);
 }
-function GrammarM({lv,onBack,onXp,apiKey,onOpenSettings}){
-  const rules=G[lv];const c=LV[lv];
-  const[sel,setSel]=useState(null);const[answers,setAnswers]=useState({});const[showResult,setShowResult]=useState(false);const[showHint,setShowHint]=useState(false);
-  const[drillAnswers,setDrillAnswers]=useState({});
-  const[aiExplain,setAiExplain]=useState(null);const[aiLoading,setAiLoading]=useState(false);const[aiError,setAiError]=useState("");
-  const rewarded=useRef(new Set());
-  useEffect(()=>{setSel(null);setAnswers({});setDrillAnswers({});setShowResult(false);setShowHint(false);setAiExplain(null);setAiError("");setAiLoading(false);rewarded.current=new Set()},[lv]);
-  useEffect(()=>{setDrillAnswers({});setAiExplain(null);setAiError("");setAiLoading(false)},[sel,lv]);
-  const completed=Object.keys(answers).length;
-  const score=Object.values(answers).filter(a=>a?.correct).length;
-  const pct=rules.length?Math.round(score/rules.length*100):0;
-  const wrongIdx=rules.map((_,i)=>i).filter(i=>answers[i]&&!answers[i].correct);
-  const openTopic=i=>{setSel(i);setShowResult(false);setShowHint(false)};
-  const resetAll=()=>{setSel(null);setAnswers({});setShowResult(false);setShowHint(false);rewarded.current=new Set()};
-  const startPractice=()=>openTopic(rules.findIndex((_,i)=>!answers[i])>=0?rules.findIndex((_,i)=>!answers[i]):0);
-  const retryWrong=()=>{if(!wrongIdx.length)return;setAnswers(a=>{const next={...a};wrongIdx.forEach(i=>delete next[i]);return next});setShowResult(false);setShowHint(true);setSel(wrongIdx[0])};
-  const handleAns=i=>{
-    if(sel==null||answers[sel])return;
-    const r=rules[sel];const correct=i===r.q.a;
-    setAnswers(a=>({...a,[sel]:{choice:i,correct}}));
-    if(correct){playSound("good");if(!rewarded.current.has(sel)){rewarded.current.add(sel);onXp?.(5)}}else playSound("bad");
-  };
-  const handleDrill=(di,oi)=>{
-    const r=rules[sel],d=grammarDrills(r)[di];if(!d||drillAnswers[di]!=null)return;
-    setDrillAnswers(a=>({...a,[di]:oi}));
-    playSound(oi===d.a?"good":"bad");
-  };
-  const clearCurrentAnswer=()=>{setAnswers(a=>{const next={...a};delete next[sel];return next});setShowHint(true)};
-  const goNext=()=>{setShowHint(false);if(sel<rules.length-1)setSel(sel+1);else setShowResult(true)};
-  const goPrev=()=>{setShowHint(false);if(sel>0)setSel(sel-1)};
-  const loadAiExplanation=async()=>{
-    const r=rules[sel];
-    if(!apiKey?.trim()){setAiError("請先到設定填入 Gemini API Key。");onOpenSettings?.();return}
-    setAiLoading(true);setAiError("");
-    try{setAiExplain(await generateGrammarAiExplanation(r,lv,apiKey))}
-    catch(e){setAiError(e?.message||"AI 講解暫時產生失敗。")}
-    finally{setAiLoading(false)}
-  };
-
-  if(showResult){return(<div><Hdr t="🧠 文法學堂" onBack={onBack} cl={c.cl}/><div style={{textAlign:"center",padding:"28px 12px"}}><div style={{fontSize:56,animation:"bounceIn .5s ease-out"}}>{pct>=80?"🏆":pct>=60?"🎉":"💪"}</div><h2 style={{fontSize:22,fontWeight:700,color:S.t1,marginTop:8}}>文法學習完成！</h2><div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,maxWidth:420,margin:"16px auto"}}>{[["答對",`${score}/${rules.length}`,c.cl],["掌握率",`${pct}%`,pct>=80?"#1D9E75":"#EF9F27"],["待複習",wrongIdx.length,"#E24B4A"]].map(([l,v,cl])=><div key={l} style={{...S.card,padding:"12px 8px",borderTop:`3px solid ${cl}`}}><div style={{fontSize:22,fontWeight:800,color:cl}}>{v}</div><div style={{fontSize:11,color:S.t3,marginTop:2}}>{l}</div></div>)}</div><div style={{fontSize:14,color:S.t2,margin:"8px 0 14px"}}>{pct>=80?"規則掌握得很好，可以進入閱讀或造句練習。":pct>=60?"基本概念不錯，建議把錯題再跑一輪。":"先看提示與範例，再慢慢重做錯題。"}</div>{wrongIdx.length>0&&<div style={{...S.card,padding:"12px 14px",maxWidth:520,margin:"0 auto 14px",textAlign:"left"}}><div style={{fontSize:13,fontWeight:800,color:"#E24B4A",marginBottom:8}}>錯題複習</div><div style={{display:"grid",gap:7}}>{wrongIdx.map(i=><button key={i} onClick={()=>openTopic(i)} style={{border:`1px solid ${S.bd}`,background:S.bg1,borderRadius:12,padding:"9px 11px",textAlign:"left",cursor:"pointer",fontFamily:"inherit"}}><div style={{fontSize:14,fontWeight:800,color:S.t1}}>{rules[i].t}</div><div style={{fontSize:12,color:S.t2,marginTop:2}}>正解：{rules[i].q.o[rules[i].q.a]} · 你的答案：{rules[i].q.o[answers[i].choice]}</div></button>)}</div></div>}<button onClick={wrongIdx.length?retryWrong:resetAll} style={{...S.btn,background:c.cl,color:"#fff",marginRight:8,fontSize:14}}>{wrongIdx.length?"只練錯題":"重新學習"}</button><button onClick={onBack} style={{...S.btn,background:S.bg2,color:S.t1,fontSize:14}}>返回</button></div></div>)}
-
-  if(sel===null)return(<div><Hdr t="🧠 文法學堂" onBack={onBack} cl={c.cl}/>
-    <div style={{...S.card,padding:"14px 16px",marginBottom:12,borderTop:`4px solid ${c.cl}`}}>
-      <div style={{display:"flex",justifyContent:"space-between",gap:10,alignItems:"center",marginBottom:10}}>
-        <div><div style={{fontSize:14,fontWeight:800,color:S.t1}}>學習進度</div><div style={{fontSize:12,color:S.t2,marginTop:2}}>先看規則，再完成每個主題的小測驗。</div></div>
-        <button onClick={startPractice} style={{...S.btn,background:c.cl,color:"#fff",fontSize:13,padding:"9px 14px",whiteSpace:"nowrap"}}>{completed?"繼續":"開始"}</button>
-      </div>
-      <div style={{height:8,background:S.bg2,borderRadius:999,overflow:"hidden"}}><div style={{height:"100%",width:`${(completed/rules.length)*100}%`,background:`linear-gradient(90deg,${c.cl},${c.ac})`,borderRadius:999,transition:"width .25s"}}/></div>
-      <div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:S.t3,marginTop:7}}><span>已完成 {completed}/{rules.length}</span><span>答對 {score}</span></div>
-    </div>
-    <div style={{display:"grid",gap:8}}>
-      {rules.map((r,i)=>{const a=answers[i];const guide=grammarGuide(r);const done=!!a;return(<button key={i} onClick={()=>openTopic(i)} style={{cursor:"pointer",...S.card,padding:"15px 16px",display:"flex",gap:12,alignItems:"center",border:"none",borderLeft:`4px solid ${done?(a.correct?"#1D9E75":"#E24B4A"):c.cl}`,transition:"all .15s",fontFamily:"inherit",textAlign:"left"}} onTouchStart={e=>e.currentTarget.style.transform="scale(0.98)"} onTouchEnd={e=>e.currentTarget.style.transform="scale(1)"}>
-        <div style={{width:38,height:38,borderRadius:"50%",background:done?(a.correct?"#E1F5EE":"#FCEBEB"):c.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:done?17:14,fontWeight:800,color:done?(a.correct?"#1D9E75":"#E24B4A"):c.cl,flexShrink:0}}>{done?(a.correct?"✓":"!"):(i+1)}</div>
-        <div style={{flex:1,minWidth:0}}><div style={{fontWeight:800,fontSize:15,color:S.t1}}>{r.t}</div><div style={{fontSize:12,color:S.t2,marginTop:3,lineHeight:1.45}}>{guide.zh}</div><div style={{fontSize:11,color:c.cl,marginTop:5,fontWeight:700}}>{guide.pattern}</div></div>
-        <div style={{fontSize:18,opacity:.35}}>›</div>
-      </button>)})}
-    </div>
-  </div>);
-
-  const r=rules[sel];const guide=grammarGuide(r);const examples=guide.examples;const drills=grammarDrills(r);const current=answers[sel];const progress=(sel+1)/rules.length*100;const fill=current?r.q.o[current.choice]:"";const fillColor=current?(current.correct?"#1D9E75":"#E24B4A"):c.cl;
-  return(<div><Hdr t="🧠 文法學堂" onBack={onBack} cl={c.cl}/>
-    <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:10,fontSize:12}}>
-      <button onClick={()=>{setSel(null);setShowHint(false)}} style={{background:"none",border:`1px solid ${S.bd}`,borderRadius:8,padding:"4px 10px",fontSize:11,cursor:"pointer",color:S.t2,fontFamily:"inherit"}}>列表</button>
-      <div style={{flex:1,height:7,background:S.bg2,borderRadius:999,overflow:"hidden"}}><div style={{height:"100%",width:`${progress}%`,background:`linear-gradient(90deg,${c.cl},${c.ac})`,borderRadius:999,transition:"width .3s"}}/></div>
-      <span style={{color:S.t3,minWidth:38,textAlign:"right"}}>{sel+1}/{rules.length}</span>
-    </div>
-
-    <div style={{...S.card,padding:"18px 16px",marginBottom:10,borderTop:`4px solid ${c.cl}`}}>
-      <div style={{display:"flex",alignItems:"flex-start",gap:10,marginBottom:13}}>
-        <div style={{width:42,height:42,borderRadius:"50%",background:c.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,fontWeight:800,color:c.cl,flexShrink:0}}>{sel+1}</div>
-        <div style={{flex:1}}><h3 style={{fontSize:20,fontWeight:800,color:S.t1,margin:"0 0 4px"}}>{r.t}</h3><div style={{fontSize:13,color:c.cl,fontWeight:800}}>{guide.pattern}</div></div>
-        {current&&<div style={{fontSize:12,fontWeight:800,color:current.correct?"#1D9E75":"#E24B4A",background:current.correct?"#E1F5EE":"#FCEBEB",borderRadius:999,padding:"5px 9px",whiteSpace:"nowrap"}}>{current.correct?"已答對":"待複習"}</div>}
-      </div>
-
-      <div style={{display:"grid",gap:10,marginBottom:14}}>
-        <div style={{background:`linear-gradient(135deg,${c.bg}55,${S.bg2})`,borderRadius:14,padding:"14px 15px",borderLeft:`4px solid ${c.cl}`}}><div style={{fontSize:12,fontWeight:800,color:c.cl,marginBottom:6}}>規則怎麼看</div><div style={{fontSize:14,color:S.t1,lineHeight:1.7,fontWeight:600}}>{guide.zh}</div></div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:8}}>{guide.tips.map((t,i)=><div key={i} style={{padding:"10px 11px",borderRadius:12,background:S.bg2,border:`1px solid ${S.bd}`}}><div style={{fontSize:11,color:S.t3,fontWeight:800}}>STEP {i+1}</div><div style={{fontSize:13,color:S.t1,fontWeight:700,marginTop:3,lineHeight:1.45}}>{t}</div></div>)}</div>
-      </div>
-
-      <div style={{background:S.bg2,borderRadius:14,padding:"13px 14px",marginBottom:12}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,marginBottom:9}}><div style={{fontSize:12,fontWeight:800,color:S.t2}}>例句庫</div><button onClick={()=>speak(examples[0]?.en||r.ex)} style={{background:S.bg1,border:`1px solid ${S.bd}`,borderRadius:10,padding:"4px 8px",fontSize:12,cursor:"pointer",color:c.cl,fontFamily:"inherit"}}>🔊 第一句</button></div>
-        <div style={{display:"grid",gap:8}}>
-          {examples.map((ex,i)=><div key={`${ex.en}-${i}`} style={{background:S.bg1,border:`1px solid ${S.bd}`,borderRadius:12,padding:"10px 11px"}}>
-            <div style={{display:"flex",gap:8,alignItems:"flex-start"}}>
-              <button onClick={()=>speak(ex.en)} style={{border:"none",background:c.bg,color:c.cl,borderRadius:8,width:30,height:30,cursor:"pointer",flexShrink:0,fontSize:13}}>🔊</button>
-              <div style={{minWidth:0}}><div style={{fontSize:15,color:S.t1,fontWeight:800,lineHeight:1.5}}>{ex.en}</div>{ex.zh&&<div style={{fontSize:12,color:S.t2,lineHeight:1.55,marginTop:2}}>{ex.zh}</div>}</div>
-            </div>
-          </div>)}
-        </div>
-      </div>
-
-      <div style={{background:"#F5F3FF",border:"1px solid #DDD6FE",borderRadius:14,padding:"13px 14px",marginBottom:15}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,marginBottom:aiExplain?10:0}}>
-          <div><div style={{fontSize:13,fontWeight:900,color:"#5B21B6"}}>AI 文法教練</div><div style={{fontSize:12,color:S.t2,marginTop:2}}>只整理「{r.t}」這個主題</div></div>
-          <button onClick={loadAiExplanation} disabled={aiLoading} style={{...S.btn,background:"#6D28D9",color:"#fff",fontSize:13,padding:"9px 13px",borderRadius:12,whiteSpace:"nowrap",opacity:aiLoading ? .65 : 1}}>{aiLoading?"整理中...":"AI 講解"}</button>
-        </div>
-        {aiError&&<div style={{fontSize:12,color:"#8A5A00",background:"#FFF7E6",border:"1px solid #F0D59A",borderRadius:10,padding:"8px 10px",marginTop:10,lineHeight:1.55}}>{aiError}</div>}
-        {aiExplain&&<div style={{display:"grid",gap:10,animation:"fadeUp .25s"}}>
-          <div style={{fontSize:14,color:S.t1,lineHeight:1.7,fontWeight:650}}>{aiExplain.simple}</div>
-          {aiExplain.examples.length>0&&<div style={{display:"grid",gap:7}}>{aiExplain.examples.map((ex,i)=><div key={`${ex.en}-${i}`} style={{background:"#fff",border:"1px solid #E9D5FF",borderRadius:11,padding:"9px 10px"}}><div style={{fontSize:14,fontWeight:800,color:S.t1}}>{ex.en}</div>{ex.zh&&<div style={{fontSize:12,color:S.t2,marginTop:2,lineHeight:1.5}}>{ex.zh}</div>}</div>)}</div>}
-          {aiExplain.practice&&<div style={{background:"#fff",border:"1px solid #C4B5FD",borderRadius:12,padding:"10px 11px"}}>
-            <div style={{fontSize:11,fontWeight:900,color:"#6D28D9",marginBottom:5}}>AI 小練習</div>
-            <div style={{fontSize:14,color:S.t1,fontWeight:800,lineHeight:1.55}}>{aiExplain.practice.prompt}</div>
-            <div style={{fontSize:12,color:S.t2,marginTop:5,lineHeight:1.55}}>答案：<b>{aiExplain.practice.answer}</b>{aiExplain.practice.explanation?`，${aiExplain.practice.explanation}`:""}</div>
-          </div>}
-        </div>}
-      </div>
-
-      {drills.length>0&&<div style={{background:S.bg1,border:`1px solid ${S.bd}`,borderRadius:14,padding:"13px 14px",marginBottom:15}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,marginBottom:10}}>
-          <div><div style={{fontSize:14,fontWeight:900,color:S.t1}}>加強練習</div><div style={{fontSize:12,color:S.t2,marginTop:2}}>同一個文法點多做幾題，先熟悉判斷線索。</div></div>
-          <div style={{fontSize:12,fontWeight:900,color:c.cl,background:c.bg,borderRadius:999,padding:"5px 9px",whiteSpace:"nowrap"}}>{Object.keys(drillAnswers).length}/{drills.length}</div>
-        </div>
-        <div style={{display:"grid",gap:10}}>
-          {drills.map((d,di)=>{const picked=drillAnswers[di];return <div key={di} style={{border:`1px solid ${picked==null?S.bd:picked===d.a?"#9DDDC7":"#F1B5B5"}`,background:picked==null?S.bg2:picked===d.a?"#F0FBF6":"#FFF2F2",borderRadius:13,padding:"11px 12px"}}>
-            <div style={{fontSize:13,fontWeight:850,color:S.t1,lineHeight:1.6,marginBottom:8}}>{grammarCloze(d.s,picked!=null?d.o[picked]:"",picked==null?c.cl:picked===d.a?"#1D9E75":"#E24B4A")}</div>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(110px,1fr))",gap:7}}>
-              {d.o.map((o,oi)=>{const ok=oi===d.a,chosen=picked===oi;let bg=S.bg1,bd=`1px solid ${S.bd}`,cl=S.t1;if(picked!=null){if(ok){bg="#E1F5EE";bd="2px solid #1D9E75";cl="#146B45"}else if(chosen){bg="#FCEBEB";bd="2px solid #E24B4A";cl="#A12F2F"}}return <button key={o} data-testid={`grammar-drill-${di}-option-${oi}`} onClick={()=>handleDrill(di,oi)} disabled={picked!=null} style={{border:bd,background:bg,color:cl,borderRadius:11,padding:"9px 8px",fontSize:13,fontWeight:800,cursor:picked==null?"pointer":"default",fontFamily:"inherit"}}>{o}</button>})}
-            </div>
-            {picked!=null&&<div style={{fontSize:12,color:S.t2,lineHeight:1.55,marginTop:8}}>解析：{d.e}</div>}
-          </div>})}
-        </div>
-      </div>}
-
-      <div style={{borderTop:`2px solid ${S.bd}`,paddingTop:15}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,marginBottom:10}}><div style={{fontSize:14,fontWeight:800,color:S.t1}}>小測驗</div>{!current&&<button onClick={()=>setShowHint(v=>!v)} style={{background:showHint?"#FFF3CD":S.bg2,border:`1px solid ${S.bd}`,borderRadius:10,padding:"5px 9px",fontSize:12,cursor:"pointer",color:showHint?"#8A5A00":S.t2,fontFamily:"inherit"}}>提示</button>}</div>
-        <button onClick={()=>speak(r.q.s.replace("___",current?r.q.o[current.choice]:"blank"))} style={{width:"100%",textAlign:"left",border:"none",background:S.bg2,borderRadius:13,padding:"12px 13px",fontSize:16,color:S.t1,lineHeight:1.75,fontWeight:650,fontFamily:"inherit",cursor:"pointer",marginBottom:10}}>{grammarCloze(r.q.s,fill,fillColor)} <span style={{fontSize:18}}>🔊</span></button>
-        {showHint&&!current&&<div style={{fontSize:12,color:"#8A5A00",background:"#FFF7E6",border:"1px solid #F0D59A",borderRadius:12,padding:"9px 11px",marginBottom:10,lineHeight:1.6}}>提示：{guide.tips.join(" → ")}。正確答案通常符合「{guide.pattern}」。</div>}
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))",gap:8}}>
-          {r.q.o.map((o,i)=>{const ok=i===r.q.a,pk=current?.choice===i;let bg=S.bg2,bd=`1px solid ${S.bd}`,cl=S.t1,anim="";if(current){if(ok){bg="#E1F5EE";bd="2px solid #1D9E75";cl="#146B45";anim="bounceIn .3s"}else if(pk){bg="#FCEBEB";bd="2px solid #E24B4A";cl="#A12F2F";anim="moleShake .3s"}}return<button key={i} onClick={()=>handleAns(i)} disabled={!!current} style={{padding:"13px 10px",borderRadius:13,background:bg,border:bd,cursor:current?"default":"pointer",fontSize:15,fontFamily:"inherit",color:cl,fontWeight:current&&ok?800:650,transition:"all .15s",animation:anim,minHeight:48,WebkitTapHighlightColor:"transparent"}} onTouchStart={e=>{if(!current)e.currentTarget.style.transform="scale(0.96)"}} onTouchEnd={e=>e.currentTarget.style.transform="scale(1)"}>{o}</button>})}
-        </div>
-        {current&&<div style={{marginTop:12,padding:"12px 14px",borderRadius:12,background:current.correct?"#E1F5EE":"#FFF3CD",animation:"fadeUp .3s",lineHeight:1.65}}><div style={{fontSize:15,fontWeight:800,color:current.correct?"#1D9E75":"#E24B4A"}}>{current.correct?"答對了":"還不對"}</div>{!current.correct&&<div style={{fontSize:13,color:S.t1,marginTop:4}}>正確答案：<b style={{color:"#1D9E75"}}>{r.q.o[r.q.a]}</b></div>}<div style={{fontSize:12,color:S.t2,marginTop:4}}>解析：{guide.mistake}</div></div>}
-      </div>
-    </div>
-
-    <div style={{display:"flex",gap:8,alignItems:"center"}}>
-      <button onClick={goPrev} disabled={sel===0} style={{...S.btn,background:S.bg2,color:S.t1,flex:1,opacity:sel===0?.35:1,fontSize:14,padding:"12px"}}>← 上一題</button>
-      {current&&!current.correct&&<button onClick={clearCurrentAnswer} style={{...S.btn,background:"#FFF3CD",color:"#8A5A00",fontSize:14,padding:"12px 14px"}}>再試</button>}
-      {current?<button onClick={goNext} style={{...S.btn,background:c.cl,color:"#fff",flex:1,fontSize:14,padding:"12px"}}>{sel>=rules.length-1?"看成績":"下一題 →"}</button>:<button onClick={()=>setShowHint(true)} style={{...S.btn,background:S.bg2,color:S.t2,flex:1,fontSize:14,padding:"12px"}}>先看提示</button>}
-    </div>
-  </div>);
-}
+function GrammarM(props){return <Suspense fallback={<ModuleLoading label="準備句型積木..."/>}><GrammarWorkshop key={props.lv} {...props} deps={{rules:G[props.lv],grammarGuide,grammarDrills,generateGrammarAiExplanation,speak,stopSpeech,playSound,Hdr,c:LV[props.lv]}}/></Suspense>}
 // ═══ READING ════════════════════════════════════════════════════════
 const READING_STOP_WORDS=new Set("a an and are as at be by can for from has have he her his i in is it its me my of on one or our she that the their there they this to too was we when while who with you your what where why how many more most than into every today".split(" "));
 function splitReadingSentences(text){const m=String(text||"").match(/[^.!?]+[.!?]+/g);return(m?.length?m:[text]).map(s=>s.trim()).filter(Boolean)}
@@ -4027,109 +3514,7 @@ function scrollChildIntoPanel(panel,el,opts={}){
     panel.scrollTo({top:Math.max(0,Math.min(max,target)),behavior});
   }));
 }
-function SongsM({lv,onBack,onXp}){
-  const songs=SONGS[lv]||[];const c=LV[lv];const[si,setSi]=useState(0);const[time,setTime]=useState(0);const[dur,setDur]=useState(0);const[playing,setPlaying]=useState(false);const[audioLoading,setAudioLoading]=useState(true);const[audioError,setAudioError]=useState("");const[showZh,setShowZh]=useState(true);const[view,setView]=useState("lyrics");const[speed,setSpeed]=useState(1);const[practice,setPractice]=useState({idx:0,pick:null,score:0,done:false});const[timingDraft,setTimingDraft]=useState([]);const[timingExport,setTimingExport]=useState("");const audioRef=useRef(null);const lineRefs=useRef({});const songPanelRef=useRef(null);const rewarded=useRef({});
-  const timingMode=useMemo(()=>{try{return new URLSearchParams(window.location.search).get("timing")==="1"}catch{return false}},[]);
-  const song=songs[si];const songLines=timingMode&&timingDraft.length?timingDraft:(song?.lines||[]);const lyricLines=useMemo(()=>songLines.map((l,i)=>({...l,i})).filter(l=>l.en),[songLines]);
-  const hasAudio=!!song?.audio;
-  const hasCover=!!song?.cover;
-  const weights=useMemo(()=>lyricLines.map(l=>Math.max(1,readingWords(l.en).length)),[lyricLines]);
-  const totalWeight=weights.reduce((a,b)=>a+b,0)||1;
-  const hasTimedLyrics=lyricLines.length>0&&lyricLines.every(l=>Number.isFinite(Number(l.t)));
-  const activeLine=useMemo(()=>{
-    if(!lyricLines.length)return -1;
-    if(!hasAudio)return -1;
-    if(hasTimedLyrics){
-      if(time<Number(lyricLines[0].t)-0.15)return -1;
-      for(let i=lyricLines.length-1;i>=0;i--){if(time>=Number(lyricLines[i].t)-0.15)return lyricLines[i].i}
-      return -1;
-    }
-    if(!dur)return lyricLines[0]?.i??-1;
-    let pos=(time/dur)*totalWeight,acc=0;for(let i=0;i<lyricLines.length;i++){acc+=weights[i];if(pos<=acc)return lyricLines[i].i}return lyricLines.at(-1)?.i??-1
-  },[time,dur,totalWeight,weights,lyricLines,hasTimedLyrics,hasAudio]);
-  const activeLyricIdx=useMemo(()=>lyricLines.findIndex(l=>l.i===activeLine),[lyricLines,activeLine]);
-  const activeLyric=activeLyricIdx>=0?lyricLines[activeLyricIdx]:null;
-  const linePct=useMemo(()=>{if(activeLyricIdx<0||!dur)return 0;const cur=Number(lyricLines[activeLyricIdx].t);const nxt=Number(lyricLines[activeLyricIdx+1]?.t||dur);if(!Number.isFinite(cur)||!Number.isFinite(nxt)||nxt<=cur)return 0;return Math.max(0,Math.min(100,((time-cur)/(nxt-cur))*100))},[activeLyricIdx,lyricLines,time,dur]);
-  const practiceItems=useMemo(()=>{
-    if(!song)return[];
-    const esc=s=>String(s).replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
-    const vocab=(song.vocab||[]).filter(Boolean);
-    return lyricLines.map((line,idx)=>{
-      const word=vocab.find(w=>new RegExp(`\\b${esc(w)}\\b`,"i").test(line.en));
-      if(!word)return null;
-      const blank=line.en.replace(new RegExp(`\\b${esc(word)}\\b`,"i"),"____");
-      const distractors=shuffleCopy(vocab.filter(w=>w!==word)).slice(0,3);
-      return{line,idx,word,blank,options:shuffleCopy([word,...distractors])};
-    }).filter(Boolean).slice(0,8);
-  },[song,lyricLines]);
-  const currentPractice=practiceItems[practice.idx];
-  useEffect(()=>{setPractice({idx:0,pick:null,score:0,done:false});setTimingDraft((song?.lines||[]).map(l=>({...l})));setTimingExport("");setAudioError("");setAudioLoading(true);lineRefs.current={};setView("lyrics");songPanelRef.current?.scrollTo({top:0})},[song?.id]);
-  useEffect(()=>{if(view!=="lyrics")songPanelRef.current?.scrollTo({top:0})},[view]);
-  useEffect(()=>{const a=audioRef.current;if(a)a.playbackRate=speed},[speed,song?.id]);
-  useEffect(()=>{const a=audioRef.current;if(!a)return;const onTime=()=>setTime(a.currentTime||0);const onLoadStart=()=>{setAudioLoading(true);setAudioError("")};const onMeta=()=>{setDur(a.duration||0);setAudioLoading(false);setAudioError("")};const onCanPlay=()=>{setAudioLoading(false);setAudioError("")};const onPlay=()=>{setPlaying(true);setAudioLoading(false);setAudioError("")};const onPause=()=>setPlaying(false);const onError=()=>{setPlaying(false);setAudioLoading(false);setAudioError("歌曲音訊載入失敗，請按「重新載入」後再試。")};const onEnd=()=>{setPlaying(false);if(song&&!rewarded.current[song.id]){rewarded.current[song.id]=true;onXp?.(10)}};a.addEventListener("timeupdate",onTime);a.addEventListener("loadstart",onLoadStart);a.addEventListener("loadedmetadata",onMeta);a.addEventListener("canplay",onCanPlay);a.addEventListener("play",onPlay);a.addEventListener("pause",onPause);a.addEventListener("error",onError);a.addEventListener("ended",onEnd);return()=>{if(!(typeof navigator!=="undefined"&&/jsdom/i.test(navigator.userAgent))){try{a.pause()}catch{}};a.removeEventListener("timeupdate",onTime);a.removeEventListener("loadstart",onLoadStart);a.removeEventListener("loadedmetadata",onMeta);a.removeEventListener("canplay",onCanPlay);a.removeEventListener("play",onPlay);a.removeEventListener("pause",onPause);a.removeEventListener("error",onError);a.removeEventListener("ended",onEnd)}},[song?.id]);
-  useEffect(()=>{if(view==="lyrics"&&activeLine>=0)scrollChildIntoPanel(songPanelRef.current,lineRefs.current[activeLine],{align:.42})},[activeLine,view,showZh,song?.id]);
-  if(!song)return(<div><Hdr t="🎵 英文歌曲" onBack={onBack} cl={c.cl}/><div style={{...S.card,padding:"28px 18px",textAlign:"center"}}><div style={{fontSize:42,marginBottom:8}}>🎧</div><div style={{fontSize:16,fontWeight:700,color:S.t1}}>這個年級的歌曲準備中</div><div style={{fontSize:13,color:S.t2,marginTop:6}}>先從小學歌曲開始驗證流程，之後可逐步加入更多歌曲。</div></div></div>);
-  const fmt=s=>`${Math.floor((s||0)/60)}:${String(Math.floor((s||0)%60)).padStart(2,"0")}`;
-  const fmt1=s=>`${fmt(s)}.${Math.floor(((s||0)%1)*10)}`;
-  const roundTime=s=>Math.max(0,Math.round(Number(s||0)*10)/10);
-  const updateLineTime=(idx,next)=>setTimingDraft(lines=>lines.map((line,i)=>i===idx?{...line,t:roundTime(next)}:line));
-  const nudgeLine=(idx,delta)=>setTimingDraft(lines=>lines.map((line,i)=>i===idx?{...line,t:roundTime(Number(line.t||0)+delta)}:line));
-  const nudgeAll=delta=>setTimingDraft(lines=>lines.map(line=>Number.isFinite(Number(line.t))?{...line,t:roundTime(Number(line.t)+delta)}:line));
-  const exportTimings=()=>{const text=`lines:[\n${(timingDraft.length?timingDraft:song.lines).map(line=>line.sec?`  {sec:${JSON.stringify(line.sec)}},`:`  {t:${roundTime(line.t)},en:${JSON.stringify(line.en)},zh:${JSON.stringify(line.zh)}},`).join("\n")}\n]`;setTimingExport(text);navigator.clipboard?.writeText(text).catch(()=>{})};
-  const calcStart=(line)=>{
-    const idx=lyricLines.findIndex(l=>l.i===line?.i);if(idx<0)return 0;
-    const timed=Number(line.t);
-    return Number.isFinite(timed)?timed:weights.slice(0,idx).reduce((a,b)=>a+b,0)/totalWeight*(dur||0);
-  };
-  const play=()=>{const a=audioRef.current;if(!a)return;setAudioError("");setAudioLoading(a.readyState<2);a.playbackRate=speed;a.play().catch(()=>{setPlaying(false);setAudioLoading(false);setAudioError("歌曲無法播放，請按「重新載入」後再試。")})};
-  const toggle=()=>{const a=audioRef.current;if(!a)return;if(a.paused)play();else a.pause()};
-  const seekTo=(sec,auto=false)=>{const a=audioRef.current;if(!a)return;a.currentTime=Math.max(0,Math.min(sec,dur||sec));if(auto)play()};
-  const retryAudio=()=>{const a=audioRef.current;if(!a)return;try{a.pause()}catch{}setPlaying(false);setTime(0);setDur(0);setAudioError("");setAudioLoading(true);a.load();play()};
-  const seekLine=(line,auto=true)=>seekTo(calcStart(line),auto);
-  const jumpLine=(delta)=>{if(!lyricLines.length)return;const base=activeLyricIdx>=0?activeLyricIdx:0;const next=Math.max(0,Math.min(lyricLines.length-1,base+delta));seekLine(lyricLines[next],true)};
-  const choosePractice=(opt)=>{if(!currentPractice||practice.pick)return;const ok=opt===currentPractice.word;setPractice(p=>({...p,pick:opt,score:p.score+(ok?1:0)}));if(ok&&!rewarded.current[`${song.id}:practice:${practice.idx}`]){rewarded.current[`${song.id}:practice:${practice.idx}`]=true;onXp?.(2)}};
-  const nextPractice=()=>setPractice(p=>p.idx>=practiceItems.length-1?{...p,done:true,pick:null}:{...p,idx:p.idx+1,pick:null});
-  const resetPractice=()=>setPractice({idx:0,pick:null,score:0,done:false});
-  const tabStyle=k=>({padding:"8px 12px",borderRadius:999,border:"none",background:view===k?c.cl:S.bg2,color:view===k?"#fff":S.t2,fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit"});
-  return(<div><Hdr t="🎵 英文歌曲" onBack={onBack} cl={c.cl} extra={<button onClick={()=>setShowZh(z=>!z)} style={{background:S.bg1,border:`1px solid ${S.bd}`,borderRadius:8,padding:"5px 9px",fontSize:12,color:c.cl,cursor:"pointer",fontFamily:"inherit",fontWeight:700}}>{showZh?"隱藏中文":"顯示中文"}</button>}/>
-    {songs.length>1&&<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:7,marginBottom:10}}>{songs.map((s,i)=><button key={s.id} onClick={()=>{setSi(i);setTime(0);setDur(0);setPlaying(false)}} style={{padding:"10px 11px",borderRadius:12,background:i===si?c.cl:S.bg1,color:i===si?"#fff":S.t1,border:`1px solid ${i===si?c.cl:S.bd}`,fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit",textAlign:"left",boxShadow:i===si?"0 8px 18px rgba(15,110,86,.18)":"none"}}><div>{s.title}</div><div style={{fontSize:11,fontWeight:600,opacity:.72,marginTop:2}}>{s.theme}</div></button>)}</div>}
-    <div style={{...S.card,padding:"18px 16px",marginBottom:10,borderTop:`4px solid ${c.cl}`,background:`linear-gradient(135deg,${c.bg}55,var(--color-background-primary,#fff))`}}>
-      <div style={{display:"flex",gap:14,alignItems:"center",marginBottom:12,flexWrap:"wrap"}}>{hasCover?<button type="button" onClick={()=>hasAudio&&toggle()} aria-label={playing?"暫停歌曲":"播放歌曲"} title={playing?"暫停歌曲":"播放歌曲"} style={{position:"relative",width:"clamp(118px,28vw,172px)",aspectRatio:"1/1",border:`1px solid ${S.bd}`,borderRadius:16,overflow:"hidden",padding:0,background:S.bg2,boxShadow:"0 16px 34px rgba(0,0,0,.18)",cursor:hasAudio?"pointer":"default",flex:"0 0 auto"}}><img src={song.cover} alt={`${song.title} cover`} style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}}/><span style={{position:"absolute",left:"50%",top:"50%",transform:"translate(-50%,-50%)",width:54,height:54,borderRadius:999,background:"rgba(20,24,28,.84)",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:playing?24:25,fontWeight:900,boxShadow:"0 10px 22px rgba(0,0,0,.35)"}}>{playing?"Ⅱ":"▶"}</span></button>:<div style={{width:58,height:58,borderRadius:14,background:`linear-gradient(135deg,${c.cl},${c.ac})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:30,color:"#fff",flexShrink:0}}>🎵</div>}<div style={{flex:"1 1 220px",minWidth:0}}><div style={{fontSize:21,fontWeight:900,color:S.t1,lineHeight:1.2}}>{song.title}</div><div style={{fontSize:12,color:S.t2,marginTop:3}}>{song.zhTitle} · {song.theme} · {song.level}</div></div></div>
-      {hasAudio?<><audio ref={audioRef} src={song.audio} preload="metadata"/>
-      <div style={{padding:"12px",borderRadius:14,background:S.bg1,border:`1px solid ${S.bd}`,marginBottom:10}}><div style={{fontSize:11,fontWeight:800,color:c.cl,marginBottom:5}}>現在播放</div><div style={{fontSize:16,fontWeight:900,color:S.t1,lineHeight:1.45,minHeight:24}}>{activeLyric?.en||"點播放開始，或點任一句歌詞重播。"}</div>{showZh&&activeLyric?.zh&&<div style={{fontSize:12,color:S.t2,lineHeight:1.5,marginTop:2}}>{activeLyric.zh}</div>}<div style={{height:4,background:S.bg2,borderRadius:999,overflow:"hidden",marginTop:9}}><div style={{height:"100%",width:`${linePct}%`,background:c.cl,borderRadius:999}}/></div></div>
-      <div onClick={e=>{const r=e.currentTarget.getBoundingClientRect();seekTo((e.clientX-r.left)/Math.max(1,r.width)*(dur||0),false)}} style={{height:10,background:S.bg2,borderRadius:999,overflow:"hidden",cursor:"pointer",marginBottom:8}}><div style={{height:"100%",width:`${dur?Math.min(100,time/dur*100):0}%`,background:`linear-gradient(90deg,${c.cl},${c.ac})`,borderRadius:999}}/></div>
-      <div style={{display:"flex",alignItems:"center",gap:7,fontSize:12,color:S.t3,marginBottom:10}}><span>{fmt(time)}</span><span style={{flex:1,textAlign:"center"}}>{audioError?"播放失敗":playing?"播放中":audioLoading&&!dur?"音訊載入中":"已暫停"}</span><span>{fmt(dur||0)}</span></div>
-      {audioError&&<div role="alert" style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,flexWrap:"wrap",padding:"10px 11px",marginBottom:10,border:"1px solid #D96C5F",borderRadius:11,background:"#FFF1EF",color:"#8F2F25",fontSize:12,fontWeight:750,lineHeight:1.5}}><span>{audioError}</span><button onClick={retryAudio} style={{...S.btn,padding:"7px 11px",fontSize:12,background:"#8F2F25",color:"#fff",flex:"0 0 auto"}}>重新載入</button></div>}
-      <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:6,marginBottom:8}}><button onClick={()=>jumpLine(-1)} style={{...S.btn,padding:"9px 0",fontSize:12,background:S.bg2,color:S.t1}}>上一句</button><button onClick={()=>seekTo(time-5)} style={{...S.btn,padding:"9px 0",fontSize:12,background:S.bg2,color:S.t1}}>-5秒</button><button onClick={toggle} style={{...S.btn,padding:"9px 0",fontSize:13,background:c.cl,color:"#fff"}}>{playing?"暫停":"播放"}</button><button onClick={()=>seekTo(time+5)} style={{...S.btn,padding:"9px 0",fontSize:12,background:S.bg2,color:S.t1}}>+5秒</button><button onClick={()=>jumpLine(1)} style={{...S.btn,padding:"9px 0",fontSize:12,background:S.bg2,color:S.t1}}>下一句</button></div>
-      <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{[.85,1,1.15].map(v=><button key={v} onClick={()=>setSpeed(v)} style={{border:`1px solid ${speed===v?c.cl:S.bd}`,background:speed===v?c.bg:S.bg1,color:speed===v?c.cl:S.t2,borderRadius:999,padding:"6px 10px",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>{v===.85?"慢聽":v===1?"原速":"快聽"} {v}x</button>)}<button onClick={()=>activeLyric&&seekLine(activeLyric,true)} disabled={!activeLyric} style={{border:`1px solid ${S.bd}`,background:S.bg1,color:S.t2,borderRadius:999,padding:"6px 10px",fontSize:12,fontWeight:800,cursor:activeLyric?"pointer":"default",fontFamily:"inherit",opacity:activeLyric?1:.5}}>重播本句</button></div>
-      </>:<div style={{padding:"11px 12px",border:`1px dashed ${c.cl}66`,borderRadius:12,background:S.bg1,fontSize:12,color:S.t2,lineHeight:1.6}}>音檔準備中。可以先閱讀歌詞與重點單字，產出 mp3 後再補上同步時間。</div>}
-    </div>
-    {timingMode&&<div style={{...S.card,padding:"13px 14px",marginBottom:10,border:`1px solid ${c.cl}`,background:c.bg}}>
-      <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:9}}><div style={{fontSize:14,fontWeight:900,color:c.cl}}>Timing Lab</div><div style={{fontSize:12,color:S.t2,fontWeight:800}}>Current {fmt1(time)}</div><button onClick={()=>updateLineTime(activeLine,time)} disabled={activeLine<0} style={{...S.btn,background:c.cl,color:"#fff",padding:"7px 10px",fontSize:12,opacity:activeLine>=0?1:.45}}>Set active line</button><button onClick={()=>nudgeAll(-.1)} style={{...S.btn,background:S.bg1,color:S.t1,padding:"7px 10px",fontSize:12}}>All -0.1s</button><button onClick={()=>nudgeAll(.1)} style={{...S.btn,background:S.bg1,color:S.t1,padding:"7px 10px",fontSize:12}}>All +0.1s</button><button onClick={exportTimings} style={{...S.btn,background:"#1F2937",color:"#fff",padding:"7px 10px",fontSize:12}}>Export timings</button></div>
-      <div style={{fontSize:12,color:S.t2,lineHeight:1.55}}>點播放後聽到一句開始時，按該句的 Set current；若只差一點，用 -0.1s / +0.1s 微調。匯出後可把內容貼回歌曲資料。</div>
-      {timingExport&&<textarea aria-label="Exported timings" readOnly value={timingExport} style={{width:"100%",minHeight:130,marginTop:10,border:`1px solid ${S.bd}`,borderRadius:10,padding:10,fontFamily:"ui-monospace,SFMono-Regular,Consolas,monospace",fontSize:11,lineHeight:1.45,background:S.bg1,color:S.t1}}/>}
-    </div>}
-    <div style={{display:"flex",gap:6,marginBottom:10}}><button onClick={()=>setView("lyrics")} style={tabStyle("lyrics")}>歌詞同步</button><button onClick={()=>setView("practice")} style={tabStyle("practice")}>歌詞填空</button></div>
-    <div ref={songPanelRef} style={{height:"clamp(340px, calc(100vh - 430px), 680px)",minHeight:0,overflowY:"auto",overscrollBehavior:"contain",scrollBehavior:"smooth",padding:"0 4px 12px",border:`1px solid ${S.bd}`,borderRadius:12,background:"rgba(255,255,255,.42)"}}>
-    {view==="lyrics"?<div style={{...S.card,padding:"14px 12px",marginBottom:10}}>
-      {songLines.map((line,i)=>line.sec?<div key={i} style={{fontSize:12,fontWeight:900,color:c.cl,margin:"16px 4px 7px",letterSpacing:0}}>{line.sec}</div>:<div ref={el=>{if(el)lineRefs.current[i]=el}} key={i} onClick={()=>hasAudio&&seekLine({...line,i},true)} style={{padding:"11px 12px",borderRadius:12,background:activeLine===i?c.bg:S.bg2,border:`1px solid ${activeLine===i?c.cl:S.bd}`,marginBottom:7,cursor:hasAudio?"pointer":"default",transition:"all .15s",boxShadow:activeLine===i?"0 8px 20px rgba(15,110,86,.12)":"none"}}>
-        <div style={{display:"flex",gap:8,alignItems:"flex-start"}}><div style={{fontSize:11,color:activeLine===i?c.cl:S.t3,fontWeight:800,minWidth:34,paddingTop:3}}>{Number.isFinite(Number(line.t))?fmt(line.t):""}</div><div style={{flex:1,minWidth:0}}><div style={{fontSize:15,lineHeight:1.5,fontWeight:activeLine===i?900:700,color:S.t1}}>{line.en}</div>{showZh&&<div style={{fontSize:12,color:S.t2,marginTop:3,lineHeight:1.5}}>{line.zh}</div>}</div><button onClick={e=>{e.stopPropagation();seekLine({...line,i},true)}} style={{border:`1px solid ${S.bd}`,background:S.bg1,borderRadius:999,padding:"5px 8px",fontSize:11,color:c.cl,cursor:"pointer",fontFamily:"inherit",fontWeight:800,flexShrink:0}}>重播</button></div>
-        {timingMode&&<div onClick={e=>e.stopPropagation()} style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",marginTop:8,paddingTop:8,borderTop:`1px dashed ${S.bd}`}}><span style={{fontSize:11,fontWeight:900,color:c.cl}}>t={fmt1(line.t)}</span><button onClick={()=>updateLineTime(i,time)} style={{border:`1px solid ${c.cl}`,background:c.bg,color:c.cl,borderRadius:999,padding:"5px 8px",fontSize:11,fontWeight:900,cursor:"pointer",fontFamily:"inherit"}}>Set current</button><button onClick={()=>nudgeLine(i,-.1)} style={{border:`1px solid ${S.bd}`,background:S.bg1,color:S.t2,borderRadius:999,padding:"5px 8px",fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>-0.1s</button><button onClick={()=>nudgeLine(i,.1)} style={{border:`1px solid ${S.bd}`,background:S.bg1,color:S.t2,borderRadius:999,padding:"5px 8px",fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>+0.1s</button></div>}
-      </div>)}
-    </div>:<div style={{...S.card,padding:"16px",marginBottom:10}}>
-      {!practiceItems.length?<div style={{fontSize:13,color:S.t2}}>這首歌還沒有可練習的填空題。</div>:practice.done?<div style={{textAlign:"center",padding:"18px 8px"}}><div style={{fontSize:42}}>🎉</div><div style={{fontSize:17,fontWeight:900,color:S.t1,marginTop:4}}>練習完成</div><div style={{fontSize:13,color:S.t2,marginTop:4}}>答對 {practice.score}/{practiceItems.length} 題</div><button onClick={resetPractice} style={{...S.btn,background:c.cl,color:"#fff",padding:"10px 18px",fontSize:13,marginTop:12}}>再練一次</button></div>:<><div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}><div style={{fontSize:12,fontWeight:900,color:c.cl}}>Question {practice.idx+1}/{practiceItems.length}</div><div style={{flex:1,height:6,background:S.bg2,borderRadius:999,overflow:"hidden"}}><div style={{height:"100%",width:`${((practice.idx+1)/practiceItems.length)*100}%`,background:c.cl}}/></div></div>
-        <div style={{padding:"14px",borderRadius:12,background:S.bg2,border:`1px solid ${S.bd}`,marginBottom:10}}><div style={{fontSize:16,fontWeight:900,color:S.t1,lineHeight:1.5}}>{currentPractice.blank}</div>{showZh&&<div style={{fontSize:12,color:S.t2,marginTop:5}}>{currentPractice.line.zh}</div>}</div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(120px,1fr))",gap:7}}>{currentPractice.options.map(opt=>{const picked=practice.pick===opt;const answered=!!practice.pick;const ok=opt===currentPractice.word;return <button key={opt} onClick={()=>choosePractice(opt)} disabled={answered} style={{border:`1px solid ${answered&&ok?c.cl:picked?"#D45757":S.bd}`,background:answered&&ok?c.bg:picked?"#FFF0F0":S.bg1,color:answered&&ok?c.cl:S.t1,borderRadius:10,padding:"10px 9px",fontSize:14,fontWeight:900,cursor:answered?"default":"pointer",fontFamily:"inherit"}}>{opt}</button>})}</div>
-        {practice.pick&&<div style={{marginTop:10,padding:"10px 12px",borderRadius:10,background:practice.pick===currentPractice.word?c.bg:"#FFF0F0",color:practice.pick===currentPractice.word?c.cl:"#B54848",fontSize:13,fontWeight:900}}>{practice.pick===currentPractice.word?"答對了！":"答錯了"} 正確答案：{currentPractice.word}</div>}
-        <div style={{display:"flex",gap:8,marginTop:10}}><button onClick={()=>seekLine(currentPractice.line,true)} style={{...S.btn,background:S.bg2,color:S.t1,flex:1,padding:"10px",fontSize:13}}>聽這一句</button><button onClick={nextPractice} disabled={!practice.pick} style={{...S.btn,background:c.cl,color:"#fff",flex:1,padding:"10px",fontSize:13,opacity:practice.pick?1:.5}}>{practice.idx>=practiceItems.length-1?"完成":"下一題"}</button></div></>}
-    </div>}
-    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(220px,1fr))",gap:10}}>
-      <div style={{...S.card,padding:"14px 16px",fontSize:12,color:S.t2,lineHeight:1.7}}><div style={{fontWeight:900,color:S.t1,marginBottom:7}}>重點句型</div><div style={{display:"grid",gap:7}}>{(song.patterns||[]).map(p=><div key={p.p} style={{padding:"10px",border:`1px solid ${S.bd}`,borderRadius:10,background:S.bg1}}><div style={{fontSize:13,fontWeight:900,color:c.cl}}>{p.p}</div><button onClick={()=>speak(p.ex)} style={{border:"none",background:"none",padding:0,marginTop:4,fontSize:13,fontWeight:800,color:S.t1,cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>{p.ex} 🔊</button>{showZh&&<div style={{fontSize:12,color:S.t2,marginTop:2}}>{p.zh}</div>}</div>)}</div></div>
-      <div style={{...S.card,padding:"14px 16px",fontSize:12,color:S.t2,lineHeight:1.7}}><div style={{fontWeight:900,color:S.t1,marginBottom:7}}>重點單字</div><div style={{display:"flex",flexWrap:"wrap",gap:6}}>{song.vocab.map(w=><button key={w} onClick={()=>speak(w)} style={{border:`1px solid ${S.bd}`,background:S.bg1,borderRadius:999,padding:"7px 10px",fontSize:12,color:c.cl,cursor:"pointer",fontWeight:800,fontFamily:"inherit"}}>{w} 🔊</button>)}</div></div>
-    </div>
-    </div>
-  </div>);
-}
+function SongsM(props){return <Suspense fallback={<ModuleLoading label="準備音樂小舞台..."/>}><SongsStudio key={props.lv} {...props} deps={{SONGS,LV,S,readingWords,shuffleCopy,scrollChildIntoPanel,speak,stopSpeech,Hdr}}/></Suspense>}
 // ═══ AI TUTOR ═══════════════════════════════════════════════════════
 function AIT({lv,onBack,apiKey,onOpenSettings}){
   const c=LV[lv];const RATES=[{l:"慢速",i:"🐢",v:0.6},{l:"正常",i:"🎯",v:0.85},{l:"快速",i:"🐇",v:1.15}];
@@ -4325,20 +3710,7 @@ Do not imitate copyrighted songs, books, or specific artists.`;
   </div>);
 }
 // ═══ ACHIEVEMENTS PAGE ══════════════════════════════════════════════
-function AchPage({onBack,unlocked,c}){
-  return(<div><Hdr t="🏆 成就徽章" onBack={onBack} cl={c.cl}/>
-    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(150px,1fr))",gap:10}}>
-      {ACH_DEFS.map(a=>{const ok=unlocked.includes(a.id);return(
-        <div key={a.id} style={{...S.card,padding:"18px 12px",textAlign:"center",opacity:ok?1:.4,transition:"all .2s"}}>
-          <div style={{fontSize:48,marginBottom:8,filter:ok?"none":"grayscale(1)",animation:ok?"emojiFloat 3s ease-in-out infinite":"none"}}>{a.icon}</div>
-          <div style={{fontWeight:600,fontSize:13,color:ok?S.t1:S.t3}}>{a.name}</div>
-          <div style={{fontSize:12,color:S.t2,marginTop:2}}>{a.desc}</div>
-          {ok&&<div style={{fontSize:11,color:c.cl,marginTop:4,fontWeight:600}}>已解鎖 ✓</div>}
-        </div>
-      )})}
-    </div>
-  </div>);
-}
+function AchPage(props){return <Suspense fallback={<ModuleLoading label="準備成就小花園..."/>}><AchievementGarden {...props} deps={{definitions:ACH_DEFS,Hdr,c:props.c}}/></Suspense>}
 // ═══ STORY READER (故事閱讀器 - 帶朗讀高亮) ═══════════════════════
 function StoryReader({story,pageIdx,setPageIdx,selectedPet,c,onNext,onExit}){
   const page=story.pages[pageIdx];
@@ -4981,154 +4353,13 @@ Return STRICT JSON only (no markdown, no explanations):
 }
 
 // ═══ WRONG ANSWER REVIEW (錯題本) ═══════════════════════════════════
-function WeakPage({onBack,weakWords,setWeakWords,c,lv}){
-  const sorted=[...weakWords].sort((a,b)=>b.n-a.n);
-  const[mode,setMode]=useState("list");// list, review
-  const[ri,setRi]=useState(0);const[flip,setFlip]=useState(false);
-  const[cloudData,setCloudData]=useState({});
-  // Try to fetch full word data for weak words
-  useEffect(()=>{let active=true;(async()=>{
-    const sb=await getSb();if(!sb)return;
-    const wanted=sorted.slice(0,20).map(w=>w.w).filter(w=>w&&!cloudData[w]);
-    if(!wanted.length)return;
-    try{
-      const{data}=await sb.from('word_bank').select(WORD_SELECT).eq('level',lv).in('word',wanted);
-      if(!active||!data?.length)return;
-      const next={};
-      data.forEach(row=>{next[row.word]={m:row.meaning,p:row.pos,ph:row.phonetic,ex:row.example,ez:row.example_zh}});
-      setCloudData(d=>({...d,...next}));
-    }catch{}
-  })();return()=>{active=false}},[weakWords]);
-
-  const removeWord=(w)=>{const key=String(w||"").trim().toLowerCase();setWeakWords(ws=>ws.filter(x=>{const same=String(x?.w||"").trim().toLowerCase()===key;const belongs=!x?.level||x.level===lv;return !(same&&belongs)}))};
-  const[confirmClear,setConfirmClear]=useState(false);
-  const clearAll=()=>{if(confirmClear){setWeakWords(ws=>ws.filter(x=>x?.level&&x.level!==lv));setConfirmClear(false)}else setConfirmClear(true)};
-
-  if(sorted.length===0)return(<div><Hdr t="🌱 再練一次" onBack={onBack} cl={c.cl}/><div style={{textAlign:"center",padding:"48px 16px"}}><div style={{fontSize:48,marginBottom:8}}>🎉</div><div style={{fontSize:16,fontWeight:600,color:S.t1}}>太棒了！{LV[lv]?.l||"這個年級"}沒有錯題</div><div style={{fontSize:13,color:S.t2,marginTop:4}}>不用急著挑戰，想學的時候再出發。</div></div></div>);
-
-  if(mode==="review"){
-    const w=sorted[ri];const info=cloudData[w?.w]||{};
-    if(!w)return(<div><Hdr t="📕 複習完成" onBack={()=>setMode("list")} cl={c.cl}/><div style={{textAlign:"center",padding:"32px"}}><div style={{fontSize:48}}>✅</div><div style={{fontSize:16,fontWeight:600,color:S.t1,marginTop:8}}>又和這些單字更熟悉了！</div></div></div>);
-    return(<div><Hdr t="🌱 單字再練一次" onBack={()=>setMode("list")} cl={c.cl}/>
-      <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:8,fontSize:12}}><div style={{flex:1,height:6,background:S.bg2,borderRadius:3}}><div style={{height:"100%",width:`${(ri/sorted.length)*100}%`,background:c.cl,borderRadius:3,transition:"width .3s"}}/></div><span style={{color:S.t3}}>{ri+1}/{sorted.length}</span></div>
-      <div onClick={()=>setFlip(!flip)} style={{...S.card,padding:"28px 20px",textAlign:"center",minHeight:200,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",cursor:"pointer",animation:"cardFlip .3s ease-out"}}>
-        {!flip?(<>
-          <div style={{fontSize:14,color:"#E24B4A",fontWeight:600,marginBottom:4}}>🌱 練習過 {w.n} 次</div>
-          <div style={{fontSize:36,fontWeight:700,color:S.t1}}>{w.w}</div>
-          {info.ph&&<div style={{fontSize:14,color:S.t3,marginTop:4}}>{info.ph}</div>}
-          <button onClick={e=>{e.stopPropagation();speak(w.w)}} style={{background:"none",border:"none",fontSize:28,cursor:"pointer",marginTop:8,padding:"4px"}}>🔊</button>
-          <div style={{fontSize:12,color:c.cl,marginTop:12,padding:"6px 16px",background:c.bg,borderRadius:16}}>👆 點擊看答案</div>
-        </>):(<>
-          <div style={{fontSize:28,fontWeight:700,color:c.cl}}>{w.w}</div>
-          <div style={{fontSize:22,fontWeight:600,color:S.t1,marginTop:4}}>{info.m||"（查詢中...）"}</div>
-          {info.p&&<div style={{fontSize:13,color:S.t3,marginTop:2}}>{info.p}</div>}
-          {info.ex&&<div style={{fontSize:14,color:S.t1,fontStyle:"italic",marginTop:10,padding:"8px 12px",background:S.bg2,borderRadius:8,width:"100%",textAlign:"left"}}>"{info.ex}"<button onClick={e=>{e.stopPropagation();speak(info.ex)}} style={{background:"none",border:"none",fontSize:22,cursor:"pointer",marginLeft:4,padding:"2px"}}>🔊</button>{info.ez&&<div style={{fontSize:12,color:S.t3,fontStyle:"normal",marginTop:2}}>{info.ez}</div>}</div>}
-        </>)}
-      </div>
-      <div style={{display:"flex",gap:8,justifyContent:"center",marginTop:10}}>
-        <button onClick={()=>{setRi(r=>r+1);setFlip(false)}} style={{...S.btn,background:c.cl,color:"#fff",padding:"10px 20px",fontSize:14,minHeight:44}}>{ri+1>=sorted.length?"✅ 完成":`▶ 下一個 (${ri+2}/${sorted.length})`}</button>
-        <button onClick={()=>{removeWord(w.w);setFlip(false)}} style={{...S.btn,background:"#E1F5EE",color:"#0F6E56",padding:"10px 16px",fontSize:13,minHeight:44}}>✓ 已記住</button>
-      </div>
-    </div>);
-  }
-
-  return(<div><Hdr t="🌱 再練一次" onBack={onBack} cl={c.cl} extra={<div style={{display:"flex",gap:4}}><button onClick={()=>{setRi(0);setFlip(false);setMode("review")}} style={{...S.btn,background:c.cl,color:"#fff",padding:"4px 12px",fontSize:12}}>📖 開始複習</button></div>}/>
-    <div style={{...S.card,padding:"12px 16px",marginBottom:10}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-        <div style={{fontSize:14,fontWeight:600,color:S.t1}}>{LV[lv]?.l||"目前年級"} · 共 {sorted.length} 個弱點單字</div>
-        <button onClick={clearAll} style={{background:confirmClear?"#E24B4A":"none",border:confirmClear?"none":`1px solid #E24B4A`,borderRadius:8,padding:"4px 10px",fontSize:12,color:confirmClear?"#fff":"#E24B4A",cursor:"pointer",transition:"all .2s"}}>{confirmClear?"⚠️ 確定清空？再點一次":"🗑️ 清空"}</button>
-      </div>
-    </div>
-    <div style={{display:"grid",gap:6}}>
-      {sorted.map((w,i)=>{const info=cloudData[w.w]||{};return(<div key={w.w} style={{...S.card,padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
-        <div style={{width:28,height:28,borderRadius:"50%",background:"#FCEBEB",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,color:"#E24B4A",flexShrink:0}}>{w.n}</div>
-        <div style={{flex:1}}>
-          <div style={{fontSize:16,fontWeight:700,color:S.t1}}>{w.w} <button onClick={()=>speak(w.w)} style={{background:"none",border:"none",fontSize:22,cursor:"pointer",padding:"2px"}}>🔊</button></div>
-          <div style={{fontSize:13,color:S.t2}}>{info.m||""}{info.p?` · ${info.p}`:""}</div>
-        </div>
-        <button onClick={()=>removeWord(w.w)} style={{background:"none",border:"none",fontSize:16,cursor:"pointer",padding:"4px",flexShrink:0}}>✅</button>
-      </div>)})}
-    </div>
-  </div>);
+async function fetchWeakWordDetails(lv,words){
+  const sb=await getSb();if(!sb||!words.length)return [];
+  try{const {data}=await sb.from('word_bank').select(WORD_SELECT).eq('level',lv).in('word',words.slice(0,50));return(data||[]).map(mapWord).filter(Boolean)}catch{return []}
 }
+function WeakPage(props){return <Suspense fallback={<ModuleLoading label="準備複習清單..."/>}><ReviewGarden key={props.lv} {...props} deps={{words:V[props.lv],loadExtraWords,fetchWeakWords:fetchWeakWordDetails,speak,stopSpeech,Hdr,c:LV[props.lv],levelName:LV[props.lv].l}}/></Suspense>}
 // ═══ DASHBOARD (學習報告) ═══════════════════════════════════════════
-function Dashboard({onBack,c,xp,streak,stats,daily,weakWords,history,achUnlocked,lv}){
-  const shareText=`🏆 我的 EnglishGo 學習成績！\n\n⭐ ${xp} XP · 🔥 連續 ${streak} 天\n📊 SRS ${stats.srsRounds} 輪完成\n💯 測驗滿分 ${stats.perfectQuiz} 次\n🏅 成就 ${achUnlocked.length} 個\n\n一起來學英文 👇\nhttps://englishgo-vevan.netlify.app`;
-  const shareToLine=()=>{shareLine(shareText,"https://englishgo-vevan.netlify.app")};
-  const shareCopy=()=>{navigator.clipboard?.writeText(shareText).then(()=>{const d=document.createElement("div");d.textContent="✅ 已複製！";d.style.cssText="position:fixed;top:20%;left:50%;transform:translateX(-50%);background:#1D9E75;color:#fff;padding:10px 24px;border-radius:20px;font-size:14px;font-weight:600;z-index:9999;animation:fadeUp .3s";document.body.appendChild(d);setTimeout(()=>d.remove(),1500)}).catch(()=>{})};
-
-  // Compute stats
-  const totalWords=stats.srsRounds*20;
-  const todayPct=Math.round((daily.done/daily.target)*100);
-  const level=xp<100?"🌱 新手":xp<300?"📗 學徒":xp<600?"📘 達人":xp<1000?"🎓 學霸":"👑 大師";
-  const weekData=Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()-6+i);const ds=d.toDateString();const h=history.find(x=>x.date===ds);return{day:["日","一","二","三","四","五","六"][d.getDay()],done:h?.done||0,today:ds===new Date().toDateString()}});
-  const maxDone=Math.max(...weekData.map(d=>d.done),1);
-
-  return(<div><Hdr t="📊 學習報告" onBack={onBack} cl={c.cl}/>
-    {/* Level & Share */}
-    <div style={{...S.card,padding:"20px",marginBottom:10,textAlign:"center"}}>
-      <div style={{fontSize:14,color:S.t3}}>你的等級</div>
-      <div style={{fontSize:28,fontWeight:700,color:S.t1,marginTop:4}}>{level}</div>
-      <div style={{fontSize:14,color:c.cl,fontWeight:600,marginTop:2}}>⭐ {xp} XP</div>
-      <div style={{display:"flex",gap:8,justifyContent:"center",marginTop:12}}>
-        <button onClick={shareToLine} style={{...S.btn,background:"#06C755",color:"#fff",padding:"8px 16px",fontSize:13,borderRadius:20,minHeight:40}}>📤 分享到 LINE</button>
-        <button onClick={shareCopy} style={{...S.btn,background:S.bg2,color:S.t1,padding:"8px 16px",fontSize:13,borderRadius:20,minHeight:40}}>📋 複製</button>
-      </div>
-    </div>
-
-    {/* Key Stats Grid */}
-    <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:8,marginBottom:10}}>
-      {[
-        {icon:"🔥",label:"連續天數",value:streak,sub:"天"},
-        {icon:"🃏",label:"SRS 總輪數",value:stats.srsRounds,sub:"輪"},
-        {icon:"💯",label:"測驗滿分",value:stats.perfectQuiz,sub:"次"},
-        {icon:"🎧",label:"聽寫完成",value:stats.dictDone,sub:"次"},
-        {icon:"🧩",label:"重組完成",value:stats.scramDone,sub:"次"},
-        {icon:"📕",label:"弱點單字",value:weakWords.length,sub:"字"},
-        {icon:"🏅",label:"成就解鎖",value:`${achUnlocked.length}/${ACH_DEFS.length}`,sub:""},
-        {icon:"📊",label:"今日進度",value:`${todayPct}%`,sub:""},
-      ].map((s,i)=>(<div key={i} style={{...S.card,padding:"14px 12px",textAlign:"center"}}>
-        <div style={{fontSize:22}}>{s.icon}</div>
-        <div style={{fontSize:20,fontWeight:700,color:S.t1,marginTop:2}}>{s.value}{s.sub&&<span style={{fontSize:12,fontWeight:400,color:S.t3}}> {s.sub}</span>}</div>
-        <div style={{fontSize:11,color:S.t2,marginTop:1}}>{s.label}</div>
-      </div>))}
-    </div>
-
-    {/* Weekly Activity Chart */}
-    <div style={{...S.card,padding:"16px",marginBottom:10}}>
-      <div style={{fontSize:14,fontWeight:600,color:S.t1,marginBottom:10}}>📅 本週學習紀錄</div>
-      <div style={{display:"flex",alignItems:"flex-end",gap:6,height:100}}>
-        {weekData.map((d,i)=>(<div key={i} style={{flex:1,textAlign:"center"}}>
-          <div style={{height:70,display:"flex",flexDirection:"column",justifyContent:"flex-end"}}>
-            <div style={{fontSize:10,color:d.done>0?c.cl:S.t3,fontWeight:600,marginBottom:2}}>{d.done||""}</div>
-            <div style={{height:`${Math.max((d.done/maxDone)*60,d.done>0?8:2)}px`,background:d.today?`linear-gradient(180deg,${c.cl},${c.ac})`:d.done>0?c.bg:S.bg2,borderRadius:4,transition:"height .3s",minHeight:2}}/>
-          </div>
-          <div style={{fontSize:11,color:d.today?c.cl:S.t3,fontWeight:d.today?700:400,marginTop:4}}>{d.day}</div>
-        </div>))}
-      </div>
-    </div>
-
-    {/* Weak Words Top 5 */}
-    {weakWords.length>0&&<div style={{...S.card,padding:"16px",marginBottom:10}}>
-      <div style={{fontSize:14,fontWeight:600,color:S.t1,marginBottom:8}}>🌱 值得再練一次的字</div>
-      {[...weakWords].sort((a,b)=>b.n-a.n).slice(0,5).map((w,i)=>(<div key={w.w} style={{display:"flex",alignItems:"center",gap:10,padding:"6px 0",borderBottom:i<4?`1px solid ${S.bd}`:"none"}}>
-        <div style={{fontSize:14,fontWeight:700,color:"#E24B4A",width:24,textAlign:"center"}}>{w.n}</div>
-        <div style={{flex:1,fontSize:14,fontWeight:600,color:S.t1}}>{w.w}</div>
-        <div style={{width:`${Math.min((w.n/Math.max(...weakWords.map(x=>x.n),1))*80,80)}px`,height:8,background:"linear-gradient(90deg,#E24B4A,#EF9F27)",borderRadius:4}}/>
-      </div>))}
-    </div>}
-
-    {/* Encouragement */}
-    <div style={{...S.card,padding:"16px",textAlign:"center",marginBottom:10}}>
-      <div style={{fontSize:14,color:S.t2,lineHeight:1.8}}>
-        {streak>=7?"🔥 連續 "+streak+" 天學習，你太厲害了！":
-         streak>=3?"💪 已經連續 "+streak+" 天，繼續保持！":
-         xp>=100?"⭐ 累積了 "+xp+" XP，進步很快！":
-         "🌱 每天 10 分鐘，英文就能慢慢進步！"}
-      </div>
-    </div>
-  </div>);
-}
+function Dashboard(props){return <Suspense fallback={<ModuleLoading label="整理學習足跡..."/>}><ProgressJournal key={props.lv} {...props} deps={{definitions:ACH_DEFS,Hdr,c:props.c,levelName:LV[props.lv].l,shareLine}}/></Suspense>}
 // ═══ GACHA CEREMONY (扭蛋抽卡儀式 - P0-3 視覺優化) ═════════════════
 // 三段式戲劇化動畫（總共 1.8 秒）：
 //   0.0s ─ 蛋從上方落下（彈性）
@@ -5142,7 +4373,7 @@ function PixelPet(props){return <Suspense fallback={<PixelPetFallback size={prop
 const LazyPetAdventurePage=lazy(()=>import("./features/PetsModule.jsx").then(m=>({default:m.PetAdventurePage})));
 const LazyGachaPage=lazy(()=>import("./features/PetsModule.jsx").then(m=>({default:m.GachaPage})));
 const LazyPetsGuard=lazy(()=>import("./features/PetsModule.jsx").then(m=>({default:m.PetsGuard})));
-function getPetsModuleDeps(){return {ACTION_PROMPTS:ACTION_PROMPTS,BOND_MILESTONES:BOND_MILESTONES,DAILY_TASK_DEFS:DAILY_TASK_DEFS,DUPLICATE_EGG_PROGRESS:DUPLICATE_EGG_PROGRESS,DUPLICATE_PET_REWARD:DUPLICATE_PET_REWARD,EGG_COST:EGG_COST,EGG_HATCH_TASKS:EGG_HATCH_TASKS,GACHA_SR_PITY:GACHA_SR_PITY,Hdr:Hdr,MAX_STAT:MAX_STAT,PETS:PETS,PET_ACTIONS:PET_ACTIONS,PET_ADVENTURE_BOSS_REQUIRED_CLEARS:PET_ADVENTURE_BOSS_REQUIRED_CLEARS,PET_ADVENTURE_ENEMY_ICONS:PET_ADVENTURE_ENEMY_ICONS,PET_ADVENTURE_SKILLS:PET_ADVENTURE_SKILLS,PET_ADVENTURE_SKILL_UNLOCKS:PET_ADVENTURE_SKILL_UNLOCKS,PET_ADVENTURE_SKILL_VISUALS:PET_ADVENTURE_SKILL_VISUALS,PET_CULTIVATION_ACTIONS:PET_CULTIVATION_ACTIONS,PET_EVENTS:PET_EVENTS,PET_FOODS:PET_FOODS,RARITY_INFO:RARITY_INFO,RARITY_ORDER:RARITY_ORDER,S:S,STAGE_NAMES:STAGE_NAMES,STAGE_SAYINGS:STAGE_SAYINGS,TIME_GREETINGS:TIME_GREETINGS,applyDuplicatePetReward:applyDuplicatePetReward,buildPetAdventureStages:buildPetAdventureStages,calcDecay:calcDecay,choosePetFoodForNeed:choosePetFoodForNeed,completePetAdventureProgress:completePetAdventureProgress,createPetAdventureBgm:createPetAdventureBgm,getAdventureAnswerLine:getAdventureAnswerLine,getAdventureCorrectSpeech:getAdventureCorrectSpeech,getAdventurePetDef:getAdventurePetDef,getAdventureQuestionMeta:getAdventureQuestionMeta,getAdventureQuestionSpeech:getAdventureQuestionSpeech,getBondLevel:getBondLevel,getCareCount:getCareCount,getDuplicateEnergyInfo:getDuplicateEnergyInfo,getDuplicatePetReward:getDuplicatePetReward,getEventCenter:getEventCenter,getNextPetAdventureSkillCard:getNextPetAdventureSkillCard,getPetAdventureDifficulty:getPetAdventureDifficulty,getPetAdventureFatigue:getPetAdventureFatigue,getPetAdventurePower:getPetAdventurePower,getPetAdventureProgress:getPetAdventureProgress,getPetAdventureScore:getPetAdventureScore,getPetAdventureSkill:getPetAdventureSkill,getPetAdventureSkillCards:getPetAdventureSkillCards,getPetCareAverage:getPetCareAverage,getPetCareSuggestion:getPetCareSuggestion,getPetCultivationPlan:getPetCultivationPlan,getPetDailyCultivation:getPetDailyCultivation,getPetMood:getPetMood,getPetReadiness:getPetReadiness,getPetSize:getPetSize,getPetStage:getPetStage,getPetUrgentNeed:getPetUrgentNeed,getSelectedPetAdventureSkill:getSelectedPetAdventureSkill,getTeamAdventureMorale:getTeamAdventureMorale,getTimeOfDay:getTimeOfDay,hashPin:hashPin,improvePetAfterAdventure:improvePetAfterAdventure,isPetAdventureBossReady:isPetAdventureBossReady,isPetSleeping:isPetSleeping,levelUpPet:levelUpPet,loadPetAdventureQuestions:loadPetAdventureQuestions,petCloudLogin:petCloudLogin,petCloudSignup:petCloudSignup,playPetAdventureSkillSound:playPetAdventureSkillSound,playSound:playSound,randomPet:randomPet,rollRarity:rollRarity,savePetAdventureProgress:savePetAdventureProgress,speak:speak,triggerRewardBurst:triggerRewardBurst,useLS:useLS}}
+function getPetsModuleDeps(){return {ACTION_PROMPTS:ACTION_PROMPTS,BOND_MILESTONES:BOND_MILESTONES,DAILY_TASK_DEFS:DAILY_TASK_DEFS,DUPLICATE_EGG_PROGRESS:DUPLICATE_EGG_PROGRESS,DUPLICATE_PET_REWARD:DUPLICATE_PET_REWARD,EGG_COST:EGG_COST,EGG_HATCH_TASKS:EGG_HATCH_TASKS,GACHA_SR_PITY:GACHA_SR_PITY,Hdr:Hdr,MAX_STAT:MAX_STAT,PETS:PETS,PET_ACTIONS:PET_ACTIONS,PET_ADVENTURE_BOSS_REQUIRED_CLEARS:PET_ADVENTURE_BOSS_REQUIRED_CLEARS,PET_ADVENTURE_ENEMY_ICONS:PET_ADVENTURE_ENEMY_ICONS,PET_ADVENTURE_SKILLS:PET_ADVENTURE_SKILLS,PET_ADVENTURE_SKILL_UNLOCKS:PET_ADVENTURE_SKILL_UNLOCKS,PET_ADVENTURE_SKILL_VISUALS:PET_ADVENTURE_SKILL_VISUALS,PET_CULTIVATION_ACTIONS:PET_CULTIVATION_ACTIONS,PET_EVENTS:PET_EVENTS,PET_FOODS:PET_FOODS,RARITY_INFO:RARITY_INFO,RARITY_ORDER:RARITY_ORDER,S:S,STAGE_NAMES:STAGE_NAMES,STAGE_SAYINGS:STAGE_SAYINGS,TIME_GREETINGS:TIME_GREETINGS,applyDuplicatePetReward:applyDuplicatePetReward,buildPetAdventureStages:buildPetAdventureStages,calcDecay:calcDecay,choosePetFoodForNeed:choosePetFoodForNeed,completePetAdventureProgress:completePetAdventureProgress,createPetAdventureBgm:createPetAdventureBgm,getAdventureAnswerLine:getAdventureAnswerLine,getAdventureCorrectSpeech:getAdventureCorrectSpeech,getAdventurePetDef:getAdventurePetDef,getAdventureQuestionMeta:getAdventureQuestionMeta,getAdventureQuestionSpeech:getAdventureQuestionSpeech,getBondLevel:getBondLevel,getCareCount:getCareCount,getDuplicateEnergyInfo:getDuplicateEnergyInfo,getDuplicatePetReward:getDuplicatePetReward,getEventCenter:getEventCenter,getNextPetAdventureSkillCard:getNextPetAdventureSkillCard,getPetAdventureDifficulty:getPetAdventureDifficulty,getPetAdventureFatigue:getPetAdventureFatigue,getPetAdventurePower:getPetAdventurePower,getPetAdventureProgress:getPetAdventureProgress,getPetAdventureScore:getPetAdventureScore,getPetAdventureSkill:getPetAdventureSkill,getPetAdventureSkillCards:getPetAdventureSkillCards,getPetCareAverage:getPetCareAverage,getPetCareSuggestion:getPetCareSuggestion,getPetCultivationPlan:getPetCultivationPlan,getPetDailyCultivation:getPetDailyCultivation,getPetMood:getPetMood,getPetReadiness:getPetReadiness,getPetSize:getPetSize,getPetStage:getPetStage,getPetUrgentNeed:getPetUrgentNeed,getSelectedPetAdventureSkill:getSelectedPetAdventureSkill,getTeamAdventureMorale:getTeamAdventureMorale,getTimeOfDay:getTimeOfDay,hashPin:hashPin,improvePetAfterAdventure:improvePetAfterAdventure,isPetAdventureBossReady:isPetAdventureBossReady,isPetSleeping:isPetSleeping,levelUpPet:levelUpPet,loadPetAdventureQuestions:loadPetAdventureQuestions,petCloudLogin:petCloudLogin,petCloudSignup:petCloudSignup,playPetAdventureSkillSound:playPetAdventureSkillSound,playSound:playSound,randomPet:randomPet,rollRarity:rollRarity,savePetAdventureProgress:savePetAdventureProgress,speak:speak,triggerRewardBurst:triggerRewardBurst,stopSpeech:stopSpeech,useLS:useLS}}
 function PetFeatureFallback(){return <div style={{textAlign:"center",padding:"48px 16px",color:S.t3}}>Loading pets...</div>}
 function PetAdventurePage(props){return <Suspense fallback={<PetFeatureFallback/>}><LazyPetAdventurePage {...props} deps={getPetsModuleDeps()}/></Suspense>}
 function GachaPage(props){return <Suspense fallback={<PetFeatureFallback/>}><LazyGachaPage {...props} deps={getPetsModuleDeps()}/></Suspense>}

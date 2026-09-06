@@ -323,7 +323,12 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
     return()=>window.clearTimeout(timer);
   },[studyActive,cur?.w,spokenExample,deck.queue,loading,cards]);
   useEffect(()=>{if(studyActive&&cur&&!flip&&!loading)speak(cur.w)},[studyActive,cur?.w,flip,loading]);
-  const rateGuardRef=useRef(0);
+  const rateGuardRef=useRef(0), reactionTimers=useRef({});
+  const scheduleReaction=useCallback((name,callback,delay)=>{
+    clearTimeout(reactionTimers.current[name]);
+    reactionTimers.current[name]=setTimeout(()=>{delete reactionTimers.current[name];callback()},delay);
+  },[]);
+  useEffect(()=>()=>{Object.values(reactionTimers.current).forEach(timer=>clearTimeout(timer));reactionTimers.current={}},[]);
   const rate=useCallback(a=>{
     if(!flip||!cur||Date.now()-rateGuardRef.current<180)return;
     rateGuardRef.current=Date.now();
@@ -334,7 +339,7 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
       const nextCombo=combo+1;
       setCombo(nextCombo);setMaxCombo(previous=>Math.max(previous,nextCombo));
       if(nextCombo>=3){
-        playSound("combo");setComboAnim(true);setTimeout(()=>setComboAnim(false),600);
+        playSound("combo");setComboAnim(true);scheduleReaction("combo",()=>setComboAnim(false),600);
         if(typeof triggerRewardBurst==="function"){
           triggerRewardBurst({text:nextCombo+" 次記住了！",fromX:window.innerWidth/2,fromY:"35%",textColor:"#527a45",textSize:28,duration:1000});
           if(nextCombo%5===0)triggerRewardBurst({emoji:"⭐",count:5,fromX:window.innerWidth/2,fromY:window.innerHeight*0.4,size:22,duration:1000});
@@ -343,13 +348,13 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
     }else if(a==="again"){
       setCombo(0);setMascotMood("think");playSound("flip");
     }else{setMascotMood("think");playSound("flip")}
-    setTimeout(()=>setMascotMood("idle"),1500);
+    scheduleReaction("mascot",()=>setMascotMood("idle"),1500);
     setDeck(previous=>rateDeck(previous,a));setFlip(false);setFlipAnim(false);
   },[onXp,cur,trackWeak,flip,combo]);
   useEffect(()=>{const h=e=>{if(!studyActive||done||e.repeat||e.altKey||e.ctrlKey||e.metaKey||e.target?.closest?.("input,textarea,select,button,a,summary,[contenteditable=true],[role=dialog]"))return;if(e.code==="Space"){e.preventDefault();if(!flip){setFlip(true);setFlipAnim(true);playSound("flip");if(spokenExample)speechTimer(()=>speak(spokenExample),350)}else{setFlip(false);setFlipAnim(false)}}if(flip){if(e.key==="1")rate("again");if(e.key==="2")rate("hard");if(e.key==="3")rate("good");if(e.key==="4")rate("easy")}if(e.key==="Enter"){e.preventDefault();if(cur)speak(flip?(spokenExample||cur.w):cur.w)}};window.addEventListener("keydown",h);return()=>window.removeEventListener("keydown",h)},[studyActive,flip,done,cur,rate,spokenExample]);
   const handleCardTap=()=>{if(!flip){setFlip(true);setFlipAnim(true);playSound("flip");if(spokenExample)speechTimer(()=>speak(spokenExample),350)}};
   const handleCSV=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{const p=parseCSV(ev.target.result);if(p.length){setCards(p);setDeck(createDeck(p));setFlip(false)}};r.readAsText(f,"utf-8")};
-  useEffect(()=>{if(studyActive&&done&&!loading&&!completedRef.current){completedRef.current=true;onDone();playSound("done");setShowConfetti(true);setTimeout(()=>setShowConfetti(false),3500)}},[studyActive,done,loading]);
+  useEffect(()=>{if(studyActive&&done&&!loading&&!completedRef.current){completedRef.current=true;onDone();playSound("done");setShowConfetti(true);scheduleReaction("confetti",()=>setShowConfetti(false),3500)}},[studyActive,done,loading]);
   const restartRound=async()=>{setLoading(true);completedRef.current=false;setShowConfetti(false);setCombo(0);setMaxCombo(0);if(selectedTopicMeta){const matches=filterCardsByTopic(levelPools[lv]||[],selectedTopicMeta.id);const picked=selectVocabularyTopicRound(matches,{weakWords,previousWords:cards});const next=sortCardsForStudy(picked,weakWords,sharedWord);setCards(next);setDeck(createDeck(next));setFlip(false);setLoading(false);return}if(Array.isArray(customCards)&&customCards.length){const next=sortCardsForStudy(customCards,weakWords,sharedWord);setCards(next);setDeck(createDeck(next));setFlip(false);setSrc(customSource||`考試範圍 (${next.length}字)`);setLoading(false);return}const cloud=await fetchCloudVocab(lv,20);const next=sortCardsForStudy(cloud?.length?cloud:cards,weakWords,sharedWord);setCards(next);setDeck(createDeck(next));setFlip(false);setLoading(false)};
   if(loading)return(<div><Hdr t="🃏 單字小花園" onBack={onBack} cl={c.cl}/><div style={{textAlign:"center",padding:"48px 16px",color:S.t3,fontSize:14}}><div style={{fontSize:40,animation:"emojiBounce 1s infinite"}}>📚</div><div style={{marginTop:8}}>正在準備{c.l}主題字庫...</div><div style={{width:120,height:4,background:S.bg2,borderRadius:2,margin:"12px auto",overflow:"hidden"}}><div style={{width:"60%",height:"100%",background:`linear-gradient(90deg,${c.cl},${c.ac})`,borderRadius:2,animation:"pulse 1s infinite"}}/></div></div></div>);
   if(!studyActive)return <VocabularyTopicPicker lv={lv} levelPools={levelPools} poolSources={poolSources} weakWords={weakWords} onBack={onBack} onStart={startTopic} LV={LV} S={S} Hdr={Hdr}/>;

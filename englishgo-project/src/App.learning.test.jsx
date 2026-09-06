@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import App from './App.jsx';
 
 async function openHome({gift=false}={}){
@@ -17,6 +17,21 @@ function openReading(){
 }
 
 describe('child friendly learning journey',()=>{
+  it('clears card reaction timers when leaving the module',async()=>{
+    const view=await openHome();
+    fireEvent.click(screen.getByRole('button',{name:'開始 5 張單字小任務'}));
+    await screen.findByTestId('srs-card');
+    const timerSpy=vi.spyOn(globalThis,'setTimeout'),clearSpy=vi.spyOn(globalThis,'clearTimeout');
+    try{
+      fireEvent.click(screen.getByRole('button',{name:'點卡片看答案'}));
+      fireEvent.click(screen.getByRole('button',{name:/記住了/}));
+      const index=timerSpy.mock.calls.findIndex(([,delay])=>delay===1500);
+      expect(index).toBeGreaterThanOrEqual(0);
+      const handle=timerSpy.mock.results[index].value;
+      view.unmount();
+      expect(clearSpy).toHaveBeenCalledWith(handle);
+    }finally{view.unmount();timerSpy.mockRestore();clearSpy.mockRestore()}
+  });
   it('starts a short mission directly and only records progress after a response',async()=>{
     await openHome();
     fireEvent.click(screen.getByRole('button',{name:'開始 5 張單字小任務'}));

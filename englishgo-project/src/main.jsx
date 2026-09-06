@@ -4,6 +4,10 @@ import App from './App.jsx';
 import './ui-polish.css';
 import './learning-experience.css';
 import './arcade.css';
+import './pet-world.css';
+import './practice-world.css';
+import './learning-workshops.css';
+import './study-planning.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

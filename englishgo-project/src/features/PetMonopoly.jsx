@@ -1,6 +1,7 @@
+import { recordPetMoment } from "../data/petJourney.js";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 
-const LazyPixelPet=lazy(()=>import("../components/PixelPet.jsx"));
+const LazyPixelPet=lazy(()=>import("../components/PetCompanion.jsx"));
 function PixelPetFallback({size=180}){return <span style={{display:"inline-block",width:size,height:size,borderRadius:12,background:"linear-gradient(135deg,var(--color-background-secondary,#f3f2ee),var(--color-background-primary,#fff))"}}/>}
 function PixelPet(props){return <Suspense fallback={<PixelPetFallback size={props.size}/>}> <LazyPixelPet {...props}/> </Suspense>}
 
@@ -344,7 +345,7 @@ function growPetFromMonopoly(pet,reward){
   let next={
     ...pet,
     exp:Math.max(0,Number(pet.exp)||0)+(reward.petExp||0),
-    bond:Math.min(100,Math.max(0,Number(pet.bond)||0)+(reward.bond||0)),
+    bond:Math.max(0,Number(pet.bond)||0)+(reward.bond||0),
     energy:Math.max(0,Math.min(100,Number(pet.energy??80)-2)),
     hunger:Math.max(0,Math.min(100,Number(pet.hunger??80)-1)),
     lastUpdate:new Date().toISOString(),
@@ -354,7 +355,7 @@ function growPetFromMonopoly(pet,reward){
     if(leveled===next)break;
     next=leveled;
   }
-  return next;
+  return recordPetMoment(next,"monopoly");
 }
 function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
   const color=c?.cl||"#0F6E56";
@@ -1104,6 +1105,7 @@ function PetMonopolyM({lv,onBack,onXp,c,pets=[],setPets,coins=0,setCoins}){
           </div>
           <button type="button" className="pm-start" data-testid="pet-monopoly-start" disabled={walletCoins<stake} onClick={startGame}>開始對局</button>
         </div>
+        <div className="pet-board-guide"><span>🗺️</span><div><b>你的第一趟學習島旅行</b><p>擲骰前可用一張工具卡 → 答英文題 → 決定買地或保留金幣。保留一些金幣，可以支付下一次路過的租金。</p><p>帶寵物答題可留下每日陪伴印記，親密度會持續累積。</p></div></div>
         <div className="pm-setup-grid">
           <div className="pm-setup-panel">
             <div className="pm-section-title">電腦玩家</div>

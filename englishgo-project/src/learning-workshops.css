@@ -1,0 +1,68 @@
+.workshop-topic-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 16px; margin: 26px 0; }
+.practice-world .workshop-topic { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; text-align: left; padding: 24px; border-radius: 20px; box-shadow: var(--garden-shadow); }
+.workshop-topic b { font-size: 21px; color: var(--garden-ink); }
+.workshop-topic>span:last-child { font-size: 13px; color: var(--garden-muted); }
+.workshop-stepper { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; margin: 24px 0; }
+.workshop-stepper button[aria-current=step] { background: var(--garden-green); color: var(--garden-white); font-weight: 750; }
+.workshop-lesson { text-align: left; }
+.workshop-lesson h2 { margin: 8px 0 24px; }
+.workshop-pattern,.workshop-takeaway { padding: 24px; border-radius: 18px; background: var(--garden-green-soft); color: var(--garden-green); font-size: clamp(20px,3vw,27px); font-weight: 750; line-height: 1.7; overflow-wrap: anywhere; margin: 20px 0; }
+.workshop-tips { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 28px; }
+.workshop-tips>span { background: var(--garden-paper); border: 1px solid var(--garden-line); border-radius: 10px; padding: 8px 12px; font-size: 14px; }
+.workshop-examples { display: grid; gap: 14px; }
+.workshop-examples>div { background: var(--garden-paper); border: 1px solid var(--garden-line); border-radius: 16px; padding: 14px 18px; }
+.workshop-examples button { display: flex; justify-content: space-between; gap: 16px; align-items: center; width: 100%; text-align: left; padding: 8px 0; background: transparent; border: 0; border-radius: 0; color: var(--garden-ink); font-size: 21px; }
+.workshop-examples button span:last-child { color: var(--garden-green); }
+.workshop-examples p { margin: 6px 0; font-size: 15px; }
+.workshop-drill { padding: 24px 0; border-bottom: 1px solid var(--garden-line); margin-bottom: 24px; }
+.workshop-drill h4 { margin: 0; font-size: 23px; line-height: 1.7; overflow-wrap: anywhere; }
+.workshop-drill .practice-answer-options { margin-top: 16px; }
+.workshop-extra { border-top: 1px solid var(--garden-line); margin-top: 36px; padding-top: 16px; text-align: left; }
+.workshop-extra summary,.workshop-coach summary { cursor: pointer; min-height: 46px; padding: 10px 0; color: var(--garden-green); font-weight: 650; }
+.workshop-extra a { display: block; padding: 14px 0; color: var(--garden-green); font-size: 14px; }
+.workshop-option-note { display: block; margin-top: 4px; color: var(--garden-muted); font-size: 13px; }
+.workshop-spoken-target { font-size: clamp(30px,4vw,44px); line-height: 1.6; color: var(--garden-green); font-weight: 750; margin: 16px 0 24px; overflow-wrap: anywhere; }
+.speaking-studio .workshop-tips { justify-content: center; }
+.workshop-microphone { border-radius: 18px; padding: 22px; border: 2px solid var(--garden-green); background: var(--garden-green-soft); margin: 22px 0; }
+.workshop-microphone b::before { content: '●'; display: inline-block; margin-right: 10px; color: var(--garden-green); animation: workshop-pulse 1.2s ease-in-out 6; }
+.workshop-microphone p { margin: 12px 0 0; }
+.workshop-coach { text-align: left; margin-top: 32px; border-radius: 18px; border: 1px solid var(--garden-line); padding: 22px; }
+.workshop-coach-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px; }
+.workshop-coach-grid>div { padding: 16px; border-radius: 12px; background: var(--garden-paper); min-width: 0; overflow-wrap: anywhere; }
+.workshop-coach-grid p { margin-bottom: 0; }
+.workshop-coach ol { padding-left: 24px; }
+.workshop-coach li { padding: 6px 0; color: var(--garden-muted); }
+.songs-studio { overflow-wrap: anywhere; }
+.songs-studio .song-player { border-radius: 24px !important; padding: 26px !important; box-shadow: var(--garden-shadow); }
+.song-art { width: 170px; flex: 0 0 auto; overflow: hidden; border-radius: 18px; }
+.song-art .practice-art { min-height: 0; height: 112px; }
+.song-seek { display: block; width: 100%; min-height: 44px; margin: 0; accent-color: var(--garden-green); cursor: pointer; }
+.song-view-tabs { flex-wrap: wrap; gap: 10px !important; margin: 24px 0 16px !important; }
+.song-view-tabs>button { flex: 1 1 90px; padding: 13px 12px !important; font-size: 15px !important; }
+.songs-studio .song-panel { background: var(--garden-white) !important; border-radius: 20px !important; }
+.song-sing-along { padding: 28px 24px; }
+.song-sing-along h3 { font-size: 25px; margin: 10px 0; }
+.song-mini-goal { display: flex; gap: 14px; align-items: center; font-size: 13px; color: var(--garden-green); }
+.song-mini-goal progress { flex: 1; min-width: 0; height: 10px; accent-color: var(--garden-green); }
+.song-sing-target { background: var(--garden-paper); border: 1px solid var(--garden-line); border-radius: 18px; padding: 24px; text-align: center; margin: 18px 0 24px; }
+.song-sing-target p[lang=en] { color: var(--garden-green); font-size: clamp(24px,3vw,32px); font-weight: 750; line-height: 1.6; }
+.song-sing-target p:last-child { margin-bottom: 0; }
+@keyframes workshop-pulse { 50% { opacity: .35; } }
+html[data-eg-theme=dark] .workshop-stepper button[aria-current=step] { color: #152c25; }
+@media(max-width:800px) { .workshop-topic-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+@media(max-width:620px) {
+  .workshop-topic-grid { grid-template-columns: 1fr; gap: 12px; }
+  .practice-world .workshop-topic { padding: 20px; }
+  .workshop-stepper { gap: 6px; }
+  .workshop-stepper button { padding: 10px 4px; font-size: 12px; }
+  .workshop-pattern,.workshop-takeaway { padding: 18px 14px; }
+  .workshop-examples>div { padding: 12px; }
+  .workshop-examples button { font-size: 19px; }
+  .workshop-coach { padding: 18px 12px; }
+  .workshop-coach-grid { grid-template-columns: 1fr; gap: 10px; }
+  .songs-studio .song-player { padding: 18px 12px !important; }
+  .song-sing-along { padding: 22px 12px; }
+  .song-sing-target { padding: 20px 14px; }
+  .song-view-tabs>button { font-size: 13px !important; padding: 12px 8px !important; }
+}
+.grammar-workshop,.speaking-studio { scroll-margin-top: 130px; }

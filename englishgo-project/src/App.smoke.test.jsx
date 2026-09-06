@@ -402,6 +402,7 @@ describe('EnglishGo app smoke flow', () => {
     fireEvent.click(screen.getByText('Be 動詞').closest('button'));
 
     expect(await screen.findByText('例句庫')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '看懂了，練練看 →' }));
     expect(screen.getByText('加強練習')).toBeInTheDocument();
     fireEvent.click(screen.getByTestId('grammar-drill-0-option-2'));
     expect(await screen.findByText(/My friends 是複數，所以用 are。/)).toBeInTheDocument();
@@ -431,7 +432,8 @@ describe('EnglishGo app smoke flow', () => {
     });
 
     try {
-      fireEvent.click(screen.getByText('AI 講解'));
+      fireEvent.click(screen.getByText('需要多一點說明？'));
+      fireEvent.click(screen.getByRole('button', { name: 'AI 講解' }));
 
       expect(await screen.findByText('be 動詞像句子的連接橋。')).toBeInTheDocument();
       expect(screen.getByText('She ___ happy today.')).toBeInTheDocument();
@@ -543,10 +545,11 @@ describe('EnglishGo app smoke flow', () => {
     fireEvent.click(document.querySelector('[data-group-id="tools"]'));
     fireEvent.click(document.querySelector('[data-module-id="weak"]'));
 
-    expect(await screen.findByText('小學 · 共 1 個弱點單字')).toBeInTheDocument();
+    expect(await screen.findByText('小學 · 共 1 個正在練習的單字')).toBeInTheDocument();
     expect(screen.getByText('apple')).toBeInTheDocument();
     expect(screen.queryByText('station')).not.toBeInTheDocument();
 
+    fireEvent.click(screen.getByText('管理這個年級的複習清單'));
     fireEvent.click(screen.getByRole('button', { name: '🗑️ 清空' }));
     fireEvent.click(screen.getByRole('button', { name: /確定清空/ }));
 
@@ -586,11 +589,12 @@ describe('EnglishGo app smoke flow', () => {
       expect(speakCard).toBeTruthy();
       fireEvent.click(speakCard);
 
+      fireEvent.click(await screen.findByRole('button', { name: '開始口說小練習 →' }));
       expect(await screen.findByText('蘋果')).toBeInTheDocument();
       fireEvent.click(screen.getByText('🎤 直接開說'));
 
       expect(await screen.findByText('通過')).toBeInTheDocument();
-      expect(screen.getByText(/準確度/)).toHaveTextContent('100%');
+      expect(screen.getByText(/文字符合度/)).toHaveTextContent('100%');
     } finally {
       window.SpeechRecognition = OriginalSpeechRecognition;
       window.webkitSpeechRecognition = OriginalWebkitSpeechRecognition;
@@ -625,6 +629,7 @@ describe('EnglishGo app smoke flow', () => {
       expect(screen.getByText('先聽一次，再按麥克風跟讀。')).toBeInTheDocument();
 
       fireEvent.click(screen.getByRole('button', { name: '句子練習' }));
+      fireEvent.click(await screen.findByRole('button', { name: '開始口說小練習 →' }));
 
       expect(await screen.findByText('I like to eat apples.')).toBeInTheDocument();
       expect(screen.getByText('看中文，唸出完整英文句子')).toBeInTheDocument();
@@ -646,6 +651,7 @@ describe('EnglishGo app smoke flow', () => {
       expect(speakCard).toBeTruthy();
       fireEvent.click(speakCard);
 
+      fireEvent.click(await screen.findByRole('button', { name: '開始口說小練習 →' }));
       expect(await screen.findByText('發音小老師')).toBeInTheDocument();
       expect(screen.getByText('音節')).toBeInTheDocument();
       expect(screen.getByText('重音')).toBeInTheDocument();
@@ -669,6 +675,7 @@ describe('EnglishGo app smoke flow', () => {
       expect(speakCard).toBeTruthy();
       fireEvent.click(speakCard);
 
+      fireEvent.click(await screen.findByRole('button', { name: '開始口說小練習 →' }));
       expect(await screen.findByText('發音小老師')).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'AI 產生練習法' })).not.toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'AI 分析這次發音' })).not.toBeInTheDocument();
@@ -689,6 +696,7 @@ describe('EnglishGo app smoke flow', () => {
       expect(speakCard).toBeTruthy();
       fireEvent.click(speakCard);
       fireEvent.click(await screen.findByRole('button', { name: '句子練習' }));
+      fireEvent.click(await screen.findByRole('button', { name: '開始口說小練習 →' }));
 
       expect(await screen.findByText('I like to eat apples.')).toBeInTheDocument();
       expect(screen.queryByText(/重點單字：/)).not.toBeInTheDocument();
@@ -733,6 +741,7 @@ describe('EnglishGo app smoke flow', () => {
       expect(speakCard).toBeTruthy();
       fireEvent.click(speakCard);
       fireEvent.click(await screen.findByRole('button', { name: '句子練習' }));
+      fireEvent.click(await screen.findByRole('button', { name: '開始口說小練習 →' }));
       fireEvent.click(await screen.findByText('🎤 直接開說'));
 
       expect(await screen.findByText('再練一次')).toBeInTheDocument();
@@ -789,9 +798,10 @@ describe('EnglishGo app smoke flow', () => {
     fireEvent.click(examCard);
 
     expect(await screen.findByText(/考試範圍複習/)).toBeInTheDocument();
-    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'apple school apple' } });
+    fireEvent.change(screen.getByRole('textbox', { name: '這次要練的英文單字' }), { target: { value: 'apple school apple' } });
     expect(screen.getByText(/已合併\/忽略 1 筆/)).toBeInTheDocument();
-    fireEvent.click(screen.getByText('開始這輪複習'));
+    fireEvent.click(screen.getByRole('button', { name: '先確認單字與字義 →' }));
+    fireEvent.click(await screen.findByRole('button', { name: '開始這輪複習' }));
 
     expect(await screen.findByText(/單字小花園/)).toBeInTheDocument();
     expect(await screen.findByText('考試範圍模式')).toBeInTheDocument();
@@ -807,7 +817,8 @@ describe('EnglishGo app smoke flow', () => {
     expect(examCard).toBeTruthy();
     fireEvent.click(examCard);
 
-    expect(await screen.findByText('依學年、學期與數量填入單字範圍')).toBeInTheDocument();
+    fireEvent.click(await screen.findByText('還沒有範圍？看看 AI 單字建議'));
+    expect(screen.getByText('依學年、學期與數量填入單字範圍')).toBeInTheDocument();
     fireEvent.change(screen.getByTestId('exam-ai-term'), { target: { value: 'elementary-1b' } });
     fireEvent.change(screen.getByTestId('exam-ai-count'), { target: { value: '5' } });
 
@@ -830,8 +841,10 @@ describe('EnglishGo app smoke flow', () => {
       fireEvent.click(screen.getByRole('button', { name: 'AI 產生單字' }));
 
       await waitFor(() => {
-        expect(screen.getByRole('textbox')).toHaveValue('apple book cat red run');
+        expect(screen.getByRole('button', { name: '用這份建議' })).toBeInTheDocument();
       });
+      fireEvent.click(screen.getByRole('button', { name: '用這份建議' }));
+      expect(screen.getByRole('textbox', { name: '這次要練的英文單字' })).toHaveValue('apple book cat red run');
       expect(screen.getByText('5')).toBeInTheDocument();
       expect(screen.getByText('apple')).toBeInTheDocument();
       await waitFor(() => {
@@ -1586,7 +1599,7 @@ describe('EnglishGo app smoke flow', () => {
     expect(rewardCenter).toHaveTextContent('答錯才會影響本局金幣');
 
     fireEvent.click(within(rewardCenter).getByRole('button', { name: '前往扭蛋' }));
-    expect(await screen.findByText(/扭蛋機/, {}, { timeout: 5000 })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /森林扭蛋屋/ }, { timeout: 5000 })).toBeInTheDocument();
   });
 
   it('opens the lazy pet guard module from the pet stat', async () => {
@@ -1634,7 +1647,7 @@ describe('EnglishGo app smoke flow', () => {
     localStorage.setItem('eg_coins', JSON.stringify(120));
     localStorage.setItem(
       'eg_pets',
-      JSON.stringify([{ petId: 'bunny', rarity: 'N', level: 2, exp: 20, bond: 6, hunger: 70, clean: 80, energy: 90 }]),
+      JSON.stringify([{ petId: 'bunny', rarity: 'N', level: 2, exp: 20, bond: 380, hunger: 70, clean: 80, energy: 90 }]),
     );
 
     await openElementaryMenu();
@@ -1675,6 +1688,8 @@ describe('EnglishGo app smoke flow', () => {
     fireEvent.click(screen.getByTestId('pet-monopoly-choice-correct'));
 
     expect(await screen.findByTestId('pet-monopoly-feedback')).toHaveTextContent('答對');
+    expect(JSON.parse(localStorage.getItem('eg_pets'))[0].bond).toBeGreaterThanOrEqual(380);
+    expect(JSON.parse(localStorage.getItem('eg_pets'))[0].journey.marks).toBe(1);
     expect(await screen.findByTestId('pet-monopoly-deal')).toHaveTextContent('收購機會');
 
     fireEvent.click(screen.getByTestId('pet-monopoly-buy'));

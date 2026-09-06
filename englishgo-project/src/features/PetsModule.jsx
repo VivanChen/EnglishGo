@@ -1,9 +1,15 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import PetCompanion from "../components/PetCompanion.jsx";
+import PetGachaStudio from "./PetGachaStudio.jsx";
+import PetPlayground from "./PetPlayground.jsx";
+import { PetHomeHub, PetGrowthPanel } from "../components/PetJourneyPanels.jsx";
+import { PetHabitatScene, PetLandscape } from "../components/PetWorldArt.jsx";
+import { recordPetMoment, getJourneyBonus, CAMP_CHOICES, applyCampChoice } from "../data/petJourney.js";
 import { DailyPetPlan, buildLearningProgress, buildPetDailyPlan } from "./PetDailyPlan.jsx";
 
-let ACTION_PROMPTS,BOND_MILESTONES,DAILY_TASK_DEFS,DUPLICATE_EGG_PROGRESS,DUPLICATE_PET_REWARD,EGG_COST,EGG_HATCH_TASKS,GACHA_SR_PITY,Hdr,MAX_STAT,PETS,PET_ACTIONS,PET_ADVENTURE_BOSS_REQUIRED_CLEARS,PET_ADVENTURE_ENEMY_ICONS,PET_ADVENTURE_SKILLS,PET_ADVENTURE_SKILL_UNLOCKS,PET_ADVENTURE_SKILL_VISUALS,PET_CULTIVATION_ACTIONS,PET_EVENTS,PET_FOODS,RARITY_INFO,RARITY_ORDER,S,STAGE_NAMES,STAGE_SAYINGS,TIME_GREETINGS,applyDuplicatePetReward,buildPetAdventureStages,calcDecay,choosePetFoodForNeed,completePetAdventureProgress,createPetAdventureBgm,getAdventureAnswerLine,getAdventureCorrectSpeech,getAdventurePetDef,getAdventureQuestionMeta,getAdventureQuestionSpeech,getBondLevel,getCareCount,getDuplicateEnergyInfo,getDuplicatePetReward,getEventCenter,getNextPetAdventureSkillCard,getPetAdventureDifficulty,getPetAdventureFatigue,getPetAdventurePower,getPetAdventureProgress,getPetAdventureScore,getPetAdventureSkill,getPetAdventureSkillCards,getPetCareAverage,getPetCareSuggestion,getPetCultivationPlan,getPetDailyCultivation,getPetMood,getPetReadiness,getPetSize,getPetStage,getPetUrgentNeed,getSelectedPetAdventureSkill,getTeamAdventureMorale,getTimeOfDay,hashPin,improvePetAfterAdventure,isPetAdventureBossReady,isPetSleeping,levelUpPet,loadPetAdventureQuestions,petCloudLogin,petCloudSignup,playPetAdventureSkillSound,playSound,randomPet,rollRarity,savePetAdventureProgress,speak,triggerRewardBurst,useLS;
+let stopSpeech,ACTION_PROMPTS,BOND_MILESTONES,DAILY_TASK_DEFS,DUPLICATE_EGG_PROGRESS,DUPLICATE_PET_REWARD,EGG_COST,EGG_HATCH_TASKS,GACHA_SR_PITY,Hdr,MAX_STAT,PETS,PET_ACTIONS,PET_ADVENTURE_BOSS_REQUIRED_CLEARS,PET_ADVENTURE_ENEMY_ICONS,PET_ADVENTURE_SKILLS,PET_ADVENTURE_SKILL_UNLOCKS,PET_ADVENTURE_SKILL_VISUALS,PET_CULTIVATION_ACTIONS,PET_EVENTS,PET_FOODS,RARITY_INFO,RARITY_ORDER,S,STAGE_NAMES,STAGE_SAYINGS,TIME_GREETINGS,applyDuplicatePetReward,buildPetAdventureStages,calcDecay,choosePetFoodForNeed,completePetAdventureProgress,createPetAdventureBgm,getAdventureAnswerLine,getAdventureCorrectSpeech,getAdventurePetDef,getAdventureQuestionMeta,getAdventureQuestionSpeech,getBondLevel,getCareCount,getDuplicateEnergyInfo,getDuplicatePetReward,getEventCenter,getNextPetAdventureSkillCard,getPetAdventureDifficulty,getPetAdventureFatigue,getPetAdventurePower,getPetAdventureProgress,getPetAdventureScore,getPetAdventureSkill,getPetAdventureSkillCards,getPetCareAverage,getPetCareSuggestion,getPetCultivationPlan,getPetDailyCultivation,getPetMood,getPetReadiness,getPetSize,getPetStage,getPetUrgentNeed,getSelectedPetAdventureSkill,getTeamAdventureMorale,getTimeOfDay,hashPin,improvePetAfterAdventure,isPetAdventureBossReady,isPetSleeping,levelUpPet,loadPetAdventureQuestions,petCloudLogin,petCloudSignup,playPetAdventureSkillSound,playSound,randomPet,rollRarity,savePetAdventureProgress,speak,triggerRewardBurst,useLS;
 function setPetModuleDeps(deps={}){
-  ({ACTION_PROMPTS,BOND_MILESTONES,DAILY_TASK_DEFS,DUPLICATE_EGG_PROGRESS,DUPLICATE_PET_REWARD,EGG_COST,EGG_HATCH_TASKS,GACHA_SR_PITY,Hdr,MAX_STAT,PETS,PET_ACTIONS,PET_ADVENTURE_BOSS_REQUIRED_CLEARS,PET_ADVENTURE_ENEMY_ICONS,PET_ADVENTURE_SKILLS,PET_ADVENTURE_SKILL_UNLOCKS,PET_ADVENTURE_SKILL_VISUALS,PET_CULTIVATION_ACTIONS,PET_EVENTS,PET_FOODS,RARITY_INFO,RARITY_ORDER,S,STAGE_NAMES,STAGE_SAYINGS,TIME_GREETINGS,applyDuplicatePetReward,buildPetAdventureStages,calcDecay,choosePetFoodForNeed,completePetAdventureProgress,createPetAdventureBgm,getAdventureAnswerLine,getAdventureCorrectSpeech,getAdventurePetDef,getAdventureQuestionMeta,getAdventureQuestionSpeech,getBondLevel,getCareCount,getDuplicateEnergyInfo,getDuplicatePetReward,getEventCenter,getNextPetAdventureSkillCard,getPetAdventureDifficulty,getPetAdventureFatigue,getPetAdventurePower,getPetAdventureProgress,getPetAdventureScore,getPetAdventureSkill,getPetAdventureSkillCards,getPetCareAverage,getPetCareSuggestion,getPetCultivationPlan,getPetDailyCultivation,getPetMood,getPetReadiness,getPetSize,getPetStage,getPetUrgentNeed,getSelectedPetAdventureSkill,getTeamAdventureMorale,getTimeOfDay,hashPin,improvePetAfterAdventure,isPetAdventureBossReady,isPetSleeping,levelUpPet,loadPetAdventureQuestions,petCloudLogin,petCloudSignup,playPetAdventureSkillSound,playSound,randomPet,rollRarity,savePetAdventureProgress,speak,triggerRewardBurst,useLS}=deps);
+  ({stopSpeech,ACTION_PROMPTS,BOND_MILESTONES,DAILY_TASK_DEFS,DUPLICATE_EGG_PROGRESS,DUPLICATE_PET_REWARD,EGG_COST,EGG_HATCH_TASKS,GACHA_SR_PITY,Hdr,MAX_STAT,PETS,PET_ACTIONS,PET_ADVENTURE_BOSS_REQUIRED_CLEARS,PET_ADVENTURE_ENEMY_ICONS,PET_ADVENTURE_SKILLS,PET_ADVENTURE_SKILL_UNLOCKS,PET_ADVENTURE_SKILL_VISUALS,PET_CULTIVATION_ACTIONS,PET_EVENTS,PET_FOODS,RARITY_INFO,RARITY_ORDER,S,STAGE_NAMES,STAGE_SAYINGS,TIME_GREETINGS,applyDuplicatePetReward,buildPetAdventureStages,calcDecay,choosePetFoodForNeed,completePetAdventureProgress,createPetAdventureBgm,getAdventureAnswerLine,getAdventureCorrectSpeech,getAdventurePetDef,getAdventureQuestionMeta,getAdventureQuestionSpeech,getBondLevel,getCareCount,getDuplicateEnergyInfo,getDuplicatePetReward,getEventCenter,getNextPetAdventureSkillCard,getPetAdventureDifficulty,getPetAdventureFatigue,getPetAdventurePower,getPetAdventureProgress,getPetAdventureScore,getPetAdventureSkill,getPetAdventureSkillCards,getPetCareAverage,getPetCareSuggestion,getPetCultivationPlan,getPetDailyCultivation,getPetMood,getPetReadiness,getPetSize,getPetStage,getPetUrgentNeed,getSelectedPetAdventureSkill,getTeamAdventureMorale,getTimeOfDay,hashPin,improvePetAfterAdventure,isPetAdventureBossReady,isPetSleeping,levelUpPet,loadPetAdventureQuestions,petCloudLogin,petCloudSignup,playPetAdventureSkillSound,playSound,randomPet,rollRarity,savePetAdventureProgress,speak,triggerRewardBurst,useLS}=deps);
 }
 function propsWithoutDeps(props){
   const {deps,...rest}=props;
@@ -17,135 +23,11 @@ export function formatPetTaskDate(value=new Date()){
   return new Intl.DateTimeFormat("zh-TW",{year:"numeric",month:"long",day:"numeric",weekday:"short"}).format(date);
 }
 
-function GachaCeremony({rarity,mode}){
-  // 不同稀有度的視覺差異
-  const config={
-    N: {beam:"rgba(255,255,255,0.7)", beamW:80, eggBg:"linear-gradient(135deg,#FFF8DC,#F5DEB3)", glow:"rgba(255,255,255,0.4)", shake:"gc_eggShake_n", orbColors:[]},
-    R: {beam:"rgba(74,144,226,0.9)", beamW:100, eggBg:"linear-gradient(135deg,#E6F1FB,#C5DBEC)", glow:"rgba(74,144,226,0.6)", shake:"gc_eggShake_r", orbColors:["#4A90E2","#4A90E2","#6BA4E5"]},
-    SR: {beam:"rgba(123,97,255,0.95)", beamW:120, eggBg:"linear-gradient(135deg,#EDE9FE,#C4B5FD)", glow:"rgba(123,97,255,0.7)", shake:"gc_eggShake_sr", orbColors:["#7B61FF","#9F8FFF","#7B61FF","#9F8FFF","#A78BFA"]},
-    SSR:{beam:"rgba(255,215,0,1)", beamW:160, eggBg:"linear-gradient(135deg,#FFF3CD,#FFD700)", glow:"rgba(255,215,0,0.9)", shake:"gc_eggShake_ssr", orbColors:["#FFD700","#FFA500","#FFD700","#FFEC8B","#FFD700","#FFA500"]},
-  }[rarity||"N"];
-  const isSSR=rarity==="SSR";
-
-  const styleSheet=`
-@keyframes gc_eggDrop { 0%{transform:translate(-50%,-180px) scale(0.3);opacity:0} 60%{transform:translate(-50%,40px) scale(1.15);opacity:1} 80%{transform:translate(-50%,30px) scale(0.95)} 100%{transform:translate(-50%,40px) scale(1);opacity:1} }
-@keyframes gc_eggShake_n { 0%,100%{transform:translate(-50%,40px) rotate(0deg)} 25%{transform:translate(-51%,40px) rotate(-2deg)} 75%{transform:translate(-49%,40px) rotate(2deg)} }
-@keyframes gc_eggShake_r { 0%,100%{transform:translate(-50%,40px) rotate(0deg)} 25%{transform:translate(-52%,40px) rotate(-4deg)} 75%{transform:translate(-48%,40px) rotate(4deg)} }
-@keyframes gc_eggShake_sr { 0%,100%{transform:translate(-50%,40px) rotate(0deg)} 25%{transform:translate(-53%,38px) rotate(-7deg)} 75%{transform:translate(-47%,38px) rotate(7deg)} }
-@keyframes gc_eggShake_ssr { 0%,100%{transform:translate(-50%,40px) rotate(0deg)} 20%{transform:translate(-54%,36px) rotate(-12deg)} 60%{transform:translate(-46%,36px) rotate(12deg)} 80%{transform:translate(-50%,32px) rotate(0deg)} }
-@keyframes gc_lightBeam { 0%{opacity:0;height:0} 30%{opacity:0.85;height:280px} 90%{opacity:0.85;height:280px} 100%{opacity:0;height:300px} }
-@keyframes gc_screenFlash { 0%,100%{opacity:0} 50%{opacity:0.5} }
-@keyframes gc_orb { 0%{transform:translate(0,0) scale(0);opacity:0} 30%{opacity:1;transform:translate(0,0) scale(1)} 100%{transform:translate(var(--gx),var(--gy)) scale(0.3);opacity:0} }
-@keyframes gc_label { 0%{transform:translate(-50%,-20px);opacity:0} 30%,100%{transform:translate(-50%,0);opacity:1} }
-@media (prefers-reduced-motion: reduce) { [data-gacha-ceremony] *{animation-duration:0.3s !important} }
-`;
-
-  const labelTxt=mode==="multi"?"十連抽中...":"抽獎中...";
-  const rarityLabel=rarity?{N:"普通",R:"稀有",SR:"超稀有",SSR:"傳說 ✨"}[rarity]:"";
-
-  // 為 SR/SSR 產生光點四散位置
-  const orbs=config.orbColors.map((color,i)=>{
-    const angle=(i*360/config.orbColors.length)+(i%2?15:-15);
-    const distance=isSSR?160+Math.random()*40:120+Math.random()*30;
-    return{
-      color,
-      gx:`${Math.cos(angle*Math.PI/180)*distance}px`,
-      gy:`-${Math.abs(Math.sin(angle*Math.PI/180)*distance)+80}px`,
-      delay:0.5+i*0.12,
-      size:isSSR?10+Math.random()*4:6+Math.random()*4,
-    };
-  });
-
-  return(<div data-gacha-ceremony style={{
-    position:"relative",
-    height:340,
-    background:isSSR?"linear-gradient(180deg,#3d2817,#1a0f08)":"linear-gradient(180deg,#1a1a2e,#0a0a1f)",
-    borderRadius:14,
-    overflow:"hidden",
-    marginBottom:12,
-    boxShadow:`inset 0 0 40px ${config.glow}`,
-  }}>
-    <style>{styleSheet}</style>
-
-    {/* SSR 全屏閃光 */}
-    {isSSR&&<div style={{position:"absolute",inset:0,background:"#FFD700",animation:"gc_screenFlash 1.8s ease-in-out forwards",zIndex:1}}/>}
-
-    {/* 標題標籤 */}
-    <div style={{
-      position:"absolute",top:16,left:"50%",
-      animation:"gc_label 0.5s ease-out forwards",
-      fontSize:13,fontWeight:700,
-      color:isSSR?"#FFD700":(rarity==="SR"?"#C8B6FF":(rarity==="R"?"#87CEEB":"#fff")),
-      background:isSSR?"rgba(255,215,0,0.15)":"rgba(0,0,0,0.4)",
-      padding:"4px 14px",borderRadius:14,
-      letterSpacing:1.5,zIndex:8,
-      boxShadow:isSSR?"0 0 20px rgba(255,215,0,0.6)":"none",
-    }}>{rarityLabel||labelTxt}</div>
-
-    {/* 光柱（背景） */}
-    <div style={{
-      position:"absolute",bottom:60,left:"50%",
-      width:config.beamW,
-      transform:"translateX(-50%)",
-      borderRadius:`${config.beamW/2}px ${config.beamW/2}px 0 0`,
-      background:`linear-gradient(180deg,${config.beam},transparent)`,
-      animation:"gc_lightBeam 1.5s 0.5s ease-in-out forwards",
-      mixBlendMode:"screen",
-      zIndex:2,
-      filter:isSSR?"blur(2px)":"none",
-    }}/>
-
-    {/* SSR 內層更亮的白光柱 */}
-    {isSSR&&<div style={{
-      position:"absolute",bottom:60,left:"50%",
-      width:60,
-      transform:"translateX(-50%)",
-      borderRadius:"30px 30px 0 0",
-      background:"linear-gradient(180deg,rgba(255,255,255,0.95),transparent)",
-      animation:"gc_lightBeam 1.5s 0.5s ease-in-out forwards",
-      mixBlendMode:"screen",
-      zIndex:3,
-    }}/>}
-
-    {/* 四散的光點（R/SR/SSR 才有） */}
-    {orbs.map((orb,i)=>(<div key={i} style={{
-      position:"absolute",bottom:140,left:"50%",
-      width:orb.size,height:orb.size,borderRadius:"50%",
-      background:orb.color,
-      boxShadow:`0 0 ${orb.size*1.5}px ${orb.color}`,
-      "--gx":orb.gx,"--gy":orb.gy,
-      animation:`gc_orb 1.3s ${orb.delay}s ease-out forwards`,
-      zIndex:4,
-    }}/>))}
-
-    {/* 蛋本體 */}
-    <div style={{
-      position:"absolute",top:0,left:"50%",
-      width:80,height:100,
-      borderRadius:"50% 50% 50% 50% / 60% 60% 40% 40%",
-      background:config.eggBg,
-      boxShadow:`inset -8px -8px 16px rgba(0,0,0,0.2), 0 0 ${isSSR?50:30}px ${config.glow}`,
-      animation:`gc_eggDrop 0.8s ease-out forwards, ${config.shake} 0.15s ease-in-out 0.8s infinite`,
-      zIndex:5,
-    }}/>
-
-    {/* 蛋上的小裝飾紋路 */}
-    <div style={{
-      position:"absolute",top:30,left:"50%",
-      transform:"translateX(-50%)",
-      width:30,height:8,
-      borderRadius:"50%",
-      background:"rgba(255,255,255,0.5)",
-      animation:`gc_eggDrop 0.8s ease-out forwards, ${config.shake} 0.15s ease-in-out 0.8s infinite`,
-      zIndex:6,
-      pointerEvents:"none",
-    }}/>
-  </div>);
-}
-
-// ═══ GACHA MACHINE (扭蛋機) ═══════════════════════════════════════
-function PetAdventurePageInner({lv,onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,setInventory}){
+function PetAdventurePageInner({lv,onBack,onNavigate,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,setInventory}){
   const[selectedIds,setSelectedIds]=useState([]);
+  const[campOpen,setCampOpen]=useState(false),[starting,setStarting]=useState(false);
+  const answerLock=useRef(false),finishLock=useRef(false),startLock=useRef(false),speechTimer=useRef(null),alive=useRef(true);
+  useEffect(()=>{alive.current=true;return()=>{alive.current=false;clearTimeout(speechTimer.current);stopSpeech?.()}},[]);
   const[run,setRun]=useState(null);
   const[battle,setBattle]=useState(null);
   const[feedback,setFeedback]=useState(null);
@@ -181,6 +63,7 @@ function PetAdventurePageInner({lv,onBack,c,pets,setPets,eggs,setEggs,coins,setC
   const selectedPets=availablePets.filter(x=>selectedIds.includes(x.pet.petId)).map(x=>x.pet);
   const teamPower=selectedPets.reduce((sum,p)=>sum+getPetAdventurePower(p),0);
   const teamMoralePreview=getTeamAdventureMorale(selectedPets);
+  const journeyBonus=getJourneyBonus(selectedPets);
   const teamPrepPlan=useMemo(()=>{
     const inv={...inventory};
     let feed=0,clean=0,rest=0,needsFood=0;
@@ -201,6 +84,7 @@ function PetAdventurePageInner({lv,onBack,c,pets,setPets,eggs,setEggs,coins,setC
   const difficultyLevel=getPetAdventureDifficulty(adventureProgress,bossReady);
   const clearsToBoss=Math.max(0,PET_ADVENTURE_BOSS_REQUIRED_CLEARS-(adventureProgress.bossCharge||0));
   const togglePet=(petId)=>{
+    if(startLock.current)return;
     setOutcome(null);
     setPrepNotice(null);
     setSelectedIds(ids=>{
@@ -257,17 +141,22 @@ function PetAdventurePageInner({lv,onBack,c,pets,setPets,eggs,setEggs,coins,setC
   };
   const startAdventure=async()=>{
     const team=availablePets.filter(x=>selectedIds.includes(x.pet.petId)).map(x=>x.pet);
-    if(!team.length)return;
-    const questionData=await loadPetAdventureQuestions();
+    if(!team.length||startLock.current)return;
+    startLock.current=true;setStarting(true);
+    let questionData;
+    try{questionData=await loadPetAdventureQuestions()}catch{startLock.current=false;if(alive.current){setStarting(false);setPrepNotice({ok:false,text:"關卡還沒準備好，請再試一次。"})}return}
+    if(!alive.current)return;
+    startLock.current=false;setStarting(false);answerLock.current=false;finishLock.current=false;setCampOpen(false);
     const progress=getPetAdventureProgress(lv);
     const ready=isPetAdventureBossReady(progress);
     const difficulty=getPetAdventureDifficulty(progress,ready);
     const stages=buildPetAdventureStages(team,lv,{bossReady:ready,difficultyLevel:difficulty,questionData});
     const power=team.reduce((sum,p)=>sum+getPetAdventurePower(p),0);
     const morale=getTeamAdventureMorale(team);
-    const maxTeamHp=Math.round((150+power*.85)*morale.hpMult);
+    const talent=getJourneyBonus(team);
+    const maxTeamHp=Math.round((150+power*.85)*morale.hpMult)+talent.hp;
     const loadout=Object.fromEntries(team.map(p=>[p.petId,getSelectedPetAdventureSkill(p,skillLoadout).id]));
-    setRun({stages,teamIds:selectedIds,teamPower:power,skillLoadout:loadout,hasBoss:ready,difficultyLevel:difficulty,progress,morale});
+    setRun({stages,talent,teamIds:selectedIds,teamPower:power,skillLoadout:loadout,hasBoss:ready,difficultyLevel:difficulty,progress,morale});
     setBattle({stageIndex:0,questionIndex:0,teamHp:maxTeamHp,maxTeamHp,enemyHp:stages[0].maxHp,answered:0,correct:0,miss:0});
     setFeedback(null);
     setOutcome(null);
@@ -276,6 +165,8 @@ function PetAdventurePageInner({lv,onBack,c,pets,setPets,eggs,setEggs,coins,setC
     playSound?.("flip");
   };
   const finishAdventure=(won,finalHp)=>{
+    if(finishLock.current||!run)return;
+    finishLock.current=true;clearTimeout(speechTimer.current);stopSpeech?.();
     stopBattleBgm();
     const hadBoss=!!run?.hasBoss;
     const runDifficulty=run?.difficultyLevel||difficultyLevel||1;
@@ -304,7 +195,7 @@ function PetAdventurePageInner({lv,onBack,c,pets,setPets,eggs,setEggs,coins,setC
       fatigue,
       finalHp,
     };
-    const updateAdventurePet=p=>improvePetAfterAdventure(p,{
+    const updateAdventurePet=p=>improvePetAfterAdventure(won?recordPetMoment(p,"adventure"):p,{
       exp:reward.exp,
       bond:reward.bond,
       skillId:skillReceiver&&p.petId===skillReceiver.petId?unlockedSkill.id:null,
@@ -364,7 +255,8 @@ function PetAdventurePageInner({lv,onBack,c,pets,setPets,eggs,setEggs,coins,setC
       skill.id==="magicLeaf";
   };
   const answerQuestion=(choiceIndex)=>{
-    if(!run||!battle||feedback)return;
+    if(!run||!battle||feedback||answerLock.current||campOpen)return;
+    answerLock.current=true;
     const stage=run.stages[battle.stageIndex];
     const q=stage.questions[battle.questionIndex%stage.questions.length];
     const correct=choiceIndex===q.answer;
@@ -380,7 +272,7 @@ function PetAdventurePageInner({lv,onBack,c,pets,setPets,eggs,setEggs,coins,setC
       const openingBonus=activeSkill.id==="quickStep"&&battle.questionIndex===0?14:0;
       const wordBonus=activeSkill.id==="wordSpark"&&/word|means|單字|意思/i.test(`${q.q} ${q.zh}`)?12:0;
       const magicBonus=activeSkill.id==="magicLeaf"?8:0;
-      const moraleBonus=run.morale?.damageBonus||0;
+      const moraleBonus=(run.morale?.damageBonus||0)+(run.talent?.damage||0)+(battle.campDamage||0);
       const damage=Math.max(12,Math.round(30+run.teamPower*.18+skillPower*.45+activeSkill.power*1.7+openingBonus+wordBonus+magicBonus+moraleBonus+Math.random()*10));
       const heal=skills.some(s=>s?.id==="melodyHeal")?18:10;
       const nextEnemyHp=Math.max(0,battle.enemyHp-damage);
@@ -397,13 +289,10 @@ function PetAdventurePageInner({lv,onBack,c,pets,setPets,eggs,setEggs,coins,setC
       });
       setBattle(b=>({...b,teamHp:nextHp,enemyHp:nextEnemyHp,answered:b.answered+1,correct:b.correct+1}));
       playPetAdventureSkillSound(activeSkill.id,true);
-      window.setTimeout(()=>speak?.(answerSpeech),420);
-      if(stageClear&&last){
-        window.setTimeout(()=>finishAdventure(true,nextHp),900);
-      }
+      clearTimeout(speechTimer.current);speechTimer.current=window.setTimeout(()=>speak?.(answerSpeech),420);
       return;
     }
-    const guard=skills.some(s=>s?.id==="braveGuard")?8:0;
+    const guard=(skills.some(s=>s?.id==="braveGuard")?8:0)+(run.talent?.guard||0)+(battle.campGuard||0);
     const damage=Math.max(6,stage.attack-guard);
     const nextHp=Math.max(0,battle.teamHp-damage);
     setBattle(b=>({...b,teamHp:nextHp,answered:b.answered+1,miss:b.miss+1}));
@@ -416,26 +305,21 @@ function PetAdventurePageInner({lv,onBack,c,pets,setPets,eggs,setEggs,coins,setC
       effectKey:Date.now(),
     });
     playPetAdventureSkillSound(activeSkill.id,false);
-    if(nextHp<=0){
-      window.setTimeout(()=>finishAdventure(false,0),900);
-    }
   };
   const continueBattle=()=>{
     if(!battle||!feedback)return;
+    answerLock.current=false;clearTimeout(speechTimer.current);stopSpeech?.();
     setBattle(b=>({...b,questionIndex:feedback.nextQuestionIndex||b.questionIndex+1}));
     setFeedback(null);
     setBattleSkillId(null);
   };
-  const nextStage=()=>{
-    if(!run||!battle)return;
-    const nextIndex=battle.stageIndex+1;
-    const next=run.stages[nextIndex];
-    setBattle(b=>({...b,stageIndex:nextIndex,questionIndex:0,enemyHp:next.maxHp}));
-    setFeedback(null);
-    setBattleSkillId(null);
-    playSound?.("good");
+  const nextStage=(choice="rest")=>{
+    if(!run||!battle||!campOpen)return;
+    setBattle(previous=>applyCampChoice(previous,choice,run.stages[previous.stageIndex+1]));
+    setCampOpen(false);setFeedback(null);setBattleSkillId(null);answerLock.current=false;playSound?.("good");
   };
   const resetAdventure=()=>{
+    clearTimeout(speechTimer.current);stopSpeech?.();answerLock.current=false;setCampOpen(false);
     stopBattleBgm();
     setRun(null);setBattle(null);setFeedback(null);setOutcome(null);
     setBattleSkillId(null);
@@ -446,16 +330,18 @@ function PetAdventurePageInner({lv,onBack,c,pets,setPets,eggs,setEggs,coins,setC
     </div>
   );
   if(!availablePets.length){
-    return(<div><Hdr t="🗺️ 寵物冒險" onBack={onBack} cl={c.cl}/>
+    return(<div className="pet-world pet-adventure"><Hdr t="🗺️ 寵物冒險" onBack={onBack} cl={c.cl}/>
+    <PetHabitatScene pets={selectedPets.length?selectedPets:availablePets.slice(0,3).map(item=>item.pet)} theme="pond" caption="答對英文、運用技能，帶著默契一起出發"/>
+    <section className="pet-adventure-guide"><span className="pet-eyebrow">夥伴的培育能力，現在派上用場</span><h2>選隊伍 → 闖關 → 營地補給</h2><p>暖心夥伴增加體力，好奇學者增加攻擊，勇敢探險家降低傷害。每兩關之間可選休息、練習默契或整理裝備。</p><div className="pet-adventure-bonus"><span>♡ 體力上限 +{journeyBonus.hp}</span><span>✧ 答對傷害 +{journeyBonus.damage}</span><span>⚑ 反擊傷害 -{journeyBonus.guard}</span></div></section>
       <div style={{...S.card,padding:"28px 20px",textAlign:"center"}}>
         <div style={{fontSize:46,marginBottom:8}}>🥚</div>
         <div style={{fontSize:20,fontWeight:900,color:S.t1}}>還沒有可出戰的寵物</div>
-        <div style={{fontSize:13,color:S.t2,lineHeight:1.7,marginTop:8}}>先到扭蛋機取得寵物，再帶牠們挑戰英文冒險。</div>
+        <div style={{fontSize:13,color:S.t2,lineHeight:1.7,marginTop:8}}>先孵出一位小夥伴，就能一起挑戰英文冒險。</div>{onNavigate&&<button className="pet-primary" onClick={()=>onNavigate("pets","eggs")}>去孵化小屋 →</button>}
       </div>
     </div>);
   }
   if(outcome){
-    return(<div><Hdr t="🗺️ 冒險結果" onBack={onBack} cl={c.cl}/>
+    return(<div className="pet-world pet-adventure"><Hdr t="🗺️ 冒險結果" onBack={onBack} cl={c.cl}/>
       <div style={{...S.card,padding:"24px 18px",textAlign:"center",background:`linear-gradient(135deg,${outcome.won?c.bg:"#FFF3CD"},var(--color-background-primary,#fff))`,border:`2px solid ${outcome.won?c.cl:"#EF9F27"}`}}>
         <div style={{fontSize:50,marginBottom:6}}>{outcome.won?"🏆":"🌤️"}</div>
         <div style={{fontSize:24,fontWeight:900,color:S.t1}}>{outcome.won?"冒險勝利！":"這次先撤退"}</div>
@@ -503,7 +389,7 @@ function PetAdventurePageInner({lv,onBack,c,pets,setPets,eggs,setEggs,coins,setC
     const activeSkillCards=getPetAdventureSkillCards(activePet);
     const qMeta=getAdventureQuestionMeta(q);
     const questionSpeech=getAdventureQuestionSpeech(q);
-    return(<div><Hdr t="🗺️ 寵物冒險" onBack={()=>{stopBattleBgm();setRun(null);setBattle(null);setFeedback(null);setBattleSkillId(null)}} cl={c.cl}/>
+    return(<div className="pet-world pet-adventure"><Hdr t="🗺️ 寵物冒險" onBack={resetAdventure} cl={c.cl}/>
       <style>{`
 @keyframes advPetReady {0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
 @keyframes advSkillFly {0%{transform:translate(-80px,42px) scale(.4) rotate(-12deg);opacity:0}25%{opacity:1}70%{transform:translate(34px,-16px) scale(1.35) rotate(8deg);opacity:1}100%{transform:translate(74px,-36px) scale(.6) rotate(18deg);opacity:0}}
@@ -591,9 +477,12 @@ function PetAdventurePageInner({lv,onBack,c,pets,setPets,eggs,setEggs,coins,setC
       <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
         {run.stages.map((s,i)=><div key={s.id} title={s.boss?"Boss":"Stage"} style={{flex:s.boss?1.4:1,height:s.boss?11:8,borderRadius:999,background:i<=battle.stageIndex?(s.boss?"linear-gradient(90deg,#7C2D12,#DC2626,#F59E0B)":c.cl):S.bg2,opacity:i===battle.stageIndex?1:.55,boxShadow:s.boss&&i<=battle.stageIndex?"0 0 12px rgba(220,38,38,.45)":"none"}}/> )}
       </div>
-      <div data-pet-adventure-layout>
+      <div className="pet-expedition-route">{run.stages.map((item,i)=><span key={item.id} className={i<battle.stageIndex?"is-done":i===battle.stageIndex?"is-current":""}>{i<battle.stageIndex?"✓":i+1} {item.zh}</span>)}</div>
+      {campOpen&&<section className="pet-camp" data-testid="pet-camp"><PetHabitatScene pets={selectedPets} theme="camp" compact/><div className="pet-section-heading"><div><span className="pet-eyebrow">一起決定接下來的冒險</span><h2>辛苦了，在營地補給吧</h2><p>體力 {battle.teamHp}/{battle.maxTeamHp} · 補給不花金幣，選一項前進。</p></div></div><div className="pet-camp-options">{CAMP_CHOICES.map(choice=><button key={choice.id} data-camp-choice={choice.id} onClick={()=>nextStage(choice.id)}><span>{choice.icon}</span><b>{choice.name}</b><small>{choice.description}</small></button>)}</div></section>}
+      <div data-pet-adventure-layout hidden={campOpen}>
       <div data-pet-adventure-battle data-pet-adventure-arena style={{position:"relative",minHeight:isBoss?304:276,borderRadius:18,overflow:"hidden",marginBottom:10,border:`2px solid ${isBoss?"#DC2626":S.bd}`,background:isBoss?"linear-gradient(160deg,#230812 0%,#3B0A16 42%,#111827 100%)":`linear-gradient(160deg,${c.bg} 0%,var(--color-background-primary,#fff) 42%,#E1F5EE 100%)`,boxShadow:isBoss?"0 18px 40px rgba(220,38,38,.24)":"0 12px 28px rgba(15,110,86,.10)"}}>
         <div style={{position:"absolute",inset:0,background:isBoss?"radial-gradient(circle at 72% 24%, rgba(248,113,113,.35), transparent 30%), radial-gradient(circle at 22% 78%, rgba(124,58,237,.22), transparent 36%)":"radial-gradient(circle at 74% 24%, rgba(255,255,255,.85), transparent 28%), radial-gradient(circle at 20% 76%, rgba(15,110,86,.12), transparent 32%)"}}/>
+        <div className="pet-battle-landscape"><PetLandscape theme={isBoss?"camp":/river|lake|water/i.test(stage.id)?"pond":"meadow"}/></div>
         {isBoss&&<div style={{position:"absolute",left:14,top:12,zIndex:1,display:"flex",gap:7,alignItems:"center",fontSize:12,fontWeight:1000,color:"#FDE68A",background:"rgba(127,29,29,.78)",border:"1px solid rgba(253,230,138,.45)",borderRadius:999,padding:"6px 10px",boxShadow:"0 0 18px rgba(220,38,38,.35)"}}>👑 BOSS APPEARED · 連勝 3 關後出現</div>}
         {feedback&&<div key={`flash-${feedback.effectKey}`} style={{position:"absolute",inset:0,background:`radial-gradient(circle at 60% 42%, ${activeVisual.glow}, transparent 42%)`,animation:"advScreenFlash .5s ease-out forwards",pointerEvents:"none"}}/>}
         <div data-adventure-enemy style={{position:"absolute",right:18,top:18,width:"42%",maxWidth:260}}>
@@ -659,7 +548,8 @@ function PetAdventurePageInner({lv,onBack,c,pets,setPets,eggs,setEggs,coins,setC
               <button onClick={()=>speak(feedback.answerSpeech||feedback.answerLine)} aria-label="朗讀完整正解" title="朗讀完整正解" style={{border:`1px solid ${S.bd}`,background:S.bg1,borderRadius:999,padding:"6px 9px",fontSize:12,color:S.t2,cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>🔊</button>
             </div>}
             {!feedback.stageClear&&battle.teamHp>0&&<button data-adventure-feedback-action onClick={continueBattle} style={{...S.btn,background:c.cl,color:"#fff",marginTop:10,fontSize:13}}>下一題</button>}
-            {feedback.stageClear&&!feedback.last&&<button data-adventure-feedback-action onClick={nextStage} style={{...S.btn,background:c.cl,color:"#fff",marginTop:10,fontSize:13}}>前往下一關</button>}
+            {feedback.stageClear&&!feedback.last&&<button data-adventure-feedback-action onClick={()=>{setCampOpen(true);clearTimeout(speechTimer.current);stopSpeech?.()}} style={{...S.btn,background:c.cl,color:"#fff",marginTop:10,fontSize:13}}>前往營地補給 →</button>}
+            {(feedback.last||battle.teamHp<=0)&&<button className="pet-primary" onClick={()=>finishAdventure(battle.teamHp>0,battle.teamHp)}>查看冒險成果 →</button>}
           </div>}
         </div>
       </div>
@@ -724,7 +614,7 @@ function PetAdventurePageInner({lv,onBack,c,pets,setPets,eggs,setEggs,coins,setC
       </div>
       </div>
       </div>
-      <div data-adventure-party style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(120px,1fr))",gap:8,marginTop:10}}>
+      <div data-adventure-party hidden={campOpen} style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(120px,1fr))",gap:8,marginTop:10}}>
         {selectedPets.map(p=>{const def=getAdventurePetDef(p);const skill=getSelectedPetAdventureSkill(p,run.skillLoadout);const visual=PET_ADVENTURE_SKILL_VISUALS[skill.id]||PET_ADVENTURE_SKILL_VISUALS.wordSpark;const active=p.petId===activePet?.petId;return(<div key={p.petId} style={{...S.card,padding:"10px",display:"flex",alignItems:"center",gap:8,border:`2px solid ${active?visual.color:S.bd}`,background:active?visual.bg:S.bg1,animation:active&&!feedback?"advCardPulse 1.1s ease-in-out infinite":"none"}}>
           <PixelPet petId={p.petId} stage={getPetStage(p)} size={48} animate={false}/>
           <div style={{minWidth:0}}><div style={{fontSize:12,fontWeight:900,color:S.t1}}>{def?.name||p.petId}</div><div style={{fontSize:11,color:visual.color,fontWeight:900}}>{skill.emoji} {skill.name}</div></div>
@@ -732,13 +622,15 @@ function PetAdventurePageInner({lv,onBack,c,pets,setPets,eggs,setEggs,coins,setC
       </div>
     </div>);
   }
-  return(<div><Hdr t="🗺️ 寵物冒險" onBack={onBack} cl={c.cl}/>
+  return(<div className="pet-world pet-adventure"><Hdr t="🗺️ 寵物冒險" onBack={onBack} cl={c.cl}/>
+    <PetHabitatScene pets={selectedPets.length?selectedPets:availablePets.slice(0,3).map(item=>item.pet)} theme="pond" caption="答對英文、運用技能，帶著默契一起出發"/>
+    <section className="pet-adventure-guide"><span className="pet-eyebrow">夥伴的培育能力，現在派上用場</span><h2>選隊伍 → 闖關 → 營地補給</h2><p>暖心夥伴增加體力，好奇學者增加攻擊，勇敢探險家降低傷害。每兩關之間可選休息、練習默契或整理裝備。</p><div className="pet-adventure-bonus"><span>♡ 體力上限 +{journeyBonus.hp}</span><span>✧ 答對傷害 +{journeyBonus.damage}</span><span>⚑ 反擊傷害 -{journeyBonus.guard}</span></div></section>
     <div style={{...S.card,padding:"16px",marginBottom:12,background:`linear-gradient(135deg,${c.bg},var(--color-background-primary,#fff))`,borderTop:`4px solid ${c.cl}`}}>
-      <div style={{fontSize:24,fontWeight:900,color:S.t1}}>帶 3 隻寵物挑戰英文關卡</div>
-      <div style={{fontSize:13,color:S.t2,lineHeight:1.7,marginTop:6}}>寵物的等級、親密度、照顧狀態與技能會影響戰力。每次冒險先挑戰 3 個隨機英文關卡，連續打贏後會出現大魔王；擊敗 Boss 可獲得培養道具、技能，還有特殊寵物蛋。</div>
+      <div style={{fontSize:24,fontWeight:900,color:S.t1}}>帶 1–3 隻夥伴，展開森林遠征</div>
+      <div style={{fontSize:13,color:S.t2,lineHeight:1.7,marginTop:6}}>寵物的等級、親密度、照顧狀態與技能會影響戰力。每次冒險先挑戰 3 個隨機英文關卡，連續打贏後會出現大魔王；每次過關都能選擇營地補給，擊敗魔王可獲得更多金幣與培養道具。</div>
       <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:12}}>
-        <button onClick={()=>setSelectedIds(bestTeamIds)} style={{...S.btn,background:c.cl,color:"#fff",fontSize:13}}>推薦隊伍</button>
-        <button onClick={()=>setSelectedIds([])} style={{...S.btn,background:S.bg1,color:S.t2,fontSize:13}}>清空選擇</button>
+        <button disabled={starting} onClick={()=>setSelectedIds(bestTeamIds)} style={{...S.btn,background:c.cl,color:"#fff",fontSize:13}}>推薦隊伍</button>
+        <button disabled={starting} onClick={()=>setSelectedIds([])} style={{...S.btn,background:S.bg1,color:S.t2,fontSize:13}}>清空選擇</button>
         {lowCareCount>0&&<span style={{alignSelf:"center",fontSize:12,fontWeight:800,color:"#B42318",background:"#FCEBEB",borderRadius:999,padding:"6px 10px"}}>{lowCareCount} 隻狀態偏低，戰力會受影響</span>}
       </div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(110px,1fr))",gap:8,marginTop:14}}>
@@ -831,299 +723,13 @@ function PetAdventurePageInner({lv,onBack,c,pets,setPets,eggs,setEggs,coins,setC
         </button>);
       })}
     </div>
-    <button onClick={startAdventure} disabled={!selectedIds.length} style={{...S.btn,background:selectedIds.length?(bossReady?"#7C2D12":c.cl):S.bg2,color:selectedIds.length?"#fff":S.t3,width:"100%",padding:"15px",fontSize:16,cursor:selectedIds.length?"pointer":"not-allowed"}}>{bossReady?"挑戰魔王":"開始冒險"} · Lv.{difficultyLevel}{!bossReady?` · 魔王還差 ${clearsToBoss} 輪`:""}</button>
+    <button onClick={startAdventure} disabled={!selectedIds.length||starting} style={{...S.btn,background:selectedIds.length?(bossReady?"#7C2D12":c.cl):S.bg2,color:selectedIds.length?"#fff":S.t3,width:"100%",padding:"15px",fontSize:16,cursor:selectedIds.length?"pointer":"not-allowed"}}>{starting?"準備關卡中…":bossReady?"挑戰魔王":"開始冒險"} · Lv.{difficultyLevel}{!bossReady?` · 魔王還差 ${clearsToBoss} 輪`:""}</button>
   </div>);
 }
 
-function GachaPageInner({onBack,c,coins,setCoins,eggs,setEggs,pets,setPets}){
-  const[rolling,setRolling]=useState(false);
-  const[rollingRarity,setRollingRarity]=useState(null);// (P0-3) 抽蛋動畫期間的稀有度，給光柱動畫用
-  const[rollingMode,setRollingMode]=useState(null);// (P0-3) 'single' | 'multi'，給動畫文字用
-  const[result,setResult]=useState(null);
-  const[showResult,setShowResult]=useState(false);
-  const[pity,setPity]=useLS("gachaPity",{sinceSR:0,total:0});
-  const countByRarity=list=>Object.keys(RARITY_INFO).reduce((acc,k)=>({...acc,[k]:list.filter(x=>x.rarity===k).length}),{});
-  const buildPulls=(count,guaranteeR=false)=>{
-    let since=Number(pity?.sinceSR||0);
-    const pulls=[];
-    for(let i=0;i<count;i++){
-      let rarity=rollRarity();
-      const pityHit=since>=GACHA_SR_PITY-1;
-      if(pityHit&&RARITY_ORDER[rarity]<RARITY_ORDER.SR)rarity="SR";
-      const pet=randomPet(rarity);
-      pulls.push({rarity,pet,i,pityHit});
-      since=RARITY_ORDER[rarity]>=RARITY_ORDER.SR?0:since+1;
-    }
-    if(guaranteeR&&!pulls.some(p=>RARITY_ORDER[p.rarity]>=RARITY_ORDER.R)){
-      const last=pulls[pulls.length-1];
-      const pet=randomPet("R");
-      pulls[pulls.length-1]={...last,rarity:"R",pet,guarantee:true};
-    }
-    return{pulls,nextPity:{sinceSR:since,total:Number(pity?.total||0)+count}};
-  };
-  const settlePulls=(pulls)=>{
-    const now=new Date().toISOString();
-    const ownedPetIds=new Set(pets.map(p=>p.petId));
-    const virtualEggs=new Map(eggs.map(e=>[e.petId,{...e,existing:true}]));
-    const eggProgress=new Map();
-    const newEggs=[];
-    const petRewards={};
-    const resolved=pulls.map((pull,i)=>{
-      const petId=pull.pet.id;
-      if(ownedPetIds.has(petId)){
-        const reward=getDuplicatePetReward(pull.rarity);
-        petRewards[petId]=petRewards[petId]?{exp:petRewards[petId].exp+reward.exp,bond:petRewards[petId].bond+reward.bond,dupes:petRewards[petId].dupes+reward.dupes}:reward;
-        return{...pull,id:`dupe_${Date.now()}_${i}`,petId,resultType:"petBoost",isNew:false,dupeExp:reward.exp,dupeBond:reward.bond};
-      }
-      const target=virtualEggs.get(petId);
-      if(target){
-        const gain=DUPLICATE_EGG_PROGRESS[pull.rarity]||DUPLICATE_EGG_PROGRESS.N;
-        const needed=EGG_HATCH_TASKS[target.rarity]||EGG_HATCH_TASKS[pull.rarity];
-        target.progress=Math.min(needed,(target.progress||0)+gain);
-        if(target.existing)eggProgress.set(target.id,target.progress);
-        else{
-          const newEgg=newEggs.find(e=>e.id===target.id);
-          if(newEgg)newEgg.progress=target.progress;
-        }
-        return{...pull,id:`merge_${Date.now()}_${i}`,petId,resultType:"eggMerge",isNew:false,progressGain:gain,targetEggId:target.id,targetProgress:target.progress,targetNeeded:needed};
-      }
-      const egg={id:`egg_${Date.now()}_${i}`,rarity:pull.rarity,petId,progress:0,date:now};
-      virtualEggs.set(petId,{...egg,existing:false});
-      newEggs.push(egg);
-      return{...pull,id:egg.id,petId,resultType:"newEgg",egg,isNew:true};
-    });
-    if(Object.keys(petRewards).length&&setPets){
-      setPets(ps=>ps.map(p=>petRewards[p.petId]?applyDuplicatePetReward(p,petRewards[p.petId],now):p));
-    }
-    if(eggProgress.size||newEggs.length){
-      setEggs(es=>[
-        ...es.map(e=>eggProgress.has(e.id)?{...e,progress:eggProgress.get(e.id),date:e.date||now,updatedAt:now}:e),
-        ...newEggs,
-      ]);
-    }
-    return resolved;
-  };
-  const runCelebration=(items)=>{
-    const hasSSR=items.some(r=>r.rarity==="SSR");
-    const hasSR=items.some(r=>r.rarity==="SR");
-    if(hasSSR&&typeof triggerRewardBurst==="function"){
-      triggerRewardBurst({emoji:"✨",count:14,fromX:window.innerWidth/2,fromY:window.innerHeight*0.4,size:30,duration:1700});
-      triggerRewardBurst({emoji:"🌟",count:10,fromX:window.innerWidth/2,fromY:window.innerHeight*0.4,size:26,duration:1900});
-      triggerRewardBurst({text:items.length>1?"出 SSR！":"傳說稀有！",fromX:window.innerWidth/2,fromY:"38%",textColor:"#FFD700",textSize:items.length>1?44:40,duration:1800});
-    }else if(hasSR&&typeof triggerRewardBurst==="function"){
-      triggerRewardBurst({emoji:"✨",count:6,fromX:window.innerWidth/2,fromY:window.innerHeight*0.4,size:22,duration:1300});
-    }
-  };
-
-  const roll=()=>{
-    if(coins<EGG_COST||rolling)return;
-    // (P0-3) 提早決定稀有度，讓動畫可以根據結果秀對應光柱
-    const{pulls,nextPity}=buildPulls(1,false);
-    const{rarity}=pulls[0];
-    setRolling(true);
-    setRollingRarity(rarity);
-    setRollingMode("single");
-    setCoins(co=>co-EGG_COST);
-    setPity(nextPity);
-    playSound("flip");
-    setTimeout(()=>{
-      const settled=settlePulls(pulls);
-      setResult(settled[0]);
-      setShowResult(true);
-      setRolling(false);
-      setRollingRarity(null);
-      setRollingMode(null);
-      if(rarity==="SSR"||rarity==="SR")playSound("combo");else playSound("good");
-      runCelebration(settled);
-    },1800);
-  };
-
-  const roll10=()=>{
-    if(coins<EGG_COST*10||rolling)return;
-    // (P0-3) 提早決定 10 個稀有度，動畫顯示最高的那個
-    const{pulls:preResults,nextPity}=buildPulls(10,true);
-    // 找到最高稀有度作為動畫顯示
-    const highest=preResults.reduce((a,b)=>RARITY_ORDER[b.rarity]>RARITY_ORDER[a.rarity]?b:a);
-    setRolling(true);
-    setRollingRarity(highest.rarity);
-    setRollingMode("multi");
-    setCoins(co=>co-EGG_COST*10);
-    setPity(nextPity);
-    playSound("flip");
-    setTimeout(()=>{
-      const results=settlePulls(preResults);
-      setResult({multi:results});
-      setShowResult(true);
-      setRolling(false);
-      setRollingRarity(null);
-      setRollingMode(null);
-      const hasRare=results.some(r=>r.rarity==="SSR"||r.rarity==="SR");
-      if(hasRare)playSound("combo");else playSound("good");
-      runCelebration(results);
-    },1800);
-  };
-
-  if(showResult&&result){
-    if(result.multi){
-      const summary=countByRarity(result.multi);
-      const best=result.multi.reduce((a,b)=>RARITY_ORDER[b.rarity]>RARITY_ORDER[a.rarity]?b:a,result.multi[0]);
-      const newCount=result.multi.filter(r=>r.isNew).length;
-      const mergedCount=result.multi.filter(r=>r.resultType==="eggMerge").length;
-      const boostedCount=result.multi.filter(r=>r.resultType==="petBoost").length;
-      return(<div><Hdr t="🎰 扭蛋結果" onBack={()=>{setShowResult(false);setResult(null)}} cl={c.cl}/>
-        <div style={{...S.card,padding:"16px",marginBottom:12,borderTop:`4px solid ${RARITY_INFO[best.rarity].color}`,background:`linear-gradient(135deg,${RARITY_INFO[best.rarity].bg},var(--color-background-primary,#fff))`}}>
-          <div style={{fontSize:18,fontWeight:900,color:S.t1}}>🎉 十連抽結果</div>
-          <div style={{fontSize:12,color:S.t2,marginTop:4,lineHeight:1.7}}>最高稀有度：<b style={{color:RARITY_INFO[best.rarity].color}}>{RARITY_INFO[best.rarity].label}</b> · 新蛋 {newCount} 顆 · 融合 {mergedCount} 顆 · 成長能量 {boostedCount} 次</div>
-          <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:10}}>{Object.entries(RARITY_INFO).map(([k,v])=><div key={k} style={{padding:"5px 9px",borderRadius:999,background:v.bg,border:`1px solid ${v.color}33`,fontSize:11,fontWeight:800,color:v.color}}>{v.label} × {summary[k]||0}</div>)}</div>
-        </div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(108px,1fr))",gap:8}}>
-          {result.multi.map((r,i)=>{const ri=RARITY_INFO[r.rarity];return(<div key={r.id} style={{...S.card,padding:"14px 8px",textAlign:"center",background:ri.bg,border:`2px solid ${ri.color}`,animation:`bounceIn .4s ${i*0.08}s both`}}>
-            <div style={{display:"flex",justifyContent:"center",gap:4,alignItems:"center",minHeight:18}}><span style={{fontSize:10,fontWeight:800,color:ri.color}}>{ri.stars} {ri.label}</span></div>
-            <div style={{display:"flex",justifyContent:"center",margin:"4px auto"}}><PixelPet petId={r.petId} stage={r.resultType==="petBoost"?"adult":"egg"} size={48} animate={false}/></div>
-            <div style={{fontSize:12,fontWeight:800,color:S.t1}}>{r.pet.name}</div>
-            <div style={{fontSize:10,color:r.isNew?c.cl:r.resultType==="eggMerge"?ri.color:S.t3,fontWeight:800,marginTop:3}}>{r.resultType==="newEgg"?"NEW":r.resultType==="eggMerge"?`融合 +${r.progressGain}`:`XP +${r.dupeExp}`}</div>
-            {r.resultType==="petBoost"&&<div style={{fontSize:9,color:S.t3,fontWeight:800,marginTop:2}}>親密度 +{r.dupeBond}</div>}
-            {(r.pityHit||r.guarantee)&&<div style={{fontSize:9,color:ri.color,fontWeight:800,marginTop:2}}>{r.pityHit?"SR 保底":"十連保底"}</div>}
-          </div>)})}
-        </div>
-        <div style={{display:"flex",gap:8,marginTop:16}}>
-          <button onClick={()=>{setShowResult(false);setResult(null)}} style={{...S.btn,background:c.cl,color:"#fff",fontSize:14,flex:1}}>收下結果</button>
-          <button onClick={()=>{setShowResult(false);setResult(null);setTimeout(roll10,200)}} disabled={coins<EGG_COST*10} style={{...S.btn,background:S.bg2,color:S.t1,fontSize:14,flex:1,opacity:coins<EGG_COST*10?0.45:1}}>再十連</button>
-        </div>
-      </div>);
-    }
-    const ri=RARITY_INFO[result.rarity];
-    const title=result.resultType==="newEgg"?`獲得 ${result.pet.name} 蛋！`:result.resultType==="eggMerge"?`${result.pet.name} 蛋已融合！`:`${result.pet.name} 轉成成長能量！`;
-    return(<div><Hdr t="🎰 扭蛋結果" onBack={()=>{setShowResult(false);setResult(null)}} cl={c.cl}/>
-      <div style={{...S.card,padding:"32px 20px",textAlign:"center",background:`linear-gradient(135deg,${ri.bg},var(--color-background-primary,#fff))`,border:`3px solid ${ri.color}`,animation:"bounceIn .5s ease-out"}}>
-        <div style={{fontSize:14,fontWeight:700,color:ri.color,marginBottom:8}}>{ri.stars} {ri.label}</div>
-        <div style={{display:"flex",justifyContent:"center",marginBottom:12,animation:"emojiBounce 1.5s ease-in-out infinite"}}><PixelPet petId={result.pet.id} stage={result.resultType==="petBoost"?"adult":"egg"} size={128}/></div>
-        <div style={{fontSize:22,fontWeight:700,color:S.t1}}>{title}</div>
-        <div style={{fontSize:12,color:result.resultType==="newEgg"?c.cl:ri.color,fontWeight:900,marginTop:4}}>{result.resultType==="newEgg"?"NEW · 已放入蛋倉":result.resultType==="eggMerge"?`重複蛋自動融合 · 孵化進度 +${result.progressGain}`:`已擁有寵物 · XP +${result.dupeExp} · 親密度 +${result.dupeBond}`}</div>
-        <div style={{fontSize:13,color:S.t2,marginTop:6}}>預覽：{result.pet.emoji} {result.pet.name}</div>
-        <div style={{fontSize:12,color:S.t3,marginTop:8,fontStyle:"italic"}}>{result.pet.story}</div>
-        {result.pityHit&&<div style={{marginTop:12,padding:"8px 12px",background:"#FFF3CD",border:"1px solid #EF9F27",borderRadius:10,fontSize:12,color:"#856404",fontWeight:800}}>SR 保底觸發，這次至少超稀有！</div>}
-        <div style={{marginTop:16,padding:"10px 14px",background:S.bg2,borderRadius:10,fontSize:13,color:S.t2}}>
-          {result.resultType==="newEgg"?`💡 繼續學習 ${EGG_HATCH_TASKS[result.rarity]} 題英文來孵化這顆蛋！`:result.resultType==="eggMerge"?`💡 到蛋倉查看進度：${result.targetProgress}/${result.targetNeeded}`:"💡 到寵物圖鑑查看寵物成長。"}
-        </div>
-      </div>
-      <div style={{display:"flex",gap:8,marginTop:14}}>
-        <button onClick={()=>{setShowResult(false);setResult(null)}} style={{...S.btn,background:c.cl,color:"#fff",fontSize:14,flex:1}}>收下結果</button>
-        <button onClick={()=>{setShowResult(false);setResult(null);setTimeout(roll,200)}} disabled={coins<EGG_COST} style={{...S.btn,background:S.bg2,color:S.t1,fontSize:14,flex:1,opacity:coins<EGG_COST?0.45:1}}>再抽一次</button>
-      </div>
-    </div>);
-  }
-
-  const totalPets=Object.values(PETS).reduce((a,list)=>a+list.length,0);
-  const collectedIds=new Set(pets.map(p=>p.petId));
-  const collectedPct=Math.round((collectedIds.size/totalPets)*100);
-  const duplicateEnergyTotal=pets.reduce((sum,p)=>sum+(p.dupes||0),0);
-  const duplicatePowerBonus=pets.reduce((sum,p)=>sum+getDuplicateEnergyInfo(p).adventureBonus,0);
-  const singlePulls=Math.floor(coins/EGG_COST);
-  const tenReady=coins>=EGG_COST*10;
-  const readyEggs=eggs.filter(e=>e.progress>=EGG_HATCH_TASKS[e.rarity]).length;
-  const eggCounts=countByRarity(eggs);
-  const srPityLeft=Math.max(1,GACHA_SR_PITY-Number(pity?.sinceSR||0));
-  const coinNeed=coins<EGG_COST?EGG_COST-coins:coins<EGG_COST*10?EGG_COST*10-coins:0;
-
-  return(<div><Hdr t="🎰 扭蛋機" onBack={onBack} cl={c.cl}/>
-    {/* Coins display */}
-    <div style={{...S.card,padding:"16px",marginBottom:12,background:`linear-gradient(135deg,#FFF3CD,#FFE066)`,border:"2px solid #EF9F27"}}>
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap"}}>
-        <div><div style={{fontSize:32,fontWeight:900,color:"#EF9F27",lineHeight:1}}>🪙 {coins}</div><div style={{fontSize:12,color:"#856404",marginTop:4}}>可抽 {singlePulls} 次 · 答題可獲得金幣</div></div>
-        <div style={{minWidth:150,flex:"1 1 180px"}}>
-          <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#856404",fontWeight:800,marginBottom:4}}><span>十連進度</span><span>{Math.min(100,Math.floor(coins/(EGG_COST*10)*100))}%</span></div>
-          <div style={{height:8,background:"rgba(255,255,255,.55)",borderRadius:999,overflow:"hidden"}}><div style={{height:"100%",width:`${Math.min(100,coins/(EGG_COST*10)*100)}%`,background:"#EF9F27",borderRadius:999}}/></div>
-          <div style={{fontSize:11,color:"#856404",marginTop:4}}>{tenReady?"可以十連抽了":`再 ${coinNeed} 金幣可${coins<EGG_COST?"單抽":"十連抽"}`}</div>
-        </div>
-      </div>
-    </div>
-
-    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:8,marginBottom:12}}>
-      <div style={{...S.card,padding:"12px",background:`linear-gradient(135deg,${c.bg},var(--color-background-primary,#fff))`}}><div style={{fontSize:12,color:S.t2,fontWeight:700}}>收藏進度</div><div style={{fontSize:20,fontWeight:900,color:c.cl,marginTop:2}}>{collectedIds.size}/{totalPets}</div><div style={{height:6,background:S.bg2,borderRadius:999,overflow:"hidden",marginTop:7}}><div style={{height:"100%",width:`${collectedPct}%`,background:c.cl}}/></div></div>
-      <div style={{...S.card,padding:"12px"}}><div style={{fontSize:12,color:S.t2,fontWeight:700}}>蛋倉狀態</div><div style={{fontSize:20,fontWeight:900,color:S.t1,marginTop:2}}>🥚 {eggs.length}</div><div style={{fontSize:11,color:readyEggs?c.cl:S.t3,marginTop:4,fontWeight:800}}>{readyEggs?`${readyEggs} 顆可以孵化`:"完成學習任務來孵蛋"}</div></div>
-      <div style={{...S.card,padding:"12px",border:`1px solid ${srPityLeft<=3?"#EF9F27":S.bd}`}}><div style={{fontSize:12,color:S.t2,fontWeight:700}}>SR 保底</div><div style={{fontSize:20,fontWeight:900,color:srPityLeft<=3?"#EF9F27":S.t1,marginTop:2}}>最多 {srPityLeft} 抽</div><div style={{fontSize:11,color:S.t3,marginTop:4}}>沒有 SR/SSR 時會累積</div></div>
-    </div>
-
-    {/* Rarity rates */}
-    <div style={{...S.card,padding:"14px 16px",marginBottom:12}}>
-      <div style={{display:"flex",justifyContent:"space-between",gap:8,alignItems:"center",marginBottom:8}}><div style={{fontSize:13,fontWeight:800,color:S.t1}}>🎲 抽獎機率</div><div style={{fontSize:11,color:c.cl,fontWeight:800}}>十連至少 1 顆稀有以上</div></div>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(76px,1fr))",gap:6}}>
-        {Object.entries(RARITY_INFO).map(([k,v])=>(<div key={k} style={{flex:"1 1 60px",textAlign:"center",padding:"6px 8px",background:v.bg,borderRadius:8,border:`1px solid ${v.color}33`}}>
-          <div style={{fontSize:10,fontWeight:700,color:v.color}}>{v.stars}</div>
-          <div style={{fontSize:14,fontWeight:700,color:v.color}}>{v.rate}%</div>
-          <div style={{fontSize:10,color:S.t3}}>{v.label}</div>
-        </div>))}
-      </div>
-    </div>
-
-    {/* Roll buttons */}
-    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
-      <button onClick={roll} disabled={coins<EGG_COST||rolling} style={{...S.btn,background:`linear-gradient(135deg,${c.cl},${c.ac})`,color:"#fff",padding:"18px 12px",fontSize:15,opacity:coins<EGG_COST||rolling?0.45:1,boxShadow:`0 4px 12px ${c.cl}40`,display:"flex",flexDirection:"column",gap:3,animation:rolling?"emojiPulse .5s infinite":"none"}}>
-        <span style={{fontSize:24}}>🎰</span>
-        <span>單抽</span>
-        <span style={{fontSize:11,opacity:.9}}>🪙 {EGG_COST}</span>
-      </button>
-      <button onClick={roll10} disabled={coins<EGG_COST*10||rolling} style={{...S.btn,background:`linear-gradient(135deg,#7B61FF,#9F8FFF)`,color:"#fff",padding:"18px 12px",fontSize:15,opacity:coins<EGG_COST*10||rolling?0.45:1,boxShadow:"0 4px 12px #7B61FF40",display:"flex",flexDirection:"column",gap:3,animation:rolling?"emojiPulse .5s infinite":"none"}}>
-        <span style={{fontSize:24}}>✨</span>
-        <span>十連抽</span>
-        <span style={{fontSize:11,opacity:.9}}>🪙 {EGG_COST*10} · R+ 保底</span>
-      </button>
-    </div>
-
-    {/* (P0-3) 三段戲劇化抽蛋動畫：落下 → 震動發光 → 自動進結果頁 */}
-    {rolling&&<GachaCeremony rarity={rollingRarity} mode={rollingMode}/>}
-
-    {/* Collection stats */}
-    <div style={{...S.card,padding:"14px 16px",marginBottom:12}}>
-      <div style={{fontSize:13,fontWeight:800,color:S.t1,marginBottom:8}}>📚 我的收藏與蛋倉</div>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(76px,1fr))",gap:6}}>
-        {Object.entries(RARITY_INFO).map(([k,v])=>{const total=PETS[k].length;const got=pets.filter(p=>p.rarity===k).length;return(<div key={k} style={{flex:"1 1 60px",textAlign:"center",padding:"6px",background:S.bg2,borderRadius:8}}>
-          <div style={{fontSize:10,color:v.color,fontWeight:600}}>{v.label}</div>
-          <div style={{fontSize:14,fontWeight:700,color:S.t1}}>{got}/{total}</div>
-          <div style={{fontSize:10,color:S.t3,marginTop:1}}>蛋 {eggCounts[k]||0}</div>
-        </div>)})}
-      </div>
-      <div style={{marginTop:10,padding:"9px 10px",borderRadius:12,background:"linear-gradient(135deg,#FFF3CD,var(--color-background-primary,#fff))",border:"1px solid #EF9F2744",display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
-        <div style={{fontSize:22}}>✨</div>
-        <div style={{flex:1,minWidth:170}}>
-          <div style={{fontSize:12,fontWeight:900,color:"#856404"}}>重複成長能量：{duplicateEnergyTotal}</div>
-          <div style={{fontSize:11,color:"#856404",lineHeight:1.5,marginTop:2}}>已轉成冒險戰力 +{duplicatePowerBonus}，同時保留 XP 與親密度補償。</div>
-        </div>
-      </div>
-    </div>
-
-    <div style={{...S.card,padding:"14px 16px",marginBottom:12,border:"1px solid #EF9F2744",background:"linear-gradient(135deg,#FFF9E6,var(--color-background-primary,#fff))"}}>
-      <div style={{fontSize:13,fontWeight:900,color:S.t1,marginBottom:8}}>🔁 重複寵物怎麼處理</div>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))",gap:7}}>
-        {Object.entries(RARITY_INFO).map(([rarity,info])=>{
-          const petReward=DUPLICATE_PET_REWARD[rarity]||DUPLICATE_PET_REWARD.N;
-          const eggGain=DUPLICATE_EGG_PROGRESS[rarity]||DUPLICATE_EGG_PROGRESS.N;
-          return(<div key={rarity} style={{padding:"8px 9px",borderRadius:11,background:info.bg,border:`1px solid ${info.color}33`}}>
-            <div style={{fontSize:11,fontWeight:900,color:info.color}}>{info.stars} {info.label}</div>
-            <div style={{fontSize:11,color:S.t2,lineHeight:1.5,marginTop:4}}>已擁有：XP +{petReward.exp} · 親密 +{petReward.bond}</div>
-            <div style={{fontSize:11,color:S.t2,lineHeight:1.5}}>重複蛋：孵化 +{eggGain}</div>
-          </div>);
-        })}
-      </div>
-    </div>
-
-    {/* How to earn coins */}
-    <div style={{...S.card,padding:"14px 16px"}}>
-      <div style={{fontSize:13,fontWeight:800,color:S.t1,marginBottom:6}}>💰 如何獲得金幣</div>
-      <div style={{fontSize:12,color:S.t2,lineHeight:1.8}}>
-        • 每答對 1 題 → 獲得 1-5 🪙<br/>
-        • 完成 SRS 輪次 → 額外獎勵<br/>
-        • Combo 連擊 → 額外獎勵<br/>
-        • 每日目標達成 → 大量金幣<br/>
-        • 抽到重複蛋 → 自動融合成孵化進度<br/>
-        • 抽到已擁有寵物 → 轉成 XP 與親密度<br/>
-        <span style={{color:c.cl,fontWeight:800}}>這裡只使用學習金幣，不需要任何付費抽蛋。</span>
-      </div>
-    </div>
-  </div>);
+function GachaPageInner(props){
+  return <PetGachaStudio {...props} api={{Hdr,useLS,EGG_COST,EGG_HATCH_TASKS,GACHA_SR_PITY,RARITY_INFO,PETS,playSound,rollRarity,randomPet,RARITY_ORDER,DUPLICATE_EGG_PROGRESS,getDuplicatePetReward,applyDuplicatePetReward}}/>;
 }
-
 
 // ═══ PET SOUNDS (寵物叫聲 v2 - 真實聲音模擬) ═════════════════════════════
 // Helper: create one "note" with frequency sweep, vibrato, ADSR envelope
@@ -1411,7 +1017,7 @@ const PET_SAYINGS=["Hello!","Love you!","Play with me!","I'm hungry...","Thank y
 // ═══ PETS GUARD (登入/註冊守門) ══════════════════════════════════════
 function PetsGuardInner(props){
   const{c,petAccount,setPetAccount,setPets,setEggs,setInventory,setCoins,pets,eggs,inventory,coins}=props;
-  const[mode,setMode]=useState(petAccount?"in":"welcome");// welcome | login | signup | in
+  const[mode,setMode]=useState(()=>{if(petAccount)return "in";try{return localStorage.getItem("eg_petLocalMode")==="true"?"local":"welcome"}catch{return "welcome"}});// welcome | login | signup | in
   const[username,setUsername]=useState("");
   const[pin,setPin]=useState("");
   const[pin2,setPin2]=useState("");
@@ -1419,8 +1025,9 @@ function PetsGuardInner(props){
   const[loading,setLoading]=useState(false);
   const[mergeChoice,setMergeChoice]=useState(null);// for login conflict
 
+  useEffect(()=>{if(mode==="in"&&!petAccount)setMode("welcome")},[mode,petAccount]);
   // If already logged in, show pets page directly
-  if(mode==="in"&&petAccount){return<PetsPage {...props}/>}
+  if(mode==="local"||(mode==="in"&&petAccount)){return<PetsPage {...props}/>}
 
   const doLogin=async()=>{
     setErr("");setLoading(true);
@@ -1540,7 +1147,9 @@ function PetsGuardInner(props){
 
   // Welcome screen
   if(mode==="welcome"){
-    return(<div><Hdr t="🐾 寵物樂園" onBack={props.onBack} cl={c.cl}/>
+    return(<div className="pet-world"><Hdr t="🐾 寵物樂園" onBack={props.onBack} cl={c.cl}/>
+      <PetHabitatScene pets={pets.length?pets:[{petId:"bunny",level:1}]} caption="你的夥伴與小家園，已經準備好了"/>
+      <div className="pet-button-row" style={{marginBottom:22}}><button className="pet-primary" onClick={()=>{try{localStorage.setItem("eg_petLocalMode","true")}catch{}setMode("local")}}>先在這台裝置養寵物 →</button><p className="pet-note">進度保存在這個瀏覽器；需要跨裝置時，可使用下方帳號。</p></div>
       <div style={{...S.card,padding:"32px 24px",textAlign:"center",background:`linear-gradient(135deg,${c.bg},var(--color-background-primary,#fff))`}}>
         <div style={{fontSize:64,marginBottom:12,animation:"emojiBounce 1.5s ease-in-out infinite"}}>🐾</div>
         <div style={{fontSize:22,fontWeight:700,color:S.t1,marginBottom:8}}>歡迎來到寵物樂園！</div>
@@ -1638,9 +1247,7 @@ function PetsGuardInner(props){
 // Each pet has 4 growth stage sprites encoded as 16x14 character grids
 // Characters map to colors (see PIXEL_COLORS). '.' means transparent.
 
-const LazyPixelPet=lazy(()=>import("../components/PixelPet.jsx"));
-function PixelPetFallback({size=180}){return <span style={{display:"inline-block",width:size,height:size,borderRadius:12,background:"linear-gradient(135deg,var(--color-background-secondary,#f3f2ee),var(--color-background-primary,#fff))"}}/>}
-function PixelPet(props){return <Suspense fallback={<PixelPetFallback size={props.size}/>}> <LazyPixelPet {...props}/> </Suspense>}
+function PixelPet(props){return <PetCompanion {...props}/>;}
 
 function PetHomeScene({pet,petDef,ri,mood,c,onCleanPoop}){
   const home=PET_HOMES[petDef.id]||PET_HOMES[PET_VARIANT_BASE[petDef.id]]||PET_HOMES.puppy;
@@ -2249,264 +1856,14 @@ function HatchAnimation({data,onClose}){
 
 // ═══ PLAYGROUND VIEW (寵物玩耍場 - P3-1) ════════════════════════════
 // 兩隻寵物在草地上互動、英文對話，答對任務後才給獎勵
-function PlaygroundView({pets,setPets,setCoins,c,onBack,incrTask}){
-  // 隨機選兩隻寵物（不同的）
-  const[selected,setSelected]=useState(()=>{
-    if(pets.length<2)return[null,null];
-    const idx1=Math.floor(Math.random()*pets.length);
-    let idx2=Math.floor(Math.random()*pets.length);
-    while(idx2===idx1)idx2=Math.floor(Math.random()*pets.length);
-    return[idx1,idx2];
-  });
-  const[bubbleIdx,setBubbleIdx]=useState(0);
-  const[played,setPlayed]=useState(false);
-  const[answer,setAnswer]=useState(null);
-
-  const PLAY_DIALOGUES=[
-    {a:"Hi!",b:"Hello!",tip:"打招呼"},
-    {a:"Let's play!",b:"OK!",tip:"一起玩吧"},
-    {a:"You are cute!",b:"Thank you!",tip:"你好可愛"},
-    {a:"I'm happy!",b:"Me too!",tip:"我很開心"},
-    {a:"Want to play?",b:"Yes please!",tip:"想玩嗎？"},
-    {a:"Good friend!",b:"Best friend!",tip:"好朋友"},
-    {a:"Let's run!",b:"Wait for me!",tip:"一起跑！"},
-    {a:"I love you!",b:"Love you too!",tip:"我愛你"},
-  ];
-  const dialogue=PLAY_DIALOGUES[bubbleIdx%PLAY_DIALOGUES.length];
-  const PLAY_CHALLENGES=[
-    {q:"Which sentence means「我們是好朋友」?",choices:["We are best friends!","I am hungry.","Good night."],answer:0,speak:"We are best friends!"},
-    {q:"Choose the friendly answer to 'Let's play!'",choices:["OK!","No food.","Sleep tight."],answer:0,speak:"OK!"},
-    {q:"Which word means「可愛的」?",choices:["cute","tired","dirty"],answer:0,speak:"cute"},
-    {q:"Complete: My pet is ___.",choices:["happy","book","run"],answer:0,speak:"My pet is happy."},
-  ];
-  const challenge=PLAY_CHALLENGES[bubbleIdx%PLAY_CHALLENGES.length];
-
-  useEffect(()=>{
-    if(selected[0]===null)return;
-    if(played||answer===challenge.answer)return;
-    const t=setInterval(()=>{setBubbleIdx(i=>i+1);setAnswer(null)},5000);
-    return()=>clearInterval(t);
-  },[selected,played,answer,challenge.answer]);
-
-  const playTogether=()=>{
-    if(played||selected[0]===null)return;
-    if(answer!==challenge.answer){
-      setAnswer(answer===null?-1:answer);
-      playSound("bad");
-      return;
-    }
-    setPets(ps=>ps.map((p,i)=>{
-      if(i===selected[0]||i===selected[1]){
-        return levelUpPet({
-          ...p,
-          bond:(p.bond||0)+8,
-          exp:(p.exp||0)+12,
-          energy:Math.max(0,(p.energy||0)-4),
-          lastUpdate:new Date().toISOString(),
-        });
-      }
-      return p;
-    }));
-    setCoins?.(co=>co+8);
-    incrTask?.("playToday");
-    setPlayed(true);
-    playSound("combo");
-    if(typeof speak==="function")speak(challenge.speak);
-  };
-
-  const reroll=()=>{
-    if(pets.length<2)return;
-    let idx1=Math.floor(Math.random()*pets.length);
-    let idx2=Math.floor(Math.random()*pets.length);
-    while(idx2===idx1)idx2=Math.floor(Math.random()*pets.length);
-    setSelected([idx1,idx2]);
-    setBubbleIdx(0);
-    setPlayed(false);
-    setAnswer(null);
-  };
-
-  if(selected[0]===null)return(<div><Hdr t="🎪 玩耍場" onBack={onBack} cl={c.cl}/>
-    <div style={{textAlign:"center",padding:"48px 16px"}}>
-      <div style={{fontSize:48}}>🐣</div>
-      <div style={{fontSize:14,color:S.t2,marginTop:12}}>需要至少 2 隻寵物才能玩耍喔！</div>
-    </div>
-  </div>);
-
-  const p1=pets[selected[0]],p2=pets[selected[1]];
-  const def1=PETS[p1.rarity].find(p=>p.id===p1.petId);
-  const def2=PETS[p2.rarity].find(p=>p.id===p2.petId);
-  if(!def1||!def2)return null;
-  const ri1=RARITY_INFO[p1.rarity];
-  const ri2=RARITY_INFO[p2.rarity];
-
-  const styleSheet=`
-@keyframes pg_walk1 { 0%,100%{transform:translateX(0) scaleY(1)} 25%{transform:translateX(-3px) scaleY(0.97)} 75%{transform:translateX(3px) scaleY(0.97)} }
-@keyframes pg_walk2 { 0%,100%{transform:translateX(0) scaleY(1)} 25%{transform:translateX(3px) scaleY(0.97)} 75%{transform:translateX(-3px) scaleY(0.97)} }
-@keyframes pg_bubble { 0%{transform:scale(0) translateY(8px);opacity:0} 30%{transform:scale(1.1) translateY(0);opacity:1} 90%{transform:scale(1) translateY(0);opacity:1} 100%{transform:scale(0.9) translateY(-5px);opacity:0} }
-@keyframes pg_heart { 0%{transform:translate(0,0) scale(0);opacity:0} 30%{opacity:1;transform:translate(0,0) scale(1)} 100%{transform:translate(var(--hx),var(--hy)) scale(0.6);opacity:0} }
-@keyframes pg_bg { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
-@media (prefers-reduced-motion: reduce) { [data-playground] *{animation-duration:0.5s !important;animation-iteration-count:1 !important} }
-`;
-
-  return(<div data-playground><Hdr t="🎪 玩耍場" onBack={onBack} cl={c.cl} extra={<button onClick={reroll} style={{background:"none",border:`1px solid ${S.bd}`,borderRadius:8,padding:"4px 10px",fontSize:11,cursor:"pointer",color:S.t2}}>🎲 換組合</button>}/>
-    <style>{styleSheet}</style>
-
-    {/* 場景 */}
-    <div style={{
-      position:"relative",
-      width:"100%",
-      height:300,
-      borderRadius:18,
-      overflow:"hidden",
-      marginBottom:14,
-      background:"linear-gradient(135deg,#B8E6FF,#E8F5E9 50%,#9CDFA8)",
-      backgroundSize:"200% 200%",
-      animation:"pg_bg 12s ease infinite",
-      boxShadow:"0 4px 16px rgba(0,0,0,0.12)",
-      border:"3px solid #E91E63",
-    }}>
-      {/* 背景裝飾 */}
-      <div style={{position:"absolute",top:14,left:20,fontSize:20,opacity:0.5}}>☁️</div>
-      <div style={{position:"absolute",top:30,right:30,fontSize:24,opacity:0.6}}>☀️</div>
-      <div style={{position:"absolute",top:24,left:"60%",fontSize:14,opacity:0.4}}>☁️</div>
-
-      {/* 寵物 1 - 左側 */}
-      <div style={{
-        position:"absolute",bottom:60,left:"22%",
-        animation:"pg_walk1 1.6s ease-in-out infinite",
-      }}>
-        <PixelPet petId={def1.id} stage={getPetStage(p1)} size={72} animate={false}/>
-        {/* 對話氣泡 */}
-        <div key={`b1-${bubbleIdx}`} style={{
-          position:"absolute",bottom:"100%",left:"50%",
-          transform:"translateX(-50%)",
-          marginBottom:8,
-          background:"#fff",
-          border:`2px solid ${ri1.color}`,
-          borderRadius:14,
-          padding:"6px 14px",
-          fontSize:14,fontWeight:700,
-          color:S.t1,
-          whiteSpace:"nowrap",
-          animation:"pg_bubble 2.8s ease-in-out forwards",
-          boxShadow:"0 3px 8px rgba(0,0,0,0.15)",
-          zIndex:5,
-        }}>
-          {dialogue.a}
-          <div style={{position:"absolute",bottom:-7,left:"50%",transform:"translateX(-50%)",width:0,height:0,borderLeft:"6px solid transparent",borderRight:"6px solid transparent",borderTop:`7px solid ${ri1.color}`}}/>
-        </div>
-      </div>
-
-      {/* 寵物 2 - 右側 */}
-      <div style={{
-        position:"absolute",bottom:60,right:"22%",
-        animation:"pg_walk2 1.6s ease-in-out infinite",
-      }}>
-        <PixelPet petId={def2.id} stage={getPetStage(p2)} size={72} animate={false}/>
-        <div key={`b2-${bubbleIdx}`} style={{
-          position:"absolute",bottom:"100%",left:"50%",
-          transform:"translateX(-50%)",
-          marginBottom:8,
-          background:"#fff",
-          border:`2px solid ${ri2.color}`,
-          borderRadius:14,
-          padding:"6px 14px",
-          fontSize:14,fontWeight:700,
-          color:S.t1,
-          whiteSpace:"nowrap",
-          animation:"pg_bubble 2.8s 1.2s ease-in-out forwards",
-          opacity:0,
-          boxShadow:"0 3px 8px rgba(0,0,0,0.15)",
-          zIndex:5,
-        }}>
-          {dialogue.b}
-          <div style={{position:"absolute",bottom:-7,left:"50%",transform:"translateX(-50%)",width:0,height:0,borderLeft:"6px solid transparent",borderRight:"6px solid transparent",borderTop:`7px solid ${ri2.color}`}}/>
-        </div>
-      </div>
-
-      {/* 已玩耍：愛心爆裂 */}
-      {played&&Array.from({length:8}).map((_,i)=>{
-        const angle=i*45;
-        const dist=60+Math.random()*30;
-        return(<div key={`h${i}`} style={{
-          position:"absolute",top:"50%",left:"50%",
-          fontSize:22,
-          "--hx":`${Math.cos(angle*Math.PI/180)*dist}px`,
-          "--hy":`${Math.sin(angle*Math.PI/180)*dist-20}px`,
-          animation:`pg_heart 1.6s ${i*0.05}s ease-out forwards`,
-          opacity:0,
-          zIndex:8,
-          pointerEvents:"none",
-        }}>{i%2?"❤️":"💖"}</div>);
-      })}
-
-      {/* 地面 */}
-      <div style={{position:"absolute",bottom:0,left:0,right:0,height:48,background:"linear-gradient(180deg,transparent,#9CDFA8 20%,#7FB28D)",zIndex:1}}/>
-      <div style={{position:"absolute",bottom:6,left:0,right:0,textAlign:"center",fontSize:14,letterSpacing:3,zIndex:2}}>🌱🌷🌱🌼🌱🌷🌱🌼🌱</div>
-    </div>
-
-    {/* 中文翻譯 */}
-    <div style={{...S.card,padding:"14px 18px",marginBottom:12,textAlign:"center",background:`linear-gradient(135deg,#FFE0F0,var(--color-background-primary,#fff))`,border:"2px solid #E91E63"}}>
-      <div style={{fontSize:11,color:"#AD1457",fontWeight:600,marginBottom:4}}>💬 牠們在說什麼？</div>
-      <div style={{fontSize:15,fontWeight:700,color:S.t1,marginBottom:2}}>"{dialogue.a}" + "{dialogue.b}"</div>
-      <div style={{fontSize:12,color:S.t2}}>意思：{dialogue.tip}</div>
-    </div>
-
-    <div style={{...S.card,padding:"14px 16px",marginBottom:12,border:"1px solid #E91E6355",background:"linear-gradient(135deg,#FFF7FB,var(--color-background-primary,#fff))"}}>
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,marginBottom:8}}>
-        <div style={{fontSize:12,fontWeight:1000,color:"#C2185B"}}>English Play Mission</div>
-        <button onClick={()=>speak(challenge.q)} style={{border:`1px solid ${S.bd}`,background:S.bg1,borderRadius:999,padding:"5px 9px",fontSize:11,color:S.t2,cursor:"pointer",fontFamily:"inherit"}}>🔊</button>
-      </div>
-      <div style={{fontSize:15,fontWeight:900,color:S.t1,lineHeight:1.45,marginBottom:9}}>{challenge.q}</div>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(110px,1fr))",gap:7}}>
-        {challenge.choices.map((choice,i)=>{
-          const picked=answer===i;
-          const wrong=picked&&i!==challenge.answer;
-          const correct=picked&&i===challenge.answer;
-          return(<button key={choice} onClick={()=>{setAnswer(i);playSound(i===challenge.answer?"good":"bad");if(i===challenge.answer)speak(challenge.speak)}} disabled={played} style={{padding:"10px 11px",borderRadius:12,border:`2px solid ${correct?"#1D9E75":wrong?"#E24B4A":S.bd}`,background:correct?"#E1F5EE":wrong?"#FCEBEB":S.bg1,color:S.t1,fontSize:13,fontWeight:900,textAlign:"left",cursor:played?"default":"pointer",fontFamily:"inherit"}}>{choice}</button>);
-        })}
-      </div>
-      {answer!==null&&answer!==challenge.answer&&<div style={{fontSize:11,color:"#B42318",fontWeight:800,marginTop:7}}>先選出正確英文，再讓寵物一起玩。</div>}
-      {answer===challenge.answer&&<div style={{fontSize:11,color:"#0F6E56",fontWeight:900,marginTop:7}}>答對了，可以開始遊戲獎勵。</div>}
-    </div>
-
-    {/* 寵物資訊 */}
-    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
-      {[{p:p1,def:def1,ri:ri1},{p:p2,def:def2,ri:ri2}].map(({p,def,ri},i)=>(
-        <div key={i} style={{...S.card,padding:"10px 12px",textAlign:"center",background:ri.bg,border:`2px solid ${ri.color}`}}>
-          <div style={{fontSize:13,fontWeight:700,color:S.t1}}>{def.name}</div>
-          <div style={{fontSize:10,color:S.t3,marginTop:2}}>Lv.{p.level} · 💖{p.bond||0}{played?<span style={{color:"#E91E63",fontWeight:700}}> +8 · XP +12</span>:""}</div>
-        </div>
-      ))}
-    </div>
-
-    {/* 主要操作按鈕 */}
-    {!played?<button onClick={playTogether} style={{
-      ...S.btn,
-      width:"100%",
-      padding:"16px",
-      fontSize:16,
-      background:"linear-gradient(135deg,#E91E63,#F06292)",
-      color:"#fff",
-      boxShadow:"0 4px 12px rgba(233,30,99,0.3)",
-    }}>{answer===challenge.answer?"🎉 一起玩耍！(+8 親密度 / XP +12 / 金幣 +8)":"先完成英文任務"}</button>:
-    <div style={{textAlign:"center",padding:"14px",background:"#FFE0F0",borderRadius:14,fontSize:14,color:"#C2185B",fontWeight:700,border:"2px solid #E91E63"}}>
-      ✨ 玩得很開心！親密度 +8、XP +12、金幣 +8
-    </div>}
-
-    <div style={{...S.card,padding:"12px 16px",marginTop:12,background:S.bg2,fontSize:11,color:S.t3,textAlign:"center",lineHeight:1.7}}>
-      💡 玩耍會消耗一點體力，但能大大增加親密度！<br/>
-      點右上「🎲 換組合」可以選不同的寵物來互動
-    </div>
-  </div>);
-}
-
 // ═══ PETS PAGE (寵物圖鑑 v2 - 養成系統) ════════════════════════════
-function PetsPage({onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,setInventory,petAccount,setPetAccount,petTasks,setPetTasks,incrTask}){
+function PetsPage({onBack,onNavigate,initialTab="home",c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,setInventory,petAccount,setPetAccount,petTasks,setPetTasks,incrTask}){
   const reactionTimer=useRef(null);
   useEffect(()=>()=>clearTimeout(reactionTimer.current),[]);
-  const[tab,setTab]=useState("tasks");
+  const[tab,setTab]=useState(initialTab);
   const[selectedPet,setSelectedPet]=useState(null);
+  const careActionLock=useRef(false),hatchingEggs=useRef(new Set());
+  useEffect(()=>setSelectedPet(current=>current?pets.find(p=>p.petId===current.petId)||null:null),[pets]);
   const[actionModal,setActionModal]=useState(null);// {pet,action}
   const[shopOpen,setShopOpen]=useState(false);
   const[eventModal,setEventModal]=useState(null);// {pet,event}
@@ -2520,6 +1877,9 @@ function PetsPage({onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,s
   const[animLevel,setAnimLevel]=useLS("eg_animLevel","full");// (P2-3) "full" | "lite" | "off"
   const[playgroundOpen,setPlaygroundOpen]=useState(false);// (P3-1 寵物玩耍場)
   const[hatchAnim,setHatchAnim]=useState(null);// (V19 孵化動畫) {pet, petDef, ri}
+  useEffect(()=>{
+    if(typeof window!=="undefined"&&!/jsdom/i.test(navigator.userAgent))window.scrollTo({top:0,behavior:"instant"});
+  },[selectedPet?.petId,playgroundOpen,shopOpen,tab,actionModal?.step]);
   const[petQuery,setPetQuery]=useState("");
   const[petRarity,setPetRarity]=useState("all");
   const[petSort,setPetSort]=useState("need");
@@ -2784,31 +2144,17 @@ function PetsPage({onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,s
   },[]);
 
   const hatchEgg=(egg)=>{
-    const petDef=PETS[egg.rarity].find(p=>p.id===egg.petId);
+    if(hatchingEggs.current.has(egg.id)||!eggs.some(e=>e.id===egg.id)||(egg.progress||0)<EGG_HATCH_TASKS[egg.rarity])return;
+    const petDef=PETS[egg.rarity]?.find(p=>p.id===egg.petId);
     if(!petDef)return;
-    const ri=RARITY_INFO[egg.rarity];
-    // (V19) 觸發孵化動畫
-    setHatchAnim({egg,petDef,ri});
-    playSound("flip");
-    // 動畫播完才實際更新資料
-    setTimeout(()=>{
-      const now=new Date().toISOString();
-      const existingIdx=pets.findIndex(p=>p.petId===egg.petId);
-      if(existingIdx>=0){
-        const reward=getDuplicatePetReward(egg.rarity);
-        setPets(ps=>ps.map(p=>p.petId===egg.petId?applyDuplicatePetReward(p,reward,now):p));
-        setSelectedPet(cur=>cur?.petId===egg.petId?applyDuplicatePetReward(cur,reward,now):cur);
-        showToast(`${petDef.name} 已擁有，轉成 XP +${reward.exp}、親密 +${reward.bond}`,"✨","info");
-      }else{
-        setPets(ps=>[...ps,{
-          petId:egg.petId,rarity:egg.rarity,level:1,exp:0,dupes:0,
-          hunger:100,clean:100,energy:100,bond:0,
-          hatchDate:now,lastUpdate:now,
-        }]);
-      }
-      setEggs(es=>es.filter(e=>e.id!==egg.id));
-      playSound("done");
-    },1200);
+    hatchingEggs.current.add(egg.id);
+    const ri=RARITY_INFO[egg.rarity],now=new Date().toISOString();
+    setPets(previous=>{
+      if(previous.some(p=>p.petId===egg.petId))return previous.map(p=>p.petId===egg.petId?applyDuplicatePetReward(p,getDuplicatePetReward(egg.rarity),now):p);
+      return [...previous,{petId:egg.petId,rarity:egg.rarity,level:1,exp:0,dupes:0,hunger:100,clean:100,energy:100,bond:0,hatchDate:now,lastUpdate:now}];
+    });
+    setEggs(previous=>previous.filter(e=>e.id!==egg.id));
+    setHatchAnim({egg,petDef,ri});playSound("done");
   };
 
   const buyFood=(food,event)=>{
@@ -2828,11 +2174,7 @@ function PetsPage({onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,s
   };
 
   const performAction=(pet,actionKey,foodId=null)=>{
-    // Don't let user disturb sleeping pet (except feed which is OK if really hungry)
-    if(isPetSleeping()&&actionKey!=="feed"&&actionKey!=="sleep"){
-      showToast("Zzz... 寵物正在睡覺，別吵醒他！","💤","sleep");
-      return;
-    }
+    careActionLock.current=false;
     const action=PET_ACTIONS[actionKey];
     const prompts=ACTION_PROMPTS[actionKey];
     const prompt=prompts[Math.floor(Math.random()*prompts.length)];
@@ -2840,6 +2182,9 @@ function PetsPage({onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,s
   };
 
   const completeAction=(actionKey,foodId)=>{
+    if(!actionModal||careActionLock.current)return;
+    if(actionKey==="feed"&&(!foodId||!(inventory[foodId]>0))){setActionModal(null);showToast("食物用完了，先到商店補充吧。","🧺");return}
+    careActionLock.current=true;
     const pet=actionModal.pet;
     const petIdx=pets.findIndex(p=>p.petId===pet.petId);
     if(petIdx<0)return;
@@ -2891,6 +2236,7 @@ function PetsPage({onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,s
       updated.bond=(updated.bond||0)+cultivationBonus.bond;
     }
     updated.careLog={date:dailyBefore.date,actions:dailyActions,comboClaimed:dailyBefore.comboClaimed||!!cultivationBonus};
+    updated=recordPetMoment(updated,actionKey);
     updated.exp=(updated.exp||0)+10;
     updated.lastUpdate=new Date().toISOString();
     const prevPetLevel=updated.level;// (P1-3 升級偵測)
@@ -2977,7 +2323,7 @@ function PetsPage({onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,s
     const{milestone,pet}=milestoneShown;
     const petDef=PETS[pet.rarity].find(p=>p.id===pet.petId);
     return(<div><Hdr t="🎊 親密度里程碑" onBack={()=>setMilestoneShown(null)} cl={c.cl}/>
-      <div style={{...S.card,padding:"32px 20px",textAlign:"center",background:`linear-gradient(135deg,${milestone.color}33,var(--color-background-primary,#fff))`,border:`3px solid ${milestone.color}`,animation:"bounceIn .5s"}}>
+      <div className="pet-care-card" style={{...S.card,padding:"32px 20px",textAlign:"center",background:`linear-gradient(135deg,${milestone.color}33,var(--color-background-primary,#fff))`,border:`3px solid ${milestone.color}`,animation:"bounceIn .5s"}}>
         <div style={{fontSize:72,marginBottom:8,animation:"emojiBounce 1s ease-in-out infinite"}}>{milestone.icon}</div>
         <div style={{fontSize:14,color:milestone.color,fontWeight:700,marginBottom:4}}>💖 {pet.bond||0} 親密度</div>
         <div style={{fontSize:24,fontWeight:700,color:S.t1}}>{milestone.title}</div>
@@ -3005,7 +2351,7 @@ function PetsPage({onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,s
     const petDef=PETS[pet.rarity].find(p=>p.id===pet.petId);
     const correct=answered===event.correct;
     return(<div><Hdr t={`💭 ${petDef.name}問你`} onBack={()=>setEventModal(null)} cl={c.cl}/>
-      <div style={{...S.card,padding:"24px 20px"}}>
+      <div className="pet-care-card" style={{...S.card,padding:"24px 20px"}}>
         <div style={{textAlign:"center",marginBottom:16}}>
           <div style={{display:"flex",justifyContent:"center",animation:"emojiBounce 1s ease-in-out infinite"}}><PixelPet petId={petDef.id} stage={getPetStage(pet)} size={120}/></div>
           <div style={{marginTop:12,padding:"14px 18px",background:c.bg,borderRadius:16,display:"inline-block",border:`2px solid ${c.cl}`,fontSize:15,fontWeight:600,color:S.t1}}>
@@ -3043,13 +2389,13 @@ function PetsPage({onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,s
 
   // (P3-1) Playground Modal - 兩隻寵物互動
   if(playgroundOpen){
-    return(<PlaygroundView pets={pets} setPets={setPets} setCoins={setCoins} c={c} onBack={()=>setPlaygroundOpen(false)} incrTask={incrTask}/>);
+    return(<PetPlayground pets={pets} setPets={setPets} setCoins={setCoins} c={c} onBack={()=>setPlaygroundOpen(false)} incrTask={incrTask} foods={PET_FOODS} getDef={getPetDef} levelUpPet={levelUpPet} Hdr={Hdr} speak={speak} stopSpeech={stopSpeech} playSound={playSound}/>);
   }
 
   // (P2-3) Settings Modal - 無障礙與省電設定
   if(settingsOpen){
     return(<div><Hdr t="⚙️ 寵物頁設定" onBack={()=>setSettingsOpen(false)} cl={c.cl}/>
-      <div style={{...S.card,padding:"18px 18px 22px",marginBottom:12}}>
+      <div className="pet-care-card" style={{...S.card,padding:"18px 18px 22px",marginBottom:12}}>
         <div style={{fontSize:14,fontWeight:700,color:S.t1,marginBottom:6}}>🎬 動畫效果強度</div>
         <div style={{fontSize:12,color:S.t3,lineHeight:1.7,marginBottom:14}}>
           調整寵物互動的動畫強度。如果手機溫度偏高、電池快沒電、或想要更安靜的體驗，可以選擇較低強度。
@@ -3095,10 +2441,10 @@ function PetsPage({onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,s
     const{pet,actionKey,action,prompt,foodId}=actionModal;
     const petDef=PETS[pet.rarity].find(p=>p.id===pet.petId);
     return(<div><Hdr t={`${action.icon} ${action.name} ${petDef.emoji}`} onBack={()=>setActionModal(null)} cl={c.cl}/>
-      <div style={{...S.card,padding:"28px 20px",textAlign:"center",background:`linear-gradient(135deg,${c.bg},var(--color-background-primary,#fff))`}}>
+      <div className="pet-care-card" style={{...S.card,padding:"28px 20px",textAlign:"center",background:`linear-gradient(135deg,${c.bg},var(--color-background-primary,#fff))`}}>
         <div style={{display:"flex",justifyContent:"center",animation:"emojiBounce 1s ease-in-out infinite"}}><PixelPet petId={petDef.id} stage={getPetStage(pet)} size={96}/></div>
         <div style={{fontSize:14,color:c.cl,fontWeight:600,marginTop:8}}>念出這句話來{action.name}！</div>
-        <div style={{...S.card,padding:"18px 14px",marginTop:14,background:"var(--color-background-primary,#fff)"}}>
+        <div className="pet-care-card" style={{...S.card,padding:"18px 14px",marginTop:14,background:"var(--color-background-primary,#fff)"}}>
           <div style={{fontSize:22,fontWeight:700,color:S.t1}}>"{prompt}"</div>
           <button onClick={()=>speak(prompt)} style={{background:"none",border:"none",fontSize:28,cursor:"pointer",marginTop:8,padding:"4px"}}>🔊</button>
         </div>
@@ -3117,7 +2463,7 @@ function PetsPage({onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,s
   // Shop view
   if(shopOpen){
     return(<div><Hdr t="🏪 寵物商店" onBack={()=>setShopOpen(false)} cl={c.cl}/>
-      <div style={{...S.card,padding:"14px 18px",marginBottom:12,textAlign:"center",background:"linear-gradient(135deg,#FFF3CD,#FFE066)",border:"2px solid #EF9F27"}}>
+      <div className="pet-care-card" style={{...S.card,padding:"14px 18px",marginBottom:12,textAlign:"center",background:"linear-gradient(135deg,#FFF3CD,#FFE066)",border:"2px solid #EF9F27"}}>
         <div style={{fontSize:28,fontWeight:700,color:"#EF9F27"}}>🪙 {coins}</div>
         <div style={{fontSize:11,color:"#856404",marginTop:2}}>購買食物餵食寵物</div>
       </div>
@@ -3131,7 +2477,7 @@ function PetsPage({onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,s
           <button onClick={(e)=>{buyFood(food,e);speak(food.word)}} disabled={!canBuy} style={{...S.btn,background:canBuy?c.cl:S.bg2,color:canBuy?"#fff":S.t3,marginTop:8,fontSize:12,padding:"6px 12px",width:"100%",cursor:canBuy?"pointer":"not-allowed"}}>🪙 {food.cost}</button>
         </div>)})}
       </div>
-      <div style={{...S.card,padding:"12px 16px",marginTop:12,fontSize:12,color:S.t2,lineHeight:1.8}}>
+      <div className="pet-care-card" style={{...S.card,padding:"12px 16px",marginTop:12,fontSize:12,color:S.t2,lineHeight:1.8}}>
         💡 <b>小提示</b>：點食物按鈕會唸出英文單字，一邊買一邊學！
       </div>
     </div>);
@@ -3164,33 +2510,16 @@ function PetsPage({onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,s
       performAction(selectedPet,action.actionKey,action.foodId||null);
     };
 
-    return(<div>
+    return(<div className="pet-world pet-care">
       {levelUpOverlay}
       <Hdr t={`${petDef.emoji} ${petDef.name}`} onBack={()=>setSelectedPet(null)} cl={c.cl} extra={<button onClick={()=>setShopOpen(true)} style={{background:"none",border:`1px solid ${S.bd}`,borderRadius:8,padding:"4px 10px",fontSize:11,cursor:"pointer",color:S.t2}}>🏪 商店</button>}/>
 
-      {/* Pet Home Scene - immersive environment */}
       <div style={{position:"relative"}}>
-      <PetHomeScene pet={selectedPet} petDef={petDef} ri={ri} mood={mood} c={c} onCleanPoop={(poopId)=>{
-        const updated={...selectedPet,poops:(selectedPet.poops||[]).filter(p=>p.id!==poopId),clean:Math.min(MAX_STAT,(selectedPet.clean||0)+5),bond:(selectedPet.bond||0)+2,lastUpdate:new Date().toISOString()};
-        setPets(ps=>ps.map(p=>p.petId===selectedPet.petId?updated:p));
-        setSelectedPet(updated);
-        setCoins(co=>co+2);
-        playSound("good");
-        speak("Clean up!");
-      }}/>
-      {actionCelebration&&<ActionCelebration data={actionCelebration}/>}
+        <PetHabitatScene pets={[selectedPet]} caption={`${petDef.name}的小天地`}/>
+        {actionCelebration&&<ActionCelebration data={actionCelebration}/>}
       </div>
-
-      {/* Level + Exp under the home */}
-      <div style={{...S.card,padding:"12px 16px",marginBottom:12,textAlign:"center"}}>
-        <div style={{display:"flex",alignItems:"center",gap:8}}>
-          <span style={{fontSize:13,fontWeight:700,color:c.cl}}>Lv.{selectedPet.level}</span>
-          <div style={{flex:1,height:8,background:S.bg2,borderRadius:4,overflow:"hidden"}}>
-            <div style={{height:"100%",width:`${(selectedPet.exp/expNeeded)*100}%`,background:`linear-gradient(90deg,${c.cl},${c.ac})`,transition:"width .3s"}}/>
-          </div>
-          <span style={{fontSize:11,color:S.t3}}>{selectedPet.exp}/{expNeeded}</span>
-        </div>
-      </div>
+      {(selectedPet.poops||[]).length>0&&<button className="pet-secondary" onClick={()=>performAction(selectedPet,"clean")}>幫小家整理乾淨 →</button>}
+      <PetGrowthPanel pet={selectedPet} onChange={updated=>{setPets(previous=>previous.map(p=>p.petId===updated.petId?updated:p));setSelectedPet(updated)}} onCare={()=>careSuggestion?startSuggestedCare():performAction(selectedPet,"study")} careLabel={careSuggestion?.label} onPlay={()=>setPlaygroundOpen(true)}/>
 
       {lastCareResult?.petId===selectedPet.petId&&<div data-testid="pet-care-result" style={{
         ...S.card,
@@ -3216,7 +2545,8 @@ function PetsPage({onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,s
         <button aria-label="關閉照顧結果" onClick={()=>setLastCareResult(null)} style={{border:`1px solid ${S.bd}`,background:S.bg1,borderRadius:999,width:30,height:30,cursor:"pointer",color:S.t2,fontWeight:900,flex:"0 0 auto"}}>×</button>
       </div>}
 
-      <div style={{...S.card,padding:"14px 16px",marginBottom:12,border:`1px solid ${c.cl}33`,background:`linear-gradient(135deg,${c.bg},var(--color-background-primary,#fff))`}}>
+      <details className="pet-home-details pet-care-extra"><summary>查看每日培養計畫與詳細狀態</summary>
+      <div className="pet-care-card" style={{...S.card,padding:"14px 16px",marginBottom:12,border:`1px solid ${c.cl}33`,background:`linear-gradient(135deg,${c.bg},var(--color-background-primary,#fff))`}}>
         <div style={{display:"flex",justifyContent:"space-between",gap:10,alignItems:"flex-start",flexWrap:"wrap",marginBottom:10}}>
           <div>
             <div style={{fontSize:14,fontWeight:1000,color:S.t1}}>今日培養計畫</div>
@@ -3269,17 +2599,17 @@ function PetsPage({onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,s
         </div>
       </div>
 
-      {careSuggestion&&<div style={{...S.card,padding:"12px 14px",marginBottom:12,border:`1px solid ${readiness.color}55`,background:`linear-gradient(135deg,${readiness.color}12,var(--color-background-primary,#fff))`,display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}>
+      {careSuggestion&&<div className="pet-care-card" style={{...S.card,padding:"12px 14px",marginBottom:12,border:`1px solid ${readiness.color}55`,background:`linear-gradient(135deg,${readiness.color}12,var(--color-background-primary,#fff))`,display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}>
         <div style={{fontSize:24}}>{careSuggestion.emoji}</div>
         <div style={{flex:1,minWidth:180}}>
           <div style={{fontSize:13,fontWeight:900,color:readiness.color}}>冒險狀態：{readiness.label} · {readiness.avg}/100</div>
           <div style={{fontSize:11,color:S.t2,lineHeight:1.5,marginTop:2}}>{careSuggestion.reason}</div>
         </div>
-        <button data-testid="pet-primary-care-action" onClick={startSuggestedCare} style={{...S.btn,background:readiness.color,color:"#fff",fontSize:12,padding:"9px 12px"}}>{careSuggestion.label}</button>
+        <button data-testid="pet-extra-care-action" onClick={startSuggestedCare} style={{...S.btn,background:readiness.color,color:"#fff",fontSize:12,padding:"9px 12px"}}>{careSuggestion.label}</button>
       </div>}
 
       {/* Status bars (P1-2 液體感狀態條) */}
-      <div style={{...S.card,padding:"14px 16px",marginBottom:12}}>
+      <div className="pet-care-card" style={{...S.card,padding:"14px 16px",marginBottom:12}}>
         <style>{`
 @keyframes statbar_pulse { 0%,100%{filter:brightness(1)} 50%{filter:brightness(1.3)} }
 @keyframes statbar_shimmer { 0%{transform:translateX(-100%)} 100%{transform:translateX(200%)} }
@@ -3355,8 +2685,10 @@ function PetsPage({onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,s
         })}
       </div>
 
+      </details>
+
       {/* Action buttons */}
-      <div style={{...S.card,padding:"14px 16px",marginBottom:12}}>
+      <div className="pet-care-card" style={{...S.card,padding:"14px 16px",marginBottom:12}}>
         <div style={{fontSize:13,fontWeight:600,color:S.t1,marginBottom:10}}>🎮 互動（每次獲得 🪙 5）</div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(80px,1fr))",gap:8}}>
           {/* Feed — needs food */}
@@ -3388,7 +2720,7 @@ function PetsPage({onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,s
         </div>
       </div>
 
-      <div style={{...S.card,padding:"14px 16px",marginBottom:12,border:"1px solid #EF9F2744",background:"linear-gradient(135deg,#FFF7D6,var(--color-background-primary,#fff))"}}>
+      <div className="pet-care-card" style={{...S.card,padding:"14px 16px",marginBottom:12,border:"1px solid #EF9F2744",background:"linear-gradient(135deg,#FFF7D6,var(--color-background-primary,#fff))"}}>
         <div style={{display:"flex",justifyContent:"space-between",gap:10,alignItems:"center",marginBottom:9}}>
           <div>
             <div style={{fontSize:13,fontWeight:900,color:S.t1}}>重複成長能量</div>
@@ -3424,7 +2756,7 @@ function PetsPage({onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,s
         </div>
       </div>
 
-      <div style={{...S.card,padding:"14px 16px",marginBottom:12,border:`1px solid ${adventureSkillVisual.color}44`,background:`linear-gradient(135deg,${adventureSkillVisual.bg},var(--color-background-primary,#fff))`}}>
+      <div className="pet-care-card" style={{...S.card,padding:"14px 16px",marginBottom:12,border:`1px solid ${adventureSkillVisual.color}44`,background:`linear-gradient(135deg,${adventureSkillVisual.bg},var(--color-background-primary,#fff))`}}>
         <div style={{display:"flex",justifyContent:"space-between",gap:10,alignItems:"center",marginBottom:10}}>
           <div>
             <div style={{fontSize:13,fontWeight:900,color:S.t1}}>冒險技能</div>
@@ -3466,7 +2798,7 @@ function PetsPage({onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,s
       </div>
 
       {/* Pet's words */}
-      <div style={{...S.card,padding:"14px 16px",marginBottom:12}}>
+      <div className="pet-care-card" style={{...S.card,padding:"14px 16px",marginBottom:12}}>
         <div style={{fontSize:13,fontWeight:600,color:S.t1,marginBottom:6}}>📚 {petDef.name}的專屬單字</div>
         <div style={{fontSize:11,color:S.t3,marginBottom:8,lineHeight:1.6}}>{petDef.story}</div>
         <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
@@ -3481,9 +2813,9 @@ function PetsPage({onBack,c,pets,setPets,eggs,setEggs,coins,setCoins,inventory,s
   }
 
   // Tab views
-  return(<div>
-    {hatchAnim&&<HatchAnimation data={hatchAnim} onClose={()=>setHatchAnim(null)}/>}
-    <Hdr t="🐾 寵物圖鑑" onBack={onBack} cl={c.cl} extra={<div style={{display:"flex",gap:4}}><button onClick={()=>setSettingsOpen(true)} style={{background:"none",border:`1px solid ${S.bd}`,borderRadius:8,padding:"4px 10px",fontSize:13,cursor:"pointer",color:S.t2}} title="設定">⚙️</button><button onClick={()=>setShopOpen(true)} style={{background:"none",border:`1px solid ${S.bd}`,borderRadius:8,padding:"4px 10px",fontSize:11,cursor:"pointer",color:S.t2}}>🏪 商店</button></div>}/>
+  return(<div className="pet-world pet-home">
+    {hatchAnim&&<HatchAnimation data={hatchAnim} onClose={()=>{setHatchAnim(null);setTab("pets");const friend=pets.find(p=>p.petId===hatchAnim.egg.petId);if(friend)setSelectedPet(friend)}}/>}
+    <Hdr t="🐾 寵物小家園" onBack={onBack} cl={c.cl} extra={<div style={{display:"flex",gap:4}}><button onClick={()=>setSettingsOpen(true)} style={{background:"none",border:`1px solid ${S.bd}`,borderRadius:8,padding:"4px 10px",fontSize:13,cursor:"pointer",color:S.t2}} title="設定">⚙️</button><button onClick={()=>setShopOpen(true)} style={{background:"none",border:`1px solid ${S.bd}`,borderRadius:8,padding:"4px 10px",fontSize:11,cursor:"pointer",color:S.t2}}>🏪 商店</button></div>}/>
     <style>{`
 /* (P2-3) 動畫強度全域控制 */
 body.eg-anim-lite [data-action-celebration],
@@ -3525,6 +2857,12 @@ body.eg-anim-off [data-pet-card] { animation: none !important; }
       <div style={{fontSize:12,color:S.t2}}>👤 <b style={{color:c.cl}}>{petAccount.username}</b> <span style={{color:S.t3,marginLeft:4}}>· 已同步雲端 ☁️</span></div>
       <button onClick={()=>setConfirmModal({msg:"登出帳號？\n\n本地寵物資料將保留，但不會再同步到雲端。",icon:"👋",onConfirm:()=>setPetAccount(null)})} style={{background:"none",border:"none",fontSize:11,color:S.t3,cursor:"pointer",padding:"4px 8px",textDecoration:"underline"}}>登出</button>
     </div>}
+    <nav className="pet-tabs" aria-label="家園分頁">
+      {[{id:"home",name:"家園"},{id:"tasks",name:"任務"},{id:"eggs",name:`蛋 (${eggs.length})`},{id:"pets",name:`寵物 (${pets.length})`},{id:"dex",name:"圖鑑"}].map(item=><button key={item.id} aria-pressed={tab===item.id} onClick={()=>setTab(item.id)}>{item.name}</button>)}
+    </nav>
+    {tab==="home"&&<PetHomeHub pets={pets} eggs={eggs} readyEggs={readyEggCount} getDef={getPetDef} onCare={setSelectedPet} onEggs={()=>setTab("eggs")} onPlay={()=>setPlaygroundOpen(true)} onNavigate={onNavigate}/>}
+
+    <details className="pet-home-details"><summary>照顧提醒、每日計畫與收藏進度</summary>
     <DailyPetPlan
       plan={dailyPetPlan}
       learningProgress={learningProgress}
@@ -3606,13 +2944,8 @@ body.eg-anim-off [data-pet-card] { animation: none !important; }
       </div>
       <button onClick={()=>setTab(readyEggCount||collectionStats.closestEgg?"eggs":"dex")} style={{...S.btn,background:c.cl,color:"#fff",fontSize:12,padding:"9px 12px"}}>{readyEggCount||collectionStats.closestEgg?"去蛋倉":"看圖鑑"}</button>
     </div>
-    <div style={{display:"flex",gap:6,marginBottom:12,overflowX:"auto"}}>
-      <button onClick={()=>setTab("tasks")} style={{flex:"1 1 auto",padding:"10px 6px",borderRadius:12,background:tab==="tasks"?c.cl:S.bg2,color:tab==="tasks"?"#fff":S.t1,border:tab==="tasks"?"none":`1px solid ${S.bd}`,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>📋 任務 ({DAILY_TASK_DEFS.filter(t=>!claimedToday.includes(t.id)&&(taskCounts[t.statKey]||0)>=t.target).length})</button>
-      <button onClick={()=>setTab("eggs")} style={{flex:"1 1 auto",padding:"10px 6px",borderRadius:12,background:tab==="eggs"?c.cl:S.bg2,color:tab==="eggs"?"#fff":S.t1,border:tab==="eggs"?"none":`1px solid ${S.bd}`,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>🥚 蛋 ({eggs.length})</button>
-      <button onClick={()=>setTab("pets")} style={{flex:"1 1 auto",padding:"10px 6px",borderRadius:12,background:tab==="pets"?c.cl:S.bg2,color:tab==="pets"?"#fff":S.t1,border:tab==="pets"?"none":`1px solid ${S.bd}`,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>🐾 寵物 ({pets.length})</button>
-      <button onClick={()=>setTab("dex")} style={{flex:"1 1 auto",padding:"10px 6px",borderRadius:12,background:tab==="dex"?c.cl:S.bg2,color:tab==="dex"?"#fff":S.t1,border:tab==="dex"?"none":`1px solid ${S.bd}`,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>📖 圖鑑</button>
-    </div>
-
+    </details>
+    {tab==="eggs"&&<section className="pet-egg-guide"><h3>讓英文，暖暖這顆蛋</h3><p>學習答題會累積孵化進度，集滿後按下孵化，就能見到你的夥伴。</p><div className="pet-button-row">{onNavigate&&<><button className="pet-primary" onClick={()=>onNavigate("srs")}>學單字，陪蛋長大 →</button><button className="pet-secondary" onClick={()=>onNavigate("gacha")}>前往扭蛋屋</button></>}</div></section>}
     {tab==="tasks"?(<div>
       {/* Daily tasks intro */}
       <div style={{...S.card,padding:"14px 16px",marginBottom:12,background:`linear-gradient(135deg,${c.bg},var(--color-background-primary,#fff))`}}>
@@ -3765,7 +3098,7 @@ body.eg-anim-off [data-pet-card] { animation: none !important; }
       </div>
     </div>
     {/* (P3-1) 玩耍場入口（多隻寵物時才顯示） */}
-    {pets.length>=2&&<button onClick={()=>setPlaygroundOpen(true)} style={{
+    {pets.length>=1&&<button onClick={()=>setPlaygroundOpen(true)} style={{
       width:"100%",
       padding:"14px 16px",
       marginBottom:12,
@@ -3781,7 +3114,7 @@ body.eg-anim-off [data-pet-card] { animation: none !important; }
       <span style={{fontSize:24}}>🎪</span>
       <div style={{textAlign:"left",flex:1}}>
         <div style={{fontSize:14,fontWeight:700,color:"#C2185B"}}>一起玩耍場</div>
-        <div style={{fontSize:11,color:"#AD1457",marginTop:2}}>完成英文小任務，再讓兩隻寵物一起玩並拿獎勵。</div>
+        <div style={{fontSize:11,color:"#AD1457",marginTop:2}}>野餐接力與記憶尋寶，一到兩隻夥伴都能玩。</div>
       </div>
       <span style={{fontSize:18,color:"#C2185B"}}>→</span>
     </button>}
