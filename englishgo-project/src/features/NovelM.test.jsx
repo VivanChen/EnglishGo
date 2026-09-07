@@ -29,6 +29,30 @@ function jumpLast() {
 afterEach(() => { vi.restoreAllMocks(); Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1024 }); Object.defineProperty(window, 'innerHeight', { configurable: true, value: 768 }); });
 
 describe('novel reading continuity', () => {
+  it('restores old chapter 7 progress and bookmarks, narrates the corrected pair, and does not migrate twice', async () => {
+    localStorage.setItem('eg_novelReadingProgress', JSON.stringify({ [book.id]: { chapterNo: 7, blockIndex: 28, blockCount: 157, page: 14, pageCount: 79 } }));
+    localStorage.setItem('eg_novelBookmarks', JSON.stringify({ [book.id]: [{ chapterNo: 7, blockIndex: 28, createdAt: 123 }] }));
+    const view = mount(); await screen.findByText('繼續閱讀');
+    expect(screen.getByText('Not the cave.')).toBeInTheDocument(); click('繼續閱讀');
+    await screen.findByTestId('novel-reader-panel'); click('☷ 目錄與書籤'); click('前往書籤 第 7 章第 30 段');
+    await waitFor(() => expect(document.activeElement).toHaveAttribute('data-reader-block', '29'));
+    const paragraph = document.activeElement;
+    expect(within(paragraph).getByTestId('novel-reader-text')).toHaveTextContent('Not the cave.');
+    expect(within(paragraph).getByTestId('novel-reader-translation')).toHaveTextContent('不是洞穴。');
+    fireEvent.click(within(paragraph).getByRole('button', { name: '朗讀中文（固定真人聲線）' }));
+    expect(view.deps.speak).toHaveBeenLastCalledWith('不是洞穴。', 'zh-TW', 1, expect.objectContaining({ audioUrl: expect.stringContaining('-zh-block-29-') }));
+    click('從這裡接著朗讀');
+    const items = view.deps.speakStory.mock.calls.at(-1)[0];
+    const englishIndex = items.findIndex(item => item.text === 'Not the cave.');
+    expect(items.slice(englishIndex, englishIndex + 2).map(item => [item.text, item.lang, item.blockIndex])).toEqual([['Not the cave.', 'en-US', 29], ['不是洞穴。', 'zh-TW', 29]]);
+    click('取消收藏段落 30'); click('還原書籤');
+    expect(JSON.parse(localStorage.getItem('eg_novelBookmarks'))[book.id][0]).toMatchObject({ blockIndex: 29, contentVersion: 2 });
+    expect(JSON.parse(localStorage.getItem('eg_novelReadingProgress'))[book.id]).toMatchObject({ blockIndex: 29, blockCount: 165, contentVersion: 2 });
+    view.unmount(); mount(); await screen.findByText('繼續閱讀');
+    expect(screen.getByText('Not the cave.')).toBeInTheDocument();
+    click('繼續閱讀'); click('☷ 目錄與書籤'); click('前往書籤 第 7 章第 30 段');
+    await waitFor(() => expect(document.activeElement).toHaveAttribute('data-reader-block', '29'));
+  });
   it('uses a contained mobile reader in portrait and landscape, and releases the page on exit', async () => {
     Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 });
     const view=mount(); await open();

@@ -27,9 +27,13 @@ function addEntry(input) {
 for (const novels of Object.values(NOVELS)) {
   for (const novel of novels) {
     for (const chapter of novel.chapters || []) {
+      const blocks = novelBlockPairs(chapter.en, chapter.zh, `${novel.id}, chapter ${chapter.no}`);
+      if (!blocks.length || !chapter.title?.trim() || !chapter.zhTitle?.trim()) {
+        throw new Error(`Missing bilingual content: ${novel.id}, chapter ${chapter.no}`);
+      }
       addEntry({ novelId: novel.id, chapterNo: chapter.no, lang: "en-US", kind: "title", text: chapter.title });
       addEntry({ novelId: novel.id, chapterNo: chapter.no, lang: "zh-TW", kind: "title", text: chapter.zhTitle });
-      for (const block of novelBlockPairs(chapter.en, chapter.zh)) {
+      for (const block of blocks) {
         if (block.en) addEntry({ novelId: novel.id, chapterNo: chapter.no, lang: "en-US", blockIndex: block.i, text: block.en });
         if (block.zh) addEntry({ novelId: novel.id, chapterNo: chapter.no, lang: "zh-TW", blockIndex: block.i, text: block.zh });
       }

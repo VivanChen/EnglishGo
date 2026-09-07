@@ -7,7 +7,7 @@ import {
   spreadStartForPage,
 } from "./novelPagination.js";
 import { makeNovelAudioItem, novelBlockPairs } from "../data/novelAudio.js";
-import { BOOKMARK_LIMIT, bookmarkKey, resolveBookmarks, NOVEL_TONES } from "./novelReading.js";
+import { BOOKMARK_LIMIT, bookmarkKey, resolveBookmarks, resolveReadingBlock, NOVEL_READING_VERSION, NOVEL_TONES } from "./novelReading.js";
 import { NovelJourney, NovelPreferences } from "./NovelReadingTools.jsx";
 import "../novel-reading.css";
 
@@ -18,11 +18,7 @@ function isNovelReaderControlTarget(target,currentTarget){
   const control=target?.closest?.("button,a,input,select,textarea,[role='button'],[role='tab'],[contenteditable='true']");
   return Boolean(control&&currentTarget?.contains?.(control));
 }
-function savedNovelBlock(progress){
-  if(progress?.blockIndex==null)return null;
-  const value=Number(progress.blockIndex);
-  return Number.isFinite(value)&&value>=0?Math.floor(value):null;
-}
+
 export default function NovelM({lv,onBack,onXp,deps}){
   const {LV,S,useLS,readingWords,playSound,stopSpeech,speak,speakStory,Hdr}=deps;
   const c=LV[lv];const[novelData,setNovelData]=useState(null);const[selectedBooks,setSelectedBooks]=useLS("novelSelectedBooks",{});const[ci,setCi]=useState(null);const[page,setPage]=useState(0);const[activeBlock,setActiveBlock]=useState(null);const[activeVocab,setActiveVocab]=useState(null);const[sidePanel,setSidePanel]=useState(null);const[immersive,setImmersive]=useState(true);const[isNarrating,setIsNarrating]=useState(false);const[isNarrationPaused,setIsNarrationPaused]=useState(false);const[mobileToolsOpen,setMobileToolsOpen]=useState(false);const[audioPreload,setAudioPreload]=useState({status:"idle",ready:0,total:0});const[done,setDone]=useLS("novelDone",{});const[quizAns,setQuizAns]=useLS("novelQuiz",{});const[readingProgress,setReadingProgress]=useLS("novelReadingProgress",{});const[readingPrefs,setReadingPrefs]=useLS("novelReadingPrefs",{fontSize:16,lineHeight:1.66});const[measurement,setMeasurement]=useState({chapter:null,pages:[]});const[layoutVersion,setLayoutVersion]=useState(0);const[pageTurn,setPageTurn]=useState(null);const rewarded=useRef({});const pendingPageRef=useRef(0);const readingAnchorRef=useRef(null);const novelSpeechRef=useRef(null);const novelPanelRef=useRef(null);const novelSpreadRef=useRef(null);const novelBlockRefs=useRef({});const measureBlockRefs=useRef({});const swipeStartRef=useRef(null);const pageTurnTimerRef=useRef(null);const pageTurnRef=useRef(null);const pageTurnSequenceRef=useRef(0);
@@ -148,7 +144,7 @@ export default function NovelM({lv,onBack,onXp,deps}){
     });
     return()=>window.cancelAnimationFrame(frame);
   },[chapter?.no]);
-  useEffect(()=>{if(!novel||!chapter||ci==null||!pages.length)return;setReadingProgress(d=>({...d,[novel.id]:{chapterNo:chapter.no,chapterIndex:ci,page:pageNow,pageCount:pages.length,blockIndex:Math.max(0,Math.min(readingAnchorRef.current??pageStart,blockPairs.length-1)),blockCount:blockPairs.length,updatedAt:Date.now()}}))},[novel?.id,chapter?.no,ci,pageNow,pageStart,pages.length,blockPairs.length,focusBlock]);
+  useEffect(()=>{if(!novel||!chapter||ci==null||!pages.length)return;setReadingProgress(d=>({...d,[novel.id]:{chapterNo:chapter.no,chapterIndex:ci,page:pageNow,pageCount:pages.length,blockIndex:Math.max(0,Math.min(readingAnchorRef.current??pageStart,blockPairs.length-1)),blockCount:blockPairs.length,contentVersion:NOVEL_READING_VERSION,updatedAt:Date.now()}}))},[novel?.id,chapter?.no,ci,pageNow,pageStart,pages.length,blockPairs.length,focusBlock]);
   useEffect(()=>{
     if(!novel||!chapter||typeof window==="undefined"||/jsdom/i.test(navigator.userAgent||""))return;
     const nextStart=nextSpreadStart(pageNow,pages.length,visiblePageCount);
@@ -227,7 +223,7 @@ export default function NovelM({lv,onBack,onXp,deps}){
   const resumeChapter=resumeIndex>=0?novel.chapters[resumeIndex]:null;
   const resumePageCount=resumeChapter?Math.max(1,Number(resumeProgress?.pageCount)||Math.ceil(novelBlockPairs(resumeChapter.en,resumeChapter.zh).length/2)):1;
   const resumePage=Math.max(0,Math.min(Number(resumeProgress?.page)||0,resumePageCount-1));
-  const resumeBlock=savedNovelBlock(resumeProgress);
+  const resumeBlock=resolveReadingBlock(novel.id,resumeProgress);
   if(ci==null)return(<div className="novel-reading"><Hdr t="📘 英文小說" onBack={onBack} cl={c.cl}/>
     <div style={{...S.card,padding:0,overflow:"hidden",marginBottom:12,borderTop:`4px solid ${c.cl}`}}>
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(min(100%,240px),1fr))",gap:0,background:"linear-gradient(135deg,#0C382E,#175B48 48%,#7ECBA9)",color:"#fff"}}>
@@ -254,7 +250,7 @@ export default function NovelM({lv,onBack,onXp,deps}){
     </div>}
     {novels.length>1&&<div style={{display:"flex",gap:6,overflowX:"auto",marginBottom:10}}>{novels.map((n,i)=><button key={n.id} onClick={()=>{setNi(i);setCi(null)}} style={{flexShrink:0,padding:"8px 12px",border:"none",borderRadius:12,background:i===ni?c.cl:S.bg2,color:i===ni?"#fff":S.t1,fontWeight:700,fontSize:12,fontFamily:"inherit",cursor:"pointer"}}>{n.title}</button>)}</div>}
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(min(100%,158px),1fr))",gap:10}}>
-      {novel.chapters.map((ch,i)=>{const isDone=completed.includes(ch.no);const chProgress=readingProgress[novel.id]?.chapterNo===ch.no?readingProgress[novel.id]:null;const chPageCount=Math.max(1,Number(chProgress?.pageCount)||Math.ceil(novelBlockPairs(ch.en,ch.zh).length/2));const chPage=Math.max(0,Math.min(Number(chProgress?.page)||0,chPageCount-1));const chBlock=savedNovelBlock(chProgress);const chQuiz=ch.quiz||[];const chQuizState=quizAns[`${novel.id}:${ch.no}`]||{};const chQuizAnswered=chQuiz.filter((_,qi)=>chQuizState[qi]!=null).length;const statusText=isDone?"已完成":chProgress?`進行中 · ${chBlock==null?`Page ${chPage+1}/${chPageCount}`:`段落 ${chBlock+1}`}`:"尚未開始";return(<div key={ch.no} role="button" tabIndex={0} aria-label={`閱讀第 ${ch.no} 章 ${ch.title}`} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();goChapter(i,chProgress?chPage:0,chBlock)}}} data-testid={`novel-chapter-card-${ch.no}`} onClick={()=>goChapter(i,chProgress?chPage:0,chBlock)} style={{...S.card,padding:0,overflow:"hidden",cursor:"pointer",border:`1px solid ${isDone?"#1D9E75":chProgress?c.cl:S.bd}`,boxShadow:chProgress?`0 10px 24px ${c.cl}22`:S.card.boxShadow}}>
+      {novel.chapters.map((ch,i)=>{const isDone=completed.includes(ch.no);const chProgress=readingProgress[novel.id]?.chapterNo===ch.no?readingProgress[novel.id]:null;const chPageCount=Math.max(1,Number(chProgress?.pageCount)||Math.ceil(novelBlockPairs(ch.en,ch.zh).length/2));const chPage=Math.max(0,Math.min(Number(chProgress?.page)||0,chPageCount-1));const chBlock=resolveReadingBlock(novel.id,chProgress);const chQuiz=ch.quiz||[];const chQuizState=quizAns[`${novel.id}:${ch.no}`]||{};const chQuizAnswered=chQuiz.filter((_,qi)=>chQuizState[qi]!=null).length;const statusText=isDone?"已完成":chProgress?`進行中 · ${chBlock==null?`Page ${chPage+1}/${chPageCount}`:`段落 ${chBlock+1}`}`:"尚未開始";return(<div key={ch.no} role="button" tabIndex={0} aria-label={`閱讀第 ${ch.no} 章 ${ch.title}`} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();goChapter(i,chProgress?chPage:0,chBlock)}}} data-testid={`novel-chapter-card-${ch.no}`} onClick={()=>goChapter(i,chProgress?chPage:0,chBlock)} style={{...S.card,padding:0,overflow:"hidden",cursor:"pointer",border:`1px solid ${isDone?"#1D9E75":chProgress?c.cl:S.bd}`,boxShadow:chProgress?`0 10px 24px ${c.cl}22`:S.card.boxShadow}}>
         <div style={{position:"relative",color:"#fff"}}>
           <NovelIllustration chapter={ch.no} small imageBase={novelImageBase} title={novel.title}/>
           <div style={{position:"absolute",top:8,left:8,width:28,height:28,borderRadius:"50%",background:"rgba(255,255,255,.9)",color:c.cl,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:900}}>{ch.no}</div>
@@ -301,7 +297,7 @@ export default function NovelM({lv,onBack,onXp,deps}){
   };
   const handlePointerCancel=()=>{swipeStartRef.current=null};
   const handlePointerUp=e=>{const start=swipeStartRef.current;swipeStartRef.current=null;try{e.currentTarget.releasePointerCapture?.(e.pointerId)}catch{}if(!start||start.id!==e.pointerId||pageTurnRef.current||window.getSelection?.()?.toString())return;const dx=e.clientX-start.x;const dy=e.clientY-start.y;if(Math.abs(dx)<48||Math.abs(dx)<Math.abs(dy)*1.25)return;if(dx<0&&canNextPage)goNextPage();if(dx>0&&canPrevPage)goPreviousPage()};
-  const writeBookmarks=next=>setBookmarks(saved=>({...saved,[novel.id]:next.map(({chapterNo,blockIndex,createdAt})=>({chapterNo,blockIndex,createdAt}))}));
+  const writeBookmarks=next=>setBookmarks(saved=>({...saved,[novel.id]:next.map(({chapterNo,blockIndex,createdAt})=>({chapterNo,blockIndex,contentVersion:NOVEL_READING_VERSION,createdAt}))}));
   const removeBookmark=mark=>{writeBookmarks(savedBookmarks.filter(item=>bookmarkKey(item)!==bookmarkKey(mark)));setRemovedBookmark(mark);setBookmarkNotice("書籤已移除，還可以還原。");};
   const toggleBookmark=block=>{
     const mark={chapterNo:chapter.no,blockIndex:block.i,createdAt:Date.now()};

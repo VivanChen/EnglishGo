@@ -12,61 +12,15 @@ export function novelBlocks(text) {
   return blankBlocks.length <= 1 && lineBlocks.length > 1 ? lineBlocks : blankBlocks;
 }
 
-export function compactNovelBlocks(blocks, target) {
-  const output = [...blocks];
-  const mergeAt = index => {
-    output[index] = `${output[index]}\n${output[index + 1]}`;
-    output.splice(index + 1, 1);
-  };
-
-  while (output.length > target && output.length > 1) {
-    const halfSentence = output.findIndex((block, index) => index < output.length - 1 && /[\uFF0C,]$/.test(String(block).trim()));
-    if (halfSentence >= 0) {
-      mergeAt(halfSentence);
-      continue;
-    }
-
-    let index = 0;
-    let shortest = Infinity;
-    output.forEach((block, blockIndex) => {
-      const score = String(block).replace(/\s+/g, "").length;
-      if (score < shortest) {
-        shortest = score;
-        index = blockIndex;
-      }
-    });
-
-    if (index === 0) {
-      output[1] = `${output[0]}\n${output[1]}`;
-      output.splice(0, 1);
-    } else if (index === output.length - 1) {
-      output[index - 1] = `${output[index - 1]}\n${output[index]}`;
-      output.splice(index, 1);
-    } else {
-      const previousLength = String(output[index - 1]).length;
-      const nextLength = String(output[index + 1]).length;
-      if (previousLength <= nextLength) {
-        output[index - 1] = `${output[index - 1]}\n${output[index]}`;
-        output.splice(index, 1);
-      } else {
-        output[index + 1] = `${output[index]}\n${output[index + 1]}`;
-        output.splice(index, 1);
-      }
-    }
+export function novelBlockPairs(enText, zhText, context = "novel chapter") {
+  const en = novelBlocks(enText);
+  const zh = novelBlocks(zhText);
+  // A missing translation cannot be located by sentence length. Reject it so
+  // the catalog build fails instead of publishing invented paragraph matches.
+  if (en.length !== zh.length) {
+    throw new Error(`Unaligned ${context}: ${en.length} English paragraphs, ${zh.length} Chinese paragraphs. Correct the source translations before publishing.`);
   }
-
-  return output;
-}
-
-export function novelBlockPairs(enText, zhText) {
-  let en = novelBlocks(enText);
-  let zh = novelBlocks(zhText);
-  if (en.length && zh.length && en.length !== zh.length) {
-    if (en.length > zh.length) en = compactNovelBlocks(en, zh.length);
-    else zh = compactNovelBlocks(zh, en.length);
-  }
-  const length = Math.max(en.length, zh.length);
-  return Array.from({ length }, (_, index) => ({ en: en[index] || "", zh: zh[index] || "", i: index }));
+  return en.map((text, i) => ({ en: text, zh: zh[i], i }));
 }
 
 function contentHash(value) {

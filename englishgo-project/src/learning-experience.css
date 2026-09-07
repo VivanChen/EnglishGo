@@ -697,6 +697,11 @@ a {
   font-size: 13px!important;
 }
 
+html[data-eg-theme="dark"] .module-story .eg-feature-header>button,
+html[data-eg-theme="dark"] .module-story .story-accent-text {
+  color: #b9dfca!important;
+}
+
 .eg-feature-tools {
   display: flex;
   align-items: center;

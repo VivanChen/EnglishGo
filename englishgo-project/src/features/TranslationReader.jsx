@@ -43,7 +43,8 @@ const TRANSLATION_READER_STYLES = `
 .translation-reader-phrase strong,.translation-reader-phrase span{display:block;overflow-wrap:anywhere}
 .translation-reader-phrase span{margin-top:4px;color:var(--tr-muted);font-size:14px}
 .translation-reader-pronunciation{font-size:18px;line-height:1.9;overflow-wrap:anywhere}
-.translation-reader-pronunciation strong{color:var(--tr-accent)}
+.translation-reader-pronunciation strong{color:var(--tr-accent-text,var(--tr-accent))}
+html[data-eg-theme="dark"] .translation-reader{--tr-accent-text:#b9dfca}
 @media (max-width:680px){
   .translation-reader-results{grid-template-columns:1fr}
   .translation-reader-phrases{grid-template-columns:1fr}

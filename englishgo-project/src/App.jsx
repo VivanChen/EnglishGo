@@ -8,6 +8,7 @@ import { JUNIOR_SONGS } from "./data/juniorSongs.js";
 import { SENIOR_SONGS } from "./data/seniorSongs.js";
 import { getWeakVocabularyForLevel, mergeUniqueWordCards, parseVocabularyTopics, updateWeakVocabulary } from "./data/vocabularyTopics.js";
 import { fetchAllCloudVocabularyRows } from "./data/cloudVocabulary.js";
+import { generateStoryPayload } from "./features/storyGeneration.js";
 
 const TranslationReader=lazy(()=>import("./features/TranslationReader.jsx"));
 const PetMonopolyM=lazy(()=>import("./features/PetMonopoly.jsx"));
@@ -3499,16 +3500,14 @@ function StoryReader({story,pageIdx,setPageIdx,selectedPet,c,onNext,onExit}){
     return()=>window.speechSynthesis?.removeEventListener?.("voiceschanged",load);
   },[]);
 
-  // Clean up on unmount or page change
+  // Automatic page turns belong to the same whole-story narration session.
   useEffect(()=>{
     return()=>{
       stopSpeech();
       if(fallbackTimerRef.current)clearTimeout(fallbackTimerRef.current);
       if(storyHandleRef.current)storyHandleRef.current.cancel();
-      setPlaying(false);
-      setCharIdx(-1);
     };
-  },[pageIdx]);
+  },[]);
 
   // playPage declared before useEffect that uses it (avoid TDZ issues)
   const playPage=useCallback(()=>{
@@ -3586,7 +3585,8 @@ function StoryReader({story,pageIdx,setPageIdx,selectedPet,c,onNext,onExit}){
 
   // Auto-play on page load
   useEffect(()=>{
-    const t=setTimeout(()=>playPage(),400);
+    if(storyHandleRef.current)return;
+    const t=setTimeout(()=>{if(!storyHandleRef.current)playPage()},400);
     return()=>clearTimeout(t);
   },[pageIdx,playPage]);
 
@@ -3631,7 +3631,7 @@ function StoryReader({story,pageIdx,setPageIdx,selectedPet,c,onNext,onExit}){
     while(wordEnd<text.length&&/\S/.test(text[wordEnd]))wordEnd++;
     return(<>
       <span>{text.slice(0,wordStart)}</span>
-      <span style={{background:`${c.cl}33`,padding:"2px 4px",borderRadius:4,color:c.cl,fontWeight:700,transition:"all .15s"}}>{text.slice(wordStart,wordEnd)}</span>
+      <span className="story-accent-text" style={{background:`${c.cl}33`,padding:"2px 4px",borderRadius:4,color:c.cl,fontWeight:700,transition:"all .15s"}}>{text.slice(wordStart,wordEnd)}</span>
       <span>{text.slice(wordEnd)}</span>
     </>);
   };
@@ -3644,7 +3644,7 @@ function StoryReader({story,pageIdx,setPageIdx,selectedPet,c,onNext,onExit}){
     </div>
     <div style={{...S.card,padding:"10px 12px",marginBottom:12,display:"flex",gap:8,alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",background:"var(--color-background-primary,#fff)"}}>
       <div style={{minWidth:0}}>
-        <div style={{fontSize:12,fontWeight:800,color:c.cl}}>{story.level_label||"AI 英文故事"}</div>
+        <div className="story-accent-text" style={{fontSize:12,fontWeight:800,color:c.cl}}>{story.level_label||"AI 英文故事"}</div>
         {story.summary&&<div style={{fontSize:11,color:S.t2,lineHeight:1.5,marginTop:2}}>{story.summary}</div>}
       </div>
       <div style={{fontSize:11,fontWeight:800,color:S.t2,background:S.bg2,borderRadius:999,padding:"5px 9px",whiteSpace:"nowrap"}}>第 {pageIdx+1} 頁 / 共 {story.pages.length} 頁</div>
@@ -3660,7 +3660,7 @@ function StoryReader({story,pageIdx,setPageIdx,selectedPet,c,onNext,onExit}){
       </div>
 
       {focusLine&&<div style={{display:"flex",justifyContent:"center",marginBottom:10}}>
-        <button type="button" onClick={()=>speak(page.word,"en-US",0.85,{pitch:1.1})} style={{border:`1px solid ${c.cl}55`,background:"var(--color-background-primary,#fff)",color:c.cl,borderRadius:999,padding:"6px 12px",fontSize:12,fontWeight:800,cursor:"pointer",boxShadow:`0 8px 18px ${c.cl}14`}}>{focusLine}</button>
+        <button className="story-accent-text" type="button" onClick={()=>speak(page.word,"en-US",0.85,{pitch:1.1})} style={{border:`1px solid ${c.cl}55`,background:"var(--color-background-primary,#fff)",color:c.cl,borderRadius:999,padding:"6px 12px",fontSize:12,fontWeight:800,cursor:"pointer",boxShadow:`0 8px 18px ${c.cl}14`}}>{focusLine}</button>
       </div>}
 
       {/* English text (big, with word highlighting) */}
@@ -3796,7 +3796,7 @@ function normalizeStoryPayload(raw,{lv,petName,themeName}){
   };
 }
 
-function StoryMode({lv,onBack,apiKey,pets,c,onXp,trackWeak,onOpenSettings}){
+export function StoryMode({lv,onBack,apiKey,pets,c,onXp,trackWeak,onOpenSettings}){
   const[step,setStep]=useState("setup");// setup | loading | reading | quiz | done
   const[selectedPet,setSelectedPet]=useState(pets[0]||null);
   const[theme,setTheme]=useState("adventure");
@@ -3807,6 +3807,11 @@ function StoryMode({lv,onBack,apiKey,pets,c,onXp,trackWeak,onOpenSettings}){
   const[quizScore,setQuizScore]=useState(0);
   const[showApiKeyInput,setShowApiKeyInput]=useState(false);
   const[error,setError]=useState("");
+
+  const storyRequestRef=useRef(null);
+  const rewardedQuestionsRef=useRef(new Set());
+  useEffect(()=>()=>{storyRequestRef.current?.abort();storyRequestRef.current=null},[]);
+  const cancelGeneration=()=>{storyRequestRef.current?.abort();storyRequestRef.current=null;setStep("setup")};
 
   const themes=[
     {id:"adventure",icon:"🗺️",name:"冒險",desc:"勇闖神秘地方"},
@@ -3819,8 +3824,10 @@ function StoryMode({lv,onBack,apiKey,pets,c,onXp,trackWeak,onOpenSettings}){
   const storyProfile=STORY_LEVEL_PROFILES[lv]||STORY_LEVEL_PROFILES.elem;
 
   const genStory=async()=>{
-    if(!apiKey){onOpenSettings?.();setShowApiKeyInput(true);return}
+    if(storyRequestRef.current)return;
+    if(!apiKey?.trim()){onOpenSettings?.();setShowApiKeyInput(true);return}
     if(!selectedPet){setError("請先擁有一隻寵物！去扭蛋機抽一隻吧");return}
+    const controller=new AbortController();storyRequestRef.current=controller;
     setStep("loading");setError("");
     const petName=PETS[selectedPet.rarity].find(p=>p.id===selectedPet.petId)?.name||"寵物";
     const themeObj=themes.find(t=>t.id===theme);
@@ -3859,79 +3866,14 @@ Return STRICT JSON only (no markdown, no explanations):
   ]
 }`;
     try{
-      // Try main model first, fall back to lite if overloaded
-      const models=["gemini-2.5-flash","gemini-2.5-flash-lite","gemini-2.0-flash"];
-      let lastErr=null,parsed=null;
-
-      outer:for(const model of models){
-        // Up to 3 retries per model with exponential backoff
-        for(let attempt=0;attempt<3;attempt++){
-          try{
-            const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,{
-              method:"POST",headers:{"Content-Type":"application/json"},
-              body:JSON.stringify({
-                contents:[{parts:[{text:prompt}]}],
-                generationConfig:{maxOutputTokens:2500,temperature:0.85,responseMimeType:"application/json"},
-              }),
-            });
-            const data=await res.json();
-
-            // Handle overload explicitly
-            if(data?.error){
-              const msg=data.error.message||"";
-              if(msg.includes("high demand")||msg.includes("overloaded")||data.error.code===503||data.error.code===429){
-                lastErr=new Error("模型忙碌中");
-                // Wait before retry: 1s, 2s, 4s
-                await new Promise(r=>setTimeout(r,1000*Math.pow(2,attempt)));
-                continue;// retry same model
-              }
-              // Other errors (invalid key, quota) → throw to outer
-              lastErr=new Error(msg);
-              break;
-            }
-
-            let text=data?.candidates?.[0]?.content?.parts?.[0]?.text;
-            if(!text){lastErr=new Error("AI 沒回傳內容");break}
-
-            // Extract JSON from response (handles ```json blocks, prefix text, etc)
-            text=text.trim();
-            // Remove ```json or ``` wrappers
-            text=text.replace(/^```(?:json)?\s*/i,"").replace(/\s*```\s*$/,"");
-            // Find first { and last } to extract JSON
-            const s=text.indexOf("{");const e=text.lastIndexOf("}");
-            if(s>=0&&e>s)text=text.slice(s,e+1);
-
-            try{
-              parsed=JSON.parse(text);
-            }catch(je){
-              lastErr=new Error("AI 回傳格式有問題，重試中...");
-              await new Promise(r=>setTimeout(r,1500));
-              continue;// retry same model
-            }
-
-            if(!parsed.pages||!parsed.questions||!Array.isArray(parsed.pages)){
-              lastErr=new Error("故事內容不完整");
-              await new Promise(r=>setTimeout(r,1500));
-              continue;
-            }
-
-            parsed=normalizeStoryPayload(parsed,{lv,petName,themeName:themeObj.name});
-
-            // Success - break out of both loops
-            break outer;
-          }catch(fetchErr){
-            lastErr=fetchErr;
-            await new Promise(r=>setTimeout(r,1000));
-          }
-        }
-      }
-
-      if(!parsed)throw lastErr||new Error("生成失敗");
-
-      setStory(parsed);
+      const parsed=await generateStoryPayload({apiKey:apiKey.trim(),prompt,pageCount:levelProfile.pages,signal:controller.signal});
+      if(storyRequestRef.current!==controller||controller.signal.aborted)return;
+      setStory(normalizeStoryPayload(parsed,{lv,petName,themeName:themeObj.name}));
+      rewardedQuestionsRef.current=new Set();
       setPageIdx(0);setQuizIdx(0);setQuizAnswered(null);setQuizScore(0);
       setStep("reading");
     }catch(e){
+      if(storyRequestRef.current!==controller||controller.signal.aborted)return;
       const msg=e.message||"";
       let userMsg="故事生成失敗";
       if(msg.includes("忙碌")||msg.includes("demand")||msg.includes("overloaded")){
@@ -3943,19 +3885,21 @@ Return STRICT JSON only (no markdown, no explanations):
       }
       setError(userMsg);
       setStep("setup");
+    }finally{
+      if(storyRequestRef.current===controller)storyRequestRef.current=null;
     }
   };
 
   const nextPage=()=>{
     if(pageIdx<story.pages.length-1)setPageIdx(pageIdx+1);
-    else setStep("quiz");
+    else{setQuizIdx(0);setQuizAnswered(null);setQuizScore(0);setStep("quiz")}
   };
 
   const answerQuiz=(idx)=>{
     if(quizAnswered!==null)return;
     setQuizAnswered(idx);
     const correct=idx===story.questions[quizIdx].correct;
-    if(correct){setQuizScore(s=>s+1);onXp&&onXp(10)}
+    if(correct){setQuizScore(s=>s+1);if(!rewardedQuestionsRef.current.has(quizIdx)){rewardedQuestionsRef.current.add(quizIdx);onXp&&onXp(10)}}
     else{trackWeak&&trackWeak(story.questions[quizIdx].q.split(" ")[0])}
   };
 
@@ -4023,7 +3967,7 @@ Return STRICT JSON only (no markdown, no explanations):
         </div>
       </div>
 
-      {error&&<div style={{padding:"10px 14px",background:"#FCEBEB",border:"1px solid #E24B4A",borderRadius:10,color:"#A32D2D",fontSize:12,marginBottom:12,whiteSpace:"pre-wrap"}}>❌ {error}</div>}
+      {error&&<div role="alert" style={{padding:"10px 14px",background:"#FCEBEB",border:"1px solid #E24B4A",borderRadius:10,color:"#A32D2D",fontSize:12,marginBottom:12,whiteSpace:"pre-wrap"}}>❌ {error}</div>}
 
       <button onClick={genStory} style={{...S.btn,background:`linear-gradient(135deg,${c.cl},${c.ac})`,color:"#fff",width:"100%",padding:"16px",fontSize:15,boxShadow:`0 4px 12px ${c.cl}44`}}>✨ 開始生成故事</button>
 
@@ -4035,12 +3979,12 @@ Return STRICT JSON only (no markdown, no explanations):
 
   // Loading
   if(step==="loading"){
-    return(<div><Hdr t="✨ 創作中..." onBack={()=>setStep("setup")} cl={c.cl}/>
+    return(<div><Hdr t="✨ 創作中..." onBack={cancelGeneration} cl={c.cl}/>
       <div style={{...S.card,padding:"48px 20px",textAlign:"center"}}>
         <div style={{display:"flex",justifyContent:"center",animation:"emojiBounce 1s ease-in-out infinite"}}>{selectedPet&&<PixelPet petId={selectedPet.petId} stage={getPetStage(selectedPet)} size={96}/>}</div>
         <div style={{fontSize:16,color:S.t1,fontWeight:600,marginTop:16}}>正在為你創作故事</div>
         <div style={{fontSize:12,color:S.t2,marginTop:6}}>AI 正在編寫專屬於你的冒險...</div>
-        <div style={{fontSize:11,color:S.t3,marginTop:4}}>（如果 AI 忙碌，會自動重試，請稍候 10-30 秒）</div>
+        <div style={{fontSize:11,color:S.t3,marginTop:4}}>AI 忙碌時會自動重試，最多等待 60 秒。你可以隨時返回取消。</div>
         <div style={{width:120,height:4,background:S.bg2,borderRadius:2,margin:"16px auto",overflow:"hidden"}}>
           <div style={{width:"60%",height:"100%",background:`linear-gradient(90deg,${c.cl},${c.ac})`,animation:"pulse 1s infinite"}}/>
         </div>

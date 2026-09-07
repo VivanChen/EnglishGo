@@ -986,8 +986,8 @@ export const NOVEL_AUDIO_CATALOG = Object.freeze({
     "text": "Lily held the Light Leaf closer.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c2-zh-block-49-59de826f6445c1b5": {
-    "text": "莉莉把光之葉握得更緊。",
+  "v2-secret-forest-adventure-c2-zh-block-49-b404799d64b97182": {
+    "text": "莉莉把光之葉拿得更靠近自己。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c2-en-block-50-9af2b1a2baa9cf53": {
@@ -1362,8 +1362,8 @@ export const NOVEL_AUDIO_CATALOG = Object.freeze({
     "text": "“Yes. The river cannot sing without its bell.”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c3-zh-block-29-a301a365f1a50c45": {
-    "text": "「是的。沒有它，河流就不能唱歌。」",
+  "v2-secret-forest-adventure-c3-zh-block-29-b142185c7abfba24": {
+    "text": "「是的。沒有河之鈴，河流就不能唱歌。」",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c3-en-block-30-1a73b988c3287bf1": {
@@ -2330,8 +2330,8 @@ export const NOVEL_AUDIO_CATALOG = Object.freeze({
     "text": "Then the stone slowly moved.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c4-zh-block-55-6661e59027f94e90": {
-    "text": "石頭慢慢打開。",
+  "v2-secret-forest-adventure-c4-zh-block-55-792515de926b424f": {
+    "text": "接著，石頭慢慢移動。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c4-en-block-56-5f1f2799c2496357": {
@@ -2346,375 +2346,383 @@ export const NOVEL_AUDIO_CATALOG = Object.freeze({
     "text": "Lily reached in.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c4-zh-block-57-d5eeb3fbfb5499b3": {
-    "text": "莉莉伸手拿出來。",
+  "v2-secret-forest-adventure-c4-zh-block-57-8a81e5d771c78d4c": {
+    "text": "莉莉把手伸進去。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c4-en-block-58-e56fddce599d8896": {
     "text": "She pulled out another piece.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c4-zh-block-58-e8ca6a3b6af0f16a": {
-    "text": "那是第二塊月之鑰匙。",
+  "v2-secret-forest-adventure-c4-zh-block-58-d3aff400f303b8ff": {
+    "text": "她拿出了另一塊碎片。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c4-en-block-59-e3c3cd51677659bd": {
     "text": "It was the second Moon Key piece.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c4-zh-block-59-8c2fb23938d50652": {
-    "text": "可可拍手。",
+  "v2-secret-forest-adventure-c4-zh-block-59-e8ca6a3b6af0f16a": {
+    "text": "那是第二塊月之鑰匙。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c4-en-block-60-f26d2f946d505e18": {
     "text": "Coco clapped.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c4-zh-block-60-1a4cf806b404a3e1": {
-    "text": "「你又成功了！」",
+  "v2-secret-forest-adventure-c4-zh-block-60-8c2fb23938d50652": {
+    "text": "可可拍手。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c4-en-block-61-97756f5e59834769": {
     "text": "“You did it again!”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c4-zh-block-61-6b7b136b1510d627": {
-    "text": "卵石王子開心地跳。",
+  "v2-secret-forest-adventure-c4-zh-block-61-1a4cf806b404a3e1": {
+    "text": "「你又成功了！」",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c4-en-block-62-ebdb827bfd085288": {
     "text": "Prince Pebble jumped happily.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c4-zh-block-62-604ef3e213139ca5": {
-    "text": "「呱！」",
+  "v2-secret-forest-adventure-c4-zh-block-62-6b7b136b1510d627": {
+    "text": "卵石王子開心地跳。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c4-en-block-63-074955c4579d5fc1": {
     "text": "“Ribbit!”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c4-zh-block-63-059afe90cef6abe8": {
-    "text": "但突然——",
+  "v2-secret-forest-adventure-c4-zh-block-63-604ef3e213139ca5": {
+    "text": "「呱！」",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c4-en-block-64-229f9c926da73a76": {
     "text": "But suddenly—",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c4-zh-block-64-9e0d30dd3f177b87": {
-    "text": "空氣變冷了。",
+  "v2-secret-forest-adventure-c4-zh-block-64-059afe90cef6abe8": {
+    "text": "但突然——",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c4-en-block-65-cb00c90d1b49bfda": {
     "text": "The air became cold.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c4-zh-block-65-492b5f57fa4b564c": {
-    "text": "石頭的光變暗。",
+  "v2-secret-forest-adventure-c4-zh-block-65-9e0d30dd3f177b87": {
+    "text": "空氣變冷了。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c4-en-block-66-771228f84617785b": {
     "text": "The glowing lines on the stones turned dark.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c4-zh-block-66-7d449b6aef606ade": {
-    "text": "低語聲停止了。",
+  "v2-secret-forest-adventure-c4-zh-block-66-492b5f57fa4b564c": {
+    "text": "石頭的光變暗。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c4-en-block-67-46d7871df39cc179": {
     "text": "The whispering voices stopped.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c4-zh-block-67-38941c10fb5e835e": {
-    "text": "莉莉看四周。",
+  "v2-secret-forest-adventure-c4-zh-block-67-7d449b6aef606ade": {
+    "text": "低語聲停止了。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c4-en-block-68-21fd3c210d4b5776": {
     "text": "Lily looked around.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c4-zh-block-68-f980116815b8c704": {
-    "text": "「不對勁……」",
+  "v2-secret-forest-adventure-c4-zh-block-68-38941c10fb5e835e": {
+    "text": "莉莉看四周。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c4-en-block-69-1431ff54f84e1c7a": {
     "text": "“Something is wrong…”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c4-zh-block-69-221874a341068168": {
-    "text": "一個影子在樹間移動。",
+  "v2-secret-forest-adventure-c4-zh-block-69-f980116815b8c704": {
+    "text": "「不對勁……」",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c4-en-block-70-b619c2e74aa6ffc3": {
     "text": "A shadow moved between the trees.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c4-zh-block-70-7274ff32ffc7efeb": {
-    "text": "可可驚呼。",
+  "v2-secret-forest-adventure-c4-zh-block-70-221874a341068168": {
+    "text": "一個影子在樹間移動。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c4-en-block-71-c09bf67fff90fba3": {
     "text": "Coco gasped.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c4-zh-block-71-091a438a6cabd4e0": {
-    "text": "「它來了……」",
+  "v2-secret-forest-adventure-c4-zh-block-71-7274ff32ffc7efeb": {
+    "text": "可可驚呼。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c4-en-block-72-5e37145126f34e12": {
     "text": "“It’s here…”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c4-zh-block-72-8920998858b61827": {
-    "text": "影子變大。",
+  "v2-secret-forest-adventure-c4-zh-block-72-091a438a6cabd4e0": {
+    "text": "「它來了……」",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c4-en-block-73-834dceeef9572bd0": {
     "text": "The shadow grew larger.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c4-zh-block-73-d61c2421bf83b692": {
-    "text": "黑暗中出現紫色眼睛。",
+  "v2-secret-forest-adventure-c4-zh-block-73-8920998858b61827": {
+    "text": "影子變大。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c4-en-block-74-4cbfb691814b36a4": {
     "text": "Purple eyes opened in the darkness.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c4-zh-block-74-fe42a99f9b3ce87b": {
-    "text": "莉莉緊握光之葉。",
+  "v2-secret-forest-adventure-c4-zh-block-74-d61c2421bf83b692": {
+    "text": "黑暗中出現紫色眼睛。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c4-en-block-75-c2b0b27cd28b2dee": {
     "text": "Lily held the Light Leaf tightly.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c4-zh-block-75-6a39f1f82a115eea": {
-    "text": "「靠近我，」她說。",
+  "v2-secret-forest-adventure-c4-zh-block-75-fe42a99f9b3ce87b": {
+    "text": "莉莉緊握光之葉。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c4-en-block-76-a0a01cf9bdaa56e3": {
     "text": "“Stay close,” she said.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c4-zh-block-76-c2910ef33bfbdb63": {
-    "text": "黑影發出低沉聲音。",
+  "v2-secret-forest-adventure-c4-zh-block-76-6a39f1f82a115eea": {
+    "text": "「靠近我，」她說。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c4-en-block-77-89f4b6e97305cdcc": {
     "text": "The shadow made a low sound.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c4-zh-block-77-f8a3ca8a24906879": {
-    "text": "「你找到了……鑰匙……」",
+  "v2-secret-forest-adventure-c4-zh-block-77-c2910ef33bfbdb63": {
+    "text": "黑影發出低沉聲音。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c4-en-block-78-77347e6250fabd99": {
     "text": "“You found… the key…”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c4-zh-block-78-c7a79ceee6ebb9af": {
-    "text": "莉莉雙腿發抖。",
+  "v2-secret-forest-adventure-c4-zh-block-78-f8a3ca8a24906879": {
+    "text": "「你找到了……鑰匙……」",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c4-en-block-79-c32f750a8071be0c": {
     "text": "Lily felt her legs shaking.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c4-zh-block-79-6ee78275f0c8656a": {
-    "text": "但她沒有逃跑。",
+  "v2-secret-forest-adventure-c4-zh-block-79-c7a79ceee6ebb9af": {
+    "text": "莉莉雙腿發抖。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c4-en-block-80-d74577508a43fb7c": {
     "text": "But she stood still.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c4-zh-block-80-59d53f9d3fe7644b": {
-    "text": "「我們不會讓你拿走！」她說。",
+  "v2-secret-forest-adventure-c4-zh-block-80-6ee78275f0c8656a": {
+    "text": "但她沒有逃跑。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c4-en-block-81-f9e60de125935add": {
     "text": "“We won’t let you take it!” she said.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c4-zh-block-81-3b7b0bcdc2f10c25": {
-    "text": "黑影笑了。",
+  "v2-secret-forest-adventure-c4-zh-block-81-59d53f9d3fe7644b": {
+    "text": "「我們不會讓你拿走！」她說。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c4-en-block-82-cc9157c0e281ce17": {
     "text": "The shadow laughed.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c4-zh-block-82-e26caf440961857f": {
-    "text": "冰冷的回音笑聲。",
+  "v2-secret-forest-adventure-c4-zh-block-82-3b7b0bcdc2f10c25": {
+    "text": "黑影笑了。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c4-en-block-83-fec108df618b2cb7": {
     "text": "A cold, echoing laugh.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c4-zh-block-83-a52309c42e313222": {
-    "text": "「你只是……小孩……」",
+  "v2-secret-forest-adventure-c4-zh-block-83-e26caf440961857f": {
+    "text": "冰冷的回音笑聲。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c4-en-block-84-2ff842afed45c1eb": {
     "text": "“You are just… a child…”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c4-zh-block-84-5a7b965291d8e2d2": {
-    "text": "黑影伸出手。",
+  "v2-secret-forest-adventure-c4-zh-block-84-a52309c42e313222": {
+    "text": "「你只是……小孩……」",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c4-en-block-85-5d956aba0cc7c316": {
     "text": "The shadow stretched its arm.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c4-zh-block-85-9468f626e109d036": {
-    "text": "黑煙向莉莉靠近。",
+  "v2-secret-forest-adventure-c4-zh-block-85-5a7b965291d8e2d2": {
+    "text": "黑影伸出手。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c4-en-block-86-06ab470d0b8e07c8": {
     "text": "Dark smoke moved toward Lily.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c4-zh-block-86-e9210ae02c0c4331": {
-    "text": "突然——",
+  "v2-secret-forest-adventure-c4-zh-block-86-9468f626e109d036": {
+    "text": "黑煙向莉莉靠近。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c4-en-block-87-bc30f1a485d6b02a": {
     "text": "Suddenly—",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c4-zh-block-87-f0c024e5c4ab1410": {
-    "text": "光之葉發出強光。",
+  "v2-secret-forest-adventure-c4-zh-block-87-e9210ae02c0c4331": {
+    "text": "突然——",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c4-en-block-88-e421d8dfa0f1deee": {
     "text": "The Light Leaf flashed bright light.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c4-zh-block-88-566dbb576ce51d46": {
+  "v2-secret-forest-adventure-c4-zh-block-88-f0c024e5c4ab1410": {
+    "text": "光之葉發出強光。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c4-en-block-89-7e85ce5cd7f712ce": {
+    "text": "The shadow pulled back.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c4-zh-block-89-566dbb576ce51d46": {
     "text": "黑影退後。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c4-en-block-89-8b7d44dbcdec7c9d": {
-    "text": "The shadow pulled back.\n“Ahhh!”",
+  "v1-secret-forest-adventure-c4-en-block-90-0d18f71d7d253bc1": {
+    "text": "“Ahhh!”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c4-zh-block-89-a67dbf88fae94056": {
+  "v2-secret-forest-adventure-c4-zh-block-90-a67dbf88fae94056": {
     "text": "「啊！」",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c4-en-block-90-edd09863509b2534": {
+  "v1-secret-forest-adventure-c4-en-block-91-edd09863509b2534": {
     "text": "Coco shouted, “The light hurts it!”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c4-zh-block-90-c2d84233d02c2a71": {
-    "text": "可可大喊：「光對它有效！」",
+  "v2-secret-forest-adventure-c4-zh-block-91-2304fb591d10b52e": {
+    "text": "可可大喊：「光會傷到它！」",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c4-en-block-91-1883529356719a03": {
+  "v1-secret-forest-adventure-c4-en-block-92-1883529356719a03": {
     "text": "Lily raised the leaf.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c4-zh-block-91-48d474293c3acca6": {
+  "v2-secret-forest-adventure-c4-zh-block-92-48d474293c3acca6": {
     "text": "莉莉舉起葉子。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c4-en-block-92-894391ba1fadaaee": {
+  "v1-secret-forest-adventure-c4-en-block-93-894391ba1fadaaee": {
     "text": "“Go away!” she shouted.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c4-zh-block-92-2e5e50517bc80352": {
+  "v2-secret-forest-adventure-c4-zh-block-93-2e5e50517bc80352": {
     "text": "「離開！」她喊。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c4-en-block-93-689759a85d44bf39": {
+  "v1-secret-forest-adventure-c4-en-block-94-689759a85d44bf39": {
     "text": "The light became stronger.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c4-zh-block-93-841dd3b2c29fd4c0": {
+  "v2-secret-forest-adventure-c4-zh-block-94-841dd3b2c29fd4c0": {
     "text": "光變得更強。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c4-en-block-94-65b4122ea64ab6fb": {
+  "v1-secret-forest-adventure-c4-en-block-95-65b4122ea64ab6fb": {
     "text": "The shadow slowly disappeared into the trees.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c4-zh-block-94-043ebcba363fbc44": {
+  "v2-secret-forest-adventure-c4-zh-block-95-043ebcba363fbc44": {
     "text": "黑影慢慢消失在樹林中。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c4-en-block-95-490bbdc6575d8d5c": {
+  "v1-secret-forest-adventure-c4-en-block-96-490bbdc6575d8d5c": {
     "text": "The forest became quiet again.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c4-zh-block-95-c0d0513daa2b1da9": {
+  "v2-secret-forest-adventure-c4-zh-block-96-c0d0513daa2b1da9": {
     "text": "森林再次安靜。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c4-en-block-96-9171add57611a9cf": {
+  "v1-secret-forest-adventure-c4-en-block-97-9171add57611a9cf": {
     "text": "Lily took a deep breath.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c4-zh-block-96-4fb5fce6ba40b1d3": {
+  "v2-secret-forest-adventure-c4-zh-block-97-4fb5fce6ba40b1d3": {
     "text": "莉莉深吸一口氣。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c4-en-block-97-1a4729509470539f": {
+  "v1-secret-forest-adventure-c4-en-block-98-1a4729509470539f": {
     "text": "“That was scary…”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c4-zh-block-97-86d2a1909d2bd30d": {
+  "v2-secret-forest-adventure-c4-zh-block-98-86d2a1909d2bd30d": {
     "text": "「好可怕……」",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c4-en-block-98-0a97e00c0113d73a": {
+  "v1-secret-forest-adventure-c4-en-block-99-0a97e00c0113d73a": {
     "text": "Coco nodded.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c4-zh-block-98-560085f34cbb4421": {
+  "v2-secret-forest-adventure-c4-zh-block-99-560085f34cbb4421": {
     "text": "可可點頭。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c4-en-block-99-87e8eb1fbbeb9c82": {
+  "v1-secret-forest-adventure-c4-en-block-100-87e8eb1fbbeb9c82": {
     "text": "“But you were very brave.”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c4-zh-block-99-2ce693b90ed245f8": {
+  "v2-secret-forest-adventure-c4-zh-block-100-2ce693b90ed245f8": {
     "text": "「但你很勇敢。」",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c4-en-block-100-8baae86c8c4d5b28": {
+  "v1-secret-forest-adventure-c4-en-block-101-8baae86c8c4d5b28": {
     "text": "Lily looked at the Moon Key pieces.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c4-zh-block-100-e6355e2bf230a504": {
+  "v2-secret-forest-adventure-c4-zh-block-101-e6355e2bf230a504": {
     "text": "莉莉看著鑰匙碎片。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c4-en-block-101-3a63b77a43cf73b6": {
+  "v1-secret-forest-adventure-c4-en-block-102-3a63b77a43cf73b6": {
     "text": "“We still need one more.”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c4-zh-block-101-9e60ace13275e682": {
+  "v2-secret-forest-adventure-c4-zh-block-102-9e60ace13275e682": {
     "text": "「還差一塊。」",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c4-en-block-102-6a34ec5eb55ab399": {
+  "v1-secret-forest-adventure-c4-en-block-103-6a34ec5eb55ab399": {
     "text": "The Light Leaf floated forward again.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c4-zh-block-102-8d1e1000c7d06dfc": {
+  "v2-secret-forest-adventure-c4-zh-block-103-8d1e1000c7d06dfc": {
     "text": "光之葉再次向前飄去。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c4-en-block-103-d5948d3ea46d3422": {
+  "v1-secret-forest-adventure-c4-en-block-104-d5948d3ea46d3422": {
     "text": "Their journey was not over.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c4-zh-block-103-ecda31e626e7072f": {
+  "v2-secret-forest-adventure-c4-zh-block-104-ecda31e626e7072f": {
     "text": "她們的旅程還沒結束。",
     "lang": "zh-TW"
   },
@@ -3130,8 +3138,8 @@ export const NOVEL_AUDIO_CATALOG = Object.freeze({
     "text": "Lily blinked.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c5-zh-block-50-6990098f2716f1c1": {
-    "text": "莉莉愣住。",
+  "v2-secret-forest-adventure-c5-zh-block-50-702e672c6ee14471": {
+    "text": "莉莉眨了眨眼。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c5-en-block-51-5430ecbabaa88d43": {
@@ -3186,8 +3194,8 @@ export const NOVEL_AUDIO_CATALOG = Object.freeze({
     "text": "“The spoon shows things differently!”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c5-zh-block-57-39ea3551ac611b57": {
-    "text": "「湯匙可以看到不同的東西！」",
+  "v2-secret-forest-adventure-c5-zh-block-57-ce6d648080d5a8d7": {
+    "text": "「湯匙映出的樣子不一樣！」",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c5-en-block-58-922161f45524596f": {
@@ -4258,8 +4266,8 @@ export const NOVEL_AUDIO_CATALOG = Object.freeze({
     "text": "It moved to one of the smaller circles.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-39-bc07423677d08a7e": {
-    "text": "它移到其中一個圓形。",
+  "v2-secret-forest-adventure-c6-zh-block-39-08c2f6bb62db6480": {
+    "text": "它移到其中一個較小的圓形。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c6-en-block-40-beb25685f8aa88e6": {
@@ -4306,999 +4314,1023 @@ export const NOVEL_AUDIO_CATALOG = Object.freeze({
     "text": "One circle had a star pattern.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-45-a84c65f9b78571b0": {
-    "text": "一個是星星。\n一個是月亮。\n一個是旋轉。",
+  "v2-secret-forest-adventure-c6-zh-block-45-1dceef5b0e7e07f0": {
+    "text": "一個圓形裡有星星圖案。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c6-en-block-46-8e7fecbd2f4a1384": {
     "text": "One had a moon pattern.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-46-9e15aa27766a5de1": {
-    "text": "莉莉想起低語之石。",
+  "v2-secret-forest-adventure-c6-zh-block-46-366d25c79ad6cb81": {
+    "text": "另一個有月亮圖案。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c6-en-block-47-05acd35a364dfe49": {
     "text": "One had a spiral pattern.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-47-d3bab29b2bece9c5": {
-    "text": "「星星、月亮、旋轉……」",
+  "v2-secret-forest-adventure-c6-zh-block-47-bd3ea390aed612f5": {
+    "text": "還有一個有螺旋圖案。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c6-en-block-48-8dcaa3eb12266dd7": {
     "text": "Lily remembered the Whispering Stones.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-48-c3f6059470cae30d": {
-    "text": "可可笑了。",
+  "v2-secret-forest-adventure-c6-zh-block-48-9e15aa27766a5de1": {
+    "text": "莉莉想起低語之石。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c6-en-block-49-cb8a91766b93160b": {
     "text": "“Star… moon… spiral…”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-49-69fc191e21fca1a3": {
-    "text": "「你記得！」",
+  "v2-secret-forest-adventure-c6-zh-block-49-d3bab29b2bece9c5": {
+    "text": "「星星、月亮、旋轉……」",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c6-en-block-50-e5b319b942d419b8": {
     "text": "Coco smiled.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-50-16776324559475ba": {
-    "text": "莉莉想了一下。",
+  "v2-secret-forest-adventure-c6-zh-block-50-c3f6059470cae30d": {
+    "text": "可可笑了。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c6-en-block-51-54ba2a9066089cbc": {
     "text": "“You remember!”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-51-a1d5516f3b958c89": {
-    "text": "「月亮是鑰匙……」",
+  "v2-secret-forest-adventure-c6-zh-block-51-69fc191e21fca1a3": {
+    "text": "「你記得！」",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c6-en-block-52-704c358c9bc1e40b": {
     "text": "Lily thought hard.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-52-0af696e99d3da4e3": {
-    "text": "她把鑰匙放進月亮圓。",
+  "v2-secret-forest-adventure-c6-zh-block-52-16776324559475ba": {
+    "text": "莉莉想了一下。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c6-en-block-53-76bc3656de7e6759": {
     "text": "“The moon is the key…”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-53-0459f92ebf83153f": {
-    "text": "喀嚓。",
+  "v2-secret-forest-adventure-c6-zh-block-53-a1d5516f3b958c89": {
+    "text": "「月亮是鑰匙……」",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c6-en-block-54-fa2ebb23bcbc63d4": {
     "text": "She moved the Moon Key into the moon circle.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-54-06d08a3759638a08": {
-    "text": "圓形亮了起來。",
+  "v2-secret-forest-adventure-c6-zh-block-54-0af696e99d3da4e3": {
+    "text": "她把鑰匙放進月亮圓。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c6-en-block-55-120cb24938da72e5": {
     "text": "Click.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-55-8d14dedc47be9d81": {
-    "text": "岩壁微微震動。",
+  "v2-secret-forest-adventure-c6-zh-block-55-0459f92ebf83153f": {
+    "text": "喀嚓。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c6-en-block-56-15b6b5b7b01a43a5": {
     "text": "The circle lit up.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-56-f89500630814367a": {
-    "text": "「很好！」可可說。",
+  "v2-secret-forest-adventure-c6-zh-block-56-06d08a3759638a08": {
+    "text": "圓形亮了起來。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c6-en-block-57-d4dec30f343f8bcf": {
     "text": "The wall shook slightly.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-57-da85f2f5e4fc5c88": {
-    "text": "「另外兩個呢？」",
+  "v2-secret-forest-adventure-c6-zh-block-57-8d14dedc47be9d81": {
+    "text": "岩壁微微震動。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c6-en-block-58-cfab8b2eb2b9644e": {
     "text": "“Good!” Coco said.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-58-38941c10fb5e835e": {
-    "text": "莉莉看四周。",
+  "v2-secret-forest-adventure-c6-zh-block-58-f89500630814367a": {
+    "text": "「很好！」可可說。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c6-en-block-59-75c215ab8ae3991f": {
     "text": "“What about the others?”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-59-cf4f12ae92a6cb17": {
-    "text": "「可能不只用鑰匙。」",
+  "v2-secret-forest-adventure-c6-zh-block-59-da85f2f5e4fc5c88": {
+    "text": "「另外兩個呢？」",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c6-en-block-60-21fd3c210d4b5776": {
     "text": "Lily looked around.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-60-8ac3dc49ec4d2bfc": {
-    "text": "卵石王子跳到地上。",
+  "v2-secret-forest-adventure-c6-zh-block-60-38941c10fb5e835e": {
+    "text": "莉莉看四周。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c6-en-block-61-7eb2a63351824c53": {
     "text": "“Maybe… we need more than just the key.”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-61-604ef3e213139ca5": {
-    "text": "「呱！」",
+  "v2-secret-forest-adventure-c6-zh-block-61-cf4f12ae92a6cb17": {
+    "text": "「可能不只用鑰匙。」",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c6-en-block-62-e4cf00d77ecb9446": {
     "text": "Prince Pebble jumped onto the ground.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-62-672ba5dbdf950753": {
-    "text": "牠推了一顆小石頭。",
+  "v2-secret-forest-adventure-c6-zh-block-62-8ac3dc49ec4d2bfc": {
+    "text": "卵石王子跳到地上。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c6-en-block-63-074955c4579d5fc1": {
     "text": "“Ribbit!”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-63-010050b6f944b392": {
-    "text": "石頭滾到岩壁。",
+  "v2-secret-forest-adventure-c6-zh-block-63-604ef3e213139ca5": {
+    "text": "「呱！」",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c6-en-block-64-acb7ce5baba57bd7": {
     "text": "He tapped a small stone.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-64-4c26228e6efd973e": {
-    "text": "碰到旋轉圖案——",
+  "v2-secret-forest-adventure-c6-zh-block-64-e8df97f58267c4eb": {
+    "text": "牠輕輕敲了一顆小石頭。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c6-en-block-65-af7985ff9416f178": {
     "text": "The stone rolled toward the wall.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-65-02a55b2585efa86a": {
-    "text": "發光！",
+  "v2-secret-forest-adventure-c6-zh-block-65-010050b6f944b392": {
+    "text": "石頭滾到岩壁。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c6-en-block-66-a62002159d381883": {
     "text": "When it touched the spiral circle—",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-66-7bc212759227bcb0": {
+  "v2-secret-forest-adventure-c6-zh-block-66-4c26228e6efd973e": {
+    "text": "碰到旋轉圖案——",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c6-en-block-67-37ac57b9962f9a22": {
+    "text": "Glow!",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c6-zh-block-67-02a55b2585efa86a": {
+    "text": "發光！",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c6-en-block-68-af27f4260b3e6c7b": {
+    "text": "The spiral circle lit up.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c6-zh-block-68-7bc212759227bcb0": {
     "text": "旋轉圓亮了。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-67-0bbe928f6bb2fcb9": {
-    "text": "Glow!\nThe spiral circle lit up.",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c6-zh-block-67-b3896ce0d0d23440": {
-    "text": "「卵石幫忙了！」可可笑。",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c6-en-block-68-5606b29f2e6c6ac7": {
+  "v1-secret-forest-adventure-c6-en-block-69-5606b29f2e6c6ac7": {
     "text": "“Pebble helped!” Coco laughed.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-68-e56f018f2d160538": {
-    "text": "莉莉也笑。",
+  "v2-secret-forest-adventure-c6-zh-block-69-b3896ce0d0d23440": {
+    "text": "「卵石幫忙了！」可可笑。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-69-98b0f90a593f7dad": {
+  "v1-secret-forest-adventure-c6-en-block-70-98b0f90a593f7dad": {
     "text": "Lily smiled.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-69-a5aad885063b32f8": {
-    "text": "「剩一個……」",
+  "v2-secret-forest-adventure-c6-zh-block-70-e56f018f2d160538": {
+    "text": "莉莉也笑。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-70-69d1df63e06bfffd": {
+  "v1-secret-forest-adventure-c6-en-block-71-69d1df63e06bfffd": {
     "text": "“One more…”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-70-40964606814c5106": {
-    "text": "光之葉飛到星星圖案。",
+  "v2-secret-forest-adventure-c6-zh-block-71-a5aad885063b32f8": {
+    "text": "「剩一個……」",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-71-a89a4523829c1530": {
+  "v1-secret-forest-adventure-c6-en-block-72-a89a4523829c1530": {
     "text": "The Light Leaf floated to the star circle.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-71-347c77325b928342": {
-    "text": "發出強光。",
+  "v2-secret-forest-adventure-c6-zh-block-72-40964606814c5106": {
+    "text": "光之葉飛到星星圖案。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-72-a2e617abed087016": {
+  "v1-secret-forest-adventure-c6-en-block-73-a2e617abed087016": {
     "text": "It shined brightly.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-72-c46fe8055212240b": {
-    "text": "莉莉明白了。",
+  "v2-secret-forest-adventure-c6-zh-block-73-347c77325b928342": {
+    "text": "發出強光。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-73-f17e7126628ee5a4": {
+  "v1-secret-forest-adventure-c6-en-block-74-f17e7126628ee5a4": {
     "text": "Lily understood.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-73-772aaec5e10bb2b3": {
-    "text": "「葉子就是星星。」",
+  "v2-secret-forest-adventure-c6-zh-block-74-c46fe8055212240b": {
+    "text": "莉莉明白了。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-74-f1dd1da542304ce0": {
+  "v1-secret-forest-adventure-c6-en-block-75-f1dd1da542304ce0": {
     "text": "“The leaf is the star.”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-74-0ba9d1705312b916": {
-    "text": "她把光之葉靠近圓形。",
+  "v2-secret-forest-adventure-c6-zh-block-75-772aaec5e10bb2b3": {
+    "text": "「葉子就是星星。」",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-75-06596809d5ab00b8": {
+  "v1-secret-forest-adventure-c6-en-block-76-06596809d5ab00b8": {
     "text": "She held the Light Leaf close to the circle.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-75-1e8078a2e83fa502": {
-    "text": "閃光！",
+  "v2-secret-forest-adventure-c6-zh-block-76-0ba9d1705312b916": {
+    "text": "她把光之葉靠近圓形。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-76-5d3f81ac378505bf": {
+  "v1-secret-forest-adventure-c6-en-block-77-5d3f81ac378505bf": {
     "text": "Flash!",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-76-6d3bf2c2b9bf9e50": {
-    "text": "星星圓亮起來。",
+  "v2-secret-forest-adventure-c6-zh-block-77-1e8078a2e83fa502": {
+    "text": "閃光！",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-77-eb47cfad64a6c76c": {
+  "v1-secret-forest-adventure-c6-en-block-78-eb47cfad64a6c76c": {
     "text": "The star circle lit up.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-77-e9210ae02c0c4331": {
-    "text": "突然——",
+  "v2-secret-forest-adventure-c6-zh-block-78-6d3bf2c2b9bf9e50": {
+    "text": "星星圓亮起來。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-78-bc30f1a485d6b02a": {
+  "v1-secret-forest-adventure-c6-en-block-79-bc30f1a485d6b02a": {
     "text": "Suddenly—",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-78-62cac2c148ffc557": {
-    "text": "三個圓同時發光。",
+  "v2-secret-forest-adventure-c6-zh-block-79-e9210ae02c0c4331": {
+    "text": "突然——",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-79-1ed1cd640d06e2c1": {
+  "v1-secret-forest-adventure-c6-en-block-80-1ed1cd640d06e2c1": {
     "text": "All three circles glowed together.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-79-9b8e8942e6c2a766": {
-    "text": "岩壁開始移動。",
+  "v2-secret-forest-adventure-c6-zh-block-80-62cac2c148ffc557": {
+    "text": "三個圓同時發光。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-80-d06d8688745a426a": {
+  "v1-secret-forest-adventure-c6-en-block-81-d06d8688745a426a": {
     "text": "The rock wall began to move.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-80-ef26720b3b0ff208": {
-    "text": "慢慢打開。",
+  "v2-secret-forest-adventure-c6-zh-block-81-9b8e8942e6c2a766": {
+    "text": "岩壁開始移動。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-81-65314f58ee1c4894": {
+  "v1-secret-forest-adventure-c6-en-block-82-65314f58ee1c4894": {
     "text": "Slowly, it opened.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-81-5912ad4974e0da27": {
-    "text": "一個黑暗的洞穴出現。",
+  "v2-secret-forest-adventure-c6-zh-block-82-ef26720b3b0ff208": {
+    "text": "慢慢打開。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-82-e69fb53edd80d010": {
+  "v1-secret-forest-adventure-c6-en-block-83-e69fb53edd80d010": {
     "text": "A dark cave appeared.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-82-c463930a6c5c3b29": {
-    "text": "冷空氣從裡面吹出。",
+  "v2-secret-forest-adventure-c6-zh-block-83-5912ad4974e0da27": {
+    "text": "一個黑暗的洞穴出現。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-83-076471e477692746": {
+  "v1-secret-forest-adventure-c6-en-block-84-076471e477692746": {
     "text": "Cold air came from inside.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-83-67f412ad198538ef": {
-    "text": "莉莉看著裡面。",
+  "v2-secret-forest-adventure-c6-zh-block-84-c463930a6c5c3b29": {
+    "text": "冷空氣從裡面吹出。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-84-be06597c85d9192a": {
+  "v1-secret-forest-adventure-c6-en-block-85-be06597c85d9192a": {
     "text": "Lily looked into the darkness.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-84-62a1ffc2b0f6badf": {
-    "text": "「就是這裡……」",
+  "v2-secret-forest-adventure-c6-zh-block-85-67f412ad198538ef": {
+    "text": "莉莉看著裡面。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-85-9b0d8a647b4a1f57": {
+  "v1-secret-forest-adventure-c6-en-block-86-9b0d8a647b4a1f57": {
     "text": "“This is it…”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-85-560085f34cbb4421": {
-    "text": "可可點頭。",
+  "v2-secret-forest-adventure-c6-zh-block-86-62a1ffc2b0f6badf": {
+    "text": "「就是這裡……」",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-86-0a97e00c0113d73a": {
+  "v1-secret-forest-adventure-c6-en-block-87-0a97e00c0113d73a": {
     "text": "Coco nodded.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-86-9469e380b0db8f73": {
-    "text": "「黑影就在裡面。」",
+  "v2-secret-forest-adventure-c6-zh-block-87-560085f34cbb4421": {
+    "text": "可可點頭。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-87-17ea925a41c7a9c3": {
+  "v1-secret-forest-adventure-c6-en-block-88-17ea925a41c7a9c3": {
     "text": "“The shadow is inside.”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-87-8e7fb99274efde36": {
-    "text": "卵石王子躲到莉莉腳後。",
+  "v2-secret-forest-adventure-c6-zh-block-88-9469e380b0db8f73": {
+    "text": "「黑影就在裡面。」",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-88-554dd2b467f68a9e": {
+  "v1-secret-forest-adventure-c6-en-block-89-554dd2b467f68a9e": {
     "text": "Prince Pebble hid behind Lily’s foot.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-88-0c2e5cbb5902198d": {
-    "text": "「呱……」",
+  "v2-secret-forest-adventure-c6-zh-block-89-8e7fb99274efde36": {
+    "text": "卵石王子躲到莉莉腳後。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-89-3bee303e7ffe7eac": {
+  "v1-secret-forest-adventure-c6-en-block-90-3bee303e7ffe7eac": {
     "text": "“Ribbit…”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-89-4fb5fce6ba40b1d3": {
-    "text": "莉莉深吸一口氣。",
+  "v2-secret-forest-adventure-c6-zh-block-90-0c2e5cbb5902198d": {
+    "text": "「呱……」",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-90-9171add57611a9cf": {
+  "v1-secret-forest-adventure-c6-en-block-91-9171add57611a9cf": {
     "text": "Lily took a deep breath.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-90-eda6e18ef223b6e4": {
-    "text": "「我們走到這裡了。」",
+  "v2-secret-forest-adventure-c6-zh-block-91-4fb5fce6ba40b1d3": {
+    "text": "莉莉深吸一口氣。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-91-d19b16e628ec0583": {
+  "v1-secret-forest-adventure-c6-en-block-92-d19b16e628ec0583": {
     "text": "“We came this far.”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-91-e45052fff807bc92": {
-    "text": "「不能停。」",
+  "v2-secret-forest-adventure-c6-zh-block-92-eda6e18ef223b6e4": {
+    "text": "「我們走到這裡了。」",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-92-6ce31d9157c2fbfc": {
+  "v1-secret-forest-adventure-c6-en-block-93-6ce31d9157c2fbfc": {
     "text": "“We cannot stop now.”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-92-2ab2cd8ca037f985": {
-    "text": "光之葉飛進洞穴。",
+  "v2-secret-forest-adventure-c6-zh-block-93-e45052fff807bc92": {
+    "text": "「不能停。」",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-93-f29fb0beee737cb0": {
+  "v1-secret-forest-adventure-c6-en-block-94-f29fb0beee737cb0": {
     "text": "The Light Leaf floated into the cave.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-93-4fece677015e47c0": {
-    "text": "成為唯一的光。",
+  "v2-secret-forest-adventure-c6-zh-block-94-2ab2cd8ca037f985": {
+    "text": "光之葉飛進洞穴。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-94-11f15a7b8f039e3d": {
+  "v1-secret-forest-adventure-c6-en-block-95-11f15a7b8f039e3d": {
     "text": "Its light became the only light.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-94-949d8d0c22521ab2": {
-    "text": "莉莉走進去。",
+  "v2-secret-forest-adventure-c6-zh-block-95-4fece677015e47c0": {
+    "text": "成為唯一的光。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-95-d9503641ba2b1577": {
+  "v1-secret-forest-adventure-c6-en-block-96-d9503641ba2b1577": {
     "text": "Lily stepped forward.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-95-c192a8a500016996": {
-    "text": "可可跟著。",
+  "v2-secret-forest-adventure-c6-zh-block-96-949d8d0c22521ab2": {
+    "text": "莉莉走進去。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-96-65281a956eeb6987": {
+  "v1-secret-forest-adventure-c6-en-block-97-65281a956eeb6987": {
     "text": "Coco followed.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-96-7da22a2dab965d37": {
-    "text": "卵石王子跳在後面。",
+  "v2-secret-forest-adventure-c6-zh-block-97-c192a8a500016996": {
+    "text": "可可跟著。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-97-7131c9a0dfe97b40": {
+  "v1-secret-forest-adventure-c6-en-block-98-7131c9a0dfe97b40": {
     "text": "Pebble hopped behind them.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-97-a6d36c50836369e9": {
-    "text": "洞穴裡很安靜。",
+  "v2-secret-forest-adventure-c6-zh-block-98-7da22a2dab965d37": {
+    "text": "卵石王子跳在後面。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-98-f26582c8e73bbc0e": {
+  "v1-secret-forest-adventure-c6-en-block-99-f26582c8e73bbc0e": {
     "text": "Inside the cave, it was very quiet.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-98-ce34ff460bc65837": {
-    "text": "水滴從天花板落下。",
+  "v2-secret-forest-adventure-c6-zh-block-99-a6d36c50836369e9": {
+    "text": "洞穴裡很安靜。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-99-febbea2b5a722413": {
+  "v1-secret-forest-adventure-c6-en-block-100-febbea2b5a722413": {
     "text": "Drops of water fell from the ceiling.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-99-cddea46e02181da3": {
-    "text": "滴……滴……",
+  "v2-secret-forest-adventure-c6-zh-block-100-ce34ff460bc65837": {
+    "text": "水滴從天花板落下。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-100-66993bd52402cc05": {
+  "v1-secret-forest-adventure-c6-en-block-101-66993bd52402cc05": {
     "text": "Drip… drip…",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-100-38bb026761225c60": {
-    "text": "牆壁上有古老的圖案。",
+  "v2-secret-forest-adventure-c6-zh-block-101-cddea46e02181da3": {
+    "text": "滴……滴……",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-101-763fe5a0175176ea": {
+  "v1-secret-forest-adventure-c6-en-block-102-763fe5a0175176ea": {
     "text": "The walls were covered with old marks.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-101-bde79053b2f4cd9f": {
-    "text": "古老的符號。",
+  "v2-secret-forest-adventure-c6-zh-block-102-38bb026761225c60": {
+    "text": "牆壁上有古老的圖案。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-102-593dea96c3e525cf": {
+  "v1-secret-forest-adventure-c6-en-block-103-593dea96c3e525cf": {
     "text": "Ancient symbols.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-102-aa8b0e232da12384": {
-    "text": "「這些是什麼？」莉莉輕聲問。",
+  "v2-secret-forest-adventure-c6-zh-block-103-bde79053b2f4cd9f": {
+    "text": "古老的符號。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-103-3ad26bc197b5b752": {
+  "v1-secret-forest-adventure-c6-en-block-104-3ad26bc197b5b752": {
     "text": "“What are these?” Lily whispered.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-103-1f21783d32f5c1f4": {
-    "text": "可可仔細看。",
+  "v2-secret-forest-adventure-c6-zh-block-104-aa8b0e232da12384": {
+    "text": "「這些是什麼？」莉莉輕聲問。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-104-dc56953f50338d95": {
+  "v1-secret-forest-adventure-c6-en-block-105-dc56953f50338d95": {
     "text": "Coco looked closely.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-104-8e290cf5be2166e8": {
-    "text": "「這是很古老的文字。」",
+  "v2-secret-forest-adventure-c6-zh-block-105-1f21783d32f5c1f4": {
+    "text": "可可仔細看。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-105-3d73449f3029cd07": {
+  "v1-secret-forest-adventure-c6-en-block-106-3d73449f3029cd07": {
     "text": "“These are very old writings.”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-105-fab19d56db381962": {
-    "text": "「記錄森林的故事。」",
+  "v2-secret-forest-adventure-c6-zh-block-106-8e290cf5be2166e8": {
+    "text": "「這是很古老的文字。」",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-106-bb2ede8adcd4fc82": {
+  "v1-secret-forest-adventure-c6-en-block-107-bb2ede8adcd4fc82": {
     "text": "“They tell the story of the forest.”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-106-a5f9870bc64c8a40": {
-    "text": "莉莉摸著牆壁。",
+  "v2-secret-forest-adventure-c6-zh-block-107-fab19d56db381962": {
+    "text": "「記錄森林的故事。」",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-107-4ba8ed4230d6f452": {
+  "v1-secret-forest-adventure-c6-en-block-108-4ba8ed4230d6f452": {
     "text": "Lily moved her hand along the wall.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-107-c73ee4412bb744be": {
-    "text": "然後停下。",
+  "v2-secret-forest-adventure-c6-zh-block-108-a5f9870bc64c8a40": {
+    "text": "莉莉摸著牆壁。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-108-d963260f39bf4762": {
+  "v1-secret-forest-adventure-c6-en-block-109-d963260f39bf4762": {
     "text": "Then she stopped.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-108-07bc146480e94c91": {
-    "text": "她看到一幅圖。",
+  "v2-secret-forest-adventure-c6-zh-block-109-c73ee4412bb744be": {
+    "text": "然後停下。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-109-5dc2540337ec389d": {
+  "v1-secret-forest-adventure-c6-en-block-110-5dc2540337ec389d": {
     "text": "There was a picture.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-109-968f4c0f72b76f3f": {
-    "text": "中央是一顆發光的水晶。",
+  "v2-secret-forest-adventure-c6-zh-block-110-07bc146480e94c91": {
+    "text": "她看到一幅圖。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-110-d7e5c142a27c2248": {
+  "v1-secret-forest-adventure-c6-en-block-111-d7e5c142a27c2248": {
     "text": "A bright crystal in the center.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-110-475cb01051dc65c4": {
-    "text": "周圍是動物和樹木。",
+  "v2-secret-forest-adventure-c6-zh-block-111-968f4c0f72b76f3f": {
+    "text": "中央是一顆發光的水晶。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-111-5f72bbaf4706af06": {
+  "v1-secret-forest-adventure-c6-en-block-112-5f72bbaf4706af06": {
     "text": "Animals and trees around it.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-111-a4d3eae0905d97d1": {
-    "text": "「那一定是星之水晶，」莉莉說。",
+  "v2-secret-forest-adventure-c6-zh-block-112-475cb01051dc65c4": {
+    "text": "周圍是動物和樹木。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-112-f481fd0b43d40abf": {
+  "v1-secret-forest-adventure-c6-en-block-113-f481fd0b43d40abf": {
     "text": "“That must be the Star Crystal,” Lily said.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-112-560085f34cbb4421": {
-    "text": "可可點頭。",
+  "v2-secret-forest-adventure-c6-zh-block-113-a4d3eae0905d97d1": {
+    "text": "「那一定是星之水晶，」莉莉說。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-113-0a97e00c0113d73a": {
+  "v1-secret-forest-adventure-c6-en-block-114-0a97e00c0113d73a": {
     "text": "Coco nodded.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-113-9082fe5182aad1ae": {
-    "text": "「森林的心。」",
+  "v2-secret-forest-adventure-c6-zh-block-114-560085f34cbb4421": {
+    "text": "可可點頭。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-114-4a825d930f31b636": {
+  "v1-secret-forest-adventure-c6-en-block-115-4a825d930f31b636": {
     "text": "“Yes… the heart of the forest.”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-114-9859d58a72efec47": {
-    "text": "但莉莉又看到另一個東西。",
+  "v2-secret-forest-adventure-c6-zh-block-115-9082fe5182aad1ae": {
+    "text": "「森林的心。」",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-115-0f362f07febd6a15": {
+  "v1-secret-forest-adventure-c6-en-block-116-0f362f07febd6a15": {
     "text": "But then Lily saw something else.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-115-d4e345aa21bf3789": {
-    "text": "一個黑影在水晶旁。",
+  "v2-secret-forest-adventure-c6-zh-block-116-9859d58a72efec47": {
+    "text": "但莉莉又看到另一個東西。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-116-2db1ef9dd472c91d": {
+  "v1-secret-forest-adventure-c6-en-block-117-2db1ef9dd472c91d": {
     "text": "A dark shape near the crystal.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-116-470936ee6b173065": {
-    "text": "「它已經存在很久了……」莉莉說。",
+  "v2-secret-forest-adventure-c6-zh-block-117-d4e345aa21bf3789": {
+    "text": "一個黑影在水晶旁。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-117-62b575b216110933": {
+  "v1-secret-forest-adventure-c6-en-block-118-62b575b216110933": {
     "text": "“It has been here for a long time…” Lily said.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-117-39fb92009cd73312": {
-    "text": "可可看起來很擔心。",
+  "v2-secret-forest-adventure-c6-zh-block-118-470936ee6b173065": {
+    "text": "「它已經存在很久了……」莉莉說。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-118-eb5997e0d8308b56": {
+  "v1-secret-forest-adventure-c6-en-block-119-eb5997e0d8308b56": {
     "text": "Coco looked worried.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-118-1a88c9b1a3282b81": {
-    "text": "「黑影不是最近才出現……」",
+  "v2-secret-forest-adventure-c6-zh-block-119-39fb92009cd73312": {
+    "text": "可可看起來很擔心。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-119-0ae49850492cac4e": {
+  "v1-secret-forest-adventure-c6-en-block-120-0ae49850492cac4e": {
     "text": "“The shadow is not new…”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-119-e9210ae02c0c4331": {
-    "text": "突然——",
+  "v2-secret-forest-adventure-c6-zh-block-120-1a88c9b1a3282b81": {
+    "text": "「黑影不是最近才出現……」",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-120-bc30f1a485d6b02a": {
+  "v1-secret-forest-adventure-c6-en-block-121-bc30f1a485d6b02a": {
     "text": "Suddenly—",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-120-603e54d0a4939f19": {
-    "text": "一個低沉聲音響起。",
+  "v2-secret-forest-adventure-c6-zh-block-121-e9210ae02c0c4331": {
+    "text": "突然——",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-121-64361d8628125737": {
+  "v1-secret-forest-adventure-c6-en-block-122-64361d8628125737": {
     "text": "A deep voice echoed.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-121-15a97700e4191663": {
-    "text": "「你們終於來了……」",
+  "v2-secret-forest-adventure-c6-zh-block-122-603e54d0a4939f19": {
+    "text": "一個低沉聲音響起。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-122-d48ec468a76eed06": {
+  "v1-secret-forest-adventure-c6-en-block-123-d48ec468a76eed06": {
     "text": "“You finally came…”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-122-641d83be146e0a7e": {
-    "text": "莉莉轉身。",
+  "v2-secret-forest-adventure-c6-zh-block-123-15a97700e4191663": {
+    "text": "「你們終於來了……」",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-123-67451594c8fcbeeb": {
+  "v1-secret-forest-adventure-c6-en-block-124-67451594c8fcbeeb": {
     "text": "Lily turned quickly.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-123-d61c2421bf83b692": {
-    "text": "黑暗中出現紫色眼睛。",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c6-en-block-124-70a9955865d5da2a": {
-    "text": "Purple eyes appeared in the darkness.",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c6-zh-block-124-e665abb69f8e0a2f": {
-    "text": "黑影慢慢成形。",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c6-en-block-125-a6b99055a3f7e1f6": {
-    "text": "The shadow slowly formed.",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c6-zh-block-125-66c0364342b32147": {
-    "text": "這次——",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c6-en-block-126-a2f1103c37928e18": {
-    "text": "But now—",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c6-zh-block-126-ba54558d1ee7638e": {
-    "text": "更真實。",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c6-en-block-127-5fea8855b7538a2f": {
-    "text": "It looked more solid.",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c6-zh-block-127-503fbe8d86ec4b69": {
-    "text": "更強。",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c6-en-block-128-320b71c1ab9c1123": {
-    "text": "More real.",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c6-zh-block-128-343d10052d8c763d": {
-    "text": "可可小聲說：",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c6-en-block-129-01ea3d76062e927c": {
-    "text": "Stronger than before.",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c6-zh-block-129-b81b10ed340c7d43": {
-    "text": "「它在變化……」",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c6-en-block-130-a2baf535cbac7f11": {
-    "text": "Coco whispered,\n“It’s changing…”",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c6-zh-block-130-bf49add96f7308b7": {
-    "text": "黑影走向前。",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c6-en-block-131-b4491e660d2f69b0": {
-    "text": "The shadow stepped forward.",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c6-zh-block-131-a9fcb3da93c1e765": {
-    "text": "「你打開了洞穴……」",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c6-en-block-132-30dc0b7c198867e5": {
-    "text": "“You opened the cave…”",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c6-zh-block-132-570b3801c5742ffa": {
-    "text": "「現在，把鑰匙交給我……」",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c6-en-block-133-b0f65e90b8851877": {
-    "text": "“Now you will give me the key…”",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c6-zh-block-133-118a80aef7949d6b": {
-    "text": "莉莉緊握鑰匙。",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c6-en-block-134-98460196ad4e7416": {
-    "text": "Lily held the Moon Key tightly.",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c6-zh-block-134-eb97b8d8e29226d2": {
-    "text": "「不。」",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c6-en-block-135-2d89decf03a12c3f": {
-    "text": "“No.”\nThe shadow laughed.",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c6-zh-block-135-e2c1a094808765e0": {
-    "text": "黑影大笑。",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c6-en-block-136-5ee8ead1fbb884a4": {
-    "text": "“You cannot stop me.”",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c6-zh-block-136-b8d61e14ca468eed": {
-    "text": "「你阻止不了我。」",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c6-en-block-137-1a786c603df16042": {
-    "text": "Dark smoke filled the cave.",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c6-zh-block-137-a80ea14670809431": {
-    "text": "黑煙充滿洞穴。",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c6-en-block-138-921f423d7434ea8c": {
-    "text": "The walls trembled.",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c6-zh-block-138-4ff9fe418a010c22": {
-    "text": "牆壁震動。",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c6-en-block-139-810b2279f1372d12": {
-    "text": "Lily raised the Light Leaf.",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c6-zh-block-139-9eac2a8c6e31e478": {
-    "text": "莉莉舉起光之葉。",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c6-en-block-140-020a987dcc1e33d8": {
-    "text": "It shined, but not as strong as before.",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c6-zh-block-140-15a4951c3f16868f": {
-    "text": "但光沒有之前強。",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c6-en-block-141-08320ec5e6af315b": {
-    "text": "“It’s too dark…” Coco said.",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c6-zh-block-141-68e167b3138f6aff": {
-    "text": "「太黑了……」可可說。",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c6-en-block-142-145f6c2a9a5c4a24": {
-    "text": "The shadow grew bigger.",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c6-zh-block-142-4c837762f5c2265f": {
-    "text": "黑影變得更大。",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c6-en-block-143-8b2ddc2aa206728b": {
-    "text": "“You are too late…”",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c6-zh-block-143-8ed88436463128ce": {
-    "text": "「你太晚了……」",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c6-en-block-144-bc30f1a485d6b02a": {
-    "text": "Suddenly—",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c6-zh-block-144-e9210ae02c0c4331": {
-    "text": "突然——",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c6-en-block-145-4c7b2f30fb90ccca": {
-    "text": "The Moon Key began to glow.",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c6-zh-block-145-91d3f46d3f590792": {
-    "text": "月之鑰匙開始發光。",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c6-en-block-146-01ea3d76062e927c": {
-    "text": "Stronger than before.",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c6-zh-block-146-d202c20caa53bce6": {
-    "text": "比之前更強。",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c6-en-block-147-49a00d29a53554af": {
-    "text": "Silver light spread across the cave.",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c6-zh-block-147-3c354f526466c032": {
-    "text": "銀光擴散整個洞穴。",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c6-en-block-148-6edd351a49aad039": {
-    "text": "The shadow stopped.",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c6-zh-block-148-5a31610ebb1589ae": {
-    "text": "黑影停住。",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c6-en-block-149-4ef869c63eb1feef": {
-    "text": "“What is this…?”",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c6-zh-block-149-61c4d57cd7d94ae6": {
-    "text": "「這是什麼……？」",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c6-en-block-150-c09bf67fff90fba3": {
-    "text": "Coco gasped.",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c6-zh-block-150-7274ff32ffc7efeb": {
-    "text": "可可驚呼。",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c6-en-block-151-39e09f0a4e9e76ed": {
-    "text": "“The key is reacting!”",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c6-zh-block-151-5a6188558a59a541": {
-    "text": "「鑰匙在反應！」",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c6-en-block-152-b4a0ffbd44621b7a": {
-    "text": "Lily felt the key becoming warm.",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c6-zh-block-152-53c5c1e8e194b313": {
-    "text": "莉莉感覺鑰匙變熱。",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c6-en-block-153-dce4e0ca2068e72f": {
-    "text": "“It’s leading us…”",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c6-zh-block-153-781c87a7160b44c6": {
-    "text": "「它在指路……」",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c6-en-block-154-74509012a157da8b": {
-    "text": "A path of light appeared deeper in the cave.",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c6-zh-block-154-956ec7a6b92174bc": {
-    "text": "一道光路出現在洞穴深處。",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c6-en-block-155-8386a2e5ed413b07": {
-    "text": "The shadow roared.",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c6-zh-block-155-e6cbfd336df2e693": {
-    "text": "黑影怒吼。",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c6-en-block-156-399e4939c9cbc356": {
-    "text": "“NO! STOP!”",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c6-zh-block-156-fa0dd81d4d7b9533": {
-    "text": "「不！停下！」",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c6-en-block-157-5089a968691459a5": {
-    "text": "Lily turned.",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c6-zh-block-157-641d83be146e0a7e": {
+  "v2-secret-forest-adventure-c6-zh-block-124-641d83be146e0a7e": {
     "text": "莉莉轉身。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-158-97384b18bc5e5f77": {
+  "v1-secret-forest-adventure-c6-en-block-125-70a9955865d5da2a": {
+    "text": "Purple eyes appeared in the darkness.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c6-zh-block-125-d61c2421bf83b692": {
+    "text": "黑暗中出現紫色眼睛。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c6-en-block-126-a6b99055a3f7e1f6": {
+    "text": "The shadow slowly formed.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c6-zh-block-126-e665abb69f8e0a2f": {
+    "text": "黑影慢慢成形。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c6-en-block-127-a2f1103c37928e18": {
+    "text": "But now—",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c6-zh-block-127-0110778916bd57b9": {
+    "text": "但現在——",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c6-en-block-128-5fea8855b7538a2f": {
+    "text": "It looked more solid.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c6-zh-block-128-1b2b8312a7fa3f4d": {
+    "text": "它看起來更有實體了。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c6-en-block-129-320b71c1ab9c1123": {
+    "text": "More real.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c6-zh-block-129-ba54558d1ee7638e": {
+    "text": "更真實。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c6-en-block-130-01ea3d76062e927c": {
+    "text": "Stronger than before.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c6-zh-block-130-503fbe8d86ec4b69": {
+    "text": "更強。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c6-en-block-131-b80166c3afbf6a3e": {
+    "text": "Coco whispered,",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c6-zh-block-131-343d10052d8c763d": {
+    "text": "可可小聲說：",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c6-en-block-132-71a18b8efdda3711": {
+    "text": "“It’s changing…”",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c6-zh-block-132-b81b10ed340c7d43": {
+    "text": "「它在變化……」",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c6-en-block-133-b4491e660d2f69b0": {
+    "text": "The shadow stepped forward.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c6-zh-block-133-bf49add96f7308b7": {
+    "text": "黑影走向前。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c6-en-block-134-30dc0b7c198867e5": {
+    "text": "“You opened the cave…”",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c6-zh-block-134-a9fcb3da93c1e765": {
+    "text": "「你打開了洞穴……」",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c6-en-block-135-b0f65e90b8851877": {
+    "text": "“Now you will give me the key…”",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c6-zh-block-135-570b3801c5742ffa": {
+    "text": "「現在，把鑰匙交給我……」",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c6-en-block-136-98460196ad4e7416": {
+    "text": "Lily held the Moon Key tightly.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c6-zh-block-136-118a80aef7949d6b": {
+    "text": "莉莉緊握鑰匙。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c6-en-block-137-637352124e69d434": {
+    "text": "“No.”",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c6-zh-block-137-eb97b8d8e29226d2": {
+    "text": "「不。」",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c6-en-block-138-cc9157c0e281ce17": {
+    "text": "The shadow laughed.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c6-zh-block-138-e2c1a094808765e0": {
+    "text": "黑影大笑。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c6-en-block-139-5ee8ead1fbb884a4": {
+    "text": "“You cannot stop me.”",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c6-zh-block-139-b8d61e14ca468eed": {
+    "text": "「你阻止不了我。」",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c6-en-block-140-1a786c603df16042": {
+    "text": "Dark smoke filled the cave.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c6-zh-block-140-a80ea14670809431": {
+    "text": "黑煙充滿洞穴。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c6-en-block-141-921f423d7434ea8c": {
+    "text": "The walls trembled.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c6-zh-block-141-4ff9fe418a010c22": {
+    "text": "牆壁震動。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c6-en-block-142-810b2279f1372d12": {
+    "text": "Lily raised the Light Leaf.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c6-zh-block-142-9eac2a8c6e31e478": {
+    "text": "莉莉舉起光之葉。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c6-en-block-143-020a987dcc1e33d8": {
+    "text": "It shined, but not as strong as before.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c6-zh-block-143-15a4951c3f16868f": {
+    "text": "但光沒有之前強。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c6-en-block-144-08320ec5e6af315b": {
+    "text": "“It’s too dark…” Coco said.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c6-zh-block-144-68e167b3138f6aff": {
+    "text": "「太黑了……」可可說。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c6-en-block-145-145f6c2a9a5c4a24": {
+    "text": "The shadow grew bigger.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c6-zh-block-145-4c837762f5c2265f": {
+    "text": "黑影變得更大。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c6-en-block-146-8b2ddc2aa206728b": {
+    "text": "“You are too late…”",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c6-zh-block-146-8ed88436463128ce": {
+    "text": "「你太晚了……」",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c6-en-block-147-bc30f1a485d6b02a": {
+    "text": "Suddenly—",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c6-zh-block-147-e9210ae02c0c4331": {
+    "text": "突然——",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c6-en-block-148-4c7b2f30fb90ccca": {
+    "text": "The Moon Key began to glow.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c6-zh-block-148-91d3f46d3f590792": {
+    "text": "月之鑰匙開始發光。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c6-en-block-149-01ea3d76062e927c": {
+    "text": "Stronger than before.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c6-zh-block-149-d202c20caa53bce6": {
+    "text": "比之前更強。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c6-en-block-150-49a00d29a53554af": {
+    "text": "Silver light spread across the cave.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c6-zh-block-150-3c354f526466c032": {
+    "text": "銀光擴散整個洞穴。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c6-en-block-151-6edd351a49aad039": {
+    "text": "The shadow stopped.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c6-zh-block-151-5a31610ebb1589ae": {
+    "text": "黑影停住。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c6-en-block-152-4ef869c63eb1feef": {
+    "text": "“What is this…?”",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c6-zh-block-152-61c4d57cd7d94ae6": {
+    "text": "「這是什麼……？」",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c6-en-block-153-c09bf67fff90fba3": {
+    "text": "Coco gasped.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c6-zh-block-153-7274ff32ffc7efeb": {
+    "text": "可可驚呼。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c6-en-block-154-39e09f0a4e9e76ed": {
+    "text": "“The key is reacting!”",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c6-zh-block-154-5a6188558a59a541": {
+    "text": "「鑰匙在反應！」",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c6-en-block-155-b4a0ffbd44621b7a": {
+    "text": "Lily felt the key becoming warm.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c6-zh-block-155-53c5c1e8e194b313": {
+    "text": "莉莉感覺鑰匙變熱。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c6-en-block-156-dce4e0ca2068e72f": {
+    "text": "“It’s leading us…”",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c6-zh-block-156-781c87a7160b44c6": {
+    "text": "「它在指路……」",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c6-en-block-157-74509012a157da8b": {
+    "text": "A path of light appeared deeper in the cave.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c6-zh-block-157-956ec7a6b92174bc": {
+    "text": "一道光路出現在洞穴深處。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c6-en-block-158-8386a2e5ed413b07": {
+    "text": "The shadow roared.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c6-zh-block-158-e6cbfd336df2e693": {
+    "text": "黑影怒吼。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c6-en-block-159-399e4939c9cbc356": {
+    "text": "“NO! STOP!”",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c6-zh-block-159-fa0dd81d4d7b9533": {
+    "text": "「不！停下！」",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c6-en-block-160-5089a968691459a5": {
+    "text": "Lily turned.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c6-zh-block-160-641d83be146e0a7e": {
+    "text": "莉莉轉身。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c6-en-block-161-97384b18bc5e5f77": {
     "text": "“Run!”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-158-cede2018795e1eb6": {
+  "v2-secret-forest-adventure-c6-zh-block-161-cede2018795e1eb6": {
     "text": "「跑！」",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-159-f5f6a69bc528a379": {
+  "v1-secret-forest-adventure-c6-en-block-162-f5f6a69bc528a379": {
     "text": "She ran toward the light path.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-159-24a463efbb451a33": {
+  "v2-secret-forest-adventure-c6-zh-block-162-24a463efbb451a33": {
     "text": "她往光的方向跑。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-160-15342735f22fda2b": {
+  "v1-secret-forest-adventure-c6-en-block-163-15342735f22fda2b": {
     "text": "Coco flew beside her.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-160-fa530be6c676ad2a": {
+  "v2-secret-forest-adventure-c6-zh-block-163-fa530be6c676ad2a": {
     "text": "可可跟著飛。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-161-43b7dcae5e23e286": {
+  "v1-secret-forest-adventure-c6-en-block-164-43b7dcae5e23e286": {
     "text": "Pebble jumped quickly behind.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-161-cc9acb6a6e6c2e9b": {
+  "v2-secret-forest-adventure-c6-zh-block-164-cc9acb6a6e6c2e9b": {
     "text": "卵石王子快速跳。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-162-8e63470dde5624b1": {
+  "v1-secret-forest-adventure-c6-en-block-165-8e63470dde5624b1": {
     "text": "The shadow chased them.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-162-9ccfc87d725fbf45": {
+  "v2-secret-forest-adventure-c6-zh-block-165-9ccfc87d725fbf45": {
     "text": "黑影追上來。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-163-cca260f4a345fa0e": {
+  "v1-secret-forest-adventure-c6-en-block-166-cca260f4a345fa0e": {
     "text": "The cave shook violently.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-163-c95e750394a5e1a1": {
+  "v2-secret-forest-adventure-c6-zh-block-166-c95e750394a5e1a1": {
     "text": "洞穴劇烈震動。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-164-411a69bbdc25fd6d": {
+  "v1-secret-forest-adventure-c6-en-block-167-411a69bbdc25fd6d": {
     "text": "Rocks fell from above.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-164-a975347a8b531d67": {
+  "v2-secret-forest-adventure-c6-zh-block-167-a975347a8b531d67": {
     "text": "石頭掉下來。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-165-ac86247fa90f55e3": {
+  "v1-secret-forest-adventure-c6-en-block-168-ac86247fa90f55e3": {
     "text": "Lily kept running.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-165-76543222eb039a3f": {
+  "v2-secret-forest-adventure-c6-zh-block-168-76543222eb039a3f": {
     "text": "莉莉不停跑。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-166-70018c7408861f95": {
+  "v1-secret-forest-adventure-c6-en-block-169-70018c7408861f95": {
     "text": "“I can see something ahead!”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-166-2f90d0cb7c514da7": {
+  "v2-secret-forest-adventure-c6-zh-block-169-2f90d0cb7c514da7": {
     "text": "「前面有東西！」",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-167-f2b90935e059b461": {
+  "v1-secret-forest-adventure-c6-en-block-170-f2b90935e059b461": {
     "text": "At the end of the path—",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-167-790506a52a299e24": {
+  "v2-secret-forest-adventure-c6-zh-block-170-790506a52a299e24": {
     "text": "光的盡頭——",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-168-e6f3a44fddd86334": {
+  "v1-secret-forest-adventure-c6-en-block-171-e6f3a44fddd86334": {
     "text": "A bright light shined.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-168-5344129fbc31cac8": {
+  "v2-secret-forest-adventure-c6-zh-block-171-5344129fbc31cac8": {
     "text": "一個耀眼的光。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c6-en-block-169-fe18d9f3d40f2d1b": {
+  "v1-secret-forest-adventure-c6-en-block-172-fe18d9f3d40f2d1b": {
     "text": "The Star Crystal.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c6-zh-block-169-acc424cc39cfe1e7": {
+  "v2-secret-forest-adventure-c6-zh-block-172-acc424cc39cfe1e7": {
     "text": "星之水晶。",
     "lang": "zh-TW"
   },
@@ -5386,8 +5418,8 @@ export const NOVEL_AUDIO_CATALOG = Object.freeze({
     "text": "It floated in the center of a wide space.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-9-980bb04780cabadb": {
-    "text": "它漂浮在空間中央。",
+  "v2-secret-forest-adventure-c7-zh-block-9-884c50f3bd802afb": {
+    "text": "它漂浮在一片寬闊空間的中央。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c7-en-block-10-9ad2c3a5a4d542a1": {
@@ -5410,8 +5442,8 @@ export const NOVEL_AUDIO_CATALOG = Object.freeze({
     "text": "Lily slowed down.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-12-22554f929ad12eb9": {
-    "text": "莉莉慢慢走近。",
+  "v2-secret-forest-adventure-c7-zh-block-12-53e58b6304c5e50a": {
+    "text": "莉莉放慢了腳步。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c7-en-block-13-d81fc621d2adf3c2": {
@@ -5426,8 +5458,8 @@ export const NOVEL_AUDIO_CATALOG = Object.freeze({
     "text": "The crystal shined like a small star.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-14-f421bd9fb0365f0b": {
-    "text": "水晶像一顆小星星。",
+  "v2-secret-forest-adventure-c7-zh-block-14-6d858ec807d4f316": {
+    "text": "水晶像一顆小星星般閃耀。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c7-en-block-15-190c8fadd28793d8": {
@@ -5490,1079 +5522,1143 @@ export const NOVEL_AUDIO_CATALOG = Object.freeze({
     "text": "Lily stepped closer.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-22-59d288c8d4623ee0": {
-    "text": "莉莉伸出手。",
+  "v2-secret-forest-adventure-c7-zh-block-22-b27e2d7616e146e7": {
+    "text": "莉莉又走近了一步。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c7-en-block-23-63fcf42228d287e7": {
     "text": "She raised her hand slowly.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-23-8d2712301c9ce29f": {
-    "text": "當她碰到水晶——",
+  "v2-secret-forest-adventure-c7-zh-block-23-0383004df3bb10e0": {
+    "text": "她慢慢舉起手。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-24-14f247005d0694a3": {
-    "text": "The moment she touched it—\nFlash!",
+  "v1-secret-forest-adventure-c7-en-block-24-febae096041d38e1": {
+    "text": "The moment she touched it—",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-24-1e8078a2e83fa502": {
+  "v2-secret-forest-adventure-c7-zh-block-24-28965132c1ebe67a": {
+    "text": "就在她碰到水晶的那一刻——",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c7-en-block-25-5d3f81ac378505bf": {
+    "text": "Flash!",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c7-zh-block-25-1e8078a2e83fa502": {
     "text": "閃光！",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-25-2e9b80986082ee73": {
+  "v1-secret-forest-adventure-c7-en-block-26-2e9b80986082ee73": {
     "text": "A bright light filled her eyes.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-25-e2d3760db51434a4": {
-    "text": "她看見畫面。",
+  "v2-secret-forest-adventure-c7-zh-block-26-f1fcc8cacc0dac0a": {
+    "text": "耀眼的光充滿了她的視野。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-26-24a962ae1cc24166": {
+  "v1-secret-forest-adventure-c7-en-block-27-24a962ae1cc24166": {
     "text": "Lily gasped.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-26-73ca033bae46b81a": {
-    "text": "不是洞穴。",
+  "v2-secret-forest-adventure-c7-zh-block-27-eb4575d7d244ece5": {
+    "text": "莉莉驚呼了一聲。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-27-9be23481b6091bf9": {
+  "v1-secret-forest-adventure-c7-en-block-28-9be23481b6091bf9": {
     "text": "She saw something.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-27-92e5df908c1df256": {
-    "text": "不是森林。",
+  "v2-secret-forest-adventure-c7-zh-block-28-cb901ca40b65622c": {
+    "text": "她看見了什麼。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-28-ce10e172f14374d0": {
+  "v1-secret-forest-adventure-c7-en-block-29-ce10e172f14374d0": {
     "text": "Not the cave.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-28-012b35bb3c2e5ca7": {
-    "text": "是一段記憶。",
+  "v2-secret-forest-adventure-c7-zh-block-29-73ca033bae46b81a": {
+    "text": "不是洞穴。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-29-3f03059e5aec81bd": {
+  "v1-secret-forest-adventure-c7-en-block-30-3f03059e5aec81bd": {
     "text": "Not the forest.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-29-ca1b6bcc4c9c574d": {
-    "text": "很久以前——",
+  "v2-secret-forest-adventure-c7-zh-block-30-92e5df908c1df256": {
+    "text": "不是森林。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-30-c6224024f90be8e6": {
+  "v1-secret-forest-adventure-c7-en-block-31-c6224024f90be8e6": {
     "text": "A memory.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-30-d1487322340b9cd3": {
-    "text": "森林更明亮。",
+  "v2-secret-forest-adventure-c7-zh-block-31-012b35bb3c2e5ca7": {
+    "text": "是一段記憶。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-31-5814d6d9b5964712": {
+  "v1-secret-forest-adventure-c7-en-block-32-5814d6d9b5964712": {
     "text": "Long ago—",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-31-8ec00cd38ad9122e": {
-    "text": "樹更高。",
+  "v2-secret-forest-adventure-c7-zh-block-32-ca1b6bcc4c9c574d": {
+    "text": "很久以前——",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-32-dc019200b386c2f5": {
+  "v1-secret-forest-adventure-c7-en-block-33-dc019200b386c2f5": {
     "text": "The forest was brighter.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-32-1d851031589bb523": {
-    "text": "河流唱得更大聲。",
+  "v2-secret-forest-adventure-c7-zh-block-33-d1487322340b9cd3": {
+    "text": "森林更明亮。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-33-48eccc995f61f3c6": {
+  "v1-secret-forest-adventure-c7-en-block-34-48eccc995f61f3c6": {
     "text": "The trees were taller.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-33-4be9657cf3f58482": {
-    "text": "動物快樂地玩耍。",
+  "v2-secret-forest-adventure-c7-zh-block-34-8ec00cd38ad9122e": {
+    "text": "樹更高。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-34-ec556f59e1c18afb": {
+  "v1-secret-forest-adventure-c7-en-block-35-ec556f59e1c18afb": {
     "text": "The river sang louder.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-34-980aeeab71202559": {
-    "text": "中央的水晶更亮。",
+  "v2-secret-forest-adventure-c7-zh-block-35-1d851031589bb523": {
+    "text": "河流唱得更大聲。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-35-2fd0c93bfe743227": {
+  "v1-secret-forest-adventure-c7-en-block-36-2fd0c93bfe743227": {
     "text": "Animals played together.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-35-eeddda923670c1fb": {
-    "text": "但——",
+  "v2-secret-forest-adventure-c7-zh-block-36-b7e34df12780ccc9": {
+    "text": "動物們一起玩耍。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-36-6e293ba1d87fe212": {
+  "v1-secret-forest-adventure-c7-en-block-37-6e293ba1d87fe212": {
     "text": "And in the center—",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-36-311084079d430029": {
-    "text": "一個小影子出現。",
+  "v2-secret-forest-adventure-c7-zh-block-37-d9f0602bf7b61a90": {
+    "text": "而在中央——",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-37-168e604e72b717a5": {
+  "v1-secret-forest-adventure-c7-en-block-38-168e604e72b717a5": {
     "text": "The Star Crystal shined even stronger.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-37-c03ac1b0f137b790": {
-    "text": "很弱。",
+  "v2-secret-forest-adventure-c7-zh-block-38-8b0b1fa4be3a45c3": {
+    "text": "星之水晶發出更強的光。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-38-08b61db03acf2b0b": {
+  "v1-secret-forest-adventure-c7-en-block-39-08b61db03acf2b0b": {
     "text": "But then—",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-38-2b6e22a5cbd6c9d3": {
-    "text": "很小。",
+  "v2-secret-forest-adventure-c7-zh-block-39-eeddda923670c1fb": {
+    "text": "但——",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-39-d6bc4000d9e0af54": {
+  "v1-secret-forest-adventure-c7-en-block-40-d6bc4000d9e0af54": {
     "text": "A small shadow appeared.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-39-41d47a1394627d42": {
-    "text": "很孤單。",
+  "v2-secret-forest-adventure-c7-zh-block-40-311084079d430029": {
+    "text": "一個小影子出現。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-40-68cafcf700938da1": {
+  "v1-secret-forest-adventure-c7-en-block-41-68cafcf700938da1": {
     "text": "It was weak.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-40-53c71eafd17507b8": {
-    "text": "它遠離光。",
+  "v2-secret-forest-adventure-c7-zh-block-41-c03ac1b0f137b790": {
+    "text": "很弱。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-41-b37cc6ada87b953c": {
-    "text": "Small.\nLonely.",
+  "v1-secret-forest-adventure-c7-en-block-42-100e545791ed7ff8": {
+    "text": "Small.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-41-d4863810ac7f28b2": {
-    "text": "「不……」莉莉輕聲說。",
+  "v2-secret-forest-adventure-c7-zh-block-42-2b6e22a5cbd6c9d3": {
+    "text": "很小。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-42-90ade76c324cc160": {
+  "v1-secret-forest-adventure-c7-en-block-43-2f4133186bc60ed3": {
+    "text": "Lonely.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c7-zh-block-43-41d47a1394627d42": {
+    "text": "很孤單。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c7-en-block-44-90ade76c324cc160": {
     "text": "It stayed far from the light.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-42-43a1350c3cc7406b": {
-    "text": "畫面改變。",
+  "v2-secret-forest-adventure-c7-zh-block-44-53c71eafd17507b8": {
+    "text": "它遠離光。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-43-a1512ac6d7883763": {
+  "v1-secret-forest-adventure-c7-en-block-45-a1512ac6d7883763": {
     "text": "“No…” Lily whispered.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-43-8920998858b61827": {
-    "text": "影子變大。",
+  "v2-secret-forest-adventure-c7-zh-block-45-d4863810ac7f28b2": {
+    "text": "「不……」莉莉輕聲說。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-44-5adf06792e93f2b3": {
+  "v1-secret-forest-adventure-c7-en-block-46-5adf06792e93f2b3": {
     "text": "The memory changed.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-44-3b43e84de093cd11": {
-    "text": "它想靠近水晶。",
+  "v2-secret-forest-adventure-c7-zh-block-46-43a1350c3cc7406b": {
+    "text": "畫面改變。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-45-145f6c2a9a5c4a24": {
+  "v1-secret-forest-adventure-c7-en-block-47-145f6c2a9a5c4a24": {
     "text": "The shadow grew bigger.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-45-60652aabc8a288bc": {
-    "text": "但光把它推開。",
+  "v2-secret-forest-adventure-c7-zh-block-47-8920998858b61827": {
+    "text": "影子變大。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-46-11a4eb1d87f132dc": {
+  "v1-secret-forest-adventure-c7-en-block-48-11a4eb1d87f132dc": {
     "text": "It tried to reach the crystal.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-46-f347a5802d94d03b": {
-    "text": "一次又一次。",
+  "v2-secret-forest-adventure-c7-zh-block-48-3b43e84de093cd11": {
+    "text": "它想靠近水晶。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-47-42aa1773f1367da8": {
+  "v1-secret-forest-adventure-c7-en-block-49-42aa1773f1367da8": {
     "text": "But the light pushed it away.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-47-755273f2c27256a9": {
-    "text": "影子變得生氣。",
+  "v2-secret-forest-adventure-c7-zh-block-49-60652aabc8a288bc": {
+    "text": "但光把它推開。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-48-f4ccbd458f89c81d": {
+  "v1-secret-forest-adventure-c7-en-block-50-f4ccbd458f89c81d": {
     "text": "Again and again.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-48-a3b352cb57e0ac2c": {
-    "text": "變得更黑。",
+  "v2-secret-forest-adventure-c7-zh-block-50-f347a5802d94d03b": {
+    "text": "一次又一次。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-49-8052d4a5f21f4542": {
+  "v1-secret-forest-adventure-c7-en-block-51-8052d4a5f21f4542": {
     "text": "The shadow became angry.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-49-503fbe8d86ec4b69": {
-    "text": "更強。",
+  "v2-secret-forest-adventure-c7-zh-block-51-755273f2c27256a9": {
+    "text": "影子變得生氣。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-50-7778f594965d404e": {
+  "v1-secret-forest-adventure-c7-en-block-52-7778f594965d404e": {
     "text": "It turned darker.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-50-875f483ca24e3a3b": {
-    "text": "開始討厭光。",
+  "v2-secret-forest-adventure-c7-zh-block-52-a3b352cb57e0ac2c": {
+    "text": "變得更黑。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-51-8f8740aa639cecf1": {
+  "v1-secret-forest-adventure-c7-en-block-53-8f8740aa639cecf1": {
     "text": "Stronger.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-51-4aa3ccf309df02e6": {
-    "text": "「我懂了……」莉莉說。",
+  "v2-secret-forest-adventure-c7-zh-block-53-503fbe8d86ec4b69": {
+    "text": "更強。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-52-74101a82efd72305": {
+  "v1-secret-forest-adventure-c7-en-block-54-74101a82efd72305": {
     "text": "It began to hate the light.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-52-8cbbd8d856a03d19": {
-    "text": "光消失。",
+  "v2-secret-forest-adventure-c7-zh-block-54-875f483ca24e3a3b": {
+    "text": "開始討厭光。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-53-d809de787df90154": {
+  "v1-secret-forest-adventure-c7-en-block-55-d809de787df90154": {
     "text": "“I understand…” Lily said softly.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-53-4798cba495c5725c": {
-    "text": "她回到洞穴。",
+  "v2-secret-forest-adventure-c7-zh-block-55-4aa3ccf309df02e6": {
+    "text": "「我懂了……」莉莉說。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-54-dddab97b9f310bb3": {
+  "v1-secret-forest-adventure-c7-en-block-56-dddab97b9f310bb3": {
     "text": "The light faded.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-54-b866a781cf626d0d": {
-    "text": "可可看著她。",
+  "v2-secret-forest-adventure-c7-zh-block-56-8cbbd8d856a03d19": {
+    "text": "光消失。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-55-e7ac64d60fa5fd7a": {
+  "v1-secret-forest-adventure-c7-en-block-57-e7ac64d60fa5fd7a": {
     "text": "She returned to the cave.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-55-bd8070f4c18dc152": {
-    "text": "「你看到了什麼？」",
+  "v2-secret-forest-adventure-c7-zh-block-57-4798cba495c5725c": {
+    "text": "她回到洞穴。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-56-a3dd9074eeef3d76": {
+  "v1-secret-forest-adventure-c7-en-block-58-a3dd9074eeef3d76": {
     "text": "Coco looked at her.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-56-5b96a7904678ab5a": {
-    "text": "莉莉難過地說：",
+  "v2-secret-forest-adventure-c7-zh-block-58-b866a781cf626d0d": {
+    "text": "可可看著她。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-57-5a9688e54284c6b0": {
+  "v1-secret-forest-adventure-c7-en-block-59-5a9688e54284c6b0": {
     "text": "“What did you see?”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-57-6febbd1738274900": {
-    "text": "「黑影……原本不是壞的。」",
+  "v2-secret-forest-adventure-c7-zh-block-59-bd8070f4c18dc152": {
+    "text": "「你看到了什麼？」",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-58-a649d38663d0c4bc": {
+  "v1-secret-forest-adventure-c7-en-block-60-a649d38663d0c4bc": {
     "text": "Lily looked sad.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-58-1eb4ff83a14bcf51": {
-    "text": "可可很驚訝。",
+  "v2-secret-forest-adventure-c7-zh-block-60-c9c58132bc83b902": {
+    "text": "莉莉看起來很難過。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-59-bde4d0dfd5188d38": {
+  "v1-secret-forest-adventure-c7-en-block-61-bde4d0dfd5188d38": {
     "text": "“The shadow… was not always evil.”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-59-cd18f15f7c835189": {
-    "text": "「什麼意思？」",
+  "v2-secret-forest-adventure-c7-zh-block-61-6febbd1738274900": {
+    "text": "「黑影……原本不是壞的。」",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-60-b5f0baec9587e42a": {
+  "v1-secret-forest-adventure-c7-en-block-62-b5f0baec9587e42a": {
     "text": "Coco was surprised.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-60-faeb70dbeee72f3e": {
-    "text": "「它很孤單，」莉莉說。",
+  "v2-secret-forest-adventure-c7-zh-block-62-1eb4ff83a14bcf51": {
+    "text": "可可很驚訝。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-61-075f7ff21d444127": {
+  "v1-secret-forest-adventure-c7-en-block-63-075f7ff21d444127": {
     "text": "“What do you mean?”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-61-497d97a9763afe7e": {
-    "text": "「它想要光……但光拒絕它。」",
+  "v2-secret-forest-adventure-c7-zh-block-63-cd18f15f7c835189": {
+    "text": "「什麼意思？」",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-62-0106c3c7aba93cee": {
+  "v1-secret-forest-adventure-c7-en-block-64-0106c3c7aba93cee": {
     "text": "“It was lonely,” Lily said.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-62-d47d4a6eb10b0bba": {
-    "text": "這時——",
+  "v2-secret-forest-adventure-c7-zh-block-64-faeb70dbeee72f3e": {
+    "text": "「它很孤單，」莉莉說。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-63-3ef695948e021c65": {
+  "v1-secret-forest-adventure-c7-en-block-65-3ef695948e021c65": {
     "text": "“It wanted the light… but the light pushed it away.”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-63-72012355a5ff58c6": {
-    "text": "一個聲音大喊：",
+  "v2-secret-forest-adventure-c7-zh-block-65-497d97a9763afe7e": {
+    "text": "「它想要光……但光拒絕它。」",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-64-484ee6d58f3ba171": {
+  "v1-secret-forest-adventure-c7-en-block-66-484ee6d58f3ba171": {
     "text": "At that moment—",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-64-feb714171b03973a": {
-    "text": "「住手！」",
+  "v2-secret-forest-adventure-c7-zh-block-66-d47d4a6eb10b0bba": {
+    "text": "這時——",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-65-7ba404efe0032a28": {
+  "v1-secret-forest-adventure-c7-en-block-67-7ba404efe0032a28": {
     "text": "A loud voice echoed.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-65-8e0c001f0c0df7f1": {
-    "text": "黑影出現。",
+  "v2-secret-forest-adventure-c7-zh-block-67-b7653b61e9f34875": {
+    "text": "一個響亮的聲音迴盪著。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-66-36ba33e352481f7d": {
+  "v1-secret-forest-adventure-c7-en-block-68-36ba33e352481f7d": {
     "text": "“STOP!”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-66-66c0364342b32147": {
-    "text": "這次——",
+  "v2-secret-forest-adventure-c7-zh-block-68-feb714171b03973a": {
+    "text": "「住手！」",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-67-a503c96d9f1e2c47": {
+  "v1-secret-forest-adventure-c7-en-block-69-a503c96d9f1e2c47": {
     "text": "The shadow appeared again.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-67-d8cd1d11c07ddfde": {
-    "text": "完整成形。",
+  "v2-secret-forest-adventure-c7-zh-block-69-8e0c001f0c0df7f1": {
+    "text": "黑影出現。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-68-a2f1103c37928e18": {
+  "v1-secret-forest-adventure-c7-en-block-70-a2f1103c37928e18": {
     "text": "But now—",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-68-4564ad453c1d0f70": {
-    "text": "高大、黑暗、真實。",
+  "v2-secret-forest-adventure-c7-zh-block-70-66c0364342b32147": {
+    "text": "這次——",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-69-08b9735ff46716ea": {
+  "v1-secret-forest-adventure-c7-en-block-71-08b9735ff46716ea": {
     "text": "It was fully formed.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-69-e0e32565b5b4785c": {
-    "text": "紫色眼睛像火。",
+  "v2-secret-forest-adventure-c7-zh-block-71-d8cd1d11c07ddfde": {
+    "text": "完整成形。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-70-dc43ea70278033e0": {
+  "v1-secret-forest-adventure-c7-en-block-72-dc43ea70278033e0": {
     "text": "Tall. Dark. Solid.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-70-f6182626a8dc4753": {
-    "text": "「你看到了真相……」",
+  "v2-secret-forest-adventure-c7-zh-block-72-d2d331a4eeb7531d": {
+    "text": "高大。黑暗。有著實體。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-71-b1d6f1b3befa5105": {
+  "v1-secret-forest-adventure-c7-en-block-73-b1d6f1b3befa5105": {
     "text": "Its purple eyes burned like fire.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-71-6cd52ea00fb6efb4": {
-    "text": "莉莉站在水晶前。",
+  "v2-secret-forest-adventure-c7-zh-block-73-e0e32565b5b4785c": {
+    "text": "紫色眼睛像火。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-72-b969cd216837fc21": {
+  "v1-secret-forest-adventure-c7-en-block-74-b969cd216837fc21": {
     "text": "“You saw the truth…” it said.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-72-b4dab766f8456728": {
-    "text": "「對。」",
+  "v2-secret-forest-adventure-c7-zh-block-74-f6182626a8dc4753": {
+    "text": "「你看到了真相……」",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-73-dd42546267d28ceb": {
+  "v1-secret-forest-adventure-c7-en-block-75-dd42546267d28ceb": {
     "text": "Lily stood in front of the crystal.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-73-67e43d7b5cae9738": {
-    "text": "黑影走近。",
+  "v2-secret-forest-adventure-c7-zh-block-75-6cd52ea00fb6efb4": {
+    "text": "莉莉站在水晶前。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-74-372f174b7dea9bcb": {
-    "text": "“Yes.”\nThe shadow stepped closer.",
+  "v1-secret-forest-adventure-c7-en-block-76-605c32e719b72803": {
+    "text": "“Yes.”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-74-1cfd726874ca3ec5": {
-    "text": "「我只是想成為光的一部分……」",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c7-en-block-75-c20cfb141865f55e": {
-    "text": "“I only wanted to be part of the light…”",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c7-zh-block-75-55f4c123fe2097a9": {
-    "text": "「但它拒絕我！」",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c7-en-block-76-146aac03a333c9d8": {
-    "text": "“But it rejected me!”",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c7-zh-block-76-3745f52824f9f556": {
-    "text": "洞穴震動。",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c7-en-block-77-5b6c288d83130d62": {
-    "text": "The cave trembled.",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c7-zh-block-77-7855233f8d262e84": {
-    "text": "黑暗能量擴散。",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c7-en-block-78-a597622c8ef0756f": {
-    "text": "Dark energy spread around.",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c7-zh-block-78-343d10052d8c763d": {
-    "text": "可可小聲說：",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c7-en-block-79-ec3090ccca477e79": {
-    "text": "Coco whispered,\n“It’s angry…”",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c7-zh-block-79-1c7ce612b80baa44": {
-    "text": "「它很生氣……」",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c7-en-block-80-7b99a545e81e03d6": {
-    "text": "Lily shook her head.",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c7-zh-block-80-8a39c96d406d5487": {
-    "text": "莉莉搖頭。",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c7-en-block-81-90ffde7ebad4dc33": {
-    "text": "“You don’t need to destroy the forest.”",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c7-zh-block-81-1c18ce3d6bdcf6b5": {
-    "text": "「你不需要毀掉森林。」",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c7-en-block-82-7c181e9d137492a0": {
-    "text": "The shadow laughed bitterly.",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c7-zh-block-82-7d84f543a4bd4701": {
-    "text": "黑影苦笑。",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c7-en-block-83-e89b175b69bf19f8": {
-    "text": "“If I cannot have the light…”",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c7-zh-block-83-7d849bcda49fe929": {
-    "text": "「如果我得不到光……」",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c7-en-block-84-dfd619d3623040a0": {
-    "text": "“Then no one will!”",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c7-zh-block-84-c2a634b1af0fed70": {
-    "text": "「那誰都別想得到！」",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c7-en-block-85-1d754a17e266d97e": {
-    "text": "It raised its arms.",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c7-zh-block-85-8a013afe77666e04": {
-    "text": "它舉手。",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c7-en-block-86-e80bae0a87f6fd74": {
-    "text": "Darkness rushed toward the crystal.",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c7-zh-block-86-45c9307f2ff013f6": {
-    "text": "黑暗衝向水晶。",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c7-en-block-87-6ad8fb09b1d973aa": {
-    "text": "Lily quickly held up the Moon Key.",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c7-zh-block-87-0f6bc1411884b495": {
-    "text": "莉莉舉起鑰匙。",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c7-en-block-88-b7f7609a09596263": {
-    "text": "The key shined.",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c7-zh-block-88-8bbbc812452af695": {
-    "text": "鑰匙發光。",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c7-en-block-89-26a5818c4eed64f8": {
-    "text": "The Light Leaf glowed.",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c7-zh-block-89-26c3e825d4ebdcae": {
-    "text": "葉子發光。",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c7-en-block-90-122f0705a4016ebe": {
-    "text": "The crystal responded.",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c7-zh-block-90-6b4c5d3447c30069": {
-    "text": "水晶回應。",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c7-en-block-91-f31567d2a2a27490": {
-    "text": "All three lights joined together.",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c7-zh-block-91-c2de718797aebdb4": {
-    "text": "三種光融合。",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c7-en-block-92-f4c7ffa3d14a2a1f": {
-    "text": "Silver. Green. Gold.",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c7-zh-block-92-5e2a0a0a1f9bc944": {
-    "text": "銀色、綠色、金色。",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c7-en-block-93-372909bc8b6d2f0b": {
-    "text": "They pushed back the darkness.",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c7-zh-block-93-eccdd9a22e93c8b7": {
-    "text": "黑暗被擋住。",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c7-en-block-94-db5d34fec7e694e2": {
-    "text": "The shadow screamed.\n“NO!”",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c7-zh-block-94-4d7aa310c68c9c4f": {
-    "text": "黑影大叫：",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c7-en-block-95-78c11e54d00f01f0": {
-    "text": "But it did not disappear.",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c7-zh-block-95-f2fb8ecdc45d50a5": {
-    "text": "「不！」",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c7-en-block-96-0190b8d61be6c9bb": {
-    "text": "Instead—",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c7-zh-block-96-df50d4204150d650": {
-    "text": "但它沒有消失。",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c7-en-block-97-5259a4c0a10b3f62": {
-    "text": "It grew even stronger.",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c7-zh-block-97-d6536f1681ef58a7": {
-    "text": "反而更強。",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c7-en-block-98-a9ebd82d4d7c8727": {
-    "text": "“I will take it by force!”",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c7-zh-block-98-660595b4e1057c20": {
-    "text": "「我會用力量搶走它！」",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c7-en-block-99-7cd0e0c886a0fb41": {
-    "text": "The shadow rushed forward.",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c7-zh-block-99-d01dfb535e4e647d": {
-    "text": "黑影衝過來。",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c7-en-block-100-86866043c6f3e85c": {
-    "text": "Dark claws reached toward the crystal.",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c7-zh-block-100-552df70a26dbcca6": {
-    "text": "黑色爪子伸向水晶。",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c7-en-block-101-aef48d777f41a3bc": {
-    "text": "“Lily!” Coco shouted.",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c7-zh-block-101-ffc6cae734d1b4a9": {
-    "text": "「莉莉！」可可喊。",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c7-en-block-102-c640b393c1413f2e": {
-    "text": "Lily stepped forward.\n“No!”",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c7-zh-block-102-110b1f4863f638f3": {
-    "text": "莉莉往前站。",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c7-en-block-103-c199e774498e6bc4": {
-    "text": "She stood between the shadow and the crystal.",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c7-zh-block-103-f2fb8ecdc45d50a5": {
-    "text": "「不！」",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c7-en-block-104-ffaac5c9fa87ffc7": {
-    "text": "Her hands were shaking.",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c7-zh-block-104-89ebb5c374cf2b66": {
-    "text": "她站在中間。",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c7-en-block-105-5b56534370474c13": {
-    "text": "But she did not move.",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c7-zh-block-105-fbfb9a8e8247298b": {
-    "text": "手在發抖。",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c7-en-block-106-4ff0fabd2ee7bb7e": {
-    "text": "“You are not alone!” Lily shouted.",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c7-zh-block-106-84cfe4a43d49f149": {
-    "text": "但沒有退。",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c7-en-block-107-6edd351a49aad039": {
-    "text": "The shadow stopped.",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c7-zh-block-107-e8e25f043e39d1bc": {
-    "text": "「你不是一個人！」她喊。",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c7-en-block-108-d8541b121b21f995": {
-    "text": "“What…?”",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c7-zh-block-108-5a31610ebb1589ae": {
-    "text": "黑影停住。",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c7-en-block-109-f265f23ad89b891e": {
-    "text": "“You don’t need to fight,” Lily said.",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c7-zh-block-109-cf6a7dcacc313167": {
-    "text": "「什麼……？」",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c7-en-block-110-b1fa2dc2a4485266": {
-    "text": "“You just need someone to understand you.”",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c7-zh-block-110-e16034aeabd06234": {
-    "text": "「你不需要戰鬥，」莉莉說。",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c7-en-block-111-fc0a88f0d6efaf38": {
-    "text": "The cave became quiet.",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c7-zh-block-111-75358200c8556e3d": {
-    "text": "「你只是需要有人理解你。」",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c7-en-block-112-d2ef1992c49f0ba4": {
-    "text": "The shadow trembled.",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c7-zh-block-112-a0fd1ef933cd6aa5": {
-    "text": "洞穴安靜。",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c7-en-block-113-b6097cc4422c1caf": {
-    "text": "Its form flickered.",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c7-zh-block-113-b68e6a319b147daf": {
-    "text": "黑影顫抖。",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c7-en-block-114-08a6ab760fb1e5f5": {
-    "text": "“Understand… me…?”",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c7-zh-block-114-e824fd5c80d4e8da": {
-    "text": "形體不穩。",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c7-en-block-115-76b458ea080cf1d7": {
-    "text": "Lily nodded.\n“Yes.”",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c7-zh-block-115-d0a5fa2dacce83ea": {
-    "text": "「理解……我……？」",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c7-en-block-116-90dbd603321ef3ad": {
-    "text": "The Light Leaf floated closer.",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c7-zh-block-116-9c629b348a8a1030": {
-    "text": "莉莉點頭。",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c7-en-block-117-8b0008845e4ff3dc": {
-    "text": "It gave a soft light.",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c7-zh-block-117-b4dab766f8456728": {
+  "v2-secret-forest-adventure-c7-zh-block-76-b4dab766f8456728": {
     "text": "「對。」",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-118-8520064184d3f27d": {
-    "text": "Not strong.",
+  "v1-secret-forest-adventure-c7-en-block-77-de38499f17e67363": {
+    "text": "The shadow stepped closer.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-118-c1a80c2d68e0a3f8": {
-    "text": "光之葉飄近。",
+  "v2-secret-forest-adventure-c7-zh-block-77-67e43d7b5cae9738": {
+    "text": "黑影走近。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-119-29fa25f3cc5b673d": {
-    "text": "Not painful.",
+  "v1-secret-forest-adventure-c7-en-block-78-c20cfb141865f55e": {
+    "text": "“I only wanted to be part of the light…”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-119-8a314d2893ff3934": {
-    "text": "光變柔和。",
+  "v2-secret-forest-adventure-c7-zh-block-78-1cfd726874ca3ec5": {
+    "text": "「我只是想成為光的一部分……」",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-120-0de8429ea9d205f7": {
-    "text": "Gentle.",
+  "v1-secret-forest-adventure-c7-en-block-79-146aac03a333c9d8": {
+    "text": "“But it rejected me!”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-120-1193a436500daaa0": {
-    "text": "不刺眼。",
+  "v2-secret-forest-adventure-c7-zh-block-79-55f4c123fe2097a9": {
+    "text": "「但它拒絕我！」",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-121-415ee3b90d76ab1d": {
-    "text": "The shadow stepped back.",
+  "v1-secret-forest-adventure-c7-en-block-80-5b6c288d83130d62": {
+    "text": "The cave trembled.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-121-f813714a7ad8eabc": {
-    "text": "不痛。",
+  "v2-secret-forest-adventure-c7-zh-block-80-3745f52824f9f556": {
+    "text": "洞穴震動。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-122-aad7332ce3528486": {
-    "text": "The light touched it.",
+  "v1-secret-forest-adventure-c7-en-block-81-a597622c8ef0756f": {
+    "text": "Dark energy spread around.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-122-a9250ad65ace0102": {
-    "text": "很溫暖。",
+  "v2-secret-forest-adventure-c7-zh-block-81-7855233f8d262e84": {
+    "text": "黑暗能量擴散。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-123-441e7510747f1f45": {
-    "text": "It did not scream.",
+  "v1-secret-forest-adventure-c7-en-block-82-b80166c3afbf6a3e": {
+    "text": "Coco whispered,",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-123-973e5571e5c2cf61": {
-    "text": "黑影後退。",
+  "v2-secret-forest-adventure-c7-zh-block-82-343d10052d8c763d": {
+    "text": "可可小聲說：",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-124-0190b8d61be6c9bb": {
+  "v1-secret-forest-adventure-c7-en-block-83-9171ba8459df062e": {
+    "text": "“It’s angry…”",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c7-zh-block-83-1c7ce612b80baa44": {
+    "text": "「它很生氣……」",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c7-en-block-84-7b99a545e81e03d6": {
+    "text": "Lily shook her head.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c7-zh-block-84-8a39c96d406d5487": {
+    "text": "莉莉搖頭。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c7-en-block-85-90ffde7ebad4dc33": {
+    "text": "“You don’t need to destroy the forest.”",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c7-zh-block-85-1c18ce3d6bdcf6b5": {
+    "text": "「你不需要毀掉森林。」",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c7-en-block-86-7c181e9d137492a0": {
+    "text": "The shadow laughed bitterly.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c7-zh-block-86-7d84f543a4bd4701": {
+    "text": "黑影苦笑。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c7-en-block-87-e89b175b69bf19f8": {
+    "text": "“If I cannot have the light…”",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c7-zh-block-87-7d849bcda49fe929": {
+    "text": "「如果我得不到光……」",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c7-en-block-88-dfd619d3623040a0": {
+    "text": "“Then no one will!”",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c7-zh-block-88-c2a634b1af0fed70": {
+    "text": "「那誰都別想得到！」",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c7-en-block-89-1d754a17e266d97e": {
+    "text": "It raised its arms.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c7-zh-block-89-8a013afe77666e04": {
+    "text": "它舉手。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c7-en-block-90-e80bae0a87f6fd74": {
+    "text": "Darkness rushed toward the crystal.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c7-zh-block-90-45c9307f2ff013f6": {
+    "text": "黑暗衝向水晶。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c7-en-block-91-6ad8fb09b1d973aa": {
+    "text": "Lily quickly held up the Moon Key.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c7-zh-block-91-0f6bc1411884b495": {
+    "text": "莉莉舉起鑰匙。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c7-en-block-92-b7f7609a09596263": {
+    "text": "The key shined.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c7-zh-block-92-8bbbc812452af695": {
+    "text": "鑰匙發光。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c7-en-block-93-26a5818c4eed64f8": {
+    "text": "The Light Leaf glowed.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c7-zh-block-93-26c3e825d4ebdcae": {
+    "text": "葉子發光。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c7-en-block-94-122f0705a4016ebe": {
+    "text": "The crystal responded.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c7-zh-block-94-6b4c5d3447c30069": {
+    "text": "水晶回應。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c7-en-block-95-f31567d2a2a27490": {
+    "text": "All three lights joined together.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c7-zh-block-95-c2de718797aebdb4": {
+    "text": "三種光融合。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c7-en-block-96-f4c7ffa3d14a2a1f": {
+    "text": "Silver. Green. Gold.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c7-zh-block-96-5e2a0a0a1f9bc944": {
+    "text": "銀色、綠色、金色。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c7-en-block-97-372909bc8b6d2f0b": {
+    "text": "They pushed back the darkness.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c7-zh-block-97-64d2c0d3b277fd87": {
+    "text": "它們把黑暗逼退了。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c7-en-block-98-c55535a26b0ae8b3": {
+    "text": "The shadow screamed.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c7-zh-block-98-4d7aa310c68c9c4f": {
+    "text": "黑影大叫：",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c7-en-block-99-137c4ef4746c59ea": {
+    "text": "“NO!”",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c7-zh-block-99-f2fb8ecdc45d50a5": {
+    "text": "「不！」",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c7-en-block-100-78c11e54d00f01f0": {
+    "text": "But it did not disappear.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c7-zh-block-100-df50d4204150d650": {
+    "text": "但它沒有消失。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c7-en-block-101-0190b8d61be6c9bb": {
     "text": "Instead—",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-124-352d74573b099e3a": {
-    "text": "光碰到它。",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c7-en-block-125-66a835ffdc18ef59": {
-    "text": "It grew smaller.",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c7-zh-block-125-d53baab072ba3042": {
-    "text": "它沒有痛苦。",
-    "lang": "zh-TW"
-  },
-  "v1-secret-forest-adventure-c7-en-block-126-00dde7ff3d788855": {
-    "text": "Its shape changed.",
-    "lang": "en-US"
-  },
-  "v2-secret-forest-adventure-c7-zh-block-126-a5ec1f01ca40cb4c": {
+  "v2-secret-forest-adventure-c7-zh-block-101-a5ec1f01ca40cb4c": {
     "text": "反而——",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-127-4a5474cedb248ea4": {
-    "text": "The dark smoke faded.",
+  "v1-secret-forest-adventure-c7-en-block-102-5259a4c0a10b3f62": {
+    "text": "It grew even stronger.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-127-dde7c8188f49bd46": {
+  "v2-secret-forest-adventure-c7-zh-block-102-84ca1eb3423f27f5": {
+    "text": "它變得更強了。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c7-en-block-103-a9ebd82d4d7c8727": {
+    "text": "“I will take it by force!”",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c7-zh-block-103-660595b4e1057c20": {
+    "text": "「我會用力量搶走它！」",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c7-en-block-104-7cd0e0c886a0fb41": {
+    "text": "The shadow rushed forward.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c7-zh-block-104-d01dfb535e4e647d": {
+    "text": "黑影衝過來。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c7-en-block-105-86866043c6f3e85c": {
+    "text": "Dark claws reached toward the crystal.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c7-zh-block-105-552df70a26dbcca6": {
+    "text": "黑色爪子伸向水晶。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c7-en-block-106-aef48d777f41a3bc": {
+    "text": "“Lily!” Coco shouted.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c7-zh-block-106-ffc6cae734d1b4a9": {
+    "text": "「莉莉！」可可喊。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c7-en-block-107-d9503641ba2b1577": {
+    "text": "Lily stepped forward.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c7-zh-block-107-110b1f4863f638f3": {
+    "text": "莉莉往前站。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c7-en-block-108-c9d9442352006c9f": {
+    "text": "“No!”",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c7-zh-block-108-f2fb8ecdc45d50a5": {
+    "text": "「不！」",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c7-en-block-109-c199e774498e6bc4": {
+    "text": "She stood between the shadow and the crystal.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c7-zh-block-109-29cbfed41a6db0ca": {
+    "text": "她站在黑影與水晶之間。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c7-en-block-110-ffaac5c9fa87ffc7": {
+    "text": "Her hands were shaking.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c7-zh-block-110-fbfb9a8e8247298b": {
+    "text": "手在發抖。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c7-en-block-111-5b56534370474c13": {
+    "text": "But she did not move.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c7-zh-block-111-84cfe4a43d49f149": {
+    "text": "但沒有退。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c7-en-block-112-4ff0fabd2ee7bb7e": {
+    "text": "“You are not alone!” Lily shouted.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c7-zh-block-112-e8e25f043e39d1bc": {
+    "text": "「你不是一個人！」她喊。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c7-en-block-113-6edd351a49aad039": {
+    "text": "The shadow stopped.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c7-zh-block-113-5a31610ebb1589ae": {
+    "text": "黑影停住。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c7-en-block-114-d8541b121b21f995": {
+    "text": "“What…?”",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c7-zh-block-114-cf6a7dcacc313167": {
+    "text": "「什麼……？」",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c7-en-block-115-f265f23ad89b891e": {
+    "text": "“You don’t need to fight,” Lily said.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c7-zh-block-115-e16034aeabd06234": {
+    "text": "「你不需要戰鬥，」莉莉說。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c7-en-block-116-b1fa2dc2a4485266": {
+    "text": "“You just need someone to understand you.”",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c7-zh-block-116-75358200c8556e3d": {
+    "text": "「你只是需要有人理解你。」",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c7-en-block-117-fc0a88f0d6efaf38": {
+    "text": "The cave became quiet.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c7-zh-block-117-a0fd1ef933cd6aa5": {
+    "text": "洞穴安靜。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c7-en-block-118-d2ef1992c49f0ba4": {
+    "text": "The shadow trembled.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c7-zh-block-118-b68e6a319b147daf": {
+    "text": "黑影顫抖。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c7-en-block-119-b6097cc4422c1caf": {
+    "text": "Its form flickered.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c7-zh-block-119-e824fd5c80d4e8da": {
+    "text": "形體不穩。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c7-en-block-120-08a6ab760fb1e5f5": {
+    "text": "“Understand… me…?”",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c7-zh-block-120-d0a5fa2dacce83ea": {
+    "text": "「理解……我……？」",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c7-en-block-121-3277daceb33d2b50": {
+    "text": "Lily nodded.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c7-zh-block-121-9c629b348a8a1030": {
+    "text": "莉莉點頭。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c7-en-block-122-605c32e719b72803": {
+    "text": "“Yes.”",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c7-zh-block-122-b4dab766f8456728": {
+    "text": "「對。」",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c7-en-block-123-90dbd603321ef3ad": {
+    "text": "The Light Leaf floated closer.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c7-zh-block-123-c1a80c2d68e0a3f8": {
+    "text": "光之葉飄近。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c7-en-block-124-8b0008845e4ff3dc": {
+    "text": "It gave a soft light.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c7-zh-block-124-8a314d2893ff3934": {
+    "text": "光變柔和。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c7-en-block-125-8520064184d3f27d": {
+    "text": "Not strong.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c7-zh-block-125-c018c1b9845239f3": {
+    "text": "並不強烈。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c7-en-block-126-29fa25f3cc5b673d": {
+    "text": "Not painful.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c7-zh-block-126-f813714a7ad8eabc": {
+    "text": "不痛。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c7-en-block-127-0de8429ea9d205f7": {
+    "text": "Gentle.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c7-zh-block-127-232b51d17ca41baf": {
+    "text": "很柔和。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c7-en-block-128-415ee3b90d76ab1d": {
+    "text": "The shadow stepped back.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c7-zh-block-128-973e5571e5c2cf61": {
+    "text": "黑影後退。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c7-en-block-129-aad7332ce3528486": {
+    "text": "The light touched it.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c7-zh-block-129-352d74573b099e3a": {
+    "text": "光碰到它。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c7-en-block-130-441e7510747f1f45": {
+    "text": "It did not scream.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c7-zh-block-130-5047906adf13d17c": {
+    "text": "它沒有尖叫。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c7-en-block-131-0190b8d61be6c9bb": {
+    "text": "Instead—",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c7-zh-block-131-a5ec1f01ca40cb4c": {
+    "text": "反而——",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c7-en-block-132-66a835ffdc18ef59": {
+    "text": "It grew smaller.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c7-zh-block-132-dde7c8188f49bd46": {
     "text": "變小了。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-128-e0b44cdbd0517cbe": {
-    "text": "Slowly—",
+  "v1-secret-forest-adventure-c7-en-block-133-00dde7ff3d788855": {
+    "text": "Its shape changed.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-128-5c6b68e6b63627c2": {
+  "v2-secret-forest-adventure-c7-zh-block-133-5c6b68e6b63627c2": {
     "text": "形狀改變。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-129-1700eefde41e4ee0": {
-    "text": "A small figure appeared.",
+  "v1-secret-forest-adventure-c7-en-block-134-4a5474cedb248ea4": {
+    "text": "The dark smoke faded.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-129-44f40a5fb0051549": {
+  "v2-secret-forest-adventure-c7-zh-block-134-44f40a5fb0051549": {
     "text": "黑煙消失。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-130-20b68b19895515de": {
-    "text": "Not a monster.",
+  "v1-secret-forest-adventure-c7-en-block-135-e0b44cdbd0517cbe": {
+    "text": "Slowly—",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-130-84e34b984f93a3b3": {
+  "v2-secret-forest-adventure-c7-zh-block-135-84e34b984f93a3b3": {
     "text": "慢慢地——",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-131-b01e562cd28d237c": {
-    "text": "Just a tiny, shadow-like creature.",
+  "v1-secret-forest-adventure-c7-en-block-136-1700eefde41e4ee0": {
+    "text": "A small figure appeared.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-131-2914a69d4f203495": {
+  "v2-secret-forest-adventure-c7-zh-block-136-2914a69d4f203495": {
     "text": "變成一個小小的影子。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-132-36184e301d4ab85a": {
-    "text": "It looked weak.",
+  "v1-secret-forest-adventure-c7-en-block-137-20b68b19895515de": {
+    "text": "Not a monster.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-132-f6fcda94bb9f811a": {
+  "v2-secret-forest-adventure-c7-zh-block-137-f6fcda94bb9f811a": {
     "text": "不是怪物。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-133-2c91c2dfeec32011": {
-    "text": "Sad.\nLonely.",
+  "v1-secret-forest-adventure-c7-en-block-138-b01e562cd28d237c": {
+    "text": "Just a tiny, shadow-like creature.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-133-a4599283e6853557": {
+  "v2-secret-forest-adventure-c7-zh-block-138-a4599283e6853557": {
     "text": "只是小小的影子生物。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-134-c09bf67fff90fba3": {
-    "text": "Coco gasped.",
+  "v1-secret-forest-adventure-c7-en-block-139-36184e301d4ab85a": {
+    "text": "It looked weak.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-134-e627914314a4bc5e": {
+  "v2-secret-forest-adventure-c7-zh-block-139-e627914314a4bc5e": {
     "text": "看起來虛弱。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-135-5f7fb8c6b1de37ae": {
-    "text": "“It’s… different…”",
+  "v1-secret-forest-adventure-c7-en-block-140-ac101d4e749aa4cc": {
+    "text": "Sad.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-135-237129db0be6cff6": {
+  "v2-secret-forest-adventure-c7-zh-block-140-c47a4904df30b410": {
+    "text": "難過。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c7-en-block-141-2f4133186bc60ed3": {
+    "text": "Lonely.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c7-zh-block-141-237129db0be6cff6": {
     "text": "孤單。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-136-d02233d08c8d558d": {
-    "text": "Lily knelt down.",
+  "v1-secret-forest-adventure-c7-en-block-142-c09bf67fff90fba3": {
+    "text": "Coco gasped.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-136-7274ff32ffc7efeb": {
+  "v2-secret-forest-adventure-c7-zh-block-142-7274ff32ffc7efeb": {
     "text": "可可驚呼。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-137-445ddb9a46a2f759": {
-    "text": "“It’s okay,” she said softly.",
+  "v1-secret-forest-adventure-c7-en-block-143-5f7fb8c6b1de37ae": {
+    "text": "“It’s… different…”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-137-6a75a17374dbe0e4": {
+  "v2-secret-forest-adventure-c7-zh-block-143-6a75a17374dbe0e4": {
     "text": "「變了……」",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-138-641e2a8761e58c85": {
-    "text": "The small shadow looked at her.",
+  "v1-secret-forest-adventure-c7-en-block-144-d02233d08c8d558d": {
+    "text": "Lily knelt down.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-138-a23e2c4609cf5d63": {
+  "v2-secret-forest-adventure-c7-zh-block-144-a23e2c4609cf5d63": {
     "text": "莉莉蹲下。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-139-8adb51650f9b4a6d": {
-    "text": "“Really…?”",
+  "v1-secret-forest-adventure-c7-en-block-145-445ddb9a46a2f759": {
+    "text": "“It’s okay,” she said softly.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-139-e7599518ddef5d40": {
+  "v2-secret-forest-adventure-c7-zh-block-145-e7599518ddef5d40": {
     "text": "「沒事的，」她說。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-140-721f6d7ff35aae07": {
-    "text": "“Yes,” Lily smiled.",
+  "v1-secret-forest-adventure-c7-en-block-146-641e2a8761e58c85": {
+    "text": "The small shadow looked at her.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-140-f61e2c08aa876141": {
+  "v2-secret-forest-adventure-c7-zh-block-146-f61e2c08aa876141": {
     "text": "小影子看著她。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-141-32fa4007d17076e3": {
-    "text": "“You can stay with the light.”",
+  "v1-secret-forest-adventure-c7-en-block-147-8adb51650f9b4a6d": {
+    "text": "“Really…?”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-141-afe60b3c2fb53e71": {
+  "v2-secret-forest-adventure-c7-zh-block-147-afe60b3c2fb53e71": {
     "text": "「真的嗎……？」",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-142-41de42ed0eea6e01": {
-    "text": "The Star Crystal shined brighter.",
+  "v1-secret-forest-adventure-c7-en-block-148-721f6d7ff35aae07": {
+    "text": "“Yes,” Lily smiled.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-142-71bed749e14f1ef6": {
+  "v2-secret-forest-adventure-c7-zh-block-148-71bed749e14f1ef6": {
     "text": "「真的，」莉莉微笑。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-143-2ec29953d6e86a11": {
-    "text": "Warm light filled the cave.",
+  "v1-secret-forest-adventure-c7-en-block-149-32fa4007d17076e3": {
+    "text": "“You can stay with the light.”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-143-5c823922bfe6e3a3": {
+  "v2-secret-forest-adventure-c7-zh-block-149-5c823922bfe6e3a3": {
     "text": "「你可以和光在一起。」",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-144-e3dc67a75a174c8a": {
-    "text": "The small shadow did not disappear.",
+  "v1-secret-forest-adventure-c7-en-block-150-41de42ed0eea6e01": {
+    "text": "The Star Crystal shined brighter.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-144-c383b5c6e81477c3": {
+  "v2-secret-forest-adventure-c7-zh-block-150-c383b5c6e81477c3": {
     "text": "星之水晶發出更亮的光。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-145-635f085a61b66c96": {
-    "text": "It stayed.",
+  "v1-secret-forest-adventure-c7-en-block-151-2ec29953d6e86a11": {
+    "text": "Warm light filled the cave.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-145-501d57a454184d5c": {
-    "text": "溫暖充滿洞穴。",
+  "v2-secret-forest-adventure-c7-zh-block-151-a62d4639a1956b83": {
+    "text": "溫暖的光充滿洞穴。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-146-a2f1103c37928e18": {
-    "text": "But now—",
+  "v1-secret-forest-adventure-c7-en-block-152-e3dc67a75a174c8a": {
+    "text": "The small shadow did not disappear.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-146-4d8f529c5c6f44b9": {
+  "v2-secret-forest-adventure-c7-zh-block-152-4d8f529c5c6f44b9": {
     "text": "小影子沒有消失。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-147-c3444335a0bf390c": {
+  "v1-secret-forest-adventure-c7-en-block-153-635f085a61b66c96": {
+    "text": "It stayed.",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c7-zh-block-153-fd804d6ed1ddf666": {
+    "text": "它留了下來。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c7-en-block-154-a2f1103c37928e18": {
+    "text": "But now—",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c7-zh-block-154-0110778916bd57b9": {
+    "text": "但現在——",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c7-en-block-155-c3444335a0bf390c": {
     "text": "It was calm.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-147-70797a30e4c2eee6": {
-    "text": "但變得平靜。",
+  "v2-secret-forest-adventure-c7-zh-block-155-a2b4c77554a76c7e": {
+    "text": "它很平靜。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-148-bed0af397f15d14e": {
+  "v1-secret-forest-adventure-c7-en-block-156-bed0af397f15d14e": {
     "text": "The darkness was gone.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-148-1fd81a6e6bee9154": {
+  "v2-secret-forest-adventure-c7-zh-block-156-1fd81a6e6bee9154": {
     "text": "黑暗消失了。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-149-6818089efc1bd4cf": {
+  "v1-secret-forest-adventure-c7-en-block-157-6818089efc1bd4cf": {
     "text": "The cave became peaceful again.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-149-9fa87e27028eb948": {
+  "v2-secret-forest-adventure-c7-zh-block-157-9fa87e27028eb948": {
     "text": "洞穴恢復平靜。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-150-e5b319b942d419b8": {
+  "v1-secret-forest-adventure-c7-en-block-158-e5b319b942d419b8": {
     "text": "Coco smiled.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-150-c3f6059470cae30d": {
+  "v2-secret-forest-adventure-c7-zh-block-158-c3f6059470cae30d": {
     "text": "可可笑了。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-151-9d013f464254f184": {
+  "v1-secret-forest-adventure-c7-en-block-159-9d013f464254f184": {
     "text": "“You saved it… and the forest.”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-151-1ea76f51583d2530": {
+  "v2-secret-forest-adventure-c7-zh-block-159-1ea76f51583d2530": {
     "text": "「你救了它，也救了森林。」",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-152-ebdb827bfd085288": {
+  "v1-secret-forest-adventure-c7-en-block-160-ebdb827bfd085288": {
     "text": "Prince Pebble jumped happily.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-152-949101def1d07260": {
+  "v2-secret-forest-adventure-c7-zh-block-160-949101def1d07260": {
     "text": "卵石王子開心跳。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-153-074955c4579d5fc1": {
+  "v1-secret-forest-adventure-c7-en-block-161-074955c4579d5fc1": {
     "text": "“Ribbit!”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-153-604ef3e213139ca5": {
+  "v2-secret-forest-adventure-c7-zh-block-161-604ef3e213139ca5": {
     "text": "「呱！」",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-154-d8ff0bb40d0d28f7": {
+  "v1-secret-forest-adventure-c7-en-block-162-d8ff0bb40d0d28f7": {
     "text": "Lily looked at the crystal.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-154-02f0101f25fd509a": {
+  "v2-secret-forest-adventure-c7-zh-block-162-02f0101f25fd509a": {
     "text": "莉莉看著水晶。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-155-59874313f37e32b2": {
+  "v1-secret-forest-adventure-c7-en-block-163-59874313f37e32b2": {
     "text": "The colors were brighter than before.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-155-13fd92f3baa750fb": {
-    "text": "光比以前更亮。",
+  "v2-secret-forest-adventure-c7-zh-block-163-c2b476103138a708": {
+    "text": "那些顏色比以前更明亮。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c7-en-block-156-ef3c136b9856010a": {
+  "v1-secret-forest-adventure-c7-en-block-164-ef3c136b9856010a": {
     "text": "The forest was safe.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c7-zh-block-156-ad9cfb203be8dabd": {
+  "v2-secret-forest-adventure-c7-zh-block-164-ad9cfb203be8dabd": {
     "text": "森林安全了。",
     "lang": "zh-TW"
   },
@@ -6730,831 +6826,839 @@ export const NOVEL_AUDIO_CATALOG = Object.freeze({
     "text": "It moved through the forest.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-19-300e3e7a18d75cef": {
-    "text": "傳遍整個森林。",
+  "v2-secret-forest-adventure-c8-zh-block-19-5241dae06d085c01": {
+    "text": "它穿過森林。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c8-en-block-20-9d4975583230f58f": {
     "text": "Far and wide.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-20-02f0a069339e210b": {
-    "text": "樹再次發光。",
+  "v2-secret-forest-adventure-c8-zh-block-20-61ffa5105d652cfc": {
+    "text": "傳向四面八方。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c8-en-block-21-400942d9c6e4f33a": {
     "text": "Trees began to shine again.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-21-11e6c825d2311dfd": {
-    "text": "花朵綻放。",
+  "v2-secret-forest-adventure-c8-zh-block-21-02f0a069339e210b": {
+    "text": "樹再次發光。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c8-en-block-22-7f57fceedf98d86e": {
     "text": "Flowers opened their petals.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-22-7c9d635ea3466a33": {
-    "text": "河流再次歌唱。",
+  "v2-secret-forest-adventure-c8-zh-block-22-11e6c825d2311dfd": {
+    "text": "花朵綻放。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c8-en-block-23-ba3a7ba021c809fe": {
     "text": "The river sang loudly once more.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-23-c8ff6eca0710df5f": {
-    "text": "啦啦啦……",
+  "v2-secret-forest-adventure-c8-zh-block-23-7c9d635ea3466a33": {
+    "text": "河流再次歌唱。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c8-en-block-24-dc99536f1e1b26dd": {
     "text": "La la la…",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-24-25518c405c5a6dea": {
-    "text": "鳥兒飛回天空。",
+  "v2-secret-forest-adventure-c8-zh-block-24-c8ff6eca0710df5f": {
+    "text": "啦啦啦……",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c8-en-block-25-4398afb0c39b8973": {
     "text": "Birds returned to the sky.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-25-59de41bfb1672ace": {
-    "text": "動物從躲藏處出來。",
+  "v2-secret-forest-adventure-c8-zh-block-25-25518c405c5a6dea": {
+    "text": "鳥兒飛回天空。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c8-en-block-26-3fda05845fad5d98": {
     "text": "Animals came out from hiding.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-26-812115d7ac846bc7": {
-    "text": "森林恢復了生命。",
+  "v2-secret-forest-adventure-c8-zh-block-26-59de41bfb1672ace": {
+    "text": "動物從躲藏處出來。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c8-en-block-27-448e837ea01eac58": {
     "text": "The forest was alive again.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-27-a0788c6c4ad57f1b": {
-    "text": "可可開心地拍手。",
+  "v2-secret-forest-adventure-c8-zh-block-27-812115d7ac846bc7": {
+    "text": "森林恢復了生命。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c8-en-block-28-117b47ce9e4189e0": {
     "text": "Coco clapped happily.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-28-ba8b93849282fbe7": {
-    "text": "「魔法回來了！」",
+  "v2-secret-forest-adventure-c8-zh-block-28-a0788c6c4ad57f1b": {
+    "text": "可可開心地拍手。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c8-en-block-29-19bfb455ce0d5f30": {
     "text": "“The magic is back!”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-29-f06c6d30968d8811": {
-    "text": "卵石王子跳來跳去。",
+  "v2-secret-forest-adventure-c8-zh-block-29-ba8b93849282fbe7": {
+    "text": "「魔法回來了！」",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c8-en-block-30-5bd9b408121191ce": {
     "text": "Prince Pebble jumped and splashed in a small puddle.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-30-604ef3e213139ca5": {
-    "text": "「呱！」",
+  "v2-secret-forest-adventure-c8-zh-block-30-f2f1b481ea095a3c": {
+    "text": "卵石王子在小水窪裡跳躍，濺起水花。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c8-en-block-31-074955c4579d5fc1": {
     "text": "“Ribbit!”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-31-87d53458049f20c9": {
-    "text": "莉莉笑了。",
+  "v2-secret-forest-adventure-c8-zh-block-31-604ef3e213139ca5": {
+    "text": "「呱！」",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c8-en-block-32-63030f7a61d1a4ff": {
     "text": "Lily laughed.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-32-8778ed6935f32203": {
-    "text": "「我們成功了。」",
+  "v2-secret-forest-adventure-c8-zh-block-32-87d53458049f20c9": {
+    "text": "莉莉笑了。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c8-en-block-33-d546a45d8532031e": {
     "text": "“We did it.”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-33-6eee8d7f8df05702": {
-    "text": "小影子靜靜站著。",
+  "v2-secret-forest-adventure-c8-zh-block-33-8778ed6935f32203": {
+    "text": "「我們成功了。」",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c8-en-block-34-04cd6c4cb73eff7c": {
     "text": "The small shadow stood quietly.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-34-7bff45ab275a645a": {
-    "text": "接著發生了奇妙的事。",
+  "v2-secret-forest-adventure-c8-zh-block-34-6eee8d7f8df05702": {
+    "text": "小影子靜靜站著。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c8-en-block-35-e577ec21211b64fe": {
     "text": "Then something wonderful happened.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-35-30fcec5ef087c67b": {
-    "text": "它的黑暗身體開始改變。",
+  "v2-secret-forest-adventure-c8-zh-block-35-7bff45ab275a645a": {
+    "text": "接著發生了奇妙的事。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c8-en-block-36-3bbb0ff06afe53d7": {
     "text": "Its dark body began to change.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-36-ea7b37c9ebb4193c": {
-    "text": "一點一點——",
+  "v2-secret-forest-adventure-c8-zh-block-36-30fcec5ef087c67b": {
+    "text": "它的黑暗身體開始改變。",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c8-en-block-37-874f5471c57a0877": {
     "text": "Little by little—",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-37-159027e2f99fab81": {
-    "text": "變成柔和的灰色光。",
+  "v2-secret-forest-adventure-c8-zh-block-37-ea7b37c9ebb4193c": {
+    "text": "一點一點——",
     "lang": "zh-TW"
   },
   "v1-secret-forest-adventure-c8-en-block-38-eb85b974b7e27420": {
     "text": "It turned into soft gray light.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-38-be43fa9ef8e8acbe": {
+  "v2-secret-forest-adventure-c8-zh-block-38-159027e2f99fab81": {
+    "text": "變成柔和的灰色光。",
+    "lang": "zh-TW"
+  },
+  "v1-secret-forest-adventure-c8-en-block-39-534c5c73c8f5bbb7": {
+    "text": "It was still a shadow,",
+    "lang": "en-US"
+  },
+  "v2-secret-forest-adventure-c8-zh-block-39-be43fa9ef8e8acbe": {
     "text": "它仍然是影子，",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-39-7e98d3bb489f37f6": {
-    "text": "It was still a shadow,\nbut now it had light inside.",
+  "v1-secret-forest-adventure-c8-en-block-40-122b6a9af3fa391d": {
+    "text": "but now it had light inside.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-39-773b0adc775b08aa": {
+  "v2-secret-forest-adventure-c8-zh-block-40-773b0adc775b08aa": {
     "text": "但裡面有光。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-40-c09bf67fff90fba3": {
+  "v1-secret-forest-adventure-c8-en-block-41-c09bf67fff90fba3": {
     "text": "Coco gasped.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-40-7274ff32ffc7efeb": {
+  "v2-secret-forest-adventure-c8-zh-block-41-7274ff32ffc7efeb": {
     "text": "可可驚呼。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-41-29e656584c17945f": {
+  "v1-secret-forest-adventure-c8-en-block-42-29e656584c17945f": {
     "text": "“It found its balance!”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-41-1030650aff0bc07d": {
+  "v2-secret-forest-adventure-c8-zh-block-42-1030650aff0bc07d": {
     "text": "「它找到平衡了！」",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-42-5beb2ca24286f48c": {
+  "v1-secret-forest-adventure-c8-en-block-43-5beb2ca24286f48c": {
     "text": "The small shadow smiled.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-42-d45569cfd6a5906e": {
+  "v2-secret-forest-adventure-c8-zh-block-43-d45569cfd6a5906e": {
     "text": "小影子微笑。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-43-d297682ba6d699aa": {
+  "v1-secret-forest-adventure-c8-en-block-44-d297682ba6d699aa": {
     "text": "“I feel… warm…”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-43-c58d59b809779647": {
+  "v2-secret-forest-adventure-c8-zh-block-44-c58d59b809779647": {
     "text": "「我覺得……好溫暖……」",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-44-1ba5e8bde507f28c": {
+  "v1-secret-forest-adventure-c8-en-block-45-1ba5e8bde507f28c": {
     "text": "Lily felt happy.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-44-ff7ec10a94d984f1": {
+  "v2-secret-forest-adventure-c8-zh-block-45-ff7ec10a94d984f1": {
     "text": "莉莉很開心。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-45-df59debf856449bd": {
+  "v1-secret-forest-adventure-c8-en-block-46-df59debf856449bd": {
     "text": "“That’s your light.”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-45-d24a371b7b5ec67f": {
+  "v2-secret-forest-adventure-c8-zh-block-46-d24a371b7b5ec67f": {
     "text": "「那就是你的光。」",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-46-48a40e4c2e40a15d": {
+  "v1-secret-forest-adventure-c8-en-block-47-48a40e4c2e40a15d": {
     "text": "The Star Crystal floated down slowly.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-46-a08017de76354994": {
+  "v2-secret-forest-adventure-c8-zh-block-47-a08017de76354994": {
     "text": "星之水晶慢慢飄下來。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-47-ea1081f69881d703": {
+  "v1-secret-forest-adventure-c8-en-block-48-ea1081f69881d703": {
     "text": "It came closer to Lily.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-47-050aedf67dac2553": {
+  "v2-secret-forest-adventure-c8-zh-block-48-050aedf67dac2553": {
     "text": "靠近莉莉。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-48-b80166c3afbf6a3e": {
+  "v1-secret-forest-adventure-c8-en-block-49-b80166c3afbf6a3e": {
     "text": "Coco whispered,",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-48-343d10052d8c763d": {
+  "v2-secret-forest-adventure-c8-zh-block-49-343d10052d8c763d": {
     "text": "可可小聲說：",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-49-147d67248d590184": {
+  "v1-secret-forest-adventure-c8-en-block-50-147d67248d590184": {
     "text": "“It is thanking you.”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-49-10ed3da7aaa53b98": {
+  "v2-secret-forest-adventure-c8-zh-block-50-10ed3da7aaa53b98": {
     "text": "「它在感謝你。」",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-50-8ce78368588d610e": {
+  "v1-secret-forest-adventure-c8-en-block-51-8ce78368588d610e": {
     "text": "The crystal touched Lily’s hand.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-50-220cd8ba9cdbe153": {
+  "v2-secret-forest-adventure-c8-zh-block-51-220cd8ba9cdbe153": {
     "text": "水晶碰到莉莉的手。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-51-0ce996f9df7b2cc2": {
+  "v1-secret-forest-adventure-c8-en-block-52-0ce996f9df7b2cc2": {
     "text": "A soft glow surrounded her.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-51-f07e312b4ed3d17e": {
+  "v2-secret-forest-adventure-c8-zh-block-52-f07e312b4ed3d17e": {
     "text": "柔和光包圍她。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-52-465a2b146e52381e": {
+  "v1-secret-forest-adventure-c8-en-block-53-465a2b146e52381e": {
     "text": "She felt warm.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-52-ffdf7b982f91d420": {
+  "v2-secret-forest-adventure-c8-zh-block-53-ffdf7b982f91d420": {
     "text": "她感到溫暖。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-53-33e91dca9be0d48a": {
+  "v1-secret-forest-adventure-c8-en-block-54-33e91dca9be0d48a": {
     "text": "Peaceful.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-53-ce6088707b2ab748": {
+  "v2-secret-forest-adventure-c8-zh-block-54-ce6088707b2ab748": {
     "text": "平靜。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-54-c3b7f28de9a1317d": {
+  "v1-secret-forest-adventure-c8-en-block-55-c3b7f28de9a1317d": {
     "text": "Brave.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-54-c106cc83713a5821": {
+  "v2-secret-forest-adventure-c8-zh-block-55-c106cc83713a5821": {
     "text": "勇敢。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-55-3fe5369a1aecf13c": {
+  "v1-secret-forest-adventure-c8-en-block-56-3fe5369a1aecf13c": {
     "text": "Then the crystal slowly floated back.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-55-7a7c254acef21836": {
+  "v2-secret-forest-adventure-c8-zh-block-56-7a7c254acef21836": {
     "text": "然後水晶慢慢回到原位。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-56-c17a81014c977857": {
+  "v1-secret-forest-adventure-c8-en-block-57-c17a81014c977857": {
     "text": "Everything was calm.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-56-4127235dee502b79": {
+  "v2-secret-forest-adventure-c8-zh-block-57-4127235dee502b79": {
     "text": "一切恢復平靜。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-57-1fecbe1055c0d679": {
+  "v1-secret-forest-adventure-c8-en-block-58-1fecbe1055c0d679": {
     "text": "After a moment, the Light Leaf moved again.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-57-e03149415a61b3c7": {
+  "v2-secret-forest-adventure-c8-zh-block-58-e03149415a61b3c7": {
     "text": "過了一會兒，光之葉再次移動。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-58-dc512010d13fc2ed": {
+  "v1-secret-forest-adventure-c8-en-block-59-dc512010d13fc2ed": {
     "text": "It floated toward the cave entrance.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-58-473aeca7d421ba97": {
+  "v2-secret-forest-adventure-c8-zh-block-59-473aeca7d421ba97": {
     "text": "它飄向洞口。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-59-6a87f823ce6d7a18": {
+  "v1-secret-forest-adventure-c8-en-block-60-6a87f823ce6d7a18": {
     "text": "“I think it’s time to go,” Lily said.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-59-c63fa6b1cdeabd80": {
+  "v2-secret-forest-adventure-c8-zh-block-60-c63fa6b1cdeabd80": {
     "text": "「我想我們該走了，」莉莉說。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-60-0a97e00c0113d73a": {
+  "v1-secret-forest-adventure-c8-en-block-61-0a97e00c0113d73a": {
     "text": "Coco nodded.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-60-560085f34cbb4421": {
+  "v2-secret-forest-adventure-c8-zh-block-61-560085f34cbb4421": {
     "text": "可可點頭。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-61-860ce442aa05e2b2": {
+  "v1-secret-forest-adventure-c8-en-block-62-860ce442aa05e2b2": {
     "text": "“Yes… but I will miss you.”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-61-0cefcd1f74c43138": {
+  "v2-secret-forest-adventure-c8-zh-block-62-0cefcd1f74c43138": {
     "text": "「是的……但我會想你的。」",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-62-06a26888ecde019f": {
+  "v1-secret-forest-adventure-c8-en-block-63-06a26888ecde019f": {
     "text": "Lily looked at Coco.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-62-5b4cc89eb34f1d7d": {
+  "v2-secret-forest-adventure-c8-zh-block-63-5b4cc89eb34f1d7d": {
     "text": "莉莉看著可可。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-63-4788be0f85305c61": {
+  "v1-secret-forest-adventure-c8-en-block-64-4788be0f85305c61": {
     "text": "“I will miss you too.”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-63-a752f54a353271ae": {
+  "v2-secret-forest-adventure-c8-zh-block-64-a752f54a353271ae": {
     "text": "「我也會想你。」",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-64-7f4216a31361ba9f": {
+  "v1-secret-forest-adventure-c8-en-block-65-7f4216a31361ba9f": {
     "text": "Prince Pebble hopped over.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-64-129f8369ef23cda6": {
+  "v2-secret-forest-adventure-c8-zh-block-65-129f8369ef23cda6": {
     "text": "卵石王子跳過來。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-65-3bee303e7ffe7eac": {
+  "v1-secret-forest-adventure-c8-en-block-66-3bee303e7ffe7eac": {
     "text": "“Ribbit…”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-65-0c2e5cbb5902198d": {
+  "v2-secret-forest-adventure-c8-zh-block-66-0c2e5cbb5902198d": {
     "text": "「呱……」",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-66-d02233d08c8d558d": {
+  "v1-secret-forest-adventure-c8-en-block-67-d02233d08c8d558d": {
     "text": "Lily knelt down.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-66-a23e2c4609cf5d63": {
+  "v2-secret-forest-adventure-c8-zh-block-67-a23e2c4609cf5d63": {
     "text": "莉莉蹲下。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-67-00f900f558d4316c": {
+  "v1-secret-forest-adventure-c8-en-block-68-00f900f558d4316c": {
     "text": "She gently touched his head.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-67-6599a06a5fe1185c": {
+  "v2-secret-forest-adventure-c8-zh-block-68-6599a06a5fe1185c": {
     "text": "輕輕摸牠的頭。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-68-70d62e76161fc563": {
+  "v1-secret-forest-adventure-c8-en-block-69-70d62e76161fc563": {
     "text": "“Take care, Pebble.”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-68-087095c0fed399dd": {
+  "v2-secret-forest-adventure-c8-zh-block-69-087095c0fed399dd": {
     "text": "「保重，卵石。」",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-69-4b3dd680ad0580cc": {
+  "v1-secret-forest-adventure-c8-en-block-70-4b3dd680ad0580cc": {
     "text": "They walked out of the cave together.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-69-129a03190e929d9a": {
+  "v2-secret-forest-adventure-c8-zh-block-70-129a03190e929d9a": {
     "text": "她們一起走出洞穴。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-70-d53247f8c8a55b5a": {
+  "v1-secret-forest-adventure-c8-en-block-71-d53247f8c8a55b5a": {
     "text": "The forest outside was bright and beautiful.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-70-0b6facd3ac004a43": {
+  "v2-secret-forest-adventure-c8-zh-block-71-0b6facd3ac004a43": {
     "text": "外面的森林明亮又美麗。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-71-9cecc3b4d757e733": {
+  "v1-secret-forest-adventure-c8-en-block-72-9cecc3b4d757e733": {
     "text": "Everything looked alive.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-71-49af8802c1403b27": {
+  "v2-secret-forest-adventure-c8-zh-block-72-49af8802c1403b27": {
     "text": "一切充滿生命。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-72-295249c81cb2e5c2": {
+  "v1-secret-forest-adventure-c8-en-block-73-295249c81cb2e5c2": {
     "text": "The sky was clear.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-72-d4fa09c78748445f": {
+  "v2-secret-forest-adventure-c8-zh-block-73-d4fa09c78748445f": {
     "text": "天空晴朗。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-73-d5a3222a4ddebe9d": {
+  "v1-secret-forest-adventure-c8-en-block-74-d5a3222a4ddebe9d": {
     "text": "The air felt fresh.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-73-be951a58fa8541c7": {
+  "v2-secret-forest-adventure-c8-zh-block-74-be951a58fa8541c7": {
     "text": "空氣清新。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-74-2509881da561c0af": {
+  "v1-secret-forest-adventure-c8-en-block-75-2509881da561c0af": {
     "text": "They walked back to the Whispering Stones.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-74-f8c4aa57c4c633fa": {
+  "v2-secret-forest-adventure-c8-zh-block-75-f8c4aa57c4c633fa": {
     "text": "她們走回低語之石。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-75-87f777566e974b97": {
+  "v1-secret-forest-adventure-c8-en-block-76-87f777566e974b97": {
     "text": "The stones glowed softly.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-75-3986459b9d82d890": {
+  "v2-secret-forest-adventure-c8-zh-block-76-3986459b9d82d890": {
     "text": "石頭發出柔和光。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-76-e28446a49f7f4f74": {
+  "v1-secret-forest-adventure-c8-en-block-77-e28446a49f7f4f74": {
     "text": "“Thank you…” the voices whispered.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-76-9ede4890c574bb21": {
+  "v2-secret-forest-adventure-c8-zh-block-77-9ede4890c574bb21": {
     "text": "「謝謝你……」聲音低語。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-77-98b0f90a593f7dad": {
+  "v1-secret-forest-adventure-c8-en-block-78-98b0f90a593f7dad": {
     "text": "Lily smiled.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-77-b252f2d94a4fcee9": {
+  "v2-secret-forest-adventure-c8-zh-block-78-b252f2d94a4fcee9": {
     "text": "莉莉微笑。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-78-e6ce187ab62abae5": {
+  "v1-secret-forest-adventure-c8-en-block-79-e6ce187ab62abae5": {
     "text": "“You’re welcome.”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-78-1d1cd07930db966e": {
+  "v2-secret-forest-adventure-c8-zh-block-79-1d1cd07930db966e": {
     "text": "「不客氣。」",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-79-a084273f12d9a3cb": {
+  "v1-secret-forest-adventure-c8-en-block-80-a084273f12d9a3cb": {
     "text": "They walked past the Singing River.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-79-bfdead296a2e9a45": {
+  "v2-secret-forest-adventure-c8-zh-block-80-bfdead296a2e9a45": {
     "text": "她們經過會唱歌的河流。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-80-e5ecc0c43632cd03": {
+  "v1-secret-forest-adventure-c8-en-block-81-e5ecc0c43632cd03": {
     "text": "The water sang happily.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-80-3fdf0b5fe20514e1": {
+  "v2-secret-forest-adventure-c8-zh-block-81-3fdf0b5fe20514e1": {
     "text": "河水開心地歌唱。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-81-4b1bb9c54b3ad3c0": {
+  "v1-secret-forest-adventure-c8-en-block-82-4b1bb9c54b3ad3c0": {
     "text": "Flowers danced in the wind.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-81-5bc72398914f9527": {
+  "v2-secret-forest-adventure-c8-zh-block-82-5bc72398914f9527": {
     "text": "花在風中搖擺。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-82-e14228d2a64bfc96": {
+  "v1-secret-forest-adventure-c8-en-block-83-e14228d2a64bfc96": {
     "text": "They reached the place where Lily first met Coco.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-82-21ea20ce3e1262ad": {
+  "v2-secret-forest-adventure-c8-zh-block-83-21ea20ce3e1262ad": {
     "text": "她們回到與可可相遇的地方。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-83-e4797afff09eea50": {
+  "v1-secret-forest-adventure-c8-en-block-84-e4797afff09eea50": {
     "text": "Coco flew slowly.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-83-b83a244ff6cd0454": {
+  "v2-secret-forest-adventure-c8-zh-block-84-b83a244ff6cd0454": {
     "text": "可可慢慢飛著。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-84-dea0bb96da843d4f": {
+  "v1-secret-forest-adventure-c8-en-block-85-dea0bb96da843d4f": {
     "text": "“This is where we say goodbye.”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-84-d325d4bf1c544eff": {
+  "v2-secret-forest-adventure-c8-zh-block-85-d325d4bf1c544eff": {
     "text": "「這裡就是說再見的地方了。」",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-85-1052b74f52850953": {
+  "v1-secret-forest-adventure-c8-en-block-86-1052b74f52850953": {
     "text": "Lily felt a little sad.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-85-6c7f26f4af30e6d5": {
+  "v2-secret-forest-adventure-c8-zh-block-86-6c7f26f4af30e6d5": {
     "text": "莉莉有點難過。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-86-262ef4aa59db9b1a": {
+  "v1-secret-forest-adventure-c8-en-block-87-262ef4aa59db9b1a": {
     "text": "“Will I see you again?” she asked.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-86-292296a88dbba523": {
+  "v2-secret-forest-adventure-c8-zh-block-87-292296a88dbba523": {
     "text": "「我們還會再見嗎？」她問。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-87-e5b319b942d419b8": {
+  "v1-secret-forest-adventure-c8-en-block-88-e5b319b942d419b8": {
     "text": "Coco smiled.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-87-7f643300251a5e1e": {
+  "v2-secret-forest-adventure-c8-zh-block-88-7f643300251a5e1e": {
     "text": "可可微笑。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-88-f1c620f929a8d74b": {
+  "v1-secret-forest-adventure-c8-en-block-89-f1c620f929a8d74b": {
     "text": "“The forest remembers brave hearts.”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-88-c9d73965da59182b": {
+  "v2-secret-forest-adventure-c8-zh-block-89-c9d73965da59182b": {
     "text": "「森林會記得勇敢的心。」",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-89-28c4c1ee2b438c1d": {
+  "v1-secret-forest-adventure-c8-en-block-90-28c4c1ee2b438c1d": {
     "text": "“If you ever need us… we will be here.”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-89-ee9078e77d7df88c": {
+  "v2-secret-forest-adventure-c8-zh-block-90-ee9078e77d7df88c": {
     "text": "「如果你需要我們……我們就在這裡。」",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-90-4beda07e7561348d": {
+  "v1-secret-forest-adventure-c8-en-block-91-4beda07e7561348d": {
     "text": "The Light Leaf floated down.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-90-1b03329f65c8ad1a": {
+  "v2-secret-forest-adventure-c8-zh-block-91-1b03329f65c8ad1a": {
     "text": "光之葉慢慢落下。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-91-7b301130198ce3d5": {
+  "v1-secret-forest-adventure-c8-en-block-92-7b301130198ce3d5": {
     "text": "It landed gently in Lily’s hand.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-91-31d6dfee65dd09ba": {
+  "v2-secret-forest-adventure-c8-zh-block-92-31d6dfee65dd09ba": {
     "text": "落在莉莉手中。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-92-e62153f5361f7f03": {
+  "v1-secret-forest-adventure-c8-en-block-93-e62153f5361f7f03": {
     "text": "Then—",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-92-a893bccf0c7a6fbb": {
+  "v2-secret-forest-adventure-c8-zh-block-93-a893bccf0c7a6fbb": {
     "text": "然後——",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-93-160cab87c09605d5": {
+  "v1-secret-forest-adventure-c8-en-block-94-160cab87c09605d5": {
     "text": "It turned into a normal leaf.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-93-029fb88c44b24e01": {
+  "v2-secret-forest-adventure-c8-zh-block-94-029fb88c44b24e01": {
     "text": "變成普通葉子。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-94-1206ad0f081b8ce7": {
+  "v1-secret-forest-adventure-c8-en-block-95-1206ad0f081b8ce7": {
     "text": "The glow disappeared.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-94-224f805cd86126e2": {
+  "v2-secret-forest-adventure-c8-zh-block-95-224f805cd86126e2": {
     "text": "光消失了。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-95-b792b46a41cee3be": {
+  "v1-secret-forest-adventure-c8-en-block-96-b792b46a41cee3be": {
     "text": "Lily blinked.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-95-b2033df0b6248e4c": {
+  "v2-secret-forest-adventure-c8-zh-block-96-b2033df0b6248e4c": {
     "text": "莉莉眨眼。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-96-3f8610477b9fdd96": {
+  "v1-secret-forest-adventure-c8-en-block-97-3f8610477b9fdd96": {
     "text": "“It’s… just a leaf now.”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-96-8f8170e2422bb7c9": {
+  "v2-secret-forest-adventure-c8-zh-block-97-8f8170e2422bb7c9": {
     "text": "「現在只是普通葉子了。」",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-97-0a97e00c0113d73a": {
+  "v1-secret-forest-adventure-c8-en-block-98-0a97e00c0113d73a": {
     "text": "Coco nodded.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-97-560085f34cbb4421": {
+  "v2-secret-forest-adventure-c8-zh-block-98-560085f34cbb4421": {
     "text": "可可點頭。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-98-2fc6a4cbdcd070af": {
+  "v1-secret-forest-adventure-c8-en-block-99-2fc6a4cbdcd070af": {
     "text": "“You don’t need it anymore.”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-98-e156217b11c864a6": {
+  "v2-secret-forest-adventure-c8-zh-block-99-e156217b11c864a6": {
     "text": "「因為你不再需要它。」",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-99-f17e7126628ee5a4": {
+  "v1-secret-forest-adventure-c8-en-block-100-f17e7126628ee5a4": {
     "text": "Lily understood.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-99-c46fe8055212240b": {
+  "v2-secret-forest-adventure-c8-zh-block-100-c46fe8055212240b": {
     "text": "莉莉明白了。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-100-30ae7e55798451ca": {
+  "v1-secret-forest-adventure-c8-en-block-101-30ae7e55798451ca": {
     "text": "She had something stronger now.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-100-915aee6e89aa6598": {
-    "text": "她已經擁有更重要的東西。",
+  "v2-secret-forest-adventure-c8-zh-block-101-b327377acc0f064e": {
+    "text": "現在，她擁有更強大的力量。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-101-1a7c2f3bd870db38": {
+  "v1-secret-forest-adventure-c8-en-block-102-1a7c2f3bd870db38": {
     "text": "Courage.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-101-76085b8e94abb36c": {
+  "v2-secret-forest-adventure-c8-zh-block-102-76085b8e94abb36c": {
     "text": "勇氣。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-102-b3c6a2b02cab2e89": {
+  "v1-secret-forest-adventure-c8-en-block-103-b3c6a2b02cab2e89": {
     "text": "Kindness.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-102-b9804d39c8d48ae8": {
+  "v2-secret-forest-adventure-c8-zh-block-103-b9804d39c8d48ae8": {
     "text": "善良。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-103-c511ccb02cd569fe": {
+  "v1-secret-forest-adventure-c8-en-block-104-c511ccb02cd569fe": {
     "text": "And a brave heart.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-103-85d8eb2a6bd01bce": {
+  "v2-secret-forest-adventure-c8-zh-block-104-85d8eb2a6bd01bce": {
     "text": "還有一顆勇敢的心。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-104-e4b5c80854a5c522": {
+  "v1-secret-forest-adventure-c8-en-block-105-e4b5c80854a5c522": {
     "text": "Prince Pebble gave one last jump.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-104-f39034c523211447": {
+  "v2-secret-forest-adventure-c8-zh-block-105-f39034c523211447": {
     "text": "卵石王子最後跳了一下。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-105-074955c4579d5fc1": {
+  "v1-secret-forest-adventure-c8-en-block-106-074955c4579d5fc1": {
     "text": "“Ribbit!”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-105-604ef3e213139ca5": {
+  "v2-secret-forest-adventure-c8-zh-block-106-604ef3e213139ca5": {
     "text": "「呱！」",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-106-c2e28daabfc303ed": {
+  "v1-secret-forest-adventure-c8-en-block-107-c2e28daabfc303ed": {
     "text": "Coco waved.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-106-53e73bd61bf9a48f": {
+  "v2-secret-forest-adventure-c8-zh-block-107-53e73bd61bf9a48f": {
     "text": "可可揮手。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-107-9c659ac8798289d7": {
+  "v1-secret-forest-adventure-c8-en-block-108-9c659ac8798289d7": {
     "text": "“Goodbye, Lily!”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-107-6e6e4597802a9385": {
+  "v2-secret-forest-adventure-c8-zh-block-108-6e6e4597802a9385": {
     "text": "「再見，莉莉！」",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-108-14427966ab8c0c26": {
+  "v1-secret-forest-adventure-c8-en-block-109-14427966ab8c0c26": {
     "text": "Lily waved back.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-108-6e0288383cefa6b5": {
+  "v2-secret-forest-adventure-c8-zh-block-109-6e0288383cefa6b5": {
     "text": "莉莉也揮手。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-109-7850f818e8d8e381": {
+  "v1-secret-forest-adventure-c8-en-block-110-7850f818e8d8e381": {
     "text": "“Goodbye!”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-109-a4712d708e042398": {
+  "v2-secret-forest-adventure-c8-zh-block-110-a4712d708e042398": {
     "text": "「再見！」",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-110-1855b2233e26b4bb": {
+  "v1-secret-forest-adventure-c8-en-block-111-1855b2233e26b4bb": {
     "text": "She turned and walked out of the forest.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-110-c393b34f243965bb": {
+  "v2-secret-forest-adventure-c8-zh-block-111-c393b34f243965bb": {
     "text": "她轉身走出森林。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-111-ed4bbe61dfcea51d": {
+  "v1-secret-forest-adventure-c8-en-block-112-ed4bbe61dfcea51d": {
     "text": "Step by step.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-111-5c03e1a8a0299c52": {
+  "v2-secret-forest-adventure-c8-zh-block-112-5c03e1a8a0299c52": {
     "text": "一步一步。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-112-47bf7884c18d6e5c": {
+  "v1-secret-forest-adventure-c8-en-block-113-47bf7884c18d6e5c": {
     "text": "The trees became fewer.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-112-65ddf5ea6054ec44": {
+  "v2-secret-forest-adventure-c8-zh-block-113-65ddf5ea6054ec44": {
     "text": "樹越來越少。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-113-9854bc85f629ea18": {
+  "v1-secret-forest-adventure-c8-en-block-114-9854bc85f629ea18": {
     "text": "The sunlight grew brighter.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-113-1601845facb332f6": {
+  "v2-secret-forest-adventure-c8-zh-block-114-1601845facb332f6": {
     "text": "陽光越來越亮。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-114-cdd6bc9bf40107ee": {
+  "v1-secret-forest-adventure-c8-en-block-115-cdd6bc9bf40107ee": {
     "text": "Soon—",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-114-785bcba3eac02df3": {
+  "v2-secret-forest-adventure-c8-zh-block-115-785bcba3eac02df3": {
     "text": "很快——",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-115-044a054be99e83be": {
+  "v1-secret-forest-adventure-c8-en-block-116-044a054be99e83be": {
     "text": "She was back near her house.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-115-f38c222e8b387b30": {
+  "v2-secret-forest-adventure-c8-zh-block-116-f38c222e8b387b30": {
     "text": "她回到家附近。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-116-6e85c45c73928b55": {
+  "v1-secret-forest-adventure-c8-en-block-117-6e85c45c73928b55": {
     "text": "It felt like a dream.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-116-d9459bb63e95c2e2": {
+  "v2-secret-forest-adventure-c8-zh-block-117-d9459bb63e95c2e2": {
     "text": "一切像一場夢。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-117-83d013658d936f70": {
+  "v1-secret-forest-adventure-c8-en-block-118-83d013658d936f70": {
     "text": "But in her hand,",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-117-51225344e23e7dc8": {
+  "v2-secret-forest-adventure-c8-zh-block-118-51225344e23e7dc8": {
     "text": "但她的手裡，",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-118-634d7a37db10f33c": {
+  "v1-secret-forest-adventure-c8-en-block-119-634d7a37db10f33c": {
     "text": "she still held the leaf.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-118-df8152e27d2e9fee": {
+  "v2-secret-forest-adventure-c8-zh-block-119-df8152e27d2e9fee": {
     "text": "還握著那片葉子。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-119-98b0f90a593f7dad": {
+  "v1-secret-forest-adventure-c8-en-block-120-98b0f90a593f7dad": {
     "text": "Lily smiled.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-119-b252f2d94a4fcee9": {
+  "v2-secret-forest-adventure-c8-zh-block-120-b252f2d94a4fcee9": {
     "text": "莉莉微笑。",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-120-1ee31849f899e47c": {
+  "v1-secret-forest-adventure-c8-en-block-121-1ee31849f899e47c": {
     "text": "“I will come back someday.”",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-120-b6b1574cd71cb28d": {
+  "v2-secret-forest-adventure-c8-zh-block-121-b6b1574cd71cb28d": {
     "text": "「我一定會再回來。」",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-121-23736a09a54047c4": {
+  "v1-secret-forest-adventure-c8-en-block-122-23736a09a54047c4": {
     "text": "Behind her—",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-121-c35d411ac21a4e60": {
+  "v2-secret-forest-adventure-c8-zh-block-122-c35d411ac21a4e60": {
     "text": "她的身後——",
     "lang": "zh-TW"
   },
-  "v1-secret-forest-adventure-c8-en-block-122-04aa6f5b6eb18fe3": {
+  "v1-secret-forest-adventure-c8-en-block-123-04aa6f5b6eb18fe3": {
     "text": "the forest whispered softly.",
     "lang": "en-US"
   },
-  "v2-secret-forest-adventure-c8-zh-block-122-104f94aea582ef2b": {
+  "v2-secret-forest-adventure-c8-zh-block-123-104f94aea582ef2b": {
     "text": "森林輕聲低語。",
     "lang": "zh-TW"
   },
@@ -7738,8 +7842,8 @@ export const NOVEL_AUDIO_CATALOG = Object.freeze({
     "text": "Before Ethan could answer—",
     "lang": "en-US"
   },
-  "v2-clock-tower-magic-school-c1-zh-block-21-b5a96740bb213cf6": {
-    "text": "就在這時——",
+  "v2-clock-tower-magic-school-c1-zh-block-21-fe41a8fa46684406": {
+    "text": "伊森還來不及回答——",
     "lang": "zh-TW"
   },
   "v1-clock-tower-magic-school-c1-en-block-22-89ed2147c57f3835": {
@@ -7834,8 +7938,8 @@ export const NOVEL_AUDIO_CATALOG = Object.freeze({
     "text": "Ethan blinked.",
     "lang": "en-US"
   },
-  "v2-clock-tower-magic-school-c1-zh-block-33-2285683ea3b51a6a": {
-    "text": "伊森愣住。",
+  "v2-clock-tower-magic-school-c1-zh-block-33-d65d9c561231bf9c": {
+    "text": "伊森眨了眨眼。",
     "lang": "zh-TW"
   },
   "v1-clock-tower-magic-school-c1-en-block-34-2fd423a5e0a24891": {
@@ -7858,8 +7962,8 @@ export const NOVEL_AUDIO_CATALOG = Object.freeze({
     "text": "The envelope looked old.",
     "lang": "en-US"
   },
-  "v2-clock-tower-magic-school-c1-zh-block-36-4f3f5a5f0bc537b0": {
-    "text": "那封信看起來很古老。",
+  "v2-clock-tower-magic-school-c1-zh-block-36-364e6463ac96bb89": {
+    "text": "那個信封看起來很古老。",
     "lang": "zh-TW"
   },
   "v1-clock-tower-magic-school-c1-en-block-37-78d1bc14be11155e": {
@@ -8042,8 +8146,8 @@ export const NOVEL_AUDIO_CATALOG = Object.freeze({
     "text": "Ethan almost dropped the envelope.",
     "lang": "en-US"
   },
-  "v2-clock-tower-magic-school-c1-zh-block-59-b6a0a99e423e4436": {
-    "text": "伊森差點把信封丟掉。",
+  "v2-clock-tower-magic-school-c1-zh-block-59-c4d4529f7b449984": {
+    "text": "伊森差點讓信封掉到地上。",
     "lang": "zh-TW"
   },
   "v1-clock-tower-magic-school-c1-en-block-60-8ddcd4f97aef61f3": {
@@ -8946,8 +9050,8 @@ export const NOVEL_AUDIO_CATALOG = Object.freeze({
     "text": "Ethan blinked.",
     "lang": "en-US"
   },
-  "v2-clock-tower-magic-school-c2-zh-block-51-3b90136881e49c4f": {
-    "text": "伊森眨眼。",
+  "v2-clock-tower-magic-school-c2-zh-block-51-d65d9c561231bf9c": {
+    "text": "伊森眨了眨眼。",
     "lang": "zh-TW"
   },
   "v1-clock-tower-magic-school-c2-en-block-52-9a47e8b5a674200d": {
@@ -10050,16 +10154,16 @@ export const NOVEL_AUDIO_CATALOG = Object.freeze({
     "text": "Some were laughing loudly.",
     "lang": "en-US"
   },
-  "v2-clock-tower-magic-school-c3-zh-block-7-96e55c3f58aa2e75": {
-    "text": "有人大聲聊天。",
+  "v2-clock-tower-magic-school-c3-zh-block-7-1043b78ba8fa6a32": {
+    "text": "有些人正在大聲笑。",
     "lang": "zh-TW"
   },
   "v1-clock-tower-magic-school-c3-en-block-8-de5dc7957afc5ca0": {
     "text": "Some practiced tiny spells with glowing sparks.",
     "lang": "en-US"
   },
-  "v2-clock-tower-magic-school-c3-zh-block-8-57f1f921df99fb01": {
-    "text": "有人練習小魔法。",
+  "v2-clock-tower-magic-school-c3-zh-block-8-dfa10f712d27ffb8": {
+    "text": "有些人練習小魔法，迸出發光的火花。",
     "lang": "zh-TW"
   },
   "v1-clock-tower-magic-school-c3-en-block-9-9902217e07e236f4": {
@@ -10314,8 +10418,8 @@ export const NOVEL_AUDIO_CATALOG = Object.freeze({
     "text": "The boy’s eyes narrowed slightly.",
     "lang": "en-US"
   },
-  "v2-clock-tower-magic-school-c3-zh-block-40-6de6e997af3b3151": {
-    "text": "男孩眼神微微變化。",
+  "v2-clock-tower-magic-school-c3-zh-block-40-6d1a97f356985f03": {
+    "text": "男孩微微瞇起眼睛。",
     "lang": "zh-TW"
   },
   "v1-clock-tower-magic-school-c3-en-block-41-8f7e4d165c1ada12": {
@@ -10562,8 +10666,8 @@ export const NOVEL_AUDIO_CATALOG = Object.freeze({
     "text": "“The tea is alive?!”",
     "lang": "en-US"
   },
-  "v2-clock-tower-magic-school-c3-zh-block-71-739274444cf7a7f3": {
-    "text": "「茶壺是活的？！」",
+  "v2-clock-tower-magic-school-c3-zh-block-71-155637a78b753f49": {
+    "text": "「茶是活的？！」",
     "lang": "zh-TW"
   },
   "v1-clock-tower-magic-school-c3-en-block-72-367142891e766b9d": {
@@ -10618,8 +10722,8 @@ export const NOVEL_AUDIO_CATALOG = Object.freeze({
     "text": "Ethan blinked.",
     "lang": "en-US"
   },
-  "v2-clock-tower-magic-school-c3-zh-block-78-2285683ea3b51a6a": {
-    "text": "伊森愣住。",
+  "v2-clock-tower-magic-school-c3-zh-block-78-d65d9c561231bf9c": {
+    "text": "伊森眨了眨眼。",
     "lang": "zh-TW"
   },
   "v1-clock-tower-magic-school-c3-en-block-79-2a95feb5574c038c": {
@@ -13106,8 +13210,8 @@ export const NOVEL_AUDIO_CATALOG = Object.freeze({
     "text": "“That is the least comforting thing I’ve ever heard.”",
     "lang": "en-US"
   },
-  "v2-clock-tower-magic-school-c5-zh-block-74-0b7872106cee47e4": {
-    "text": "「這是我今天聽過最不安心的話。」",
+  "v2-clock-tower-magic-school-c5-zh-block-74-b4396f658e4dea07": {
+    "text": "「這是我聽過最讓人不安心的話。」",
     "lang": "zh-TW"
   },
   "v1-clock-tower-magic-school-c5-en-block-75-eb2ac4b347b4a6f7": {
@@ -14330,8 +14434,8 @@ export const NOVEL_AUDIO_CATALOG = Object.freeze({
     "text": "Ethan blinked.",
     "lang": "en-US"
   },
-  "v2-clock-tower-magic-school-c6-zh-block-67-2285683ea3b51a6a": {
-    "text": "伊森愣住。",
+  "v2-clock-tower-magic-school-c6-zh-block-67-d65d9c561231bf9c": {
+    "text": "伊森眨了眨眼。",
     "lang": "zh-TW"
   },
   "v1-clock-tower-magic-school-c6-en-block-68-c2e1bb7b3fa1fbe7": {
@@ -14890,16 +14994,16 @@ export const NOVEL_AUDIO_CATALOG = Object.freeze({
     "text": "The Headmaster became still.",
     "lang": "en-US"
   },
-  "v2-clock-tower-magic-school-c6-zh-block-137-80750f173b61dc2c": {
-    "text": "校長瞬間沉默。",
+  "v2-clock-tower-magic-school-c6-zh-block-137-fb147d0aab63fe07": {
+    "text": "校長一動也不動。",
     "lang": "zh-TW"
   },
   "v1-clock-tower-magic-school-c6-en-block-138-830509790796258d": {
     "text": "Very still.",
     "lang": "en-US"
   },
-  "v2-clock-tower-magic-school-c6-zh-block-138-6a15b32478927e1a": {
-    "text": "非常安靜。",
+  "v2-clock-tower-magic-school-c6-zh-block-138-2ae7c9cec4faf354": {
+    "text": "完全不動。",
     "lang": "zh-TW"
   },
   "v1-clock-tower-magic-school-c6-en-block-139-8f1c42e24668545d": {
@@ -15426,8 +15530,8 @@ export const NOVEL_AUDIO_CATALOG = Object.freeze({
     "text": "And above everything—",
     "lang": "en-US"
   },
-  "v2-clock-tower-magic-school-c7-zh-block-33-a9b30f81ed468e96": {
-    "text": "而最顯眼的是——",
+  "v2-clock-tower-magic-school-c7-zh-block-33-165e2f2830e57bf6": {
+    "text": "而在所有東西上方——",
     "lang": "zh-TW"
   },
   "v1-clock-tower-magic-school-c7-en-block-34-4189397886ffada7": {
@@ -16042,8 +16146,8 @@ export const NOVEL_AUDIO_CATALOG = Object.freeze({
     "text": "“No student has entered it for years.”",
     "lang": "en-US"
   },
-  "v2-clock-tower-magic-school-c7-zh-block-110-6998ed26531f976c": {
-    "text": "「很多年沒人進去過了。」",
+  "v2-clock-tower-magic-school-c7-zh-block-110-99f76a80cc4546d7": {
+    "text": "「很多年來，都沒有學生進去過。」",
     "lang": "zh-TW"
   },
   "v1-clock-tower-magic-school-c7-en-block-111-c2f006c3cff820ff": {
@@ -16578,8 +16682,8 @@ export const NOVEL_AUDIO_CATALOG = Object.freeze({
     "text": "Before anyone could move—",
     "lang": "en-US"
   },
-  "v2-clock-tower-magic-school-c8-zh-block-16-b60072741366296f": {
-    "text": "但就在這時——",
+  "v2-clock-tower-magic-school-c8-zh-block-16-cd3fb37d064b6a88": {
+    "text": "還沒有人來得及動身——",
     "lang": "zh-TW"
   },
   "v1-clock-tower-magic-school-c8-en-block-17-bf7103b5b114ba44": {
@@ -17106,8 +17210,8 @@ export const NOVEL_AUDIO_CATALOG = Object.freeze({
     "text": "Ethan blinked.",
     "lang": "en-US"
   },
-  "v2-clock-tower-magic-school-c8-zh-block-82-2285683ea3b51a6a": {
-    "text": "伊森愣住。",
+  "v2-clock-tower-magic-school-c8-zh-block-82-d65d9c561231bf9c": {
+    "text": "伊森眨了眨眼。",
     "lang": "zh-TW"
   },
   "v1-clock-tower-magic-school-c8-en-block-83-ec3bd63b167d8584": {
@@ -17490,8 +17594,8 @@ export const NOVEL_AUDIO_CATALOG = Object.freeze({
     "text": "“But all their bloodlines disappeared during the Shadow War…”",
     "lang": "en-US"
   },
-  "v2-clock-tower-magic-school-c8-zh-block-130-597a5ab2646cee5f": {
-    "text": "「但那些血脈在暗影戰爭後早就消失了……」",
+  "v2-clock-tower-magic-school-c8-zh-block-130-d1dee73036f94098": {
+    "text": "「但他們所有的血脈都在暗影戰爭期間消失了……」",
     "lang": "zh-TW"
   },
   "v1-clock-tower-magic-school-c8-en-block-131-1fa58551e9ad194d": {
@@ -17514,8 +17618,8 @@ export const NOVEL_AUDIO_CATALOG = Object.freeze({
     "text": "Ethan blinked.",
     "lang": "en-US"
   },
-  "v2-clock-tower-magic-school-c8-zh-block-133-3b90136881e49c4f": {
-    "text": "伊森眨眼。",
+  "v2-clock-tower-magic-school-c8-zh-block-133-d65d9c561231bf9c": {
+    "text": "伊森眨了眨眼。",
     "lang": "zh-TW"
   },
   "v1-clock-tower-magic-school-c8-en-block-134-37b2072cdc390f4d": {
@@ -17690,8 +17794,8 @@ export const NOVEL_AUDIO_CATALOG = Object.freeze({
     "text": "Ethan blinked.",
     "lang": "en-US"
   },
-  "v2-clock-tower-magic-school-c9-zh-block-8-2285683ea3b51a6a": {
-    "text": "伊森愣住。",
+  "v2-clock-tower-magic-school-c9-zh-block-8-d65d9c561231bf9c": {
+    "text": "伊森眨了眨眼。",
     "lang": "zh-TW"
   },
   "v1-clock-tower-magic-school-c9-en-block-9-0e7068d504a287ff": {
@@ -18290,8 +18394,8 @@ export const NOVEL_AUDIO_CATALOG = Object.freeze({
     "text": "The staircase spiraled deep beneath the school.",
     "lang": "en-US"
   },
-  "v2-clock-tower-magic-school-c9-zh-block-83-08b38d721bbe0205": {
-    "text": "樓梯一路往學校地下深處延伸。",
+  "v2-clock-tower-magic-school-c9-zh-block-83-9493c3a991ae7814": {
+    "text": "樓梯盤旋而下，一直延伸到學校的地下深處。",
     "lang": "zh-TW"
   },
   "v1-clock-tower-magic-school-c9-en-block-84-f810dd0238e5cd82": {
@@ -18658,8 +18762,8 @@ export const NOVEL_AUDIO_CATALOG = Object.freeze({
     "text": "Ethan blinked.",
     "lang": "en-US"
   },
-  "v2-clock-tower-magic-school-c9-zh-block-129-3b90136881e49c4f": {
-    "text": "伊森眨眼。",
+  "v2-clock-tower-magic-school-c9-zh-block-129-d65d9c561231bf9c": {
+    "text": "伊森眨了眨眼。",
     "lang": "zh-TW"
   },
   "v1-clock-tower-magic-school-c9-en-block-130-3426be83a79da3f2": {
@@ -19130,16 +19234,16 @@ export const NOVEL_AUDIO_CATALOG = Object.freeze({
     "text": "Even the clocks seemed slower for one second.",
     "lang": "en-US"
   },
-  "v2-clock-tower-magic-school-c10-zh-block-23-4e637620f0aee971": {
-    "text": "連時鐘聲都像停了一秒。",
+  "v2-clock-tower-magic-school-c10-zh-block-23-c892ceff8baf3af5": {
+    "text": "有那麼一秒，連時鐘似乎都變慢了。",
     "lang": "zh-TW"
   },
   "v1-clock-tower-magic-school-c10-en-block-24-d67f68b9bf254d13": {
     "text": "Ethan blinked.",
     "lang": "en-US"
   },
-  "v2-clock-tower-magic-school-c10-zh-block-24-3b90136881e49c4f": {
-    "text": "伊森眨眼。",
+  "v2-clock-tower-magic-school-c10-zh-block-24-d65d9c561231bf9c": {
+    "text": "伊森眨了眨眼。",
     "lang": "zh-TW"
   },
   "v1-clock-tower-magic-school-c10-en-block-25-86c437f833da6c6a": {
@@ -19634,8 +19738,8 @@ export const NOVEL_AUDIO_CATALOG = Object.freeze({
     "text": "The giant silver tree glowed brighter than ever before.",
     "lang": "en-US"
   },
-  "v2-clock-tower-magic-school-c10-zh-block-86-44eba7b9fe9908e1": {
-    "text": "巨大銀樹亮到極限。",
+  "v2-clock-tower-magic-school-c10-zh-block-86-e979e9c126d614ad": {
+    "text": "巨大銀樹發出比以往更明亮的光。",
     "lang": "zh-TW"
   },
   "v1-clock-tower-magic-school-c10-en-block-87-7d13de9b3b708d56": {
@@ -20002,8 +20106,8 @@ export const NOVEL_AUDIO_CATALOG = Object.freeze({
     "text": "The library returned.",
     "lang": "en-US"
   },
-  "v2-clock-tower-magic-school-c10-zh-block-132-8eda6cca02fa5413": {
-    "text": "圖書館恢復正常。",
+  "v2-clock-tower-magic-school-c10-zh-block-132-d69ac8c58d6687a7": {
+    "text": "圖書館的景象重新出現在眼前。",
     "lang": "zh-TW"
   },
   "v1-clock-tower-magic-school-c10-en-block-133-f6f4f5614d5a552d": {
@@ -20122,8 +20226,8 @@ export const NOVEL_AUDIO_CATALOG = Object.freeze({
     "text": "Seraphine hesitated.",
     "lang": "en-US"
   },
-  "v2-clock-tower-magic-school-c10-zh-block-147-22a813aaba3fb485": {
-    "text": "瑟拉芬沉默。",
+  "v2-clock-tower-magic-school-c10-zh-block-147-79eca2ec745c3344": {
+    "text": "瑟拉芬猶豫了。",
     "lang": "zh-TW"
   },
   "v1-clock-tower-magic-school-c10-en-block-148-8de8a656e2c29220": {
@@ -20938,8 +21042,8 @@ export const NOVEL_AUDIO_CATALOG = Object.freeze({
     "text": "The silver watch was glowing brighter than ever before.",
     "lang": "en-US"
   },
-  "v2-clock-tower-magic-school-c11-zh-block-91-b376285dade6526d": {
-    "text": "銀色懷錶亮到極限。",
+  "v2-clock-tower-magic-school-c11-zh-block-91-0fe804c95933f588": {
+    "text": "銀色懷錶發出比以往更明亮的光。",
     "lang": "zh-TW"
   },
   "v1-clock-tower-magic-school-c11-en-block-92-94ba71c8e9736f66": {
@@ -22378,8 +22482,8 @@ export const NOVEL_AUDIO_CATALOG = Object.freeze({
     "text": "The hidden staircase door above exploded open.",
     "lang": "en-US"
   },
-  "v2-clock-tower-magic-school-c12-zh-block-112-c1dc97135b2852e7": {
-    "text": "上方隱藏樓梯大門爆炸。",
+  "v2-clock-tower-magic-school-c12-zh-block-112-28cdb7105ec8be49": {
+    "text": "上方通往隱藏樓梯的門猛然爆開。",
     "lang": "zh-TW"
   },
   "v1-clock-tower-magic-school-c12-en-block-113-8edc5f5a6a81b3e2": {
@@ -22818,24 +22922,24 @@ export const NOVEL_AUDIO_CATALOG = Object.freeze({
     "text": "A terrible sound.",
     "lang": "en-US"
   },
-  "v2-clock-tower-magic-school-c13-zh-block-16-0110deab1fe8e565": {
-    "text": "那笑聲古老。",
+  "v2-clock-tower-magic-school-c13-zh-block-16-aa630d0778877e13": {
+    "text": "那是可怕的聲音。",
     "lang": "zh-TW"
   },
   "v1-clock-tower-magic-school-c13-en-block-17-b47c80c12cde794d": {
     "text": "Ancient.",
     "lang": "en-US"
   },
-  "v2-clock-tower-magic-school-c13-zh-block-17-bb307052ca79bee3": {
-    "text": "飢餓。",
+  "v2-clock-tower-magic-school-c13-zh-block-17-089b1e3a1250db3f": {
+    "text": "古老。",
     "lang": "zh-TW"
   },
   "v1-clock-tower-magic-school-c13-en-block-18-5c0c2bc92329d890": {
     "text": "Hungry.",
     "lang": "en-US"
   },
-  "v2-clock-tower-magic-school-c13-zh-block-18-f6a3967d1423dd5d": {
-    "text": "令人發寒。",
+  "v2-clock-tower-magic-school-c13-zh-block-18-bb307052ca79bee3": {
+    "text": "飢餓。",
     "lang": "zh-TW"
   },
   "v1-clock-tower-magic-school-c13-en-block-19-e5f9c6934ad7c74d": {
@@ -23546,8 +23650,8 @@ export const NOVEL_AUDIO_CATALOG = Object.freeze({
     "text": "Daniel looked upward toward the unseen tower above.",
     "lang": "en-US"
   },
-  "v2-clock-tower-magic-school-c13-zh-block-107-ad52e283ac5b909e": {
-    "text": "丹尼爾抬頭看向不存在的高塔。",
+  "v2-clock-tower-magic-school-c13-zh-block-107-84749c05e5cf7ae9": {
+    "text": "丹尼爾抬頭望向上方那座看不見的高塔。",
     "lang": "zh-TW"
   },
   "v1-clock-tower-magic-school-c13-en-block-108-c8dbee988cc93265": {
@@ -23842,16 +23946,16 @@ export const NOVEL_AUDIO_CATALOG = Object.freeze({
     "text": "Because it felt real.",
     "lang": "en-US"
   },
-  "v2-clock-tower-magic-school-c13-zh-block-144-03d2b60c7a981ec5": {
-    "text": "因為太真實了。",
+  "v2-clock-tower-magic-school-c13-zh-block-144-3a06b7c0b566fd40": {
+    "text": "因為那感覺很真實。",
     "lang": "zh-TW"
   },
   "v1-clock-tower-magic-school-c13-en-block-145-b9872dfd5737b9fa": {
     "text": "Too real.",
     "lang": "en-US"
   },
-  "v2-clock-tower-magic-school-c13-zh-block-145-20954239e82aacee": {
-    "text": "接著丹尼爾表情再次變嚴肅。",
+  "v2-clock-tower-magic-school-c13-zh-block-145-37727eb1faae953f": {
+    "text": "太真實了。",
     "lang": "zh-TW"
   },
   "v1-clock-tower-magic-school-c13-en-block-146-9b08c3303e9eca6c": {
@@ -24122,8 +24226,8 @@ export const NOVEL_AUDIO_CATALOG = Object.freeze({
     "text": "“I never stopped trying to come home.”",
     "lang": "en-US"
   },
-  "v2-clock-tower-magic-school-c13-zh-block-179-7445d940034d6393": {
-    "text": "「我從來沒有停止想回家。」",
+  "v2-clock-tower-magic-school-c13-zh-block-179-94ce9dd79f4be3f2": {
+    "text": "「我從來沒有停止努力回家。」",
     "lang": "zh-TW"
   },
   "v1-clock-tower-magic-school-c13-en-block-180-099433082e2183e3": {
@@ -24562,8 +24666,8 @@ export const NOVEL_AUDIO_CATALOG = Object.freeze({
     "text": "Adrian looked at her sharply.",
     "lang": "en-US"
   },
-  "v2-clock-tower-magic-school-c14-zh-block-47-783cbae0384fce38": {
-    "text": "亞德里安立刻追問。",
+  "v2-clock-tower-magic-school-c14-zh-block-47-024bef4a1803e18c": {
+    "text": "亞德里安猛然看向她。",
     "lang": "zh-TW"
   },
   "v1-clock-tower-magic-school-c14-en-block-48-6deee12bf1828056": {
@@ -25058,64 +25162,64 @@ export const NOVEL_AUDIO_CATALOG = Object.freeze({
     "text": "Closer.",
     "lang": "en-US"
   },
-  "v2-clock-tower-magic-school-c14-zh-block-109-4b5dc208961b60db": {
-    "text": "越來越近。",
+  "v2-clock-tower-magic-school-c14-zh-block-109-f6b194d7ffe30704": {
+    "text": "更近了。",
     "lang": "zh-TW"
   },
   "v1-clock-tower-magic-school-c14-en-block-110-6bde392af93a7912": {
     "text": "Closer.",
     "lang": "en-US"
   },
-  "v2-clock-tower-magic-school-c14-zh-block-110-7ee67600c8c39371": {
-    "text": "伊森閉緊雙眼。",
+  "v2-clock-tower-magic-school-c14-zh-block-110-f6b194d7ffe30704": {
+    "text": "更近了。",
     "lang": "zh-TW"
   },
   "v1-clock-tower-magic-school-c14-en-block-111-fb03fbb018e44fb7": {
     "text": "Ethan closed his eyes tightly.",
     "lang": "en-US"
   },
-  "v2-clock-tower-magic-school-c14-zh-block-111-c8347d448f97a318": {
-    "text": "他想起奶奶。",
+  "v2-clock-tower-magic-school-c14-zh-block-111-706eba4da8788e95": {
+    "text": "伊森緊緊閉上雙眼。",
     "lang": "zh-TW"
   },
   "v1-clock-tower-magic-school-c14-en-block-112-c010d55e1cb19341": {
     "text": "He remembered his grandmother.",
     "lang": "en-US"
   },
-  "v2-clock-tower-magic-school-c14-zh-block-112-0242db0c653fc1d0": {
-    "text": "想起父親。",
+  "v2-clock-tower-magic-school-c14-zh-block-112-c8347d448f97a318": {
+    "text": "他想起奶奶。",
     "lang": "zh-TW"
   },
   "v1-clock-tower-magic-school-c14-en-block-113-40ab726392d5d099": {
     "text": "His father.",
     "lang": "en-US"
   },
-  "v2-clock-tower-magic-school-c14-zh-block-113-8dc00f07bc764dc8": {
-    "text": "想起列車。",
+  "v2-clock-tower-magic-school-c14-zh-block-113-61c2cfcb3d5409e3": {
+    "text": "他的父親。",
     "lang": "zh-TW"
   },
   "v1-clock-tower-magic-school-c14-en-block-114-24397df677adfa0f": {
     "text": "The train.",
     "lang": "en-US"
   },
-  "v2-clock-tower-magic-school-c14-zh-block-114-c619fec4e87990d4": {
-    "text": "想起第一天來學校。",
+  "v2-clock-tower-magic-school-c14-zh-block-114-e9e5f8f7d1d99056": {
+    "text": "那班列車。",
     "lang": "zh-TW"
   },
   "v1-clock-tower-magic-school-c14-en-block-115-b911b7ee35c6abbc": {
     "text": "His first day at the school.",
     "lang": "en-US"
   },
-  "v2-clock-tower-magic-school-c14-zh-block-115-a893bccf0c7a6fbb": {
-    "text": "然後——",
+  "v2-clock-tower-magic-school-c14-zh-block-115-5a13e39922890b82": {
+    "text": "他在學校的第一天。",
     "lang": "zh-TW"
   },
   "v1-clock-tower-magic-school-c14-en-block-116-dda37c734c361181": {
     "text": "Then he remembered something else.",
     "lang": "en-US"
   },
-  "v2-clock-tower-magic-school-c14-zh-block-116-e3f2ba2e2d908350": {
-    "text": "他又想起另一件事。",
+  "v2-clock-tower-magic-school-c14-zh-block-116-117da0c3ca1a814b": {
+    "text": "接著，他又想起另一件事。",
     "lang": "zh-TW"
   },
   "v1-clock-tower-magic-school-c14-en-block-117-b84f7b6cd7d203b2": {
@@ -25314,16 +25418,16 @@ export const NOVEL_AUDIO_CATALOG = Object.freeze({
     "text": "That meant this mattered.",
     "lang": "en-US"
   },
-  "v2-clock-tower-magic-school-c14-zh-block-141-ec8a417b23dd2900": {
-    "text": "這代表——",
+  "v2-clock-tower-magic-school-c14-zh-block-141-53320fd3fcd4dd74": {
+    "text": "那表示這件事很重要。",
     "lang": "zh-TW"
   },
   "v1-clock-tower-magic-school-c14-en-block-142-044f7c650f933c42": {
     "text": "A lot.",
     "lang": "en-US"
   },
-  "v2-clock-tower-magic-school-c14-zh-block-142-58d3aeb803b324dd": {
-    "text": "那真的很重要。",
+  "v2-clock-tower-magic-school-c14-zh-block-142-c34d2779ca7e1302": {
+    "text": "非常重要。",
     "lang": "zh-TW"
   },
   "v1-clock-tower-magic-school-c14-en-block-143-3e972cf3ddfd21c1": {
@@ -25506,8 +25610,8 @@ export const NOVEL_AUDIO_CATALOG = Object.freeze({
     "text": "Ethan swallowed hard.",
     "lang": "en-US"
   },
-  "v2-clock-tower-magic-school-c14-zh-block-165-d0164111065abf73": {
-    "text": "伊森深吸一口氣。",
+  "v2-clock-tower-magic-school-c14-zh-block-165-d4b2ba4b9b5f4b6f": {
+    "text": "伊森用力嚥了嚥口水。",
     "lang": "zh-TW"
   },
   "v1-clock-tower-magic-school-c14-en-block-166-e62153f5361f7f03": {
@@ -25578,8 +25682,8 @@ export const NOVEL_AUDIO_CATALOG = Object.freeze({
     "text": "The giant bells above the tower cracked apart.",
     "lang": "en-US"
   },
-  "v2-clock-tower-magic-school-c15-zh-block-4-5ab88fda7cd89dda": {
-    "text": "高塔上的巨大鐘聲接連崩裂。",
+  "v2-clock-tower-magic-school-c15-zh-block-4-82bd5cc1674b3503": {
+    "text": "高塔上方的巨大鐘接連裂開。",
     "lang": "zh-TW"
   },
   "v1-clock-tower-magic-school-c15-en-block-5-fc6a32eb7e7618c9": {
@@ -25666,8 +25770,8 @@ export const NOVEL_AUDIO_CATALOG = Object.freeze({
     "text": "SILENCE IS NECESSARY.",
     "lang": "en-US"
   },
-  "v2-clock-tower-magic-school-c15-zh-block-15-492a431a85a59ae5": {
-    "text": "「沉默與封印是必要的。」",
+  "v2-clock-tower-magic-school-c15-zh-block-15-a1dfb9bf9d3dff9c": {
+    "text": "「沉默是必要的。」",
     "lang": "zh-TW"
   },
   "v1-clock-tower-magic-school-c15-en-block-16-19648630abe8083f": {
@@ -25882,8 +25986,8 @@ export const NOVEL_AUDIO_CATALOG = Object.freeze({
     "text": "“You will still remain human.”",
     "lang": "en-US"
   },
-  "v2-clock-tower-magic-school-c15-zh-block-42-40ba82722c124d00": {
-    "text": "「你依然會保有人類意志。」",
+  "v2-clock-tower-magic-school-c15-zh-block-42-db8b9e08ae456c52": {
+    "text": "「你依然會是人類。」",
     "lang": "zh-TW"
   },
   "v1-clock-tower-magic-school-c15-en-block-43-e64fd5b486acd6ce": {
@@ -25938,16 +26042,16 @@ export const NOVEL_AUDIO_CATALOG = Object.freeze({
     "text": "Either the tower…",
     "lang": "en-US"
   },
-  "v2-clock-tower-magic-school-c15-zh-block-49-361f7bdd5a82705b": {
-    "text": "不是高塔。",
+  "v2-clock-tower-magic-school-c15-zh-block-49-c6ee00469dad734e": {
+    "text": "要麼是高塔……",
     "lang": "zh-TW"
   },
   "v1-clock-tower-magic-school-c15-en-block-50-9cc280276160468b": {
     "text": "Or him.",
     "lang": "en-US"
   },
-  "v2-clock-tower-magic-school-c15-zh-block-50-aacead677dfc9832": {
-    "text": "就是他。",
+  "v2-clock-tower-magic-school-c15-zh-block-50-88f7763c47d3f8ba": {
+    "text": "要麼是他。",
     "lang": "zh-TW"
   },
   "v1-clock-tower-magic-school-c15-en-block-51-0eb07e6c2c407512": {
@@ -26698,8 +26802,8 @@ export const NOVEL_AUDIO_CATALOG = Object.freeze({
     "text": "Ethan blinked.",
     "lang": "en-US"
   },
-  "v2-clock-tower-magic-school-c15-zh-block-144-3b90136881e49c4f": {
-    "text": "伊森眨眼。",
+  "v2-clock-tower-magic-school-c15-zh-block-144-d65d9c561231bf9c": {
+    "text": "伊森眨了眨眼。",
     "lang": "zh-TW"
   },
   "v1-clock-tower-magic-school-c15-en-block-145-9a6435f57475fc73": {
@@ -27314,8 +27418,8 @@ export const NOVEL_AUDIO_CATALOG = Object.freeze({
     "text": "A silver flame surrounded by a clock circle.",
     "lang": "en-US"
   },
-  "v2-clock-tower-magic-school-c16-zh-block-54-7289702df10f7532": {
-    "text": "銀色火焰包圍時鐘圓環。",
+  "v2-clock-tower-magic-school-c16-zh-block-54-776409d11f8f4e4e": {
+    "text": "一道銀色火焰，周圍環繞著時鐘圓環。",
     "lang": "zh-TW"
   },
   "v1-clock-tower-magic-school-c16-en-block-55-515f97102b0f5241": {

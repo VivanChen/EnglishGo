@@ -16,17 +16,25 @@ describe("fixed novel audio catalog", () => {
     for (const novels of Object.values(NOVELS)) {
       for (const novel of novels) {
         for (const chapter of novel.chapters || []) {
+          const base = { novelId: novel.id, chapterNo: chapter.no };
+          for (const [lang, text] of [['en-US', chapter.title], ['zh-TW', chapter.zhTitle]]) {
+            expect(NOVEL_AUDIO_CATALOG[makeNovelAudioAssetId({ ...base, kind: 'title', lang, text })]).toEqual({ lang, text });
+          }
           expected += 2;
           for (const block of novelBlockPairs(chapter.en, chapter.zh)) {
-            if (block.en) expected += 1;
-            if (block.zh) expected += 1;
+            for (const [lang, text] of [['en-US', block.en], ['zh-TW', block.zh]]) {
+              const item = makeNovelAudioItem({ ...base, blockIndex: block.i, lang, text });
+              const assetId = new URL(item.audioUrl, 'https://englishgo.test').searchParams.get('novel');
+              expect(NOVEL_AUDIO_CATALOG[assetId]).toEqual({ lang, text });
+              expected += 1;
+            }
           }
         }
       }
     }
 
     expect(Object.keys(NOVEL_AUDIO_CATALOG)).toHaveLength(expected);
-    expect(expected).toBe(6926);
+    expect(expected).toBe(6952);
   });
 
   it("changes the immutable URL whenever narrated text changes", () => {
