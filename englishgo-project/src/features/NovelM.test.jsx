@@ -26,9 +26,32 @@ function jumpLast() {
   const select = screen.getByRole('combobox', { name: '跳到頁面' });
   fireEvent.change(select, { target: { value: select.options[select.options.length - 1].value } }); finishTurn();
 }
-afterEach(() => { vi.restoreAllMocks(); Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1024 }); });
+afterEach(() => { vi.restoreAllMocks(); Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1024 }); Object.defineProperty(window, 'innerHeight', { configurable: true, value: 768 }); });
 
 describe('novel reading continuity', () => {
+  it('uses a contained mobile reader in portrait and landscape, and releases the page on exit', async () => {
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 });
+    const view=mount(); await open();
+    expect(document.documentElement).toHaveClass('novel-mobile-reading');
+    expect(screen.queryByRole('button',{name:'章節列表',exact:true})).not.toBeInTheDocument();
+    Object.defineProperty(window,'innerWidth',{configurable:true,value:844});
+    Object.defineProperty(window,'innerHeight',{configurable:true,value:390});
+    fireEvent(window,new Event('resize'));
+    expect(document.documentElement).toHaveClass('novel-mobile-reading');
+    click('返回章節列表');
+    expect(document.documentElement).not.toHaveClass('novel-mobile-reading');
+    await open(); view.unmount(); expect(document.documentElement).not.toHaveClass('novel-mobile-reading');
+  });
+  it('puts the mobile chapter quiz and completion in the page navigation', async () => {
+    Object.defineProperty(window,'innerWidth',{configurable:true,value:390});
+    const view=mount(); await open(); jumpLast();
+    const actions=screen.getByTestId('novel-page-actions');
+    fireEvent.click(within(actions).getByRole('button',{name:'故事小測驗'}));
+    book.chapters[0].quiz.forEach(question=>click(question.o[question.a])); click('關閉工具面板');
+    fireEvent.click(within(actions).getByRole('button',{name:'完成・下一章'}));
+    expect(view.props.onXp).toHaveBeenCalledExactlyOnceWith(15);
+    expect(screen.getByRole('combobox',{name:'跳到頁面'})).toHaveValue('0');
+  });
   it('keeps a paragraph bookmark after font changes and a remount, and supports removal undo', async () => {
     const view = mount(); await open(); click('下一頁'); finishTurn();
     const paragraph = screen.getAllByTestId('novel-reader-text')[1];

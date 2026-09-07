@@ -2,7 +2,6 @@ import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState }
 import {
   findPageForBlock,
   nextSpreadStart,
-  normalizeMeasuredHeights,
   paginateByHeight,
   previousSpreadStart,
   spreadStartForPage,
@@ -39,12 +38,13 @@ export default function NovelM({lv,onBack,onXp,deps}){
   const readerFont=readingPrefs?.fontFamily==="clear"?'Arial, "Noto Sans", sans-serif':NOVEL_READING_FONT;
   const tone=NOVEL_TONES[readingPrefs?.tone]||NOVEL_TONES.paper;
   const readerColors={"--reader-paper":tone.paper,"--reader-ink":tone.ink,"--reader-muted":tone.muted,"--reader-rule":tone.rule,"--reader-accent":tone.accent,"--reader-active":tone.active};
+  const[viewportHeight,setViewportHeight]=useState(()=>typeof window==="undefined"?768:window.innerHeight||768);
   const[viewportWidth,setViewportWidth]=useState(()=>typeof window==="undefined"?1024:window.innerWidth||1024);
   useEffect(()=>{let active=true;import("../data/novels.js").then(m=>{if(active)setNovelData(m.NOVELS)}).catch(()=>{if(active)setNovelData({elementary:[]})});return()=>{active=false}},[]);
   useEffect(()=>()=>{speechSequenceRef.current++;if(novelSpeechRef.current?.cancel)novelSpeechRef.current.cancel();else stopSpeech();window.clearTimeout?.(pageTurnTimerRef.current);pageTurnRef.current=null},[]);
-  useEffect(()=>{if(typeof window==="undefined")return;const onResize=()=>setViewportWidth(window.innerWidth||1024);onResize();window.addEventListener("resize",onResize);return()=>window.removeEventListener("resize",onResize)},[]);
+  useEffect(()=>{if(typeof window==="undefined")return;const onResize=()=>{setViewportWidth(window.innerWidth||1024);setViewportHeight(window.innerHeight||768)};onResize();window.addEventListener("resize",onResize);return()=>window.removeEventListener("resize",onResize)},[]);
   useEffect(()=>{let active=true;document.fonts?.ready?.then(()=>{if(active)setLayoutVersion(v=>v+1)});return()=>{active=false}},[]);
-  const isMobile=viewportWidth<=560;
+  const isMobile=viewportWidth<=560||(viewportWidth<=960&&viewportHeight<=500);
   const visiblePageCount=isMobile?1:2;
   const readerFontSize=Math.max(14,Math.min(22,Number(readingPrefs?.fontSize)||16));
   const readerLineHeight=Math.max(1.5,Math.min(2.1,Number(readingPrefs?.lineHeight)||1.66));
@@ -54,6 +54,12 @@ export default function NovelM({lv,onBack,onXp,deps}){
   const setNi=index=>setSelectedBooks(saved=>({...saved,[lv]:novels[index]?.id}));
   useEffect(()=>{const target=Math.max(0,Number(pendingPageRef.current)||0);pendingPageRef.current=0;window.clearTimeout?.(pageTurnTimerRef.current);pageTurnTimerRef.current=null;pageTurnRef.current=null;setPageTurn(null);setPage(target);setActiveBlock(null);setActiveVocab(null);setSidePanel(null);setMobileToolsOpen(false);setPeekBlocks({});setBookmarkNotice(null);setRemovedBookmark(null);novelBlockRefs.current={};novelPanelRef.current?.scrollTo({top:0})},[ci,ni]);
   const novel=novels[ni];const completed=done[novel?.id]||[];const chapter=ci==null?null:novel?.chapters[ci];const blockPairs=useMemo(()=>novelBlockPairs(chapter?.en,chapter?.zh),[chapter]);const enBlocks=useMemo(()=>blockPairs.map(b=>b.en),[blockPairs]);const zhBlocks=useMemo(()=>blockPairs.map(b=>b.zh),[blockPairs]);const words=chapter?readingWords(chapter.en).length:0;const pct=novel?Math.round((completed.length/novel.chapters.length)*100):0;
+  const mobileFocus=isMobile&&readingFocus&&!!chapter;
+  useEffect(()=>{
+    if(!mobileFocus)return;
+    document.documentElement.classList.add("novel-mobile-reading");
+    return()=>document.documentElement.classList.remove("novel-mobile-reading");
+  },[mobileFocus]);
   const savedBookmarks=useMemo(()=>resolveBookmarks(novel,bookmarks?.[novel?.id]),[novel,bookmarks]);
   const savedKeys=new Set(savedBookmarks.map(bookmarkKey));
   useEffect(()=>{
@@ -82,7 +88,7 @@ export default function NovelM({lv,onBack,onXp,deps}){
     return blockPairs.map(block=>{
       const enLines=Math.max(1,Math.ceil(String(block.en||"").length/lineChars));
       const zhLines=(showZh||peekBlocks[block.i])&&block.zh?Math.max(1,Math.ceil(String(block.zh).length/Math.max(12,Math.floor(lineChars*.72)))):0;
-      return 22+Math.max(93,enLines*readerFontSize*readerLineHeight)+(zhLines?16+zhLines*Math.max(13,readerFontSize-2)*readerLineHeight:0)+(!showZh&&block.zh?44:0);
+      return 22+Math.max(93,enLines*readerFontSize*readerLineHeight)+(zhLines?16+zhLines*Math.max(13,readerFontSize-2)*readerLineHeight:0)+(!showZh&&block.zh?52:0);
     });
   },[blockPairs,isMobile,readerFontSize,readerLineHeight,showZh,peekBlocks,viewportWidth]);
   const fallbackPages=useMemo(()=>{
@@ -124,10 +130,9 @@ export default function NovelM({lv,onBack,onXp,deps}){
     if(!chapter||!blockPairs.length)return;
     const spreadHeight=novelSpreadRef.current?.clientHeight||0;
     const measured=blockPairs.map((_,index)=>measureBlockRefs.current[index]?.getBoundingClientRect?.().height||0);
-    if(spreadHeight<240||measured.some(height=>height<=0))return;
-    const normalizedMeasured=isMobile?normalizeMeasuredHeights(measured,estimatedBlockHeights):measured;
+    if(spreadHeight<80||measured.some(height=>height<=0))return;
     const pageChrome=isMobile?82:96;
-    const nextPages=paginateByHeight(blockPairs,normalizedMeasured,Math.max(200,spreadHeight-pageChrome),6,isMobile?2:1);
+    const nextPages=paginateByHeight(blockPairs,measured,Math.max(60,spreadHeight-pageChrome),6,1);
     setMeasurement(current=>{
       const currentKey=current.pages.map(items=>items.map(item=>item.i).join(",")).join("|");
       const nextKey=nextPages.map(items=>items.map(item=>item.i).join(",")).join("|");
@@ -312,10 +317,10 @@ export default function NovelM({lv,onBack,onXp,deps}){
     setFocusBlock(anchor);
   };
   const openPanel=panel=>{setSidePanel(panel);if(isMobile)setMobileToolsOpen(false)};
-  const renderBookmarkNotice=()=>bookmarkNotice&&<div className="novel-bookmark-notice" role="status"><span>{bookmarkNotice}</span>{removedBookmark&&<button onClick={()=>{if(savedBookmarks.length>=BOOKMARK_LIMIT){setBookmarkNotice("書籤已滿，先移除一個再還原。");return}if(!savedKeys.has(bookmarkKey(removedBookmark)))writeBookmarks([removedBookmark,...savedBookmarks]);setRemovedBookmark(null);setBookmarkNotice("書籤已還原。")}}>還原書籤</button>}</div>;
+  const renderBookmarkNotice=()=>bookmarkNotice&&<div className="novel-bookmark-notice" role="status"><span>{bookmarkNotice}</span>{removedBookmark&&<button onClick={()=>{if(savedBookmarks.length>=BOOKMARK_LIMIT){setBookmarkNotice("書籤已滿，先移除一個再還原。");return}if(!savedKeys.has(bookmarkKey(removedBookmark)))writeBookmarks([removedBookmark,...savedBookmarks]);setRemovedBookmark(null);setBookmarkNotice("書籤已還原。")}}>還原書籤</button>}<button aria-label="關閉書籤提示" onClick={()=>{setBookmarkNotice(null);setRemovedBookmark(null)}}>×</button></div>;
   const renderNovelBlock=(b,measuring=false)=>{
     const saved=savedKeys.has(`${chapter.no}:${b.i}`),translated=showZh||peekBlocks[b.i];
-    return <section key={`${measuring?"measure":"read"}-${b.i}`} data-reader-block={measuring?undefined:b.i} data-saved={saved} tabIndex={measuring?undefined:-1} aria-label={measuring?undefined:`段落 ${b.i+1}`} ref={el=>{if(measuring){if(el)measureBlockRefs.current[b.i]=el}else if(el)novelBlockRefs.current[b.i]=el}} style={{padding:isMobile?"7px 8px":"9px 10px",borderRadius:8,background:!measuring&&activeBlock===b.i?tone.active:"transparent",border:`1px solid ${!measuring&&activeBlock===b.i?tone.accent:"transparent"}`,transition:"background .18s,border-color .18s"}}>
+    return <section className="novel-paragraph" key={`${measuring?"measure":"read"}-${b.i}`} data-reader-block={measuring?undefined:b.i} data-saved={saved} tabIndex={measuring?undefined:-1} aria-label={measuring?undefined:`段落 ${b.i+1}`} ref={el=>{if(measuring){if(el)measureBlockRefs.current[b.i]=el}else if(el)novelBlockRefs.current[b.i]=el}} style={{padding:isMobile?"7px 8px":"9px 10px",borderRadius:8,background:!measuring&&activeBlock===b.i?tone.active:"transparent",border:`1px solid ${!measuring&&activeBlock===b.i?tone.accent:"transparent"}`,transition:"background .18s,border-color .18s"}}>
       <div style={{display:"flex",gap:8,alignItems:"flex-start"}}>
         <p lang="en" data-testid={measuring?undefined:"novel-reader-text"} style={{flex:1,minWidth:0,margin:0,fontSize:readerFontSize,lineHeight:readerLineHeight,color:tone.ink,fontFamily:readerFont,fontWeight:500,whiteSpace:"pre-line",overflowWrap:"anywhere"}}>{b.en}</p>
         <div className="novel-block-tools">{measuring?<><span data-testid="novel-measure-speaker" style={{width:38,height:44}}/><span style={{width:38,height:44}}/></>:<>
@@ -323,7 +328,7 @@ export default function NovelM({lv,onBack,onXp,deps}){
           <button aria-label={`${saved?"取消收藏":"收藏"}段落 ${b.i+1}`} aria-pressed={saved} title={saved?"取消書籤":"留下書籤"} onClick={()=>toggleBookmark(b)}><svg aria-hidden="true" width="17" height="21" viewBox="0 0 20 24"><path d="M4 2h12v19l-6-4-6 4Z" fill={saved?"currentColor":"none"} stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/></svg></button>
         </>}</div>
       </div>
-      {!showZh&&b.zh&&(measuring?<div style={{height:44}}/>:<button className="novel-peek" aria-expanded={!!peekBlocks[b.i]} aria-label={`${peekBlocks[b.i]?"收起":"看看"}段落 ${b.i+1} 的中文`} onClick={()=>{readingAnchorRef.current=b.i;setPeekBlocks(current=>({...current,[b.i]:!current[b.i]}))}}>{peekBlocks[b.i]?"收起中文 ▴":"看看這段中文 ▾"}</button>)}
+      {!showZh&&b.zh&&(measuring?<div style={{height:44,marginTop:8}}/>:<button className="novel-peek" aria-expanded={!!peekBlocks[b.i]} aria-label={`${peekBlocks[b.i]?"收起":"看看"}段落 ${b.i+1} 的中文`} onClick={()=>{readingAnchorRef.current=b.i;setPeekBlocks(current=>({...current,[b.i]:!current[b.i]}))}}>{peekBlocks[b.i]?"收起中文 ▴":"看看這段中文 ▾"}</button>)}
       {translated&&b.zh&&<div lang="zh-Hant" data-testid={measuring?undefined:"novel-reader-translation"} style={{marginTop:isMobile?6:8,padding:isMobile?"7px 8px":"8px 10px",background:tone.translation,borderLeft:`3px solid ${tone.rule}`,borderRadius:"2px 7px 7px 2px",fontSize:Math.max(13,readerFontSize-2),lineHeight:readerLineHeight,color:tone.muted,fontFamily:"inherit",whiteSpace:"pre-line",display:"flex",gap:8,alignItems:"flex-start",overflowWrap:"anywhere"}}><span style={{flex:1,minWidth:0}}>{b.zh}</span>{measuring?<span data-testid="novel-measure-speaker" style={{width:38,height:44,flexShrink:0}}/>:<button onClick={()=>speakNovelText(b.zh,"zh-TW",1,b.i)} title="朗讀中文" aria-label="朗讀中文（固定真人聲線）" style={{width:38,height:44,background:tone.paper,color:tone.accent,border:`1px solid ${tone.rule}`,borderRadius:9,fontSize:14,cursor:"pointer",flexShrink:0}}>🔊</button>}</div>}
     </section>;
   };
@@ -347,7 +352,7 @@ export default function NovelM({lv,onBack,onXp,deps}){
     </article>}
   </div>:null;
   const finishAndGo=()=>{completeChapter();if(quizDone){next!=null?goChapter(next):backToList()}};
-  return(<div className="novel-reading" style={readerColors}>{!(readingFocus&&isMobile)&&<Hdr t="📘 英文小說" onBack={backToList} cl={c.cl} extra={!readingFocus?<button onClick={()=>setShowZh(z=>!z)} style={{background:"none",border:`1px solid ${S.bd}`,borderRadius:8,padding:"4px 8px",fontSize:12,color:c.cl,cursor:"pointer",fontFamily:"inherit"}}>{showZh?"隱藏中文":"顯示中文"}</button>:null}/>}
+  return(<div className={`novel-reading${mobileFocus?" novel-mobile-focus":""}`} style={readerColors}>{!(readingFocus&&isMobile)&&<Hdr t="📘 英文小說" onBack={backToList} cl={c.cl} extra={!readingFocus?<button onClick={()=>setShowZh(z=>!z)} style={{background:"none",border:`1px solid ${S.bd}`,borderRadius:8,padding:"4px 8px",fontSize:12,color:c.cl,cursor:"pointer",fontFamily:"inherit"}}>{showZh?"隱藏中文":"顯示中文"}</button>:null}/>}
     {!readingFocus&&<div style={{...S.card,padding:0,overflow:"hidden",marginBottom:10,border:`1px solid ${S.bd}`,borderTop:`4px solid ${c.cl}`,background:"linear-gradient(135deg,#FFFCF3,#F3FBF7)"}}>
       <div data-testid="novel-chapter-hero" style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"minmax(150px,220px) minmax(0,1fr)",gap:0,alignItems:"stretch"}}>
         <div data-testid="novel-hero-media" style={{height:isMobile?"clamp(180px, 48vw, 260px)":"clamp(170px,24vw,220px)",overflow:"visible"}}><NovelIllustration fill chapter={chapter.no} imageBase={novelImageBase} title={novel.title}/></div>
@@ -431,11 +436,11 @@ export default function NovelM({lv,onBack,onXp,deps}){
         {renderPageTurn()}
       </div>
       <div data-testid="novel-measurement-layer" aria-hidden="true" style={{position:"absolute",visibility:"hidden",pointerEvents:"none",zIndex:-1,width:isMobile?"calc(100% - 24px)":"calc(50% - 22px)",height:1,overflow:"hidden",left:0,top:0,padding:isMobile?"11px 9px":"16px 14px",boxSizing:"border-box"}}>{blockPairs.map(block=>renderNovelBlock(block,true))}</div>
-      <div data-testid="novel-page-actions" style={pageActionsStyle}><button onClick={goPreviousPage} disabled={!canPrevPage||!!pageTurn} style={{...S.btn,background:S.bg2,color:S.t1,flex:1,padding:"10px",fontSize:13,opacity:canPrevPage&&!pageTurn?1:.4}}>上一頁</button><div style={{minWidth:isMobile?112:92,textAlign:"center"}}><div style={{fontSize:12,color:tone.ink,fontWeight:900,whiteSpace:"nowrap"}}>{isMobile?`Page ${pageNow+1}`:`Pages ${pageNow+1}-${Math.min(pageNow+2,pages.length)}`}</div><div style={{fontSize:10,color:tone.muted,whiteSpace:"nowrap"}}>{isMobile?"↔ 左右滑動 · ":""}段落 {pageStart+1}-{pageEnd} / {blockPairs.length}</div></div><button onClick={goNextPage} disabled={!canNextPage||!!pageTurn} style={{...S.btn,background:c.cl,color:"#fff",flex:1,padding:"10px",fontSize:13,opacity:canNextPage&&!pageTurn?1:.4}}>下一頁</button></div>
+      <div data-testid="novel-page-actions" style={pageActionsStyle}><button onClick={goPreviousPage} disabled={!canPrevPage||!!pageTurn} style={{...S.btn,background:S.bg2,color:S.t1,flex:1,padding:"10px",fontSize:13,opacity:canPrevPage&&!pageTurn?1:.4}}>上一頁</button><div style={{minWidth:isMobile?112:92,textAlign:"center"}}><div style={{fontSize:12,color:tone.ink,fontWeight:900,whiteSpace:"nowrap"}}>{isMobile?`Page ${pageNow+1}`:`Pages ${pageNow+1}-${Math.min(pageNow+2,pages.length)}`}</div><div style={{fontSize:10,color:tone.muted,whiteSpace:"nowrap"}}>{isMobile?"↔ 左右滑動 · ":""}段落 {pageStart+1}-{pageEnd} / {blockPairs.length}</div></div><button onClick={()=>mobileFocus&&!canNextPage?(quizDone?finishAndGo():openPanel("quiz")):goNextPage()} disabled={(!canNextPage&&!mobileFocus)||!!pageTurn} style={{...S.btn,background:c.cl,color:"#fff",flex:1,padding:"10px",fontSize:13,opacity:(canNextPage||mobileFocus)&&!pageTurn?1:.4}}>{mobileFocus&&!canNextPage?(quizDone?(next!=null?"完成・下一章":"完成・回書架"):"故事小測驗"):"下一頁"}</button></div>
     </div>
     {!sidePanel&&renderBookmarkNotice()}
-    {!canNextPage&&<section className="novel-chapter-finish" aria-label="章末小站"><span aria-hidden="true">{isDone?"✓":"✦"}</span><div><h3>{isDone?"這一章，完成了！":"故事先在這裡停一下"}</h3><p>{isDone?"帶著剛剛找到的線索，繼續下一段冒險吧。":quizDone?`已回答 ${quizAnswered} 題，可以完成這一章並獲得 15 XP。`:`已翻到本章最後一頁。讀完後，試試 ${quiz.length} 個故事小問題。`}</p></div><button onClick={()=>quizDone?finishAndGo():openPanel("quiz")}>{quizDone?(next!=null?"繼續下一章 →":"回到故事書架"):`來試試故事小測驗`}</button></section>}
-    <div style={{display:"flex",gap:8,marginTop:10}}><button onClick={backToList} style={{...S.btn,background:S.bg2,color:S.t1,flex:1,padding:"11px",fontSize:13}}>章節列表</button><button onClick={finishAndGo} disabled={!quizDone} style={{...S.btn,background:c.cl,color:"#fff",flex:1,padding:"11px",fontSize:13,opacity:quizDone?1:.45}}>{next!=null?"完成並下一章":"完成並返回"}</button></div>
+    {!canNextPage&&!mobileFocus&&<section className="novel-chapter-finish" aria-label="章末小站"><span aria-hidden="true">{isDone?"✓":"✦"}</span><div><h3>{isDone?"這一章，完成了！":"故事先在這裡停一下"}</h3><p>{isDone?"帶著剛剛找到的線索，繼續下一段冒險吧。":quizDone?`已回答 ${quizAnswered} 題，可以完成這一章並獲得 15 XP。`:`已翻到本章最後一頁。讀完後，試試 ${quiz.length} 個故事小問題。`}</p></div><button onClick={()=>quizDone?finishAndGo():openPanel("quiz")}>{quizDone?(next!=null?"繼續下一章 →":"回到故事書架"):`來試試故事小測驗`}</button></section>}
+    {!mobileFocus&&<div style={{display:"flex",gap:8,marginTop:10}}><button onClick={backToList} style={{...S.btn,background:S.bg2,color:S.t1,flex:1,padding:"11px",fontSize:13}}>章節列表</button><button onClick={finishAndGo} disabled={!quizDone} style={{...S.btn,background:c.cl,color:"#fff",flex:1,padding:"11px",fontSize:13,opacity:quizDone?1:.45}}>{next!=null?"完成並下一章":"完成並返回"}</button></div>}
     </div>
   </div>);
 }

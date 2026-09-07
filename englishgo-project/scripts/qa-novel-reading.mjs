@@ -24,6 +24,7 @@ try {
     });
     const click = name => page.getByRole('button', { name, exact: true }).click();
     const tools = async () => { if (width <= 560 && await page.getByRole('button', { name: '展開閱讀工具', exact: true }).count()) await click('展開閱讀工具'); };
+    const appTheme = async name => { if(width<=560){await tools();await click('退出沉浸');} await click(name);if(width<=560)await click('進入沉浸'); };
     const settled = async () => { await page.getByTestId('novel-page-turn').waitFor({ state: 'detached' }); await page.waitForTimeout(300); };
     const inspect = async name => {
       await settled(); console.log(`${width}px ${name}`);
@@ -51,16 +52,16 @@ try {
     await click('☷ 目錄與書籤'); await click(`前往書籤 第 1 章第 ${index + 1} 段`); await settled();
     assert(await page.locator(`[data-reader-block="${index}"]`).getByTestId('novel-reader-text').textContent() === excerpt, 'Bookmark restored a different paragraph');
     assert(await page.locator(`[data-reader-block="${index}"]`).evaluate(element => element === document.activeElement), 'Bookmark focus did not reach saved paragraph'); await inspect('bookmark-return');
-    await tools(); await click('A+'); await click('A+'); await click('A+'); await click('寬行距'); await inspect('large-type'); await click('切換為深色模式'); await inspect('night-with-dark-app'); await click('切換為淺色模式');
+    await tools(); await click('A+'); await click('A+'); await click('A+'); await click('寬行距'); await inspect('large-type'); await appTheme('切換為深色模式'); await inspect('night-with-dark-app'); await appTheme('切換為淺色模式');
     await click('☷ 目錄與書籤'); await page.getByRole('navigation', { name: '故事章節' }).getByRole('button', { name: new RegExp(NOVELS.elementary[0].chapters[1].title) }).click(); await settled();
     assert((await page.getByTestId('novel-reader-text').first().textContent()) === novelBlockPairs(NOVELS.elementary[0].chapters[1].en, NOVELS.elementary[0].chapters[1].zh)[0].en, 'Chapter inherited old text or pagination'); await inspect('next-chapter');
     await click('☷ 目錄與書籤'); await click(`前往書籤 第 1 章第 ${index + 1} 段`); await settled();
     const jump = page.getByRole('combobox', { name: '跳到頁面' }); await jump.selectOption(await jump.locator('option').last().getAttribute('value')); await settled(); await inspect('chapter-end');
-    await click('來試試故事小測驗'); await inspect('quiz');
+    await click(width<=560?'故事小測驗':'來試試故事小測驗'); await inspect('quiz');
     for (const question of NOVELS.elementary[0].chapters[0].quiz) await click(question.o[question.a]);
-    await inspect('quiz-answered'); await click('關閉工具面板'); const xp = await page.evaluate(() => JSON.parse(localStorage.getItem('eg_xp')) || 0); await click('完成並下一章'); await settled();
+    await inspect('quiz-answered'); await click('關閉工具面板'); const xp = await page.evaluate(() => JSON.parse(localStorage.getItem('eg_xp')) || 0); await click(width<=560?'完成・下一章':'完成並下一章'); await settled();
     assert((await page.evaluate(() => JSON.parse(localStorage.getItem('eg_xp')) || 0)) === xp + 15, 'Chapter completion did not award exactly 15 XP');
-    await click('章節列表'); await page.reload(); await page.getByText(NOVELS.elementary[0].zhTitle, { exact: true }).waitFor(); await inspect('library-restored');
+    await click(width<=560?'返回章節列表':'章節列表'); await page.reload(); await page.getByText(NOVELS.elementary[0].zhTitle, { exact: true }).waitFor(); await inspect('library-restored');
     await context.close();
   }
   for (const [level, label] of [['junior', 'Junior High'], ['senior', 'Senior High']]) {

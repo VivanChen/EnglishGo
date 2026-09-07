@@ -68,6 +68,7 @@ for(const width of [1440,390,320]){
       await inspect('novel-reading');
       await page.getByRole('button',{name:'下一頁',exact:true}).click();
       await inspect('novel-next-page');
+      if(width<=560)await page.getByRole('button',{name:'返回章節列表',exact:true}).click();
     }
     if(mod==='songs'){
       await page.getByRole('button',{name:'播放',exact:true}).click();
