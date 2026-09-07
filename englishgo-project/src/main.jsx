@@ -8,6 +8,7 @@ import './pet-world.css';
 import './practice-world.css';
 import './learning-workshops.css';
 import './study-planning.css';
+import './learning-desk.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

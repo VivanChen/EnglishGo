@@ -1,0 +1,48 @@
+.novel-reading {
+  --novel-green: #23674f; --novel-ink: #243e33;
+  --color-text-primary: #243e33; --color-text-secondary: #586c5e; --color-text-tertiary: #667365;
+  --color-background-primary: #fffef8; --color-background-secondary: #f1f4ec; --color-border-tertiary: #d9e1d5;
+}
+.novel-reading button:focus-visible, .novel-reading select:focus-visible, .novel-reading [tabindex]:focus-visible { outline: 3px solid #ba8830 !important; outline-offset: 3px; }
+html[data-eg-theme="dark"] .novel-reading > .eg-feature-header { --color-text-primary: #edf2e8; }
+html[data-eg-theme="dark"] .novel-reading > .eg-feature-header > button { color: #b9dfca !important; }
+.novel-reading-rail { display: flex; align-items: center; gap: 10px; margin: 0 0 9px; padding: 10px 12px; border-radius: 12px; background: #f4f7f1; border: 1px solid #d4e0d2; color: var(--novel-ink); }
+.novel-reading-rail button, .novel-reading-rail select, .novel-preferences button { min-height: 42px; border: 1px solid #c4d6c5; border-radius: 10px; padding: 8px 12px; background: #fffefa; font: inherit; font-size: 12px; font-weight: 800; color: var(--novel-green); cursor: pointer; }
+.novel-reading-rail label { margin-left: auto; font-size: 11px; display: flex; align-items: center; gap: 6px; }
+.novel-reading-rail select { max-width: 150px; }
+.novel-reading-rail > span { font-size: 11px; }
+.novel-block-tools { flex: 0 0 38px; display: grid; gap: 5px; }
+.novel-reading .novel-block-tools button { width: 38px; min-height: 44px; padding: 0; border: 1px solid var(--reader-rule); color: var(--reader-accent); background: var(--reader-paper); border-radius: 10px; cursor: pointer; font: inherit; font-size: 15px; }
+.novel-block-tools button[aria-pressed="true"] { background: var(--reader-active); }
+.novel-peek { display: flex; align-items: center; gap: 7px; margin-top: 8px; padding: 6px 9px; min-height: 36px; border: 1px dashed var(--reader-rule); border-radius: 8px; background: transparent; color: var(--reader-muted); font: inherit; font-size: 12px; cursor: pointer; }
+.novel-reading [data-reader-block][data-saved="true"] { box-shadow: inset 3px 0 0 var(--reader-rule); }
+.novel-reading [data-reader-block]:focus { outline-offset: -3px; }
+.novel-reading [data-testid="novel-page-content"] { scroll-padding: 8px; }
+.novel-tool-hint { margin: 0 0 15px; font-size: 12px; line-height: 1.65; color: #586c5e; }
+.novel-journey, .novel-preferences { color: var(--novel-ink); }
+.novel-journey h3 { margin: 20px 0 10px; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+.novel-journey h3 span { margin-left: auto; font-size: 11px; color: #647365; }
+.novel-contents, .novel-bookmarks { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.novel-contents button { display: flex; width: 100%; padding: 12px 10px; border: 1px solid #dce3d5; border-radius: 12px; background: #fffefa; gap: 10px; text-align: left; color: var(--novel-ink); font: inherit; cursor: pointer; }
+.novel-contents button[aria-current] { border-color: #387956; background: #eef5e8; }
+.novel-contents b { font-family: Georgia, serif; color: #5d8061; font-size: 21px; }
+.novel-contents span, .novel-bookmark-jump { display: grid; gap: 5px; min-width: 0; }
+.novel-contents strong { font-size: 13px; }.novel-contents small { font-size: 11px; line-height: 1.4; }
+.novel-bookmarks li { padding: 10px; background: #f7f3e5; border: 1px solid #e5d9b5; border-radius: 12px; }
+.novel-bookmark-jump { text-align: left; width: 100%; padding: 0; border: 0; background: none; font: inherit; cursor: pointer; color: var(--novel-ink); }
+.novel-bookmark-jump span { font-family: Georgia, serif; font-size: 15px; line-height: 1.55; white-space: pre-line; overflow-wrap: anywhere; }
+.novel-bookmark-jump small { font-size: 11px; color: #65725a; }
+.novel-bookmark-remove { min-height: 36px; margin-top: 6px; background: transparent; border: 0; color: #675b3e; font: inherit; font-size: 11px; cursor: pointer; text-decoration: underline; }
+.novel-bookmark-empty { display: grid; justify-items: center; padding: 20px 12px; background: #f5f4e9; border-radius: 14px; text-align: center; }
+.novel-bookmark-empty > span { font-size: 32px; color: #768c5a; }.novel-bookmark-empty strong { font-size: 13px; }.novel-bookmark-empty p { margin: 6px 0 0; font-size: 12px; line-height: 1.6; }
+.novel-preferences fieldset { border: 0; padding: 0; margin: 0 0 20px; }.novel-preferences legend { font-size: 13px; font-weight: 800; padding: 0 0 8px; }
+.novel-choice-row { display: flex; gap: 6px; }.novel-choice-row button { flex: 1; padding: 8px 6px; }.novel-choice-row span { display: block; font-size: 22px; padding-bottom: 3px; }
+.novel-preferences button[aria-pressed="true"] { background: #e9f3e5; border-color: #34704c; box-shadow: inset 0 0 0 1px #34704c; }.novel-preferences .novel-tool-hint { margin-top: 8px; }
+.novel-font-preview { border-radius: 14px; padding: 20px 16px; background: var(--reader-paper); color: var(--reader-ink); font-size: 23px; line-height: 1.7; }
+.novel-bookmark-notice { color: #29583c; font-size: 12px; padding: 10px 12px; background: #eef5e6; border-radius: 10px; margin-top: 8px; display: flex; gap: 10px; align-items: center; }
+.novel-bookmark-notice button { margin-left: auto; min-height: 36px; border: 1px solid #a5b998; border-radius: 8px; background: #fff; color: #29583c; font: inherit; cursor: pointer; }
+.novel-chapter-finish { position: relative; display: flex; align-items: center; gap: 18px; padding: 22px; margin-top: 14px; background: #edf4e5; border: 1px solid #c8d9b8; border-radius: 18px; color: var(--novel-ink); }
+.novel-chapter-finish > span { width: 58px; height: 58px; display: grid; place-items: center; border-radius: 50%; background: #fff9df; font-size: 28px; flex-shrink: 0; }.novel-chapter-finish h3 { font-size: 19px; margin: 0 0 5px; }.novel-chapter-finish p { font-size: 12px; line-height: 1.65; margin: 0; }.novel-chapter-finish > div { flex: 1; }.novel-chapter-finish button { min-height: 44px; border: 0; border-radius: 12px; padding: 10px 16px; background: #2c6448; color: #fff; font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; }
+@media(max-width:560px) { .novel-reading-rail { gap: 6px; padding: 7px 8px; }.novel-reading-rail > span { display: none; }.novel-reading-rail button { padding: 8px; font-size: 11px; }.novel-reading-rail select { padding: 8px 4px; max-width: 108px; }.novel-chapter-finish { flex-wrap: wrap; padding: 16px; gap: 12px; }.novel-chapter-finish button { width: 100%; }.novel-chapter-finish > span { width: 44px; height: 44px; font-size: 22px; }.novel-chapter-finish h3 { font-size: 17px; } }
+
+.novel-resume-excerpt { font-family: Georgia, serif; font-size: 15px; color: #496153; line-height: 1.55; margin: 9px 0 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; white-space: pre-line; }

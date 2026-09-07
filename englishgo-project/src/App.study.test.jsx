@@ -14,7 +14,7 @@ describe('learning history integration', () => {
     await waitFor(() => expect(get('daily')).toMatchObject({ done: 0, target: 5 }));
     expect(get('streak')).toBe(3); expect(get('hist')).toHaveLength(1); expect(get('ach')).not.toContain('streak3');
     fireEvent.click(await screen.findByRole('button', { name: '開始 5 張單字小任務' }));
-    fireEvent.click(await screen.findByRole('button', { name: '點卡片看答案' })); fireEvent.click(screen.getByRole('button', { name: /記住了/ }));
+    fireEvent.click(await screen.findByRole('button', { name: '點卡片看答案' }, { timeout: 5000 })); fireEvent.click(screen.getByRole('button', { name: /記住了/ }));
     await waitFor(() => expect(get('ach').filter(id => id === 'streak3')).toHaveLength(1)); expect(get('daily').done).toBe(1);
     view.unmount();
   });

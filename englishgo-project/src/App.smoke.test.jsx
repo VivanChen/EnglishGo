@@ -357,7 +357,7 @@ describe('EnglishGo app smoke flow', () => {
     expect(screen.getByText('短句上手')).toBeInTheDocument();
     expect(screen.getByText('生活對話')).toBeInTheDocument();
     expect(screen.getByText('精準批改')).toBeInTheDocument();
-    expect(screen.getByText('可朗讀、可複製')).toBeInTheDocument();
+    expect(screen.getByText(/可朗讀、可複製，也能把有幫助的回答收好/)).toBeInTheDocument();
   });
 
   it('opens the safe AI translation reader from the learning menu', async () => {
@@ -1258,25 +1258,25 @@ describe('EnglishGo app smoke flow', () => {
       fireEvent.click(await screen.findByText('The Whispering Tree', {}, { timeout: 5000 }));
 
       const reader = await screen.findByTestId('novel-reader-panel');
-      expect(reader).toHaveStyle({ height: 'clamp(540px, calc(100svh - 210px), 780px)' });
+      expect(reader).toHaveStyle({ height: 'clamp(400px, calc(100svh - 280px), 720px)' });
       fireEvent.click((await screen.findAllByTitle('朗讀中文'))[0]);
 
       const playbackControls = screen.getByTestId('novel-playback-controls');
       expect(playbackControls).toHaveStyle({ display: 'flex' });
       expect(screen.getByTestId('novel-mobile-progress-row')).toContainElement(playbackControls);
       expect(screen.getByTestId('novel-audio-status')).toHaveTextContent('朗讀中');
-      expect(reader).toHaveStyle({ height: 'clamp(540px, calc(100svh - 210px), 780px)' });
+      expect(reader).toHaveStyle({ height: 'clamp(400px, calc(100svh - 280px), 720px)' });
 
       fireEvent.click(screen.getByRole('button', { name: '暫停小說朗讀' }));
       expect(screen.getByTestId('novel-audio-status')).toHaveTextContent('已暫停');
       expect(screen.getByRole('button', { name: '繼續小說朗讀' })).toBeInTheDocument();
-      expect(reader).toHaveStyle({ height: 'clamp(540px, calc(100svh - 210px), 780px)' });
+      expect(reader).toHaveStyle({ height: 'clamp(400px, calc(100svh - 280px), 720px)' });
 
       fireEvent.click(screen.getByRole('button', { name: '繼續小說朗讀' }));
       expect(screen.getByTestId('novel-audio-status')).toHaveTextContent('朗讀中');
       fireEvent.click(screen.getByRole('button', { name: '停止小說朗讀' }));
       expect(screen.queryByTestId('novel-playback-controls')).not.toBeInTheDocument();
-      expect(reader).toHaveStyle({ height: 'clamp(540px, calc(100svh - 210px), 780px)' });
+      expect(reader).toHaveStyle({ height: 'clamp(400px, calc(100svh - 280px), 720px)' });
     } finally {
       setViewportWidth(1024);
       speech.restore();
@@ -1530,7 +1530,7 @@ describe('EnglishGo app smoke flow', () => {
     const toolToggle = screen.getByRole('button', { name: '展開閱讀工具' });
     expect(toolToggle).toHaveAttribute('aria-expanded', 'false');
     expect(screen.getByTestId('novel-reader-panel')).toHaveStyle({
-      height: 'clamp(540px, calc(100svh - 210px), 780px)',
+      height: 'clamp(400px, calc(100svh - 280px), 720px)',
     });
     fireEvent.click(toolToggle);
     expect(screen.getByRole('button', { name: '收合閱讀工具' })).toHaveAttribute('aria-expanded', 'true');
@@ -1551,8 +1551,8 @@ describe('EnglishGo app smoke flow', () => {
     expect(screen.getByText(/左右滑動 · 段落/)).toBeInTheDocument();
     const measurementLayer = screen.getByTestId('novel-measurement-layer');
     const measurementSpeakers = within(measurementLayer).getAllByTestId('novel-measure-speaker');
-    expect(measurementSpeakers[0]).toHaveStyle({ width: '34px', height: '34px' });
-    expect(measurementSpeakers[1]).toHaveStyle({ width: '30px', height: '30px' });
+    expect(measurementSpeakers[0]).toHaveStyle({ width: '38px', height: '44px' });
+    expect(measurementSpeakers[1]).toHaveStyle({ width: '38px', height: '44px' });
 
     fireEvent.click(within(screen.getByTestId('novel-immersive-toolbar')).getByRole('button', { name: /章節測驗/ }));
     expect(screen.getByTestId('novel-side-panel')).toHaveStyle({ paddingBottom: 'calc(14px + env(safe-area-inset-bottom))' });
