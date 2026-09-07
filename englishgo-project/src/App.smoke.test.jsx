@@ -1126,448 +1126,131 @@ describe('EnglishGo app smoke flow', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
-  it('opens novel chapters in a wide immersive reading layout', async () => {
+  async function openNovelForSmoke() {
     await openElementaryMenu();
+    clickFirstButtonWithText('閱讀聽力');clickFirstButtonWithText('英文小說');
+    fireEvent.click(await screen.findByTestId('novel-chapter-card-1', {}, {timeout:5000}));
+    return screen.findByTestId('novel-reader-panel');
+  }
+  const novelClick=name=>fireEvent.click(screen.getByRole('button',{name,exact:true}));
+  const finishNovelTurn=()=>{const turn=screen.queryByTestId('novel-page-turn');if(turn)fireEvent.animationEnd(turn);};
+  const openNovelAudio=()=>{novelClick('展開閱讀工具');novelClick('聽故事');};
 
-    clickFirstButtonWithText('閱讀聽力');
-    clickFirstButtonWithText('英文小說');
-
-    fireEvent.click(await screen.findByText('The Whispering Tree', {}, { timeout: 5000 }));
-
-    expect(await screen.findByTestId('novel-immersive-toolbar')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: '📘 英文小說' })).toBeInTheDocument();
-    expect(screen.getByTestId('novel-immersive-shell')).toHaveStyle({
-      width: 'min(1120px, calc(100vw - 32px))',
-    });
-    expect(screen.queryByTestId('novel-chapter-hero')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('novel-reading-settings')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('novel-chapter-nav')).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: '下一頁' }));
-    expect(await screen.findByText('Page 3')).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: '退出沉浸' }));
-    expect(await screen.findByTestId('novel-chapter-hero')).toBeInTheDocument();
-    expect(screen.getByTestId('novel-reading-settings')).toBeInTheDocument();
-    expect(screen.getByTestId('novel-chapter-nav')).toBeInTheDocument();
-    expect(screen.getByText('Page 3')).toBeInTheDocument();
+  it('opens a focused single-page novel and returns to the story shelf',async()=>{
+    await openNovelForSmoke();
+    expect(document.documentElement).toHaveClass('novel-reading-open');
+    expect(screen.getAllByTestId('novel-book-page')).toHaveLength(1);
+    expect(screen.getByRole('heading',{name:'The Whispering Tree'})).toBeInTheDocument();
+    expect(screen.queryByRole('button',{name:'A+'})).not.toBeInTheDocument();
+    expect(screen.queryByTestId('novel-side-panel')).not.toBeInTheDocument();
+    const before=screen.getAllByTestId('novel-reader-text')[0].textContent;
+    novelClick('下一頁');finishNovelTurn();expect(screen.getAllByTestId('novel-reader-text')[0].textContent).not.toBe(before);
+    novelClick('返回章節列表');expect(document.documentElement).not.toHaveClass('novel-reading-open');
+    expect(screen.getByRole('heading',{name:'我的故事書架'})).toBeInTheDocument();
+    expect(screen.getByRole('button',{name:/繼續閱讀/})).toBeInTheDocument();
   });
 
-  it('does not capture pointer gestures that start on novel reader buttons', async () => {
-    await openElementaryMenu();
-
-    clickFirstButtonWithText('閱讀聽力');
-    clickFirstButtonWithText('英文小說');
-
-    fireEvent.click(await screen.findByText('The Whispering Tree', {}, { timeout: 5000 }));
-
-    const panel = await screen.findByTestId('novel-reader-panel');
-    panel.setPointerCapture = vi.fn();
-
-    fireEvent.pointerDown(screen.getByRole('button', { name: '下一頁' }), {
-      pointerId: 1,
-      clientX: 900,
-      clientY: 620,
-    });
-
+  it('does not capture pointer gestures that start on novel reader buttons',async()=>{
+    const panel=await openNovelForSmoke();panel.setPointerCapture=vi.fn();
+    fireEvent.pointerDown(screen.getByRole('button',{name:'下一頁'}),{pointerId:1,clientX:900,clientY:620});
+    fireEvent.pointerDown(screen.getByRole('button',{name:'段落 1 的閱讀工具'}),{pointerId:2,clientX:850,clientY:220});
     expect(panel.setPointerCapture).not.toHaveBeenCalled();
-
-    fireEvent.pointerDown(screen.getAllByLabelText('朗讀英文')[0], {
-      pointerId: 2,
-      clientX: 850,
-      clientY: 220,
-    });
-
-    expect(panel.setPointerCapture).not.toHaveBeenCalled();
-
-    panel.releasePointerCapture = vi.fn();
-    fireEvent.pointerDown(panel, { pointerId: 3, clientX: 800, clientY: 300 });
-    fireEvent.pointerCancel(panel, { pointerId: 3, clientX: 800, clientY: 300 });
-    fireEvent.pointerUp(panel, { pointerId: 3, clientX: 100, clientY: 300 });
+    fireEvent.pointerDown(panel,{pointerId:3,clientX:800,clientY:300});fireEvent.pointerCancel(panel,{pointerId:3});fireEvent.pointerUp(panel,{pointerId:3,clientX:100,clientY:300});
     expect(screen.queryByTestId('novel-page-turn')).not.toBeInTheDocument();
   });
 
-  it('starts novel speech without repeated cancellation immediately before playback', async () => {
-    const speech = installMockSpeechSynthesis();
-    const previousTts = window.EnglishGoTTS;
-    const preloadMany = vi.fn(() => Promise.resolve([]));
-    window.EnglishGoTTS = { preloadMany };
-    try {
-      await openElementaryMenu();
-
-      fireEvent.click(document.querySelector('[data-group-id="read"]'));
-      fireEvent.click(document.querySelector('[data-module-id="novels"]'));
-
-      fireEvent.click(await screen.findByText('The Whispering Tree', {}, { timeout: 5000 }));
-      const chineseSpeakers = await screen.findAllByTitle('朗讀中文');
-      speech.cancel.mockClear();
-      speech.speak.mockClear();
-      speech.events.splice(0);
-      fireEvent.click(chineseSpeakers[0]);
-
-      expect(speech.speak).toHaveBeenCalledTimes(1);
-      expect(speech.cancel).toHaveBeenCalledTimes(1);
-      expect(speech.events).toEqual(['cancel', 'resume', 'speak']);
-      expect(screen.getByRole('button', { name: '停止小說朗讀' })).toBeInTheDocument();
-      fireEvent.click(screen.getByRole('button', { name: '暫停小說朗讀' }));
-      expect(speech.pause).toHaveBeenCalledTimes(1);
-      expect(screen.getByRole('button', { name: '繼續小說朗讀' })).toBeInTheDocument();
-      fireEvent.click(screen.getByRole('button', { name: '繼續小說朗讀' }));
-      expect(speech.resume).toHaveBeenCalledTimes(2);
-      expect(screen.getByRole('button', { name: '暫停小說朗讀' })).toBeInTheDocument();
-      expect(speech.speak.mock.calls[0][0].__englishGoAudioUrl).toMatch(
-        /^\/\.netlify\/functions\/elevenlabs-tts\?novel=v2-secret-forest-adventure-c1-zh-block-0-/,
-      );
-
-      act(() => {
-        speech.speak.mock.calls[0][0].onend?.(new Event('end'));
-      });
-      expect(screen.queryByRole('button', { name: '停止小說朗讀' })).not.toBeInTheDocument();
-      speech.cancel.mockClear();
-      speech.speak.mockClear();
-      speech.events.splice(0);
-      fireEvent.click(screen.getByRole('button', { name: '英中本頁朗讀' }));
-
-      expect(speech.speak).toHaveBeenCalledTimes(1);
-      expect(speech.cancel).toHaveBeenCalledTimes(1);
-      expect(speech.events).toEqual(['cancel', 'resume', 'speak']);
-      expect(speech.speak.mock.calls[0][0].__englishGoAudioUrl).toMatch(
-        /^\/\.netlify\/functions\/elevenlabs-tts\?novel=v1-secret-forest-adventure-c1-en-block-0-/,
-      );
-      const pauseCalls = speech.pause.mock.calls.length;
-      const resumeCalls = speech.resume.mock.calls.length;
-      fireEvent.click(screen.getByRole('button', { name: '暫停小說朗讀' }));
-      expect(speech.pause).toHaveBeenCalledTimes(pauseCalls + 1);
-      fireEvent.click(screen.getByRole('button', { name: '繼續小說朗讀' }));
-      expect(speech.resume).toHaveBeenCalledTimes(resumeCalls + 1);
-    } finally {
-      if (previousTts) window.EnglishGoTTS = previousTts;
-      else delete window.EnglishGoTTS;
-      speech.restore();
-    }
+  it('starts novel speech once and preserves fixed bilingual audio identities',async()=>{
+    const speech=installMockSpeechSynthesis();
+    try{
+      await openNovelForSmoke();novelClick('段落 1 的閱讀工具');speech.cancel.mockClear();speech.speak.mockClear();speech.events.splice(0);
+      novelClick('朗讀中文（固定真人聲線）');novelClick('關閉工具面板');
+      expect(speech.speak).toHaveBeenCalledTimes(1);expect(speech.cancel).toHaveBeenCalledTimes(1);expect(speech.events).toEqual(['cancel','resume','speak']);
+      expect(speech.speak.mock.calls[0][0].__englishGoAudioUrl).toMatch(/^\/\.netlify\/functions\/elevenlabs-tts\?novel=v2-secret-forest-adventure-c1-zh-block-0-/);
+      novelClick('暫停小說朗讀');expect(speech.pause).toHaveBeenCalledTimes(1);novelClick('繼續小說朗讀');expect(speech.resume).toHaveBeenCalledTimes(2);
+      act(()=>speech.speak.mock.calls[0][0].onend?.(new Event('end')));
+      speech.cancel.mockClear();speech.speak.mockClear();speech.events.splice(0);novelClick('英中本頁朗讀');
+      expect(speech.speak).toHaveBeenCalledTimes(1);expect(speech.cancel).toHaveBeenCalledTimes(1);expect(speech.events).toEqual(['cancel','resume','speak']);
+      expect(speech.speak.mock.calls[0][0].__englishGoAudioUrl).toMatch(/^\/\.netlify\/functions\/elevenlabs-tts\?novel=v1-secret-forest-adventure-c1-en-block-0-/);
+      novelClick('停止小說朗讀');
+    }finally{speech.restore();}
   });
 
-  it('keeps the mobile novel page stable while narration controls appear', async () => {
+  it('keeps mobile narration actions in the footer while pausing and resuming',async()=>{
+    setViewportWidth(390);const speech=installMockSpeechSynthesis();
+    try{
+      const reader=await openNovelForSmoke();const firstText=screen.getAllByTestId('novel-reader-text')[0].textContent;
+      novelClick('英中本頁朗讀');const controls=screen.getByTestId('novel-playback-controls');
+      expect(screen.getByTestId('novel-page-actions')).toContainElement(controls);expect(screen.getByTestId('novel-reader-panel')).toBe(reader);
+      novelClick('暫停小說朗讀');expect(screen.getByRole('button',{name:'繼續小說朗讀'})).toBeInTheDocument();
+      novelClick('繼續小說朗讀');expect(screen.getAllByTestId('novel-reader-text')[0].textContent).toBe(firstText);
+      novelClick('停止小說朗讀');expect(screen.queryByTestId('novel-playback-controls')).not.toBeInTheDocument();
+      expect(screen.getByTestId('novel-reader-panel')).toBe(reader);
+    }finally{setViewportWidth(1024);speech.restore();}
+  });
+
+  it('turns the mobile novel page only when narration reaches a new page',async()=>{
+    setViewportWidth(390);const speech=installMockSpeechSynthesis();
+    try{
+      await openNovelForSmoke();const count=screen.getAllByTestId('novel-reader-text').length;expect(count).toBeGreaterThan(0);
+      openNovelAudio();novelClick('整章朗讀');expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      const advance=async()=>{const utterance=speech.speak.mock.calls.at(-1)?.[0];expect(utterance).toBeTruthy();await act(async()=>{utterance.onend?.(new Event('end'));await new Promise(resolve=>setTimeout(resolve,430));});};
+      await advance();await advance();expect(screen.queryByTestId('novel-page-turn')).not.toBeInTheDocument();
+      for(let i=0;i<count*2-1;i++){await advance();expect(screen.queryByTestId('novel-page-turn')).not.toBeInTheDocument();}
+      await advance();expect(screen.getByTestId('novel-page-turn')).toHaveAttribute('data-direction','forward');finishNovelTurn();novelClick('停止小說朗讀');
+    }finally{setViewportWidth(1024);speech.restore();}
+  },20000);
+
+  it('turns one page in either direction and ignores repeated gestures during the transition',async()=>{
+    const reader=await openNovelForSmoke();const initial=screen.getAllByTestId('novel-reader-text')[0].textContent;
+    const pageContent=screen.getByTestId('novel-page-content');pageContent.scrollTop=120;
+    novelClick('下一頁');const forward=screen.getByTestId('novel-page-turn'),id=forward.getAttribute('data-transition-id');
+    expect(pageContent.scrollTop).toBe(0);
+    expect(forward).toHaveAttribute('data-direction','forward');expect(screen.getByRole('button',{name:'下一頁'})).toBeDisabled();
+    fireEvent.keyDown(reader,{key:'ArrowRight'});expect(screen.getByTestId('novel-page-turn')).toHaveAttribute('data-transition-id',id);
+    finishNovelTurn();expect(screen.getAllByTestId('novel-reader-text')[0].textContent).not.toBe(initial);
+    novelClick('上一頁');expect(screen.getByTestId('novel-page-turn')).toHaveAttribute('data-direction','backward');finishNovelTurn();
+    expect(screen.getAllByTestId('novel-reader-text')[0].textContent).toBe(initial);
+  });
+
+  it('jumps directly to a page from the contents drawer',async()=>{
+    await openNovelForSmoke();const first=screen.getAllByTestId('novel-reader-text')[0].textContent;
+    novelClick('☷ 目錄與書籤');const jump=screen.getByRole('combobox',{name:'跳到頁面'});
+    fireEvent.change(jump,{target:{value:jump.options[2].value}});finishNovelTurn();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();expect(screen.getAllByTestId('novel-reader-text')[0].textContent).not.toBe(first);
+  });
+
+  it('opens novel vocabulary and quiz only when requested',async()=>{
+    await openNovelForSmoke();expect(screen.queryByText('curious')).not.toBeInTheDocument();expect(screen.queryByText(/What did Lily find in the forest/)).not.toBeInTheDocument();
+    novelClick('展開閱讀工具');novelClick('重點單字');expect(screen.getByText('curious')).toBeInTheDocument();novelClick('關閉工具面板');
+    novelClick('展開閱讀工具');novelClick('章節測驗 0/3');expect(screen.getByText(/What did Lily find in the forest/)).toBeInTheDocument();
+  });
+
+  it('resumes a novel from its paragraph after switching to a mobile viewport',async()=>{
+    await openNovelForSmoke();novelClick('下一頁');finishNovelTurn();const anchor=screen.getAllByTestId('novel-reader-text')[0].textContent;
+    await waitFor(()=>expect(JSON.parse(localStorage.getItem('eg_novelReadingProgress'))['secret-forest-adventure'].blockIndex).toBeGreaterThan(0));
+    novelClick('返回章節列表');setViewportWidth(390);novelClick('繼續閱讀');
+    await waitFor(()=>expect(screen.getAllByTestId('novel-reader-text').some(node=>node.textContent===anchor)).toBe(true));
+    expect(document.documentElement).toHaveClass('novel-mobile-reading');expect(screen.getAllByTestId('novel-book-page')).toHaveLength(1);setViewportWidth(1024);
+  });
+
+  it('adjusts novel type, spacing and translation without losing the reading paragraph',async()=>{
+    await openNovelForSmoke();novelClick('下一頁');finishNovelTurn();const anchor=screen.getAllByTestId('novel-reader-text')[0].textContent;
+    novelClick('閱讀偏好');novelClick('A+');novelClick('寬行距');novelClick('先讀英文');novelClick('夜讀');novelClick('關閉工具面板');
+    expect(screen.getAllByTestId('novel-reader-text')[0]).toHaveStyle({fontSize:'20px',lineHeight:'1.95'});
+    expect(screen.getAllByTestId('novel-reader-text').some(node=>node.textContent===anchor)).toBe(true);
+    expect(screen.queryByTestId('novel-reader-translation')).not.toBeInTheDocument();expect(screen.getByTestId('novel-reader-panel')).toHaveStyle({background:'#202e30'});
+  });
+
+  it('uses a single viewport reader and modal tools on a narrow screen',async()=>{
     setViewportWidth(390);
-    const speech = installMockSpeechSynthesis();
-    try {
-      await openElementaryMenu();
-
-      clickFirstButtonWithText('閱讀聽力');
-      clickFirstButtonWithText('英文小說');
-      fireEvent.click(await screen.findByText('The Whispering Tree', {}, { timeout: 5000 }));
-
-      const reader = await screen.findByTestId('novel-reader-panel');
-      expect(reader).toHaveStyle({ height: 'clamp(400px, calc(100svh - 280px), 720px)' });
-      fireEvent.click((await screen.findAllByTitle('朗讀中文'))[0]);
-
-      const playbackControls = screen.getByTestId('novel-playback-controls');
-      expect(playbackControls).toHaveStyle({ display: 'flex' });
-      expect(screen.getByTestId('novel-mobile-progress-row')).toContainElement(playbackControls);
-      expect(screen.getByTestId('novel-audio-status')).toHaveTextContent('朗讀中');
-      expect(reader).toHaveStyle({ height: 'clamp(400px, calc(100svh - 280px), 720px)' });
-
-      fireEvent.click(screen.getByRole('button', { name: '暫停小說朗讀' }));
-      expect(screen.getByTestId('novel-audio-status')).toHaveTextContent('已暫停');
-      expect(screen.getByRole('button', { name: '繼續小說朗讀' })).toBeInTheDocument();
-      expect(reader).toHaveStyle({ height: 'clamp(400px, calc(100svh - 280px), 720px)' });
-
-      fireEvent.click(screen.getByRole('button', { name: '繼續小說朗讀' }));
-      expect(screen.getByTestId('novel-audio-status')).toHaveTextContent('朗讀中');
-      fireEvent.click(screen.getByRole('button', { name: '停止小說朗讀' }));
-      expect(screen.queryByTestId('novel-playback-controls')).not.toBeInTheDocument();
-      expect(reader).toHaveStyle({ height: 'clamp(400px, calc(100svh - 280px), 720px)' });
-    } finally {
-      setViewportWidth(1024);
-      speech.restore();
-    }
-  });
-
-  it('turns the mobile novel page only when chapter narration reaches a new page', async () => {
-    setViewportWidth(390);
-    const speech = installMockSpeechSynthesis();
-    try {
-      await openElementaryMenu();
-
-      clickFirstButtonWithText('閱讀聽力');
-      clickFirstButtonWithText('英文小說');
-      fireEvent.click(await screen.findByText('The Whispering Tree', {}, { timeout: 5000 }));
-
-      const pageRange = screen.getByText(/左右滑動 · 段落/).textContent;
-      const firstPageBlockCount = Number(pageRange.match(/段落 1-(\d+)/)?.[1]);
-      expect(firstPageBlockCount).toBeGreaterThan(0);
-      fireEvent.click(screen.getByRole('button', { name: '展開閱讀工具' }));
-      fireEvent.click(screen.getByRole('button', { name: '整章朗讀' }));
-
-      const advanceNarration = async () => {
-        const utterance = speech.speak.mock.calls.at(-1)?.[0];
-        expect(utterance).toBeTruthy();
-        await act(async () => {
-          utterance.onend?.(new Event('end'));
-          await new Promise(resolve => setTimeout(resolve, 430));
-        });
-      };
-
-      await advanceNarration(); // English title → Chinese title
-      await advanceNarration(); // Chinese title → first English block
-      expect(screen.queryByTestId('novel-page-turn')).not.toBeInTheDocument();
-
-      for (let step = 0; step < firstPageBlockCount * 2 - 1; step += 1) {
-        await advanceNarration();
-        expect(screen.queryByTestId('novel-page-turn')).not.toBeInTheDocument();
-      }
-
-      await advanceNarration();
-      const automaticTurn = screen.getByTestId('novel-page-turn');
-      expect(automaticTurn).toHaveAttribute('data-direction', 'forward');
-      fireEvent.animationEnd(automaticTurn);
-      fireEvent.click(screen.getByRole('button', { name: '停止小說朗讀' }));
-    } finally {
-      setViewportWidth(1024);
-      speech.restore();
-    }
-  }, 10000);
-
-  it('uses a realistic novel page turn in both directions', async () => {
-    await openElementaryMenu();
-
-    clickFirstButtonWithText('閱讀聽力');
-    clickFirstButtonWithText('英文小說');
-
-    fireEvent.click(await screen.findByText('The Whispering Tree', {}, { timeout: 5000 }));
-    expect(await screen.findByTestId('novel-immersive-toolbar')).toBeInTheDocument();
-
-    const nextButton = screen.getByRole('button', { name: '下一頁' });
-    fireEvent.click(nextButton);
-
-    const forwardTurn = screen.getByTestId('novel-page-turn');
-    expect(forwardTurn).toHaveAttribute('data-direction', 'forward');
-    const transitionId = forwardTurn.getAttribute('data-transition-id');
-    expect(forwardTurn).toHaveStyle({
-      animation: 'novel-sheet-forward 400ms cubic-bezier(.3,.05,.2,1) forwards',
-    });
-    expect(nextButton).toBeDisabled();
-    expect(screen.getByText('Pages 1-2')).toBeInTheDocument();
-    fireEvent.keyDown(screen.getByTestId('novel-reader-panel'), { key: 'ArrowRight' });
-    expect(screen.getByTestId('novel-page-turn')).toHaveAttribute('data-transition-id', transitionId);
-
-    fireEvent.animationEnd(forwardTurn);
-    expect(await screen.findByText('Page 3')).toBeInTheDocument();
-
-    const previousButton = screen.getByRole('button', { name: '上一頁' });
-    fireEvent.click(previousButton);
-
-    const backwardTurn = screen.getByTestId('novel-page-turn');
-    expect(backwardTurn).toHaveAttribute('data-direction', 'backward');
-    expect(backwardTurn).toHaveStyle({
-      animation: 'novel-sheet-backward 400ms cubic-bezier(.3,.05,.2,1) forwards',
-    });
-    expect(previousButton).toBeDisabled();
-
-    fireEvent.animationEnd(backwardTurn);
-    expect(await screen.findByText('Page 1')).toBeInTheDocument();
-
-    const pageTurnStyles = screen.getByTestId('novel-page-turn-styles');
-    expect(pageTurnStyles.textContent).toContain('@media (prefers-reduced-motion:reduce)');
-    expect(pageTurnStyles.textContent).toContain(
-      'animation:novel-sheet-fade 120ms ease-out forwards!important',
-    );
-  });
-
-  it('shows improved novel reading navigation inside a chapter', async () => {
-    await openElementaryMenu();
-
-    clickFirstButtonWithText('閱讀聽力');
-    clickFirstButtonWithText('英文小說');
-
-    fireEvent.click(await screen.findByText('The Whispering Tree', {}, { timeout: 5000 }));
-
-    expect(await screen.findByTestId('novel-immersive-toolbar')).toBeInTheDocument();
-    expect(screen.getByText('Pages 1-2')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: '退出沉浸' }));
-    expect(await screen.findByText('閱讀控制台')).toBeInTheDocument();
-    expect(screen.getByText('本頁進度')).toBeInTheDocument();
-    expect(screen.getByText('章節概覽')).toBeInTheDocument();
-    expect(screen.getByText('下一頁')).toBeInTheDocument();
-  });
-
-  it('opens novel vocabulary and quiz only when requested', async () => {
-    await openElementaryMenu();
-
-    clickFirstButtonWithText('閱讀聽力');
-    clickFirstButtonWithText('英文小說');
-
-    fireEvent.click(await screen.findByText('The Whispering Tree', {}, { timeout: 5000 }));
-
-    const immersiveToolbar = await screen.findByTestId('novel-immersive-toolbar');
-    expect(screen.queryByText('curious')).not.toBeInTheDocument();
-    expect(screen.queryByText(/What did Lily find in the forest/)).not.toBeInTheDocument();
-
-    fireEvent.click(within(immersiveToolbar).getByRole('button', { name: /重點單字/ }));
-    expect(screen.getByTestId('novel-side-panel')).toBeInTheDocument();
-    expect(screen.getByText('curious')).toBeInTheDocument();
-
-    fireEvent.click(within(immersiveToolbar).getByRole('button', { name: /章節測驗/ }));
-    expect(await screen.findByText(/What did Lily find in the forest/)).toBeInTheDocument();
-  });
-
-  it('resumes a novel from the same paragraph across desktop and mobile layouts', async () => {
-    await openElementaryMenu();
-
-    clickFirstButtonWithText('閱讀聽力');
-    clickFirstButtonWithText('英文小說');
-
-    fireEvent.click(await screen.findByText('The Whispering Tree', {}, { timeout: 5000 }));
-    expect(await screen.findByTestId('novel-immersive-toolbar')).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: '下一頁' }));
-    expect(await screen.findByText('Page 3')).toBeInTheDocument();
-    const resumePageTurn = screen.queryByTestId('novel-page-turn');
-    if (resumePageTurn) fireEvent.animationEnd(resumePageTurn);
-
-    const anchorText = screen.getAllByTestId('novel-reader-text')[0].textContent;
-    let savedProgress;
-    await waitFor(() => {
-      savedProgress = JSON.parse(localStorage.getItem('eg_novelReadingProgress'))['secret-forest-adventure'];
-      expect(savedProgress.blockIndex).toBeGreaterThan(0);
-    });
-
-    fireEvent.click(screen.getByText('章節列表'));
-
-    expect(await screen.findByText('繼續閱讀')).toBeInTheDocument();
-    expect(screen.getByText(new RegExp(`上次讀到 Chapter 1 · 段落 ${savedProgress.blockIndex+1}`))).toBeInTheDocument();
-    const firstChapterCard = screen.getByTestId('novel-chapter-card-1');
-    expect(within(firstChapterCard).getByText(new RegExp(`進行中 · 段落 ${savedProgress.blockIndex+1}`))).toBeInTheDocument();
-    expect(within(firstChapterCard).getByText(/測驗 0\/3/)).toBeInTheDocument();
-
-    setViewportWidth(390);
-    try {
-      fireEvent.click(screen.getByText('繼續閱讀'));
-      await waitFor(() => {
-        expect(screen.getAllByTestId('novel-reader-text').some(node => node.textContent === anchorText)).toBe(true);
-      });
-      expect(screen.getByTestId('novel-book-spread')).toHaveStyle({ gridTemplateColumns: '1fr' });
-    } finally {
-      setViewportWidth(1024);
-    }
-  });
-
-  it('adjusts novel reading comfort settings', async () => {
-    setViewportWidth(1024);
-    await openElementaryMenu();
-
-    clickFirstButtonWithText('閱讀聽力');
-    clickFirstButtonWithText('英文小說');
-
-    fireEvent.click(await screen.findByText('The Whispering Tree', {}, { timeout: 5000 }));
-
-    expect(await screen.findByTestId('novel-immersive-toolbar')).toBeInTheDocument();
-    expect(screen.getByTestId('novel-book-spread')).toHaveStyle({
-      gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-    });
-    expect(screen.getAllByTestId('novel-book-page')).toHaveLength(2);
-    expect(screen.getByTestId('novel-reader-panel')).toHaveStyle({
-      overflowY: 'hidden',
-      background: '#E8E4DA',
-    });
-    expect(screen.getByTestId('novel-book-spread')).toHaveAttribute(
-      'data-book-style',
-      'clean-paper',
-    );
-    expect(screen.getByTestId('novel-book-spine')).toBeInTheDocument();
-    const paragraphs = await screen.findAllByTestId('novel-reader-text');
-    expect(paragraphs[0]).toHaveStyle({
-      fontSize: '16px',
-      fontFamily: 'Georgia, Cambria, "Times New Roman", serif',
-    });
-    const translations = screen.getAllByTestId('novel-reader-translation');
-    expect(translations[0]).toHaveStyle({
-      fontFamily: 'inherit',
-      borderLeft: '3px solid #D6B873',
-    });
-
-    fireEvent.click(screen.getByRole('button', { name: '下一頁' }));
-    expect(await screen.findByText('Page 3')).toBeInTheDocument();
-    const settingsPageTurn = screen.queryByTestId('novel-page-turn');
-    if (settingsPageTurn) fireEvent.animationEnd(settingsPageTurn);
-    const readingAnchor = screen.getAllByTestId('novel-reader-text')[0].textContent;
-
-    fireEvent.click(screen.getByRole('button', { name: 'A+' }));
-    expect((await screen.findAllByTestId('novel-reader-text'))[0]).toHaveStyle({ fontSize: '18px' });
-    expect(screen.getAllByTestId('novel-reader-text').some(node => node.textContent === readingAnchor)).toBe(true);
-
-    fireEvent.click(screen.getByRole('button', { name: '寬行距' }));
-    expect((await screen.findAllByTestId('novel-reader-text'))[0]).toHaveStyle({ lineHeight: '1.9' });
-    expect(screen.getAllByTestId('novel-reader-text').some(node => node.textContent === readingAnchor)).toBe(true);
-
-    fireEvent.click(screen.getByRole('button', { name: '退出沉浸' }));
-    expect(await screen.findByText('閱讀設定')).toBeInTheDocument();
-    expect(screen.getByText('閱讀控制台')).toBeInTheDocument();
-  }, 10000);
-
-  it('uses a mobile-safe novel reader layout on narrow screens', async () => {
-    setViewportWidth(390);
-    await openElementaryMenu();
-
-    clickFirstButtonWithText('閱讀聽力');
-    clickFirstButtonWithText('英文小說');
-
-    fireEvent.click(await screen.findByText('The Whispering Tree', {}, { timeout: 5000 }));
-
-    expect(await screen.findByTestId('novel-immersive-toolbar')).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: '📘 英文小說' })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '返回章節列表' })).toBeInTheDocument();
-    expect(screen.getByTestId('novel-immersive-shell')).toHaveStyle({ width: '100%' });
-    expect(screen.queryByTestId('novel-chapter-hero')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('novel-reading-settings')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('novel-chapter-nav')).not.toBeInTheDocument();
-    expect(screen.getByTestId('novel-reader-panel')).toHaveStyle({
-      overflowY: 'hidden',
-      padding: '0 4px calc(14px + env(safe-area-inset-bottom))',
-    });
-    expect(screen.getByTestId('novel-immersive-toolbar')).toHaveStyle({ flexDirection: 'column' });
-    expect(screen.queryByTestId('novel-toolbar-actions')).not.toBeInTheDocument();
-    const toolToggle = screen.getByRole('button', { name: '展開閱讀工具' });
-    expect(toolToggle).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.getByTestId('novel-reader-panel')).toHaveStyle({
-      height: 'clamp(400px, calc(100svh - 280px), 720px)',
-    });
-    fireEvent.click(toolToggle);
-    expect(screen.getByRole('button', { name: '收合閱讀工具' })).toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getByTestId('novel-toolbar-actions')).toHaveStyle({
-      display: 'grid',
-      gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-      overflowX: 'visible',
-    });
-    expect(screen.getByTestId('novel-audio-status')).toHaveAttribute('title', '固定真人旁白');
-    expect(screen.getByTestId('novel-audio-status')).toHaveTextContent('真人旁白');
-    expect(screen.getByTestId('novel-book-spread')).toHaveStyle({ gridTemplateColumns: '1fr' });
-    expect(screen.getAllByTestId('novel-book-page')).toHaveLength(1);
-    expect(screen.getAllByTestId('novel-reader-text').length).toBeGreaterThanOrEqual(2);
-    expect(screen.getByTestId('novel-page-content')).toHaveStyle({ overflowY: 'auto' });
-    expect(screen.getByTestId('novel-page-actions')).toHaveStyle({
-      paddingBottom: 'calc(10px + env(safe-area-inset-bottom))',
-    });
-    expect(screen.getByText(/左右滑動 · 段落/)).toBeInTheDocument();
-    const measurementLayer = screen.getByTestId('novel-measurement-layer');
-    const measurementSpeakers = within(measurementLayer).getAllByTestId('novel-measure-speaker');
-    expect(measurementSpeakers[0]).toHaveStyle({ width: '38px', height: '44px' });
-    expect(measurementSpeakers[1]).toHaveStyle({ width: '38px', height: '44px' });
-
-    fireEvent.click(within(screen.getByTestId('novel-immersive-toolbar')).getByRole('button', { name: /章節測驗/ }));
-    expect(screen.getByTestId('novel-side-panel')).toHaveStyle({ paddingBottom: 'calc(14px + env(safe-area-inset-bottom))' });
-
-    fireEvent.click(screen.getByRole('button', { name: '關閉工具面板' }));
-    fireEvent.click(screen.getByRole('button', { name: '展開閱讀工具' }));
-    fireEvent.click(screen.getByRole('button', { name: '退出沉浸' }));
-    expect(screen.getByRole('heading', { name: '📘 英文小說' })).toBeInTheDocument();
-    expect(await screen.findByTestId('novel-chapter-hero')).toHaveStyle({ gridTemplateColumns: '1fr' });
-    expect(screen.getByTestId('novel-hero-media')).toHaveStyle({ overflow: 'visible' });
-    expect(screen.getByTestId('novel-illustration-frame')).toHaveStyle({ height: '100%' });
-    expect(screen.getByTestId('novel-reading-settings')).toHaveStyle({ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' });
-    expect(screen.getByTestId('novel-chapter-nav')).toHaveStyle({ gridTemplateColumns: '1fr 1fr' });
-
-    setViewportWidth(1024);
+    try{
+      await openNovelForSmoke();expect(document.documentElement).toHaveClass('novel-reading-open','novel-mobile-reading');
+      expect(screen.getAllByTestId('novel-book-page')).toHaveLength(1);expect(screen.queryByRole('button',{name:'A+'})).not.toBeInTheDocument();
+      screen.getByRole('button',{name:'展開閱讀工具'}).focus();novelClick('展開閱讀工具');expect(screen.getByRole('dialog',{name:'閱讀工具'})).toHaveAttribute('aria-modal','true');
+      fireEvent.keyDown(document.activeElement,{key:'Escape'});expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      expect(document.activeElement).toBe(screen.getByRole('button',{name:'展開閱讀工具'}));
+      novelClick('返回章節列表');expect(document.documentElement).not.toHaveClass('novel-reading-open','novel-mobile-reading');
+    }finally{setViewportWidth(1024);}
   });
 
   it('shows every mobile function category without swipe-only navigation', async () => {

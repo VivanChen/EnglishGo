@@ -44,7 +44,7 @@ try {
         const blocks = [...document.querySelectorAll('[data-testid="novel-page-content"] [data-reader-block]')].map(element => ({
           index: Number(element.dataset.readerBlock),
           en: element.querySelector('[lang="en"]').textContent,
-          zh: element.querySelector('[lang="zh-Hant"] > span').textContent,
+          zh: element.querySelector('[lang="zh-Hant"]').textContent,
         }));
         const actions = document.querySelector('[data-testid="novel-page-actions"]').getBoundingClientRect();
         return { blocks, overflow: document.documentElement.scrollWidth > innerWidth + 1,
@@ -70,7 +70,7 @@ try {
       await inspect(chapter, 'first-page', 0);
       const allRenderedPairs = await page.getByTestId('novel-measurement-layer').locator('section').evaluateAll(elements => elements.map(element => ({
         en: element.querySelector('[lang="en"]').textContent,
-        zh: element.querySelector('[lang="zh-Hant"] > span').textContent,
+        zh: element.querySelector('[lang="zh-Hant"]').textContent,
       })));
       check(JSON.stringify(allRenderedPairs) === JSON.stringify(novelBlockPairs(chapter.en, chapter.zh).map(({ en, zh }) => ({ en, zh }))), 'Reader measurement data lost or changed a paragraph');
       for (const index of targets[level][chapter.no] || []) {
@@ -80,11 +80,11 @@ try {
           await page.screenshot({ path: path.join(output, `${width}-${level}-${chapter.no}-${index + 1}.png`), fullPage: width > 560 });
         }
       }
-      const jump = page.getByRole('combobox', { name: '跳到頁面' });
+      await click('☷ 目錄與書籤');const jump = page.getByRole('combobox', { name: '跳到頁面' });
       await jump.selectOption(await jump.locator('option').last().getAttribute('value'));
       await inspect(chapter, 'last-page', allRenderedPairs.length - 1);
       console.log(`${width}px ${level} chapter ${chapter.no}: ${allRenderedPairs.length} pairs checked, first/last and corrected passages displayed`);
-      await click(width <= 560 ? '返回章節列表' : '章節列表');
+      await click('返回章節列表');
     }
     await context.close();
   }

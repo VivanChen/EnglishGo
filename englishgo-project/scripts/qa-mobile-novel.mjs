@@ -27,11 +27,11 @@ try {
       await page.screenshot({path:`.superpowers/qa/mobile-novel/${width}x${height}-${name}.png`,fullPage:!mobile});results.push({width,height,name,...layout,errors});console.log(`${width}x${height} ${name}`);return layout;
     };
     const start=await inspect('reading');
-    if(mobile){await page.mouse.wheel(0,600);await inspect('wheel');await click('展開閱讀工具');const expanded=await inspect('tools');check(Math.abs(expanded.actions.bottom-start.actions.bottom)<1,'Opening tools moved page controls');await click('閱讀偏好');await click('先讀英文');await click('關閉工具面板');await inspect('english');
-      await click('展開閱讀工具');await click('A+');await click('A+');await click('A+');await click('寬行距');await click('收合閱讀工具');await inspect('large-type',true);
+    if(mobile){await page.mouse.wheel(0,600);await inspect('wheel');await click('展開閱讀工具');const expanded=await inspect('tools');check(Math.abs(expanded.actions.bottom-start.actions.bottom)<1,'Opening tools moved page controls');await click('關閉工具面板');await click('閱讀偏好');await click('先讀英文');await click('關閉工具面板');await inspect('english');
+      await click('閱讀偏好');for(let i=0;i<3&&await page.getByRole('button',{name:'A+',exact:true}).isEnabled();i++)await click('A+');await click('寬行距');await click('關閉工具面板');await inspect('large-type',true);
       await click('下一頁');await inspect('next-page',true);
       const anchor=await page.getByTestId('novel-reader-text').first().textContent();await page.setViewportSize({width:height,height:width});await page.waitForTimeout(400);check((await page.getByTestId('novel-reader-text').allTextContents()).includes(anchor),'Rotation lost reading location');await page.setViewportSize({width,height});await inspect('rotated-back',true);
-      const jump=page.getByRole('combobox',{name:'跳到頁面'});await jump.selectOption(await jump.locator('option').last().getAttribute('value'));await inspect('last-page',true);await click('故事小測驗');await page.getByRole('dialog').waitFor();await click('關閉工具面板');await inspect('quiz-closed',true);
+      await click('☷ 目錄與書籤');const jump=page.getByRole('combobox',{name:'跳到頁面'});await jump.selectOption(await jump.locator('option').last().getAttribute('value'));await inspect('last-page',true);await click('故事小測驗');await page.getByRole('dialog').waitFor();await click('關閉工具面板');await inspect('quiz-closed',true);
       await click('返回章節列表');check(!await page.evaluate(()=>document.documentElement.classList.contains('novel-mobile-reading')),'Reader scroll lock leaked to library');await page.mouse.wheel(0,600);await page.waitForTimeout(150);check(await page.evaluate(()=>scrollY>0),'Library cannot scroll after leaving reader');results.push({width,height,name:'library-scroll-restored',errors});
     }
     check(!errors.length,errors.join('\n'));await context.close();

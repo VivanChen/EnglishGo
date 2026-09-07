@@ -23,8 +23,7 @@ try {
       localStorage.setItem('eg_quiet', 'true'); localStorage.setItem('eg_calm', 'true');
     });
     const click = name => page.getByRole('button', { name, exact: true }).click();
-    const tools = async () => { if (width <= 560 && await page.getByRole('button', { name: '展開閱讀工具', exact: true }).count()) await click('展開閱讀工具'); };
-    const appTheme = async name => { if(width<=560){await tools();await click('退出沉浸');} await click(name);if(width<=560)await click('進入沉浸'); };
+    const appTheme = async name => { await click('返回章節列表');await click(name);await inspect(name==='切換為深色模式'?'dark-library':'light-library');await click('繼續閱讀'); };
     const settled = async () => { await page.getByTestId('novel-page-turn').waitFor({ state: 'detached' }); await page.waitForTimeout(300); };
     const inspect = async name => {
       await settled(); console.log(`${width}px ${name}`);
@@ -39,29 +38,30 @@ try {
     await page.getByTestId('novel-chapter-card-1').waitFor(); await inspect('library');
     await page.getByTestId('novel-chapter-card-1').focus(); await page.keyboard.press('Enter'); await page.getByTestId('novel-reader-panel').waitFor(); await inspect('reader');
     const voiceCount = await page.evaluate(() => window.qaVoice.length); await page.getByTestId('novel-reader-text').first().click(); assert(await page.evaluate(() => window.qaVoice.length) === voiceCount, 'Reading text started unwanted audio');
+    await click('展開閱讀工具');await click('看插圖');await page.getByRole('img',{name:'Chapter 1 illustration'}).waitFor();await inspect('scene');await click('關閉工具面板');
     await click('下一頁'); await settled();
     const block = page.locator('[data-testid="novel-page-content"] [data-reader-block]').first(), index = Number(await block.getAttribute('data-reader-block'));
-    const excerpt = await block.getByTestId('novel-reader-text').textContent(); await click(`收藏段落 ${index + 1}`); await inspect('bookmark-saved');
+    const excerpt = await block.getByTestId('novel-reader-text').textContent(); await click(`段落 ${index + 1} 的閱讀工具`);await click(`收藏段落 ${index + 1}`); await inspect('bookmark-saved');await click('關閉工具面板');
     await click('☷ 目錄與書籤'); await inspect('journey'); await click(`移除書籤 第 1 章第 ${index + 1} 段`); await click('還原書籤'); await inspect('bookmark-undo'); await click('關閉工具面板');
-    await tools(); await click('閱讀偏好'); await click('先讀英文'); await click('清楚字體'); await click('柔綠'); await inspect('preferences'); await click('關閉工具面板');
+    await click('閱讀偏好'); await click('先讀英文'); await click('清楚字體'); await click('柔綠'); await inspect('preferences'); await click('關閉工具面板');
     assert(await page.getByTestId('novel-reader-translation').count() === 0, 'English-first preference ignored');
-    const peek = page.getByRole('button', { name: /^看看段落 \d+ 的中文$/ }).first(); await peek.click(); assert(await page.getByTestId('novel-reader-translation').count() === 1, 'Paragraph peek revealed unrelated translations'); await inspect('single-translation');
-    await tools(); await click('閱讀偏好'); await click('夜讀'); await click('關閉工具面板'); await inspect('night');
+    await page.getByRole('button',{name:/^段落 \d+ 的閱讀工具$/}).first().click();const peek = page.getByRole('button', { name: /^看看段落 \d+ 的中文$/ }).first(); await peek.click(); assert(await page.getByTestId('novel-reader-translation').count() === 1, 'Paragraph peek revealed unrelated translations'); await inspect('single-translation');
+    await click('閱讀偏好'); await click('夜讀'); await click('關閉工具面板'); await inspect('night');
     await page.reload(); await click('繼續閱讀'); await settled(); assert(await page.getByTestId('novel-reader-translation').count() === 0, 'Temporary peek survived reload');
-    assert(await page.getByTestId('novel-reader-panel').evaluate(element => getComputedStyle(element).backgroundColor) === 'rgb(20, 33, 35)', 'Night preference was lost'); await inspect('restored');
+    assert(await page.getByTestId('novel-reader-panel').evaluate(element => getComputedStyle(element).backgroundColor) === 'rgb(32, 46, 48)', 'Night preference was lost'); await inspect('restored');
     await click('☷ 目錄與書籤'); await click(`前往書籤 第 1 章第 ${index + 1} 段`); await settled();
     assert(await page.locator(`[data-reader-block="${index}"]`).getByTestId('novel-reader-text').textContent() === excerpt, 'Bookmark restored a different paragraph');
     assert(await page.locator(`[data-reader-block="${index}"]`).evaluate(element => element === document.activeElement), 'Bookmark focus did not reach saved paragraph'); await inspect('bookmark-return');
-    await tools(); await click('A+'); await click('A+'); await click('A+'); await click('寬行距'); await inspect('large-type'); await appTheme('切換為深色模式'); await inspect('night-with-dark-app'); await appTheme('切換為淺色模式');
+    await click('閱讀偏好');for(let i=0;i<3&&await page.getByRole('button',{name:'A+',exact:true}).isEnabled();i++)await click('A+');await click('寬行距');await click('關閉工具面板'); await inspect('large-type'); await appTheme('切換為深色模式'); await inspect('night-with-dark-app'); await appTheme('切換為淺色模式');
     await click('☷ 目錄與書籤'); await page.getByRole('navigation', { name: '故事章節' }).getByRole('button', { name: new RegExp(NOVELS.elementary[0].chapters[1].title) }).click(); await settled();
     assert((await page.getByTestId('novel-reader-text').first().textContent()) === novelBlockPairs(NOVELS.elementary[0].chapters[1].en, NOVELS.elementary[0].chapters[1].zh)[0].en, 'Chapter inherited old text or pagination'); await inspect('next-chapter');
     await click('☷ 目錄與書籤'); await click(`前往書籤 第 1 章第 ${index + 1} 段`); await settled();
-    const jump = page.getByRole('combobox', { name: '跳到頁面' }); await jump.selectOption(await jump.locator('option').last().getAttribute('value')); await settled(); await inspect('chapter-end');
-    await click(width<=560?'故事小測驗':'來試試故事小測驗'); await inspect('quiz');
+    await click('☷ 目錄與書籤');const jump = page.getByRole('combobox', { name: '跳到頁面' }); await jump.selectOption(await jump.locator('option').last().getAttribute('value')); await settled(); await inspect('chapter-end');
+    await click('故事小測驗'); await inspect('quiz');
     for (const question of NOVELS.elementary[0].chapters[0].quiz) await click(question.o[question.a]);
-    await inspect('quiz-answered'); await click('關閉工具面板'); const xp = await page.evaluate(() => JSON.parse(localStorage.getItem('eg_xp')) || 0); await click(width<=560?'完成・下一章':'完成並下一章'); await settled();
+    await inspect('quiz-answered'); await click('關閉工具面板'); const xp = await page.evaluate(() => JSON.parse(localStorage.getItem('eg_xp')) || 0); await click('完成・下一章'); await settled();
     assert((await page.evaluate(() => JSON.parse(localStorage.getItem('eg_xp')) || 0)) === xp + 15, 'Chapter completion did not award exactly 15 XP');
-    await click(width<=560?'返回章節列表':'章節列表'); await page.reload(); await page.getByText(NOVELS.elementary[0].zhTitle, { exact: true }).waitFor(); await inspect('library-restored');
+    await click('返回章節列表'); await page.reload(); await page.getByText(NOVELS.elementary[0].zhTitle, { exact: true }).waitFor(); await inspect('library-restored');
     await context.close();
   }
   for (const [level, label] of [['junior', 'Junior High'], ['senior', 'Senior High']]) {

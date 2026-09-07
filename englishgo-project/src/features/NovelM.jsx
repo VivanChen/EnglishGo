@@ -9,6 +9,7 @@ import {
 import { makeNovelAudioItem, novelBlockPairs } from "../data/novelAudio.js";
 import { BOOKMARK_LIMIT, bookmarkKey, resolveBookmarks, resolveReadingBlock, NOVEL_READING_VERSION, NOVEL_TONES } from "./novelReading.js";
 import { NovelJourney, NovelPreferences } from "./NovelReadingTools.jsx";
+import NovelLibrary from "./NovelLibrary.jsx";
 import "../novel-reading.css";
 
 const NOVEL_READING_FONT='Georgia, Cambria, "Times New Roman", serif';
@@ -21,16 +22,17 @@ function isNovelReaderControlTarget(target,currentTarget){
 
 export default function NovelM({lv,onBack,onXp,deps}){
   const {LV,S,useLS,readingWords,playSound,stopSpeech,speak,speakStory,Hdr}=deps;
-  const c=LV[lv];const[novelData,setNovelData]=useState(null);const[selectedBooks,setSelectedBooks]=useLS("novelSelectedBooks",{});const[ci,setCi]=useState(null);const[page,setPage]=useState(0);const[activeBlock,setActiveBlock]=useState(null);const[activeVocab,setActiveVocab]=useState(null);const[sidePanel,setSidePanel]=useState(null);const[immersive,setImmersive]=useState(true);const[isNarrating,setIsNarrating]=useState(false);const[isNarrationPaused,setIsNarrationPaused]=useState(false);const[mobileToolsOpen,setMobileToolsOpen]=useState(false);const[audioPreload,setAudioPreload]=useState({status:"idle",ready:0,total:0});const[done,setDone]=useLS("novelDone",{});const[quizAns,setQuizAns]=useLS("novelQuiz",{});const[readingProgress,setReadingProgress]=useLS("novelReadingProgress",{});const[readingPrefs,setReadingPrefs]=useLS("novelReadingPrefs",{fontSize:16,lineHeight:1.66});const[measurement,setMeasurement]=useState({chapter:null,pages:[]});const[layoutVersion,setLayoutVersion]=useState(0);const[pageTurn,setPageTurn]=useState(null);const rewarded=useRef({});const pendingPageRef=useRef(0);const readingAnchorRef=useRef(null);const novelSpeechRef=useRef(null);const novelPanelRef=useRef(null);const novelSpreadRef=useRef(null);const novelBlockRefs=useRef({});const measureBlockRefs=useRef({});const swipeStartRef=useRef(null);const pageTurnTimerRef=useRef(null);const pageTurnRef=useRef(null);const pageTurnSequenceRef=useRef(0);
+  const c=LV[lv];const[novelData,setNovelData]=useState(null);const[selectedBooks,setSelectedBooks]=useLS("novelSelectedBooks",{});const[ci,setCi]=useState(null);const[page,setPage]=useState(0);const[activeBlock,setActiveBlock]=useState(null);const[activeVocab,setActiveVocab]=useState(null);const[sidePanel,setSidePanel]=useState(null);const[isNarrating,setIsNarrating]=useState(false);const[isNarrationPaused,setIsNarrationPaused]=useState(false);const[audioPreload,setAudioPreload]=useState({status:"idle",ready:0,total:0});const[done,setDone]=useLS("novelDone",{});const[quizAns,setQuizAns]=useLS("novelQuiz",{});const[readingProgress,setReadingProgress]=useLS("novelReadingProgress",{});const[readingPrefs,setReadingPrefs]=useLS("novelReadingPrefs",{fontSize:18,lineHeight:1.8});const[measurement,setMeasurement]=useState({chapter:null,pages:[]});const[layoutVersion,setLayoutVersion]=useState(0);const[pageTurn,setPageTurn]=useState(null);const rewarded=useRef({});const pendingPageRef=useRef(0);const readingAnchorRef=useRef(null);const novelSpeechRef=useRef(null);const novelPanelRef=useRef(null);const novelSpreadRef=useRef(null);const novelBlockRefs=useRef({});const measureBlockRefs=useRef({});const swipeStartRef=useRef(null);const pageTurnTimerRef=useRef(null);const pageTurnRef=useRef(null);const pageTurnSequenceRef=useRef(0);
   const[bookmarks,setBookmarks]=useLS("novelBookmarks",{});
   const[peekBlocks,setPeekBlocks]=useState({});
   const[bookmarkNotice,setBookmarkNotice]=useState(null);
   const[removedBookmark,setRemovedBookmark]=useState(null);
   const[focusBlock,setFocusBlock]=useState(null);
+  const[selectedParagraph,setSelectedParagraph]=useState(null);
   const toolsPanelRef=useRef(null);
   const speechSequenceRef=useRef(0);
   const showZh=readingPrefs?.showZh!==false;
-  const setShowZh=updater=>setReadingPrefs(value=>({...value,showZh:typeof updater==="function"?updater(value?.showZh!==false):updater}));
+
   const readerFont=readingPrefs?.fontFamily==="clear"?'Arial, "Noto Sans", sans-serif':NOVEL_READING_FONT;
   const tone=NOVEL_TONES[readingPrefs?.tone]||NOVEL_TONES.paper;
   const readerColors={"--reader-paper":tone.paper,"--reader-ink":tone.ink,"--reader-muted":tone.muted,"--reader-rule":tone.rule,"--reader-accent":tone.accent,"--reader-active":tone.active};
@@ -41,21 +43,22 @@ export default function NovelM({lv,onBack,onXp,deps}){
   useEffect(()=>{if(typeof window==="undefined")return;const onResize=()=>{setViewportWidth(window.innerWidth||1024);setViewportHeight(window.innerHeight||768)};onResize();window.addEventListener("resize",onResize);return()=>window.removeEventListener("resize",onResize)},[]);
   useEffect(()=>{let active=true;document.fonts?.ready?.then(()=>{if(active)setLayoutVersion(v=>v+1)});return()=>{active=false}},[]);
   const isMobile=viewportWidth<=560||(viewportWidth<=960&&viewportHeight<=500);
-  const visiblePageCount=isMobile?1:2;
+  const visiblePageCount=1;
   const readerFontSize=Math.max(14,Math.min(22,Number(readingPrefs?.fontSize)||16));
   const readerLineHeight=Math.max(1.5,Math.min(2.1,Number(readingPrefs?.lineHeight)||1.66));
-  const readingFocus=immersive;
+
   const novels=novelData?(novelData[lv]?.length?novelData[lv]:novelData.elementary):[];
   const ni=Math.max(0,novels.findIndex(book=>book.id===selectedBooks?.[lv]));
   const setNi=index=>setSelectedBooks(saved=>({...saved,[lv]:novels[index]?.id}));
-  useEffect(()=>{const target=Math.max(0,Number(pendingPageRef.current)||0);pendingPageRef.current=0;window.clearTimeout?.(pageTurnTimerRef.current);pageTurnTimerRef.current=null;pageTurnRef.current=null;setPageTurn(null);setPage(target);setActiveBlock(null);setActiveVocab(null);setSidePanel(null);setMobileToolsOpen(false);setPeekBlocks({});setBookmarkNotice(null);setRemovedBookmark(null);novelBlockRefs.current={};novelPanelRef.current?.scrollTo({top:0})},[ci,ni]);
-  const novel=novels[ni];const completed=done[novel?.id]||[];const chapter=ci==null?null:novel?.chapters[ci];const blockPairs=useMemo(()=>novelBlockPairs(chapter?.en,chapter?.zh),[chapter]);const enBlocks=useMemo(()=>blockPairs.map(b=>b.en),[blockPairs]);const zhBlocks=useMemo(()=>blockPairs.map(b=>b.zh),[blockPairs]);const words=chapter?readingWords(chapter.en).length:0;const pct=novel?Math.round((completed.length/novel.chapters.length)*100):0;
-  const mobileFocus=isMobile&&readingFocus&&!!chapter;
+  useEffect(()=>{const target=Math.max(0,Number(pendingPageRef.current)||0);pendingPageRef.current=0;window.clearTimeout?.(pageTurnTimerRef.current);pageTurnTimerRef.current=null;pageTurnRef.current=null;setPageTurn(null);setPage(target);setActiveBlock(null);setActiveVocab(null);setSidePanel(null);setPeekBlocks({});setBookmarkNotice(null);setRemovedBookmark(null);novelBlockRefs.current={};novelPanelRef.current?.scrollTo({top:0})},[ci,ni]);
+  const novel=novels[ni];const completed=done[novel?.id]||[];const chapter=ci==null?null:novel?.chapters[ci];const blockPairs=useMemo(()=>novelBlockPairs(chapter?.en,chapter?.zh),[chapter]);const enBlocks=useMemo(()=>blockPairs.map(b=>b.en),[blockPairs]);const zhBlocks=useMemo(()=>blockPairs.map(b=>b.zh),[blockPairs]);
+
   useEffect(()=>{
-    if(!mobileFocus)return;
-    document.documentElement.classList.add("novel-mobile-reading");
-    return()=>document.documentElement.classList.remove("novel-mobile-reading");
-  },[mobileFocus]);
+    if(!chapter)return;
+    document.documentElement.classList.add("novel-reading-open");
+    if(isMobile)document.documentElement.classList.add("novel-mobile-reading");
+    return()=>document.documentElement.classList.remove("novel-reading-open","novel-mobile-reading");
+  },[chapter,isMobile]);
   const savedBookmarks=useMemo(()=>resolveBookmarks(novel,bookmarks?.[novel?.id]),[novel,bookmarks]);
   const savedKeys=new Set(savedBookmarks.map(bookmarkKey));
   useEffect(()=>{
@@ -65,38 +68,42 @@ export default function NovelM({lv,onBack,onXp,deps}){
     panel.querySelector('button')?.focus();
     const handleKey=event=>{
       if(event.key==="Escape"){event.preventDefault();setSidePanel(null);return}
-      if(!isMobile||event.key!=="Tab")return;
-      const controls=[...panel.querySelectorAll('button:not(:disabled),select,a[href],[tabindex="0"]')];
+      if(event.key!=="Tab")return;
+      const controls=[...panel.querySelectorAll('button:not(:disabled),select,input,a[href],[tabindex="0"]')];
       const first=controls[0],last=controls.at(-1);
       if(event.shiftKey&&document.activeElement===first){event.preventDefault();last?.focus()}
       else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first?.focus()}
     };
     document.addEventListener("keydown",handleKey);
     const overflow=document.body.style.overflow;
-    if(isMobile)document.body.style.overflow="hidden";
-    return()=>{document.removeEventListener("keydown",handleKey);if(isMobile)document.body.style.overflow=overflow;if(previous?.isConnected)previous.focus();else novelPanelRef.current?.focus({preventScroll:true})};
+    document.body.style.overflow="hidden";
+    return()=>{document.removeEventListener("keydown",handleKey);document.body.style.overflow=overflow;if(previous?.isConnected)previous.focus();else novelPanelRef.current?.focus({preventScroll:true})};
   },[sidePanel,isMobile]);
   const novelImageBase=novel?.imageBase||"/images/novels/secret-forest";
   useEffect(()=>{if(typeof Image==="undefined"||!novel)return;const max=novel.chapters.length;const nums=ci==null?[1,2,3,4].filter(n=>n<=max):[ci+1,ci+2].filter(n=>n>=1&&n<=max);if(ci==null){const cover=new Image();cover.src=`${novelImageBase}/cover.jpg`}nums.forEach(n=>{const img=new Image();img.src=`${novelImageBase}/chapter-${n}${ci==null?"-thumb":""}.jpg`})},[ci,novel,novelImageBase]);
   const estimatedBlockHeights=useMemo(()=>{
-    const pageWidth=isMobile?Math.max(280,viewportWidth-52):340;
+    const pageWidth=Math.max(200,Math.min(720,viewportWidth-48)-40);
     const lineChars=Math.max(20,Math.floor(pageWidth/(readerFontSize*.58)));
     return blockPairs.map(block=>{
       const enLines=Math.max(1,Math.ceil(String(block.en||"").length/lineChars));
       const zhLines=(showZh||peekBlocks[block.i])&&block.zh?Math.max(1,Math.ceil(String(block.zh).length/Math.max(12,Math.floor(lineChars*.72)))):0;
-      return 22+Math.max(93,enLines*readerFontSize*readerLineHeight)+(zhLines?16+zhLines*Math.max(13,readerFontSize-2)*readerLineHeight:0)+(!showZh&&block.zh?52:0);
+      return 12+Math.max(32,enLines*readerFontSize*readerLineHeight)+(zhLines?7+zhLines*Math.max(13,readerFontSize-2)*readerLineHeight:0);
     });
   },[blockPairs,isMobile,readerFontSize,readerLineHeight,showZh,peekBlocks,viewportWidth]);
   const fallbackPages=useMemo(()=>{
-    const capacity=readingFocus?(isMobile?500:610):(isMobile?410:430);
-    return paginateByHeight(blockPairs,estimatedBlockHeights,capacity,6,isMobile?2:1);
-  },[blockPairs,estimatedBlockHeights,isMobile,readingFocus]);
+    const capacity=Math.max(120,viewportHeight-(isMobile?200:240));
+    return paginateByHeight(blockPairs,estimatedBlockHeights,capacity,8,1);
+  },[blockPairs,estimatedBlockHeights,isMobile,viewportHeight]);
   const pages=measurement.chapter===chapter&&measurement.pages.length?measurement.pages:fallbackPages;
   const pageNow=spreadStartForPage(Math.min(page,Math.max(0,pages.length-1)),visiblePageCount);
   const pagesAt=start=>Array.from({length:visiblePageCount},(_,offset)=>({index:start+offset,blocks:pages[start+offset]||[]})).filter(item=>item.index<pages.length);
   const visiblePages=pagesAt(pageNow);
   const pageBlocks=visiblePages.flatMap(item=>item.blocks);
   const pageStart=pageBlocks.length?Math.min(...pageBlocks.map(block=>block.i)):0;
+  useLayoutEffect(()=>{
+    const content=novelSpreadRef.current?.querySelector('[data-testid="novel-page-content"]');
+    if(content)content.scrollTop=0;
+  },[chapter,pageNow,pageTurn?.targetStart]);
   useEffect(()=>{
     if(focusBlock==null||!chapter||!pageBlocks.some(block=>block.i===focusBlock))return;
     const node=novelBlockRefs.current[focusBlock];
@@ -124,17 +131,16 @@ export default function NovelM({lv,onBack,onXp,deps}){
   },[chapter?.no]);
   useLayoutEffect(()=>{
     if(!chapter||!blockPairs.length)return;
-    const spreadHeight=novelSpreadRef.current?.clientHeight||0;
+    const spreadHeight=novelSpreadRef.current?.querySelector('[data-testid="novel-page-content"]')?.clientHeight||0;
     const measured=blockPairs.map((_,index)=>measureBlockRefs.current[index]?.getBoundingClientRect?.().height||0);
     if(spreadHeight<80||measured.some(height=>height<=0))return;
-    const pageChrome=isMobile?82:96;
-    const nextPages=paginateByHeight(blockPairs,measured,Math.max(60,spreadHeight-pageChrome),6,1);
+    const nextPages=paginateByHeight(blockPairs,measured,Math.max(60,spreadHeight-4),8,1);
     setMeasurement(current=>{
       const currentKey=current.pages.map(items=>items.map(item=>item.i).join(",")).join("|");
       const nextKey=nextPages.map(items=>items.map(item=>item.i).join(",")).join("|");
       return current.chapter===chapter&&currentKey===nextKey?current:{chapter,pages:nextPages};
     });
-  },[blockPairs,chapter,estimatedBlockHeights,isMobile,layoutVersion,readerFontSize,readerLineHeight,readingFocus,showZh,peekBlocks,readerFont,visiblePageCount]);
+  },[blockPairs,chapter,estimatedBlockHeights,isMobile,layoutVersion,readerFontSize,readerLineHeight,showZh,peekBlocks,readerFont,visiblePageCount]);
   useEffect(()=>{
     if(!chapter||typeof window==="undefined"||/jsdom/i.test(navigator.userAgent||""))return;
     const frame=window.requestAnimationFrame(()=>{
@@ -182,7 +188,7 @@ export default function NovelM({lv,onBack,onXp,deps}){
   const startNovelStory=(items,options={})=>{
     const sequence=++speechSequenceRef.current;
     setActiveBlock(null);setActiveVocab(null);setIsNarrationPaused(false);setIsNarrating(true);
-    if(isMobile)setMobileToolsOpen(false);
+    setSidePanel(null);
     const guard=callback=>(...args)=>{if(sequence===speechSequenceRef.current)callback?.(...args)};
     const finish=callback=>guard(()=>{setIsNarrating(false);setIsNarrationPaused(false);callback?.()});
     const handle=speakStory(items,{...options,onSentence:guard(options.onSentence),onFinish:finish(options.onFinish),oncancel:finish(options.oncancel)});
@@ -214,230 +220,134 @@ export default function NovelM({lv,onBack,onXp,deps}){
   };
   const speakNovelText=(text,lang="en-US",rate=0.78,idx=null)=>{const sequence=++speechSequenceRef.current;const item=novelAudioItem(text,lang,"block",idx);const finish=()=>{if(sequence!==speechSequenceRef.current)return;setActiveBlock(null);setIsNarrating(false);setIsNarrationPaused(false)};const utterance=speak(item.text,item.lang,item.rate,{apiTts:item.apiTts,audioUrl:item.audioUrl,onend:finish,onerror:finish,oncancel:finish});if(!utterance)return;novelSpeechRef.current=null;setActiveVocab(null);setActiveBlock(idx);setIsNarrationPaused(false);setIsNarrating(true)};
   const speakNovelVocab=(word)=>{const sequence=++speechSequenceRef.current;const finish=()=>{if(sequence!==speechSequenceRef.current)return;setActiveVocab(null);setIsNarrating(false);setIsNarrationPaused(false)};const utterance=speak(word,"en-US",0.86,{onend:finish,onerror:finish,oncancel:finish});if(!utterance)return;novelSpeechRef.current=null;setActiveBlock(null);setActiveVocab(word);setIsNarrationPaused(false);setIsNarrating(true)};
-  const goChapter=(i,startPage=0,startBlock=null)=>{stopNovelSpeech();const safePage=Math.max(0,Number(startPage)||0);pendingPageRef.current=safePage;readingAnchorRef.current=startBlock==null?null:Math.max(0,Number(startBlock)||0);setImmersive(true);setCi(i);setPage(safePage);if(typeof navigator==="undefined"||!/jsdom/i.test(navigator.userAgent||"")){try{window.scrollTo?.({top:0,behavior:"smooth"})}catch{}}};
+  const goChapter=(i,startPage=0,startBlock=null)=>{stopNovelSpeech();const safePage=Math.max(0,Number(startPage)||0);pendingPageRef.current=safePage;readingAnchorRef.current=startBlock==null?null:Math.max(0,Number(startBlock)||0);setCi(i);setPage(safePage);if(typeof navigator==="undefined"||!/jsdom/i.test(navigator.userAgent||"")){try{window.scrollTo?.({top:0,behavior:"smooth"})}catch{}}};
   const backToList=()=>{stopNovelSpeech();setCi(null)};
   if(!novelData)return(<div><Hdr t="📘 英文小說" onBack={onBack} cl={c.cl}/><div style={{textAlign:"center",padding:"48px",color:S.t3}}>載入小說中...</div></div>);
   if(!novel)return(<div><Hdr t="📘 英文小說" onBack={onBack} cl={c.cl}/><div style={{...S.card,padding:"28px 18px",textAlign:"center",color:S.t2}}>這個年級的小說準備中</div></div>);
-  const resumeProgress=novel?readingProgress[novel.id]:null;
-  const resumeIndex=resumeProgress?novel.chapters.findIndex(ch=>ch.no===resumeProgress.chapterNo):-1;
-  const resumeChapter=resumeIndex>=0?novel.chapters[resumeIndex]:null;
-  const resumePageCount=resumeChapter?Math.max(1,Number(resumeProgress?.pageCount)||Math.ceil(novelBlockPairs(resumeChapter.en,resumeChapter.zh).length/2)):1;
-  const resumePage=Math.max(0,Math.min(Number(resumeProgress?.page)||0,resumePageCount-1));
-  const resumeBlock=resolveReadingBlock(novel.id,resumeProgress);
-  if(ci==null)return(<div className="novel-reading"><Hdr t="📘 英文小說" onBack={onBack} cl={c.cl}/>
-    <div style={{...S.card,padding:0,overflow:"hidden",marginBottom:12,borderTop:`4px solid ${c.cl}`}}>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(min(100%,240px),1fr))",gap:0,background:"linear-gradient(135deg,#0C382E,#175B48 48%,#7ECBA9)",color:"#fff"}}>
-        <div style={{padding:"22px 18px",display:"flex",flexDirection:"column",justifyContent:"center",minHeight:210}}>
-          <div style={{fontSize:12,fontWeight:800,opacity:.78,marginBottom:6,letterSpacing:.2}}>{novel.theme} · {novel.level} · 有聲讀本</div>
-          <div style={{fontSize:29,fontWeight:900,lineHeight:1.12,maxWidth:430}}>{novel.title}</div>
-          <div style={{fontSize:16,fontWeight:800,opacity:.92,marginTop:7}}>{novel.zhTitle}</div>
-          <div style={{fontSize:13,lineHeight:1.6,opacity:.86,marginTop:12,maxWidth:390}}>一章一章閱讀、聆聽、回答問題，練習長篇英文理解。</div>
-          <div style={{display:"flex",gap:8,alignItems:"center",marginTop:18,fontSize:12}}><span>{completed.length}/{novel.chapters.length} 章完成</span><div style={{flex:1,maxWidth:190,height:7,background:"rgba(255,255,255,.22)",borderRadius:4,overflow:"hidden"}}><div style={{height:"100%",width:`${pct}%`,background:"#fff",borderRadius:4}}/></div><span>{pct}%</span></div>
-        </div>
-        <NovelIllustration cover chapter={1} imageBase={novelImageBase} title={novel.title}/>
-      </div>
-    </div>
-    {resumeChapter&&<div style={{...S.card,padding:"13px 14px",marginBottom:12,border:`1px solid ${c.cl}`,background:"linear-gradient(135deg,#F0FFF8,#FFFFFF)"}}>
-      <div style={{display:"flex",alignItems:"center",gap:12,justifyContent:"space-between",flexWrap:"wrap"}}>
-        <div style={{minWidth:0,flex:"1 1 260px"}}>
-          <div style={{fontSize:12,fontWeight:900,color:c.cl,marginBottom:3}}>閱讀進度</div>
-          <div style={{fontSize:16,fontWeight:900,color:S.t1,lineHeight:1.3}}>{resumeChapter.title}</div>
-          <div style={{fontSize:12,color:S.t2,marginTop:3}}>上次讀到 Chapter {resumeChapter.no} · {resumeBlock==null?`Page ${resumePage+1}`:`段落 ${resumeBlock+1}`}</div>
-          <p className="novel-resume-excerpt" lang="en">{novelBlockPairs(resumeChapter.en,resumeChapter.zh)[resumeBlock??0]?.en}</p>
-        </div>
-        <button onClick={()=>goChapter(resumeIndex,resumePage,resumeBlock)} style={{...S.btn,background:c.cl,color:"#fff",padding:"10px 16px",fontSize:13,flex:"0 0 auto"}}>繼續閱讀</button>
-      </div>
-    </div>}
-    {novels.length>1&&<div style={{display:"flex",gap:6,overflowX:"auto",marginBottom:10}}>{novels.map((n,i)=><button key={n.id} onClick={()=>{setNi(i);setCi(null)}} style={{flexShrink:0,padding:"8px 12px",border:"none",borderRadius:12,background:i===ni?c.cl:S.bg2,color:i===ni?"#fff":S.t1,fontWeight:700,fontSize:12,fontFamily:"inherit",cursor:"pointer"}}>{n.title}</button>)}</div>}
-    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(min(100%,158px),1fr))",gap:10}}>
-      {novel.chapters.map((ch,i)=>{const isDone=completed.includes(ch.no);const chProgress=readingProgress[novel.id]?.chapterNo===ch.no?readingProgress[novel.id]:null;const chPageCount=Math.max(1,Number(chProgress?.pageCount)||Math.ceil(novelBlockPairs(ch.en,ch.zh).length/2));const chPage=Math.max(0,Math.min(Number(chProgress?.page)||0,chPageCount-1));const chBlock=resolveReadingBlock(novel.id,chProgress);const chQuiz=ch.quiz||[];const chQuizState=quizAns[`${novel.id}:${ch.no}`]||{};const chQuizAnswered=chQuiz.filter((_,qi)=>chQuizState[qi]!=null).length;const statusText=isDone?"已完成":chProgress?`進行中 · ${chBlock==null?`Page ${chPage+1}/${chPageCount}`:`段落 ${chBlock+1}`}`:"尚未開始";return(<div key={ch.no} role="button" tabIndex={0} aria-label={`閱讀第 ${ch.no} 章 ${ch.title}`} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();goChapter(i,chProgress?chPage:0,chBlock)}}} data-testid={`novel-chapter-card-${ch.no}`} onClick={()=>goChapter(i,chProgress?chPage:0,chBlock)} style={{...S.card,padding:0,overflow:"hidden",cursor:"pointer",border:`1px solid ${isDone?"#1D9E75":chProgress?c.cl:S.bd}`,boxShadow:chProgress?`0 10px 24px ${c.cl}22`:S.card.boxShadow}}>
-        <div style={{position:"relative",color:"#fff"}}>
-          <NovelIllustration chapter={ch.no} small imageBase={novelImageBase} title={novel.title}/>
-          <div style={{position:"absolute",top:8,left:8,width:28,height:28,borderRadius:"50%",background:"rgba(255,255,255,.9)",color:c.cl,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:900}}>{ch.no}</div>
-          {isDone&&<div style={{position:"absolute",top:8,right:8,borderRadius:999,background:"#E1F5EE",color:"#1D9E75",padding:"3px 8px",fontSize:11,fontWeight:800}}>已讀</div>}
-        </div>
-        <div style={{padding:"12px 12px 13px"}}>
-          <div style={{fontSize:14,fontWeight:800,color:S.t1,lineHeight:1.35}}>{ch.title}</div>
-          <div style={{fontSize:12,color:S.t2,marginTop:4}}>{ch.zhTitle}</div>
-          <div style={{fontSize:11,color:S.t3,marginTop:8}}>約 {Math.max(1,Math.ceil(readingWords(ch.en).length/100))} 分鐘 · {ch.vocab.length} 個重點單字</div>
-          <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:9}}>
-            <span style={{fontSize:10,fontWeight:900,color:isDone?"#1D9E75":chProgress?c.cl:S.t3,background:isDone?"#E1F5EE":chProgress?c.bg:S.bg2,border:`1px solid ${isDone?"#1D9E75":chProgress?c.cl:S.bd}`,borderRadius:999,padding:"4px 8px"}}>{statusText}</span>
-            <span style={{fontSize:10,fontWeight:900,color:chQuizAnswered===chQuiz.length&&chQuiz.length?c.cl:S.t3,background:S.bg2,border:`1px solid ${S.bd}`,borderRadius:999,padding:"4px 8px"}}>測驗 {chQuizAnswered}/{chQuiz.length}</span>
-          </div>
-        </div>
-      </div>)})}
-    </div>
-  </div>);
-  const next=ci+1<novel.chapters.length?ci+1:null;const prev=ci>0?ci-1:null;const isDone=completed.includes(chapter.no);const canPrevPage=pageNow>0;const canNextPage=pageNow+visiblePageCount<pages.length;const quizScore=quiz.reduce((n,q,i)=>n+(quizState[i]===q.a?1:0),0);
-  const pagePct=pages.length?Math.round((Math.min(pageNow+visiblePageCount,pages.length)/pages.length)*100):0;
-  const chapterPct=novel.chapters.length?Math.round(((ci+Math.min(pageNow+visiblePageCount,pages.length)/Math.max(1,pages.length))/novel.chapters.length)*100):0;
-  const pageEnd=pageBlocks.length?Math.max(...pageBlocks.map(block=>block.i))+1:0;
-  const updateReadingPrefs=patch=>setReadingPrefs(d=>({...d,...patch}));
-  const panelIsVocab=sidePanel==="vocab";
-  const panelTitle=sidePanel==="journey"?"目錄與書籤":sidePanel==="settings"?"閱讀偏好":panelIsVocab?"重點單字":`章節測驗 ${quizAnswered}/${quiz.length}`;
-  const audioPreloadLabel=audioPreload.status==="loading"?`語音準備中 0/${audioPreload.total}`:audioPreload.status==="ready"?"✓ 本頁語音已就緒":audioPreload.status==="partial"?`語音待連線 ${audioPreload.ready}/${audioPreload.total}`:audioPreload.status==="unavailable"?"語音服務待連線":"固定真人旁白";
-  const playbackStatusLabel=isNarrating?(isNarrationPaused?"朗讀已暫停":"正在朗讀"):audioPreloadLabel;
-  const mobileAudioStatus=isNarrating?(isNarrationPaused?"Ⅱ 已暫停":"▶ 朗讀中"):audioPreload.status==="ready"?"✓ 語音就緒":audioPreload.status==="loading"?"準備語音…":audioPreload.status==="partial"||audioPreload.status==="unavailable"?"語音待連線":"真人旁白";
-  const panelTop=isMobile?"auto":"76px";
-  const panelStyle={position:"fixed",zIndex:130,left:isMobile?0:"max(12px, calc((100vw - 760px) / 2 - 304px))",right:isMobile?0:"auto",top:panelTop,bottom:isMobile?0:18,width:isMobile?"auto":286,maxHeight:isMobile?"calc(72vh - env(safe-area-inset-bottom))":"calc(100vh - 94px)",overflowY:"auto",background:S.bg1,border:`1px solid ${c.cl}55`,borderRadius:isMobile?"18px 18px 0 0":16,boxShadow:"0 20px 48px rgba(15,110,86,.22)",padding:14,paddingBottom:isMobile?"calc(14px + env(safe-area-inset-bottom))":14};
-  const pageActionsStyle={display:"flex",gap:8,alignItems:"center",paddingTop:10,paddingBottom:isMobile?"calc(10px + env(safe-area-inset-bottom))":"10px",flex:"0 0 auto"};
-  const mobileReaderHeight=readingFocus?"clamp(400px, calc(100svh - 280px), 720px)":"clamp(400px, calc(100svh - 320px), 620px)";
-  const finishPageTurn=(transitionId,event)=>{if(event&&event.currentTarget!==event.target)return;const transition=pageTurnRef.current;if(!transition||transition.id!==transitionId)return;window.clearTimeout?.(pageTurnTimerRef.current);pageTurnTimerRef.current=null;pageTurnRef.current=null;readingAnchorRef.current=pages[transition.targetStart]?.[0]?.i??0;setPage(transition.targetStart);setPageTurn(current=>current?.id===transitionId?null:current)};
-  const turnPage=(target,direction,stopAudio=true)=>{if(pageTurnRef.current)return;if(stopAudio){stopNovelSpeech();setActiveBlock(null)}const targetStart=spreadStartForPage(Math.max(0,Math.min(target,pages.length-1)),visiblePageCount);if(targetStart===pageNow)return;const transition={id:++pageTurnSequenceRef.current,direction,sourceStart:pageNow,targetStart};pageTurnRef.current=transition;setPageTurn(transition);window.clearTimeout?.(pageTurnTimerRef.current);pageTurnTimerRef.current=window.setTimeout?.(()=>finishPageTurn(transition.id),480)};
-  const goPreviousPage=()=>turnPage(previousSpreadStart(pageNow,visiblePageCount),"backward");
-  const goNextPage=()=>turnPage(nextSpreadStart(pageNow,pages.length,visiblePageCount),"forward");
-  const handleReaderKeyDown=e=>{if(pageTurnRef.current||isNovelReaderControlTarget(e.target,e.currentTarget)||e.altKey||e.ctrlKey||e.metaKey)return;if(e.key==="ArrowLeft"&&canPrevPage){e.preventDefault();goPreviousPage()}if(e.key==="ArrowRight"&&canNextPage){e.preventDefault();goNextPage()}};
-  const handlePointerDown=e=>{
-    if(e.pointerType==="mouse"||pageTurnRef.current||isNovelReaderControlTarget(e.target,e.currentTarget)){
-      swipeStartRef.current=null;
-      return;
-    }
-    swipeStartRef.current={x:e.clientX,y:e.clientY,id:e.pointerId};
-    e.currentTarget.setPointerCapture?.(e.pointerId);
+  if(ci==null)return <NovelLibrary novels={novels} novel={novel} index={ni} onSelect={setNi} onBack={onBack} onOpen={goChapter} completed={completed} progress={readingProgress} quizAnswers={quizAns} readingWords={readingWords}/>;
+
+  const next=ci+1<novel.chapters.length?ci+1:null;
+  const isDone=completed.includes(chapter.no);
+  const canPrevPage=pageNow>0,canNextPage=pageNow+1<pages.length;
+  const pagePct=Math.round(Math.min(pageNow+1,pages.length)/Math.max(1,pages.length)*100);
+  const chapterPct=Math.round((ci+(pageNow+1)/Math.max(1,pages.length))/novel.chapters.length*100);
+  const updateReadingPrefs=patch=>setReadingPrefs(current=>({...current,...patch}));
+  const panelTitles={journey:'目錄與書籤',settings:'閱讀偏好',vocab:'重點單字',quiz:`章節測驗 ${quizAnswered}/${quiz.length}`,audio:'聽故事',tools:'閱讀工具',paragraph:'這一段，慢慢讀',scene:'故事裡的風景'};
+  const playbackStatus=isNarrating?(isNarrationPaused?'朗讀已暫停':'正在陪你讀故事'):audioPreload.status==='ready'?'本頁語音已準備好':audioPreload.status==='loading'?'正在準備本頁語音':'連線後就能聽故事';
+  const finishPageTurn=(id,event)=>{
+    if(event&&event.target!==event.currentTarget)return;
+    const transition=pageTurnRef.current;if(!transition||transition.id!==id)return;
+    window.clearTimeout(pageTurnTimerRef.current);pageTurnRef.current=null;pageTurnTimerRef.current=null;
+    readingAnchorRef.current=pages[transition.targetStart]?.[0]?.i??0;setPage(transition.targetStart);setPageTurn(null);
   };
-  const handlePointerCancel=()=>{swipeStartRef.current=null};
-  const handlePointerUp=e=>{const start=swipeStartRef.current;swipeStartRef.current=null;try{e.currentTarget.releasePointerCapture?.(e.pointerId)}catch{}if(!start||start.id!==e.pointerId||pageTurnRef.current||window.getSelection?.()?.toString())return;const dx=e.clientX-start.x;const dy=e.clientY-start.y;if(Math.abs(dx)<48||Math.abs(dx)<Math.abs(dy)*1.25)return;if(dx<0&&canNextPage)goNextPage();if(dx>0&&canPrevPage)goPreviousPage()};
-  const writeBookmarks=next=>setBookmarks(saved=>({...saved,[novel.id]:next.map(({chapterNo,blockIndex,createdAt})=>({chapterNo,blockIndex,contentVersion:NOVEL_READING_VERSION,createdAt}))}));
-  const removeBookmark=mark=>{writeBookmarks(savedBookmarks.filter(item=>bookmarkKey(item)!==bookmarkKey(mark)));setRemovedBookmark(mark);setBookmarkNotice("書籤已移除，還可以還原。");};
+  const turnPage=(target,direction,stopAudio=true)=>{
+    if(pageTurnRef.current)return;
+    if(stopAudio)stopNovelSpeech();
+    const targetStart=Math.max(0,Math.min(target,pages.length-1));if(targetStart===pageNow)return;
+    const transition={id:++pageTurnSequenceRef.current,targetStart,direction};
+    pageTurnRef.current=transition;setPageTurn(transition);window.clearTimeout(pageTurnTimerRef.current);
+    pageTurnTimerRef.current=window.setTimeout(()=>finishPageTurn(transition.id),260);
+  };
+  const goPreviousPage=()=>turnPage(previousSpreadStart(pageNow,1),'backward');
+  const goNextPage=()=>turnPage(nextSpreadStart(pageNow,pages.length,1),'forward');
+  const handleReaderKeyDown=event=>{
+    if(pageTurnRef.current||sidePanel||isNovelReaderControlTarget(event.target,event.currentTarget)||event.altKey||event.ctrlKey||event.metaKey)return;
+    if(event.key==='ArrowLeft'&&canPrevPage){event.preventDefault();goPreviousPage()}
+    if(event.key==='ArrowRight'&&canNextPage){event.preventDefault();goNextPage()}
+  };
+  const handlePointerDown=event=>{
+    if(event.pointerType==='mouse'||pageTurnRef.current||isNovelReaderControlTarget(event.target,event.currentTarget)){swipeStartRef.current=null;return}
+    swipeStartRef.current={x:event.clientX,y:event.clientY,id:event.pointerId};
+  };
+  const handlePointerUp=event=>{
+    const start=swipeStartRef.current;swipeStartRef.current=null;
+    if(!start||start.id!==event.pointerId||pageTurnRef.current||window.getSelection?.()?.toString())return;
+    const dx=event.clientX-start.x,dy=event.clientY-start.y;
+    if(Math.abs(dx)<48||Math.abs(dx)<Math.abs(dy)*1.25)return;
+    if(dx<0&&canNextPage)goNextPage();if(dx>0&&canPrevPage)goPreviousPage();
+  };
+  const writeBookmarks=items=>setBookmarks(saved=>({...saved,[novel.id]:items.map(({chapterNo,blockIndex,createdAt})=>({chapterNo,blockIndex,contentVersion:NOVEL_READING_VERSION,createdAt}))}));
+  const removeBookmark=mark=>{writeBookmarks(savedBookmarks.filter(item=>bookmarkKey(item)!==bookmarkKey(mark)));setRemovedBookmark(mark);setBookmarkNotice('書籤已移除，還可以還原。')};
   const toggleBookmark=block=>{
     const mark={chapterNo:chapter.no,blockIndex:block.i,createdAt:Date.now()};
     if(savedKeys.has(bookmarkKey(mark))){removeBookmark(savedBookmarks.find(item=>bookmarkKey(item)===bookmarkKey(mark)));return}
     if(savedBookmarks.length>=BOOKMARK_LIMIT){setBookmarkNotice(`這本書已存滿 ${BOOKMARK_LIMIT} 個書籤，先整理一下再收藏。`);setRemovedBookmark(null);return}
-    writeBookmarks([mark,...savedBookmarks]);setRemovedBookmark(null);setBookmarkNotice(`已收藏第 ${chapter.no} 章的段落 ${block.i+1}。`);
+    writeBookmarks([mark,...savedBookmarks]);setRemovedBookmark(null);setBookmarkNotice('這一段，已放進你的書籤。');
   };
   const jumpToBlock=(chapterIndex,blockIndex)=>{
-    const targetBlocks=novelBlockPairs(novel.chapters[chapterIndex]?.en,novel.chapters[chapterIndex]?.zh);
-    const anchor=Math.max(0,Math.min(Number(blockIndex)||0,targetBlocks.length-1));
+    const blocks=novelBlockPairs(novel.chapters[chapterIndex]?.en,novel.chapters[chapterIndex]?.zh);
+    const anchor=Math.max(0,Math.min(Number(blockIndex)||0,blocks.length-1));
     if(chapterIndex!==ci)goChapter(chapterIndex,0,anchor);
-    else{stopNovelSpeech();window.clearTimeout(pageTurnTimerRef.current);pageTurnRef.current=null;setPageTurn(null);readingAnchorRef.current=anchor;setPage(spreadStartForPage(findPageForBlock(pages,anchor),visiblePageCount));setSidePanel(null)}
+    else{stopNovelSpeech();window.clearTimeout(pageTurnTimerRef.current);pageTurnRef.current=null;setPageTurn(null);readingAnchorRef.current=anchor;setPage(findPageForBlock(pages,anchor));setSidePanel(null)}
     setFocusBlock(anchor);
   };
-  const openPanel=panel=>{setSidePanel(panel);if(isMobile)setMobileToolsOpen(false)};
-  const renderBookmarkNotice=()=>bookmarkNotice&&<div className="novel-bookmark-notice" role="status"><span>{bookmarkNotice}</span>{removedBookmark&&<button onClick={()=>{if(savedBookmarks.length>=BOOKMARK_LIMIT){setBookmarkNotice("書籤已滿，先移除一個再還原。");return}if(!savedKeys.has(bookmarkKey(removedBookmark)))writeBookmarks([removedBookmark,...savedBookmarks]);setRemovedBookmark(null);setBookmarkNotice("書籤已還原。")}}>還原書籤</button>}<button aria-label="關閉書籤提示" onClick={()=>{setBookmarkNotice(null);setRemovedBookmark(null)}}>×</button></div>;
-  const renderNovelBlock=(b,measuring=false)=>{
-    const saved=savedKeys.has(`${chapter.no}:${b.i}`),translated=showZh||peekBlocks[b.i];
-    return <section className="novel-paragraph" key={`${measuring?"measure":"read"}-${b.i}`} data-reader-block={measuring?undefined:b.i} data-saved={saved} tabIndex={measuring?undefined:-1} aria-label={measuring?undefined:`段落 ${b.i+1}`} ref={el=>{if(measuring){if(el)measureBlockRefs.current[b.i]=el}else if(el)novelBlockRefs.current[b.i]=el}} style={{padding:isMobile?"7px 8px":"9px 10px",borderRadius:8,background:!measuring&&activeBlock===b.i?tone.active:"transparent",border:`1px solid ${!measuring&&activeBlock===b.i?tone.accent:"transparent"}`,transition:"background .18s,border-color .18s"}}>
-      <div style={{display:"flex",gap:8,alignItems:"flex-start"}}>
-        <p lang="en" data-testid={measuring?undefined:"novel-reader-text"} style={{flex:1,minWidth:0,margin:0,fontSize:readerFontSize,lineHeight:readerLineHeight,color:tone.ink,fontFamily:readerFont,fontWeight:500,whiteSpace:"pre-line",overflowWrap:"anywhere"}}>{b.en}</p>
-        <div className="novel-block-tools">{measuring?<><span data-testid="novel-measure-speaker" style={{width:38,height:44}}/><span style={{width:38,height:44}}/></>:<>
-          <button aria-label="朗讀英文" title="朗讀這一段英文" onClick={()=>speakNovelText(b.en,"en-US",0.78,b.i)}>🔊</button>
-          <button aria-label={`${saved?"取消收藏":"收藏"}段落 ${b.i+1}`} aria-pressed={saved} title={saved?"取消書籤":"留下書籤"} onClick={()=>toggleBookmark(b)}><svg aria-hidden="true" width="17" height="21" viewBox="0 0 20 24"><path d="M4 2h12v19l-6-4-6 4Z" fill={saved?"currentColor":"none"} stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/></svg></button>
-        </>}</div>
-      </div>
-      {!showZh&&b.zh&&(measuring?<div style={{height:44,marginTop:8}}/>:<button className="novel-peek" aria-expanded={!!peekBlocks[b.i]} aria-label={`${peekBlocks[b.i]?"收起":"看看"}段落 ${b.i+1} 的中文`} onClick={()=>{readingAnchorRef.current=b.i;setPeekBlocks(current=>({...current,[b.i]:!current[b.i]}))}}>{peekBlocks[b.i]?"收起中文 ▴":"看看這段中文 ▾"}</button>)}
-      {translated&&b.zh&&<div lang="zh-Hant" data-testid={measuring?undefined:"novel-reader-translation"} style={{marginTop:isMobile?6:8,padding:isMobile?"7px 8px":"8px 10px",background:tone.translation,borderLeft:`3px solid ${tone.rule}`,borderRadius:"2px 7px 7px 2px",fontSize:Math.max(13,readerFontSize-2),lineHeight:readerLineHeight,color:tone.muted,fontFamily:"inherit",whiteSpace:"pre-line",display:"flex",gap:8,alignItems:"flex-start",overflowWrap:"anywhere"}}><span style={{flex:1,minWidth:0}}>{b.zh}</span>{measuring?<span data-testid="novel-measure-speaker" style={{width:38,height:44,flexShrink:0}}/>:<button onClick={()=>speakNovelText(b.zh,"zh-TW",1,b.i)} title="朗讀中文" aria-label="朗讀中文（固定真人聲線）" style={{width:38,height:44,background:tone.paper,color:tone.accent,border:`1px solid ${tone.rule}`,borderRadius:9,fontSize:14,cursor:"pointer",flexShrink:0}}>🔊</button>}</div>}
+  const openPanel=panel=>setSidePanel(panel);
+  const openParagraph=block=>{readingAnchorRef.current=block.i;setSelectedParagraph(block.i);openPanel('paragraph')};
+  const paragraph=blockPairs[selectedParagraph];
+  const finishAndGo=()=>{completeChapter();if(quizDone){next!=null?goChapter(next):backToList()}};
+  const renderBookmarkNotice=()=>bookmarkNotice&&<div className="novel-bookmark-notice" role="status"><span>{bookmarkNotice}</span>{removedBookmark&&<button onClick={()=>{
+    if(savedBookmarks.length>=BOOKMARK_LIMIT){setBookmarkNotice('書籤已滿，先移除一個再還原。');return}
+    if(!savedKeys.has(bookmarkKey(removedBookmark)))writeBookmarks([removedBookmark,...savedBookmarks]);setRemovedBookmark(null);setBookmarkNotice('書籤已還原。');
+  }}>還原書籤</button>}<button aria-label="關閉書籤提示" onClick={()=>{setBookmarkNotice(null);setRemovedBookmark(null)}}>×</button></div>;
+  const renderNovelBlock=(block,measuring=false)=>{
+    const saved=savedKeys.has(`${chapter.no}:${block.i}`),translated=showZh||peekBlocks[block.i];
+    return <section className="novel-paragraph" key={`${measuring?'measure':'read'}-${block.i}`} data-reader-block={measuring?undefined:block.i} data-active={!measuring&&activeBlock===block.i} data-saved={saved} tabIndex={measuring?undefined:-1} aria-label={measuring?undefined:`段落 ${block.i+1}`} ref={element=>{if(measuring){if(element)measureBlockRefs.current[block.i]=element}else if(element)novelBlockRefs.current[block.i]=element}}>
+      <p lang="en" data-testid={measuring?undefined:'novel-reader-text'} style={{fontFamily:readerFont,fontSize:readerFontSize,lineHeight:readerLineHeight}}>{block.en}</p>
+      {translated&&block.zh&&<div lang="zh-Hant" className="novel-translation" data-testid={measuring?undefined:'novel-reader-translation'} style={{fontSize:Math.max(13,readerFontSize-2),lineHeight:readerLineHeight}}>{block.zh}</div>}
+      {!measuring&&<button className="novel-paragraph-more" aria-label={`段落 ${block.i+1} 的閱讀工具`} title="聽這段、看中文或留書籤" onClick={()=>openParagraph(block)}>{saved?'▣':'⋯'}</button>}
     </section>;
   };
-  const pageSheetStyle=(item,start=pageNow)=>({height:"100%",minWidth:0,overflow:"hidden",display:"flex",flexDirection:"column",background:tone.paper,border:`1px solid ${readingPrefs?.tone==="night"?"#405653":"#D7D1C4"}`,borderRadius:isMobile?8:item.index===start?"8px 1px 1px 8px":"1px 8px 8px 1px",padding:isMobile?"11px 9px 9px":"16px 14px 12px",boxShadow:item.index===start?"inset -15px 0 22px rgba(77,64,43,.055),0 9px 20px rgba(47,39,28,.09)":"inset 15px 0 22px rgba(77,64,43,.055),0 9px 20px rgba(47,39,28,.09)"});
-  const renderPageFace=item=><>
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,marginBottom:isMobile?5:8,flex:"0 0 auto"}}><div><div style={{fontSize:12,fontWeight:900,color:tone.accent}}>Page {item.index+1}</div><div style={{fontSize:10,color:tone.muted,fontWeight:800}}>{chapter.title}</div></div><span style={{fontSize:11,color:tone.muted}}>{item.blocks.length?`${item.blocks[0].i+1}-${item.blocks[item.blocks.length-1].i+1}`:""}</span></div>
-    <div data-testid="novel-page-content" style={{display:"grid",gap:6,flex:"1 1 auto",minHeight:0,overflowX:"hidden",overflowY:"auto",overscrollBehavior:"contain",scrollbarWidth:"thin",alignContent:"start"}}>{item.blocks.map(block=>renderNovelBlock(block))}</div>
-    <div style={{marginTop:"auto",paddingTop:6,textAlign:"center",fontSize:10,color:tone.muted,flex:"0 0 auto"}}>{item.index+1}</div>
-  </>;
-  const renderPageSheet=(item,start=pageNow)=><article key={item.index} data-testid="novel-book-page" style={pageSheetStyle(item,start)}>{renderPageFace(item)}</article>;
-  const sourceTurnPages=pageTurn?pagesAt(pageTurn.sourceStart):[];
-  const targetTurnPages=pageTurn?pagesAt(pageTurn.targetStart):[];
-  const displayedPages=pageTurn?(isMobile?targetTurnPages:pageTurn.direction==="forward"?[sourceTurnPages[0],targetTurnPages[1]].filter(Boolean):[targetTurnPages[0],sourceTurnPages[1]].filter(Boolean)):visiblePages;
-  const turningSource=pageTurn?(isMobile?sourceTurnPages[0]:pageTurn.direction==="forward"?sourceTurnPages[1]:sourceTurnPages[0]):null;
-  const turningBack=pageTurn?(isMobile?targetTurnPages[0]:pageTurn.direction==="forward"?targetTurnPages[0]:targetTurnPages[1]):null;
-  const renderPageTurn=()=>pageTurn&&turningSource?<div data-testid="novel-page-turn" data-direction={pageTurn.direction} data-transition-id={pageTurn.id} aria-hidden="true" inert="" onAnimationEnd={event=>finishPageTurn(pageTurn.id,event)} style={{position:"absolute",zIndex:6,top:isMobile?8:10,bottom:0,left:isMobile?4:pageTurn.direction==="forward"?"calc(50% + 1px)":8,width:isMobile?"calc(100% - 8px)":"calc(50% - 9px)",transformStyle:isMobile?"flat":"preserve-3d",transformOrigin:pageTurn.direction==="forward"?"left center":"right center",animation:`${isMobile?"novel-sheet-mobile":"novel-sheet"}-${pageTurn.direction} 400ms cubic-bezier(.3,.05,.2,1) forwards`,pointerEvents:"none"}}>
-    <article style={{...pageSheetStyle(turningSource,pageTurn.sourceStart),position:"absolute",inset:0,backfaceVisibility:"hidden",borderRadius:isMobile?8:pageTurn.direction==="forward"?"2px 8px 8px 2px":"8px 2px 2px 8px",boxShadow:pageTurn.direction==="forward"?"-12px 4px 22px rgba(62,43,24,.22)":"12px 4px 22px rgba(62,43,24,.22)"}}>{renderPageFace(turningSource)}</article>
-    {!isMobile&&<article aria-hidden="true" style={{...pageSheetStyle(turningBack||turningSource,pageTurn.targetStart),position:"absolute",inset:0,backfaceVisibility:"hidden",transform:"rotateY(180deg)",borderRadius:pageTurn.direction==="forward"?"8px 2px 2px 8px":"2px 8px 8px 2px",background:readingPrefs?.tone==="night"?tone.paper:"linear-gradient(90deg,#F2EBDD,#FFFDF7 18%,#FFFDF7 82%,#E9DFCF)",boxShadow:pageTurn.direction==="forward"?"12px 4px 22px rgba(62,43,24,.18)":"-12px 4px 22px rgba(62,43,24,.18)",color:"transparent"}}>
-      <div style={{height:6,width:"36%",borderRadius:3,background:"rgba(93,75,52,.12)",margin:"5px 0 18px"}}/>
-      <div style={{display:"grid",gap:12}}>{[82,66,76,58,72].map((width,i)=><div key={i} style={{height:5,width:`${width}%`,borderRadius:3,background:"rgba(93,75,52,.1)"}}/>)}</div>
-    </article>}
-  </div>:null;
-  const finishAndGo=()=>{completeChapter();if(quizDone){next!=null?goChapter(next):backToList()}};
-  return(<div className={`novel-reading${mobileFocus?" novel-mobile-focus":""}`} style={readerColors}>{!(readingFocus&&isMobile)&&<Hdr t="📘 英文小說" onBack={backToList} cl={c.cl} extra={!readingFocus?<button onClick={()=>setShowZh(z=>!z)} style={{background:"none",border:`1px solid ${S.bd}`,borderRadius:8,padding:"4px 8px",fontSize:12,color:c.cl,cursor:"pointer",fontFamily:"inherit"}}>{showZh?"隱藏中文":"顯示中文"}</button>:null}/>}
-    {!readingFocus&&<div style={{...S.card,padding:0,overflow:"hidden",marginBottom:10,border:`1px solid ${S.bd}`,borderTop:`4px solid ${c.cl}`,background:"linear-gradient(135deg,#FFFCF3,#F3FBF7)"}}>
-      <div data-testid="novel-chapter-hero" style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"minmax(150px,220px) minmax(0,1fr)",gap:0,alignItems:"stretch"}}>
-        <div data-testid="novel-hero-media" style={{height:isMobile?"clamp(180px, 48vw, 260px)":"clamp(170px,24vw,220px)",overflow:"visible"}}><NovelIllustration fill chapter={chapter.no} imageBase={novelImageBase} title={novel.title}/></div>
-        <div style={{padding:isMobile?"13px 12px 14px":"16px",display:"grid",gap:12,minWidth:0}}>
-          <div style={{display:"flex",gap:12,alignItems:"flex-start",justifyContent:"space-between",flexWrap:"wrap"}}>
-            <div style={{display:"flex",gap:12,alignItems:"flex-start",minWidth:0,flex:isMobile?"1 1 100%":"1 1 260px"}}><div style={{width:42,height:42,borderRadius:"50%",background:c.cl,color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,flexShrink:0}}> {chapter.no}</div><div style={{minWidth:0}}><div style={{fontSize:12,color:c.cl,fontWeight:900}}>Chapter {chapter.no}</div><div style={{fontSize:isMobile?20:22,fontWeight:900,color:S.t1,lineHeight:1.18,overflowWrap:"anywhere"}}>{chapter.title}</div><div style={{fontSize:13,color:S.t2,marginTop:3}}>{chapter.zhTitle} · {words} words</div></div></div>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(2,minmax(0,1fr))",gap:7,flex:isMobile?"1 1 100%":"0 1 190px",minWidth:0}}>
-              <div style={{padding:"8px 10px",border:`1px solid ${S.bd}`,borderRadius:10,background:"#fff"}}><div style={{fontSize:11,color:S.t3,fontWeight:800}}>頁面</div><div style={{fontSize:17,fontWeight:900,color:c.cl}}>{pageNow+1}/{pages.length}</div></div>
-              <div style={{padding:"8px 10px",border:`1px solid ${S.bd}`,borderRadius:10,background:"#fff"}}><div style={{fontSize:11,color:S.t3,fontWeight:800}}>測驗</div><div style={{fontSize:17,fontWeight:900,color:quizDone?c.cl:S.t1}}>{quizScore}/{quiz.length}</div></div>
+  const shownPage=pageTurn?.targetStart??pageNow;
+  const shownBlocks=pages[shownPage]||[];
+  const footerAction=!canNextPage?(quizDone?(next!=null?'完成・下一章':'完成・回書架'):'故事小測驗'):'下一頁';
+  return <div className="novel-reading novel-reader-session" data-tone={readingPrefs?.tone||'paper'} style={{...readerColors,'--reader-translation':tone.translation,'--reader-surround':tone.surround}}>
+    <header className="novel-reader-topbar" data-testid="novel-immersive-toolbar">
+      <button className="novel-icon-button novel-reader-back" aria-label="返回章節列表" onClick={backToList}>←</button>
+      <div className="novel-reader-heading"><span>第 {chapter.no} 章 <i>／ {novel.chapters.length}</i></span><h1 lang="en">{chapter.title}</h1></div>
+      <nav className="novel-reader-top-actions" aria-label="閱讀選項"><button className="novel-icon-button" onClick={()=>openPanel('journey')} aria-label="☷ 目錄與書籤"><span aria-hidden="true">☷</span><small>目錄</small></button><button className="novel-icon-button" onClick={()=>openPanel('settings')} aria-label="閱讀偏好"><span aria-hidden="true">Aa</span><small>字體</small></button><button className="novel-icon-button" onClick={()=>openPanel('tools')} aria-label="展開閱讀工具"><span aria-hidden="true">⋯</span><small>工具</small></button></nav>
+    </header>
+    <div className="novel-reader-overall-progress" aria-hidden="true"><span style={{width:`${chapterPct}%`}}/></div>
+    <div className="novel-reader-workspace" data-testid="novel-immersive-shell">
+      <div className="novel-reading-companion" aria-hidden="true"><img src={`${novelImageBase}/chapter-${chapter.no}-thumb.jpg`} alt=""/><span>STORY TIME</span><p>{chapter.zhTitle}</p><i>讓想像，陪你翻下一頁。</i></div>
+      <div className="novel-reader-paper" data-testid="novel-reader-panel" ref={novelPanelRef} role="region" aria-label="小說閱讀器，可左右滑動或用方向鍵翻頁" tabIndex={0} style={{background:tone.paper}} onKeyDown={handleReaderKeyDown} onPointerDown={handlePointerDown} onPointerUp={handlePointerUp} onPointerCancel={()=>{swipeStartRef.current=null}}>
+        <div className="novel-book-spread" ref={novelSpreadRef} data-testid="novel-book-spread" data-book-style="single-page">
+          <article className="novel-book-page" data-testid="novel-book-page">
+            <div className="novel-page-heading"><span>{chapter.zhTitle}</span><span>{showZh?'英中對照':'英文閱讀'}</span></div>
+            <div className="novel-page-content" data-testid="novel-page-content" data-direction={pageTurn?.direction} data-turning={!!pageTurn} onAnimationEnd={event=>pageTurn&&finishPageTurn(pageTurn.id,event)}>
+              {shownBlocks.map(block=>renderNovelBlock(block))}
             </div>
-          </div>
-          <div style={{border:`1px solid ${c.cl}33`,background:"#fff",borderRadius:12,padding:"11px 12px"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,marginBottom:9}}><div style={{fontSize:13,fontWeight:900,color:S.t1}}>閱讀控制台</div><div style={{fontSize:12,color:c.cl,fontWeight:900}}><span>本頁進度</span> <span>{pagePct}%</span></div></div>
-            <div style={{height:8,background:S.bg2,borderRadius:999,overflow:"hidden",marginBottom:10}}><div style={{height:"100%",width:`${pagePct}%`,background:`linear-gradient(90deg,${c.cl},${c.ac})`,borderRadius:999,transition:"width .2s"}}/></div>
-            <div style={{display:"flex",gap:7,flexWrap:"wrap"}}><button onClick={readBilingualPage} disabled={!pageBlocks.some(b=>b.zh)} style={{...S.btn,background:c.cl,color:"#fff",padding:"9px 12px",fontSize:12,flex:"1 1 112px",opacity:pageBlocks.some(b=>b.zh)?1:.45}}>🎧 英中本頁</button><button onClick={readPage} style={{...S.btn,background:S.bg2,color:S.t1,padding:"9px 12px",fontSize:12,flex:"1 1 104px"}}>🔊 英文本頁</button><button onClick={readPageZh} disabled={!pageBlocks.some(b=>b.zh)} style={{...S.btn,background:S.bg2,color:S.t1,padding:"9px 12px",fontSize:12,flex:"1 1 104px",opacity:pageBlocks.some(b=>b.zh)?1:.45}}>🔈 中文本頁</button><button onClick={readBilingualChapter} disabled={!zhBlocks.length} style={{...S.btn,background:c.bg,color:c.cl,padding:"9px 12px",fontSize:12,flex:"1 1 116px",opacity:zhBlocks.length?1:.45}}>整章播放</button><button onClick={completeChapter} disabled={isDone||!quizDone} style={{...S.btn,background:isDone?"#E1F5EE":quizDone?c.cl:S.bg2,color:isDone?"#1D9E75":quizDone?"#fff":S.t3,padding:"9px 12px",fontSize:12,flex:"1 1 116px",opacity:(!quizDone&&!isDone)?0.62:1}}>{isDone?"已完成":quizDone?"完成 +15XP":"先完成測驗"}</button></div>
-          </div>
+            {pageTurn&&<span className="novel-turn-marker" data-testid="novel-page-turn" data-direction={pageTurn.direction} data-transition-id={pageTurn.id} onAnimationEnd={event=>finishPageTurn(pageTurn.id,event)} aria-hidden="true"/>}
+          </article>
         </div>
+        <div className="novel-measurement-layer" data-testid="novel-measurement-layer" aria-hidden="true">{blockPairs.map(block=>renderNovelBlock(block,true))}</div>
       </div>
-    </div>}
-    <div data-testid="novel-immersive-shell" style={{width:readingFocus&&!isMobile?"min(1120px, calc(100vw - 32px))":"100%",marginLeft:readingFocus&&!isMobile?"50%":0,transform:readingFocus&&!isMobile?"translateX(-50%)":"none"}}>
-    {readingFocus&&<div data-testid="novel-immersive-toolbar" style={{display:"flex",alignItems:"center",gap:isMobile?7:7,flexDirection:isMobile?"column":"row",marginBottom:8,padding:isMobile?"7px 8px":"9px 12px",border:`1px solid ${c.cl}44`,borderRadius:10,background:"rgba(255,255,255,.94)",boxShadow:"0 8px 22px rgba(20,66,52,.09)"}}>
-      <div style={{display:"flex",alignItems:"center",gap:9,minWidth:0,flex:isMobile?"0 0 auto":"1 1 230px",width:isMobile?"100%":undefined}}>
-        {isMobile?<button type="button" onClick={backToList} aria-label="返回章節列表" style={{width:36,height:36,border:`1px solid ${S.bd}`,borderRadius:11,background:S.bg2,color:c.cl,fontSize:18,fontWeight:900,cursor:"pointer",flexShrink:0,padding:0}}>←</button>:<div style={{width:32,height:32,borderRadius:"50%",background:c.cl,color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:900,flexShrink:0}}>{chapter.no}</div>}
-        <div style={{minWidth:0,flex:1}}><div style={{fontSize:13,fontWeight:900,color:S.t1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{chapter.title}</div><div style={{fontSize:10,color:S.t3,fontWeight:800}}>{isMobile?`Chapter ${chapter.no} · Page ${pageNow+1}`:`Pages ${pageNow+1}-${Math.min(pageNow+2,pages.length)}`} · {chapterPct}%</div></div>
-        <span data-testid="novel-audio-status" role="status" aria-live="polite" title={playbackStatusLabel} style={{fontSize:10,fontWeight:900,color:!isNarrating&&(audioPreload.status==="partial"||audioPreload.status==="unavailable")?"#9A6410":c.cl,background:!isNarrating&&(audioPreload.status==="partial"||audioPreload.status==="unavailable")?"#FFF4D8":c.bg,borderRadius:999,padding:"4px 7px",whiteSpace:"nowrap"}}>{isMobile?mobileAudioStatus:playbackStatusLabel}</span>
-      </div>
-      <div data-testid="novel-mobile-progress-row" style={{display:"flex",alignItems:"center",gap:isMobile?6:8,width:isMobile?"100%":undefined,flex:isMobile?"0 0 auto":"0 1 120px",minWidth:isMobile?0:80}}><div style={{height:6,background:S.bg2,borderRadius:999,overflow:"hidden",flex:"1 1 auto",minWidth:isMobile?24:40}}><div style={{height:"100%",width:`${chapterPct}%`,background:c.cl,borderRadius:999}}/></div>{isMobile&&isNarrating&&<div data-testid="novel-playback-controls" role="group" aria-label="小說朗讀控制" style={{display:"flex",gap:5,flex:"0 0 auto"}}>{isNarrationPaused?<button onClick={resumeNovelSpeech} aria-label="繼續小說朗讀" style={{...S.btn,background:c.cl,color:"#fff",padding:"7px 9px",fontSize:11,minHeight:36,whiteSpace:"nowrap"}}>▶ 繼續</button>:<button onClick={pauseNovelSpeech} aria-label="暫停小說朗讀" style={{...S.btn,background:c.bg,color:c.cl,border:`1px solid ${c.cl}`,padding:"7px 9px",fontSize:11,minHeight:36,whiteSpace:"nowrap"}}>Ⅱ 暫停</button>}<button onClick={stopNovelSpeech} aria-label="停止小說朗讀" title="停止朗讀" style={{...S.btn,background:"#FFF0F0",color:"#B54848",border:"1px solid #E9B8B8",padding:"7px 9px",fontSize:11,minWidth:36,minHeight:36}}>■</button></div>}{isMobile&&<button type="button" onClick={()=>setMobileToolsOpen(open=>!open)} aria-label={mobileToolsOpen?"收合閱讀工具":"展開閱讀工具"} aria-expanded={mobileToolsOpen} aria-controls={mobileToolsOpen?"novel-reading-tools":undefined} style={{...S.btn,background:mobileToolsOpen?c.bg:S.bg2,color:mobileToolsOpen?c.cl:S.t1,border:`1px solid ${mobileToolsOpen?c.cl:S.bd}`,padding:"7px 9px",fontSize:11,minHeight:36,whiteSpace:"nowrap"}}>⚙ 工具 {mobileToolsOpen?"▴":"▾"}</button>}</div>
-      {(!isMobile||mobileToolsOpen)&&<div id="novel-reading-tools" data-testid="novel-toolbar-actions" aria-label="小說閱讀工具" style={{display:isMobile?"grid":"flex",gridTemplateColumns:isMobile?"repeat(3, minmax(0, 1fr))":undefined,gap:7,alignItems:"center",overflowX:"visible",flexWrap:isMobile?undefined:"wrap",width:isMobile?"100%":undefined,maxWidth:"100%",paddingBottom:isMobile?2:0}}>
-        <button onClick={readBilingualPage} disabled={!pageBlocks.some(b=>b.zh)} aria-label="英中本頁朗讀" style={{...S.btn,background:c.cl,color:"#fff",padding:"8px 10px",fontSize:11,opacity:pageBlocks.some(b=>b.zh)?1:.45,flexShrink:0}}>🎧 本頁</button>
-        <button onClick={readBilingualChapter} disabled={!zhBlocks.length} aria-label="整章朗讀" style={{...S.btn,background:c.bg,color:c.cl,padding:"8px 10px",fontSize:11,opacity:zhBlocks.length?1:.45,flexShrink:0}}>▶ 整章</button>
-        <button onClick={readBilingualFromHere} aria-label="從這裡接著朗讀" style={{...S.btn,background:c.bg,color:c.cl,padding:"8px 10px",fontSize:11}}>接著聽</button>
-        {!isMobile&&isNarrating&&(isNarrationPaused?<button onClick={resumeNovelSpeech} aria-label="繼續小說朗讀" style={{...S.btn,background:c.cl,color:"#fff",padding:"8px 10px",fontSize:11,flexShrink:0}}>▶ 繼續</button>:<button onClick={pauseNovelSpeech} aria-label="暫停小說朗讀" style={{...S.btn,background:c.bg,color:c.cl,border:`1px solid ${c.cl}`,padding:"8px 10px",fontSize:11,flexShrink:0}}>Ⅱ 暫停</button>)}
-        {!isMobile&&isNarrating&&<button onClick={stopNovelSpeech} aria-label="停止小說朗讀" style={{...S.btn,background:"#FFF0F0",color:"#B54848",border:"1px solid #E9B8B8",padding:"8px 10px",fontSize:11,flexShrink:0}}>■ 停止</button>}
-        <button onClick={()=>setShowZh(z=>!z)} aria-label={showZh?"隱藏中文":"顯示中文"} style={{...S.btn,background:showZh?"#FFF7E6":S.bg2,color:S.t1,padding:"8px 10px",fontSize:11,flexShrink:0}}>{showZh?"中✓":"中文"}</button>
-        <button onClick={()=>updateReadingPrefs({fontSize:Math.max(14,readerFontSize-2)})} aria-label="A-" style={{...S.btn,background:S.bg2,color:S.t1,padding:"8px 10px",fontSize:11,minWidth:38,flexShrink:0}}>A-</button>
-        <button onClick={()=>updateReadingPrefs({fontSize:Math.min(22,readerFontSize+2)})} aria-label="A+" style={{...S.btn,background:S.bg2,color:S.t1,padding:"8px 10px",fontSize:11,minWidth:38,flexShrink:0}}>A+</button>
-        <button onClick={()=>updateReadingPrefs({lineHeight:readerLineHeight>=1.9?1.66:1.9})} aria-label={readerLineHeight>=1.9?"一般行距":"寬行距"} style={{...S.btn,background:readerLineHeight>=1.9?c.bg:S.bg2,color:readerLineHeight>=1.9?c.cl:S.t1,padding:"8px 10px",fontSize:11,flexShrink:0}}>行距</button>
-        <button onClick={()=>{setSidePanel(panelIsVocab?null:"vocab");if(isMobile)setMobileToolsOpen(false)}} aria-label="重點單字" style={{...S.btn,background:panelIsVocab?c.cl:S.bg2,color:panelIsVocab?"#fff":S.t1,padding:"8px 10px",fontSize:11,flexShrink:0}}>單字</button>
-        <button onClick={()=>{setSidePanel(sidePanel==="quiz"?null:"quiz");if(isMobile)setMobileToolsOpen(false)}} aria-label={`章節測驗 ${quizAnswered}/${quiz.length}`} style={{...S.btn,background:sidePanel==="quiz"?c.cl:S.bg2,color:sidePanel==="quiz"?"#fff":S.t1,padding:"8px 10px",fontSize:11,flexShrink:0}}>測驗 {quizAnswered}/{quiz.length}</button>
-        <button onClick={()=>openPanel("settings")} aria-label="閱讀偏好" style={{...S.btn,background:S.bg2,color:S.t1,padding:"8px 10px",fontSize:11}}>偏好</button>
-        <button onClick={()=>setImmersive(false)} aria-label="退出沉浸" style={{...S.btn,background:S.bg2,color:S.t1,padding:"8px 10px",fontSize:11,flexShrink:0}}>退出沉浸</button>
-      </div>}
-    </div>}
-    {!readingFocus&&<div data-testid="novel-reading-settings" style={{display:isMobile?"grid":"flex",gridTemplateColumns:isMobile?"repeat(3, minmax(0, 1fr))":undefined,alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:10,padding:"10px 12px",border:`1px solid ${c.cl}33`,borderRadius:12,background:"linear-gradient(135deg,#FFFFFF,#F1FBF6)",boxShadow:"0 8px 20px rgba(15,110,86,.06)"}}>
-      <div style={{fontSize:13,fontWeight:900,color:S.t1,marginRight:isMobile?0:"auto",gridColumn:isMobile?"1 / -1":undefined}}>閱讀設定</div>
-      <button onClick={()=>updateReadingPrefs({fontSize:Math.max(14,readerFontSize-2)})} aria-label="A-" style={{...S.btn,background:S.bg2,color:S.t1,padding:"8px 10px",fontSize:12,minWidth:42,width:isMobile?"100%":undefined}}>A-</button>
-      <div style={{fontSize:12,fontWeight:900,color:c.cl,minWidth:42,textAlign:"center"}}>{readerFontSize}px</div>
-      <button onClick={()=>updateReadingPrefs({fontSize:Math.min(22,readerFontSize+2)})} aria-label="A+" style={{...S.btn,background:c.cl,color:"#fff",padding:"8px 10px",fontSize:12,minWidth:42,width:isMobile?"100%":undefined}}>A+</button>
-      <button onClick={()=>updateReadingPrefs({lineHeight:readerLineHeight>=1.9?1.66:1.9})} style={{...S.btn,background:readerLineHeight>=1.9?c.bg:S.bg2,color:readerLineHeight>=1.9?c.cl:S.t1,padding:"8px 12px",fontSize:12,width:isMobile?"100%":undefined}}>{readerLineHeight>=1.9?"一般行距":"寬行距"}</button>
-      <button onClick={()=>openPanel("settings")} style={{...S.btn,background:S.bg2,color:S.t1,padding:"8px 12px",fontSize:12}}>閱讀偏好</button>
-      <button onClick={()=>setImmersive(true)} style={{...S.btn,background:c.cl,color:"#fff",padding:"8px 12px",fontSize:12,gridColumn:isMobile?"span 2":undefined,width:isMobile?"100%":undefined}}>進入沉浸</button>
-      <button onClick={()=>setSidePanel(panelIsVocab?null:"vocab")} style={{...S.btn,background:panelIsVocab?c.cl:S.bg2,color:panelIsVocab?"#fff":S.t1,padding:"8px 12px",fontSize:12,width:isMobile?"100%":undefined}}>重點單字</button>
-      <button onClick={()=>setSidePanel(sidePanel==="quiz"?null:"quiz")} style={{...S.btn,background:sidePanel==="quiz"?c.cl:S.bg2,color:sidePanel==="quiz"?"#fff":S.t1,padding:"8px 12px",fontSize:12,gridColumn:isMobile?"span 2":undefined,width:isMobile?"100%":undefined}}>章節測驗 {quizAnswered}/{quiz.length}</button>
-    </div>}
-    {sidePanel&&<>
-      {isMobile&&<button aria-label="關閉小說工具" onClick={()=>setSidePanel(null)} style={{position:"fixed",inset:0,zIndex:120,background:"rgba(15,55,45,.28)",border:"none"}}/>}
-      <aside ref={toolsPanelRef} role={isMobile?"dialog":"complementary"} aria-modal={isMobile?"true":undefined} aria-label={panelTitle} data-testid="novel-side-panel" style={{...panelStyle,background:"#FFFEF8",color:"#243e33"}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,marginBottom:12}}>
-          <div style={{fontSize:16,fontWeight:900,color:"#243e33"}}>{panelTitle}</div>
-          <button onClick={()=>setSidePanel(null)} aria-label="關閉工具面板" style={{width:34,height:34,border:`1px solid ${S.bd}`,borderRadius:12,background:"#F1F4EC",cursor:"pointer",fontWeight:900,color:"#243e33"}}>×</button>
-        </div>
-        {sidePanel==="journey"?<NovelJourney novel={novel} chapterNo={chapter.no} completed={completed} progress={readingProgress[novel.id]} bookmarks={savedBookmarks} onJump={jumpToBlock} onRemove={removeBookmark}/>:sidePanel==="settings"?<NovelPreferences prefs={readingPrefs||{}} onChange={updateReadingPrefs}/>:panelIsVocab?<div style={{display:"flex",flexWrap:"wrap",gap:7}}>
-          {chapter.vocab.map(w=>{const on=activeVocab===w;return <button key={w} onClick={e=>{e.currentTarget.blur();speakNovelVocab(w)}} style={{border:`1px solid ${on?c.cl:S.bd}`,background:on?"#E6F7F0":"#FFFEF8",borderRadius:999,padding:"8px 10px",fontSize:13,color:c.cl,cursor:"pointer",fontWeight:900,fontFamily:"inherit",boxShadow:on?`0 0 0 2px ${c.cl}22`:"none",display:"inline-flex",gap:5,alignItems:"center"}}><span>{w}</span><span aria-hidden="true">🔊</span></button>})}
-        </div>:<div style={{display:"grid",gap:10}}>
-          {quiz.map((q,qi)=>{const picked=quizState[qi];return(<div key={q.q} style={{border:`1px solid ${S.bd}`,borderRadius:12,padding:"11px",background:"#FFFEF8"}}><div style={{fontSize:14,fontWeight:900,color:"#243e33",lineHeight:1.45}}>{qi+1}. {q.q}</div>{showZh&&<div style={{fontSize:12,color:"#586c5e",marginTop:3}}>{q.zh}</div>}<div style={{display:"grid",gridTemplateColumns:"1fr",gap:7,marginTop:9}}>{q.o.map((o,oi)=>{const selected=picked===oi;const correct=oi===q.a;const answered=picked!=null;return <button key={o} onClick={()=>chooseQuiz(qi,oi)} style={{border:`1px solid ${answered&&correct?c.cl:selected?"#D45757":S.bd}`,background:answered&&correct?"#E6F7F0":selected?"#FFF0F0":"#F1F4EC",color:answered&&correct?c.cl:"#243e33",borderRadius:9,padding:"9px 10px",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>{o}</button>})}</div>{picked!=null&&<div style={{fontSize:12,color:picked===q.a?c.cl:"#B54848",fontWeight:800,marginTop:7}}>{picked===q.a?"答對了！你找到故事的線索了。":"再看看故事，綠色選項是正確答案。可以再選一次。"}</div>}</div>)})}
-        </div>}
-        {renderBookmarkNotice()}
-      </aside>
-    </>}
-    {!readingFocus&&<div data-testid="novel-chapter-nav" style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"auto minmax(0,1fr) auto",alignItems:"center",gap:8,marginBottom:10,fontSize:12,background:"#fff",border:`1px solid ${S.bd}`,borderRadius:12,padding:"9px 10px"}}><button onClick={()=>prev!=null&&goChapter(prev)} disabled={prev==null} style={{...S.btn,background:S.bg2,color:S.t1,padding:"8px 11px",opacity:prev==null?0.35:1,fontSize:12,order:isMobile?2:0}}>← 上一章</button><div style={{gridColumn:isMobile?"1 / -1":undefined,order:isMobile?1:0,minWidth:0}}><div style={{display:"flex",justifyContent:"space-between",gap:8,marginBottom:5}}><span style={{fontWeight:900,color:S.t1}}>章節概覽</span><span style={{fontWeight:900,color:c.cl}}>{chapterPct}%</span></div><div style={{height:7,background:S.bg2,borderRadius:999,overflow:"hidden"}}><div style={{height:"100%",width:`${chapterPct}%`,background:`linear-gradient(90deg,${c.cl},${c.ac})`,borderRadius:999}}/></div></div><button onClick={()=>next!=null&&goChapter(next)} disabled={next==null} style={{...S.btn,background:S.bg2,color:S.t1,padding:"8px 11px",opacity:next==null?0.35:1,fontSize:12,order:isMobile?3:0}}>下一章 →</button></div>}
-    <style data-testid="novel-page-turn-styles">{`@keyframes novel-sheet-forward{0%{transform:rotateY(0);filter:brightness(1);box-shadow:-4px 2px 10px rgba(55,44,30,.10)}48%{filter:brightness(.9);box-shadow:-22px 8px 32px rgba(55,44,30,.25)}100%{transform:rotateY(-180deg);filter:brightness(1);box-shadow:-2px 1px 5px rgba(55,44,30,.05)}}@keyframes novel-sheet-backward{0%{transform:rotateY(0);filter:brightness(1);box-shadow:4px 2px 10px rgba(55,44,30,.10)}48%{filter:brightness(.9);box-shadow:22px 8px 32px rgba(55,44,30,.25)}100%{transform:rotateY(180deg);filter:brightness(1);box-shadow:2px 1px 5px rgba(55,44,30,.05)}}@keyframes novel-sheet-mobile-forward{0%{transform:translateX(0);opacity:1}55%{opacity:.82}100%{transform:translateX(-22%);opacity:0}}@keyframes novel-sheet-mobile-backward{0%{transform:translateX(0);opacity:1}55%{opacity:.82}100%{transform:translateX(22%);opacity:0}}@media (prefers-reduced-motion:reduce){[data-testid="novel-page-turn"]{animation:novel-sheet-fade 120ms ease-out forwards!important}}@keyframes novel-sheet-fade{from{opacity:.72}to{opacity:0}}`}</style>
-    <div className="novel-reading-rail">
-      <button onClick={()=>openPanel("journey")}>☷ 目錄與書籤</button>
-      <span>本章 {pagePct}% · 位置自動保存</span>
-      <label>跳頁 <select aria-label="跳到頁面" value={pageNow} disabled={!!pageTurn} onChange={event=>{const target=Number(event.target.value);turnPage(target,target>pageNow?"forward":"backward")}}>{pages.map((_,index)=>index%visiblePageCount===0&&<option key={index} value={index}>{isMobile?`第 ${index+1} 頁`:`第 ${index+1}–${Math.min(index+2,pages.length)} 頁`}</option>)}</select></label>
+      <div className="novel-reading-margin-note" aria-hidden="true"><span>✦</span><p>讀懂一句，<br/>就是一小步。</p></div>
     </div>
-    <div data-testid="novel-reader-panel" ref={novelPanelRef} role="region" aria-label="小說閱讀器，可左右滑動或用方向鍵翻頁" tabIndex={0} onKeyDown={handleReaderKeyDown} onPointerDown={handlePointerDown} onPointerUp={handlePointerUp} onPointerCancel={handlePointerCancel} onLostPointerCapture={handlePointerCancel} style={{height:isMobile?mobileReaderHeight:readingFocus?"clamp(440px, calc(100svh - 350px), 820px)":"clamp(430px, calc(100vh - 330px), 720px)",minHeight:0,overflowY:"hidden",overflowX:"hidden",overscrollBehavior:"contain",touchAction:"pan-y",padding:isMobile?"0 4px calc(14px + env(safe-area-inset-bottom))":"0 4px 12px",border:"1px solid #CBC5B9",borderRadius:14,background:tone.surround,display:"flex",flexDirection:"column",position:"relative",outline:"none",transition:"height .18s ease"}}>
-      <div ref={novelSpreadRef} data-testid="novel-book-spread" data-book-style="clean-paper" style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"repeat(2, minmax(0, 1fr))",gap:isMobile?0:2,flex:"1 1 auto",minHeight:0,padding:isMobile?"8px 4px 0":"10px 8px 0",position:"relative",perspective:1400}}>
-        {!isMobile&&<div data-testid="novel-book-spine" aria-hidden="true" style={{position:"absolute",zIndex:3,left:"50%",top:10,bottom:0,width:10,transform:"translateX(-50%)",background:"linear-gradient(90deg,rgba(67,56,42,.08),rgba(255,255,255,.82),rgba(67,56,42,.08))",boxShadow:"0 0 12px rgba(55,45,32,.09)",opacity:readingPrefs?.tone==="night"?.2:1,pointerEvents:"none"}}/>}
-        {displayedPages.map(item=>renderPageSheet(item,pageTurn?.targetStart??pageNow))}
-        {renderPageTurn()}
+    <footer className="novel-reader-footer">
+      <div className="novel-reader-position"><span>{isNarrating?(isNarrationPaused?'已暫停':'正在朗讀'):pageNow===0?'點段落旁的 ⋯，聽發音或留書籤':'閱讀位置已保存'}</span><button onClick={()=>openPanel('journey')} aria-label="選擇閱讀頁面">{pageNow+1} <i>/ {pages.length}</i> 頁 <span aria-hidden="true">⌄</span></button></div>
+      <div className="novel-reader-pagination" data-testid="novel-page-actions">
+        <button className="novel-page-step" onClick={goPreviousPage} disabled={!canPrevPage||!!pageTurn} aria-label="上一頁"><span aria-hidden="true">←</span><small>上一頁</small></button>
+        <div className="novel-main-listen">{isNarrating?<div data-testid="novel-playback-controls" role="group" aria-label="小說朗讀控制"><button className="novel-listen-button" aria-label={isNarrationPaused?'繼續小說朗讀':'暫停小說朗讀'} onClick={isNarrationPaused?resumeNovelSpeech:pauseNovelSpeech}>{isNarrationPaused?'▶ 繼續聽':'Ⅱ 暫停朗讀'}</button><button className="novel-icon-button" aria-label="停止小說朗讀" onClick={stopNovelSpeech}>■</button></div>:<button className="novel-listen-button" onClick={showZh?readBilingualPage:readPage} aria-label={showZh?'英中本頁朗讀':'英文本頁朗讀'}><span aria-hidden="true">♫</span> 聽這一頁</button>}</div>
+        <button className={`novel-page-step ${!canNextPage?'is-chapter-end':''}`} onClick={()=>canNextPage?goNextPage():quizDone?finishAndGo():openPanel('quiz')} disabled={!!pageTurn} aria-label={footerAction}><small>{footerAction}</small><span aria-hidden="true">→</span></button>
       </div>
-      <div data-testid="novel-measurement-layer" aria-hidden="true" style={{position:"absolute",visibility:"hidden",pointerEvents:"none",zIndex:-1,width:isMobile?"calc(100% - 24px)":"calc(50% - 22px)",height:1,overflow:"hidden",left:0,top:0,padding:isMobile?"11px 9px":"16px 14px",boxSizing:"border-box"}}>{blockPairs.map(block=>renderNovelBlock(block,true))}</div>
-      <div data-testid="novel-page-actions" style={pageActionsStyle}><button onClick={goPreviousPage} disabled={!canPrevPage||!!pageTurn} style={{...S.btn,background:S.bg2,color:S.t1,flex:1,padding:"10px",fontSize:13,opacity:canPrevPage&&!pageTurn?1:.4}}>上一頁</button><div style={{minWidth:isMobile?112:92,textAlign:"center"}}><div style={{fontSize:12,color:tone.ink,fontWeight:900,whiteSpace:"nowrap"}}>{isMobile?`Page ${pageNow+1}`:`Pages ${pageNow+1}-${Math.min(pageNow+2,pages.length)}`}</div><div style={{fontSize:10,color:tone.muted,whiteSpace:"nowrap"}}>{isMobile?"↔ 左右滑動 · ":""}段落 {pageStart+1}-{pageEnd} / {blockPairs.length}</div></div><button onClick={()=>mobileFocus&&!canNextPage?(quizDone?finishAndGo():openPanel("quiz")):goNextPage()} disabled={(!canNextPage&&!mobileFocus)||!!pageTurn} style={{...S.btn,background:c.cl,color:"#fff",flex:1,padding:"10px",fontSize:13,opacity:(canNextPage||mobileFocus)&&!pageTurn?1:.4}}>{mobileFocus&&!canNextPage?(quizDone?(next!=null?"完成・下一章":"完成・回書架"):"故事小測驗"):"下一頁"}</button></div>
-    </div>
+      <div className="novel-page-progress" aria-hidden="true"><span style={{width:`${pagePct}%`}}/></div>
+    </footer>
     {!sidePanel&&renderBookmarkNotice()}
-    {!canNextPage&&!mobileFocus&&<section className="novel-chapter-finish" aria-label="章末小站"><span aria-hidden="true">{isDone?"✓":"✦"}</span><div><h3>{isDone?"這一章，完成了！":"故事先在這裡停一下"}</h3><p>{isDone?"帶著剛剛找到的線索，繼續下一段冒險吧。":quizDone?`已回答 ${quizAnswered} 題，可以完成這一章並獲得 15 XP。`:`已翻到本章最後一頁。讀完後，試試 ${quiz.length} 個故事小問題。`}</p></div><button onClick={()=>quizDone?finishAndGo():openPanel("quiz")}>{quizDone?(next!=null?"繼續下一章 →":"回到故事書架"):`來試試故事小測驗`}</button></section>}
-    {!mobileFocus&&<div style={{display:"flex",gap:8,marginTop:10}}><button onClick={backToList} style={{...S.btn,background:S.bg2,color:S.t1,flex:1,padding:"11px",fontSize:13}}>章節列表</button><button onClick={finishAndGo} disabled={!quizDone} style={{...S.btn,background:c.cl,color:"#fff",flex:1,padding:"11px",fontSize:13,opacity:quizDone?1:.45}}>{next!=null?"完成並下一章":"完成並返回"}</button></div>}
-    </div>
-  </div>);
+    {sidePanel&&<div className="novel-drawer-layer"><button className="novel-drawer-backdrop" aria-label="關閉小說工具" tabIndex={-1} onClick={()=>setSidePanel(null)}/>
+      <aside className="novel-drawer" ref={toolsPanelRef} role="dialog" aria-modal="true" aria-label={panelTitles[sidePanel]} data-testid="novel-side-panel">
+        <header className="novel-drawer-heading"><div><span>第 {chapter.no} 章 · {chapter.zhTitle}</span><h2>{panelTitles[sidePanel]}</h2></div><button className="novel-icon-button" onClick={()=>setSidePanel(null)} aria-label="關閉工具面板">×</button></header>
+        <div className="novel-drawer-content">
+          {sidePanel==='journey'&&<><label className="novel-page-jump">接著哪一頁讀？<select aria-label="跳到頁面" value={pageNow} disabled={!!pageTurn} onChange={event=>{const target=Number(event.target.value);turnPage(target,target>pageNow?'forward':'backward');setSidePanel(null)}}>{pages.map((_,i)=><option key={i} value={i}>第 {i+1} 頁 / {pages.length}</option>)}</select></label><NovelJourney novel={novel} chapterNo={chapter.no} completed={completed} progress={{...readingProgress[novel.id],blockIndex:resolveReadingBlock(novel.id,readingProgress[novel.id])}} bookmarks={savedBookmarks} onJump={jumpToBlock} onRemove={removeBookmark}/></>}
+          {sidePanel==='settings'&&<NovelPreferences prefs={{...readingPrefs,fontSize:readerFontSize,lineHeight:readerLineHeight}} onChange={updateReadingPrefs}/>}
+          {sidePanel==='tools'&&<><p className="novel-tool-hint">想聽、想學，或想看看故事裡的風景，都從這裡開始。</p><div className="novel-tool-menu">{[['audio','♫','聽故事','整章朗讀，或從這裡接著聽'],['vocab','Aa','重點單字',`${chapter.vocab.length} 個故事裡的英文單字`],['quiz','✦',`故事小測驗`,`${quizAnswered} / ${quiz.length} 題・找找故事的線索`],['scene','▧','看插圖','把故事裡的風景看清楚']].map(([id,icon,title,description])=><button key={id} onClick={()=>openPanel(id)} aria-label={id==='quiz'?`章節測驗 ${quizAnswered}/${quiz.length}`:title}><span aria-hidden="true">{icon}</span><div><strong>{title}</strong><small>{description}</small></div><b aria-hidden="true">›</b></button>)}</div></>}
+          {sidePanel==='audio'&&<><p className="novel-tool-hint">先聽英文，再聽中文，或試著只用英文跟上故事。</p><div className="novel-audio-options"><h3>英中一起聽</h3><button onClick={readBilingualPage} aria-label="英中本頁朗讀">♫ 聽這一頁</button><button onClick={readBilingualFromHere} aria-label="從這裡接著朗讀">從這裡接著聽 →</button><button onClick={readBilingualChapter} aria-label="整章朗讀">從本章開頭聽</button><h3>分開聽</h3><button onClick={readPage}>英文本頁</button><button onClick={readPageZh}>中文本頁</button><button onClick={readChapter}>英文整章</button><button onClick={readChapterZh}>中文整章</button></div><p className="novel-audio-note" role="status" data-testid="novel-audio-status">{playbackStatus}</p></>}
+          {sidePanel==='paragraph'&&paragraph&&<><div className="novel-paragraph-preview"><p lang="en">{paragraph.en}</p><p lang="zh-Hant">{paragraph.zh}</p></div><div className="novel-paragraph-actions"><button onClick={()=>speakNovelText(paragraph.en,'en-US',0.78,paragraph.i)} aria-label="朗讀英文">♫ 聽英文</button><button onClick={()=>speakNovelText(paragraph.zh,'zh-TW',1,paragraph.i)} aria-label="朗讀中文（固定真人聲線）">♫ 聽中文</button><button onClick={()=>toggleBookmark(paragraph)} aria-label={`${savedKeys.has(`${chapter.no}:${paragraph.i}`)?'取消收藏':'收藏'}段落 ${paragraph.i+1}`} aria-pressed={savedKeys.has(`${chapter.no}:${paragraph.i}`)}>{savedKeys.has(`${chapter.no}:${paragraph.i}`)?'▣ 已存書籤':'▢ 留下書籤'}</button>{!showZh&&<button aria-label={`${peekBlocks[paragraph.i]?'收起':'看看'}段落 ${paragraph.i+1} 的中文`} onClick={()=>{readingAnchorRef.current=paragraph.i;setPeekBlocks(current=>({...current,[paragraph.i]:!current[paragraph.i]}));setSidePanel(null)}}>{peekBlocks[paragraph.i]?'收起書頁上的中文':'在書頁顯示這段中文'}</button>}</div></>}
+          {sidePanel==='vocab'&&<><p className="novel-tool-hint">點一個單字，聽聽它怎麼念，再回到故事裡找找看。</p><div className="novel-vocabulary">{chapter.vocab.map(word=><button key={word} onClick={()=>speakNovelVocab(word)} aria-pressed={activeVocab===word}><span lang="en">{word}</span><span aria-hidden="true">♫</span></button>)}</div></>}
+          {sidePanel==='scene'&&<><div className="novel-scene"><NovelIllustration fill chapter={chapter.no} imageBase={novelImageBase} title={novel.title}/></div><p className="novel-tool-hint">{chapter.zhTitle} · 你在這張圖裡發現了什麼？</p></>}
+          {sidePanel==='quiz'&&<><p className="novel-tool-hint">不用急，可以回到故事找線索，選錯了也能再試一次。</p><div className="novel-quiz">{quiz.map((question,qi)=><section key={question.q}><span>故事線索 {qi+1}</span><h3 lang="en">{question.q}</h3>{showZh&&<p>{question.zh}</p>}<div>{question.o.map((option,oi)=><button key={option} onClick={()=>chooseQuiz(qi,oi)} data-answer={quizState[qi]!=null?(oi===question.a?'correct':quizState[qi]===oi?'wrong':undefined):undefined} aria-pressed={quizState[qi]===oi}>{option}</button>)}</div>{quizState[qi]!=null&&<p className="novel-quiz-feedback" role="status">{quizState[qi]===question.a?'答對了！你找到故事的線索了。':'再看看故事，綠色選項是正確答案。可以再選一次。'}</p>}</section>)}</div><button className="novel-primary-button novel-quiz-finish" onClick={finishAndGo} disabled={!quizDone}>{quizDone?(next!=null?'完成・下一章':'完成・回書架'):'答完問題，就能完成這一章'}</button>{isDone&&<p className="novel-tool-hint">這一章已完成，重讀不會重複領取獎勵。</p>}</>}
+          {renderBookmarkNotice()}
+        </div>
+      </aside>
+    </div>}
+  </div>;
 }
-// ═══ SONGS (英文歌曲練習) ═════════════════════════════════════════════
