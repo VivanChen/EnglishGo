@@ -228,3 +228,5 @@ html[data-eg-theme=dark] .arcade-letter-slots>span.is-filled { color:#335a6c; }
   .arcade-island-heading b { font-size:16px; }
   .arcade-boardgame-link { padding:17px; gap:12px; }
 }
+
+.arcade-dash-feature{display:flex;align-items:center;width:100%;text-align:left;border:3px solid white;border-radius:22px;overflow:hidden;background:linear-gradient(120deg,#eafaff,#a1e4fc);color:#57327d;cursor:pointer;margin:0 0 22px;box-shadow:0 6px 0 #d4c5ed;font-family:inherit}.arcade-dash-copy{display:flex;flex:1;flex-direction:column;gap:9px;padding:25px 28px}.arcade-dash-copy small{font-size:11px;letter-spacing:2px;color:#945ac9;font-weight:900}.arcade-dash-copy strong{font-size:35px;font-weight:950}.arcade-dash-copy>span{font-size:13px}.arcade-dash-copy b{font-size:13px;color:#a03389;margin-top:7px}.arcade-dash-feature svg{width:42%;max-width:350px;align-self:stretch}.arcade-dash-feature:hover{filter:brightness(1.03)}@media(max-width:600px){.arcade-dash-copy{padding:19px 14px;gap:7px}.arcade-dash-copy strong{font-size:26px}.arcade-dash-copy>span{font-size:11px}.arcade-dash-copy small{font-size:9px}.arcade-dash-feature svg{width:34%}}

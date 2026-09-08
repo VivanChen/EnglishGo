@@ -2566,7 +2566,7 @@ export default function App(){
          mod==="srs"?<SRS lv={lv} onBack={back} onLevelChange={nextLv=>navigateEnglishGo({lv:nextLv,sharedWord:null,customDeck:null},{replace:true})} onXp={n=>addXpWithTask(n,"srsToday")} onDone={()=>setStats(s=>({...s,srsRounds:s.srsRounds+1}))} trackWeak={trackWeak} gifKey={gifKey} sharedWord={sharedWord} apiKey={gemKey} weakWords={levelWeakWords} customCards={customDeck?.cards||null} customSource={customDeck?.source||""} onOpenSettings={()=>openModule("settings","tools")}/>:
          mod==="quiz"?<QuizM lv={lv} onBack={back} onXp={n=>addXpWithTask(n,"quizToday")} onPerfect={()=>setStats(s=>({...s,perfectQuiz:s.perfectQuiz+1}))} trackWeak={trackWeak} onReviewWords={cards=>navigateEnglishGo({lv,mod:"srs",menuGroup:"learn",sharedWord:null,customDeck:{cards,source:"小任務複習"}})}/>:
          mod==="speak"?<SpeakM lv={lv} onBack={back} onXp={n=>addXpWithTask(n,"speakToday")} apiKey={gemKey} onOpenSettings={()=>openModule("settings","tools")}/>:
-         mod==="whack"?<WhackM lv={lv} onBack={back} onXp={addXp}/>:
+         mod==="wordDash"?<WordDashM lv={lv} onBack={back} onXp={addXp}/>:mod==="whack"?<WhackM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="match"?<MatchM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="bomb"?<BombM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="petMonopoly"?<Suspense fallback={<ModuleLoading label="載入寵物大富翁..."/>}><PetMonopolyM quiet={quiet} setQuiet={setQuiet} onNavigate={navigatePet} onComplete={()=>incrTask("playToday")} lv={lv} onBack={back} onXp={n=>addXp(n,{awardCoins:false})} c={c} pets={pets} setPets={setPets} coins={coins} setCoins={setCoins} deps={{G,Hdr,S,V,escapeRegexSafe,getAdventurePetDef,levelUpPet,shuffleCopy}}/></Suspense>:
@@ -2713,6 +2713,7 @@ function MenuV2({lv,onSelect,activeGroup="learn",onGroupChange,daily,c,xp,coins,
     {id:"songs",group:"read",icon:"♪",t:"英文歌曲",d:(SONGS?.[lv]?.length||0)?`${SONGS[lv].length} 首歌曲`:"尚未建立歌曲",tag:"聽唱學習"},
     {id:"dictation",group:"read",icon:"D",t:"聽寫練習",d:"聽句子並輸入答案",tag:"聽力拼字"},
     {id:"story",group:"read",icon:"✦",t:"AI 故事",d:"生成適合程度的短故事",tag:"創意閱讀"},
+    {id:"wordDash",group:"game",icon:"D",t:"單字衝衝",d:"3D 天空障礙賽，聽英文衝對門",tag:"3D 闖關"},
     {id:"whack",group:"game",icon:"W",t:"地鼠花園",d:"打地鼠聽音找字，幫花園種花",tag:"聽音挑戰"},
     {id:"match",group:"game",icon:"M",t:"記憶星空",d:"英文與中文快速配對",tag:"記憶配對"},
     {id:"bomb",group:"game",icon:"B",t:"火箭拼字",d:"字母積木補充火箭能量",tag:"拼字挑戰"},
@@ -3235,6 +3236,8 @@ ${analysisBlock}
 function speakPassThreshold(item){return item?.type==="word"?80:70}
 function SpeakM(props){return <Suspense fallback={<ModuleLoading label="準備口說小練習..."/>}><SpeakingStudio key={props.lv} {...props} deps={{fallback:SPEAK_FALLBACK[props.lv],fetchSpeakItems,selectSpeakItemsByMode,modes:SPEAK_MODE_OPTIONS,localPronunciationGuide,generatePronunciationGuide,compareWords,speakPassThreshold,normalizeText,speak,stopSpeech,playSound,Hdr,c:LV[props.lv]}}/></Suspense>}
 // ═══ ILLUSTRATED ARCADE ════════════════════════════════════════
+const LazyWordDash=lazy(()=>import("./features/WordDash.jsx"));
+function WordDashM(props){return <Suspense fallback={<ModuleLoading label="正在搭建 3D 賽道…"/>}><LazyWordDash key={props.lv} {...props} deps={{V,speak,stopSpeech,playSound,loadExtraWords,fetchCloudVocab}}/></Suspense>}
 const LazyArcadeGames=lazy(()=>import("./features/ArcadeGames.jsx"));
 function ArcadeM({game,...props}){
   const deps={V,SCRAM,LV,loadExtraWords,fetchCloudVocab,speak,stopSpeech,playSound,Hdr};
