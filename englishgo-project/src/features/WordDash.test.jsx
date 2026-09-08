@@ -1,15 +1,61 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import WordDash from './WordDash.jsx';
-import { dashObstacleHit, makeDashRounds } from '../data/wordDash.js';
+import { DASH_COURSES, dashCourseObstacle, dashObstacleHit, makeDashRounds } from '../data/wordDash.js';
 
 let scene;
 vi.mock('../components/WordDashScene.jsx', () => ({ default: props => { scene = props; return <div data-testid="scene"/>; } }));
 const words = [{ w: 'apple', m: '蘋果' }, { w: 'cat', m: '貓' }, { w: 'dog', m: '狗' }, { w: 'book', m: '書' }, { w: 'fish', m: '魚' }];
 const deps = { V: { elementary: words }, speak: vi.fn(), stopSpeech: vi.fn(), playSound: vi.fn(), loadExtraWords: async () => ({}), fetchCloudVocab: async () => [] };
-async function mount({ ready = true } = {}) { vi.useFakeTimers(); const onXp = vi.fn(); render(<WordDash lv="elementary" onBack={vi.fn()} onXp={onXp} deps={deps}/>); await act(async () => {}); fireEvent.click(screen.getByRole('button', { name: /開始衝衝/ })); if (ready) act(() => vi.advanceTimersByTime(3000)); return onXp; }
+async function mount({ ready = true, course } = {}) { vi.useFakeTimers(); const onXp = vi.fn(); render(<WordDash lv="elementary" onBack={vi.fn()} onXp={onXp} deps={deps}/>); await act(async () => {}); if (course) fireEvent.click(screen.getByRole('button', { name: new RegExp(course.title) })); fireEvent.click(screen.getByRole('button', { name: /開始衝衝/ })); if (ready) act(() => vi.advanceTimersByTime(3000)); return onXp; }
 afterEach(() => { vi.useRealTimers(); vi.clearAllMocks(); });
 describe('Word Dash', () => {
+  it.each(DASH_COURSES)('finishes $title with the correct number of gates and rewards', async course => {
+    const xp = await mount({ course });
+    expect(scene.course.id).toBe(course.id); expect(scene.total).toBe(course.rounds);
+    for (let i = 0; i < course.rounds; i++) {
+      const word = deps.speak.mock.calls.at(-1)[0];
+      const selected = scene.choices.findIndex(choice => choice.w === word);
+      act(() => scene.onGate(selected));
+    }
+    expect(scene.phase).toBe('finishing'); act(() => scene.onFinish());
+    expect(xp).toHaveBeenCalledTimes(course.rounds); expect(xp.mock.calls.every(([amount]) => amount === 10)).toBe(true);
+    expect(screen.getByText(new RegExp(`\\+${course.rounds * 10} XP`))).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '再衝一次 ↗' }));
+    expect(scene.phase).toBe('countdown'); expect(scene.round).toBe(0); expect(scene.course.id).toBe(course.id); expect(scene.total).toBe(course.rounds);
+    expect(xp).toHaveBeenCalledTimes(course.rounds);
+  });
+  it('starts the next course with a fresh clock and lets players change courses from pause', async () => {
+    const xp = await mount();
+    for (let i = 0; i < 5; i++) { const word = deps.speak.mock.calls.at(-1)[0]; act(() => scene.onGate(scene.choices.findIndex(choice => choice.w === word))); }
+    act(() => scene.onFinish()); fireEvent.click(screen.getByRole('button', { name: /下一關：果凍滾球谷/ }));
+    expect(scene.course.id).toBe('jelly'); expect(scene.total).toBe(6); expect(screen.getByText('0s')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Ⅱ 暫停' })); fireEvent.click(screen.getByRole('button', { name: '重選賽道' }));
+    expect(scene.phase).toBe('lobby');
+    fireEvent.click(screen.getByRole('button', { name: /星光皇冠賽/ })); fireEvent.click(screen.getByRole('button', { name: /開始衝衝/ }));
+    expect(scene.course.id).toBe('starlight'); expect(scene.total).toBe(8); expect(xp).toHaveBeenCalledTimes(5);
+  });
+  it('fills long courses from a small word pool without consecutive duplicate targets', () => {
+    const rounds = makeDashRounds(words.slice(0, 3), () => .5, 8);
+    expect(rounds).toHaveLength(8);
+    rounds.forEach((round, index) => {
+      if (index) expect(round.w).not.toBe(rounds[index - 1].w);
+      expect(new Set(round.choices.map(word => word.m)).size).toBe(3);
+    });
+    expect(new Set(DASH_COURSES.at(-1).pattern)).toEqual(new Set(['bar', 'ball', 'roller', 'piston']));
+    expect(dashCourseObstacle(DASH_COURSES[1], 0)).toBe('roller');
+  });
+  it('collides with raised pistons but allows retracted pistons and high jumps', () => {
+    const piston = { type: 'piston', x: 0, z: -10, y: 1, width: 2.5, height: 1.8, depth: 2.5 };
+    expect(dashObstacleHit(piston, 0, -10, 0)).toBe(true);
+    expect(dashObstacleHit(piston, 0, -10, 2.8)).toBe(false);
+    expect(dashObstacleHit(piston, 4.65, -10, 0)).toBe(false);
+    expect(dashObstacleHit({ ...piston, y: -1.6 }, 0, -10, 0)).toBe(false);
+    const roller = { type: 'roller', x: 4.5, z: -7, y: 1.1, radius: 1.1 };
+    expect(dashObstacleHit(roller, 0, -7, 0)).toBe(false);
+    expect(dashObstacleHit(roller, 4.5, -7, 0)).toBe(true);
+    expect(dashObstacleHit(roller, 4.5, -7, 2.8)).toBe(false);
+  });
   it('builds unambiguous doors and handles insufficient vocabulary', () => {
     expect(makeDashRounds(words.slice(0, 2))).toEqual([]);
     for (const round of makeDashRounds([...words, { w: 'kitty', m: '貓' }])) {

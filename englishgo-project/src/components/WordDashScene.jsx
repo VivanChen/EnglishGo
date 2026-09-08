@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { dashObstacleHit } from '../data/wordDash.js';
+import { DASH_COURSES, dashCourseObstacle, dashObstacleHit } from '../data/wordDash.js';
 
 const COLORS = ['#ff58b3', '#3ed9ef', '#ffd84f'];
 export default function WordDashScene(props) {
@@ -9,16 +9,17 @@ export default function WordDashScene(props) {
   latest.current = props;
   useEffect(() => {
     const element = host.current;
+    const course = latest.current.course || DASH_COURSES[0];
     let renderer;
     try { renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false }); } catch { setFailed(true); latest.current.onUnavailable?.(); return; }
     const mobileDevice = window.innerWidth < 600;
     renderer.setPixelRatio(Math.min(devicePixelRatio || 1, mobileDevice ? 1.25 : 1.7));
     renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
-    renderer.setClearColor('#73d7f4');
-    renderer.domElement.setAttribute('aria-label', '圓滾角色在粉紅與藍色的天空賽道上奔跑');
+    renderer.setClearColor(course.sky);
+    renderer.domElement.setAttribute('aria-label', `${course.title}：圓滾角色在立體障礙賽道上奔跑`);
     element.appendChild(renderer.domElement);
-    const scene = new THREE.Scene(); scene.fog = new THREE.Fog('#73d7f4', 55, 155);
+    const scene = new THREE.Scene(); scene.fog = new THREE.Fog(course.sky, 55, 155);
     const camera = new THREE.PerspectiveCamera(48, 1, .1, 240);
     scene.add(new THREE.HemisphereLight('#ffffff', '#7a65ca', 2.6));
     const sun = new THREE.DirectionalLight('#fff5dc', 3); sun.position.set(-14, 25, 10); sun.castShadow = true;
@@ -51,8 +52,8 @@ export default function WordDashScene(props) {
     const length = 32, total = latest.current.total;
     for (let r = 0; r < total; r++) {
       const z = -r * length;
-      box(15, 1.2, 32, ['#38c8e3', '#a28bea', '#52d5bd', '#fbabcf', '#45cce2'][r % 5], scene, 0, -.65, z - 10);
-      [-7.4, 7.4].forEach(x => { box(.5, .8, 31.5, '#ff70c1', scene, x, .25, z - 10); for (let t = 0; t < 5; t++) ball(.36, '#fff0aa', scene, x, .85, z + 3 - t * 6); });
+      box(15, 1.2, 32, course.floors[r % course.floors.length], scene, 0, -.65, z - 10);
+      [-7.4, 7.4].forEach(x => { box(.5, .8, 31.5, course.rail, scene, x, .25, z - 10); for (let t = 0; t < 5; t++) ball(.36, '#fff0aa', scene, x, .85, z + 3 - t * 6); });
       [-2.3, 2.3].forEach(x => box(.1, .02, 28, '#b9f4fa', scene, x, .015, z - 9));
       for (let i = 0; i < 3; i++) {
         const x = (i - 1) * 4.65, group = new THREE.Group(); group.position.set(x, 0, z - 22); scene.add(group);
@@ -68,18 +69,36 @@ export default function WordDashScene(props) {
         const sign = new THREE.Mesh(geometry, signMaterial); sign.position.set(0, 3, .26); panel.add(sign);
         gates.push({ group, panel, canvas, texture, round: r, lane: i, hitAt: -10, opened: false });
       }
-      if (r % 2 === 0) {
+      const obstacleType = dashCourseObstacle(course, r);
+      if (obstacleType === 'bar') {
         const spinner = new THREE.Group(); spinner.position.set(0, .65, z - 10); scene.add(spinner);
         box(13, .55, .6, '#ff6db4', spinner, 0, 0, 0); ball(.65, '#ffdd55', spinner, 0, 0, 0);
         const ring = mesh(new THREE.TorusGeometry(1.1, .18, 8, 30), '#fff6aa', spinner, 0, .2, 0); ring.rotation.x = Math.PI / 2;
         obstacles.push({ type: 'bar', root: spinner, round: r, x: 0, z: z - 10, angle: 0 });
-      } else {
+      } else if (obstacleType === 'ball') {
         for (let i = 0; i < 3; i++) {
           const x = (i - 1) * 4.65, root = new THREE.Group(); root.position.set(x, 1, z - 9 - i * 1.4); scene.add(root);
           ball(.95, COLORS[i], root, 0, 0, 0);
           const ring = mesh(new THREE.TorusGeometry(.95, .08, 8, 24), '#fffaf1', root); ring.rotation.x = Math.PI / 2;
           box(2.5, .15, 2.5, '#fff1ad', scene, x, .1, root.position.z);
           obstacles.push({ type: 'ball', root, round: r, x, z: root.position.z, y: 1, radius: .95, offset: i * 1.9 });
+        }
+      } else if (obstacleType === 'roller') {
+        for (let i = 0; i < 2; i++) {
+          const root = new THREE.Group(); root.position.set(0, 1.1, z - 7 - i * 6); scene.add(root);
+          ball(1.1, COLORS[(r + i) % 3], root);
+          const ring = mesh(new THREE.TorusGeometry(1.1, .1, 8, 24), '#fffaf1', root); ring.rotation.x = Math.PI / 2;
+          [-5, 0, 5].forEach(x => box(1.2, .025, .16, '#fff8ba', scene, x, .03, root.position.z));
+          obstacles.push({ type: 'roller', root, round: r, x: 0, z: root.position.z, y: 1.1, radius: 1.1, offset: i * Math.PI + r * .5 });
+        }
+      } else if (obstacleType === 'piston') {
+        for (let i = 0; i < 3; i++) {
+          const x = (i - 1) * 4.65, root = new THREE.Group(); root.position.set(x, -1.6, z - 10 - i * .6); scene.add(root);
+          box(2.5, 1.8, 2.5, COLORS[i], root, 0, 0, 0);
+          box(2.25, .15, 2.25, '#fff6e3', root, 0, .84, 0);
+          const button = ball(.38, COLORS[i], root, 0, 1, 0); button.scale.y = .3;
+          const rim = mesh(new THREE.TorusGeometry(1.6, .1, 8, 24), '#ffe18c', scene, x, .06, root.position.z); rim.rotation.x = Math.PI / 2;
+          obstacles.push({ type: 'piston', root, rim, round: r, x, z: root.position.z, y: -1.6, width: 2.5, height: 1.8, depth: 2.5, offset: i * Math.PI * 2 / 3 });
         }
       }
       for (let k = 0; k < 3; k++) { const chevron = box(1.4, .025, .45, '#fff6ae', scene, 0, .03, z + 1 - k * 1.4); chevron.rotation.y = .5; }
@@ -91,17 +110,26 @@ export default function WordDashScene(props) {
     [-1.3, 0, 1.3].forEach(x => { const point = mesh(new THREE.ConeGeometry(.65, 1.5, 4), '#ffe86a', crown, x, 1, 0); point.rotation.y = Math.PI / 4; ball(.17, '#fffbe0', crown, x, 1.9, 0); });
     [-6.7, 6.7].forEach(x => box(.7, 7, .7, '#9f6dea', scene, x, 3.5, finishZ));
     box(14, .7, .7, '#ffd647', scene, 0, 7, finishZ);
-    for (let i = 0; i < 25; i++) {
+    for (let i = 0; i < Math.ceil(total * length / 8) + 5; i++) {
       const cloud = new THREE.Group(); scene.add(cloud); cloud.position.set((i % 2 ? 1 : -1) * (15 + i % 4 * 5), -3 + i % 3 * 4, 15 - i * 8);
-      for (let j = 0; j < 3; j++) { const puff = ball(2.6, '#f1fcff', cloud, j * 2, 0, 0); puff.scale.y = .65; puff.castShadow = false; puff.receiveShadow = false; }
-      if (i % 3 === 0) { const balloon = ball(2, COLORS[i % 3], scene, cloud.position.x, 9 + i % 5, cloud.position.z); balloon.scale.y = 1.3; balloon.castShadow = false; }
+      if (course.id === 'starlight') {
+        const star = mesh(new THREE.OctahedronGeometry(.8), '#fff4ac', cloud); star.castShadow = false; star.rotation.z = i;
+        if (i % 3 === 0) {
+          const planet = ball(2.2, COLORS[i % 3], cloud, 0, 6, 0); planet.castShadow = false;
+          const ring = mesh(new THREE.TorusGeometry(3.1, .18, 8, 32), '#ecd6ff', cloud, 0, 6, 0); ring.rotation.x = 1.15; ring.rotation.y = .35; ring.castShadow = false;
+        }
+      } else {
+        for (let j = 0; j < 3; j++) { const puff = ball(2.6, '#f1fcff', cloud, j * 2, 0, 0); puff.scale.y = .65; puff.castShadow = false; puff.receiveShadow = false; }
+        if (i % 3 === 0) { const balloon = ball(2, COLORS[i % 3], scene, cloud.position.x, 9 + i % 5, cloud.position.z); balloon.scale.y = 1.3; balloon.castShadow = false; }
+      }
     }
     for (let i = 0; i < 55; i++) { const piece = box(.15, .3, .05, COLORS[i % 3], scene, 0, -10, 0); piece.visible = false; piece.castShadow = false; confetti.push(piece); }
     for (let i = 0; i < 30; i++) { const piece = box(.22, .26, .14, COLORS[i % 3], scene); piece.visible = false; piece.castShadow = false; particles.push({ root: piece, life: 0, velocity: new THREE.Vector3() }); }
     function burst(x, z) { particles.forEach((piece, i) => { piece.root.visible = true; piece.root.position.set(x, 1.5, z); piece.life = .9 + (i % 5) * .08; piece.velocity.set(Math.sin(i * 4.1) * 5, 2 + (i % 4), Math.cos(i * 4.1) * 4); }); }
     const cameraTarget = new THREE.Vector3(), lookTarget = new THREE.Vector3(0, .6, -9), cameraAim = new THREE.Vector3();
     const motionQuery = window.matchMedia?.('(prefers-reduced-motion: reduce)');
-    let frame, last = performance.now(), t = 0, distance = -2, jumpTime = -1, lastJump = 0, lastRound = -1, bumpAt = -1, stagger = 0;
+    const hitObstacles = new Set();
+    let frame, last = performance.now(), t = 0, distance = -2, jumpTime = -1, lastJump = 0, lastRound = -1, stagger = 0;
     let boost = 0, recoil = 0, recoilFrom = 0, lastProgress = -1, cameraReady = false, finished = false, landing = 0, redraw = true, outfit;
     function resize() { const w = element.clientWidth, h = element.clientHeight; renderer.setSize(w, h); camera.aspect = w / h; camera.updateProjectionMatrix(); redraw = true; }
     const observer = new ResizeObserver(resize); observer.observe(element); resize();
@@ -116,12 +144,15 @@ export default function WordDashScene(props) {
       if (moving) t += dt;
       if (outfit !== p.color) { outfit = p.color; playerMaterial.color.set(outfit || '#b57cff'); }
       if (moving) obstacles.forEach(obstacle => {
-        if (obstacle.type === 'bar') { obstacle.angle = t * (1.15 + obstacle.round * .13) + obstacle.round; obstacle.root.rotation.y = obstacle.angle; }
-        else { obstacle.y = 1.05 + Math.abs(Math.sin(t * 1.75 + obstacle.offset)) * 2.5; obstacle.root.position.y = obstacle.y; obstacle.root.rotation.z = Math.sin(t + obstacle.offset) * .2; }
+        if (obstacle.type === 'bar') { obstacle.angle = t * (1.15 + obstacle.round * .13) * course.tempo + obstacle.round; obstacle.root.rotation.y = obstacle.angle; }
+        else if (obstacle.type === 'roller') { obstacle.x = Math.sin(t * 1.1 * course.tempo + obstacle.offset) * 5.6; obstacle.root.position.x = obstacle.x; obstacle.root.rotation.z = -obstacle.x / obstacle.radius; }
+        else if (obstacle.type === 'piston') { const lift = Math.max(0, Math.sin(t * 1.8 * course.tempo + obstacle.offset)); obstacle.y = -1.6 + lift * 2.6; obstacle.root.position.y = obstacle.y; obstacle.rim.scale.setScalar(1 + lift * .12); }
+        else { obstacle.y = 1.05 + Math.abs(Math.sin(t * 1.75 * course.tempo + obstacle.offset)) * 2.5; obstacle.root.position.y = obstacle.y; obstacle.root.rotation.z = Math.sin(t + obstacle.offset) * .2; }
       });
       if (p.round !== lastRound || (gates[0] && !gates[0].painted)) {
         lastRound = p.round;
         gates.forEach(gate => {
+          if (gate.round < p.round) return;
           const ctx = gate.canvas.getContext('2d'); ctx.clearRect(0, 0, 512, 160); ctx.fillStyle = '#fffdfb'; ctx.beginPath(); ctx.roundRect(4, 4, 504, 152, 28); ctx.fill();
           const label = gate.round === p.round && p.choices ? p.choices[gate.lane].m : ['READY', 'SET', 'GO!'][gate.lane];
           ctx.fillStyle = '#473069'; ctx.font = `900 ${Math.min(64, 430 / Math.max(3, label.length))}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(label, 256, 83); gate.texture.needsUpdate = true; gate.painted = true;
@@ -133,11 +164,10 @@ export default function WordDashScene(props) {
         stagger = Math.max(0, stagger - dt);
         boost = Math.max(0, boost - dt);
         if (recoil > 0) { recoil = Math.max(0, recoil - dt); const amount = 1 - recoil / .6; distance = recoilFrom - 6 * (1 - (1 - amount) ** 3); }
-        else distance += dt * (stagger ? 1.2 : boost ? 6.5 : 4.4);
+        else distance += dt * (stagger ? 1.2 : boost ? course.speed + 2.1 : course.speed);
         const jumpHeight = jumpTime < 0 ? 0 : Math.sin(jumpTime / .95 * Math.PI) * 2.8;
-        if (!recoil && bumpAt !== p.round && obstacles.some(obstacle => obstacle.round === p.round && dashObstacleHit(obstacle, player.root.position.x, -distance, jumpHeight))) {
-          bumpAt = p.round; stagger = .9; p.onBump();
-        }
+        const collision = !recoil && obstacles.find(obstacle => obstacle.round === p.round && !hitObstacles.has(obstacle) && dashObstacleHit(obstacle, player.root.position.x, -distance, jumpHeight));
+        if (collision) { hitObstacles.add(collision); stagger = .9; boost = 0; p.onBump(); }
         if (!recoil && distance >= p.round * length + 21) {
           const selected = Math.max(0, Math.min(2, Math.round(player.root.position.x / 4.65 + 1)));
           const gate = gates.find(item => item.round === p.round && item.lane === selected);
