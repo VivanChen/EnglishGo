@@ -9,6 +9,7 @@ const deps={Hdr:({onBack,t})=><header><button onClick={onBack}>返回</button><h
 function Harness({onBack=vi.fn(),onComplete=vi.fn()}){const [coins,setCoins]=useState(0),[pets,setPets]=useState([{petId:'bunny',level:1,exp:0,bond:0,hunger:80,energy:90}]);return <><output data-testid="saved">{JSON.stringify({coins,pets})}</output><PetMonopoly lv="elementary" {...{coins,setCoins,pets,setPets,deps,onBack,onComplete}} onXp={vi.fn()} c={{cl:'#456947'}}/></>}
 const saved=()=>JSON.parse(screen.getByTestId('saved').textContent);
 const start=()=>fireEvent.click(screen.getByTestId('pet-monopoly-start'));
+const roll=()=>{fireEvent.click(screen.getByRole('button',{name:'擲骰'}));fireEvent.click(screen.getByTestId('pet-island-route-0'))};
 async function drainRound(){
   for(let step=0;step<8;step++){
     await act(async()=>{await vi.runAllTimersAsync()});
@@ -25,46 +26,67 @@ beforeEach(()=>{
 });
 afterEach(()=>{vi.useRealTimers();vi.restoreAllMocks()});
 
-describe('learning island journey',()=>{
-  it('starts with zero wallet coins and keeps travel money separate from the wallet',async()=>{
-    const onComplete=vi.fn();await act(async()=>{render(<Harness onComplete={onComplete}/>)});expect(screen.getByText('不花錢包金幣')).toBeInTheDocument();start();
-    expect(screen.getByTestId('pet-monopoly-player-cash')).toHaveTextContent('100');expect(saved().coins).toBe(0);
-    fireEvent.click(screen.getByRole('button',{name:'返回'}));expect(screen.getByRole('dialog')).toHaveTextContent('要先結束這趟旅行嗎');
-    fireEvent.click(screen.getByRole('button',{name:'結束這局，回準備頁'}));expect(screen.getByTestId('pet-monopoly-setup')).toBeInTheDocument();expect(saved().coins).toBe(0);expect(onComplete).not.toHaveBeenCalled();
+describe('gameplay-first island journey',()=>{
+  const cash=()=>Number(screen.getByTestId('pet-monopoly-player-cash').textContent);
+  const settle=async(buy=false)=>{
+    await drainRound();
+    const offer=screen.queryByTestId('pet-monopoly-buy');
+    if(offer)fireEvent.click(buy&&!offer.disabled?offer:screen.getByTestId('pet-monopoly-skip-buy'));
+    const event=document.querySelector('[data-testid^="pet-island-event-option-"]:not(:disabled)');if(event)fireEvent.click(event);
+    await drainRound();
+  };
+  it('offers land immediately, charges exactly once and never requires English',async()=>{
+    render(<Harness/>);start();roll();await drainRound();
+    expect(screen.queryByTestId('pet-monopoly-choice-correct')).not.toBeInTheDocument();
+    const buy=screen.getByTestId('pet-monopoly-buy');fireEvent.click(buy);fireEvent.click(buy);
+    expect(cash()).toBe(76);expect(screen.getByTestId('pet-monopoly-tile-word-market')).toHaveAttribute('data-owner','player');
+    await drainRound();expect(cash()).toBe(78);expect(saved().coins).toBe(0);
   });
-  it('freezes a moving token and resumes the same move when leaving is cancelled',async()=>{
-    render(<Harness/>);start();fireEvent.click(screen.getByRole('button',{name:'擲骰'}));fireEvent.click(screen.getByRole('button',{name:'返回'}));
-    await act(async()=>{await vi.advanceTimersByTimeAsync(30000)});
-    expect(screen.queryByTestId('pet-monopoly-choice-correct')).not.toBeInTheDocument();expect(screen.getByTestId('pet-monopoly-tile-start')).toHaveClass('is-active');
-    fireEvent.click(screen.getByRole('button',{name:'繼續旅行'}));await drainRound();
-    expect(screen.getByTestId('pet-monopoly-choice-correct')).toBeInTheDocument();expect(screen.getByTestId('pet-monopoly-tile-word-market')).toHaveClass('is-active');
+  it('freezes a moving token and resumes the same move',async()=>{
+    render(<Harness/>);start();roll();fireEvent.click(screen.getByRole('button',{name:'返回'}));
+    await act(async()=>{await vi.advanceTimersByTimeAsync(30000)});expect(screen.getByTestId('pet-monopoly-tile-start')).toHaveClass('is-active');
+    fireEvent.click(screen.getByRole('button',{name:'繼續旅行'}));await drainRound();expect(screen.getByTestId('pet-monopoly-deal')).toBeInTheDocument();
   });
-  it('lets a wrong answer be reviewed before continuing the round',async()=>{
-    render(<Harness/>);start();fireEvent.click(screen.getByRole('button',{name:'擲骰'}));await drainRound();
-    const wrong=[...document.querySelectorAll('.pm-choice')].find(button=>!button.dataset.testid);fireEvent.click(wrong);
-    expect(screen.getByTestId('pet-monopoly-review-next')).toBeInTheDocument();expect(screen.queryByTestId('pet-monopoly-moving')).not.toBeInTheDocument();expect(saved().coins).toBe(0);
-    fireEvent.click(screen.getByTestId('pet-monopoly-review-next'));await drainRound();expect(screen.getByRole('button',{name:'擲骰'})).not.toBeDisabled();
+  it('provides six explicit destinations with the remote die and consumes it once',async()=>{
+    render(<Harness/>);start();fireEvent.click(screen.getByTestId('pet-monopoly-card-control'));fireEvent.click(screen.getByRole('button',{name:'擲骰'}));
+    expect(document.querySelectorAll('[data-testid^="pet-island-route-"]')).toHaveLength(6);
+    fireEvent.click(screen.getByTestId('pet-island-route-4'));await drainRound();expect(screen.getByTestId('pet-monopoly-tile-word-harbor')).toHaveClass('is-active');expect(screen.queryByTestId('pet-monopoly-card-active')).not.toBeInTheDocument();
   });
-  it('allows one property upgrade before rolling without giving computers an extra turn',async()=>{
-    const dice=[1,2,6,2,6,2,6,2,6,2];vi.mocked(globalThis.crypto.getRandomValues).mockImplementation(array=>{array[0]=(dice.shift()||1)-1;return array});
-    render(<Harness/>);start();
-    for(let round=0;round<5;round++){
-      fireEvent.click(screen.getByRole('button',{name:'擲骰'}));await drainRound();fireEvent.click(screen.getByTestId('pet-monopoly-choice-correct'));
-      const offer=screen.queryByTestId('pet-monopoly-buy');if(offer)fireEvent.click(round===0?offer:screen.getByTestId('pet-monopoly-skip-buy'));await drainRound();
-    }
-    fireEvent.click(screen.getByRole('button',{name:/^升級 \d+ 旅費$/}));
-    expect(screen.getByTestId('pet-monopoly-tile-word-market')).toHaveAttribute('data-owner-level','2');
-    expect(screen.queryByTestId('pet-monopoly-moving')).not.toBeInTheDocument();expect(screen.getByRole('button',{name:'擲骰'})).not.toBeDisabled();
-    expect(screen.queryByRole('button',{name:/^升級 \d+ 旅費$/})).not.toBeInTheDocument();
+  it('blocks a chosen opponent once and permits cancelling without consuming a card',async()=>{
+    render(<Harness/>);start();fireEvent.click(screen.getByTestId('pet-monopoly-card-block'));fireEvent.click(screen.getByRole('button',{name:'取消，保留道具'}));expect(screen.getByTestId('pet-monopoly-card-block')).toHaveTextContent('x1');
+    fireEvent.click(screen.getByTestId('pet-monopoly-card-block'));fireEvent.click(screen.getByTestId('pet-island-block-cpu1'));expect(screen.getByTestId('pet-monopoly-card-block')).toHaveTextContent('x0');
+    roll();await settle();expect(screen.getByTestId('pet-monopoly-feedback')).toHaveTextContent('輪到');expect(screen.queryByTestId('pet-monopoly-cpu-owner')).not.toBeInTheDocument();
+    roll();await settle();expect(screen.getAllByTestId('pet-monopoly-cpu-owner')).toHaveLength(1);
   });
-  it.each([6,10])('finishes %i rounds, pays the disclosed reward once, and presents a next step',async(rounds)=>{
+  it('limits shop purchases to one per turn and does not spend the wallet',()=>{
+    render(<Harness/>);start();const buy=screen.getByTestId('pet-island-shop-control');fireEvent.click(buy);fireEvent.click(buy);expect(cash()).toBe(90);expect(screen.getByTestId('pet-monopoly-card-control')).toHaveTextContent('x2');expect(screen.getByTestId('pet-island-shop-shield')).toBeDisabled();expect(saved().coins).toBe(0);
+  });
+  it('draws a choice card without a quiz and resolves a safe option only once',async()=>{
+    vi.spyOn(Math,'random').mockReturnValue(.999);vi.mocked(crypto.getRandomValues).mockImplementation(a=>{a[0]=2;return a});
+    render(<Harness/>);start();roll();await drainRound();expect(screen.getByTestId('pet-island-event-card')).toHaveTextContent('夜市合夥邀請');
+    const choice=screen.getByTestId('pet-island-event-option-0');fireEvent.click(choice);fireEvent.click(choice);expect(cash()).toBe(112);
+  });
+  it('uses a shield against fate repair costs, separate from the chance deck',async()=>{
+    vi.spyOn(Math,'random').mockReturnValue(.999);
+    const sequence=[1,1,2,1,6,1];vi.mocked(crypto.getRandomValues).mockImplementation(a=>{a[0]=(sequence.shift()||1)-1;return a});
+    render(<Harness/>);start();roll();await settle(true);roll();await settle();fireEvent.click(screen.getByTestId('pet-monopoly-card-shield'));roll();await drainRound();
+    expect(screen.getByTestId('pet-island-event-card')).toHaveTextContent('暴風雨後的修繕');const before=cash();fireEvent.click(screen.getByTestId('pet-island-event-option-0'));expect(cash()).toBe(before);expect(screen.getByTestId('pet-monopoly-feedback')).toHaveTextContent('護盾擋下');
+  });
+  it('lets a failed optional English challenge leave game resources unchanged',()=>{
+    render(<Harness/>);fireEvent.click(screen.getByRole('checkbox'));start();const before=cash();fireEvent.click(screen.getByTestId('pet-island-learning'));
+    fireEvent.click(document.querySelector('.pm-choice:not([data-testid])'));expect(cash()).toBe(before);expect(screen.getByTestId('pet-monopoly-feedback')).toHaveTextContent('不受影響');expect(screen.getByRole('button',{name:'擲骰'})).toBeEnabled();expect(screen.getByTestId('pet-island-learning')).toBeDisabled();
+  });
+  it('upgrades a remote property only once per round',async()=>{
+    render(<Harness/>);fireEvent.click(screen.getByTestId('pet-monopoly-setup-stake-300'));start();roll();await settle(true);
+    fireEvent.click(screen.getByTestId('pet-monopoly-tile-word-market'));fireEvent.click(screen.getByRole('button',{name:/^升級 30/}));expect(screen.getByTestId('pet-monopoly-tile-word-market')).toHaveAttribute('data-owner-level','2');expect(screen.getByRole('button',{name:/下輪再升級/})).toBeDisabled();expect(screen.getByRole('button',{name:'擲骰'})).toBeEnabled();
+  });
+  it.each([6,10])('finishes %i rounds with no quiz and pays the displayed gameplay reward exactly once',async(rounds)=>{
     const onComplete=vi.fn();render(<StrictMode><Harness onComplete={onComplete}/></StrictMode>);if(rounds===10)fireEvent.click(screen.getByRole('button',{name:'10 回合 · 深度探索'}));start();
-    for(let round=0;round<rounds;round++){
-      fireEvent.click(screen.getByRole('button',{name:'擲骰'}));await drainRound();fireEvent.click(screen.getByTestId('pet-monopoly-choice-correct'));
-      const skip=screen.queryByTestId('pet-monopoly-skip-buy');if(skip)fireEvent.click(skip);await drainRound();
-      if(round<rounds-1){expect(saved().coins).toBe(0);expect(onComplete).not.toHaveBeenCalled()}
-    }
-    expect(screen.getByTestId('pet-monopoly-result')).toHaveTextContent(`${rounds} 回合，順利抵達終點`);expect(saved().coins).toBe(12+rounds*2);expect(screen.getByTestId('pet-monopoly-result')).toHaveTextContent(`答對 ${rounds}/${rounds} 題`);
-    fireEvent.click(screen.getByRole('button',{name:'再選一趟旅程'}));expect(saved().coins).toBe(12+rounds*2);expect(screen.getByTestId('pet-monopoly-setup')).toBeInTheDocument();expect(onComplete).toHaveBeenCalledTimes(1);
+    for(let round=0;round<rounds;round++){roll();await settle();if(round<rounds-1)expect(saved().coins).toBe(0)}
+    const result=screen.getByTestId('pet-monopoly-result');expect(result).toHaveTextContent(`${rounds} 回合，順利抵達終點`);const expected=12+(result.textContent.includes('冠軍 6')?6:0)+(result.textContent.includes('島主挑戰 8')?8:0);expect(saved().coins).toBe(expected);expect(onComplete).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole('button',{name:'再選一趟旅程'}));expect(saved().coins).toBe(expected);
+  });
+  it('abandons safely without paying completion rewards',()=>{
+    const onComplete=vi.fn();render(<Harness onComplete={onComplete}/>);start();fireEvent.click(screen.getByRole('button',{name:'返回'}));fireEvent.click(screen.getByRole('button',{name:'結束這局，回準備頁'}));expect(saved().coins).toBe(0);expect(onComplete).not.toHaveBeenCalled();
   });
 });

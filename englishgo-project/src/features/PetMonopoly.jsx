@@ -1,44 +1,38 @@
 import { recordPetMoment } from "../data/petJourney.js";
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
-import './pet-monopoly-journey.css';
+import { useEffect, useRef, useState } from "react";
+import PetIslandView from './PetIslandView.jsx';
+import {ISLAND_GOALS,getIslandRoutes,getIslandGoalProgress,getIslandIncome} from '../data/petIslandStrategy.js';
 
-const LazyPixelPet=lazy(()=>import("../components/PetCompanion.jsx"));
-function PixelPetFallback({size=180}){return <span style={{display:"inline-block",width:size,height:size,borderRadius:12,background:"linear-gradient(135deg,var(--color-background-secondary,#f3f2ee),var(--color-background-primary,#fff))"}}/>}
-function PixelPet(props){return <Suspense fallback={<PixelPetFallback size={props.size}/>}> <LazyPixelPet {...props}/> </Suspense>}
+import {ISLAND_DECKS,ISLAND_TOOLS,drawIslandEvent} from '../data/petIslandEvents.js';
+import {createIslandSound} from '../audio/petIslandSound.js';
 
 let G,Hdr,S,V,escapeRegexSafe,getAdventurePetDef,levelUpPet,shuffleCopy;
 const PET_MONOPOLY_TILES=[
-  {id:"start",type:"start",name:"起點",icon:"🏁",hint:"經過可領取補給"},
-  {id:"word-market",type:"word",name:"單字市集",icon:"🔤",hint:"看中文選英文"},
-  {id:"grammar-gate",type:"grammar",name:"文法城門",icon:"¶",hint:"補上正確句型"},
-  {id:"coin-park",type:"event",name:"金幣公園",icon:"🪙",hint:"答對拿小獎"},
-  {id:"pet-school",type:"training",name:"寵物學院",icon:"🎓",hint:"寵物 EXP 加成"},
-  {id:"word-harbor",type:"word",name:"單字港口",icon:"⚓",hint:"核心字彙挑戰"},
-  {id:"north-station",type:"word",name:"台北車站",icon:"🚄",hint:"快速翻譯挑戰"},
-  {id:"shop",type:"shop",name:"補給商店",icon:"🛒",hint:"答對換補給金"},
-  {id:"grammar-plaza",type:"grammar",name:"文法廣場",icon:"▦",hint:"句型四選一"},
-  {id:"chance",type:"event",name:"命運卡",icon:"✦",hint:"隨機學習事件"},
-  {id:"east-coast",type:"training",name:"花東海岸",icon:"🌊",hint:"寵物默契訓練"},
-  {id:"word-station",type:"word",name:"單字車站",icon:"🚉",hint:"快速翻譯"},
-  {id:"training-yard",type:"training",name:"訓練庭院",icon:"🏋️",hint:"寵物羈絆提升"},
-  {id:"forest-class",type:"grammar",name:"阿里山課堂",icon:"🌲",hint:"文法判斷"},
-  {id:"grammar-tower",type:"grammar",name:"文法塔",icon:"🏰",hint:"高分文法題"},
-  {id:"treasure",type:"event",name:"寶箱格",icon:"🎁",hint:"答對開寶箱"},
-  {id:"south-market",type:"shop",name:"台南補給站",icon:"🥤",hint:"補給與旅費"},
-  {id:"word-library",type:"word",name:"單字圖書館",icon:"📚",hint:"例句單字"},
-  {id:"pet-camp",type:"training",name:"寵物營地",icon:"⛺",hint:"休息後更親密"},
-  {id:"science-port",type:"word",name:"高雄港口",icon:"🚢",hint:"港口單字挑戰"},
-  {id:"grammar-lab",type:"grammar",name:"句型研究所",icon:"🔬",hint:"句型推理"},
-  {id:"island-fair",type:"event",name:"島嶼市集",icon:"🎡",hint:"隨機獎勵"},
-  {id:"pet-spa",type:"training",name:"溫泉寵物館",icon:"♨️",hint:"寵物恢復"},
-  {id:"boss",type:"boss",name:"Boss 城堡",icon:"👑",hint:"高獎勵英文關卡"},
-];
-const PET_MONOPOLY_GRID=[
-  [7,7],[6,7],[5,7],[4,7],[3,7],[2,7],[1,7],
-  [1,6],[1,5],[1,4],[1,3],[1,2],
-  [1,1],[2,1],[3,1],[4,1],[5,1],[6,1],[7,1],
-  [7,2],[7,3],[7,4],[7,5],[7,6],
-];
+  {id:"start",type:"start",name:"起點",icon:"🏁",hint:"選擇落點，規劃你的島嶼資產"},
+  {id:"word-market",type:"word",name:"貝殼市集",icon:"🐚",hint:"選擇落點，規劃你的島嶼資產"},
+  {id:"grammar-gate",type:"grammar",name:"紫藤城門",icon:"⛩️",hint:"選擇落點，規劃你的島嶼資產"},
+  {id:"coin-park",type:"event",name:"機會公園",icon:"🪙",hint:"選擇落點，規劃你的島嶼資產"},
+  {id:"pet-school",type:"training",name:"寵物學院",icon:"🎓",hint:"選擇落點，規劃你的島嶼資產"},
+  {id:"word-harbor",type:"word",name:"帆船港口",icon:"⚓",hint:"選擇落點，規劃你的島嶼資產"},
+  {id:"north-station",type:"word",name:"台北車站",icon:"🚄",hint:"選擇落點，規劃你的島嶼資產"},
+  {id:"shop",type:"shop",name:"補給商店",icon:"🛒",hint:"選擇落點，規劃你的島嶼資產"},
+  {id:"grammar-plaza",type:"grammar",name:"星光廣場",icon:"🌟",hint:"選擇落點，規劃你的島嶼資產"},
+  {id:"chance",type:"event",name:"命運卡",icon:"✦",hint:"選擇落點，規劃你的島嶼資產"},
+  {id:"east-coast",type:"training",name:"花東海岸",icon:"🌊",hint:"選擇落點，規劃你的島嶼資產"},
+  {id:"word-station",type:"word",name:"海風車站",icon:"🚉",hint:"選擇落點，規劃你的島嶼資產"},
+  {id:"training-yard",type:"training",name:"訓練庭院",icon:"🏋️",hint:"選擇落點，規劃你的島嶼資產"},
+  {id:"forest-class",type:"grammar",name:"森林茶屋",icon:"🌲",hint:"選擇落點，規劃你的島嶼資產"},
+  {id:"grammar-tower",type:"grammar",name:"月光鐘塔",icon:"🏰",hint:"選擇落點，規劃你的島嶼資產"},
+  {id:"treasure",type:"event",name:"機會寶箱",icon:"🎁",hint:"選擇落點，規劃你的島嶼資產"},
+  {id:"south-market",type:"shop",name:"台南補給站",icon:"🥤",hint:"選擇落點，規劃你的島嶼資產"},
+  {id:"word-library",type:"word",name:"海角書店",icon:"📚",hint:"選擇落點，規劃你的島嶼資產"},
+  {id:"pet-camp",type:"training",name:"寵物營地",icon:"⛺",hint:"選擇落點，規劃你的島嶼資產"},
+  {id:"science-port",type:"word",name:"高雄港口",icon:"🚢",hint:"選擇落點，規劃你的島嶼資產"},
+  {id:"grammar-lab",type:"grammar",name:"星空研究所",icon:"🔬",hint:"選擇落點，規劃你的島嶼資產"},
+  {id:"island-fair",type:"event",name:"命運市集",icon:"🎡",hint:"選擇落點，規劃你的島嶼資產"},
+  {id:"pet-spa",type:"training",name:"溫泉寵物館",icon:"♨️",hint:"選擇落點，規劃你的島嶼資產"},
+  {id:"boss",type:"boss",name:"冒險城堡",icon:"👑",hint:"選擇落點，規劃你的島嶼資產"},
+ ].map(tile=>({...tile,hint:tile.type==='start'?'經過補給 +12；停留再 +8':tile.type==='event'?(['chance','island-fair'].includes(tile.id)?'抽命運卡：局勢可能逆轉':'抽機會卡：自己選擇風險與報酬'):tile.type==='boss'?'城堡冒險：再抽一張機會卡':`收購 ${({word:24,grammar:32,shop:28,training:30})[tile.type]} 旅費；同類兩棟可增加街區收入`}));
 const PET_MONOPOLY_COMPUTERS=[
   {id:"cpu1",name:"電腦 1",color:"#2563EB",emoji:"🔵"},
   {id:"cpu2",name:"電腦 2",color:"#D97706",emoji:"🟠"},
@@ -46,39 +40,20 @@ const PET_MONOPOLY_COMPUTERS=[
 ];
 const PET_MONOPOLY_TYPE_META={
   start:{label:"起點",color:"#0F9F7A",soft:"#E7FFF5"},
-  word:{label:"單字",color:"#2563EB",soft:"#EFF6FF"},
-  grammar:{label:"文法",color:"#7C3AED",soft:"#F5F3FF"},
+  word:{label:"海港街區",color:"#2563EB",soft:"#EFF6FF"},
+  grammar:{label:"星光街區",color:"#7C3AED",soft:"#F5F3FF"},
   event:{label:"機會",color:"#D97706",soft:"#FFF7ED"},
   shop:{label:"商店",color:"#0891B2",soft:"#ECFEFF"},
-  training:{label:"培養",color:"#DB2777",soft:"#FDF2F8"},
-  boss:{label:"Boss",color:"#DC2626",soft:"#FEF2F2"},
+  training:{label:"休閒街區",color:"#DB2777",soft:"#FDF2F8"},
+  boss:{label:"冒險",color:"#DC2626",soft:"#FEF2F2"},
 };
-const PET_MONOPOLY_CARDS=[
-  {id:"boost",name:"\u52a0\u901f\u5361",icon:"\u2191",short:"+2",color:"#2563EB",desc:"\u4e0b\u6b21\u64f2\u9ab0 +2"},
-  {id:"shield",name:"\u8b77\u76fe\u5361",icon:"\u25c7",short:"1/2",color:"#0F9F7A",desc:"\u4e0b\u6b21\u904e\u8def\u8cbb\u6e1b\u534a"},
-  {id:"rent",name:"\u6536\u79df\u5361",icon:"$",short:"x2",color:"#D97706",desc:"\u4e0b\u6b21\u6536\u79df\u52a0\u500d"},
-];
+const PET_MONOPOLY_CARDS=ISLAND_TOOLS;
 const PET_MONOPOLY_CARD_BY_ID=PET_MONOPOLY_CARDS.reduce((map,card)=>({...map,[card.id]:card}),{});
 const PET_MONOPOLY_STAKES=[100,300,500];
 const PET_MONOPOLY_DICE_ROLL_MS=520;
 const PET_MONOPOLY_PLAYER_STEP_MS=190;
 const PET_MONOPOLY_CPU_STEP_MS=155;
 const PET_MONOPOLY_CPU_GAP_MS=420;
-const PET_MONOPOLY_EVENT_DECK=[
-  {id:"portal",name:"傳送門",kind:"portal",coins:4,xp:2,petExp:0,bond:0,text:"前往最近無主地"},
-  {id:"tailwind",name:"順風前進",kind:"move",steps:2,coins:6,xp:3,petExp:3,bond:1,text:"前進 2 格"},
-  {id:"detour",name:"臨時繞路",kind:"move",steps:-2,coins:3,xp:2,petExp:2,bond:0,text:"後退 2 格"},
-  {id:"coin-rain",name:"旅費補給",kind:"reward",coins:20,xp:2,petExp:2,bond:1,text:"獲得額外旅費"},
-  {id:"pet-snack",name:"寵物零食",kind:"reward",coins:6,xp:2,petExp:18,bond:5,text:"寵物成長加速"},
-  {id:"tax",name:"小島維護費",kind:"tax",coins:0,xp:3,petExp:0,bond:0,text:"依地產數支付旅費"},
-  {id:"draw-boost",name:"加速補給",kind:"card",cardId:"boost",coins:5,xp:2,petExp:2,bond:1,text:"抽到加速卡"},
-  {id:"draw-shield",name:"護盾補給",kind:"card",cardId:"shield",coins:5,xp:2,petExp:2,bond:1,text:"抽到護盾卡"},
-  {id:"draw-rent",name:"收租補給",kind:"card",cardId:"rent",coins:5,xp:2,petExp:2,bond:1,text:"抽到收租卡"},
-  {id:"upgrade-coupon",name:"升級折扣",kind:"upgradeDiscount",discount:12,coins:6,xp:2,petExp:4,bond:1,text:"下一次升級少 12 旅費"},
-  {id:"rent-spark",name:"收租加成",kind:"card",cardId:"rent",coins:8,xp:2,petExp:3,bond:1,text:"準備下次收租加倍"},
-  {id:"cpu-pause",name:"電腦停買",kind:"cpuPause",coins:8,xp:2,petExp:3,bond:1,text:"電腦下一輪不能收購"},
-  {id:"boss-shortcut",name:"Boss 捷徑",kind:"bossShortcut",coins:4,xp:4,petExp:8,bond:2,text:"前往 Boss 前哨"},
-];
 const PET_MONOPOLY_WORD_MODES=[
   {id:"zhToEn",label:"中文選英文"},
   {id:"enToZh",label:"英文選中文"},
@@ -181,19 +156,6 @@ function buildPetMonopolyQuestion(lv,tile,seed=0,recentWords=[]){
     word,
   };
 }
-function getPetMonopolyReward(tile,lapBonus=false){
-  const table={
-    start:{xp:4,coins:0,petExp:4,bond:1,label:"起點補給"},
-    word:{xp:8,coins:0,petExp:9,bond:2,label:"單字街獎勵"},
-    grammar:{xp:10,coins:0,petExp:10,bond:2,label:"文法地產獎勵"},
-    event:{xp:7,coins:0,petExp:7,bond:2,label:"機會命運"},
-    shop:{xp:6,coins:10,petExp:6,bond:1,label:"商店補給"},
-    training:{xp:9,coins:0,petExp:18,bond:5,label:"寵物訓練"},
-    boss:{xp:18,coins:18,petExp:28,bond:8,label:"Boss 勝利獎勵"},
-  };
-  const base=table[tile?.type]||table.word;
-  return lapBonus?{...base,xp:base.xp+6,coins:base.coins+8,petExp:base.petExp+4,bond:base.bond+1,label:`${base.label} + 繞行一圈`}:base;
-}
 function rollPetMonopolyDice(){
   try{
     const arr=new Uint32Array(1);
@@ -245,17 +207,6 @@ export function settlePetMonopolyBankruptComputers(computers=[],limit=3){
 function getPetMonopolyDistance(from,to,total){
   return((Number(to)||0)-(Number(from)||0)+total)%total;
 }
-function getNextPetMonopolyOpenTile(tiles,fromIndex,owned={},computers=[],computerCount=3){
-  const total=tiles.length;
-  for(let step=1;step<=total;step++){
-    const index=(fromIndex+step)%total;
-    const tile=tiles[index];
-    if(isPetMonopolyOwnable(tile)&&!owned?.[tile.id]&&!getPetMonopolyCpuOwner(computers,tile.id,computerCount)){
-      return{tile,index,step};
-    }
-  }
-  return null;
-}
 export function getPetMonopolyCpuBuyDecision({cpu,tile,cost,availableCoins,playerPosition,tileIndex,total}){
   if(!cpu||cpu.active===false||!isPetMonopolyOwnable(tile)||!cost||availableCoins<cost||availableCoins<50)return{buy:false,reason:""};
   const priority={grammar:3,training:3,shop:2,word:1}[tile.type]||1;
@@ -266,79 +217,6 @@ export function getPetMonopolyCpuBuyDecision({cpu,tile,cost,availableCoins,playe
   const ownedCount=(cpu.owned||[]).length;
   const buy=afterBuy>=reserve+pressure||(priority>=3&&afterBuy>=34)||(priority===2&&ownedCount<2&&afterBuy>=48);
   return{buy,reason:buy?"buy":"reserve"};
-}
-function getPetMonopolyAffinityBonus(question,petDef){
-  const focus=String(question?.word?.w||"").toLowerCase();
-  if(!focus||!(petDef?.words||[]).map(w=>String(w).toLowerCase()).includes(focus))return{coins:0,petExp:0,label:""};
-  return{coins:4,petExp:5,label:`${petDef.name} 熟悉 ${focus}，技能加成`};
-}
-function getPetMonopolyComboBonus(streak){
-  if(streak<3)return{coins:0,xp:0,petExp:0,label:""};
-  const tier=Math.min(4,Math.floor(streak/3));
-  return{coins:tier*3,xp:tier*2,petExp:tier*2,label:`連勝 ${streak} 回合，加碼獎勵`};
-}
-function getPetMonopolyEventCard(tile,seed=0){
-  const offsets={"coin-park":0,chance:1,treasure:4,"island-fair":8};
-  const offset=offsets[tile?.id]??0;
-  return PET_MONOPOLY_EVENT_DECK[Math.abs((Number(seed)||0)+offset)%PET_MONOPOLY_EVENT_DECK.length];
-}
-function getPetMonopolyTileTwist(tile,seed=0,context={}){
-  if(tile?.type==="event"){
-    const card=getPetMonopolyEventCard(tile,seed);
-    const base={kind:card.kind,coins:card.coins||0,xp:card.xp||0,petExp:card.petExp||0,bond:card.bond||0,eventId:card.id,label:`${card.name}：${card.text}`};
-    if(card.kind==="portal"){
-      const target=getNextPetMonopolyOpenTile(
-        context.tiles||PET_MONOPOLY_TILES,
-        Number(context.position)||0,
-        context.owned||{},
-        context.computers||[],
-        Number(context.computerCount)||3,
-      );
-      if(target)return{...base,label:`${card.name}：前往 ${target.tile.name}`,targetTileId:target.tile.id,targetIndex:target.index};
-      return{...base,kind:"bonus",coins:10,xp:3,petExp:4,bond:1,label:`${card.name}：全地圖已被收購，改拿補給`};
-    }
-    if(card.kind==="move"){
-      const tiles=context.tiles||PET_MONOPOLY_TILES;
-      const total=tiles.length;
-      const from=Number(context.position)||0;
-      const index=(from+(Number(card.steps)||0)+total*4)%total;
-      const target=tiles[index];
-      return{...base,label:`${card.name}：${card.steps>0?"前進":"後退"} ${Math.abs(card.steps)} 格到 ${target?.name||"下一格"}`,targetTileId:target?.id,targetIndex:index,moveSteps:card.steps};
-    }
-    if(card.kind==="bossShortcut"){
-      const tiles=context.tiles||PET_MONOPOLY_TILES;
-      const bossIndex=tiles.findIndex(item=>item.id==="boss");
-      const index=bossIndex>0?bossIndex-1:Math.max(0,tiles.length-1);
-      const target=tiles[index];
-      return{...base,label:`${card.name}：前往 ${target?.name||"Boss 前哨"}`,targetTileId:target?.id,targetIndex:index};
-    }
-    if(card.kind==="tax"){
-      const tax=Math.max(3,Math.min(18,(Number(context.propertyCount)||0)*4||3));
-      return{...base,coins:-tax,label:`${card.name}：支付 ${tax} 旅費`};
-    }
-    if(card.kind==="card"){
-      return{...base,cardId:card.cardId};
-    }
-    if(card.kind==="upgradeDiscount"){
-      return{...base,upgradeDiscount:card.discount||0};
-    }
-    if(card.kind==="cpuPause"){
-      return{...base,cpuBuyPause:1};
-    }
-    return base;
-  }
-  if(tile?.type==="boss"){
-    return{coins:10,xp:5,petExp:8,bond:2,label:"Boss 戰利品：皇冠寶箱"};
-  }
-  return null;
-}
-function getPetMonopolyCardDrop(tile,seed=0){
-  if(!tile||tile.type==="event")return null;
-  if(tile.type!=="boss"&&Math.abs(Number(seed)||0)%4!==0)return null;
-  if(tile?.type==="word")return"boost";
-  if(tile?.type==="grammar"||tile?.type==="shop")return"shield";
-  if(tile?.type==="training"||tile?.type==="boss")return"rent";
-  return null;
 }
 function growPetFromMonopoly(pet,reward){
   if(!pet)return pet;
@@ -357,12 +235,22 @@ function growPetFromMonopoly(pet,reward){
   }
   return recordPetMoment(next,"monopoly");
 }
-function PetMonopolyM({lv,onBack,onNavigate,onComplete,onXp,c,pets=[],setPets,coins=0,setCoins}){
+function PetMonopolyM({lv,onBack,onNavigate,onComplete,onXp,c,pets=[],setPets,coins=0,setCoins,quiet,setQuiet}){
   const color=c?.cl||"#0F6E56";
   const accent=c?.ac||"#1D9E75";
   const tiles=PET_MONOPOLY_TILES;
   const defaultStake=100;
+  const [encounter,setEncounter]=useState(null),[learning,setLearning]=useState(false),[learningUsed,setLearningUsed]=useState(-1),[toolTarget,setToolTarget]=useState(false),[soundOn,setSoundOn]=useState(()=>document.documentElement.dataset.egQuiet!=='true');
+  const encounterRef=useRef(null),deckRef=useRef({}),soundRef=useRef(null),toolUsedRef=useRef(-1),shopUsedRef=useRef(-1),learningUsedRef=useRef(-1);
+  if(!soundRef.current)soundRef.current=createIslandSound();
+  useEffect(()=>()=>soundRef.current?.dispose(),[]);
+  const soundEnabledRef=useRef(soundOn);
+  useEffect(()=>{if(typeof quiet==='boolean'){setSoundOn(!quiet);soundEnabledRef.current=!quiet;if(quiet)soundRef.current.stop()}},[quiet]);
+  const toggleSound=()=>{const next=!soundOn;setSoundOn(next);soundEnabledRef.current=next;setQuiet?.(!next);document.documentElement.dataset.egQuiet=String(!next);if(next){soundRef.current.unlock();soundRef.current.play('card')}else soundRef.current.stop()};
+  const [shopUsed,setShopUsed]=useState(-1);
   const[gameStarted,setGameStarted]=useState(false);
+  const[goalId,setGoalId]=useState('builder'),[visited,setVisited]=useState([]),[routes,setRoutes]=useState([]),[inspected,setInspected]=useState(null);
+  const visitedRef=useRef([]),routesRef=useRef(null),answeringRef=useRef(false),upgradedTurnRef=useRef(-1);
   const[setupComputerCount,setSetupComputerCount]=useState(1);
   const[roundLimit,setRoundLimit]=useState(6);
   const[paused,setPaused]=useState(false);
@@ -451,25 +339,26 @@ function PetMonopolyM({lv,onBack,onNavigate,onComplete,onXp,c,pets=[],setPets,co
   const pauseGame=(exiting=false)=>{
     if(resultRef.current)return;
     if(!pausedRef.current)moveTimersRef.current.forEach(timer=>{clearTimeout(timer.id);timer.remaining=Math.max(0,timer.deadline-Date.now())});
+    soundRef.current.stop();
     pausedRef.current=true;setPaused(true);setExitRequested(exiting);
   };
   const resumeGame=()=>{
+    if(soundEnabledRef.current)soundRef.current.unlock();
     pausedRef.current=false;setPaused(false);setExitRequested(false);
     moveTimersRef.current.forEach(timer=>{timer.deadline=Date.now()+timer.remaining;timer.id=setTimeout(timer.run,timer.remaining)});
   };
   const updateGameCoins=updater=>{const next=Math.max(0,typeof updater==="function"?updater(cashRef.current):updater);cashRef.current=next;setGameCoins(next)};
-  const updateComputers=updater=>setComputers(prev=>{
-    const next=typeof updater==="function"?updater(prev):updater;
-    computersRef.current=next;
-    return next;
-  });
-  const updateCardEffects=updater=>setCardEffects(prev=>{
-    const next=typeof updater==="function"?updater(prev):updater;
-    cardEffectsRef.current=next;
-    return next;
-  });
+  const updateComputers=updater=>{
+    const next=typeof updater==='function'?updater(computersRef.current):updater;
+    computersRef.current=next;setComputers(next);
+  };
+  const updateCardEffects=updater=>{
+    const next=typeof updater==='function'?updater(cardEffectsRef.current):updater;
+    cardEffectsRef.current=next;setCardEffects(next);
+  };
   const showScreenEffect=effect=>{
     if(!effect)return;
+    if(soundEnabledRef.current&&!pausedRef.current)soundRef.current.play(effect.kind);
     setScreenEffect({
       id:`${effect.kind||"effect"}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
       color,
@@ -478,6 +367,8 @@ function PetMonopolyM({lv,onBack,onNavigate,onComplete,onXp,c,pets=[],setPets,co
     });
   };
   const startGame=()=>{
+    if(soundEnabledRef.current)soundRef.current.unlock();
+    deckRef.current={};encounterRef.current=null;setEncounter(null);setToolTarget(false);toolUsedRef.current=-1;shopUsedRef.current=-1;setShopUsed(-1);learningUsedRef.current=-1;setLearningUsed(-1);
     const buyIn=Number(stake)||100;
     clearMoveTimers();
     pausedRef.current=false;setPaused(false);setExitRequested(false);resultRef.current=null;setResult(null);playedRef.current=0;earnedRef.current={xp:0,petExp:0,bond:0,correct:0};cashRef.current=buyIn;
@@ -486,7 +377,7 @@ function PetMonopolyM({lv,onBack,onNavigate,onComplete,onXp,c,pets=[],setPets,co
     const nextComputers=PET_MONOPOLY_COMPUTERS.map((cpu,i)=>({...cpu,position:(i+3)%PET_MONOPOLY_TILES.length,coins:buyIn,owned:[],active:true}));
     computersRef.current=nextComputers;
     setComputers(nextComputers);
-    setPosition(0);
+    setPosition(0);setVisited([]);visitedRef.current=[];setRoutes([]);routesRef.current=null;setInspected(null);upgradedTurnRef.current=-1;
     setDice(null);
     setTurn(0);
     setPending(null);setAnswerReview(null);
@@ -503,7 +394,7 @@ function PetMonopolyM({lv,onBack,onNavigate,onComplete,onXp,c,pets=[],setPets,co
     setGrandPrize(null);
     setWinner(null);
     grandPrizeClaimedRef.current=false;
-    setCardHand({boost:0,shield:0,rent:0});
+    setCardHand({boost:1,shield:1,rent:1,control:1,block:1});
     setCardEffects({boost:false,shield:false,rent:false});
     cardEffectsRef.current={boost:false,shield:false,rent:false};
     setCardFlash(null);
@@ -529,7 +420,9 @@ function PetMonopolyM({lv,onBack,onNavigate,onComplete,onXp,c,pets=[],setPets,co
     clearMoveTimers();setMoving(null);setPending(null);setOffer(null);setRentDialog(null);setGrandPrize(null);setScreenEffect(null);setEventFlash(null);setRentFlash(null);
     const assets=Object.entries(ownedRef.current).reduce((sum,[id,property])=>sum+getPetMonopolyPropertyValue(tiles.find(tile=>tile.id===id),property),0);
     const totals=[{id:'player',name:'你和夥伴',score:cashRef.current+assets},...computersRef.current.slice(0,computerCount).map(cpu=>({id:cpu.id,name:cpu.name,score:cpu.coins+cpu.owned.reduce((sum,id)=>sum+getPetMonopolyTileCost(tiles.find(tile=>tile.id===id)),0)}))].sort((a,b)=>b.score-a.score);
-    const completed={reason,rounds:playedRef.current,coins:12+earnedRef.current.correct*2,...earnedRef.current,rankings:totals,cash:cashRef.current,assets,partner:!!selectedPet};
+    const goal=ISLAND_GOALS.find(item=>item.id===goalId),goalProgress=getIslandGoalProgress(goalId,ownedRef.current,visitedRef.current),goalDone=goalProgress>=goal.target;
+    const completed={goalProgress,goalDone,reason,rounds:playedRef.current,coins:12+(totals[0].id==='player'?6:0)+(goalDone?8:0),...earnedRef.current,rankings:totals,cash:cashRef.current,assets,partner:!!selectedPet};
+    if(soundEnabledRef.current)soundRef.current.play('win');
     resultRef.current=completed;setResult(completed);setWinner(totals[0].id);setCoins?.(value=>(Number(value)||0)+completed.coins);onComplete?.();
   };
   const updateCpuBuyPause=updater=>setCpuBuyPause(prev=>{
@@ -555,7 +448,9 @@ function PetMonopolyM({lv,onBack,onNavigate,onComplete,onXp,c,pets=[],setPets,co
   };
   const useCard=cardId=>{
     const card=PET_MONOPOLY_CARD_BY_ID[cardId];
-    if(!card||moving||pending||rentDialog||grandPrize||answerReview||pausedRef.current||cardUsedTurn===turn||(Number(cardHand[cardId])||0)<=0||cardEffects[cardId])return;
+    if(resultRef.current||!card||encounterRef.current||offer||toolTarget||routesRef.current||moving||pending||rentDialog||grandPrize||answerReview||pausedRef.current||toolUsedRef.current===turn||(Number(cardHand[cardId])||0)<=0||cardEffects[cardId])return;
+    if(cardId==='block'){setToolTarget(true);return}
+    toolUsedRef.current=turn;
     setCardHand(prev=>({...prev,[cardId]:Math.max(0,(Number(prev[cardId])||0)-1)}));
     updateCardEffects(prev=>({...prev,[cardId]:true}));
     setCardUsedTurn(turn);
@@ -577,6 +472,7 @@ function PetMonopolyM({lv,onBack,onNavigate,onComplete,onXp,c,pets=[],setPets,co
     });
   };
   const confirmRentMoment=()=>{
+    if(pausedRef.current||resultRef.current)return;
     const dialog=rentDialog;
     const continuation=rentContinuationRef.current;
     rentContinuationRef.current=null;
@@ -585,6 +481,7 @@ function PetMonopolyM({lv,onBack,onNavigate,onComplete,onXp,c,pets=[],setPets,co
       claimGrandPrize();
       return;
     }
+    if(pausedRef.current||resultRef.current)return;
     continuation?.();
   };
   const currentTile=tiles[position];
@@ -615,14 +512,23 @@ function PetMonopolyM({lv,onBack,onNavigate,onComplete,onXp,c,pets=[],setPets,co
     const playOne=index=>{
       if(index>=totalPlayers){
         setMoving(null);
+        updateComputers(prev=>prev.map(cpu=>cpu.active===false?cpu:{...cpu,coins:cpu.coins+getIslandIncome(Object.fromEntries(cpu.owned.map(id=>[id,{level:1}])),tiles).total}));
+        const income=getIslandIncome(ownedRef.current,tiles);
+        if(income.total){updateGameCoins(value=>value+income.total);setFeedback(`建築收入 +${income.total} 旅費${income.bonus?`（含街區加成 +${income.bonus}）`:''}。輪到你規劃下一站。`)}
         if(playedRef.current>=roundLimit){finishGame();return}
+        setTurn(value=>value+1);
         if(cpuBuyPauseRef.current>0)updateCpuBuyPause(v=>Math.max(0,v-1));
-        setFeedback(prev=>prev?.startsWith("輪到")?prev:"輪到你。");
+        if(!income.total)setFeedback("輪到你。選路、建設或使用道具。");
         return;
       }
       const cpu=computersRef.current[index];
       if(!cpu||cpu.active===false)return playOne(index+1);
-      const rolled=rollPetMonopolyDice();
+      if(cpu.blocked){updateComputers(prev=>prev.map(item=>item.id===cpu.id?{...item,blocked:false}:item));setFeedback(`${cpu.name} 被路障攔住，停走一次。`);showScreenEffect({kind:'card',title:'路障生效',value:cpu.name});playOne(index+1);return}
+      const base=rollPetMonopolyDice();
+      const options=cpu.control?Array.from({length:6},(_,i)=>({steps:i+1,index:(cpu.position+i+1)%tiles.length})):getIslandRoutes(base,cpu.position,tiles.length);
+      const value=route=>{const target=tiles[route.index];if(ownedRef.current[target.id])return -getPetMonopolyRent(target,ownedRef.current[target.id]);if(getPetMonopolyCpuOwner(computersRef.current,target.id,computerCount,cpu.id))return -8;if(isPetMonopolyOwnable(target)&&!cpu.owned.includes(target.id))return cpu.coins>=getPetMonopolyTileCost(target)+20?15:0;return target.type==='event'?7:2};
+      const rolled=(cpu.control?options.sort((a,b)=>value(b)-value(a))[0].steps:index===0?base:options.sort((a,b)=>value(b)-value(a))[0].steps)+(cpu.boost?2:0);
+      updateComputers(prev=>prev.map(item=>item.id===cpu.id?{...item,boost:false,control:false}:item));
       const nextPos=(cpu.position+rolled)%tiles.length;
       const tile=tiles[nextPos];
       const path=getPetMonopolyMovePath(cpu.position,rolled,tiles.length);
@@ -640,7 +546,7 @@ function PetMonopolyM({lv,onBack,onNavigate,onComplete,onXp,c,pets=[],setPets,co
           const otherCpuOwner=getPetMonopolyCpuOwner(computersRef.current,tile.id,computerCount,current.id);
           const already=current.owned.includes(tile.id);
           const ownedByAny=!!playerProperty||!!otherCpuOwner||already;
-          const tileBonus=tile.type==="shop"?5:tile.type==="event"?3:0;
+          const tileBonus=nextPos<cpu.position?12:0;
           const buyCost=isPetMonopolyOwnable(tile)?getPetMonopolyTileCost(tile):0;
           const buyPaused=(Number(cpuBuyPauseRef.current)||0)>0;
           const buyDecision=getPetMonopolyCpuBuyDecision({
@@ -659,7 +565,7 @@ function PetMonopolyM({lv,onBack,onNavigate,onComplete,onXp,c,pets=[],setPets,co
           if(playerProperty){
             const rentBoostActive=!!cardEffectsRef.current.rent;
             const rentBase=getPetMonopolyRent(tile,playerProperty);
-            const rentDue=rentBoostActive?rentBase*2:rentBase;
+            const rentDue=Math.ceil((rentBoostActive?rentBase*2:rentBase)*(current.shield?.5:1));
             rentPaid=Math.min(rentDue,nextCoins);
             nextCoins=Math.max(0,nextCoins-rentPaid);
             if(rentPaid){
@@ -673,7 +579,7 @@ function PetMonopolyM({lv,onBack,onNavigate,onComplete,onXp,c,pets=[],setPets,co
               showScreenEffect({kind:"rent-in",title:"收租",value:`+${rentPaid}`,icon:"$",color});
             }
           }else if(otherCpuOwner){
-            rentPaid=Math.min(getPetMonopolyRent(tile,{level:1}),nextCoins);
+            rentPaid=Math.min(Math.ceil(getPetMonopolyRent(tile,{level:1})*(otherCpuOwner.rent?2:1)*(current.shield?.5:1)),nextCoins);
             nextCoins=Math.max(0,nextCoins-rentPaid);
             if(rentPaid){
               setRentFlash({title:"過路費",text:`${current.name} → ${otherCpuOwner.name} ${rentPaid}`,color:otherCpuOwner.color,effect:"rent-cpu",amount:rentPaid,icon:"$"});
@@ -684,13 +590,29 @@ function PetMonopolyM({lv,onBack,onNavigate,onComplete,onXp,c,pets=[],setPets,co
             if(item.id===current.id)return{
               ...item,
               position:nextPos,
-              coins:nextCoins,
+              coins:nextCoins,shield:rentPaid?false:item.shield,
               owned:canBuy?[...item.owned,tile.id]:item.owned,
             };
-            if(otherCpuOwner&&item.id===otherCpuOwner.id&&rentPaid)return{...item,coins:item.coins+rentPaid};
-            return item;
+            if(otherCpuOwner&&item.id===otherCpuOwner.id&&rentPaid)return{...item,coins:item.coins+rentPaid,rent:false};
+            return {...item};
           });
-          const settled=retireBankruptComputers(updatedComputers);
+          if(tile.type==='event'||tile.type==='boss'){
+            const kind=['chance','island-fair'].includes(tile.id)?'fate':'chance';const draw=drawIslandEvent(kind,deckRef.current);deckRef.current=draw.piles;
+            const actor=updatedComputers.find(item=>item.id===current.id);
+            const option={...(draw.card.options.find(item=>(item.cash||item.allCash||item.steal)&&(!item.cost||actor.coins>=item.cost))||draw.card.options[0])};
+            let delta=(option.cash||0)-(option.cost||0)+(option.allCash||0);
+            if(option.gamble&&rollPetMonopolyDice()<=3)delta+=option.gamble;
+            if(option.duel&&rollPetMonopolyDice()<=3){delta+=option.cost;option.steal=24}
+            if(option.tax){if(actor.shield){actor.shield=false}else delta-=Math.min(20,actor.owned.length*4)}
+            if(option.allCash){updateGameCoins(value=>value+option.allCash);updatedComputers.forEach(other=>{if(other.id!==actor.id&&other.active!==false)other.coins+=option.allCash})}
+            if(option.steal){const rival=[{id:'player',coins:cashRef.current},...updatedComputers.filter(other=>other.id!==actor.id&&other.active!==false)].sort((a,b)=>b.coins-a.coins)[0];const amount=Math.min(rival?.coins||0,option.steal);delta+=amount;if(rival?.id==='player')updateGameCoins(value=>value-amount);else if(rival)updatedComputers.find(other=>other.id===rival.id).coins-=amount}
+            if(option.card)actor[option.card]=true;
+            if(option.discount)actor.discount=option.discount;
+            if(Number.isInteger(option.move))actor.position=option.move;
+            actor.coins=Math.max(0,actor.coins+delta);
+            setEventFlash({title:`${current.name} · ${kind==='fate'?'命運':'機會'} · ${draw.card.title}`,text:option.label});
+          }
+          const settled={next:updatedComputers,eliminated:[]};
           updateComputers(settled.next);
           if(canBuy)showScreenEffect({kind:"buy",title:cpu.name,value:tile.name,icon:tile.icon,color:current.color});
           setMoving({actor:"cpu",name:cpu.name,dice:rolled,to:tile.name,step:path.length,total:path.length,result:canBuy?"收購":tile.type==="event"?"事件":"停留",phase:"done"});
@@ -713,7 +635,7 @@ function PetMonopolyM({lv,onBack,onNavigate,onComplete,onXp,c,pets=[],setPets,co
               tileName:tile.name,
               color:playerProperty?color:otherCpuOwner?.color||color,
               winner:playerWon?"player":"",
-              joke:playerProperty?"電腦摸摸口袋：這堂英文課怎麼還要付學費？":"電腦互收租金，裁判先喝口水。",
+              joke:playerProperty?"電腦摸摸口袋：這條街怎麼又漲租了？":"電腦互收租金，裁判先喝口水。",
             },continueCpuRound);
           }else{
             continueCpuRound();
@@ -736,14 +658,27 @@ function PetMonopolyM({lv,onBack,onNavigate,onComplete,onXp,c,pets=[],setPets,co
     moveTimersRef.current.push(timer);
   };
   const roll=()=>{
-    if(pending||offer||moving||rentDialog||grandPrize||winner||answerReview||pausedRef.current||resultRef.current)return;
+    if(encounterRef.current||toolTarget||pending||offer||moving||rentDialog||grandPrize||winner||answerReview||pausedRef.current||resultRef.current)return;
+    if(routesRef.current)return;
     const baseRoll=rollPetMonopolyDice();
+    if(soundEnabledRef.current)soundRef.current.unlock();
+    const choices=cardEffectsRef.current.control?Array.from({length:6},(_,i)=>({face:i+1,steps:i+1,index:(position+i+1)%tiles.length})):getIslandRoutes(baseRoll,position,tiles.length,!!cardEffectsRef.current.boost);
+    routesRef.current=choices;setRoutes(choices);setInspected(choices[0].index);
+    setFeedback('兩條路線各有機會，選一個骰子出發。');
+    showScreenEffect({kind:'dice',title:'擲出兩種可能',value:choices.map(route=>route.face).join(' / '),icon:'🎲',color});
+  };
+  const moveAlongRoute=choice=>{
+    const route=routesRef.current?.find(item=>item.steps===choice.steps);
+    if(!route||pausedRef.current||resultRef.current)return;
+    routesRef.current=null;setRoutes([]);setInspected(null);
+    updateCardEffects(prev=>({...prev,control:false}));
+    const baseRoll=route.face;
     const boostActive=!!cardEffectsRef.current.boost;
-    const rolled=baseRoll+(boostActive?2:0);
+    const rolled=route.steps;
     const nextPos=(position+rolled)%tiles.length;
     const tile=tiles[nextPos];
-    const question=buildPetMonopolyQuestion(lv,tile,turn+position+nextPos+rolled,recentQuestionWordsRef.current);
-    const lapBonus=nextPos<=position&&position!==0;
+
+    const lapBonus=position+rolled>=tiles.length;
     const path=getPetMonopolyMovePath(position,rolled,tiles.length);
     setDice(rolled);
     setLastMove(null);
@@ -767,177 +702,94 @@ function PetMonopolyM({lv,onBack,onNavigate,onComplete,onXp,c,pets=[],setPets,co
         }else{
           setMoving(null);
           setLastMove({dice:rolled,tile});
-          setPending({dice:rolled,nextPos,tile,question,lapBonus});
+          resolveLanding(tile,nextPos,lapBonus);
           setFeedback(`到達「${tile.name}」`);
         }
       },PET_MONOPOLY_DICE_ROLL_MS+PET_MONOPOLY_PLAYER_STEP_MS*(step+1));
       moveTimersRef.current.push(timer);
     });
   };
-  const answer=idx=>{
-    if(!pending||pausedRef.current||resultRef.current)return;
+  const showEncounter=value=>{encounterRef.current=value;setEncounter(value)};
+  const endEncounter=()=>{showEncounter(null);queueComputerRound()};
+  const resolveLanding=(tile,index,lapBonus)=>{
     playedRef.current+=1;
-    const correct=idx===pending.question.answer;
-    rememberQuestionWord(pending.question);
-    if(correct){
-      const baseReward=getPetMonopolyReward(pending.tile,pending.lapBonus);
-      const property=ownedRef.current[pending.tile.id];
-      const cpuOwner=getPetMonopolyCpuOwner(computersRef.current,pending.tile.id,computerCount);
-      const propertyYield=property?getPetMonopolyYield(property):{coins:0,xp:0,petExp:0};
-      const affinity=getPetMonopolyAffinityBonus(pending.question,selectedPetDef);
-      const nextStreak=streak+1;
-      const combo=getPetMonopolyComboBonus(nextStreak);
-      const twist=getPetMonopolyTileTwist(pending.tile,turn+pending.dice+pending.nextPos,{
-        tiles,
-        position:pending.nextPos,
-        owned:ownedRef.current,
-        computers:computersRef.current,
-        computerCount,
-        propertyCount,
-        selectedPetDef,
-      });
-      const reward={
-        ...baseReward,
-        coins:baseReward.coins+propertyYield.coins+affinity.coins+combo.coins+(twist?.coins||0),
-        xp:baseReward.xp+propertyYield.xp+combo.xp+(twist?.xp||0),
-        petExp:baseReward.petExp+propertyYield.petExp+affinity.petExp+combo.petExp+(twist?.petExp||0),
-        bond:baseReward.bond+(twist?.bond||0),
-      };
-      const totalXp=reward.xp;
-      const totalCoins=reward.coins;
-      earnedRef.current={xp:earnedRef.current.xp+totalXp,petExp:earnedRef.current.petExp+(selectedPet?reward.petExp:0),bond:earnedRef.current.bond+(selectedPet?reward.bond:0),correct:earnedRef.current.correct+1};
-      const shieldActive=!!(cpuOwner&&cardEffectsRef.current.shield);
-      const rentBase=cpuOwner?getPetMonopolyRent(pending.tile,{level:1}):0;
-      const rentDue=shieldActive?Math.ceil(rentBase/2):rentBase;
-      const rentPaid=cpuOwner?Math.min(rentDue,Math.max(0,(Number(gameCoins)||0)+totalCoins)):0;
-      const rentMoment=cpuOwner&&rentPaid?{
-        kind:"rent-out",
-        payer:"玩家",
-        payee:cpuOwner.name,
-        amount:rentPaid,
-        tileName:pending.tile.name,
-        color:cpuOwner.color,
-        joke:shieldActive?"護盾卡把帳單砍半，電腦只好小聲嘆氣。":"電腦拿出收據：這格地今天有點貴喔。",
-      }:null;
-      const continueAfterRent=fn=>rentMoment?showRentMoment(rentMoment,fn):fn();
-      setScore(s=>({correct:s.correct+1,wrong:s.wrong,laps:s.laps+(pending.lapBonus?1:0),boss:s.boss+(pending.tile.type==="boss"?1:0)}));
-      setStreak(nextStreak);
-      onXp?.(totalXp);
-      updateGameCoins(v=>v+totalCoins-rentPaid);
-      if(twist?.upgradeDiscount)setUpgradeDiscount(prev=>Math.max(prev,twist.upgradeDiscount));
-      if(twist?.cpuBuyPause)updateCpuBuyPause(prev=>Math.max(prev,twist.cpuBuyPause));
-      if(cpuOwner&&rentPaid){
-        updateComputers(prev=>prev.map(cpu=>cpu.id===cpuOwner.id?{...cpu,coins:cpu.coins+rentPaid}:cpu));
-        if(shieldActive){
-          updateCardEffects(prev=>({...prev,shield:false}));
-          setCardFlash({title:"\u8b77\u76fe\u5361",text:`\u904e\u8def\u8cbb\u6e1b\u534a -${Math.max(0,rentBase-rentPaid)}`,color:PET_MONOPOLY_CARD_BY_ID.shield.color,icon:PET_MONOPOLY_CARD_BY_ID.shield.icon,effect:"use"});
-          showScreenEffect({kind:"card",effect:"use",source:"card",title:"護盾卡",value:"過路費 1/2",icon:PET_MONOPOLY_CARD_BY_ID.shield.icon,color:PET_MONOPOLY_CARD_BY_ID.shield.color});
-        }
-        setRentFlash({title:"\u904e\u8def\u8cbb",text:shieldActive?`${cpuOwner.name} +${rentPaid}\uff5c\u8b77\u76fe\u6e1b\u534a`:`${cpuOwner.name} +${rentPaid}`,color:cpuOwner.color,effect:"rent-out",amount:rentPaid,icon:"$"});
-        showScreenEffect({kind:"rent-out",title:"過路費",value:`-${rentPaid}`,icon:"$",color:cpuOwner.color});
-      }else{
-        setRentFlash(null);
-      }
-      if(selectedPet&&setPets){
-        setPets(prev=>(prev||[]).map((pet,i)=>i===petIndex?growPetFromMonopoly(pet,reward):pet));
-      }
-      const propertyText=property?`，含地產收益 ${propertyYield.coins} 旅費`:"";
-      const affinityText=affinity.label?`，${affinity.label}`:"";
-      const comboText=combo.label?`，${combo.label}`:"";
-      const twistText=twist?`，${twist.label}`:"";
-      const buyText=!property&&!cpuOwner&&isPetMonopolyOwnable(pending.tile)?` 可收購：${getPetMonopolyTileCost(pending.tile)} 旅費。`:"";
-      const bossText=pending.tile.type==="boss"?" Boss 擊敗。":"";
-      const coinText=totalCoins>0?`、旅費 +${totalCoins}`:totalCoins<0?`、旅費 ${totalCoins}`:"";
-      const msg=`答對 +${totalXp} XP${coinText}${propertyText}${affinityText}${comboText}${twistText}。${bossText}${buyText}`;
-      setFeedback(msg);
-      if(twist){
-        setEventFlash({
-          title:pending.tile.type==="boss"?"Boss 寶箱":"機會 / 命運",
-          text:twist.label.replace(/^命運卡：/,"").replace(/^Boss 戰利品：/,""),
-          color:PET_MONOPOLY_TYPE_META[pending.tile.type]?.color||color,
-          effect:"event",
-          icon:pending.tile.icon,
-        });
-        showScreenEffect({kind:"event",title:pending.tile.type==="boss"?"Boss 寶箱":"機會 / 命運",value:twist.name||pending.tile.name,icon:pending.tile.icon,color:PET_MONOPOLY_TYPE_META[pending.tile.type]?.color||color});
-      }else{
-        setEventFlash(null);
-      }
-      awardCard(twist?.cardId||getPetMonopolyCardDrop(pending.tile,turn+pending.dice+pending.nextPos));
-      if(twist?.targetTileId){
-        const targetTile=tiles.find(t=>t.id===twist.targetTileId);
-        const targetIndex=tiles.findIndex(t=>t.id===twist.targetTileId);
-        const targetCpuOwner=getPetMonopolyCpuOwner(computersRef.current,twist.targetTileId,computerCount);
-        if(targetTile&&targetIndex>=0){
-          setPosition(targetIndex);
-          setLastMove({dice:pending.dice,tile:targetTile});
-          if(isPetMonopolyOwnable(targetTile)&&!ownedRef.current[targetTile.id]&&!targetCpuOwner){
-            setOffer({tileId:targetTile.id,cost:getPetMonopolyTileCost(targetTile)});
-          }else{
-            continueAfterRent(()=>queueComputerRound());
-          }
-        }else{
-          continueAfterRent(()=>queueComputerRound());
-        }
-      }else{
-        if(property){
-          const nextOwned={...ownedRef.current,[pending.tile.id]:{...ownedRef.current[pending.tile.id],visits:(Number(ownedRef.current[pending.tile.id]?.visits)||0)+1}};
-          ownedRef.current=nextOwned;
-          setOwned(nextOwned);
-        }
-        if(!property&&!cpuOwner&&isPetMonopolyOwnable(pending.tile)){
-          setOffer({tileId:pending.tile.id,cost:getPetMonopolyTileCost(pending.tile)});
-        }else{
-          continueAfterRent(()=>queueComputerRound());
-        }
-      }
-    }else{
-      const penalty=Math.min(Math.max(2,pending.dice),Math.max(0,Number(gameCoins)||0));
-      const cpuOwner=getPetMonopolyCpuOwner(computersRef.current,pending.tile.id,computerCount);
-      const shieldActive=!!(cpuOwner&&cardEffectsRef.current.shield);
-      const rentBase=cpuOwner?getPetMonopolyRent(pending.tile,{level:1}):0;
-      const rentDue=shieldActive?Math.ceil(rentBase/2):rentBase;
-      const rentPaid=cpuOwner?Math.min(rentDue,Math.max(0,(Number(gameCoins)||0)-penalty)):0;
-      const rentMoment=cpuOwner&&rentPaid?{
-        kind:"rent-out",
-        payer:"玩家",
-        payee:cpuOwner.name,
-        amount:rentPaid,
-        tileName:pending.tile.name,
-        color:cpuOwner.color,
-        joke:"停在別人的地產會支付旅費，再一起試下一題。",
-      }:null;
-      if(penalty||rentPaid)updateGameCoins(v=>v-penalty-rentPaid);
-      if(cpuOwner&&rentPaid){
-        updateComputers(prev=>prev.map(cpu=>cpu.id===cpuOwner.id?{...cpu,coins:cpu.coins+rentPaid}:cpu));
-        if(shieldActive){
-          updateCardEffects(prev=>({...prev,shield:false}));
-          setCardFlash({title:"\u8b77\u76fe\u5361",text:`\u904e\u8def\u8cbb\u6e1b\u534a -${Math.max(0,rentBase-rentPaid)}`,color:PET_MONOPOLY_CARD_BY_ID.shield.color,icon:PET_MONOPOLY_CARD_BY_ID.shield.icon,effect:"use"});
-          showScreenEffect({kind:"card",effect:"use",source:"card",title:"護盾卡",value:"過路費 1/2",icon:PET_MONOPOLY_CARD_BY_ID.shield.icon,color:PET_MONOPOLY_CARD_BY_ID.shield.color});
-        }
-        setRentFlash({title:"\u904e\u8def\u8cbb",text:shieldActive?`${cpuOwner.name} +${rentPaid}\uff5c\u8b77\u76fe\u6e1b\u534a`:`${cpuOwner.name} +${rentPaid}`,color:cpuOwner.color,effect:"rent-out",amount:rentPaid,icon:"$"});
-        showScreenEffect({kind:"rent-out",title:"過路費",value:`-${rentPaid}`,icon:"$",color:cpuOwner.color});
-      }else{
-        setRentFlash(null);
-      }
-      setScore(s=>({correct:s.correct,wrong:s.wrong+1,laps:s.laps,boss:s.boss}));
-      setStreak(0);
-      const msg=`再學會一題：${pending.question.explain}。本次旅費 -${penalty}，下一題繼續加油。`;
-      setFeedback(msg);
-      setEventFlash(null);
-      setAnswerReview(pending.question);
-      if(rentMoment)showRentMoment(rentMoment,null);
+    const visits=[...new Set([...visitedRef.current,tile.type])];visitedRef.current=visits;setVisited(visits);
+    if(lapBonus){updateGameCoins(value=>value+12);setScore(value=>({...value,laps:value.laps+1}))}
+    if(selectedPet&&setPets){const reward={petExp:5,bond:1};setPets(prev=>prev.map((pet,i)=>i===petIndex?growPetFromMonopoly(pet,reward):pet));earnedRef.current.petExp+=5;earnedRef.current.bond+=1}
+    const cpu=getPetMonopolyCpuOwner(computersRef.current,tile.id,computerCount);
+    if(cpu){
+      const shield=cardEffectsRef.current.shield;
+      const amount=Math.min(cashRef.current,Math.ceil(getPetMonopolyRent(tile,{level:1})*(cpu.rent?2:1)*(shield?.5:1)));
+      updateGameCoins(value=>value-amount);updateComputers(prev=>prev.map(item=>item.id===cpu.id?{...item,coins:item.coins+amount,rent:false}:item));
+      if(shield)updateCardEffects(prev=>({...prev,shield:false}));
+      setRentFlash({title:'過路費',text:shield?`${cpu.name} +${amount} · 護盾減半`:`${cpu.name} +${amount}`,effect:'rent-out'});
+      showScreenEffect({kind:'rent-out',title:'支付租金',value:`−${amount}`});
+      showRentMoment({kind:'rent-out',payer:'玩家',payee:cpu.name,amount,tileName:tile.name,joke:shield?'護盾已將租金減半。':'保留現金或使用護盾，可以減輕下次的租金壓力。'},()=>queueComputerRound());return;
     }
-    setTurn(t=>t+1);
+    if(isPetMonopolyOwnable(tile)&&!ownedRef.current[tile.id]){setOffer({tileId:tile.id,cost:getPetMonopolyTileCost(tile)});return}
+    if(tile.type==='event'||tile.type==='boss'){
+      const kind=['chance','island-fair'].includes(tile.id)?'fate':'chance';
+      const draw=drawIslandEvent(kind,deckRef.current);deckRef.current=draw.piles;
+      showEncounter({kind,...draw.card});showScreenEffect({kind:'event',title:kind==='fate'?'命運降臨':'機會來了',value:draw.card.title});return;
+    }
+    showEncounter({kind:'arrival',title:ownedRef.current[tile.id]?'回到自己的建築':'起點補給',text:ownedRef.current[tile.id]?'歇歇腳，建築會在這輪結束時帶來收入。':'領取 8 旅費補給，繼續規劃下一趟。',options:[{label:'繼續這一輪',cash:tile.type==='start'?8:0}]});
+  };
+  const resolveEvent=option=>{
+    const event=encounterRef.current;
+    if(!event||pausedRef.current||resultRef.current||!event.options.includes(option))return;
+    if(option.cost&&!option.debt&&cashRef.current<option.cost)return;
+    if(option.spendCard&&!cardHand[option.spendCard])return;
+    showEncounter(null);
+    let delta=(option.cash||0)-Math.min(cashRef.current,option.cost||0),message=option.label;
+    if(option.gamble){const won=rollPetMonopolyDice()<=3;delta+=won?option.gamble:0;message=won?'投資成功，收到 36！':'攤位生意清淡，投資沒有回收。'}
+    let steal=option.steal||0;
+    if(option.duel){const won=rollPetMonopolyDice()<=3;if(won){delta+=option.cost;steal=24}message=won?'挑戰成功！':'挑戰失敗，支付 8 旅費。'}
+    if(steal){const rival=[...liveComputers()].sort((a,b)=>b.coins-a.coins)[0];const amount=Math.min(rival?.coins||0,steal);delta+=amount;updateComputers(prev=>prev.map(cpu=>cpu.id===rival?.id?{...cpu,coins:cpu.coins-amount}:cpu));message+=` 轉移 ${amount} 旅費。`}
+    if(option.tax){const tax=Math.min(20,Object.keys(ownedRef.current).length*4);if(cardEffectsRef.current.shield){updateCardEffects(prev=>({...prev,shield:false}));message='護盾擋下修繕費！'}else{delta-=tax;message=`維修費 −${Math.min(tax,cashRef.current)}`}}
+    if(option.allCash){delta+=option.allCash;updateComputers(prev=>prev.map(cpu=>cpu.active===false?cpu:{...cpu,coins:cpu.coins+option.allCash}))}
+    if(option.card)awardCard(option.card);
+    if(option.spendCard)setCardHand(prev=>({...prev,[option.spendCard]:prev[option.spendCard]-1}));
+    if(option.discount)setUpgradeDiscount(value=>Math.max(value,option.discount));
+    if(Number.isInteger(option.move))setPosition(option.move);
+    updateGameCoins(value=>value+delta);setFeedback(message);setEventFlash({title:event.title,text:message});
+    showScreenEffect({kind:delta<0?'rent-out':'event',title:event.title,value:message});queueComputerRound();
+  };
+  const buyTool=cardId=>{
+    const card=PET_MONOPOLY_CARD_BY_ID[cardId];
+    if(!card||shopUsedRef.current===turn||!isIdle()||cashRef.current<card.price||(cardHand[cardId]||0)>=3)return;
+    shopUsedRef.current=turn;setShopUsed(turn);updateGameCoins(value=>value-card.price);awardCard(cardId);
+  };
+  const blockOpponent=id=>{
+    if(!toolTarget||pausedRef.current||resultRef.current||toolUsedRef.current===turn||!cardHand.block)return;
+    const cpu=liveComputers().find(item=>item.id===id&&!item.blocked);if(!cpu)return;
+    toolUsedRef.current=turn;setCardUsedTurn(turn);setToolTarget(false);setCardHand(prev=>({...prev,block:prev.block-1}));
+    updateComputers(prev=>prev.map(item=>item.id===id?{...item,blocked:true}:item));showScreenEffect({kind:'card',title:'設置路障',value:`${cpu.name} 停走一次`});setFeedback(`路障已放好：${cpu.name} 下一次停走。`);
+  };
+  const isIdle=()=>!moving&&!pending&&!offer&&!routesRef.current&&!encounterRef.current&&!rentDialog&&!pausedRef.current&&!resultRef.current&&!toolTarget;
+  const openLearning=()=>{
+    if(!isIdle()||learningUsedRef.current===turn)return;
+    learningUsedRef.current=turn;setLearningUsed(turn);answeringRef.current=false;
+    setPending({tile:tiles[position],question:buildPetMonopolyQuestion(lv,tiles[position],turn+position,recentQuestionWordsRef.current)});
+  };
+  const skipLearning=()=>{if(!pausedRef.current&&!resultRef.current)setPending(null)};
+  const answer=idx=>{
+    if(!pending||answeringRef.current||pausedRef.current||resultRef.current)return;
+    answeringRef.current=true;const question=pending.question;rememberQuestionWord(question);
+    if(idx===question.answer){onXp?.(5);earnedRef.current.xp+=5;earnedRef.current.correct+=1;setFeedback('英文小彩蛋：學習 XP +5。');showScreenEffect({kind:'card',title:'學會了',value:'+5 XP'})}
+    else setFeedback(`正確答案是 ${question.explain}。遊戲旅費與收購機會不受影響。`);
     setPending(null);
   };
+  const offerResolvedRef=useRef(false);
+  useEffect(()=>{offerResolvedRef.current=false},[offer]);
   const buyProperty=()=>{
-    if(!offer)return;
+    if(!offer||offerResolvedRef.current||ownedRef.current[offer.tileId]||pausedRef.current||resultRef.current)return;
     const tile=tiles.find(t=>t.id===offer.tileId);
     if(!tile)return setOffer(null);
     if((Number(gameCoins)||0)<offer.cost){
       setFeedback(`旅費不足，還差 ${offer.cost-(Number(gameCoins)||0)} 才能收購「${tile.name}」。可以保留旅費繼續走。`);
       return;
     }
+    offerResolvedRef.current=true;
     updateGameCoins(v=>v-offer.cost);
     const nextOwned={...ownedRef.current,[tile.id]:{level:1,visits:1}};
     ownedRef.current=nextOwned;
@@ -949,430 +801,34 @@ function PetMonopolyM({lv,onBack,onNavigate,onComplete,onXp,c,pets=[],setPets,co
     queueComputerRound();
   };
   const skipOffer=()=>{
+    if(!offer||offerResolvedRef.current||pausedRef.current)return;
+    offerResolvedRef.current=true;
     if(offer)setFeedback("略過收購");
     setOffer(null);
     queueComputerRound();
   };
-  const upgradeCurrentProperty=()=>{
-    const property=owned[currentTile.id];
-    if(!property||property.level>=3||upgradedTurn===turn||moving||pending||offer||pausedRef.current)return;
-    const cost=currentUpgradeCost;
-    if((Number(gameCoins)||0)<cost){
-      setFeedback(`升級旅費不足，還差 ${cost-(Number(gameCoins)||0)}。`);
-      return;
-    }
-    updateGameCoins(v=>v-cost);
-    if(upgradeDiscount>0)setUpgradeDiscount(0);
-    const nextOwned={...ownedRef.current,[currentTile.id]:{...property,level:property.level+1}};
-    ownedRef.current=nextOwned;
-    setOwned(nextOwned);
-    setUpgradedTurn(turn);
-    const msg=`${currentTile.name} Lv.${property.level+1}`;
-    setFeedback(msg);
-    showScreenEffect({kind:"upgrade",title:"地產升級",value:`Lv.${property.level+1}`,icon:currentTile.icon,color});
+  const upgradeCurrentProperty=(tileId=tiles[position].id)=>{
+    const property=ownedRef.current[tileId],tile=tiles.find(item=>item.id===tileId);
+    if(encounterRef.current||toolTarget||!tile||!property||property.level>=3||upgradedTurnRef.current===turn||moving||pending||offer||routesRef.current||answerReview||rentDialog||pausedRef.current||resultRef.current)return;
+    const cost=Math.max(5,getPetMonopolyUpgradeCost(property)-upgradeDiscount);
+    if(cashRef.current<cost)return;
+    upgradedTurnRef.current=turn;
+    updateGameCoins(value=>value-cost);setUpgradeDiscount(0);
+    const nextOwned={...ownedRef.current,[tileId]:{...property,level:property.level+1}};
+    ownedRef.current=nextOwned;setOwned(nextOwned);setUpgradedTurn(turn);
+    setFeedback(`${tile.name} 升到 Lv.${property.level+1}，每輪建築收入 +${(property.level+1)*2}。`);
+    showScreenEffect({kind:'upgrade',title:'建築升級',value:`Lv.${property.level+1}`,icon:tile.icon,color});
   };
-  const canUpgradeCurrent=!!currentProperty&&currentProperty.visits>=2&&currentProperty.level<3&&upgradedTurn!==turn;
-  return(<div className="pet-island-journey" style={{"--pm-accent":"#35614e","--pm-accent-2":"#537a60","--pm-border":"#dedfce","--pm-card":"#fffdf7","--pm-surface":"#f1f1e6","--pm-text":"#283e33","--pm-muted":"#69756a"}}>
-    <Hdr t="🎲 寵物大富翁" onBack={exitGame} cl={color}/>
-    <style>{`
-      .pet-monopoly{position:relative;display:grid;gap:12px;color:var(--pm-text)}
-      .pet-monopoly button{font-family:inherit}
-      .pm-setup{border:1px solid color-mix(in srgb,var(--pm-accent) 28%,var(--pm-border));border-radius:24px;background:linear-gradient(135deg,#F7FFFC,var(--pm-card));padding:18px;display:grid;gap:16px;box-shadow:0 22px 52px rgba(15,110,86,.1)}
-      .pm-setup-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap}
-      .pm-setup-title{font-size:28px;font-weight:1000;line-height:1.05;letter-spacing:0}
-      .pm-setup-sub{font-size:13px;color:var(--pm-muted);font-weight:800;margin-top:6px}
-      .pm-setup-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-      .pm-setup-panel{border:1px solid color-mix(in srgb,var(--pm-accent) 20%,var(--pm-border));border-radius:18px;background:rgba(255,255,255,.74);padding:14px;display:grid;gap:10px}
-      .pm-option-row{display:flex;gap:8px;flex-wrap:wrap}
-      .pm-option{border:1px solid color-mix(in srgb,var(--pm-accent) 20%,var(--pm-border));background:var(--pm-card);color:var(--pm-text);border-radius:14px;padding:10px 14px;font-size:14px;font-weight:1000;cursor:pointer;min-width:72px}
-      .pm-option.is-active{background:var(--pm-accent);border-color:var(--pm-accent);color:#fff;box-shadow:0 12px 24px color-mix(in srgb,var(--pm-accent) 22%,transparent)}
-      .pm-option:disabled{opacity:.42;cursor:not-allowed;box-shadow:none}
-      .pm-start{border:0;border-radius:16px;background:linear-gradient(135deg,var(--pm-accent),var(--pm-accent-2));color:#fff;padding:13px 18px;font-size:15px;font-weight:1000;cursor:pointer;box-shadow:0 16px 32px color-mix(in srgb,var(--pm-accent) 24%,transparent)}
-      .pm-start:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
-      .pm-game-hud{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;align-items:stretch}
-      .pm-hud-pill{border:1px solid color-mix(in srgb,var(--hud-color) 26%,var(--pm-border));border-radius:14px;background:linear-gradient(135deg,color-mix(in srgb,var(--hud-color) 10%,#fff),rgba(255,255,255,.9));padding:9px 10px;font-size:12px;font-weight:900;color:var(--pm-muted)}
-      .pm-hud-pill b{display:block;color:var(--hud-color);font-size:16px;line-height:1.15;margin-top:3px}
-      .pm-hero{order:3;border:1px solid color-mix(in srgb,var(--pm-accent) 30%,var(--pm-border));border-radius:20px;background:radial-gradient(circle at 18% 12%,color-mix(in srgb,var(--pm-accent) 22%,transparent),transparent 30%),radial-gradient(circle at 92% 20%,rgba(250,204,21,.24),transparent 26%),linear-gradient(135deg,#F8FFF8,var(--pm-card));padding:14px 16px;display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:12px;box-shadow:0 18px 38px rgba(15,110,86,.08)}
-      .pm-kicker{display:inline-flex;align-items:center;gap:7px;color:var(--pm-accent);background:color-mix(in srgb,var(--pm-accent) 10%,#fff);border:1px solid color-mix(in srgb,var(--pm-accent) 24%,transparent);border-radius:999px;padding:6px 10px;font-size:12px;font-weight:1000}
-      .pm-kicker-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-      .pm-deck-chip{display:inline-flex;align-items:center;gap:5px;color:#92400E;background:#FFF7ED;border:1px solid #FDBA74;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:1000}
-      .pm-title{font-size:clamp(26px,4.4vw,42px);line-height:1.02;font-weight:1000;margin:8px 0 6px;letter-spacing:0}
-      .pm-goal{display:inline-flex;align-items:center;gap:6px;margin-top:10px;border:1px solid color-mix(in srgb,var(--pm-accent) 25%,var(--pm-border));border-radius:999px;background:color-mix(in srgb,var(--pm-accent) 9%,#fff);color:var(--pm-accent);padding:7px 10px;font-size:12px;font-weight:1000}
-      .pm-goal.is-done{background:#ECFDF3;color:#047857;border-color:#86EFAC}
-      .pm-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
-      .pm-stat{border:1px solid color-mix(in srgb,var(--tone) 24%,var(--pm-border));border-radius:14px;background:linear-gradient(135deg,color-mix(in srgb,var(--tone) 12%,#fff),var(--pm-card));padding:10px;min-height:64px}
-      .pm-stat b{display:block;font-size:20px;line-height:1.05;margin-top:6px}
-      .pm-stat span{font-size:11px;color:var(--tone);font-weight:1000}
-      .pm-roster{order:2;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.2fr);gap:10px;align-items:stretch}
-      .pm-player-card,.pm-cpu-box{border:1px solid color-mix(in srgb,var(--pm-accent) 20%,var(--pm-border));border-radius:16px;background:linear-gradient(135deg,color-mix(in srgb,var(--pm-accent) 7%,#fff),var(--pm-card));padding:10px}
-      .pm-player-card{display:flex;align-items:center;gap:9px}
-      .pm-rank-box{position:absolute;left:12px;right:auto;top:12px;z-index:3;width:min(285px,calc(100% - 24px));border:1px solid color-mix(in srgb,var(--pm-accent) 22%,var(--pm-border));border-radius:14px;background:rgba(255,255,255,.7);backdrop-filter:blur(10px);padding:7px 8px;text-align:left;box-shadow:0 12px 26px rgba(15,110,86,.1)}
-      .pm-rank-box .pm-section-title{text-align:left;font-size:11px}
-      .pm-rank-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin-top:5px}
-      .pm-rank-row{display:grid;grid-template-columns:18px minmax(0,1fr) auto;gap:5px;align-items:center;border:1px solid color-mix(in srgb,var(--rank-color) 26%,var(--pm-border));border-radius:999px;background:color-mix(in srgb,var(--rank-color) 7%,#fff);padding:4px 6px;font-size:10px;font-weight:1000;color:var(--pm-text)}
-      .pm-rank-row span:nth-child(2){overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-      .pm-rank-row b{color:var(--rank-color);font-size:12px}
-      .pm-cpu-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:8px}
-      .pm-cpu-pill{border:1px solid color-mix(in srgb,var(--cpu-color) 32%,var(--pm-border));border-radius:12px;background:color-mix(in srgb,var(--cpu-color) 8%,#fff);padding:7px;font-size:11px;line-height:1.35;color:var(--pm-muted)}
-      .pm-cpu-pill b{display:block;color:var(--cpu-color);font-size:12px}
-      .pm-count-buttons{display:flex;gap:6px;margin-top:7px}
-      .pm-count-buttons button{border:1px solid var(--pm-border);background:var(--pm-card);border-radius:999px;padding:5px 9px;font-size:11px;font-weight:1000;cursor:pointer;color:var(--pm-text)}
-      .pm-count-buttons button.is-active{background:var(--pm-accent);color:#fff;border-color:var(--pm-accent)}
-      .pm-main{order:1;display:block}
-      .pm-board{position:relative;display:grid;grid-template-columns:repeat(7,minmax(68px,1fr));grid-template-rows:repeat(7,minmax(62px,1fr));gap:7px;border:1px solid color-mix(in srgb,var(--pm-accent) 28%,var(--pm-border));border-radius:24px;background:radial-gradient(circle at 22% 18%,rgba(14,165,233,.16),transparent 24%),radial-gradient(circle at 75% 78%,rgba(34,197,94,.15),transparent 25%),linear-gradient(135deg,#F7FFFC,var(--pm-card));padding:10px;box-shadow:0 18px 42px rgba(15,110,86,.1);min-height:600px}
-      .pm-tile{position:relative;border:1px solid color-mix(in srgb,var(--tile-color) 34%,var(--pm-border));border-radius:13px;background:linear-gradient(135deg,var(--tile-soft),rgba(255,255,255,.92));padding:8px 6px 6px;text-align:left;overflow:hidden;min-height:62px;transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease,filter .22s ease}
-      .pm-tile.is-active{box-shadow:0 0 0 3px color-mix(in srgb,var(--tile-color) 26%,transparent),0 16px 30px color-mix(in srgb,var(--tile-color) 20%,transparent);transform:translateY(-3px) scale(1.015);animation:pmTilePulse .72s ease-out}
-      .pm-tile.is-owned-by-player{border-color:color-mix(in srgb,var(--pm-accent) 70%,var(--pm-border));box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--pm-accent) 55%,transparent),0 0 0 1px color-mix(in srgb,var(--pm-accent) 14%,transparent)}
-      .pm-tile.is-owned-by-cpu{border-color:color-mix(in srgb,var(--owner-color) 70%,var(--pm-border));box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--owner-color) 55%,transparent),0 0 0 1px color-mix(in srgb,var(--owner-color) 14%,transparent)}
-      .pm-owner-band{position:absolute;left:0;right:0;top:0;height:8px;background:linear-gradient(90deg,var(--owner-color),color-mix(in srgb,var(--owner-color) 55%,#fff));box-shadow:0 7px 18px color-mix(in srgb,var(--owner-color) 24%,transparent)}
-      .pm-tile-icon{font-size:20px;display:block}
-      .pm-tile-name{display:block;font-size:11px;font-weight:1000;line-height:1.2;margin-top:4px}
-      .pm-tile-type{display:inline-block;font-size:9px;font-weight:1000;color:var(--tile-color);background:color-mix(in srgb,var(--tile-color) 10%,#fff);border-radius:999px;padding:2px 6px;margin-top:5px}
-      .pm-owner-badge{position:absolute;right:5px;top:9px;border-radius:999px;background:var(--owner-color);color:#fff;font-size:10px;font-weight:1000;padding:3px 6px;box-shadow:0 8px 18px color-mix(in srgb,var(--owner-color) 30%,transparent);animation:pmOwnerPop .55s ease-out both}
-      .pm-owner-badge.cpu{background:var(--owner-color);box-shadow:0 6px 14px color-mix(in srgb,var(--owner-color) 26%,transparent)}
-      .pm-token-stack{position:absolute;right:5px;bottom:5px;display:flex;gap:3px;align-items:center}
-      .pm-token{width:32px;height:32px;border-radius:11px;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 18px rgba(0,0,0,.12);overflow:hidden;border:2px solid #fff;font-size:14px;font-weight:1000;animation:pmTokenStep .36s ease-out both}
-      .pm-token.cpu{background:var(--cpu-color);color:#fff}
-      .pm-center{position:relative;grid-column:2 / 7;grid-row:2 / 7;border:1px dashed color-mix(in srgb,var(--pm-accent) 28%,var(--pm-border));border-radius:22px;background:linear-gradient(135deg,rgba(240,253,250,.72),rgba(255,255,255,.82));display:grid;place-items:center;text-align:center;padding:12px;overflow:hidden}
-      .pm-island{position:absolute;inset:22px;border-radius:22px;background:radial-gradient(ellipse at 52% 46%,rgba(34,197,94,.34) 0 18%,transparent 19%),radial-gradient(ellipse at 50% 47%,rgba(20,184,166,.24) 0 29%,transparent 30%),linear-gradient(135deg,rgba(14,165,233,.12),rgba(250,204,21,.13));}
-      .pm-island:before{content:"";position:absolute;left:48%;top:8%;width:112px;height:330px;border-radius:58% 44% 55% 45%;background:linear-gradient(160deg,#BFEFCC,#68D391 45%,#1D9E75);transform:rotate(17deg);box-shadow:0 18px 42px rgba(15,110,86,.22)}
-      .pm-island-label{position:absolute;left:22px;top:20px;text-align:left;color:var(--pm-accent);font-weight:1000;font-size:18px}
-      .pm-city{position:absolute;border-radius:999px;background:#fff;border:1px solid rgba(15,110,86,.2);padding:4px 8px;font-size:11px;font-weight:1000;color:#0F6E56;box-shadow:0 8px 20px rgba(15,110,86,.12)}
-      .pm-overlay{position:absolute;right:12px;bottom:42px;z-index:8;width:min(360px,calc(100% - 24px));max-height:min(292px,50%);overflow:auto;border:1px solid rgba(15,110,86,.18);border-radius:18px;background:rgba(255,255,255,.72);backdrop-filter:blur(16px);box-shadow:0 18px 42px rgba(15,110,86,.16);padding:9px;display:grid;gap:7px}
-      .pm-overlay[data-state="idle"],.pm-overlay[data-state="moving"]{max-height:none;overflow:visible}
-      .pm-overlay[data-state="question"],.pm-overlay[data-state="offer"]{width:min(560px,calc(100% - 24px));max-height:min(460px,calc(100% - 96px))}
-      .pm-overlay::-webkit-scrollbar{width:6px}
-      .pm-overlay::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--pm-accent) 30%,transparent);border-radius:999px}
-      .pm-dice{width:58px;height:58px;border:0;border-radius:18px;background:linear-gradient(135deg,var(--pm-accent),var(--pm-accent-2));color:#fff;font-size:28px;font-weight:1000;cursor:pointer;box-shadow:0 14px 26px color-mix(in srgb,var(--pm-accent) 24%,transparent);transition:transform .18s ease,box-shadow .18s ease}
-      .pm-dice:not(:disabled):hover{transform:translateY(-2px) rotate(-3deg);box-shadow:0 18px 34px color-mix(in srgb,var(--pm-accent) 28%,transparent)}
-      .pm-dice:disabled{opacity:.55;cursor:not-allowed}
-      .pm-section-title{font-size:14px;font-weight:1000;color:var(--pm-text)}
-      .pm-feedback{border:1px solid color-mix(in srgb,var(--pm-accent) 20%,var(--pm-border));border-radius:12px;background:linear-gradient(135deg,color-mix(in srgb,var(--pm-accent) 8%,#fff),rgba(255,255,255,.78));padding:6px 8px;font-size:12px;font-weight:900;line-height:1.35;color:var(--pm-accent);max-height:40px;overflow:hidden}
-      .pm-card-hand{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
-      .pm-card-button{border:1px solid color-mix(in srgb,var(--card-color) 28%,var(--pm-border));border-radius:12px;background:linear-gradient(135deg,color-mix(in srgb,var(--card-color) 12%,#fff),rgba(255,255,255,.9));padding:6px;display:grid;grid-template-columns:20px minmax(0,1fr) auto;gap:4px;align-items:center;text-align:left;color:var(--pm-text);cursor:pointer;box-shadow:0 8px 16px color-mix(in srgb,var(--card-color) 10%,transparent)}
-      .pm-card-button.is-active{outline:2px solid color-mix(in srgb,var(--card-color) 38%,transparent);background:linear-gradient(135deg,color-mix(in srgb,var(--card-color) 20%,#fff),#fff)}
-      .pm-card-button:disabled{opacity:.46;cursor:not-allowed;box-shadow:none}
-      .pm-card-icon{width:22px;height:22px;border-radius:9px;background:var(--card-color);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:1000}
-      .pm-card-name{min-width:0;display:grid;gap:1px}
-      .pm-card-name b{font-size:11px;line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-      .pm-card-name span{font-size:10px;line-height:1.05;color:var(--card-color);font-weight:1000;white-space:nowrap}
-      .pm-card-count{font-size:11px;font-weight:1000;color:var(--card-color)}
-      .pm-card-active{border:1px solid color-mix(in srgb,var(--pm-accent) 20%,var(--pm-border));border-radius:999px;background:rgba(255,255,255,.72);padding:6px 9px;font-size:12px;font-weight:1000;color:var(--pm-text);display:flex;gap:6px;align-items:center;justify-content:center;flex-wrap:wrap}
-      .pm-card-active span{color:var(--pm-accent)}
-      .pm-question{display:grid;gap:8px}
-      .pm-question-mode{display:inline-flex;align-items:center;justify-content:center;border:1px solid color-mix(in srgb,var(--pm-accent) 24%,var(--pm-border));border-radius:999px;background:color-mix(in srgb,var(--pm-accent) 8%,#fff);color:var(--pm-accent);padding:3px 8px;font-size:11px;font-weight:1000}
-      .pm-question h3{margin:0 0 6px;font-size:16px}
-      .pm-question p{margin:0;color:var(--pm-muted);font-size:12px;line-height:1.45}
-      .pm-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:8px}
-      .pm-choice{border:1px solid color-mix(in srgb,var(--pm-accent) 22%,var(--pm-border));border-radius:12px;background:var(--pm-card);padding:9px;font-size:14px;font-weight:1000;cursor:pointer;color:var(--pm-text)}
-      .pm-choice:hover{border-color:var(--pm-accent);background:color-mix(in srgb,var(--pm-accent) 8%,#fff)}
-      .pm-deal{border:1px solid color-mix(in srgb,var(--pm-accent) 28%,var(--pm-border));border-radius:14px;background:linear-gradient(135deg,color-mix(in srgb,var(--pm-accent) 10%,#fff),rgba(255,255,255,.82));padding:9px;display:grid;gap:6px}
-      .pm-deal-text{font-size:12px;color:var(--pm-muted);line-height:1.55}
-      .pm-event-card{border:1px solid color-mix(in srgb,var(--event-color) 34%,var(--pm-border));border-radius:14px;background:linear-gradient(135deg,color-mix(in srgb,var(--event-color) 14%,#fff),rgba(255,255,255,.9));padding:10px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px;align-items:center;text-align:left;box-shadow:0 12px 26px color-mix(in srgb,var(--event-color) 14%,transparent)}
-      .pm-event-card b{font-size:12px;color:var(--event-color)}
-      .pm-event-card span{font-size:13px;font-weight:1000;color:var(--pm-text);line-height:1.35}
-      .pm-card-burst{position:relative;overflow:hidden;grid-template-columns:38px minmax(0,1fr);animation:pmBurst .72s ease-out both;background:radial-gradient(circle at 18% 50%,color-mix(in srgb,var(--event-color) 28%,#fff),transparent 34%),linear-gradient(135deg,color-mix(in srgb,var(--event-color) 18%,#fff),rgba(255,255,255,.96))}
-      .pm-card-burst:before,.pm-card-burst:after{content:"";position:absolute;inset:-45%;background:conic-gradient(from 20deg,transparent 0 18%,color-mix(in srgb,var(--event-color) 34%,transparent) 19% 21%,transparent 22% 42%,rgba(255,255,255,.78) 43% 45%,transparent 46%);animation:pmSpin 1.8s linear infinite;pointer-events:none}
-      .pm-card-burst:after{animation-duration:2.4s;animation-direction:reverse;opacity:.6}
-      .pm-burst-icon{position:relative;z-index:1;width:34px;height:34px;border-radius:14px;background:var(--event-color);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:18px;font-weight:1000;box-shadow:0 10px 22px color-mix(in srgb,var(--event-color) 28%,transparent)}
-      .pm-burst-text{position:relative;z-index:1;display:grid;gap:2px}
-      @keyframes pmBurst{0%{transform:scale(.86);filter:saturate(.8);opacity:.1}55%{transform:scale(1.04);filter:saturate(1.35);opacity:1}100%{transform:scale(1);filter:saturate(1)}}
-      @keyframes pmSpin{to{transform:rotate(360deg)}}
-      .pm-screen-effect{position:fixed;inset:0;z-index:190;pointer-events:none;display:grid;place-items:center;overflow:hidden;animation:pmScreenFade 1.32s ease-out both}
-      .pm-screen-effect:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 46%,color-mix(in srgb,var(--effect-color) 24%,transparent),transparent 34%),rgba(255,255,255,.18);backdrop-filter:blur(1px)}
-      .pm-screen-rings{position:absolute;inset:0;display:grid;place-items:center}
-      .pm-screen-rings:before,.pm-screen-rings:after{content:"";position:absolute;width:210px;height:210px;border-radius:999px;border:3px solid color-mix(in srgb,var(--effect-color) 40%,transparent);animation:pmRingPop 1.1s ease-out both}
-      .pm-screen-rings:after{width:300px;height:300px;animation-delay:.12s;opacity:.65}
-      .pm-screen-rings span{position:absolute;left:50%;top:50%;width:10px;height:18px;border-radius:999px;background:var(--effect-color);box-shadow:0 0 18px color-mix(in srgb,var(--effect-color) 60%,transparent);transform:rotate(calc(var(--i)*25.7deg)) translateY(-120px);animation:pmParticle 1.1s ease-out both}
-      .pm-effect-core{position:relative;z-index:2;min-width:190px;min-height:150px;border-radius:34px;background:linear-gradient(135deg,color-mix(in srgb,var(--effect-color) 18%,#fff),rgba(255,255,255,.92));border:2px solid color-mix(in srgb,var(--effect-color) 42%,#fff);box-shadow:0 30px 90px color-mix(in srgb,var(--effect-color) 26%,transparent);display:grid;place-items:center;align-content:center;gap:6px;padding:20px 26px;text-align:center;animation:pmEffectCore .9s cubic-bezier(.2,1.2,.2,1) both}
-      .pm-effect-core b{font-size:15px;color:var(--effect-color)}
-      .pm-effect-core span:last-child{font-size:28px;font-weight:1000;color:var(--pm-text);line-height:1.05}
-      .pm-effect-icon{width:72px;height:72px;border-radius:26px;background:var(--effect-color);color:#fff;display:grid;place-items:center;font-size:38px;font-weight:1000;box-shadow:0 18px 38px color-mix(in srgb,var(--effect-color) 34%,transparent)}
-      .pm-screen-effect.is-dice .pm-effect-icon{animation:pmDiceTumble .68s ease-in-out both}
-      .pm-screen-effect.is-rent-in .pm-effect-core,.pm-screen-effect.is-buy .pm-effect-core,.pm-screen-effect.is-upgrade .pm-effect-core{animation-name:pmEffectCoreWin}
-      .pm-screen-effect.is-rent-out .pm-effect-core{animation-name:pmEffectCoreHit}
-      .pm-screen-effect.is-grand-prize .pm-effect-core{animation-name:pmGrandPrizePop}
-      .pm-impact-toast{position:fixed;left:50%;top:84px;z-index:180;transform:translateX(-50%);pointer-events:none;display:grid;grid-template-columns:auto auto minmax(0,1fr);align-items:center;gap:8px;max-width:min(520px,calc(100vw - 28px));border:1px solid color-mix(in srgb,var(--impact-color) 38%,#fff);border-radius:999px;background:rgba(255,255,255,.82);backdrop-filter:blur(14px);box-shadow:0 20px 54px color-mix(in srgb,var(--impact-color) 20%,transparent);padding:8px 12px;animation:pmImpactToast 1.7s ease-out both}
-      .pm-impact-toast b{color:var(--impact-color);font-size:13px}
-      .pm-impact-toast span:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--pm-text);font-size:12px;font-weight:1000}
-      .pm-impact-icon{width:30px;height:30px;border-radius:12px;background:var(--impact-color);color:#fff;display:grid;place-items:center;font-size:16px;font-weight:1000}
-      @keyframes pmTilePulse{0%{filter:saturate(.85);transform:scale(.98)}62%{filter:saturate(1.35);transform:translateY(-4px) scale(1.03)}100%{filter:saturate(1);transform:translateY(-3px) scale(1.015)}}
-      @keyframes pmOwnerPop{0%{transform:scale(.7);opacity:0}70%{transform:scale(1.08);opacity:1}100%{transform:scale(1)}}
-      @keyframes pmTokenStep{0%{transform:translateY(8px) scale(.86);opacity:.45}65%{transform:translateY(-5px) scale(1.08);opacity:1}100%{transform:translateY(0) scale(1)}}
-      @keyframes pmScreenFade{0%{opacity:0}10%{opacity:1}74%{opacity:1}100%{opacity:0}}
-      @keyframes pmRingPop{0%{transform:scale(.32);opacity:0}38%{opacity:1}100%{transform:scale(1.58);opacity:0}}
-      @keyframes pmParticle{0%{opacity:0;transform:rotate(calc(var(--i)*25.7deg)) translateY(-42px) scale(.4)}30%{opacity:1}100%{opacity:0;transform:rotate(calc(var(--i)*25.7deg)) translateY(-188px) scale(1)}}
-      @keyframes pmEffectCore{0%{transform:scale(.72) rotate(-4deg);opacity:0}60%{transform:scale(1.08) rotate(1deg);opacity:1}100%{transform:scale(1) rotate(0)}}
-      @keyframes pmEffectCoreWin{0%{transform:translateY(22px) scale(.7);opacity:0}55%{transform:translateY(-10px) scale(1.1);opacity:1}100%{transform:translateY(0) scale(1)}}
-      @keyframes pmEffectCoreHit{0%{transform:translateX(-18px) scale(.76);opacity:0}32%{transform:translateX(14px) scale(1.06);opacity:1}54%{transform:translateX(-8px) scale(1)}100%{transform:translateX(0) scale(1)}}
-      @keyframes pmGrandPrizePop{0%{transform:scale(.45) rotate(-10deg);opacity:0}45%{transform:scale(1.18) rotate(4deg);opacity:1}70%{transform:scale(.96) rotate(-2deg)}100%{transform:scale(1) rotate(0)}}
-      @keyframes pmDiceTumble{0%{transform:rotate(-24deg) scale(.72)}35%{transform:rotate(18deg) scale(1.12)}70%{transform:rotate(-10deg) scale(1.02)}100%{transform:rotate(0) scale(1)}}
-      @keyframes pmImpactToast{0%{opacity:0;transform:translate(-50%,-16px) scale(.92)}18%{opacity:1;transform:translate(-50%,0) scale(1.03)}78%{opacity:1;transform:translate(-50%,0) scale(1)}100%{opacity:0;transform:translate(-50%,-12px) scale(.98)}}
-      .pm-rent-dialog,.pm-prize-dialog{position:fixed;inset:0;z-index:210;display:grid;place-items:center;padding:18px;background:radial-gradient(circle at 50% 36%,color-mix(in srgb,var(--dialog-color) 18%,transparent),transparent 34%),rgba(10,20,18,.22);backdrop-filter:blur(5px);animation:pmDialogFade .18s ease-out both}
-      .pm-rent-card,.pm-prize-card{position:relative;overflow:hidden;width:min(440px,calc(100vw - 30px));border:1px solid color-mix(in srgb,var(--dialog-color) 40%,#fff);border-radius:24px;background:linear-gradient(145deg,#fff,color-mix(in srgb,var(--dialog-color) 8%,#fff));box-shadow:0 28px 90px color-mix(in srgb,var(--dialog-color) 24%,transparent);padding:18px;display:grid;gap:12px;text-align:center}
-      .pm-rent-card:before,.pm-prize-card:before{content:"";position:absolute;inset:-40% -20% auto;height:90%;background:linear-gradient(120deg,transparent,rgba(255,255,255,.72),transparent);transform:rotate(10deg);animation:pmPrizeSweep 1.4s ease-out both;pointer-events:none}
-      .pm-rent-icon,.pm-prize-icon{width:72px;height:72px;border-radius:26px;margin:0 auto;display:grid;place-items:center;background:var(--dialog-color);color:#fff;font-size:38px;font-weight:1000;box-shadow:0 18px 42px color-mix(in srgb,var(--dialog-color) 28%,transparent);animation:pmDialogBounce .48s ease-out both}
-      .pm-rent-title,.pm-prize-title{font-size:22px;font-weight:1000;color:var(--dialog-color);line-height:1.18}
-      .pm-rent-amount,.pm-prize-reward{font-size:34px;font-weight:1000;color:var(--dialog-color);line-height:1}
-      .pm-rent-talk{border:1px dashed color-mix(in srgb,var(--dialog-color) 35%,var(--pm-border));border-radius:16px;background:rgba(255,255,255,.76);padding:10px 12px;font-size:13px;font-weight:900;color:var(--pm-text);line-height:1.55}
-      .pm-dialog-ok{border:0;border-radius:16px;background:var(--dialog-color);color:#fff;padding:12px 16px;font-size:15px;font-weight:1000;cursor:pointer;box-shadow:0 14px 28px color-mix(in srgb,var(--dialog-color) 22%,transparent)}
-      .pm-cpu-status-list{display:none}
-      @keyframes pmDialogFade{from{opacity:0}to{opacity:1}}
-      @keyframes pmDialogBounce{0%{transform:translateY(16px) scale(.7);opacity:0}70%{transform:translateY(-4px) scale(1.08);opacity:1}100%{transform:translateY(0) scale(1)}}
-      @keyframes pmPrizeSweep{0%{transform:translateX(-130%) rotate(10deg)}100%{transform:translateX(140%) rotate(10deg)}}
-      .pm-action-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-      .pm-action{border:0;border-radius:12px;background:var(--pm-accent);color:#fff;padding:10px 12px;font-size:12px;font-weight:1000;cursor:pointer}
-      .pm-action.secondary{background:var(--pm-surface);color:var(--pm-text);border:1px solid var(--pm-border)}
-      .pm-action:disabled{opacity:.5;cursor:not-allowed}
-      @media (max-width:900px){.pm-setup-grid,.pm-game-hud{grid-template-columns:1fr 1fr}.pm-board{grid-template-columns:repeat(7,minmax(44px,1fr));grid-template-rows:repeat(7,minmax(48px,1fr));gap:5px;min-height:540px;padding:8px}.pm-tile{min-height:48px;padding:7px 5px 5px}.pm-tile-name{font-size:9px}.pm-tile-type{display:none}.pm-token{width:25px;height:25px;border-radius:9px}.pm-center{padding:8px}.pm-overlay{right:8px;bottom:30px;width:min(340px,calc(100% - 16px));max-height:46%;padding:8px}.pm-overlay[data-state="idle"],.pm-overlay[data-state="moving"]{max-height:none;overflow:visible}.pm-overlay[data-state="question"],.pm-overlay[data-state="offer"]{width:min(480px,calc(100% - 16px));max-height:min(420px,calc(100% - 72px))}.pm-dice{width:54px;height:54px;font-size:24px}}
-      @media (max-width:520px){.pm-setup{padding:12px;border-radius:18px}.pm-setup-grid,.pm-game-hud{grid-template-columns:1fr}.pm-setup-title{font-size:23px}.pm-board{gap:3px;min-height:500px}.pm-tile-icon{font-size:15px}.pm-tile-name{font-size:8px}.pm-choices{grid-template-columns:1fr}.pm-island-label{font-size:14px}.pm-city{display:none}.pm-rank-box{left:8px;right:auto;top:8px;transform:none;width:min(220px,calc(100% - 16px));padding:4px 5px;border-radius:999px}.pm-rank-box .pm-section-title{display:none}.pm-rank-list{grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;margin-top:0}.pm-rank-row{display:flex;justify-content:center;padding:3px 4px;border-radius:999px;font-size:10px;line-height:1}.pm-rank-row span:nth-child(2){display:none}.pm-rank-row span:last-child{display:inline;font-size:10px}.pm-overlay{left:8px;right:8px;bottom:22px;width:auto;max-height:45%}.pm-overlay[data-state="idle"],.pm-overlay[data-state="moving"]{max-height:none;overflow:visible}.pm-overlay[data-state="question"],.pm-overlay[data-state="offer"]{max-height:min(430px,calc(100% - 58px))}.pm-effect-core{min-width:150px;min-height:128px;padding:16px 20px}.pm-effect-icon{width:60px;height:60px;font-size:32px}.pm-effect-core span:last-child{font-size:22px}}
-      @media (max-width:520px){.pm-card-hand{gap:5px}.pm-card-button{grid-template-columns:18px minmax(0,1fr);gap:4px;padding:6px 5px}.pm-card-icon{width:18px;height:18px;border-radius:7px;font-size:11px}.pm-card-name b{font-size:10px}.pm-card-name span{font-size:9px}.pm-card-count{display:none}.pm-card-active{font-size:11px;padding:5px 7px}}
-    `}</style>
-    {result?<section className="pmi-result" data-testid="pet-monopoly-result">
-      <span className="pmi-eyebrow">一起完成的學習旅程</span><div className="pmi-result-icon" aria-hidden="true">⚑</div>
-      <h2 ref={resultTitleRef} tabIndex={-1}>{result.reason==='island'?'學習島探索完成！':`${result.rounds} 回合，順利抵達終點！`}</h2>
-      <p>答對 {result.correct}/{result.rounds} 題。每一次練習，都在累積你和夥伴的默契。</p>
-      <div className="pmi-result-rewards" role="status"><span>已存入錢包</span><strong>金幣 +{result.coins}</strong><p>完成獎勵 12 ＋ 答對 {result.correct} 題 × 2</p></div>
-      <div className="pmi-result-stats"><div><span>學習 XP</span><b>+{result.xp}</b></div><div><span>夥伴 XP</span><b>+{result.petExp}</b></div><div><span>親密</span><b>+{result.bond}</b></div></div>
-      <p className="pmi-muted">XP 與親密已在答題時存入。局內旅費與地產只用於本局排名。</p>
-      <div className="pmi-final-ranks"><h3>本局旅行排名</h3>{result.rankings.map((entry,index)=><div key={entry.id}><span>{index+1}. {entry.name}</span><b>{entry.score} 資產</b></div>)}</div>
-      <div className="pmi-button-row"><button className="pm-start" onClick={()=>{setGameStarted(false);setResult(null);resultRef.current=null;setWinner(null)}}>再選一趟旅程</button><button className="pm-action secondary" onClick={()=>onNavigate?onNavigate('pets','home'):onBack?.()}>回寵物小屋</button></div>
-    </section>:!gameStarted?(
-      <section className="pm-setup" data-testid="pet-monopoly-setup">
-        <div className="pm-setup-head">
-          <div>
-            <div className="pm-kicker-row">
-              <div className="pm-kicker">開局設定 · 免費遊玩</div>
-            </div>
-            <h2 className="pm-setup-title">帶著夥伴，<br/>去學習島走走。</h2>
-            <p className="pm-setup-sub">擲骰探索、練習英文，再決定怎麼經營小島。</p>
-            <div className="pmi-tags"><span>不花錢包金幣</span><span>約 {roundLimit===6?'5–8':'8–12'} 分鐘</span><span>{({elementary:'國小',junior:'國中',senior:'高中'})[lv]||'目前程度'}英文</span></div>
-          </div>
-          <div className="pmi-setup-friend" aria-hidden="true">{selectedPet?<PixelPet petId={selectedPet.petId} stage={(selectedPet.level||1)>=4?'adult':'baby'} size={150}/>:<span>🏝️</span>}</div>
-        </div>
-        <div className="pmi-rules"><div><b>01 擲骰探索</b><p>每回合前進一段，遇見不同英文題。</p></div><div><b>02 練習與選擇</b><p>答對獲得 XP，可用局內旅費買地。</p></div><div><b>03 抵達終點</b><p>完成指定回合，比較旅費＋地產總值。</p></div></div>
-        <section className="pmi-partners"><h3>這趟旅行，誰陪你？</h3><div className="pmi-partner-list">{pets.map((pet,index)=><button key={pet.petId} className={petIndex===index?'is-active':''} aria-pressed={petIndex===index} onClick={()=>setPetIndex(index)}><PixelPet petId={pet.petId} stage={(pet.level||1)>=4?'adult':'baby'} size={46}/><span>{pet.nickname||getAdventurePetDef(pet)?.name||pet.petId}</span>{petIndex===index&&<b>✓</b>}</button>)}</div>{!pets.length&&<p className="pmi-muted">目前還沒有夥伴，也可以先自己練習。回小屋孵化寵物後，就能一起累積親密。</p>}</section>
-        <div className="pm-setup-grid">
-          <div className="pm-setup-panel"><div className="pm-section-title">旅程長度</div><div className="pm-option-row">{[6,10].map(value=><button key={value} className={`pm-option ${roundLimit===value?'is-active':''}`} aria-pressed={roundLimit===value} onClick={()=>setRoundLimit(value)}>{value} 回合 · {value===6?'輕鬆散步':'深度探索'}</button>)}</div><p className="pm-deal-text">每人行動一次算一回合，最後一輪電腦走完就結算。</p></div>
-          <div className="pm-setup-panel">
-            <div className="pm-section-title">同行電腦玩家</div>
-            <div className="pm-option-row">
-              {[1,2,3].map(n=><button key={n} type="button" className={`pm-option ${setupComputerCount===n?"is-active":""}`} aria-pressed={setupComputerCount===n} data-testid={`pet-monopoly-setup-cpu-${n}`} onClick={()=>setSetupComputerCount(n)}>{n} 位{n===1?' · 推薦':''}</button>)}
-            </div>
-          </div>
-        </div><details className="pmi-advanced"><summary>進階設定與遊戲規則</summary>
-          <div className="pm-setup-panel">
-            <div className="pm-section-title">局內起始旅費</div>
-            <div className="pm-option-row">
-              {PET_MONOPOLY_STAKES.map(amount=><button key={amount} type="button" className={`pm-option ${stake===amount?"is-active":""}`} aria-pressed={stake===amount} data-testid={`pet-monopoly-setup-stake-${amount}`} onClick={()=>setStake(amount)}>{amount}</button>)}
-            </div>
-            <div className="pm-deal-text">每位玩家都會領到相同旅費。旅費只在這局使用，不會扣除或兌換錢包金幣。</div>
-          </div>
-          <p>答錯會顯示答案並扣少量局內旅費；停在別人的地產需要付租金。先買地再路過，會累積升級機會。每回合擲骰前可使用一張工具卡。</p><p>答對可得到學習 XP 與寵物成長；如果電腦全數退場，也會提早結算。</p>
-          <div className="pm-deck-chip" data-testid="pet-monopoly-event-deck-size" data-event-count={PET_MONOPOLY_EVENT_DECK.length}>機會/命運 {PET_MONOPOLY_EVENT_DECK.length} 種事件</div>
-        </details><div className="pmi-launch"><div><b>{roundLimit} 回合 · {setupComputerCount} 位電腦</b><p>完成獎勵：金幣 12 ＋ 每答對一題 2 金幣</p></div><button type="button" className="pm-start" data-testid="pet-monopoly-start" onClick={startGame}>開始對局 →</button></div>
-      </section>
-    ):(
-    <>
-    <div className="pmi-game-top"><div><span className="pmi-eyebrow">學習島旅行</span><h2>第 {Math.min(roundLimit,turn+1)} / {roundLimit} 回合</h2><p>{selectedPet?`${selectedPet.nickname||selectedPetDef?.name||selectedPet.petId}陪你一起練習`:'自己的小小探索'}</p></div><button className="pm-action secondary" onClick={()=>pauseGame()}>Ⅱ 暫停</button></div>
-    <div className="pmi-round-track" aria-label={`已完成 ${turn} / ${roundLimit} 回合`}>{Array.from({length:roundLimit},(_,index)=><span key={index} className={index<turn?'is-done':index===turn?'is-current':''}>{index<turn?'✓':index+1}</span>)}</div>
-    <div className="pmi-active-content" inert={paused?'':undefined}>
-    <section className="pm-game-hud" data-testid="pet-monopoly-game-hud">
-      <div className="pm-hud-pill" style={{"--hud-color":"#D97706"}}>起始旅費 <b>{stake}</b></div>
-      <div className="pm-hud-pill" style={{"--hud-color":color}}>玩家旅費 <b data-testid="pet-monopoly-player-cash">{gameCoins}</b></div>
-      <div className="pm-hud-pill" style={{"--hud-color":"#2563EB"}}>電腦 {activeComputers.length} <b>{activeComputers.map(cpu=>cpu.coins).join(" / ")||"全數退場"}</b></div>
-      <div className="pm-hud-pill" style={{"--hud-color":"#537a60"}}>本局練習 <b>{score.correct} 題答對</b></div>
-      <div className="pm-hud-pill" style={{"--hud-color":"#537a60"}}>地產總值 <b>{playerAssetValue}</b></div>
-      <div className="pm-cpu-status-list" aria-hidden="true">
-        {computers.slice(0,computerCount).map(cpu=><span key={cpu.id} data-testid={`pet-monopoly-cpu-status-${cpu.id}`} data-active={String(cpu.active!==false)}>{cpu.coins}</span>)}
-      </div>
-    </section>
-    {screenEffect&&(
-      <div key={screenEffect.id} className={`pm-screen-effect is-${screenEffect.kind}`} data-testid="pet-monopoly-screen-effect" data-effect={screenEffect.kind} style={{"--effect-color":screenEffect.color||color}}>
-        <div className="pm-screen-rings" aria-hidden="true">
-          {Array.from({length:14}).map((_,i)=><span key={i} style={{"--i":i}}/>)}
-        </div>
-        <div className="pm-effect-core" data-testid={screenEffect.kind==="dice"?"pet-monopoly-dice-effect":screenEffect.source==="card"?"pet-monopoly-card-burst":undefined} data-effect={screenEffect.effect||screenEffect.kind}>
-          <span className="pm-effect-icon">{screenEffect.icon}</span>
-          <b>{screenEffect.title}</b>
-          <span>{screenEffect.value}</span>
-        </div>
-      </div>
-    )}
-    {rentFlash&&(
-      <div className={`pm-impact-toast ${rentFlash.effect||""}`} data-testid="pet-monopoly-rent" data-effect={rentFlash.effect||"rent"} style={{"--impact-color":rentFlash.color||color}}>
-        <span className="pm-impact-icon">{rentFlash.icon||"$"}</span>
-        <b>{rentFlash.title}</b>
-        <span>{rentFlash.text}</span>
-      </div>
-    )}
-    {rentDialog&&(
-      <div className="pm-rent-dialog" role="dialog" aria-modal="true" aria-label="本次旅費結算" data-testid="pet-monopoly-rent-dialog" data-flow="paused" data-winner={rentDialog.winner||""} style={{"--dialog-color":rentDialog.color||color}}>
-        <div className="pm-rent-card">
-          <div className="pm-rent-icon">$</div>
-          <div className="pm-rent-title">{rentDialog.kind==="rent-in"?`${rentDialog.payee}向${rentDialog.payer}收取租金`:`${rentDialog.payer}被${rentDialog.payee}收取租金`}</div>
-          <div className="pm-rent-amount">{rentDialog.kind==="rent-in"?"+":"-"}{rentDialog.amount} 旅費</div>
-          <div style={{fontSize:13,fontWeight:900,color:"var(--pm-muted)"}}>{rentDialog.tileName}</div>
-          <div className="pm-rent-talk">{rentDialog.joke}</div>
-          <button type="button" className="pm-dialog-ok" data-testid="pet-monopoly-rent-confirm" onClick={confirmRentMoment}>收到，繼續旅行</button>
-        </div>
-      </div>
-    )}
-    {grandPrize&&(
-      <div className="pm-prize-dialog" data-testid="pet-monopoly-grand-prize" style={{"--dialog-color":"#D97706"}}>
-        <div className="pm-prize-card">
-          <div className="pm-prize-icon">🎁</div>
-          <div className="pm-prize-title">勝利大禮包</div>
-          <div className="pm-prize-reward">+{grandPrize.coins}</div>
-          <div className="pm-rent-talk">電腦玩家全數退場，寵物把彩帶拉到整張地圖都是。</div>
-          <button type="button" className="pm-dialog-ok" onClick={()=>setGrandPrize(null)}>收下</button>
-        </div>
-      </div>
-    )}
-    {eventFlash&&(
-      <div className="pm-impact-toast event" data-testid="pet-monopoly-event" data-effect={eventFlash.effect||"event"} style={{"--impact-color":eventFlash.color||color}}>
-        <span className="pm-impact-icon">{eventFlash.icon||"✦"}</span>
-        <b>{eventFlash.title}</b>
-        <span>{eventFlash.text}</span>
-      </div>
-    )}
-    <section className="pm-main">
-      <div className="pm-board" data-testid="pet-monopoly-board" aria-label="寵物大富翁棋盤">
-        {tiles.map((tile,i)=>{
-          const meta=PET_MONOPOLY_TYPE_META[tile.type]||PET_MONOPOLY_TYPE_META.word;
-          const[posCol,posRow]=PET_MONOPOLY_GRID[i]||[1,1];
-          const active=i===position;
-          const property=owned[tile.id];
-          const cpuOwner=getPetMonopolyCpuOwner(activeComputers,tile.id,computerCount);
-          const computerVisitors=activeComputers.filter(cpu=>cpu.position===i);
-          const ownerId=property?"player":cpuOwner?.id||"none";
-          return(
-            <div key={tile.id} className={`pm-tile ${active?"is-active":""} ${property?"is-owned-by-player":cpuOwner?"is-owned-by-cpu":""}`} data-testid={`pet-monopoly-tile-${tile.id}`} data-owner={ownerId} data-owner-level={property?.level||(cpuOwner?1:0)} style={{"--tile-color":meta.color,"--tile-soft":meta.soft,"--owner-color":property?color:cpuOwner?.color||color,gridColumn:posCol,gridRow:posRow}}>
-              {(property||cpuOwner)&&<span className="pm-owner-band" aria-hidden="true"/>}
-              <span className="pm-tile-icon">{tile.icon}</span>
-              <span className="pm-tile-name">{tile.name}</span>
-              <span className="pm-tile-type">{meta.label}</span>
-              {property&&<span className="pm-owner-badge" data-testid="pet-monopoly-player-owner">P Lv.{property.level}</span>}
-              {!property&&cpuOwner&&<span className="pm-owner-badge cpu" data-testid="pet-monopoly-cpu-owner">{cpuOwner.name.replace("電腦 ","C")}</span>}
-              {(active||computerVisitors.length>0)&&(
-                <span className="pm-token-stack">
-                  {active&&<span className="pm-token" aria-label="目前位置">{selectedPet?<PixelPet petId={selectedPet.petId} size={32}/>:<span>🐾</span>}</span>}
-                  {computerVisitors.map(cpu=><span key={cpu.id} className="pm-token cpu" style={{"--cpu-color":cpu.color}} title={cpu.name}>{cpu.name.replace("電腦 ","")}</span>)}
-                </span>
-              )}
-            </div>
-          );
-        })}
-        <div className="pm-center">
-          <div className="pm-island" aria-hidden="true">
-            <div className="pm-island-label">台灣學習島</div>
-            <span className="pm-city" style={{left:"50%",top:"16%"}}>台北</span>
-            <span className="pm-city" style={{left:"39%",top:"45%"}}>台中</span>
-            <span className="pm-city" style={{left:"47%",top:"70%"}}>高雄</span>
-            <span className="pm-city" style={{right:"18%",top:"48%"}}>花東</span>
-          </div>
-          <div className="pm-rank-box" data-testid="pet-monopoly-rankings">
-            <div className="pm-section-title">排名</div>
-            <div className="pm-rank-list">
-              {rankings.map((rank,i)=>(
-                <div key={rank.id} className="pm-rank-row" style={{"--rank-color":rank.color}}>
-                  <b>#{i+1}</b>
-                  <span>{rank.emoji} {rank.name}</span>
-                  <span>{rank.score}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-          <div className="pm-overlay pm-action-dock" data-testid="pet-monopoly-overlay" data-panel="dock" data-state={moving?"moving":pending?"question":answerReview?'review':offer?"offer":"idle"}>
-            <div className="pmi-action-heading"><span className="pmi-eyebrow">{moving?'島上正在旅行':pending?'輪到你練習英文':answerReview?'一起複習一下':offer?'輪到你做選擇':'準備好，再向前一步'}</span></div>
-            <div className="pm-feedback" data-testid="pet-monopoly-feedback" role="status">{feedback}</div>
-            <div className="pm-card-hand" data-testid="pet-monopoly-cards">
-              {PET_MONOPOLY_CARDS.map(card=>{
-                const count=Number(cardHand[card.id])||0;
-                const active=!!cardEffects[card.id];
-                const disabled=!!moving||!!pending||!!rentDialog||!!grandPrize||!!winner||!!answerReview||cardUsedTurn===turn||count<=0||active;
-                return(
-                  <button key={card.id} type="button" className={`pm-card-button ${active?"is-active":""}`} data-testid={`pet-monopoly-card-${card.id}`} style={{"--card-color":card.color}} disabled={disabled} onClick={()=>useCard(card.id)} aria-label={`${card.name} ${card.desc}`}>
-                    <span className="pm-card-icon">{card.icon}</span>
-                    <span className="pm-card-name"><b>{card.name}</b><span>{card.desc}</span></span>
-                    <span className="pm-card-count">x{count}</span>
-                  </button>
-                );
-              })}
-            </div>
-            {activeCards.length>0&&(
-              <div className="pm-card-active" data-testid="pet-monopoly-card-active">
-                <span>{`\u5df2\u555f\u7528`}</span>
-                {activeCards.map(card=><b key={card.id}>{card.name}</b>)}
-              </div>
-            )}
-            {moving&&(
-              <div className="pm-deal" data-testid="pet-monopoly-moving">
-                <button className="pm-dice" data-testid="pet-monopoly-roll" disabled aria-label="擲骰">{moving.phase==="waiting"?"CPU":dice||moving.dice}</button>
-                <div className="pm-section-title">{moving.phase==="waiting"?`${moving.name} 回合`:moving.phase==="rolling"?moving.actor==="cpu"?`${moving.name} 擲骰`:"玩家移動":moving.actor==="cpu"?`${moving.name} 移動`:"玩家移動"}</div>
-                <div className="pm-deal-text">{moving.phase==="waiting"?"準備中":moving.phase==="rolling"?`骰出 ${moving.dice}`:`${moving.step}/${moving.total} → ${moving.to}`}</div>
-              </div>
-            )}
-            {!moving&&pending&&(
-              <div className="pm-question" data-testid="pet-monopoly-question-word" data-word={pending.question.word?.w||""}>
-                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10}}>
-                  <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
-                    <span style={{fontSize:12,fontWeight:1000,color:color}}>英文挑戰 · 骰出 {pending.dice}</span>
-                    <span className="pm-question-mode" data-testid="pet-monopoly-question-mode">{pending.question.modeLabel||pending.question.kind}</span>
-                  </div>
-                  <div style={{fontSize:12,fontWeight:1000,color:PET_MONOPOLY_TYPE_META[pending.tile.type]?.color||color}}>{pending.tile.name}</div>
-                </div>
-                <h3 data-testid="pet-monopoly-question-prompt">{pending.question.prompt}</h3>
-                <p data-testid="pet-monopoly-question-sub">{pending.question.sub}</p>
-                <div className="pm-choices">
-                  {pending.question.choices.map((choice,i)=>(
-                    <button key={`${choice}-${i}`} type="button" className="pm-choice" data-testid={i===pending.question.answer?"pet-monopoly-choice-correct":undefined} onClick={()=>answer(i)}>
-                      {choice}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-            {answerReview&&!moving&&<div className="pmi-answer-review"><h3>正確答案是 {answerReview.explain}</h3>{answerReview.word&&<p>{answerReview.word.w} · {answerReview.word.m}</p>}<p>{answerReview.word?.ex||answerReview.sub}</p><button className="pm-start" data-testid="pet-monopoly-review-next" onClick={()=>{setAnswerReview(null);queueComputerRound()}}>記住了，繼續這一輪 →</button></div>}
-            {!moving&&!pending&&offer&&offerTile&&(
-              <div className="pm-deal" data-testid="pet-monopoly-deal">
-                <div className="pm-section-title">收購機會</div>
-                <div className="pm-deal-text">「{offerTile.name}」· {offer.cost} 旅費</div>
-                <div className="pm-deal-text">買下後剩 {Math.max(0,gameCoins-offer.cost)} 旅費 · 別人停留可收租 {getPetMonopolyRent(offerTile,{level:1})}</div>
-                <div className="pm-deal-text">地產會計入最終排名；再次停留可以升級。</div>
-                <div className="pm-action-row">
-                  <button type="button" className="pm-action" data-testid="pet-monopoly-buy" disabled={(Number(gameCoins)||0)<offer.cost} onClick={buyProperty}>收購 · {offer.cost} 旅費</button>
-                  <button type="button" className="pm-action secondary" data-testid="pet-monopoly-skip-buy" onClick={skipOffer}>保留旅費，繼續</button>
-                </div>
-              </div>
-            )}
-            {!moving&&!pending&&!offer&&!answerReview&&(
-              <div className="pm-deal">
-                <div className="pm-section-title">{currentTile.icon} {currentTile.name}</div>
-                <div className="pm-deal-text">{currentMeta.label}</div>
-                {currentProperty&&(
-                  <div className="pm-deal-text">Lv.{currentProperty.level} · 旅費 +{currentYield.coins} · 學習 XP +{currentYield.xp}</div>
-                )}
-                {currentProperty&&currentProperty.visits<2&&<div className="pm-deal-text" style={{fontWeight:1000,color:color}}>再停一次可升級</div>}
-                {canUpgradeCurrent&&upgradeDiscount>0&&<div className="pm-deal-text" style={{fontWeight:1000,color:"#D97706"}}>升級折扣 -{upgradeDiscount} 旅費</div>}
-                {canUpgradeCurrent&&<button type="button" className="pm-action" disabled={(Number(gameCoins)||0)<currentUpgradeCost} onClick={upgradeCurrentProperty}>升級 {currentUpgradeCost} 旅費</button>}
-                {!currentProperty&&isPetMonopolyOwnable(currentTile)&&<div className="pm-deal-text">答題後可收購</div>}
-                <div>
-                  <button className="pm-dice" data-testid="pet-monopoly-roll" disabled={!!moving||!!pending||!!offer||!!rentDialog||!!grandPrize||!!winner} onClick={roll} aria-label="擲骰">🎲 擲骰出發</button>
-                  {dice&&<div className="pmi-muted">上次骰出 {dice} · {lastMove?.tile.name||currentTile.name}</div>}
-                </div>
-              </div>
-            )}
-          </div>
-    </section>
-    <details className="pmi-board-details"><summary>查看棋盤規則與事件</summary><p>最後一輪結束後，以局內旅費＋地產總值排名。錢包獎勵與排名無關，完成就能領取。</p><p>學習 XP 與夥伴成長會即時存入；本局旅費不會帶出遊戲。</p><div className="pm-deck-chip" data-testid="pet-monopoly-event-deck-size" data-event-count={PET_MONOPOLY_EVENT_DECK.length}>機會/命運 {PET_MONOPOLY_EVENT_DECK.length} 種事件</div></details>
-    </div>
-    <dialog ref={pauseDialogRef} className="pmi-pause-dialog" aria-label="學習島遊戲已暫停" onCancel={event=>{event.preventDefault();resumeGame()}}><span className="pmi-eyebrow">第 {Math.min(roundLimit,turn+1)} / {roundLimit} 回合 · 已暫停</span><h2>{exitRequested?'要先結束這趟旅行嗎？':'休息一下，夥伴等你'}</h2><p>繼續會回到剛才的位置。結束這局會放棄棋盤進度與完成金幣；已得到的 XP 與親密會保留。</p><div className="pmi-button-row"><button className="pm-start" onClick={resumeGame}>繼續旅行</button><button className="pm-action secondary" onClick={abandonGame}>結束這局，回準備頁</button></div></dialog>
-    </>
-    )}
-  </div>);
+  return <PetIslandView {...{encounter,resolveEvent,learning,setLearning,learningUsed,openLearning,toolTarget,setToolTarget,blockOpponent,buyTool,shopUsed,soundOn,toggleSound,Hdr,exitGame,gameStarted,result,tiles,position,owned,computers,computerCount,selectedPet,selectedPetDef,
+    routes,inspected,setInspected,paused,moving,startGame,roundLimit,setRoundLimit,setupComputerCount,setSetupComputerCount,
+    stake,setStake,pets,petIndex,setPetIndex,goalId,setGoalId,visited,turn,gameCoins,score,rankings,pauseGame,skipLearning,
+    pending,answer,answerReview,setAnswerReview,queueComputerRound,offer,offerTile,buyProperty,skipOffer,roll,moveAlongRoute,
+    feedback,cardHand,cardEffects,cardUsedTurn,useCard,screenEffect,eventFlash,rentFlash,rentDialog,confirmRentMoment,
+    upgradeCurrentProperty,upgradedTurn,upgradeDiscount,pauseDialogRef,resumeGame,abandonGame,exitRequested,
+    setGameStarted,setResult,resultTitleRef,onBack,onNavigate}}
+    cards={PET_MONOPOLY_CARDS} tileCost={getPetMonopolyTileCost} tileRent={getPetMonopolyRent}
+    tileUpgradeCost={getPetMonopolyUpgradeCost} typeMeta={PET_MONOPOLY_TYPE_META} eventCount={Object.values(ISLAND_DECKS).flat().length}
+    getPetName={pet=>getAdventurePetDef(pet)?.name||pet.petId}/>;
 }
 
 export default function PetMonopolyFeature(props){

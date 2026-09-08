@@ -2569,7 +2569,7 @@ export default function App(){
          mod==="whack"?<WhackM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="match"?<MatchM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="bomb"?<BombM lv={lv} onBack={back} onXp={addXp}/>:
-         mod==="petMonopoly"?<Suspense fallback={<ModuleLoading label="載入寵物大富翁..."/>}><PetMonopolyM onNavigate={navigatePet} onComplete={()=>incrTask("playToday")} lv={lv} onBack={back} onXp={n=>addXp(n,{awardCoins:false})} c={c} pets={pets} setPets={setPets} coins={coins} setCoins={setCoins} deps={{G,Hdr,S,V,escapeRegexSafe,getAdventurePetDef,levelUpPet,shuffleCopy}}/></Suspense>:
+         mod==="petMonopoly"?<Suspense fallback={<ModuleLoading label="載入寵物大富翁..."/>}><PetMonopolyM quiet={quiet} setQuiet={setQuiet} onNavigate={navigatePet} onComplete={()=>incrTask("playToday")} lv={lv} onBack={back} onXp={n=>addXp(n,{awardCoins:false})} c={c} pets={pets} setPets={setPets} coins={coins} setCoins={setCoins} deps={{G,Hdr,S,V,escapeRegexSafe,getAdventurePetDef,levelUpPet,shuffleCopy}}/></Suspense>:
          mod==="grammar"?<GrammarM lv={lv} onBack={back} onXp={addXp} apiKey={gemKey} onOpenSettings={()=>openModule("settings","tools")}/>:
          mod==="reading"?<ReadingM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="novels"?<NovelM lv={lv} onBack={back} onXp={addXp}/>:
@@ -2717,7 +2717,7 @@ function MenuV2({lv,onSelect,activeGroup="learn",onGroupChange,daily,c,xp,coins,
     {id:"match",group:"game",icon:"M",t:"記憶星空",d:"英文與中文快速配對",tag:"記憶配對"},
     {id:"bomb",group:"game",icon:"B",t:"火箭拼字",d:"字母積木補充火箭能量",tag:"拼字挑戰"},
     {id:"scramble",group:"game",icon:"S",t:"句子小火車",d:"把單字排成正確句子",tag:"語順練習"},
-    {id:"petMonopoly",group:"game",icon:"🎲",t:"寵物大富翁",d:"走棋盤答英文養寵物",tag:"寵物桌遊"},
+    {id:"petMonopoly",group:"game",icon:"🎲",t:"寵物大富翁",d:"立體島嶼，選路蓋房當島主",tag:"3D 策略桌遊"},
     {id:"gacha",group:"pet",icon:"G",t:"森林扭蛋屋",d:`${coins} 金幣可使用`,tag:"取得寵物"},
     {id:"pets",group:"pet",icon:"P",t:"寵物小家園",d:`${pets.length} 隻寵物 · ${eggs.length} 顆蛋`,tag:"培養照顧"},
     {id:"petAdventure",group:"pet",icon:"A",t:"寵物冒險",d:pets.length?`${pets.length} 隻可組隊戰鬥`:"先取得寵物再挑戰",tag:"英文戰鬥"},

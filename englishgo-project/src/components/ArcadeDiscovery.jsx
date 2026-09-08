@@ -11,6 +11,6 @@ export default function ArcadeDiscovery({ lv, onSelect }) {
       const stars = Object.values(stageRecords(progress, lv, id, 'practice')).reduce((sum, record) => sum + (Number(record?.stars) || 0), 0);
       return <button type="button" key={id} data-module-id={id} className="arcade-game-card" style={{ '--arcade-accent': game.color }} onClick={() => onSelect(id, 'game')}><ArcadeScene game={id}/><div className="arcade-game-card-copy"><span>{game.subtitle} · 3 段關卡</span><h3>{game.title}</h3><p>{game.description}</p><div className="arcade-game-card-footer"><span>{stars ? `輕鬆練習 · ${stars}/9 顆星` : '輕鬆練習 / 挑戰模式'}</span><b>去冒險 →</b></div></div></button>;
     })}</div>
-    <button type="button" className="arcade-boardgame-link" data-module-id="petMonopoly" onClick={() => onSelect('petMonopoly', 'game')}><span aria-hidden="true">🎲</span><span><b>寵物大富翁</b><small>想來一場長冒險？帶著寵物逛學習島，和電腦玩家比策略。</small></span><span aria-hidden="true">→</span></button>
+    <button type="button" className="arcade-boardgame-link" data-module-id="petMonopoly" onClick={() => onSelect('petMonopoly', 'game')}><span aria-hidden="true">🎲</span><span><b>寵物大富翁</b><small>選路搶地、抽機會命運、出牌攻防，和夥伴一起爭奪小島。</small></span><span aria-hidden="true">→</span></button>
   </div>;
 }

@@ -10,7 +10,7 @@ export function PetHomeHub({pets,eggs,readyEggs,onCare,onEggs,onPlay,onNavigate,
       <button className="pet-destination" onClick={onPlay} disabled={!pets.length}><span className="pet-destination-icon">🧺</span><h3>夥伴遊樂園</h3><p>野餐接力、記憶尋寶<br/>一隻寵物就能出發</p><b>{pets.length?'一起玩三回合 →':'孵出第一隻寵物就能玩'}</b></button>
       {onNavigate&&<><button className="pet-destination" onClick={()=>onNavigate('petAdventure')}><span className="pet-destination-icon">⛺</span><h3>森林遠征</h3><p>組隊闖關、選擇補給<br/>讓培育的能力派上用場</p><b>準備探險 →</b></button><button className="pet-destination" onClick={()=>onNavigate('gacha')}><span className="pet-destination-icon">🌿</span><h3>森林扭蛋屋</h3><p>用學習金幣<br/>遇見新的小夥伴</p><b>去遇見朋友 →</b></button></>}
     </div>
-    {onNavigate&&<button className="pet-board-link" onClick={()=>onNavigate('petMonopoly')}><span>🎲</span><div><b>想玩久一點？寵物大富翁</b><p>學單字、規劃金幣，和夥伴一起走遍學習島。</p></div><span>→</span></button>}
+    {onNavigate&&<button className="pet-board-link" onClick={()=>onNavigate('petMonopoly')}><span>🎲</span><div><b>想玩久一點？寵物大富翁</b><p>買地收租、道具攻防，和夥伴一起挑戰島主。</p></div><span>→</span></button>}
   </section>;
 }
 
