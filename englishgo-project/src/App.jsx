@@ -1,3 +1,4 @@
+import { refreshPetCare } from "./data/petCare.js";
 import { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense } from "react";
 import { Brand, ComfortControls, LearningDashboard, WelcomeScreen } from "./components/LearningExperience.jsx";
 import ReadingPractice from "./features/ReadingPractice.jsx";
@@ -938,7 +939,7 @@ function getTimeOfDay(){
 // ═══ DAILY TASKS (每日任務 - 跟寵物連動) ════════════════════════════
 const DAILY_TASK_DEFS=[
   {id:"srs_5",icon:"🃏",name:"複習 5 個單字",desc:"完成 5 張 SRS 卡片",target:5,reward:{coins:20,exp:15},statKey:"srsToday"},
-  {id:"quiz_3",icon:"📝",name:"答對 3 題測驗",desc:"測驗模式連對 3 題",target:3,reward:{coins:15,exp:10},statKey:"quizToday"},
+  {id:"quiz_3",icon:"📝",name:"答對 3 題測驗",desc:"測驗模式累計答對 3 題",target:3,reward:{coins:15,exp:10},statKey:"quizToday"},
   {id:"speak_1",icon:"🗣️",name:"口說練習 1 次",desc:"完成一次口說練習",target:1,reward:{coins:25,exp:20},statKey:"speakToday"},
   {id:"feed_1",icon:"🍖",name:"餵食寵物 1 次",desc:"給你的寵物餵食",target:1,reward:{coins:10,exp:5},statKey:"feedToday"},
   {id:"play_1",icon:"🎾",name:"陪寵物玩 1 次",desc:"陪寵物玩耍",target:1,reward:{coins:10,exp:5},statKey:"playToday"},
@@ -1329,50 +1330,7 @@ function isPetSleeping(){
 // Chance of poop per hour when awake (25% per hour)
 const POOP_CHANCE_PER_HOUR=0.25;
 
-function calcDecay(pet){
-  if(!pet.lastUpdate)return pet;
-  const hoursAgo=(Date.now()-new Date(pet.lastUpdate).getTime())/3600000;
-  if(hoursAgo<0.1)return pet;
-  // Calculate how many hours were spent sleeping vs awake
-  const lastT=new Date(pet.lastUpdate).getTime();
-  let sleepHours=0,awakeHours=0;
-  // Sample every 30 min to estimate sleep time
-  const steps=Math.min(48,Math.ceil(hoursAgo*2));
-  for(let i=0;i<steps;i++){
-    const t=new Date(lastT+(i/steps)*hoursAgo*3600000);
-    const h=t.getHours();
-    const isSleep=h>=22||h<7;
-    if(isSleep)sleepHours+=hoursAgo/steps;
-    else awakeHours+=hoursAgo/steps;
-  }
-  // While sleeping: no hunger/clean decay, but energy recovers!
-  const decayHours=awakeHours;
-  const energyRecovery=sleepHours*15;// +15/hr while sleeping
-  // Poop accumulation (only while awake)
-  const newPoops=[];
-  const existingPoops=pet.poops||[];
-  if(awakeHours>0.5){
-    const poopCount=Math.floor(awakeHours*POOP_CHANCE_PER_HOUR);
-    for(let i=0;i<poopCount;i++){
-      newPoops.push({
-        id:Date.now()+i,
-        x:15+Math.random()*70,// % position
-        time:new Date(lastT+(i+1)*(awakeHours/poopCount)*3600000).toISOString(),
-      });
-    }
-  }
-  const totalPoops=[...existingPoops,...newPoops].slice(-5);// max 5
-  // Extra clean decay per poop (each poop costs -5 clean)
-  const poopPenalty=totalPoops.length*5;
-  return {
-    ...pet,
-    hunger:Math.max(0,(pet.hunger??80)-STAT_DECAY.hunger*decayHours),
-    clean:Math.max(0,(pet.clean??80)-STAT_DECAY.clean*decayHours-poopPenalty),
-    energy:Math.min(MAX_STAT,(pet.energy??80)-STAT_DECAY.energy*decayHours+energyRecovery),
-    poops:totalPoops,
-    lastUpdate:new Date().toISOString(),
-  };
-}
+function calcDecay(pet){return refreshPetCare(pet); }
 
 function getPetMood(pet){
   const avg=((pet.hunger??80)+(pet.clean??80)+(pet.energy??80))/3;
@@ -2444,10 +2402,10 @@ export default function App(){
     return()=>clearTimeout(t);
   },[pets,eggs,inventory,coins,petAccount]);
 
-  const addXp=(n=5)=>{
+  const addXp=(n=5,{awardCoins=true}={})=>{
     rollStudyDay();
     setXp(x=>x+n);
-    setCoins(co=>co+Math.max(1,Math.floor(n/3)));// 1-5 coins per action
+    if(awardCoins)setCoins(co=>co+Math.max(1,Math.floor(n/3)));// 1-5 coins per learning action
     setDaily(d=>{const current=dailyProgress(d);return{...d,target:current.target,done:Math.min(current.done+1,current.target)}});
     // Progress eggs
     setEggs(es=>es.map(e=>e.progress<EGG_HATCH_TASKS[e.rarity]?{...e,progress:e.progress+1}:e));
@@ -2539,7 +2497,7 @@ export default function App(){
     setLastActivity({id:nextMod,lv});
     navigateEnglishGo({lv,mod:nextMod,menuGroup:group||menuGroup,sharedWord:null,customDeck:null});
   };
-  const navigatePet=(nextMod,tab="home")=>{openModule(nextMod,nextMod==="srs"?"learn":nextMod==="petMonopoly"?"game":"pet");setPetStartTab(tab)};
+  const navigatePet=(nextMod,tab="home")=>{openModule(nextMod,["srs","quiz","speak"].includes(nextMod)?"learn":nextMod==="petMonopoly"?"game":"pet");setPetStartTab(tab)};
   const changeMenuGroup=nextGroup=>navigateEnglishGo({menuGroup:nextGroup},{replace:true});
   const openHome=()=>{if(!mod){window.scrollTo({top:0,behavior:"auto"});return}navigateEnglishGo({lv,mod:null,sharedWord:null,customDeck:null})};
   const startMiniMission=()=>{
@@ -2611,7 +2569,7 @@ export default function App(){
          mod==="whack"?<WhackM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="match"?<MatchM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="bomb"?<BombM lv={lv} onBack={back} onXp={addXp}/>:
-         mod==="petMonopoly"?<Suspense fallback={<ModuleLoading label="載入寵物大富翁..."/>}><PetMonopolyM lv={lv} onBack={back} onXp={addXp} c={c} pets={pets} setPets={setPets} coins={coins} setCoins={setCoins} deps={{G,Hdr,S,V,escapeRegexSafe,getAdventurePetDef,levelUpPet,shuffleCopy}}/></Suspense>:
+         mod==="petMonopoly"?<Suspense fallback={<ModuleLoading label="載入寵物大富翁..."/>}><PetMonopolyM onNavigate={navigatePet} onComplete={()=>incrTask("playToday")} lv={lv} onBack={back} onXp={n=>addXp(n,{awardCoins:false})} c={c} pets={pets} setPets={setPets} coins={coins} setCoins={setCoins} deps={{G,Hdr,S,V,escapeRegexSafe,getAdventurePetDef,levelUpPet,shuffleCopy}}/></Suspense>:
          mod==="grammar"?<GrammarM lv={lv} onBack={back} onXp={addXp} apiKey={gemKey} onOpenSettings={()=>openModule("settings","tools")}/>:
          mod==="reading"?<ReadingM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="novels"?<NovelM lv={lv} onBack={back} onXp={addXp}/>:
@@ -2627,7 +2585,7 @@ export default function App(){
          mod==="settings"?<SettingsPage onBack={back} c={c} gemKey={gemKey} setGemKey={setGemKey} gifKey={gifKey} setGifKey={setGifKey}/>:
          mod==="gacha"?<GachaPage onBack={back} onNavigate={navigatePet} c={c} coins={coins} setCoins={setCoins} eggs={eggs} setEggs={setEggs} pets={pets} setPets={setPets}/>:
          mod==="pets"?<PetsGuard onBack={back} onNavigate={navigatePet} initialTab={petStartTab} c={c} pets={pets} setPets={setPets} eggs={eggs} setEggs={setEggs} coins={coins} setCoins={setCoins} inventory={inventory} setInventory={setInventory} petAccount={petAccount} setPetAccount={setPetAccount} petTasks={petTasks} setPetTasks={setPetTasks} incrTask={incrTask}/>:
-         mod==="petAdventure"?<PetAdventurePage lv={lv} onBack={back} onNavigate={navigatePet} c={c} pets={pets} setPets={setPets} eggs={eggs} setEggs={setEggs} coins={coins} setCoins={setCoins} inventory={inventory} setInventory={setInventory}/>:null}
+         mod==="petAdventure"?<PetAdventurePage incrTask={incrTask} petAccount={petAccount} lv={lv} onBack={back} onNavigate={navigatePet} c={c} pets={pets} setPets={setPets} eggs={eggs} setEggs={setEggs} coins={coins} setCoins={setCoins} inventory={inventory} setInventory={setInventory}/>:null}
       </main>
       <footer className="eg-app-footer"><div>🌱 每天一點點，讓英文慢慢長大。</div><button type="button" onClick={()=>openModule("settings","tools")}>家長與老師設定</button><div>EnglishGo · 無廣告的學習小天地</div></footer>
     </div>
@@ -2760,8 +2718,8 @@ function MenuV2({lv,onSelect,activeGroup="learn",onGroupChange,daily,c,xp,coins,
     {id:"bomb",group:"game",icon:"B",t:"火箭拼字",d:"字母積木補充火箭能量",tag:"拼字挑戰"},
     {id:"scramble",group:"game",icon:"S",t:"句子小火車",d:"把單字排成正確句子",tag:"語順練習"},
     {id:"petMonopoly",group:"game",icon:"🎲",t:"寵物大富翁",d:"走棋盤答英文養寵物",tag:"寵物桌遊"},
-    {id:"gacha",group:"pet",icon:"G",t:"扭蛋機",d:`${coins} 金幣可使用`,tag:"取得寵物"},
-    {id:"pets",group:"pet",icon:"P",t:"寵物圖鑑",d:`${pets.length} 隻寵物 · ${eggs.length} 顆蛋`,tag:"培養照顧"},
+    {id:"gacha",group:"pet",icon:"G",t:"森林扭蛋屋",d:`${coins} 金幣可使用`,tag:"取得寵物"},
+    {id:"pets",group:"pet",icon:"P",t:"寵物小家園",d:`${pets.length} 隻寵物 · ${eggs.length} 顆蛋`,tag:"培養照顧"},
     {id:"petAdventure",group:"pet",icon:"A",t:"寵物冒險",d:pets.length?`${pets.length} 隻可組隊戰鬥`:"先取得寵物再挑戰",tag:"英文戰鬥"},
     {id:"achievements",group:"tools",icon:"★",t:"成就牆",d:`${achUnlocked.length}/${ACH_DEFS.length} 個已解鎖`,tag:"學習成果"},
     {id:"weak",group:"tools",icon:"!",t:"弱點單字",d:weakWords.length?`${weakWords.length} 個需要複習`:"目前沒有弱點紀錄",tag:"補強清單"},
@@ -2799,7 +2757,7 @@ function MenuV2({lv,onSelect,activeGroup="learn",onGroupChange,daily,c,xp,coins,
               <div className="eg-menu-reward-block-title">現在可以做什麼</div>
               <div className="eg-menu-reward-line"><span>寵物食物</span><strong>{coins>=8?"可以購買":`還差 ${8-coins}`}</strong></div>
               <div className="eg-menu-reward-line"><span>寵物扭蛋（50／次）</span><strong>{coins>=50?`可抽 ${Math.floor(coins/50)} 次`:`還差 ${50-coins}`}</strong></div>
-              <div className="eg-menu-reward-line"><span>大富翁（100 起）</span><strong>{coins>=100?"可以參加":`還差 ${100-coins}`}</strong></div>
+              <div className="eg-menu-reward-line"><span>寵物大富翁</span><strong>免費遊玩</strong></div>
             </div>
             <div className="eg-menu-reward-block">
               <div className="eg-menu-reward-block-title">答錯會怎樣</div>
@@ -2812,9 +2770,9 @@ function MenuV2({lv,onSelect,activeGroup="learn",onGroupChange,daily,c,xp,coins,
           <div className="eg-menu-spend-actions" aria-label="金幣使用入口">
             <button type="button" className="eg-menu-spend-action" aria-label="前往寵物照顧" style={{"--spend-color":"#0F9F7A"}} onClick={()=>onSelect("pets","pet")}><strong>前往寵物照顧</strong><span>進入後可開食物商店，8 金幣起並順便學生活單字。</span></button>
             <button type="button" className="eg-menu-spend-action" aria-label="前往扭蛋" style={{"--spend-color":"#DB2777"}} onClick={()=>onSelect("gacha","pet")}><strong>前往扭蛋</strong><span>每次 50 金幣，取得寵物蛋並用學習進度孵化。</span></button>
-            <button type="button" className="eg-menu-spend-action" aria-label="前往寵物大富翁" style={{"--spend-color":"#D97706"}} onClick={()=>onSelect("petMonopoly","game")}><strong>前往寵物大富翁</strong><span>自選投入 100 金幣起，離開時帶回本局剩餘金幣。</span></button>
+            <button type="button" className="eg-menu-spend-action" aria-label="前往寵物大富翁" style={{"--spend-color":"#D97706"}} onClick={()=>onSelect("petMonopoly","game")}><strong>前往寵物大富翁</strong><span>免費玩 6 或 10 回合，完成後領取學習獎勵；島嶼旅費只在這一局使用。</span></button>
           </div>
-          <div className="eg-menu-reward-rule"><span aria-hidden="true">✓</span><span><strong>保護規則：</strong>一般學習答錯不倒扣主錢包；只有主動進入大富翁後，答錯才會影響本局金幣，而且總額不會變成負數。</span></div>
+          <div className="eg-menu-reward-rule"><span aria-hidden="true">✓</span><span><strong>保護規則：</strong>學習答錯不會扣學習金幣。大富翁的島嶼旅費與你的錢包分開，遊戲結束後依成果給獎勵。</span></div>
         </section>
       )}/>;
 }

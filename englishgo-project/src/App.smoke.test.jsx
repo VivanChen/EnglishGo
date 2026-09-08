@@ -1279,7 +1279,8 @@ describe('EnglishGo app smoke flow', () => {
     expect(rewardCenter).toHaveTextContent('寵物食物');
     expect(rewardCenter).toHaveTextContent('一般練習');
     expect(rewardCenter).toHaveTextContent('不扣金幣');
-    expect(rewardCenter).toHaveTextContent('答錯才會影響本局金幣');
+    expect(rewardCenter).toHaveTextContent('島嶼旅費與你的錢包分開');
+    expect(rewardCenter).toHaveTextContent('免費玩 6 或 10 回合');
 
     fireEvent.click(within(rewardCenter).getByRole('button', { name: '前往扭蛋' }));
     expect(await screen.findByRole('heading', { name: /森林扭蛋屋/ }, { timeout: 5000 })).toBeInTheDocument();
@@ -1314,8 +1315,8 @@ describe('EnglishGo app smoke flow', () => {
     await waitFor(() => {
       const returnedPetTab = document.querySelector('[data-group-id="pet"]');
       expect(returnedPetTab).toHaveAttribute('aria-selected', 'true');
-      expect(screen.getByText('扭蛋機')).toBeInTheDocument();
-      expect(screen.getByText('寵物圖鑑')).toBeInTheDocument();
+      expect(screen.getByText('森林扭蛋屋')).toBeInTheDocument();
+      expect(screen.getByText('寵物小家園')).toBeInTheDocument();
     });
   }, 15000);
 
@@ -1351,7 +1352,8 @@ describe('EnglishGo app smoke flow', () => {
     fireEvent.click(screen.getByTestId('pet-monopoly-start'));
 
     expect(screen.getByTestId('pet-monopoly-board')).toBeInTheDocument();
-    expect(screen.getByTestId('pet-monopoly-game-hud')).toHaveTextContent(/投入 100/);
+    expect(screen.getByTestId('pet-monopoly-game-hud')).toHaveTextContent(/起始旅費 100/);
+    expect(JSON.parse(localStorage.getItem('eg_coins'))).toBe(120);
     expect(screen.getByTestId('pet-monopoly-game-hud')).toHaveTextContent(/電腦 1/);
     expect(screen.getByText(/台灣學習島/)).toBeInTheDocument();
     expect(screen.getAllByText(/電腦 1/).length).toBeGreaterThan(0);
@@ -1426,7 +1428,7 @@ describe('EnglishGo app smoke flow', () => {
     expect(deckSize).toBeGreaterThanOrEqual(10);
   }, 15000);
 
-  it('starts pet monopoly only after choosing computers and stake', async () => {
+  it('starts pet monopoly with matching travel money without spending wallet coins', async () => {
     localStorage.setItem('eg_coins', JSON.stringify(500));
 
     await openElementaryMenu();
@@ -1447,14 +1449,15 @@ describe('EnglishGo app smoke flow', () => {
     fireEvent.click(screen.getByTestId('pet-monopoly-start'));
 
     expect(await screen.findByTestId('pet-monopoly-board')).toBeInTheDocument();
-    expect(screen.getByTestId('pet-monopoly-game-hud')).toHaveTextContent(/投入 100/);
-    expect(screen.getByTestId('pet-monopoly-game-hud')).toHaveTextContent(/玩家 100/);
+    expect(screen.getByTestId('pet-monopoly-game-hud')).toHaveTextContent(/起始旅費 100/);
+    expect(screen.getByTestId('pet-monopoly-game-hud')).toHaveTextContent(/玩家旅費 100/);
+    expect(JSON.parse(localStorage.getItem('eg_coins'))).toBe(500);
     expect(screen.getByTestId('pet-monopoly-game-hud')).toHaveTextContent(/電腦 1.*100/);
     expect(screen.queryByTestId('pet-monopoly-roster')).not.toBeInTheDocument();
     expect(screen.queryByTestId('pet-monopoly-hero')).not.toBeInTheDocument();
   }, 15000);
 
-  it('keeps pet monopoly actions in a compact board dock and rolls dice with a screen effect', async () => {
+  it('keeps pet monopoly actions outside the board so questions have room and records the dice result', async () => {
     const restoreDice = mockPetMonopolyDice([2]);
     localStorage.setItem('eg_coins', JSON.stringify(120));
 
@@ -1464,12 +1467,8 @@ describe('EnglishGo app smoke flow', () => {
     expect(screen.getByTestId('pet-monopoly-overlay')).toHaveClass('pm-action-dock');
     expect(screen.getByTestId('pet-monopoly-overlay')).toHaveAttribute('data-state', 'idle');
 
-    const petMonopolyStyles = Array.from(document.querySelectorAll('style'))
-      .map(style => style.textContent || '')
-      .join('\n');
-    expect(petMonopolyStyles).toMatch(/\.pm-overlay{[^}]*bottom:42px/);
-    expect(petMonopolyStyles).toMatch(/\.pm-overlay\[data-state="idle"\][^{]*{[^}]*max-height:none[^}]*overflow:visible/);
-    expect(petMonopolyStyles).toContain('.pm-overlay[data-state="question"],.pm-overlay[data-state="offer"]{width:min(560px,calc(100% - 24px));max-height:min(460px,calc(100% - 96px))');
+    expect(screen.getByTestId('pet-monopoly-board')).not.toContainElement(screen.getByTestId('pet-monopoly-overlay'));
+    expect(screen.getByRole('heading',{name:'第 1 / 6 回合'})).toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId('pet-monopoly-roll'));
 
@@ -1731,7 +1730,7 @@ describe('EnglishGo app smoke flow', () => {
     expect(decision.buy).toBe(false);
   });
 
-  it('shows pet care priorities and next-step hints without competition features', async () => {
+  it('prioritizes ready eggs and shows actionable companion care hints', async () => {
     const today = new Date().toDateString();
     localStorage.setItem('eg_petAcc', JSON.stringify({ username: 'Kid', pinHash: 'demo', lastSync: today }));
     localStorage.setItem(
@@ -1763,20 +1762,18 @@ describe('EnglishGo app smoke flow', () => {
     clickMenuStat('寵物');
 
     const center = await screen.findByTestId('pet-care-center', {}, { timeout: 5000 });
-    expect(within(center).getByText('今日照顧中心')).toBeInTheDocument();
-    expect(within(center).getByText(/任務可領/)).toBeInTheDocument();
+    expect(within(center).getByText('今天，先做這件事')).toBeInTheDocument();
     expect(within(center).getByText(/蛋可孵化/)).toBeInTheDocument();
-    expect(within(center).getByText(/優先照顧/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /每日任務/ })).toHaveTextContent('1');
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: /寵物 \(1\)/ }));
+      fireEvent.click(screen.getByRole('button', { name: '我的夥伴', exact: true }));
     });
-    const nextStep = await screen.findByTestId('pet-next-step-bunny');
-    expect(nextStep).toHaveTextContent(/下一步/);
-    expect(nextStep).toHaveTextContent(/餵/);
+    const nextStep = screen.getByRole('button', { name: /小兔兔.*有點餓了/ });
+    expect(nextStep).toHaveTextContent('去陪伴');
   }, 15000);
 
-  it('shows a collection goal that points to the closest pet egg', async () => {
+  it('connects the nursery progress and collection filters', async () => {
     const today = new Date().toDateString();
     localStorage.setItem('eg_petAcc', JSON.stringify({ username: 'Kid', pinHash: 'demo', lastSync: today }));
     localStorage.setItem(
@@ -1807,23 +1804,15 @@ describe('EnglishGo app smoke flow', () => {
     await openElementaryMenu();
     clickMenuStat('寵物');
 
-    const goal = await screen.findByTestId('pet-collection-goal', {}, { timeout: 5000 });
-    expect(goal).toHaveTextContent('收藏目標');
-    expect(goal).toHaveTextContent('小雞');
-    expect(goal).toHaveTextContent('7/10');
-    expect(goal).toHaveTextContent(/還差 3 題英文/);
-    expect(goal).toHaveTextContent('收藏進度');
-    expect(goal).toHaveTextContent('1/29');
-    expect(goal).toHaveTextContent(/還缺 28 種/);
-    expect(goal).toHaveTextContent('下一枚徽章');
-    expect(goal).toHaveTextContent('3 種寵物');
-    expect(goal).toHaveTextContent(/還差 2 種/);
-    const badges = within(goal).getByTestId('pet-collection-badges');
-    expect(badges).toHaveTextContent('收藏徽章');
-    expect(badges).toHaveTextContent('入門收藏');
-    expect(badges).toHaveTextContent('1/3');
-    expect(badges).toHaveTextContent('進行中');
-    expect(badges).toHaveTextContent('10 種');
+    await screen.findByTestId('pet-care-center');
+    fireEvent.click(screen.getByRole('button', { name: /孵化小屋/ }));
+    const egg = screen.getByRole('heading', { name: '小雞 蛋' }).closest('article');
+    expect(egg).toHaveTextContent('7/10');
+    expect(egg).toHaveTextContent('還需要 3 次學習進度');
+    expect(within(egg).getByRole('button', { name: /學單字/ })).toBeEnabled();
+    fireEvent.click(screen.getByRole('button', { name: /夥伴圖鑑/ }));
+    expect(screen.getByRole('combobox', { name: '收藏狀態' })).toHaveTextContent('已收集 1 種');
+    expect(screen.getByRole('button', { name: /孵化中.*小雞/ })).toBeEnabled();
   }, 15000);
 
   it('shows a clear result after completing a pet care action', async () => {
@@ -1856,21 +1845,23 @@ describe('EnglishGo app smoke flow', () => {
 
     await screen.findByTestId('pet-care-center', {}, { timeout: 5000 });
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: /寵物 \(1\)/ }));
+      fireEvent.click(screen.getByRole('button', { name: '我的夥伴', exact: true }));
     });
 
     const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.99);
     try {
-      fireEvent.click(await screen.findByTestId('pet-card-bunny'));
+      fireEvent.click(screen.getByRole('button', { name: /小兔兔.*有點餓了/ }));
       fireEvent.click(await screen.findByTestId('pet-primary-care-action'));
+      fireEvent.click(screen.getAllByRole('button', { name: '選這份食物' })[0]);
       fireEvent.click(await screen.findByTestId('pet-action-complete'));
 
       const result = await screen.findByTestId('pet-care-result');
       expect(result).toHaveTextContent('照顧完成');
       expect(result).toHaveTextContent(/餵|吃/);
-      expect(result).toHaveTextContent(/飽|飢餓|狀態/);
+      expect(result).toHaveTextContent('金幣 +5');
       expect(result).toHaveTextContent('今日培養 1/3');
-      expect(result).toHaveTextContent(/再完成 2 種照顧/);
+      expect(JSON.parse(localStorage.getItem('eg_inv')).apple).toBe(1);
+      expect(JSON.parse(localStorage.getItem('eg_pets'))[0].hunger).toBeGreaterThan(18);
     } finally {
       randomSpy.mockRestore();
     }

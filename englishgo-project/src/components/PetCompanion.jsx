@@ -4,7 +4,21 @@ import PixelPet from './PixelPet.jsx';
 // Soft portraits for familiar animals. Unmapped species retain their authored sprite.
 const coats={bunny:['#fff9e5','#e2cda9'],chick:['#ffe89d','#e4b752'],puppy:['#dfb78a','#ad7951'],kitty:['#f4d7b0','#c2966e'],piggy:['#f4ccd0','#cc939e'],froggy:['#aed1a1','#6e9e78'],hamster:['#efc698','#bd9468'],panda:['#f5f0df','#c8c6b6'],koala:['#c6d2d0','#8ba19e']};
 export default function PetCompanion({petId,stage='baby',size=132}) {
-  const id=useId();if(!coats[petId]||stage==='egg')return <PixelPet {...{petId,stage,size}} animate={false}/>;
+  const id=useId();
+  if(stage==='egg'){
+    const shades=['#d8e7c6','#f5d4aa','#ddcfeb','#c7dfdf'];
+    const tint=shades[[...String(petId||'')].reduce((n,char)=>n+char.charCodeAt(0),0)%shades.length];
+    return <svg className="pet-companion pet-egg-portrait" width={size} height={size} viewBox="0 0 180 180" role="img" aria-label={`${petId} egg`}>
+      <defs><linearGradient id={id} x2=".7" y2="1"><stop stopColor="#fffbed"/><stop offset="1" stopColor={tint}/></linearGradient></defs>
+      <ellipse cx="90" cy="160" rx="54" ry="10" fill="#46664b20"/>
+      <path d="M37 107C37 61 65 17 90 17s53 44 53 90c0 65-106 65-106 0Z" fill={`url(#${id})`} stroke="#65765d" strokeWidth="3"/>
+      <ellipse cx="65" cy="66" rx="10" ry="17" fill="#fffdf5" opacity=".85" transform="rotate(25 65 66)"/>
+      <path d="m41 111 16-12 18 14 17-13 18 13 18-13 13 11" fill="none" stroke="#8eac7c" strokeWidth="6" strokeLinejoin="round" opacity=".6"/>
+      <g fill="#8eac7c" opacity=".55"><circle cx="103" cy="65" r="8"/><circle cx="71" cy="132" r="7"/><circle cx="116" cy="130" r="5"/></g>
+      <path d="m149 44 3 8 8 3-8 3-3 8-3-8-8-3 8-3Z" fill="#dfba71"/>
+    </svg>;
+  }
+  if(!coats[petId])return <PixelPet {...{petId,stage,size}} animate={false}/>;
   const [coat,shade]=coats[petId],bird=petId==='chick',bunny=petId==='bunny',cat=petId==='kitty',dog=petId==='puppy',frog=petId==='froggy',panda=petId==='panda';
   return <svg className="pet-companion" width={size} height={size} viewBox="0 0 180 180" role="img" aria-label={`${petId} ${stage}`}>
     <defs><linearGradient id={id} x1="0" y1="0" x2=".8" y2="1"><stop stopColor={coat}/><stop offset="1" stopColor={shade}/></linearGradient></defs>

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { applyCampChoice, awardPetPlay, choosePetHabitat, choosePetPath, getJourneyBonus, getPetJourney, getPlayStars, makePetPlay, petPlayReducer, recordPetMoment } from './petJourney.js';
-import { planPetPulls } from './petGacha.js';
+import { applyPendingEggReward, mergePendingEggRewards, planPetPulls } from './petGacha.js';
 const foods=[{id:'apple',word:'apple',name:'蘋果'},{id:'milk',word:'milk',name:'牛奶'},{id:'bread',word:'bread',name:'麵包'},{id:'fish',word:'fish',name:'魚'},{id:'banana',word:'banana',name:'香蕉'}];
 const pet={petId:'bunny',level:2,bond:380,exp:5,hunger:80,energy:90};
 const today=new Date(2026,8,6,12),tomorrow=new Date(2026,8,7,12);
@@ -80,11 +80,35 @@ describe('gacha settlement before presentation',()=>{
     const result=planPetPulls({count:10,pity:{},pets:[],eggs:[],api,now:1});
     expect(result.eggs).toHaveLength(2);expect(result.eggs.find(e=>e.rarity==='N').progress).toBe(10);
     expect(result.items.at(-1)).toMatchObject({rarity:'R',guarantee:true});
-    expect(result.items.filter(item=>item.resultType==='eggMerge')).toHaveLength(8);
+    expect(result.items.filter(item=>item.resultType==='eggMerge')).toHaveLength(4);
+    expect(result.items.filter(item=>item.resultType==='eggReserve')).toHaveLength(4);
+    expect(result.eggs.find(e=>e.rarity==='N').pendingDuplicateReward).toEqual({exp:80,bond:8,dupes:4});
   });
   it('boosts existing pets while preserving their growth fields',()=>{
     const existing={...pet,petId:'pet-N',journey:{marks:8,habitat:'camp'}};
     const result=planPetPulls({count:1,pity:{},pets:[existing],eggs:[],api,now:1});
     expect(result.pets[0]).toMatchObject({bond:382,exp:25,journey:{marks:8,habitat:'camp'}});expect(result.eggs).toEqual([]);expect(existing.bond).toBe(380);
+  });
+  it('preserves a ready egg reward for hatching without changing the source save',()=>{
+    const egg={id:'old-egg',petId:'pet-N',rarity:'N',progress:10,pendingDuplicateReward:{exp:20,bond:2,dupes:1}};
+    const result=planPetPulls({count:1,pity:{},pets:[],eggs:[egg],api,now:1});
+    expect(result.items[0]).toMatchObject({resultType:'eggReserve',dupeExp:20,dupeBond:2});
+    expect(result.eggs[0]).toMatchObject({id:'old-egg',progress:10,pendingDuplicateReward:{exp:40,bond:4,dupes:2}});
+    expect(egg.pendingDuplicateReward).toEqual({exp:20,bond:2,dupes:1});
+    const hatch={petId:'pet-N',exp:0,bond:0,dupes:0};
+    const grown=applyPendingEggReward(hatch,result.eggs[0],{applyDuplicatePetReward:(pet,reward)=>({...pet,exp:pet.exp+reward.exp,bond:pet.bond+reward.bond,dupes:pet.dupes+reward.dupes})});
+    expect(grown).toMatchObject({exp:40,bond:4,dupes:2});
+    expect(applyPendingEggReward(hatch,{id:'legacy'},api)).toBe(hatch);
+    expect(mergePendingEggRewards(egg,result.eggs[0])).toEqual({exp:60,bond:6,dupes:3});
+  });
+  it('keeps naturally rolled SSR and only labels pity when a lower rarity was upgraded',()=>{
+    const result=planPetPulls({count:1,pity:{sinceSR:19,total:19},pets:[],eggs:[],api:{...api,rollRarity:()=> 'SSR'},now:1});
+    expect(result.items[0]).toMatchObject({rarity:'SSR',pityHit:false});expect(result.pity.sinceSR).toBe(0);
+  });
+  it('rejects unsupported batch sizes and keeps sequential reward IDs distinct at the same time',()=>{
+    expect(()=>planPetPulls({count:0,pity:{},pets:[],eggs:[],api,now:1})).toThrow(RangeError);
+    const first=planPetPulls({count:1,pity:{},pets:[],eggs:[],api,now:1});
+    const next=planPetPulls({count:1,pity:first.pity,pets:[],eggs:first.eggs,api,now:1});
+    expect(next.items[0].id).not.toBe(first.items[0].id);
   });
 });
