@@ -47,3 +47,10 @@ Built-in imagegen assets: `owl-paper.png` and `house-paper.png`, stored alongsid
 Prompt: Use case: illustration-story. Single isolated SUBJECT. Refined natural-history watercolor and colored-pencil illustration for a physical pop-up children's book, muted earthy tones, realistic intricate texture, warm ivory die-cut paper edge. Entire silhouette inside generous margins. Genuinely transparent background. No text, no additional scenery, no plastic CGI. Match a classic woodland storybook paper cutout.
 
 Subjects: a small friendly woodland owl perched, whole body with folded wings and visible feet; a tiny welcoming woodland cottage, terracotta tiled roof, warm golden windows, arched wooden front door, natural cream plaster and stone foundation, three-quarter front view.
+
+## Pip prop refresh — 2026-09-09
+Built-in image_gen tool; original transparent RGBA PNGs, alpha checked, no raster postprocessing.
+- `bush-paper.png`: Isolated low woodland bush, sage/moss leaves, tiny wildflowers and grass; botanical watercolor/colored pencil, ivory paper-cut edge; no scenery, text, checkerboard or plastic 3D.
+- `rock-paper.png`: Isolated rounded slate-lavender mountain rock, mineral flecks, cracks and subtle moss; detailed watercolor/colored pencil and ivory edge, transparent background.
+- `star-paper.png`: Friendly five-point honey-gold star, kind eyes and tiny smile, rounded points, watercolor pigment/pencil shading/paper grain, ivory edge; transparent background, not emoji or CGI.
+- `cloud-paper.png`: Isolated low wispy night cloud, ivory/lavender watercolor and pencil, fine ivory edge; genuine transparency, no backdrop or text.

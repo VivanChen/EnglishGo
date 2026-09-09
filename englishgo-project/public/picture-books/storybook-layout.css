@@ -1,0 +1,16 @@
+/* Keep the reading card outside the pop-up stage, including when enlarged. */
+@media(min-width:601px){
+ .storybook-layout #stage{left:330px;width:700px}
+ .storybook-layout #book{margin-left:-320px;transform:scale(.82) rotateX(58deg) translateY(-26px)}
+ .storybook-layout #card{left:20px;top:130px;width:310px;max-height:455px;overflow:auto;padding:24px 22px}
+ .storybook-layout #card.zoom{transform:none}
+ .storybook-layout #title{font-size:27px}
+ .storybook-layout #text{font-size:20px;line-height:1.6}
+ .storybook-layout #card.zoom #text{font-size:24px}
+ .storybook-layout #zh{font-size:17px}
+ .storybook-layout #controls{left:67%;gap:14px;width:390px;justify-content:center}
+ .storybook-layout .mode{white-space:nowrap;flex-shrink:0}
+ .storybook-layout .stars{left:67%}
+ .storybook-layout .lamp{display:none}
+ .storybook-layout .brand{left:24px;font-size:25px}
+}

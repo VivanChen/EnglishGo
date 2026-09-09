@@ -153,8 +153,9 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 </style>
 <link rel="stylesheet" href="/picture-books/pip-enhancements.css">
+<link rel="stylesheet" href="/picture-books/storybook-layout.css">
 </head>
-<body>
+<body class="storybook-layout">
 <div id="app">
   <svg class="lamp" viewBox="0 0 150 150"><defs><radialGradient id="lg" cx="50%" cy="60%"><stop offset="0" stop-color="#fff2c0"/><stop offset="1" stop-color="#ffd777" stop-opacity="0"/></radialGradient></defs>
     <ellipse cx="80" cy="120" rx="70" ry="30" fill="url(#lg)"/><path d="M40 20 L110 20 L130 72 L20 72Z" fill="#f8e7b8"/><path d="M40 20 L110 20 L130 72 L20 72Z" fill="url(#lg)" opacity=".6"/><rect x="70" y="72" width="10" height="46" fill="#5a3416"/><ellipse cx="75" cy="120" rx="26" ry="8" fill="#5a3416"/></svg>
@@ -310,9 +311,9 @@ const BACK = {
    <path d="M0 300Q180 200 366 250T732 230V376H0z" fill="#33437a"/><path d="M0 340Q240 290 732 320V376H0z" fill="#26325f"/></svg>`
 };
 /* pop-ups: {x,y(depth 0..1),html,tag,cls} — y=0 near bottom (front), 1 back */
-for (const name of ['fox','tree','basket','owl','house']) {
+for (const name of ['fox','tree','basket','owl','house','bush','rock','star','cloud']) {
   A[name] = (w=150) => {
-    const h = ['house','basket'].includes(name) ? 140 : 190;
+    const h = name==='star'?150:['bush','rock','cloud'].includes(name)?95:['house','basket'].includes(name)?140:190;
     return '<svg width="'+w+'" viewBox="0 0 150 '+h+'"><image href="/images/picture-books/'+name+'-paper.png" width="150" height="'+h+'" preserveAspectRatio="xMidYMax meet"/></svg>';
   };
 }
@@ -338,6 +339,26 @@ function coverArt(){
   document.getElementById('coverArt').innerHTML=`<path d="M0 220Q120 150 260 200T420 180V280H0z" fill="#3c5e8a"/><path d="M0 250Q200 210 420 240V280H0z" fill="#2f4d78"/>
    <g transform="translate(70,30) scale(.95)">${A.fox(150).replace('<svg','<svg x="0" y="0"')}</g><g transform="translate(250,60)">${A.star(110).replace('<svg','<svg x="0" y="0"')}</g>`;
 }
+
+// Keep the supplied story and scene objects; bring every paper prop into the visible stage.
+Object.values(POPS).forEach(scene=>scene.forEach(o=>{o.x=Math.round(o.x*.8+20);}));
+// A clear foreground path lets the owl and basket remain separately tappable.
+POPS.forest=[
+ {x:35,y:.8,h:A.tree(105),tag:'tree'},
+ {x:170,y:.75,h:A.tree(100),tag:'tree'},
+ {x:530,y:.85,h:A.tree(110),tag:'tree'},
+ {x:230,y:.1,h:A.fox(140),tag:'fox'},
+ {x:420,y:.12,h:A.star(90),tag:'lamp',bob:1},
+ {x:540,y:.48,h:A.owl(100),tag:'owl',bob:1}
+];
+POPS.walk=[
+ {x:45,y:.8,h:A.tree(100),tag:'tree'},
+ {x:530,y:.8,h:A.tree(110),tag:'tree'},
+ {x:240,y:.1,h:A.fox(145),tag:'fox'},
+ {x:440,y:.1,h:A.basket(110),tag:'basket'},
+ {x:465,y:.5,h:A.star(75),tag:'star',tagTop:-62,bob:1},
+ {x:65,y:.08,h:A.bush(100),tag:'grass'}
+];
 
 /* ================= STATE ================= */
 let page=0, mode='read', playing=false, slow=false, sound=true, tokens=[], utter=null, timers=[], boundaryFired=false;

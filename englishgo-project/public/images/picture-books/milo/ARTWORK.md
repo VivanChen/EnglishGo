@@ -9,3 +9,9 @@ Generated with the built-in image_gen tool on 2026-09-09. Original human charact
 - `ruby-ribbon.png`: Reference milo-welcome for style and transparency. New human girl Ruby, age seven, dark brown braided hair, dusty blue dress, cream blouse, brown boots, holding long pink ribbon, facing left attentively; no crown, animals or text.
 
 Unusable variants with baked-in checkerboards were discarded. Alpha was checked before copying. Runtime scenes select the angry pose for crash/anger, seated breathing pose for pause/breathe, and welcoming pose for the remaining pages.
+
+## Wooden toy props (2026-09-09)
+Built-in image_gen; all three saved as original transparent RGBA PNGs, alpha verified.
+- `castle.png`: Isolated handcrafted maple/beech toy-block castle, two towers and arched doorway, blue roof cones and sage blocks, warm visible woodgrain, watercolor/colored pencil, ivory paper-cut edge. No floor, scenery, text or plastic 3D; transparent background.
+- `fallen-blocks.png`: Reference castle.png; same toy set scattered into a low fallen pile, recognizable arches/cylinders/blue cones/sage cubes, same medium and transparency.
+- `bridge.png`: Reference castle.png; same blocks rebuilt into a wide bridge with sturdy piers, spanning arch and a pink ribbon bow on top; same medium and transparency.
