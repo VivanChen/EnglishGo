@@ -31,7 +31,7 @@ export function usePictureBookNarration(speak, stopSpeech) {
     mounted.current = true;
     return () => { mounted.current = false; session.current++; clearPending(); stopSpeech(); };
   }, [stopSpeech]);
-  function start(text, { offset = 0, onFinish, audioUrl, rate = .8 } = {}) {
+  function start(text, { offset = 0, onFinish, audioUrl, rate = .8, playbackRate = 1 } = {}) {
     stop();
     const run = session.current, words = storyWords(text);
     let exact = false, finished = false;
@@ -47,6 +47,8 @@ export function usePictureBookNarration(speak, stopSpeech) {
       const utterance = speak(text, 'en-US', rate, {
         ...(audioUrl ? { audioUrl } : {}),
         trackWords: true,
+        apiTts: true,
+        playbackRate,
         onstart: () => { if (!valid()) return; clearPending(); setState(s => ({ ...s, status: 'playing', word: offset })); },
         onboundary: event => {
           if (!valid() || (event.name && event.name !== 'word')) return;

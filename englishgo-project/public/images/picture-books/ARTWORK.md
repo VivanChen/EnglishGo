@@ -24,3 +24,26 @@ NO book, NO letters, NO interface, NO geometric cone trees, NO low-poly graphics
 NO plastic materials. Keep center spacious and readable, dark forest edges
 framing a luminous central clearing. This image will be a background behind
 actual 3D models.
+
+
+## Paper theater assets (2026-09-09)
+
+Generated with the built-in imagegen tool, preserved as transparent PNG files:
+`fox-paper.png`, `bear-paper.png`, `rabbit-paper.png`, `tree-paper.png`, `basket-paper.png`.
+
+Animal prompt: Use case: illustration-story. Asset: a single isolated full-body woodland CHARACTER for an exquisite physical pop-up children's book, on genuinely transparent background. Naturalistic anatomy and expressive kind eyes, detailed watercolor and fine colored-pencil fur, muted earthy colors, refined classic British natural-history storybook illustration, delicate warm ivory die-cut paper edge. Three-quarter view facing slightly left, standing, all body including ears feet tail within generous margins. No text, no props, no scenery, no plastic or CGI look.
+Subjects: a young red fox with a large fluffy white-tipped tail; a gentle brown bear cub standing on hind paws; a small warm grey rabbit with long ears.
+
+Prop prompt: Use case: illustration-story. Single isolated SUBJECT. Refined natural-history watercolor and colored-pencil illustration for an exquisite physical pop-up children's book, muted earthy tones, fine realistic texture, warm ivory die-cut paper edge. Entire silhouette with generous margins, on genuinely transparent background. No text, no scenery, no plastic CGI, no cartoon face.
+Subjects: a graceful young oak tree, full trunk and asymmetrical leafy canopy, detailed bark and individual soft green leaves; an empty wicker picnic basket with an arched handle, carefully drawn woven wicker, three-quarter view.
+
+The paper theater layout references the user's supplied `pip-and-the-lost-star.html`; React implementation and animations are local. Click responses animate the whole paper cutout (hopping, rocking, flying, spinning), not skeletal character rigs.
+
+
+## Pip source-book additions
+
+Built-in imagegen assets: `owl-paper.png` and `house-paper.png`, stored alongside the other paper PNGs in this directory.
+
+Prompt: Use case: illustration-story. Single isolated SUBJECT. Refined natural-history watercolor and colored-pencil illustration for a physical pop-up children's book, muted earthy tones, realistic intricate texture, warm ivory die-cut paper edge. Entire silhouette inside generous margins. Genuinely transparent background. No text, no additional scenery, no plastic CGI. Match a classic woodland storybook paper cutout.
+
+Subjects: a small friendly woodland owl perched, whole body with folded wings and visible feet; a tiny welcoming woodland cottage, terracotta tiled roof, warm golden windows, arched wooden front door, natural cream plaster and stone foundation, three-quarter front view.

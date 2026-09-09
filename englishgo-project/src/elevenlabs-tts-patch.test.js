@@ -62,6 +62,17 @@ function loadPatch() {
 }
 
 describe("ElevenLabs TTS patch", () => {
+  it("reports API-only book failures instead of silently using a system voice", async () => {
+    const { nativeSpeak } = installPatchEnv();
+    globalThis.fetch = vi.fn(() => Promise.reject(new Error('offline')));
+    globalThis.Audio = vi.fn(() => ({play:vi.fn(() => Promise.resolve()),pause:vi.fn()}));
+    loadPatch();
+    const u = new SpeechSynthesisUtterance('Pip was a little fox.');
+    u.__englishGoRequireApi = true; u.__englishGoTrackWords = true; u.onerror = vi.fn();
+    window.speechSynthesis.speak(u);
+    await vi.waitFor(() => expect(u.onerror).toHaveBeenCalledOnce());
+    expect(nativeSpeak).not.toHaveBeenCalled();
+  });
   it("does not report an HTML fallback page as downloaded audio", async () => {
     installPatchEnv();
     globalThis.fetch = vi.fn(() => Promise.resolve(new Response('<html>app</html>', { headers: { 'Content-Type': 'text/html' } })));
@@ -78,10 +89,12 @@ describe("ElevenLabs TTS patch", () => {
     loadPatch();
     const utterance = new SpeechSynthesisUtterance('A little fox looks up.');
     utterance.__englishGoTrackWords = true;
+    utterance.__englishGoPlaybackRate = .8;
     utterance.onboundary = vi.fn(); utterance.onstart = vi.fn(); utterance.onprogress = vi.fn();
     window.speechSynthesis.speak(utterance);
     await vi.waitFor(() => expect(audio.onplaying).toBeTypeOf('function'));
     expect(nativeSpeak).not.toHaveBeenCalled();
+    expect(audio.playbackRate).toBe(.8);
     expect(utterance.onstart).not.toHaveBeenCalled();
     audio.onplaying(); audio.onplaying();
     expect(utterance.onstart).toHaveBeenCalledOnce();

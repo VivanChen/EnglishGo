@@ -18,6 +18,7 @@ describe('storybook voice and animation timing', () => {
     const { result } = renderHook(() => usePictureBookNarration(speak, stop));
     act(() => result.current.start('A little fox.', { audioUrl: '/fixed-page.mp3', rate: .9 }));
     expect(speak.mock.calls[0][2]).toBe(.9);
+    expect(speak.mock.calls[0][3].apiTts).toBe(true);
     expect(speak.mock.calls[0][3].audioUrl).toBe('/fixed-page.mp3');
     const first = speak.mock.calls[0][3];
     expect(result.current.status).toBe('loading');

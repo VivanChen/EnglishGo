@@ -100,6 +100,14 @@
     return false;
   }
 
+  function fallbackSpeech(utterance) {
+    if (utterance.__englishGoRequireApi) {
+      utterance.onerror?.(new Event("error"));
+      return;
+    }
+    return nativeSpeak(utterance);
+  }
+
   function emitEnd(utterance) {
     try {
       if (typeof utterance.onend === "function") utterance.onend(new Event("end"));
@@ -398,7 +406,7 @@
         audio.src = url;
         audio.currentTime = 0;
         audio.muted = false;
-        audio.playbackRate = 1;
+        audio.playbackRate = clamp(utterance.__englishGoPlaybackRate, 0.7, 1.2, 1);
         audio.volume = typeof utterance.volume === "number" ? utterance.volume : 1;
         audio.oncanplay = () => hideTtsLoading(loadingToken);
         let started = false;
@@ -426,7 +434,7 @@
             activeAudioPaused = false;
           }
           hideTtsLoading(loadingToken);
-          nativeSpeak(utterance);
+          fallbackSpeech(utterance);
         };
         if (!utterance.__englishGoTrackWords) emitStart(utterance);
         return unlockPlayback.then(() => activeAudioPaused ? null : audio.play()).then(() => hideTtsLoading(loadingToken)).catch((err) => {
@@ -442,7 +450,7 @@
         }
         try { audio.pause(); } catch {}
         hideTtsLoading(loadingToken);
-        nativeSpeak(utterance);
+        fallbackSpeech(utterance);
       });
 
     return undefined;

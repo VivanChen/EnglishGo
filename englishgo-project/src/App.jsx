@@ -1671,6 +1671,7 @@ function makeUtterance(t,l="en-US",r=0.9,opts={},token=_speechToken){
   if(opts.onboundary)u.onboundary=e=>{if(token===_speechToken)opts.onboundary?.(e)};
   if(opts.onstart)u.onstart=e=>{if(token===_speechToken)opts.onstart?.(e)};
   if(opts.onprogress)u.onprogress=e=>{if(token===_speechToken)opts.onprogress?.(e)};
+  if(opts.playbackRate)u.__englishGoPlaybackRate=opts.playbackRate;
   if(opts.trackWords)u.__englishGoTrackWords=true;
   if(opts.apiTts)u.__englishGoApiTts=true;
   if(opts.audioUrl)u.__englishGoAudioUrl=opts.audioUrl;

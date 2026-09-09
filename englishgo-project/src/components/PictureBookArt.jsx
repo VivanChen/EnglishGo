@@ -1,5 +1,6 @@
 // Small original vector cutouts keep the illustrated scenes sharp and available offline.
 export default function PictureBookArt({ word }) {
+  if (['fox', 'bear', 'rabbit', 'tree', 'basket'].includes(word)) return <img src={`/images/picture-books/${word}-paper.png`} alt="" draggable={false}/>;
   const eyes = <g fill="#263e3c"><circle cx="39" cy="48" r="2.5"/><circle cx="61" cy="48" r="2.5"/><path d="M46 59q4 5 8 0" fill="none" stroke="#263e3c" strokeWidth="2.5" strokeLinecap="round"/></g>;
   const shapes = {
     fox: <><path d="M68 89Q110 67 83 47Q83 74 62 68" fill="#db8149"/><path d="M90 60q3-8-7-13q0 13-5 19" fill="#fff0d0"/><ellipse cx="49" cy="75" rx="25" ry="22" fill="#d77e42"/><ellipse cx="49" cy="78" rx="13" ry="17" fill="#ffedcd"/><path d="M20 18L42 29H61L81 18L77 57Q50 83 23 57Z" fill="#ed9658"/><path d="M26 29L37 34L27 43M74 29L63 34L73 43" fill="#633e39"/><path d="M24 51Q35 47 50 61Q65 47 77 51Q51 83 24 51" fill="#fff0d0"/>{eyes}<path d="M46 56h8l-4 5Z" fill="#263e3c"/></>,
