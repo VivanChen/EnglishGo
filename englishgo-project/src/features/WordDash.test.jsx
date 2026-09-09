@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import WordDash from './WordDash.jsx';
-import { DASH_COURSES, dashCourseObstacle, dashObstacleHit, makeDashRounds } from '../data/wordDash.js';
+import { DASH_COURSES, dashCourseObstacle, dashObstacleHit, dashRaceRank, dashCameraDistance, dashRivalDistances, makeDashRounds } from '../data/wordDash.js';
 
 let scene;
 vi.mock('../components/WordDashScene.jsx', () => ({ default: props => { scene = props; return <div data-testid="scene"/>; } }));
@@ -10,6 +10,44 @@ const deps = { V: { elementary: words }, speak: vi.fn(), stopSpeech: vi.fn(), pl
 async function mount({ ready = true, course } = {}) { vi.useFakeTimers(); const onXp = vi.fn(); render(<WordDash lv="elementary" onBack={vi.fn()} onXp={onXp} deps={deps}/>); await act(async () => {}); if (course) fireEvent.click(screen.getByRole('button', { name: new RegExp(course.title) })); fireEvent.click(screen.getByRole('button', { name: /開始衝衝/ })); if (ready) act(() => vi.advanceTimersByTime(3000)); return onXp; }
 afterEach(() => { vi.useRealTimers(); vi.clearAllMocks(); });
 describe('Word Dash', () => {
+  it('keeps rivals moving and the camera steady while the player recoils', () => {
+    const course = DASH_COURSES[0];
+    const before = dashRivalDistances(5, course, 5), after = dashRivalDistances(5.6, course, 5);
+    expect(after.every((distance, i) => distance >= before[i])).toBe(true);
+    expect(dashCameraDistance(21, 15)).toBe(21);
+    expect(dashCameraDistance(21, 22)).toBe(22);
+    expect(dashRaceRank(15, after, 157)).toBeGreaterThan(dashRaceRank(21, before, 157));
+    expect(dashRaceRank(157, dashRivalDistances(100, course, 5), 157)).toBe(7);
+  });
+  it('shows a loss even after completing every word when all rivals finished first', async () => {
+    const xp = await mount();
+    for (let i = 0; i < 5; i++) { const word = deps.speak.mock.calls.at(-1)[0]; act(() => scene.onGate(scene.choices.findIndex(choice => choice.w === word))); }
+    act(() => scene.onFinish(7));
+    expect(screen.getByText('第 7 名 / 7 位選手')).toBeInTheDocument();
+    expect(screen.getByText('這次未奪冠，再挑戰！')).toBeInTheDocument();
+    expect(xp).toHaveBeenCalledTimes(5);
+    expect(deps.playSound).toHaveBeenLastCalledWith('bad');
+  });
+  it('allows every race placing, including second, and counts rivals already finished', () => {
+    const rivals = [100, 90, 80, 70, 60, 50];
+    [110, 95, 85, 75, 65, 55, 40].forEach((distance, i) => expect(dashRaceRank(distance, rivals, 157)).toBe(i + 1));
+    expect(dashRaceRank(157, [157, 150, 140, 130, 120, 110], 157)).toBe(2);
+    const course = DASH_COURSES[0];
+    const early = dashRivalDistances(10, course, 5), later = dashRivalDistances(20, course, 5);
+    expect(later.every((distance, i) => distance > early[i])).toBe(true);
+    expect(dashRivalDistances(999, course, 5)).toEqual(Array(6).fill(157));
+  });
+  it('shows the live rank and preserves second place on the results screen', async () => {
+    await mount(); act(() => scene.onRank(2));
+    expect(screen.getByText('2 / 7')).toBeInTheDocument();
+    for (let i = 0; i < 5; i++) { const word = deps.speak.mock.calls.at(-1)[0]; act(() => scene.onGate(scene.choices.findIndex(choice => choice.w === word))); }
+    act(() => scene.onFinish(2));
+    expect(screen.getByText('第 2 名 / 7 位選手')).toBeInTheDocument();
+    expect(screen.getByText('這次未奪冠，再挑戰！')).toBeInTheDocument();
+    expect(screen.queryByText('冠軍！你贏了！')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '再衝一次 ↗' }));
+    expect(screen.getByText('1 / 7')).toBeInTheDocument();
+  });
   it.each(DASH_COURSES)('finishes $title with the correct number of gates and rewards', async course => {
     const xp = await mount({ course });
     expect(scene.course.id).toBe(course.id); expect(scene.total).toBe(course.rounds);
@@ -72,9 +110,9 @@ describe('Word Dash', () => {
       act(() => { const gate = scene.onGate; gate(correct); gate(correct); });
     }
     expect(scene.phase).toBe('finishing');
-    expect(screen.queryByText('全關衝線成功！')).not.toBeInTheDocument();
+    expect(screen.queryByText('冠軍！你贏了！')).not.toBeInTheDocument();
     act(() => scene.onFinish());
-    expect(screen.getByText('全關衝線成功！')).toBeInTheDocument();
+    expect(screen.getByText('冠軍！你贏了！')).toBeInTheDocument();
     expect(xp.mock.calls).toEqual([[10], [10], [10], [10], [10]]);
     expect(screen.getByText(/1 次重試/)).toBeInTheDocument();
   });

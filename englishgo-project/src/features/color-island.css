@@ -4,3 +4,8 @@
 @media(max-width:600px){.island-page .island-clue{top:70px}.island-page .island-minimap button{height:36px;min-height:36px!important}}
 .island-travel{position:absolute;top:210px;left:24px;max-width:230px;background:#fffffff0;border:2px solid white;border-radius:13px;padding:9px 12px;font-size:12px;font-weight:850;color:#755196;pointer-events:none}.island-travel small{display:block;margin-top:4px;font-size:10px;font-weight:600}.island-travel.has-arrived{border-color:#d0b5f0}.island-page .island-countdown{top:31%}.island-page .island-countdown>b{line-height:1.2}.island-page .island-countdown>span{white-space:nowrap}
 @media(max-width:600px){.island-page .island-countdown{top:33%}.island-page .island-countdown>b{font-size:70px}.island-page .island-countdown>span{font-size:10px;padding:6px 9px}.island-travel{top:auto;bottom:204px;left:50%;transform:translateX(-50%);max-width:94%;width:max-content;padding:4px 10px;font-size:10px;border-radius:20px}.island-travel small{display:none}.island-page .island-clock{top:177px;font-size:23px;right:8px}}
+
+.island-minimap>button.is-destination{outline:3px dashed #593486;outline-offset:-4px}
+
+.island-bottom .island-travel{position:static;transform:none;width:fit-content;max-width:100%;margin:0 auto 6px}
+.island-bottom .island-travel small:first-of-type{display:block}

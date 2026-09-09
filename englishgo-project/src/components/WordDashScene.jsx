@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { DASH_COURSES, dashCourseObstacle, dashObstacleHit } from '../data/wordDash.js';
+import { DASH_COURSES, dashCourseObstacle, dashObstacleHit, dashRivalDistances, dashRaceRank, dashCameraDistance } from '../data/wordDash.js';
 
 const COLORS = ['#ff58b3', '#3ed9ef', '#ffd84f'];
 export default function WordDashScene(props) {
@@ -130,6 +130,7 @@ export default function WordDashScene(props) {
     const motionQuery = window.matchMedia?.('(prefers-reduced-motion: reduce)');
     const hitObstacles = new Set();
     let frame, last = performance.now(), t = 0, distance = -2, jumpTime = -1, lastJump = 0, lastRound = -1, stagger = 0;
+    let raceSeconds = 0, lastRank = 0, lastRaceUpdate = -1, cameraDistance = -2;
     let boost = 0, recoil = 0, recoilFrom = 0, lastProgress = -1, cameraReady = false, finished = false, landing = 0, redraw = true, outfit;
     function resize() { const w = element.clientWidth, h = element.clientHeight; renderer.setSize(w, h); camera.aspect = w / h; camera.updateProjectionMatrix(); redraw = true; }
     const observer = new ResizeObserver(resize); observer.observe(element); resize();
@@ -158,6 +159,8 @@ export default function WordDashScene(props) {
           ctx.fillStyle = '#473069'; ctx.font = `900 ${Math.min(64, 430 / Math.max(3, label.length))}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(label, 256, 83); gate.texture.needsUpdate = true; gate.painted = true;
         });
       }
+      if (active || finishing) raceSeconds += dt;
+      const rivalDistances = dashRivalDistances(raceSeconds, course, total);
       if (active) {
         if (p.jump !== lastJump) { lastJump = p.jump; if (jumpTime < 0) jumpTime = 0; }
         if (jumpTime >= 0) { jumpTime += dt; if (jumpTime > .95) { jumpTime = -1; landing = 1; } }
@@ -179,11 +182,19 @@ export default function WordDashScene(props) {
       if (finishing && !finished) {
         jumpTime = -1;
         distance = Math.min(total * length - 3, distance + dt * 6);
-        if (distance >= total * length - 3) { finished = true; p.onFinish?.(); }
+        if (distance >= total * length - 3) { finished = true; p.onFinish?.(dashRaceRank(distance, rivalDistances, total * length - 3)); }
       }
       if (active || finishing) {
         const value = Math.max(0, Math.min(100, Math.round((distance + 2) / (total * length - 1) * 100)));
         if (value !== lastProgress) { lastProgress = value; p.onProgress?.(value); }
+      }
+      if (active || finishing) {
+        const rank = dashRaceRank(distance, rivalDistances, total * length - 3);
+        if (rank !== lastRank) { lastRank = rank; p.onRank?.(rank); }
+        if (raceSeconds - lastRaceUpdate >= .1 || finished) {
+          lastRaceUpdate = raceSeconds;
+          p.onRace?.({ player: distance, rivals: rivalDistances, finish: total * length - 3 });
+        }
       }
       const targetX = idle ? 2.8 : finishing || p.phase === 'won' ? 0 : (p.lane - 1) * 4.65;
       if (p.phase !== 'paused') {
@@ -199,7 +210,7 @@ export default function WordDashScene(props) {
         player.arms.forEach((arm, i) => { arm.rotation.x = calm ? 0 : Math.sin(t * 10 + i * Math.PI) * .55; arm.rotation.z = (i ? 1 : -1) * (jumpTime >= 0 || p.phase === 'won' ? 1.5 : .4); });
         player.feet.forEach((foot, i) => foot.position.z = calm ? -.12 : Math.sin(t * 10 + i * Math.PI) * .22);
         marker.position.y = 2.8 + (calm ? 0 : Math.sin(t * 3) * .08);
-        bots.forEach((bot, i) => { bot.root.position.set((i % 3 - 1) * 4.4 + .7, calm ? 0 : Math.abs(Math.sin(t * 9 + i)) * .18, Math.min(4.5 - Math.floor(i / 3) * 2, -distance + 4 + i * 1.2 - Math.sin(t * .6 + i))); bot.arms.forEach((arm, j) => arm.rotation.x = calm ? 0 : Math.sin(t * 9 + i + j * Math.PI) * .6); });
+        bots.forEach((bot, i) => { bot.root.position.set((i % 3 - 1) * 4.4 + .7, calm ? 0 : Math.abs(Math.sin(t * 9 + i)) * .18, idle ? 4.5 - Math.floor(i / 3) * 2 : -rivalDistances[i]); bot.arms.forEach((arm, j) => arm.rotation.x = calm ? 0 : Math.sin(t * 9 + i + j * Math.PI) * .6); });
         gates.forEach(gate => {
           const age = Math.max(0, t - gate.hitAt);
           if (gate.opened) { gate.panel.rotation.x = -Math.min(Math.PI / 2, age * 6); gate.panel.scale.setScalar(Math.max(0, 1 - age * .85)); gate.panel.visible = age < 1.2; }
@@ -211,14 +222,15 @@ export default function WordDashScene(props) {
       const mobile = camera.aspect < .8;
       if (idle) { camera.position.set(19, 16, 23); camera.lookAt(0, 1, -12); }
       else if (p.phase !== 'paused') {
-        cameraTarget.set(player.root.position.x * .22, mobile ? 14 : 9.5, -distance + (mobile ? 22 : 16));
-        if (!cameraReady || calm) { camera.position.copy(cameraTarget); lookTarget.set(0, .6, -distance - 11); cameraReady = true; }
-        else { camera.position.lerp(cameraTarget, 1 - Math.exp(-dt * 8)); lookTarget.lerp(cameraAim.set(0, .6, -distance - 11), 1 - Math.exp(-dt * 8)); }
+        cameraDistance = dashCameraDistance(cameraDistance, distance);
+        cameraTarget.set(player.root.position.x * .22, mobile ? 14 : 9.5, -cameraDistance + (mobile ? 22 : 16));
+        if (!cameraReady || calm) { camera.position.copy(cameraTarget); lookTarget.set(0, .6, -cameraDistance - 11); cameraReady = true; }
+        else { camera.position.lerp(cameraTarget, 1 - Math.exp(-dt * 8)); lookTarget.lerp(cameraAim.set(0, .6, -cameraDistance - 11), 1 - Math.exp(-dt * 8)); }
         camera.lookAt(lookTarget);
         camera.fov += ((boost && !calm ? 52 : 48) - camera.fov) * Math.min(1, dt * 4); camera.updateProjectionMatrix();
       }
       sun.position.set(-14, 25, -distance + 10); sun.target.position.set(0, 0, -distance - 8);
-      if (p.phase === 'won' || finishing) confetti.forEach((piece, i) => { piece.visible = !calm; piece.position.set(Math.sin(i * 7) * 8, 2 + (12 - (t * 3 + i * .4) % 12), -distance + Math.cos(i * 5) * 6); piece.rotation.set(t + i, t * 2, i); });
+      if (p.phase === 'won' && lastRank === 1) confetti.forEach((piece, i) => { piece.visible = !calm; piece.position.set(Math.sin(i * 7) * 8, 2 + (12 - (t * 3 + i * .4) % 12), -distance + Math.cos(i * 5) * 6); piece.rotation.set(t + i, t * 2, i); });
       renderer.render(scene, camera);
       redraw = false;
     }
