@@ -52,3 +52,9 @@
   for = "/app-recovery.js"
   [headers.values]
     Cache-Control = "no-cache, no-store, must-revalidate"
+
+# Content-addressed prerecorded book audio; no synthesis function on playback.
+[[headers]]
+  for = "/audio/picture-books/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

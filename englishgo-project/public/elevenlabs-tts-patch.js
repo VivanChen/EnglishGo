@@ -187,7 +187,23 @@
           body: JSON.stringify({ text: normalized, voiceId: settings.voiceId, lang: settings.lang, speed: settings.speed }),
         };
 
-    const promise = fetch(requestUrl, requestOptions)
+    async function fetchAudio() {
+      // Book MP3s are generated before deployment. Reuse their persistent local copy.
+      let saved;
+      if (fixedAudioUrl.startsWith('/audio/picture-books/') && window.caches) {
+        try {
+          saved = await window.caches.open('storybook-audio-v1');
+          const hit = await saved.match(requestUrl);
+          if (hit?.ok && /^audio\//i.test(hit.headers.get('content-type') || '')) return hit;
+        } catch { saved = null; }
+      }
+      const response = await fetch(requestUrl, requestOptions);
+      if (saved && response.ok && /^audio\//i.test(response.headers.get('content-type') || '')) {
+        try { await saved.put(requestUrl, response.clone()); } catch { /* Storage may be full; playback still works. */ }
+      }
+      return response;
+    }
+    const promise = fetchAudio()
       .then(async (res) => {
         if (!res.ok) throw new Error(`ElevenLabs TTS failed: ${res.status}`);
         const blob = await res.blob();
@@ -195,7 +211,7 @@
         const url = URL.createObjectURL(blob);
         audioCache.set(cacheKey, url);
 
-        if (audioCache.size > 120) {
+        if (audioCache.size > 512) {
           const firstKey = audioCache.keys().next().value;
           try { URL.revokeObjectURL(audioCache.get(firstKey)); } catch {}
           audioCache.delete(firstKey);
@@ -215,7 +231,7 @@
   async function preloadMany(texts, options = {}) {
     const rawItems = Array.isArray(texts) ? texts : [texts];
     const hasFixedAssets = rawItems.some(item => item && typeof item === "object" && item.audioUrl);
-    const limit = clamp(options.limit, 1, hasFixedAssets ? 24 : 12, 5);
+    const limit = clamp(options.limit, 1, hasFixedAssets ? 512 : 12, 5);
     const concurrency = clamp(options.concurrency, 1, 3, 2);
     const seen = new Set();
     const items = [];
@@ -237,6 +253,7 @@
         const next = items[index++];
         const url = await preload(next.text, next.options);
         if (url) readyCount += 1;
+        if (typeof options.onProgress === "function") options.onProgress(readyCount, items.length);
       }
     });
 

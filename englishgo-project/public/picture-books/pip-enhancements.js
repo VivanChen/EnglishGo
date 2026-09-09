@@ -40,7 +40,9 @@
   }
   say = function(text, cb) {
     stopRead(); if (!S || !sound) return;
-    const u=utterance(text); u.onend=cb; u.onerror=()=>toast('語音暫時無法播放，請再試一次。'); S.speak(u); return u;
+    const item=window.PIP_WORD_AUDIO_ITEMS?.[String(text).toLowerCase().replace(/^'|'$/g,'')];
+    if(!item){toast('這個單字尚未備妥音檔。');return;}
+    const u=utterance(item.text);u.__englishGoAudioUrl=item.audioUrl; u.onend=cb; u.onerror=()=>toast('語音暫時無法播放，請再試一次。'); S.speak(u); return u;
   };
   startRead = function() {
     stopRead(); if (!S || !sound) { toast('請開啟聲音，或選擇自己讀。'); return; }
@@ -91,9 +93,21 @@
     if(innerWidth<=600)requestAnimationFrame(()=>vocabBox.scrollIntoView({block:'nearest',behavior:'smooth'}));
   };
   addEventListener('keydown',e=>{if(e.key==='Escape')vocabBox.classList.remove('show');});
+  const originalHighlight=hl;
+  hl=function(index){
+    originalHighlight(index);
+    const card=$('card'),word=card.querySelector('.w.hl');
+    if(word&&card.scrollHeight>card.clientHeight){
+      const box=card.getBoundingClientRect(),point=word.getBoundingClientRect();
+      const scale=box.height/card.offsetHeight;
+      if(point.bottom>box.bottom-20)card.scrollTop+=(point.bottom-box.bottom+40)/scale;
+      else if(point.top<box.top+20)card.scrollTop-=(box.top-point.top+40)/scale;
+    }
+  };
   const originalRender=render;
   render=function(dir){
     originalRender(dir);
+    $('card').scrollTop=0;
     document.querySelectorAll('.w').forEach(w=>{w.tabIndex=0;w.setAttribute('role','button');w.setAttribute('aria-label','發音 '+w.textContent);});
     document.querySelectorAll('.pop').forEach((pop,i)=>{
       const entry=POPS[PAGES[page].s][i];
@@ -144,11 +158,16 @@
   const status=document.createElement('button');status.id='audioStatus';status.type='button';status.setAttribute('aria-label','重新下載全本語音');$('app').append(status);
   let downloading=false;
   async function preload(){
-    if(downloading)return;downloading=true;status.disabled=true;status.textContent=`↓ 正在預下載 ${PAGES.length} 頁 API 語音…`;
-    const timeout=setTimeout(()=>{status.textContent='語音仍在背景下載中…';},30000);
-    try{const ready=await window.EnglishGoTTS.preloadMany(window.PIP_AUDIO_ITEMS,{limit:PAGES.length,concurrency:2});status.textContent=ready===PAGES.length?`✓ 全本語音已準備好 · ${ready} / ${PAGES.length} 頁`:`↓ 語音已準備 ${ready} / ${PAGES.length} 頁 · 點此重試`;}
-    catch{status.textContent='語音下載未完成 · 點此重試';}
-    finally{clearTimeout(timeout);downloading=false;status.disabled=false;}
+    if(downloading)return;downloading=true;status.disabled=true;status.textContent=`↓ 正在預下載 ${PAGES.length} 頁文章與單字音檔…`;
+    const pages=window.PIP_AUDIO_ITEMS||[],words=Object.values(window.PIP_WORD_AUDIO_ITEMS||{});
+    let pageReady=0,wordReady=0;
+    const show=()=>{status.textContent=`↓ 文章 ${pageReady}/${pages.length} · 單字 ${wordReady}/${words.length}`;};
+    try{
+      pageReady=await window.EnglishGoTTS.preloadMany(pages,{limit:pages.length,concurrency:3,onProgress:n=>{pageReady=n;show();}});
+      wordReady=await window.EnglishGoTTS.preloadMany(words,{limit:words.length,concurrency:3,onProgress:n=>{wordReady=n;show();}});
+      status.textContent=`${pageReady===pages.length&&wordReady===words.length?'✓ 全本語音已備妥':'↓ 點此重試'} · 文章 ${pageReady}/${pages.length} · 單字 ${wordReady}/${words.length}`;
+    }catch{status.textContent='音檔下載未完成 · 點此重試';}
+    finally{downloading=false;status.disabled=false;}
   }
   status.onclick=preload;
   coverArt();render(1);$('card').classList.add('hide');fit();prepareArt(0).catch(()=>{});preload();

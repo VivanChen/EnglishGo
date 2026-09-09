@@ -14,3 +14,14 @@
  .storybook-layout .lamp{display:none}
  .storybook-layout .brand{left:24px;font-size:25px}
 }
+
+@media(min-width:601px){
+ .dori-book #card{width:330px;top:110px;max-height:485px}
+ .dori-book #text{font-size:18px;line-height:1.5}
+ .dori-book #title{font-size:24px}
+ .dori-book #stage{left:350px;width:680px}
+}
+.dori-book .cover{background:linear-gradient(155deg,#4b6659,#20392f 70%)}
+.dori-book .cover .ct{font-size:36px}
+.dori-book .cover .ct small{font-size:17px;line-height:1.5;margin-top:12px}
+.dori-book .cover .zh{color:#e2ead7}

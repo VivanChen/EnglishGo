@@ -27909,5 +27909,37 @@ export const NOVEL_AUDIO_CATALOG = Object.freeze({
   "v1-picture-book-milo-little-storm-c8-en-block-0-b79d11aa81d94c4f": {
     "text": "Milo smiled. A little anger was still there, and that was okay. \"Next time, I can stop, breathe, and use my words.\"",
     "lang": "en-US"
+  },
+  "v1-picture-book-dori-echo-mist-c1-en-block-0-59ce8726cbc4d287": {
+    "text": "Dori, a young triceratops, was exploring a valley with her mother. Ferns brushed against her legs, and the air smelled of rain. \"Stay where I can see you,\" Mother said. \"If we become separated, stop somewhere safe and use our special call: one long sound, then two short ones.\"",
+    "lang": "en-US"
+  },
+  "v1-picture-book-dori-echo-mist-c2-en-block-0-5007415e8c26395c": {
+    "text": "A branch crashed onto the path between them. Dori stepped back, and thick mist hid her mother from view. \"Mom?\" she called. Only dripping leaves answered. Although her heart was racing, she stopped beside a flat stone. Running without a plan might carry her farther away.",
+    "lang": "en-US"
+  },
+  "v1-picture-book-dori-echo-mist-c3-en-block-0-fe2c399a96515db6": {
+    "text": "Several deep footprints crossed the mud nearby. Dori almost followed them, but something looked wrong. These prints were narrow and pointed; her mother left broad, rounded tracks. A large footprint did not always belong to a large friend. She needed better evidence before choosing a direction.",
+    "lang": "en-US"
+  },
+  "v1-picture-book-dori-echo-mist-c4-en-block-0-c07cba757788ff6f": {
+    "text": "Dori made their special call and listened carefully. A faint sound returned from the cliffs. For a moment, she felt hopeful. Then she noticed that it copied her exactly. It was an echo, not an answer. She waited and called again instead of rushing toward the sound.",
+    "lang": "en-US"
+  },
+  "v1-picture-book-dori-echo-mist-c5-en-block-0-f6e2b5ef927d0259": {
+    "text": "Rain began to fill the shallow channel beside the stone. Dori could see the water rising. She moved a few steps uphill to a giant fern, where the ground was dry. The stone was still in sight. This small change gave her shelter without taking her far from the path.",
+    "lang": "en-US"
+  },
+  "v1-picture-book-dori-echo-mist-c6-en-block-0-2563345c1d50def6": {
+    "text": "Under the fern, Dori felt lonely. She wanted to cry, and a few tears slipped down her face. Being brave did not mean feeling no fear. She took slow breaths until her voice was steady. Then she sent their signal through the mist: one long call and two short ones.",
+    "lang": "en-US"
+  },
+  "v1-picture-book-dori-echo-mist-c7-en-block-0-373cb9ff656fe6f9": {
+    "text": "This time, a voice called her name. \"Dori! Stay there. I am coming around the fallen branch.\" She recognized her mother at once. The words were different from her own call, so this could not be an echo. Dori answered from the fern and waited while the heavy footsteps grew closer.",
+    "lang": "en-US"
+  },
+  "v1-picture-book-dori-echo-mist-c8-en-block-0-5e57c7f3446b81c4": {
+    "text": "Mother appeared through the mist and gently touched Dori with her nose. Relief warmed Dori from head to tail. \"I was afraid,\" she admitted. \"And you still made careful choices,\" Mother replied. Together, they returned along the path. Dori had learned to pause, check the clues, and ask for help.",
+    "lang": "en-US"
   }
 });

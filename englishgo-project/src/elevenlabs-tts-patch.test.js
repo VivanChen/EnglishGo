@@ -319,3 +319,24 @@ describe("ElevenLabs TTS patch", () => {
     expect(nativeResume).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('prerecorded storybook audio packs',()=>{
+ it('preloads more than 120 assets and retains the first narration in memory',async()=>{
+  installPatchEnv();globalThis.fetch=vi.fn(()=>Promise.resolve(new Response('mp3',{headers:{'Content-Type':'audio/mpeg'}})));loadPatch();
+  const items=Array.from({length:250},(_,i)=>({text:'word '+i,audioUrl:'/audio/picture-books/test-'+i+'.mp3'}));
+  const progress=vi.fn();expect(await window.EnglishGoTTS.preloadMany(items,{limit:items.length,onProgress:progress})).toBe(250);
+  expect(progress).toHaveBeenLastCalledWith(250,250);
+  await window.EnglishGoTTS.preloadMany([items[0]],{limit:1});expect(globalThis.fetch).toHaveBeenCalledTimes(250);
+ });
+ it('reuses downloaded book audio after restarting the player without a network request',async()=>{
+  const files=new Map();const cache={match:vi.fn(async key=>files.get(key)?.clone()),put:vi.fn(async(key,res)=>files.set(key,res))};
+  Object.defineProperty(window,'caches',{configurable:true,value:{open:vi.fn(async()=>cache)}});
+  try{
+   installPatchEnv();globalThis.fetch=vi.fn(()=>Promise.resolve(new Response('mp3',{headers:{'Content-Type':'audio/mpeg'}})));loadPatch();
+   const item={text:'evidence',audioUrl:'/audio/picture-books/evidence.mp3'};
+   expect(await window.EnglishGoTTS.preloadMany([item],{limit:1})).toBe(1);expect(cache.put).toHaveBeenCalledOnce();
+   installPatchEnv();globalThis.fetch=vi.fn(()=>Promise.reject(Error('offline')));loadPatch();
+   expect(await window.EnglishGoTTS.preloadMany([item],{limit:1})).toBe(1);expect(globalThis.fetch).not.toHaveBeenCalled();
+  }finally{delete window.caches;}
+ });
+});

@@ -1,3 +1,4 @@
+import { DORI_PAGES, DORI_VOCAB, DORI_QUESTIONS } from '../data/doriBook.js';
 import { MILO_PAGES, MILO_VOCAB } from '../data/miloBook.js';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
@@ -64,5 +65,33 @@ describe('Milo storybook',()=>{
    const id=makeNovelAudioAssetId({novelId:'picture-book-milo-little-storm',chapterNo:index+1,lang:'en-US',text:page.x});
    expect(NOVEL_AUDIO_CATALOG[id]).toEqual({text:page.x,lang:'en-US'});
   });
+ });
+});
+
+describe('Dori upper-elementary storybook',()=>{
+ it('offers the new book, bilingual support and evidence-based reading practice',()=>{
+  render(<PictureBooks onBack={vi.fn()} stopSpeech={vi.fn()}/>);
+  fireEvent.click(screen.getByRole('button',{name:'🦕 小恐龍朵里尋找媽媽'}));
+  expect(screen.getByTitle('Dori and the Echo in the Mist 互動立體童書')).toHaveAttribute('src','/picture-books/dori-and-the-echo-in-the-mist.html');
+  expect(screen.getByText(/國小五～六年級/)).toBeVisible();
+  fireEvent.click(screen.getByText('讀後探索 · 4 題推理練習與 3 個句型'));
+  fireEvent.click(screen.getByRole('button',{name:DORI_QUESTIONS[0].options[1],hidden:true}));
+  expect(screen.getByRole('status',{hidden:true})).toHaveTextContent('再看看故事中的線索');
+  fireEvent.click(screen.getByRole('button',{name:DORI_QUESTIONS[0].options[0],hidden:true}));
+  expect(screen.getByRole('status',{hidden:true})).toHaveTextContent('答對了');
+  expect(screen.getByRole('button',{name:'朗讀 evidence 證據',hidden:true})).toBeInTheDocument();
+ });
+ it('keeps generated bilingual text, vocabulary and API recordings aligned',()=>{
+  const built=readFileSync(path.join(process.cwd(),'public/picture-books/dori-and-the-echo-in-the-mist.html'),'utf8');
+  const data=built.slice(built.indexOf('const VOCAB ='),built.indexOf('/* ================= SVG ART'));
+  expect(vm.runInNewContext(data+';({pages:PAGES,vocab:VOCAB})')).toEqual({pages:DORI_PAGES,vocab:DORI_VOCAB});
+  DORI_PAGES.forEach((page,index)=>{
+   expect(page.x.split(/\s+/).length).toBeGreaterThanOrEqual(40);
+   expect(page.z).toMatch(/[\u4e00-\u9fff]/);
+   const id=makeNovelAudioAssetId({novelId:'picture-book-dori-echo-mist',chapterNo:index+1,lang:'en-US',text:page.x});
+   expect(NOVEL_AUDIO_CATALOG[id]).toEqual({text:page.x,lang:'en-US'});
+  });
+  const words=new Set(DORI_PAGES.flatMap(p=>p.x.toLowerCase().match(/[a-z]+/g)));
+  Object.keys(DORI_VOCAB).forEach(word=>expect(words.has(word),word).toBe(true));
  });
 });

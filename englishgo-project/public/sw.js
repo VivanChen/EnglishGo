@@ -58,6 +58,8 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url);
 
   if (request.method !== 'GET') return;
+  // Prerecorded storybook packs have their own persistent audio cache.
+  if (url.origin === location.origin && url.pathname.startsWith('/audio/picture-books/')) return;
 
   // Never cache API/database calls
   const isAPI = url.hostname.includes('supabase.co') ||
