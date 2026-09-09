@@ -1,3 +1,4 @@
+import { MILO_PAGES, MILO_VOCAB } from '../data/miloBook.js';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
@@ -39,4 +40,29 @@ describe('the user supplied Pip book',()=>{
       expect(NOVEL_AUDIO_CATALOG[id]).toEqual({text:page.x,lang:'en-US'});
     });
   });
+});
+
+describe('Milo storybook',()=>{
+ it('switches books, stops the previous reader, and supplies the selected vocabulary',()=>{
+  render(<PictureBooks onBack={vi.fn()} stopSpeech={vi.fn()}/>);
+  const old=screen.getByTitle('Pip and the Lost Star 互動立體童書');
+  const send=vi.spyOn(old.contentWindow,'postMessage');
+  fireEvent.click(screen.getByRole('button',{name:'👑 米洛王子的小風暴'}));
+  expect(send).toHaveBeenCalledWith({type:'pip:stop'},window.location.origin);
+  expect(screen.getByTitle('Prince Milo and the Little Storm 互動立體童書')).toHaveAttribute('src','/picture-books/milo-and-the-little-storm.html');
+  expect(screen.getByRole('button',{name:'朗讀 angry 生氣的',hidden:true})).toBeInTheDocument();
+  expect(screen.queryByRole('button',{name:'朗讀 owl 貓頭鷹',hidden:true})).toBeNull();
+ });
+ it('aligns every bilingual page, scene and fixed API recording',()=>{
+  const built=readFileSync(path.join(process.cwd(),'public/picture-books/milo-and-the-little-storm.html'),'utf8');
+  const data=built.slice(built.indexOf('const VOCAB ='),built.indexOf('/* ================= SVG ART'));
+  const parsed=vm.runInNewContext(data+';({pages:PAGES,vocab:VOCAB})');
+  expect(parsed).toEqual({pages:MILO_PAGES,vocab:MILO_VOCAB});
+  expect(new Set(MILO_PAGES.map(p=>p.s)).size).toBe(8);
+  MILO_PAGES.forEach((page,index)=>{
+   expect(page.z).toMatch(/[\u4e00-\u9fff]/);
+   const id=makeNovelAudioAssetId({novelId:'picture-book-milo-little-storm',chapterNo:index+1,lang:'en-US',text:page.x});
+   expect(NOVEL_AUDIO_CATALOG[id]).toEqual({text:page.x,lang:'en-US'});
+  });
+ });
 });

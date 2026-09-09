@@ -1,3 +1,4 @@
+import { MILO_PAGES } from '../src/data/miloBook.js';
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -49,6 +50,8 @@ for (const book of PICTURE_BOOKS) {
 }
 
 PIP_PAGES.forEach((page,index) => addEntry({ novelId: 'picture-book-pip-lost-star', chapterNo: index+1, lang: 'en-US', text: page.x }));
+
+MILO_PAGES.forEach((page,index) => addEntry({ novelId: 'picture-book-milo-little-storm', chapterNo: index+1, lang: 'en-US', text: page.x }));
 
 const config = {
   chineseAudioVersion: NOVEL_CHINESE_AUDIO_VERSION,

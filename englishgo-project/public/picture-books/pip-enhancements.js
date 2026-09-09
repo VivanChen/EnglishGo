@@ -34,7 +34,7 @@
       let at=Math.min(1,e.currentTime/e.duration)*total, sum=0;
       const index=weights.findIndex(w=>(sum+=w)>at);hl(index<0?tokens.length-1:index);
     };
-    u.onend=()=>{if(!valid())return;clearTimeout(watchdog);playing=false;loading=false;paused=false;clearHl();setPlayBtn();toast(page===7?'Tap → to finish the book':'Tap → to turn the page');};
+    u.onend=()=>{if(!valid())return;clearTimeout(watchdog);playing=false;loading=false;paused=false;clearHl();setPlayBtn();toast(page===PAGES.length-1?'Tap → to finish the book':'Tap → to turn the page');};
     u.onerror=failed;
     S.speak(u);
   };
@@ -76,8 +76,8 @@
         const art=pop.querySelector('svg');if(!art)return;
         art.getAnimations().forEach(a=>a.cancel());
         const key=entry.tag||'';
-        const frames=['star','lamp'].includes(key)?[{transform:'rotate(0)'},{transform:'translateY(-30px) rotate(180deg)'},{transform:'rotate(360deg)'}]:key==='owl'?[{transform:'translate(0,0)'},{transform:'translate(-25px,-45px) rotate(-12deg)'},{transform:'translate(0,0)'}]:key==='fox'?[{transform:'translateY(0)'},{transform:'translateY(-32px) rotate(-5deg)'},{transform:'translateY(0)'}]:[{transform:'rotate(0)'},{transform:'rotate(-10deg)'},{transform:'rotate(10deg)'},{transform:'rotate(0)'}];
-        art.animate(frames,{duration:850,easing:'ease-in-out'});
+        const frames=key==='breathe'?[{transform:'scale(1)'},{transform:'scale(1.2)'},{transform:'scale(1)'}]:['castle','blocks','bridge'].includes(key)?[{transform:'translateY(0)'},{transform:'translateY(-12px) rotate(-3deg)'},{transform:'translateY(0)'}]:['star','lamp'].includes(key)?[{transform:'rotate(0)'},{transform:'translateY(-30px) rotate(180deg)'},{transform:'rotate(360deg)'}]:key==='owl'?[{transform:'translate(0,0)'},{transform:'translate(-25px,-45px) rotate(-12deg)'},{transform:'translate(0,0)'}]:key==='fox'?[{transform:'translateY(0)'},{transform:'translateY(-32px) rotate(-5deg)'},{transform:'translateY(0)'}]:[{transform:'rotate(0)'},{transform:'rotate(-10deg)'},{transform:'rotate(10deg)'},{transform:'rotate(0)'}];
+        art.animate(frames,{duration:key==='breathe'?3600:850,easing:'ease-in-out'});
       }
       pop.addEventListener('pointerdown',respond);
       pop.addEventListener('click',e=>e.stopPropagation());
@@ -110,9 +110,9 @@
   const status=document.createElement('button');status.id='audioStatus';status.type='button';status.setAttribute('aria-label','重新下載全本語音');$('app').append(status);
   let downloading=false;
   async function preload(){
-    if(downloading)return;downloading=true;status.disabled=true;status.textContent='↓ 正在預下載 8 頁 API 語音…';
+    if(downloading)return;downloading=true;status.disabled=true;status.textContent=`↓ 正在預下載 ${PAGES.length} 頁 API 語音…`;
     const timeout=setTimeout(()=>{status.textContent='語音仍在背景下載中…';},30000);
-    try{const ready=await window.EnglishGoTTS.preloadMany(window.PIP_AUDIO_ITEMS,{limit:8,concurrency:2});status.textContent=ready===8?'✓ 全本語音已準備好 · 8 / 8 頁':`↓ 語音已準備 ${ready} / 8 頁 · 點此重試`;}
+    try{const ready=await window.EnglishGoTTS.preloadMany(window.PIP_AUDIO_ITEMS,{limit:PAGES.length,concurrency:2});status.textContent=ready===PAGES.length?`✓ 全本語音已準備好 · ${ready} / ${PAGES.length} 頁`:`↓ 語音已準備 ${ready} / ${PAGES.length} 頁 · 點此重試`;}
     catch{status.textContent='語音下載未完成 · 點此重試';}
     finally{clearTimeout(timeout);downloading=false;status.disabled=false;}
   }

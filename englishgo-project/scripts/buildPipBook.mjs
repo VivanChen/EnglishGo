@@ -1,5 +1,6 @@
 import {readFile,writeFile,mkdir} from 'node:fs/promises';
 import {PIP_PAGES,PIP_VOCAB} from '../src/data/pipBook.js';
+import {MILO_PAGES,MILO_VOCAB} from '../src/data/miloBook.js';
 import {makeNovelAudioItem} from '../src/data/novelAudio.js';
 const root = new URL('../', import.meta.url);
 let html=await readFile(new URL('src/content/pip-and-the-lost-star.html',root),'utf8');
@@ -21,3 +22,16 @@ await mkdir(new URL('public/picture-books/',root),{recursive:true});
 await writeFile(new URL('public/picture-books/pip-and-the-lost-star.html',root),html);
 await writeFile(new URL('public/picture-books/pip-audio-items.js',root),'window.PIP_AUDIO_ITEMS = '+JSON.stringify(items,null,2)+';\n');
 console.log(`Preserved Pip: ${PIP_PAGES.length} pages, ${Object.keys(PIP_VOCAB).length} original vocabulary cards.`);
+
+// Reuse the supplied physical-book engine, with independent story data and scenes.
+let milo=html.replace(/Pip and the Lost Star/g,'Prince Milo and the Little Storm')
+ .replace('Pip and the<br>Lost Star','Prince Milo and<br>the Little Storm')
+ .replace('🦊⭐','🐻👑').replace('Pip counted the stars. One star winked back.','Stop, breathe, and use your words.')
+ .replace(/const VOCAB = [\s\S]*?(?=\/\* ================= SVG ART)/,
+   'const VOCAB = '+JSON.stringify(MILO_VOCAB)+';\nconst PAGES = '+JSON.stringify(MILO_PAGES)+';\n')
+ .replace('/picture-books/pip-audio-items.js','/picture-books/milo-audio-items.js')
+ .replace('/* ================= STATE ================= */',await readFile(new URL('src/content/milo-scenes.js',root),'utf8')+'\n/* ================= STATE ================= */');
+const miloItems=MILO_PAGES.map((p,i)=>makeNovelAudioItem({novelId:'picture-book-milo-little-storm',chapterNo:i+1,lang:'en-US',text:p.x}));
+await writeFile(new URL('public/picture-books/milo-and-the-little-storm.html',root),milo);
+await writeFile(new URL('public/picture-books/milo-audio-items.js',root),'window.PIP_AUDIO_ITEMS = '+JSON.stringify(miloItems,null,2)+';\n');
+console.log(`Original Milo: ${MILO_PAGES.length} pages, ${Object.keys(MILO_VOCAB).length} vocabulary cards.`);

@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prince Milo and the Little Storm · 互動立體童書</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Andika:wght@400;700&family=Noto+Sans+TC:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --wood:#8a5a2c; --wood-dark:#5f3b18; --wood-light:#b57a41;
+  --night:#1c2044; --night-deep:#0f1230;
+  --cream:#fbf3df; --cream-dark:#e9d9b3; --ink:#4b3a2a; --ink-soft:#7a6650;
+  --gold:#f6c445; --gold-dark:#c9931b;
+  --fox:#e8823a; --teal:#2f8f9d; --rose:#d9634f;
+  --shadow:0 10px 26px rgba(20,12,4,.35);
+  --h:'Baloo 2', 'Noto Sans TC', sans-serif;
+  --b:'Andika', 'Noto Sans TC', sans-serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:#2a1a0c;font-family:var(--b);color:var(--ink);overflow:hidden;user-select:none}
+button{font-family:var(--h);cursor:pointer;border:0;background:none}
+button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+
+/* ---------- fixed canvas, scaled to fit ---------- */
+#app{position:absolute;left:50%;top:50%;width:1040px;height:660px;transform-origin:center;
+  background:
+    radial-gradient(ellipse 65% 60% at 32% 22%, rgba(255,214,140,.55), transparent 70%),
+    radial-gradient(ellipse 90% 70% at 50% 110%, rgba(0,0,0,.55), transparent 60%),
+    repeating-linear-gradient(90deg, rgba(255,255,255,.03) 0 3px, transparent 3px 60px),
+    linear-gradient(180deg,#a3652f,#7d4a20 55%,#5a3416);
+  border-radius:22px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.6)}
+#app::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(88deg, transparent 0 40px, rgba(0,0,0,.05) 40px 42px)}
+
+/* lamp glow (top-left) */
+.lamp{position:absolute;left:36px;top:34px;width:150px;height:150px;pointer-events:none;z-index:1;filter:drop-shadow(0 12px 18px rgba(0,0,0,.35))}
+
+/* ---------- top bar ---------- */
+.brand{position:absolute;left:30px;top:22px;z-index:20;font:800 22px/1 var(--h);color:var(--cream);letter-spacing:.5px;text-shadow:0 2px 0 rgba(0,0,0,.35);display:flex;align-items:center;gap:8px}
+.brand span{font-size:26px}
+.stars{position:absolute;left:50%;top:22px;transform:translateX(-50%);display:flex;gap:6px;z-index:20;background:rgba(20,12,4,.45);padding:7px 14px;border-radius:20px}
+.stars i{width:22px;height:22px;display:block;background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='%235b4025' d='M12 1.8l3 6.5 7 .9-5.1 4.9 1.3 7-6.2-3.5L5.8 21l1.3-7L2 9.2l7-.9z'/></svg>") center/contain no-repeat;opacity:.55;transition:transform .3s,opacity .3s}
+.stars i.on{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='%23f6c445' stroke='%23c9931b' stroke-width='1' d='M12 1.8l3 6.5 7 .9-5.1 4.9 1.3 7-6.2-3.5L5.8 21l1.3-7L2 9.2l7-.9z'/></svg>");opacity:1}
+.stars i.now{transform:scale(1.35)}
+.topbtns{position:absolute;right:26px;top:18px;display:flex;gap:10px;z-index:20}
+.round{width:44px;height:44px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#fff8e8,#e6d3a8);box-shadow:0 3px 0 #a67d44,0 6px 12px rgba(0,0,0,.35);font-size:20px;display:grid;place-items:center;color:var(--ink);transition:transform .15s}
+.round:active{transform:translateY(2px);box-shadow:0 1px 0 #a67d44,0 3px 8px rgba(0,0,0,.35)}
+.round.off{opacity:.55}
+
+/* ---------- 3D stage ---------- */
+#stage{position:absolute;left:0;top:0;width:100%;height:100%;perspective:1400px;perspective-origin:50% 22%;z-index:5}
+#book{position:absolute;left:50%;top:50%;width:640px;height:640px;margin:-300px 0 0 -260px;transform-style:preserve-3d;transform:rotateX(58deg) translateY(-26px);}
+.page{position:absolute;left:0;width:640px;height:320px;transform-style:preserve-3d;background:linear-gradient(180deg,#fff9ea,#f5ebd2);box-shadow:inset 0 0 40px rgba(120,80,20,.18)}
+.page.far{top:0;transform-origin:50% 100%;transform:rotateX(-47deg);border-radius:10px 10px 0 0}
+.page.near{top:320px;transform-origin:50% 0;border-radius:0 0 10px 10px}
+.page.near::before{content:"";position:absolute;left:0;right:0;top:0;height:16px;background:linear-gradient(180deg,rgba(60,30,0,.28),transparent)}
+.page.far::after{content:"";position:absolute;left:0;right:0;bottom:0;height:20px;background:linear-gradient(0deg,rgba(60,30,0,.25),transparent)}
+/* book cover boards */
+.board{position:absolute;left:-14px;width:668px;height:334px;background:linear-gradient(135deg,#24305e,#141a3a);border-radius:12px;box-shadow:0 6px 0 #0b0f24;transform:translateZ(-8px)}
+.board.f{top:-14px;transform-origin:50% 100%;transform:rotateX(-47deg) translateZ(-8px)}
+.board.n{top:320px}
+.backdrop{position:absolute;inset:14px 14px 0 14px;overflow:hidden;border-radius:6px 6px 0 0;backface-visibility:hidden}
+.backdrop svg{width:100%;height:100%;display:block}
+.floor{position:absolute;inset:0;overflow:hidden}
+.floor svg{position:absolute;inset:0;width:100%;height:100%}
+
+/* pop-ups: stand vertically on the near page */
+.pop{position:absolute;bottom:0;transform-origin:50% 100%;transform:rotateX(-60deg);transform-style:preserve-3d;will-change:transform;transition:transform .55s cubic-bezier(.34,1.56,.64,1)}
+.pop.down{transform:rotateX(0deg) scaleY(.02)}
+.pop svg{display:block;overflow:visible;filter:drop-shadow(0 6px 4px rgba(0,0,0,.25))}
+.pop .shadow{position:absolute;left:10%;right:10%;bottom:-6px;height:26px;background:radial-gradient(ellipse,rgba(0,0,0,.35),transparent 70%);transform:rotateX(60deg);transform-origin:50% 100%;pointer-events:none}
+.tag{position:absolute;left:50%;transform:translate(-50%,0);background:var(--cream);color:var(--ink);font:700 15px/1 var(--b);padding:6px 10px;border-radius:8px;border:2px dashed #b89a68;box-shadow:0 3px 8px rgba(0,0,0,.3);white-space:nowrap;cursor:pointer;opacity:0;transition:opacity .4s .4s}
+.pop:not(.down) .tag{opacity:1}
+.tag:hover{background:#fff}
+.bob{animation:bob 3.2s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:rotateX(-60deg) translateY(0)}50%{transform:rotateX(-60deg) translateY(-6px)}}
+.pop.bob.down{animation:none}
+
+/* page flip sheet */
+.sheet{position:absolute;left:0;top:320px;width:640px;height:320px;transform-origin:50% 0;transform-style:preserve-3d;pointer-events:none;opacity:0}
+.sheet .f,.sheet .b{position:absolute;inset:0;background:linear-gradient(180deg,#fff9ea,#f1e5c8);backface-visibility:hidden;border-radius:0 0 10px 10px;box-shadow:0 0 30px rgba(0,0,0,.2)}
+.sheet .b{transform:rotateX(180deg);background:linear-gradient(0deg,#fff9ea,#f1e5c8)}
+.sheet.go{opacity:1;animation:flip .9s cubic-bezier(.55,.1,.35,1) forwards}
+.sheet.go.back{animation-name:flipback}
+@keyframes flip{0%{transform:rotateX(0)}100%{transform:rotateX(-178deg)}}
+@keyframes flipback{0%{transform:rotateX(-178deg)}100%{transform:rotateX(0)}}
+
+/* ---------- story card ---------- */
+#card{position:absolute;left:44px;top:150px;width:390px;padding:26px 28px 22px;background:linear-gradient(180deg,#fffaf0,#f8eed6);border-radius:8px;box-shadow:var(--shadow),inset 0 0 0 1px rgba(255,255,255,.7);z-index:15;transition:transform .35s,opacity .3s;cursor:zoom-in}
+#card::before,#card::after{content:"❧";position:absolute;color:#c9a96a;font-size:20px;opacity:.7}
+#card::before{left:10px;top:6px}#card::after{right:10px;bottom:6px;transform:rotate(180deg)}
+#card.zoom{transform:scale(1.28) translate(60px,20px);cursor:zoom-out;z-index:30}
+#card.hide{opacity:0;pointer-events:none}
+.pageno{font:700 11px/1 var(--b);letter-spacing:2px;color:#a08862;margin-bottom:6px}
+#title{font:800 27px/1.15 var(--h);color:#7a4b1f;margin:0 0 12px}
+#text{font:400 22px/1.6 var(--b);color:var(--ink)}
+.w{display:inline-block;padding:0 2px;border-radius:5px;cursor:pointer;transition:background .15s;border-bottom:2px dotted transparent}
+.w.v{border-bottom-color:#c9a96a}
+.w:hover{background:#fbe9b0}
+.w.hl{background:var(--gold);box-shadow:0 0 0 2px var(--gold)}
+.w.said{background:#ffe9a8}
+#zh{font:500 15px/1.6 'Noto Sans TC',sans-serif;color:#8b7150;margin-top:10px;padding-top:8px;border-top:1px dashed #d9c49b;display:none}
+#zh.show{display:block}
+.hint{font:400 11px/1 var(--b);color:#a08862;margin-top:14px}
+
+/* vocab popup */
+#vocab{position:absolute;left:300px;top:190px;width:230px;padding:16px 16px 12px;background:linear-gradient(180deg,#fffdf6,#f5e9cf);border-radius:18px;box-shadow:0 18px 40px rgba(0,0,0,.45),inset 0 0 0 4px #fff,inset 0 0 0 6px #e6d2a4;z-index:32;text-align:center;transform:scale(.6) rotate(-6deg);opacity:0;pointer-events:none;transition:transform .35s cubic-bezier(.34,1.56,.64,1),opacity .25s;cursor:pointer}
+#vocab.show{opacity:1;transform:scale(1) rotate(-2deg);pointer-events:auto}
+#vocab .pic{font-size:78px;line-height:1.1;filter:drop-shadow(0 6px 6px rgba(0,0,0,.2))}
+#vocab .en{font:800 34px/1.1 var(--h);color:#5a3f1e;margin-top:6px}
+#vocab .zh{font:500 17px/1.3 'Noto Sans TC',sans-serif;color:#8b7150;margin-top:4px}
+#vocab .spk{position:absolute;right:10px;top:10px;font-size:18px;opacity:.6}
+
+/* ---------- controls ---------- */
+#controls{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);display:flex;align-items:center;gap:18px;z-index:20}
+.nav{width:58px;height:58px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#fff8e8,#e3cfa2);box-shadow:0 5px 0 #a67d44,0 8px 14px rgba(0,0,0,.4);display:grid;place-items:center;transition:transform .15s}
+.nav svg{width:26px;height:26px}
+.nav:active{transform:translateY(3px);box-shadow:0 2px 0 #a67d44,0 4px 8px rgba(0,0,0,.4)}
+.nav:disabled{opacity:.4;pointer-events:none}
+.mid{display:flex;flex-direction:column;align-items:center;gap:8px}
+#play{min-width:210px;height:54px;border-radius:30px;background:linear-gradient(180deg,#fff9ea,#efdcb0);border:3px solid #b98c4f;box-shadow:0 5px 0 #8f6430,0 8px 16px rgba(0,0,0,.4);font:800 21px var(--h);color:#5a3f1e;display:flex;align-items:center;justify-content:center;gap:10px;transition:transform .15s}
+#play:active{transform:translateY(3px);box-shadow:0 2px 0 #8f6430}
+.modes{display:flex;gap:8px}
+.mode{height:30px;padding:0 14px;border-radius:15px;font:700 13px var(--h);color:#5a3f1e;background:#f3e6c9;border:2px solid #c8ad7a;box-shadow:0 3px 0 #a67d44;display:flex;align-items:center;gap:6px}
+.mode.on{background:var(--rose);color:#fff;border-color:#b24b3a;box-shadow:0 3px 0 #8a3327}
+.mode.on.alt{background:var(--teal);border-color:#226a76;box-shadow:0 3px 0 #1b525c}
+
+/* ---------- cover & end overlays ---------- */
+.overlay{position:absolute;inset:0;z-index:40;display:grid;place-items:center;background:radial-gradient(ellipse at 50% 40%,rgba(28,32,68,.5),rgba(10,8,20,.85));transition:opacity .6s;}
+.overlay.hide{opacity:0;pointer-events:none}
+.cover{width:420px;height:540px;border-radius:14px 22px 22px 14px;background:linear-gradient(160deg,#2c3a75,#151b3f 60%,#0e1230);box-shadow:-10px 0 0 #0b0f24,0 30px 60px rgba(0,0,0,.7),inset 6px 0 0 rgba(255,255,255,.08);position:relative;overflow:hidden;transform:rotate(-4deg);animation:coverin 1s cubic-bezier(.34,1.56,.64,1) both;text-align:center;padding-top:40px}
+@keyframes coverin{from{transform:rotate(-14deg) scale(.7) translateY(80px);opacity:0}to{transform:rotate(-4deg);opacity:1}}
+.cover .ct{font:800 44px/1.05 var(--h);color:var(--gold);text-shadow:0 3px 0 #7a5300,0 8px 20px rgba(0,0,0,.6);padding:0 30px}
+.cover .ct small{display:block;font:700 22px var(--h);color:#f7e5b5;margin-top:6px;text-shadow:none}
+.cover .zh{font:500 16px 'Noto Sans TC',sans-serif;color:#b9c3ff;margin-top:8px}
+.cover svg{position:absolute;left:0;bottom:0;width:100%;height:280px}
+.cover .open{position:absolute;left:50%;bottom:30px;transform:translateX(-50%);height:52px;padding:0 30px;border-radius:26px;background:var(--gold);color:#5a3f1e;font:800 20px var(--h);box-shadow:0 5px 0 var(--gold-dark),0 10px 20px rgba(0,0,0,.5);z-index:2}
+.end{text-align:center;color:var(--cream)}
+.end h2{font:800 60px var(--h);color:var(--gold);margin:0;text-shadow:0 4px 0 #7a5300}
+.end p{font:400 20px var(--b);margin:10px 0 24px;color:#e9e0c8}
+.end .open{height:52px;padding:0 30px;border-radius:26px;background:var(--gold);color:#5a3f1e;font:800 20px var(--h);box-shadow:0 5px 0 var(--gold-dark)}
+.end .big{font-size:80px;margin-bottom:10px;animation:bob2 2s ease-in-out infinite}
+@keyframes bob2{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
+
+/* sparkles */
+.sp{position:absolute;width:6px;height:6px;border-radius:50%;background:#fff6c8;box-shadow:0 0 8px 2px #ffe58a;pointer-events:none;z-index:18;animation:spark .9s ease-out forwards}
+@keyframes spark{0%{transform:scale(1) translateY(0);opacity:1}100%{transform:scale(.1) translateY(-30px);opacity:0}}
+
+/* toast */
+#toast{position:absolute;right:26px;bottom:26px;background:rgba(30,20,8,.85);color:#fff2d0;font:400 13px var(--b);padding:8px 14px;border-radius:10px;z-index:25;opacity:0;transition:opacity .3s;max-width:260px}
+#toast.show{opacity:1}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+<link rel="stylesheet" href="/picture-books/pip-enhancements.css">
+</head>
+<body>
+<div id="app">
+  <svg class="lamp" viewBox="0 0 150 150"><defs><radialGradient id="lg" cx="50%" cy="60%"><stop offset="0" stop-color="#fff2c0"/><stop offset="1" stop-color="#ffd777" stop-opacity="0"/></radialGradient></defs>
+    <ellipse cx="80" cy="120" rx="70" ry="30" fill="url(#lg)"/><path d="M40 20 L110 20 L130 72 L20 72Z" fill="#f8e7b8"/><path d="M40 20 L110 20 L130 72 L20 72Z" fill="url(#lg)" opacity=".6"/><rect x="70" y="72" width="10" height="46" fill="#5a3416"/><ellipse cx="75" cy="120" rx="26" ry="8" fill="#5a3416"/></svg>
+
+  <div class="brand"><span>🏮</span>STORYLIGHT</div>
+  <div class="stars" id="starsRow"></div>
+  <div class="topbtns">
+    <button class="round" id="btnZh" title="中文翻譯">中</button>
+    <button class="round" id="btnSlow" title="慢速朗讀">🐢</button>
+    <button class="round" id="btnSound" title="聲音">🔊</button>
+  </div>
+
+  <div id="stage">
+    <div id="book">
+      <div class="board f"></div><div class="board n"></div>
+      <div class="page far"><div class="backdrop" id="backdrop"></div></div>
+      <div class="page near"><div class="floor" id="floor"></div><div id="pops"></div>
+        <div class="sheet" id="sheet"><div class="f"></div><div class="b"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="card">
+    <div class="pageno" id="pageno">PAGE 1 OF 8</div>
+    <h2 id="title"></h2>
+    <div id="text"></div>
+    <div id="zh"></div>
+    <div class="hint">tap the words to hear them · tap the card to zoom</div>
+  </div>
+
+  <div id="vocab"><span class="spk">🔈</span><div class="pic"></div><div class="en"></div><div class="zh"></div></div>
+
+  <div id="controls">
+    <button class="nav" id="prev" aria-label="Previous page"><svg viewBox="0 0 24 24"><path fill="#3c78c8" stroke="#1d4f8c" stroke-width="1.5" d="M14 4l-8 8 8 8v-5h6v-6h-6z"/></svg></button>
+    <div class="mid">
+      <button id="play"><span id="playIcon">▶</span><span id="playTxt">Read to me</span></button>
+      <div class="modes">
+        <button class="mode on" id="mRead">🎙 Read to me</button>
+        <button class="mode" id="mSelf">📖 I'll read</button>
+      </div>
+    </div>
+    <button class="nav" id="next" aria-label="Next page"><svg viewBox="0 0 24 24"><path fill="#f6c445" stroke="#b5860f" stroke-width="1.5" d="M10 4l8 8-8 8v-5H4V9h6z"/></svg></button>
+  </div>
+
+  <div id="toast"></div>
+
+  <div class="overlay" id="coverOv">
+    <div class="cover">
+      <div class="ct">Prince Milo and<br>the Little Storm<small>一本互動立體童書</small></div>
+      <div class="zh">皮皮與迷路的小星星</div>
+      <svg viewBox="0 0 420 280" id="coverArt"></svg>
+      <button class="open" id="openBook">Open the book ✨</button>
+    </div>
+  </div>
+  <div class="overlay hide" id="endOv">
+    <div class="end"><div class="big">🐻👑</div><h2>The End</h2><p>Stop, breathe, and use your words.<br>你讀完了整本書，太棒了！</p><button class="open" id="again">Read again</button></div>
+  </div>
+</div>
+
+<script src="/elevenlabs-tts-patch.js"></script>
+<script>
+/* ================= STORY DATA ================= */
+const VOCAB = {"prince":["🤴","王子"],"crown":["👑","王冠"],"castle":["🏰","城堡"],"wooden":["🪵","木製的"],"blocks":["🧱","積木"],"block":["🧱","一塊積木"],"ribbon":["🎀","緞帶"],"caught":["🪝","勾住（過去式）"],"fell":["⬇️","倒下（過去式）"],"storm":["🌩️","風暴"],"cheeks":["☺️","臉頰"],"hot":["🌡️","熱的"],"hands":["🙌","雙手"],"tight":["✊","緊緊的"],"angry":["😠","生氣的"],"kick":["🦶","踢"],"feet":["👣","雙腳"],"space":["↔️","空間"],"tree":["🌳","樹"],"waited":["⏳","等待（過去式）"],"belly":["🧸","肚子"],"breathed":["🌬️","呼吸（過去式）"],"slowly":["🐢","慢慢地"],"gently":["🪶","輕輕地"],"open":["👐","張開"],"sad":["😢","難過的"],"sorry":["💛","對不起"],"help":["🤝","幫忙"],"hold":["🤲","扶住"],"wide":["↔️","寬的"],"bridge":["🌉","橋"],"together":["🤝","一起"],"smiled":["😊","微笑（過去式）"],"anger":["💢","生氣的感覺"],"stop":["✋","停下來"],"breathe":["🌬️","呼吸"],"words":["💬","話語"],"rabbit":["🐇","兔子"]};
+const PAGES = [{"t":"A castle for two","s":"build","x":"Prince Milo wore a little crown. He built a castle with wooden blocks. \"Come and play, Ruby!\" he called.","z":"米洛王子戴著小小的王冠。他用木頭積木蓋了一座城堡。「露比，來一起玩！」他喊道。"},{"t":"Crash!","s":"crash","x":"Ruby brought a long ribbon. It caught a block. Crash! The castle fell. Milo felt a storm inside.","z":"露比帶來一條長緞帶。緞帶勾到了一塊積木。轟！城堡倒下了。米洛心裡像颳起了一場風暴。"},{"t":"Hot cheeks","s":"angry","x":"His cheeks felt hot. His hands were tight. \"I am angry!\" shouted Milo. He wanted to kick the blocks.","z":"他的臉頰熱熱的，雙手握得緊緊的。「我好生氣！」米洛大喊。他好想踢那些積木。"},{"t":"A safe place","s":"pause","x":"Milo stopped his feet. \"I need some space,\" he said. He sat by a tree. Ruby waited nearby.","z":"米洛停住了雙腳。「我需要一點空間。」他說。他坐到樹旁。露比在附近等著。"},{"t":"A little breath","s":"breathe","x":"Milo put a hand on his belly. He breathed in slowly, then blew out gently. In and out. His hands began to open.","z":"米洛把一隻手放在肚子上。他慢慢吸氣，再輕輕吐氣。吸氣，吐氣。他的雙手開始放鬆。"},{"t":"Words for the storm","s":"talk","x":"\"I worked hard on my castle. I feel sad and angry,\" said Milo. \"I am sorry,\" said Ruby. \"Can I help you?\"","z":"「我很努力蓋城堡。我又難過又生氣。」米洛說。「對不起。」露比說。「我可以幫你嗎？」"},{"t":"Build it together","s":"repair","x":"\"Yes. Please hold this block,\" said Milo. They built a wide bridge together. Ruby tied her ribbon to the top.","z":"「可以。請幫我扶住這塊積木。」米洛說。他們一起蓋了一座寬寬的橋。露比把緞帶綁在最上面。"},{"t":"Room for every feeling","s":"finish","x":"Milo smiled. A little anger was still there, and that was okay. \"Next time, I can stop, breathe, and use my words.\"","z":"米洛笑了。他心裡還有一點生氣，這也沒關係。「下次，我可以先停下來、呼吸，再把感受說出來。」"}];
+/* ================= SVG ART ================= */
+const A = {
+ fox:(w=150)=>`<svg width="${w}" viewBox="0 0 150 170"><g stroke="#8a4416" stroke-width="2.5" stroke-linejoin="round">
+  <path d="M75 165c-28 0-46-14-46-38 0-22 18-36 46-36s46 14 46 36c0 24-18 38-46 38z" fill="#e8823a"/>
+  <ellipse cx="75" cy="135" rx="24" ry="20" fill="#fff4e3"/>
+  <path d="M118 120c18 6 26 22 22 40-6-4-12-4-20 0 0-14-4-28-2-40z" fill="#e8823a"/><path d="M134 142c6 8 8 14 6 18-4-3-8-3-14 0 2-6 4-12 8-18z" fill="#fff4e3"/>
+  <path d="M28 70L36 18l30 30h18l30-30 8 52c0 30-22 42-43 42S28 100 28 70z" fill="#e8823a"/>
+  <path d="M38 30l16 16-10 18z M112 30l-16 16 10 18z" fill="#fff4e3"/>
+  <path d="M38 74c8 26 24 36 37 36s29-10 37-36c-8-8-24-10-37-10s-29 2-37 10z" fill="#fff4e3"/>
+  </g>
+  <ellipse cx="57" cy="84" rx="6" ry="7" fill="#2b1a0e"/><ellipse cx="93" cy="84" rx="6" ry="7" fill="#2b1a0e"/>
+  <circle cx="59" cy="82" r="2" fill="#fff"/><circle cx="95" cy="82" r="2" fill="#fff"/>
+  <ellipse cx="75" cy="98" rx="7" ry="5" fill="#2b1a0e"/><path d="M68 105q7 6 14 0" stroke="#2b1a0e" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <ellipse cx="47" cy="94" rx="7" ry="4" fill="#f5a48b" opacity=".7"/><ellipse cx="103" cy="94" rx="7" ry="4" fill="#f5a48b" opacity=".7"/>
+  <path d="M30 118c-12 6-14 16-8 24 8 2 16 0 22-6" fill="#d9634f" stroke="#a83f2f" stroke-width="2"/></svg>`,
+ star:(w=90,sad=false)=>`<svg width="${w}" viewBox="0 0 100 100"><g class="glow"><path d="M50 4l13 30 32 3-24 21 7 32-28-17-28 17 7-32L5 37l32-3z" fill="#ffd94a" stroke="#c9931b" stroke-width="3" stroke-linejoin="round"/>
+  <circle cx="40" cy="48" r="4" fill="#5a3f1e"/><circle cx="60" cy="48" r="4" fill="#5a3f1e"/>
+  ${sad?'<path d="M40 66q10-7 20 0" stroke="#5a3f1e" stroke-width="3" fill="none" stroke-linecap="round"/><ellipse cx="66" cy="56" rx="3" ry="5" fill="#8cc8ff"/>':'<path d="M40 60q10 10 20 0" stroke="#5a3f1e" stroke-width="3" fill="none" stroke-linecap="round"/>'}
+  <ellipse cx="32" cy="58" rx="5" ry="3" fill="#ffab8c" opacity=".8"/><ellipse cx="68" cy="58" rx="5" ry="3" fill="#ffab8c" opacity=".8"/></g></svg>`,
+ house:(w=170)=>`<svg width="${w}" viewBox="0 0 170 190"><path d="M10 80L85 14l75 66v106H10z" fill="#d9a066" stroke="#7a4b1f" stroke-width="3"/><path d="M0 84L85 6l85 78-12 8-73-66-73 66z" fill="#a83f2f" stroke="#6d2a1e" stroke-width="3"/>
+  <rect x="112" y="24" width="18" height="30" fill="#7a4b1f"/><rect x="68" y="120" width="34" height="66" rx="17" fill="#6d2a1e"/><circle cx="94" cy="156" r="3" fill="#ffd94a"/>
+  <rect x="24" y="98" width="30" height="30" rx="3" fill="#ffe08a" stroke="#7a4b1f" stroke-width="3"/><rect x="116" y="98" width="30" height="30" rx="3" fill="#ffe08a" stroke="#7a4b1f" stroke-width="3"/>
+  <path d="M39 98v30M24 113h30M131 98v30M116 113h30" stroke="#7a4b1f" stroke-width="2.5"/></svg>`,
+ tree:(w=110,c='#2f6f4e')=>`<svg width="${w}" viewBox="0 0 110 180"><rect x="47" y="130" width="16" height="50" fill="#6d3f1e"/><path d="M55 8l38 58H70l32 46H62l40 48H8l40-48H8l32-46H17z" fill="${c}" stroke="#1d4a33" stroke-width="3" stroke-linejoin="round"/></svg>`,
+ bush:(w=140,c='#3a8a5c')=>`<svg width="${w}" viewBox="0 0 140 70"><path d="M8 68c-6-26 14-40 34-30 6-22 40-26 52-6 22-10 46 8 40 36z" fill="${c}" stroke="#1d4a33" stroke-width="3"/></svg>`,
+ cloud:(w=140)=>`<svg width="${w}" viewBox="0 0 140 70"><path d="M20 66c-16 0-20-24-4-30 0-24 34-30 44-12 10-14 38-10 40 8 22-4 34 22 16 34z" fill="#f3f6ff" stroke="#c9d3ef" stroke-width="3"/></svg>`,
+ owl:(w=90)=>`<svg width="${w}" viewBox="0 0 90 110"><path d="M45 105c-24 0-36-16-36-46 0-28 14-52 36-52s36 24 36 52c0 30-12 46-36 46z" fill="#7a5230" stroke="#4a2e14" stroke-width="3"/><path d="M14 22l8 24 12-10zM76 22l-8 24-12-10z" fill="#7a5230" stroke="#4a2e14" stroke-width="3"/>
+  <circle cx="31" cy="46" r="13" fill="#fff4d6" stroke="#4a2e14" stroke-width="3"/><circle cx="59" cy="46" r="13" fill="#fff4d6" stroke="#4a2e14" stroke-width="3"/><circle cx="33" cy="48" r="6" fill="#2b1a0e"/><circle cx="61" cy="48" r="6" fill="#2b1a0e"/>
+  <path d="M45 56l-6 8h12z" fill="#f6a723"/><path d="M28 78q17 14 34 0M30 90q15 10 30 0" stroke="#4a2e14" stroke-width="2" fill="none"/></svg>`,
+ basket:(w=120)=>`<svg width="${w}" viewBox="0 0 120 100"><path d="M12 44h96l-10 50H22z" fill="#c98b4b" stroke="#7a4b1f" stroke-width="3"/><path d="M22 58h76M20 72h80M40 44v50M60 44v50M80 44v50" stroke="#7a4b1f" stroke-width="2"/><path d="M30 44C30 10 90 10 90 44" fill="none" stroke="#7a4b1f" stroke-width="6" stroke-linecap="round"/></svg>`,
+ rock:(w=120)=>`<svg width="${w}" viewBox="0 0 120 70"><path d="M6 66C0 40 22 20 54 18c30-2 60 14 60 46z" fill="#8c8ea0" stroke="#4e5063" stroke-width="3"/><path d="M40 40l10 8M70 30l12 12" stroke="#4e5063" stroke-width="2"/></svg>`,
+ moon:(w=100)=>`<svg width="${w}" viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="#fff1b8"/><circle cx="36" cy="40" r="6" fill="#efd98f"/><circle cx="58" cy="62" r="9" fill="#efd98f"/><circle cx="62" cy="34" r="4" fill="#efd98f"/></svg>`
+};
+function skyBase(kind){
+  const st=[];for(let i=0;i<40;i++){st.push(`<circle cx="${(i*173)%732+8}" cy="${(i*97)%200+10}" r="${1+(i%3)*.7}" fill="#fff" opacity="${.5+(i%5)*.1}"/>`)}
+  const g={hill:'#2c3a75,#1a2050',garden:'#2a3474,#151a40',meet:'#2f3a80,#171c48',walk:'#334a8a,#1a2050',forest:'#101a2c,#0a0f1c',mountain:'#1b2a5e,#0f1230',top:'#3a2b7a,#120f2e',end:'#1c2044,#0b0d22'}[kind];
+  return `<defs><linearGradient id="sk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${g.split(',')[0]}"/><stop offset="1" stop-color="${g.split(',')[1]}"/></linearGradient></defs><rect width="732" height="376" fill="url(#sk)"/>${st.join('')}`;
+}
+const BACK = {
+ hill:()=>`<svg viewBox="0 0 732 376">${skyBase('hill')}<g transform="translate(600,50)"><circle r="34" fill="#fff1b8"/><circle cx="-10" cy="-8" r="5" fill="#efd98f"/><circle cx="8" cy="12" r="8" fill="#efd98f"/></g>
+   <path d="M0 300Q180 180 366 250T732 230V376H0z" fill="#3c5e8a"/><path d="M0 330Q200 260 420 300T732 280V376H0z" fill="#2f4d78"/></svg>`,
+ garden:()=>`<svg viewBox="0 0 732 376">${skyBase('garden')}<path d="M540 40 L420 200" stroke="#fff6b0" stroke-width="3" stroke-linecap="round" opacity=".9"/><path d="M560 24 L500 110" stroke="#fff6b0" stroke-width="5" stroke-linecap="round" opacity=".5"/>
+   <path d="M0 290Q200 220 400 270T732 250V376H0z" fill="#3c5e8a"/><path d="M0 330Q240 290 732 320V376H0z" fill="#2f6f4e"/></svg>`,
+ meet:()=>`<svg viewBox="0 0 732 376">${skyBase('meet')}<path d="M0 300Q180 220 366 260T732 240V376H0z" fill="#2f6f4e"/><path d="M0 340Q240 300 732 330V376H0z" fill="#276044"/>
+   ${[60,180,320,470,620].map(x=>`<g transform="translate(${x},350)"><rect x="-2" y="-30" width="4" height="30" fill="#2a8a52"/><circle cy="-34" r="9" fill="${['#f28cb8','#ffd166','#c77dff','#ff8fa3','#8ce0ff'][x%5]}"/></g>`).join('')}</svg>`,
+ walk:()=>`<svg viewBox="0 0 732 376">${skyBase('walk')}<path d="M0 260Q250 120 500 220T732 180V376H0z" fill="#4a7a5a"/><path d="M0 320Q300 240 732 300V376H0z" fill="#3b6a4c"/>
+   <path d="M120 376Q300 300 560 320" stroke="#c9b58a" stroke-width="14" fill="none" stroke-linecap="round" opacity=".7"/></svg>`,
+ forest:()=>`<svg viewBox="0 0 732 376">${skyBase('forest')}${[30,120,220,330,430,540,640].map((x,i)=>`<path d="M${x} 376 L${x+50} ${60+i*20} L${x+100} 376z" fill="#14332a"/>`).join('')}
+   ${[80,280,480,600].map((x,i)=>`<path d="M${x} 376 L${x+45} ${150+i*15} L${x+90} 376z" fill="#0f2820"/>`).join('')}</svg>`,
+ mountain:()=>`<svg viewBox="0 0 732 376">${skyBase('mountain')}<path d="M0 376L200 90 330 220 470 60 732 376z" fill="#4a5a8c"/><path d="M200 90l-30 60 30 20 30-20zM470 60l-36 70 36 24 36-24z" fill="#e9eefb"/><path d="M0 376L120 260 260 340 400 240 560 330 732 250V376z" fill="#33437a"/></svg>`,
+ top:()=>`<svg viewBox="0 0 732 376">${skyBase('top')}<circle cx="366" cy="120" r="70" fill="#fff1b8" opacity=".15"/><circle cx="366" cy="120" r="44" fill="#fff1b8"/><circle cx="350" cy="110" r="6" fill="#efd98f"/><circle cx="380" cy="132" r="9" fill="#efd98f"/>
+   ${[100,240,500,640].map((x,i)=>`<path d="M${x} ${40+i*30}l6 14 15 2-11 10 3 15-13-8-13 8 3-15-11-10 15-2z" fill="#ffe57a" opacity=".9"/>`).join('')}
+   <path d="M0 376L100 300 220 340 366 260 520 340 640 300 732 376z" fill="#2b2f66"/></svg>`,
+ end:()=>`<svg viewBox="0 0 732 376">${skyBase('end')}<g transform="translate(560,90)"><path d="M0-40l12 28 30 4-22 20 6 30-26-16-26 16 6-30-22-20 30-4z" fill="#ffe57a" stroke="#f6c445" stroke-width="2"/><circle cx="-9" cy="-4" r="3" fill="#5a3f1e"/><path d="M4-6q6-4 12 0" stroke="#5a3f1e" stroke-width="2.5" fill="none" stroke-linecap="round"/><path d="M-10 8q10 8 20 0" stroke="#5a3f1e" stroke-width="2.5" fill="none" stroke-linecap="round"/></g>
+   <path d="M0 300Q180 200 366 250T732 230V376H0z" fill="#33437a"/><path d="M0 340Q240 290 732 320V376H0z" fill="#26325f"/></svg>`
+};
+/* pop-ups: {x,y(depth 0..1),html,tag,cls} — y=0 near bottom (front), 1 back */
+for (const name of ['fox','tree','basket','owl','house']) {
+  A[name] = (w=150) => {
+    const h = ['house','basket'].includes(name) ? 140 : 190;
+    return '<svg width="'+w+'" viewBox="0 0 150 '+h+'"><image href="/images/picture-books/'+name+'-paper.png" width="150" height="'+h+'" preserveAspectRatio="xMidYMax meet"/></svg>';
+  };
+}
+const POPS = {
+ hill:[{x:520,y:.85,h:A.house(190),tag:'house'},{x:80,y:.7,h:A.tree(110),tag:'tree'},{x:310,y:.15,h:A.fox(150),tag:'fox',bob:1},{x:600,y:.2,h:A.bush(150),tag:'bush'}],
+ garden:[{x:60,y:.8,h:A.house(160)},{x:520,y:.75,h:A.tree(100,'#3a8a5c'),tag:'tree'},{x:310,y:.15,h:A.fox(140)},{x:500,y:.15,h:A.star(80),tag:'star',bob:1},{x:560,y:.1,h:A.bush(140,'#4a9d6a'),tag:'garden'}],
+ meet:[{x:120,y:.5,h:A.bush(150,'#3a8a5c')},{x:310,y:.12,h:A.fox(150),tag:'fox'},{x:490,y:.08,h:A.star(90,true),tag:'star',bob:1},{x:540,y:.6,h:A.tree(110,'#3a8a5c')}],
+ walk:[{x:40,y:.8,h:A.tree(100)},{x:600,y:.7,h:A.tree(120)},{x:310,y:.15,h:A.fox(150),tag:'fox'},{x:470,y:.12,h:A.basket(110),tag:'basket'},{x:495,y:.3,h:A.star(60),bob:1},{x:520,y:.05,h:A.bush(130),tag:'grass'}],
+ forest:[{x:20,y:.75,h:A.tree(120,'#1f5a40')},{x:150,y:.45,h:A.tree(130,'#2a6a4a')},{x:560,y:.7,h:A.tree(120,'#1f5a40')},{x:640,y:.3,h:A.tree(100,'#2a6a4a')},{x:310,y:.12,h:A.fox(140),tag:'fox'},{x:480,y:.15,h:A.star(90),tag:'lamp',bob:1},{x:590,y:.5,h:A.owl(90),tag:'owl',bob:1}],
+ mountain:[{x:60,y:.6,h:A.rock(140),tag:'rock'},{x:560,y:.55,h:A.rock(160)},{x:310,y:.15,h:A.fox(150),tag:'fox'},{x:490,y:.25,h:A.star(100),tag:'star',bob:1},{x:420,y:.85,h:A.cloud(160),tag:'wind',bob:1},{x:80,y:.9,h:A.cloud(120)}],
+ top:[{x:30,y:.7,h:A.cloud(170),tag:'sky'},{x:560,y:.75,h:A.cloud(150)},{x:310,y:.12,h:A.fox(150),tag:'fox'},{x:500,y:.5,h:A.star(110),tag:'star',bob:1},{x:520,y:.2,h:A.rock(150),tag:'top'}],
+ end:[{x:540,y:.8,h:A.house(180),tag:'home'},{x:70,y:.65,h:A.tree(110)},{x:310,y:.12,h:A.fox(150),tag:'fox',bob:1},{x:610,y:.15,h:A.bush(140)}]
+};
+const FLOOR = {
+ hill:'#7aa76c',garden:'#6b9d5d',meet:'#5f9a58',walk:'#6a9a62',forest:'#3a5e46',mountain:'#8d94a8',top:'#6f6fa8',end:'#6f9a68'
+};
+function floorSvg(kind){
+  const c=FLOOR[kind];
+  return `<svg viewBox="0 0 640 320" preserveAspectRatio="none"><defs><linearGradient id="fl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${c}"/><stop offset="1" stop-color="#fbf3df"/></linearGradient></defs>
+    <path d="M0 0H640V200Q320 270 0 200z" fill="url(#fl)"/>${Array.from({length:18},(_,i)=>`<path d="M${(i*137)%620+10} ${30+(i*53)%150}q6-14 12 0" stroke="rgba(255,255,255,.35)" stroke-width="2" fill="none"/>`).join('')}</svg>`;
+}
+function coverArt(){
+  document.getElementById('coverArt').innerHTML=`<path d="M0 220Q120 150 260 200T420 180V280H0z" fill="#3c5e8a"/><path d="M0 250Q200 210 420 240V280H0z" fill="#2f4d78"/>
+   <g transform="translate(70,30) scale(.95)">${A.fox(150).replace('<svg','<svg x="0" y="0"')}</g><g transform="translate(250,60)">${A.star(110).replace('<svg','<svg x="0" y="0"')}</g>`;
+}
+
+// Scene adapters for the shared pop-up engine. Existing watercolor cutouts stay local.
+const paper=(name,w=150)=>`<svg width="${w}" viewBox="0 0 150 190"><image href="/images/picture-books/${name}-paper.png" width="150" height="190" preserveAspectRatio="xMidYMax meet"/></svg>`;
+const prince=(w=160)=>`<svg width="${w}" viewBox="0 0 150 210"><image href="/images/picture-books/bear-paper.png" y="20" width="150" height="190" preserveAspectRatio="xMidYMax meet"/><path d="M51 35L47 13 63 23 75 5 88 23 103 13 98 35Z" fill="#d4ad59" stroke="#84642f" stroke-width="1.5"/><path d="M53 31H96" stroke="#f4dfa1" stroke-width="3"/></svg>`;
+const blocks=(fallen=false,bridge=false)=>`<svg width="200" viewBox="0 0 200 150"><defs><linearGradient id="wood"><stop stop-color="#e0bd87"/><stop offset="1" stop-color="#af7950"/></linearGradient></defs>${(fallen?[[15,110,45,24,-12],[72,104,35,30,15],[122,112,42,25,-8]]:bridge?[[20,65,40,75,0],[140,65,40,75,0],[20,45,160,25,0]]:[[30,65,45,75,0],[125,65,45,75,0],[68,90,65,50,0],[30,43,45,25,0],[125,43,45,25,0],[75,22,50,25,0]]).map(([x,y,w,h,r])=>`<g transform="rotate(${r} ${x+w/2} ${y+h/2})"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="3" fill="url(#wood)" stroke="#896444"/><path d="M${x+4} ${y+7}h${w-8}M${x+5} ${y+h-5}h${w-10}" stroke="#f1d3a3" opacity=".6"/></g>`).join('')}${bridge?'<path d="M150 45V10m0 0q25-10 35 4l-10 8-25-4" stroke="#b75c68" fill="#d98a91" stroke-width="3"/>':''}</svg>`;
+const breath=()=>`<svg width="130" viewBox="0 0 150 120"><path d="M28 86C4 84 5 48 29 46 20 11 79 2 88 34 127 13 155 74 119 86Z" fill="#f2eee4" stroke="#b9c9c3" stroke-width="2"/><path d="M38 58q30-20 64 0M43 70q25-16 49 0" stroke="#829f96" stroke-width="3" fill="none" stroke-linecap="round"/></svg>`;
+PAGES.forEach((p,i)=>{
+ BACK[p.s]=()=>`<svg viewBox="0 0 732 376"><defs><linearGradient id="day" x2="0" y2="1"><stop stop-color="${i===2?'#b5adb5':'#c6d9d1'}"/><stop offset="1" stop-color="#f1e5c9"/></linearGradient></defs><rect width="732" height="376" fill="url(#day)"/><circle cx="585" cy="78" r="38" fill="#f9edc8" opacity=".85"/><path d="M0 270Q160 175 360 260T732 230V376H0Z" fill="#a4b29a"/><path d="M0 320Q220 245 440 315T732 285V376H0Z" fill="#788f78"/><image href="/images/picture-books/tree-paper.png" x="25" y="65" width="175" height="290"/><image href="/images/picture-books/tree-paper.png" x="560" y="120" width="150" height="230"/></svg>`;
+ FLOOR[p.s]='#b4b58f';
+ POPS[p.s]=[{x:250,y:.12,h:prince(),tag:'prince'},{x:565,y:.3,h:paper('rabbit',120),tag:'rabbit'},
+ ...(i===3?[{x:100,y:.7,h:paper('tree',150),tag:'tree'}]:i===4?[{x:390,y:.5,h:breath(),tag:'breathe',bob:1}]:[{x:385,y:.05,h:blocks(i>0&&i<6,i>=6),tag:i>0&&i<6?'blocks':i>=6?'bridge':'castle'}]),
+ ...(i===2?[{x:300,y:.85,h:breath(),tag:'anger'}]:[])];
+});
+coverArt=function(){document.getElementById('coverArt').innerHTML=`<path d="M0 230Q180 170 420 230V280H0Z" fill="#a3ad88"/><g transform="translate(35,20)">${prince(165)}</g><g transform="translate(210,100)">${blocks()}</g>`;};
+
+/* ================= STATE ================= */
+let page=0, mode='read', playing=false, slow=false, sound=true, tokens=[], utter=null, timers=[], boundaryFired=false;
+const $=id=>document.getElementById(id);
+const S=window.speechSynthesis;
+
+/* ---------- scale canvas ---------- */
+function fit(){const s=Math.min(innerWidth/1040,innerHeight/660);$('app').style.transform=`translate(-50%,-50%) scale(${s})`}
+addEventListener('resize',fit);fit();
+
+/* ---------- stars ---------- */
+const sr=$('starsRow');PAGES.forEach(()=>sr.appendChild(document.createElement('i')));
+function drawStars(){[...sr.children].forEach((el,i)=>{el.classList.toggle('on',i<=page);el.classList.toggle('now',i===page)})}
+
+/* ---------- speech ---------- */
+let voice=null;
+function pickVoice(){const v=S.getVoices();voice=v.find(x=>/en[-_]US/i.test(x.lang)&&/Google|Samantha|Aria|Jenny|Zira|Natural/i.test(x.name))||v.find(x=>/en[-_]US/i.test(x.lang))||v.find(x=>/^en/i.test(x.lang))||null}
+if(S){pickVoice();S.onvoiceschanged=pickVoice}
+function say(text,cb){
+  if(!S||!sound){cb&&cb();return}
+  S.cancel();const u=new SpeechSynthesisUtterance(text);if(voice)u.voice=voice;u.lang='en-US';u.rate=slow?.65:.88;u.pitch=1.05;u.onend=()=>cb&&cb();S.speak(u);return u;
+}
+
+/* ---------- render page ---------- */
+function tokenize(text){
+  tokens=[];let re=/[A-Za-z']+|[^A-Za-z'\s]+|\s+/g,m,i=0,html='';
+  while((m=re.exec(text))){const s=m[0];
+    if(/^[A-Za-z']+$/.test(s)){const key=s.toLowerCase().replace(/^'|'$/g,'');const v=VOCAB[key]?' v':'';html+=`<span class="w${v}" data-i="${i}" data-w="${key}">${s}</span>`;tokens.push({i,start:m.index,end:m.index+s.length,w:key});i++}
+    else html+=s.replace(/\n/g,' ');
+  }
+  return html;
+}
+function render(dir){
+  const p=PAGES[page];
+  $('pageno').textContent=`PAGE ${page+1} OF ${PAGES.length}`;
+  $('title').textContent=p.t;$('text').innerHTML=tokenize(p.x);$('zh').textContent=p.z;
+  $('backdrop').innerHTML=BACK[p.s]();$('floor').innerHTML=floorSvg(p.s);
+  const box=$('pops');box.innerHTML='';
+  POPS[p.s].forEach((o,k)=>{
+    const d=document.createElement('div');d.className='pop down'+(o.bob?' bob':'');
+    d.style.left=Math.round(o.x*.84)+'px';d.style.bottom=(70+o.y*190)+'px';d.style.zIndex=Math.round((1-o.y)*10);
+    d.innerHTML=o.h+'<div class="shadow"></div>'+(o.tag?`<div class="tag" style="top:-34px">${o.tag}</div>`:'');
+    d.addEventListener('pointerdown',e=>{e.stopPropagation();const key=(o.tag||'').toLowerCase();
+      d.style.transition='transform .2s';d.style.transform='rotateX(-60deg) scale(1.08)';setTimeout(()=>{d.style.transition='';d.style.transform=''},220);
+      if(o.tag){showVocab(key,d)}});
+    box.appendChild(d);
+    setTimeout(()=>d.classList.remove('down'),120+k*90);
+  });
+  drawStars();
+  $('prev').disabled=page===0;
+  $('card').classList.remove('hide');
+  setPlayBtn();
+}
+function go(n,dir){
+  if(n<0)return;
+  stopRead(true);
+  if(n>=PAGES.length){$('endOv').classList.remove('hide');return}
+  const sh=$('sheet');sh.className='sheet go'+(dir<0?' back':'');
+  document.querySelectorAll('.pop').forEach(p=>p.classList.add('down'));
+  $('card').classList.add('hide');
+  setTimeout(()=>{page=n;render(dir);if(mode==='read'&&autoRead)startRead()},480);
+  setTimeout(()=>{sh.className='sheet'},950);
+}
+
+/* ---------- read to me with word highlight ---------- */
+let autoRead=true;
+function clearHl(){document.querySelectorAll('.w.hl').forEach(e=>e.classList.remove('hl'));timers.forEach(clearTimeout);timers=[]}
+function hl(i){clearHl();const el=document.querySelector(`.w[data-i="${i}"]`);if(el){el.classList.add('hl')}}
+function startRead(){
+  if(!S||!sound){toast('此瀏覽器不支援語音，請切換到「I\'ll read」模式');return}
+  S.cancel();clearHl();const text=PAGES[page].x;
+  utter=new SpeechSynthesisUtterance(text);if(voice)utter.voice=voice;utter.lang='en-US';utter.rate=slow?.65:.88;utter.pitch=1.05;
+  boundaryFired=false;
+  utter.onboundary=e=>{if(e.name&&e.name!=='word')return;boundaryFired=true;timers.forEach(clearTimeout);timers=[];
+    const t=tokens.find(t=>e.charIndex>=t.start&&e.charIndex<t.end)||tokens.find(t=>t.start>=e.charIndex);if(t)hl(t.i)};
+  utter.onend=()=>{playing=false;clearHl();setPlayBtn();document.querySelectorAll('.w').forEach(w=>w.classList.remove('said'));toast(page<PAGES.length-1?'Tap ▶ next to turn the page  →':'Tap → to finish the book')};
+  utter.onerror=()=>{playing=false;setPlayBtn()};
+  playing=true;setPlayBtn();S.speak(utter);
+  /* fallback timing if no boundary events (e.g. Safari) */
+  setTimeout(()=>{if(boundaryFired||!playing)return;const per=(slow?520:340);tokens.forEach((t,k)=>timers.push(setTimeout(()=>{if(playing)hl(t.i)},k*per)))},700);
+}
+function stopRead(hard){if(S)S.cancel();playing=false;paused=false;clearHl();setPlayBtn()}
+let paused=false;
+function setPlayBtn(){
+  const b=$('play');
+  if(mode==='self'){$('playIcon').textContent='🔈';$('playTxt').textContent='Read this page';return}
+  if(playing&&!paused){$('playIcon').textContent='❚❚';$('playTxt').textContent='Pause'}
+  else if(paused){$('playIcon').textContent='▶';$('playTxt').textContent='Keep reading'}
+  else{$('playIcon').textContent='▶';$('playTxt').textContent='Read to me'}
+}
+$('play').onclick=()=>{
+  if(mode==='self'){startRead();return}
+  if(playing&&!paused){S.pause();paused=true;setPlayBtn();return}
+  if(paused){S.resume();paused=false;setPlayBtn();return}
+  startRead();
+};
+
+/* ---------- word / vocab ---------- */
+$('text').addEventListener('click',e=>{const w=e.target.closest('.w');if(!w)return;e.stopPropagation();
+  if(playing){stopRead()}
+  w.classList.add('said');setTimeout(()=>w.classList.remove('said'),700);
+  showVocab(w.dataset.w,null,w.textContent);
+});
+function showVocab(key,anchor,word){
+  const v=VOCAB[key];const box=$('vocab');
+  say(word||key);
+  if(!v){box.classList.remove('show');return}
+  box.querySelector('.pic').textContent=v[0];box.querySelector('.en').textContent=word||key;box.querySelector('.zh').textContent=v[1];
+  box.classList.add('show');clearTimeout(box._t);box._t=setTimeout(()=>box.classList.remove('show'),2600);
+}
+$('vocab').onclick=e=>{e.stopPropagation();say($('vocab').querySelector('.en').textContent)};
+$('card').addEventListener('click',e=>{if(e.target.closest('.w'))return;$('card').classList.toggle('zoom')});
+
+/* ---------- modes / buttons ---------- */
+$('mRead').onclick=()=>{mode='read';autoRead=true;$('mRead').classList.add('on');$('mSelf').classList.remove('on','alt');setPlayBtn()};
+$('mSelf').onclick=()=>{mode='self';autoRead=false;stopRead();$('mSelf').classList.add('on','alt');$('mRead').classList.remove('on');setPlayBtn();toast('你自己讀，點單字可以聽發音')};
+$('btnZh').onclick=()=>{$('zh').classList.toggle('show');$('btnZh').classList.toggle('off',!$('zh').classList.contains('show'))};$('btnZh').classList.add('off');
+$('btnSlow').onclick=()=>{slow=!slow;$('btnSlow').classList.toggle('off',!slow);toast(slow?'慢速朗讀 🐢':'正常速度');if(playing)startRead()};$('btnSlow').classList.add('off');
+$('btnSound').onclick=()=>{sound=!sound;$('btnSound').textContent=sound?'🔊':'🔇';if(!sound)stopRead()};
+$('prev').onclick=()=>go(page-1,-1);$('next').onclick=()=>go(page+1,1);
+addEventListener('keydown',e=>{if(e.target.closest('button,[role=button]')||e.ctrlKey||e.metaKey||e.altKey)return;if(e.key==='ArrowRight')go(page+1,1);if(e.key==='ArrowLeft')go(page-1,-1);if(e.key===' '){e.preventDefault();$('play').click()}});
+$('openBook').onclick=()=>{$('coverOv').classList.add('hide');page=0;render(1);setTimeout(()=>{if(mode==='read')startRead()},900)};
+$('again').onclick=()=>{$('endOv').classList.add('hide');page=0;render(1);setTimeout(()=>{if(mode==='read')startRead()},900)};
+document.addEventListener('click',()=>$('vocab').classList.remove('show'));
+
+/* ---------- sparkles ---------- */
+let last=0;
+$('stage').addEventListener('pointermove',e=>{const now=performance.now();if(now-last<40)return;last=now;
+  const r=$('app').getBoundingClientRect(),s=r.width/1040;const d=document.createElement('div');d.className='sp';
+  d.style.left=((e.clientX-r.left)/s-3+(Math.random()*10-5))+'px';d.style.top=((e.clientY-r.top)/s-3)+'px';$('app').appendChild(d);setTimeout(()=>d.remove(),900)});
+
+function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2800)}
+
+coverArt();render(1);$('card').classList.add('hide');
+</script>
+<script src="/picture-books/milo-audio-items.js"></script>
+<script src="/picture-books/pip-enhancements.js"></script>
+</body>
+</html>
