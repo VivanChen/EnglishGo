@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { followPageAnchor } from '../data/pageAnchors.js';
 import ArcadeDiscovery from './ArcadeDiscovery.jsx';
 
 const paths = {
@@ -56,14 +57,14 @@ export function ComfortControls({ dark, setDark, calm, setCalm, quiet, setQuiet 
 
 export function WelcomeScreen({ levels, counts, formatCount, onSelect, comfort, lastLevel }) {
   return <div className="eg-welcome">
-    <a className="eg-skip" href="#choose-level">跳到學習階段</a>
+    <a className="eg-skip" href="#choose-level" onClick={followPageAnchor}>跳到學習階段</a>
     <header className="eg-welcome-top"><Brand/><ComfortControls {...comfort}/></header>
     <main className="eg-welcome-main">
       <section className="eg-welcome-hero">
-        <div><span className="eg-eyebrow"><span className="eg-live-dot"/> 給每個好奇的小小學習家</span><h1>讓好奇心發芽，<br/>一起<span>玩出英文力。</span></h1><p>聽一聽、說一說，和小夥伴探索英文。<br/>從一個單字開始，每一小步都算數。</p><a href="#choose-level" className="eg-primary">開始我的學習旅程 <LearningIcon name="arrow" size={19}/></a><div className="eg-welcome-note">免費學習 <span>·</span> 沒有廣告 <span>·</span> 照自己的步調</div></div>
+        <div><span className="eg-eyebrow"><span className="eg-live-dot"/> 給每個好奇的小小學習家</span><h1>讓好奇心發芽，<br/>一起<span>玩出英文力。</span></h1><p>聽一聽、說一說，和小夥伴探索英文。<br/>從一個單字開始，每一小步都算數。</p><a href="#choose-level" onClick={followPageAnchor} className="eg-primary">開始我的學習旅程 <LearningIcon name="arrow" size={19}/></a><div className="eg-welcome-note">免費學習 <span>·</span> 沒有廣告 <span>·</span> 照自己的步調</div></div>
         <div className="eg-welcome-garden"><span className="eg-garden-tag tag-hello">Hello, little explorer!</span><SproutFriend/><span className="eg-garden-tag tag-grow"><LearningIcon name="star" size={17}/> 今天也長大了一點</span><span className="eg-garden-orbit"/></div>
       </section>
-      <section id="choose-level" className="eg-level-section"><div className="eg-section-heading"><div><span className="eg-eyebrow">LET’S GET STARTED</span><h2>選一個適合你的起點</h2></div><p>之後隨時可以換，慢慢來就好。</p></div>
+      <section id="choose-level" tabIndex={-1} className="eg-level-section"><div className="eg-section-heading"><div><span className="eg-eyebrow">LET’S GET STARTED</span><h2>選一個適合你的起點</h2></div><p>之後隨時可以換，慢慢來就好。</p></div>
         <div className="eg-levels">{Object.entries(levels).map(([key,level],i)=><button className={`eg-level-choice tone-${i}`} type="button" onClick={()=>onSelect(key)} key={key}><span className="eg-level-symbol"><LearningIcon name={['learn','read','star'][i]} size={30}/></span><span className="eg-level-choice-title">{level.l}<small>{level.en}</small></span><p>{['從生活單字出發，快樂打好基礎','讀故事、練表達，一步步更有信心','拓展詞彙，探索更大的英文世界'][i]}</p><span className="eg-level-choice-bottom"><span className="eg-level-badge">{formatCount(counts?.[key],counts!==null)}</span><LearningIcon name="arrow" size={20}/></span>{lastLevel===key&&<span className="eg-last-level">上次的起點</span>}</button>)}</div>
       </section>
       <section className="eg-how"><div><span>01</span><h3>聽聽看，認識新單字</h3><p>有發音、有例句，不懂也沒關係。</p></div><div><span>02</span><h3>動動手，把英文玩起來</h3><p>配對、故事、歌曲，選你喜歡的方式。</p></div><div><span>03</span><h3>看看自己，又進步一點</h3><p>留下學習足跡，陪寵物一起長大。</p></div></section>

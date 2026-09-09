@@ -1,3 +1,4 @@
+import { followPageAnchor, withoutPageAnchor } from "./data/pageAnchors.js";
 import { refreshPetCare } from "./data/petCare.js";
 import { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense } from "react";
 import { Brand, ComfortControls, LearningDashboard, WelcomeScreen } from "./components/LearningExperience.jsx";
@@ -2288,7 +2289,7 @@ export default function App(){
       depth:replace?current.depth:current.depth+1,
     });
     const state={...(window.history.state||{}),[ENGLISHGO_HISTORY_KEY]:navigation};
-    window.history[replace?"replaceState":"pushState"](state,"",url||window.location.href);
+    window.history[replace?"replaceState":"pushState"](state,"",url||withoutPageAnchor(window.location.href));
     applyNavigation(navigation);
   },[applyNavigation]);
 
@@ -2306,7 +2307,7 @@ export default function App(){
   // Keep browser Back / iOS swipe-back aligned with EnglishGo's screen hierarchy.
   useEffect(()=>{
     const params=new URLSearchParams(window.location.search);
-    const cleanSharedUrl=params.has("word")?window.location.pathname:window.location.href;
+    const cleanSharedUrl=params.has("word")?window.location.pathname:initialNavigation.lv?withoutPageAnchor(window.location.href):window.location.href;
     window.history.replaceState({...(window.history.state||{}),[ENGLISHGO_HISTORY_KEY]:initialNavigation},"",cleanSharedUrl);
     const handlePopState=event=>{
       const navigation=readEnglishGoNavigation(event.state);
@@ -2561,9 +2562,9 @@ export default function App(){
       `}</style>
 
       <RewardBurstHost/>
-      <a className="eg-skip" href="#learning-content">跳到學習內容</a>
+      <a className="eg-skip" href="#learning-content" onClick={followPageAnchor}>跳到學習內容</a>
       <nav className="eg-app-nav" aria-label="網站導覽"><Brand onClick={openHome}/><div className="eg-nav-spacer"/><button type="button" className="eg-level-switch" onClick={returnToLevelSelection} aria-label="返回學習階段選擇"> {c.l} · 換階段</button><ComfortControls {...comfort}/></nav>
-      <main id="learning-content" className={`eg-app-content ${mod?`is-module module-${mod}`:""}`} style={{maxWidth:!mod?940:mod==="petAdventure"?1280:mod==="petMonopoly"?1180:["srs","pets","gacha"].includes(mod)?1080:mod==="translate"?960:760,margin:"0 auto",padding:mod==="petAdventure"||mod==="petMonopoly"?"14px 18px calc(20px + env(safe-area-inset-bottom, 0px))":"12px 12px calc(16px + env(safe-area-inset-bottom, 0px))"}}>
+      <main id="learning-content" tabIndex={-1} className={`eg-app-content ${mod?`is-module module-${mod}`:""}`} style={{maxWidth:!mod?940:mod==="petAdventure"?1280:mod==="petMonopoly"?1180:["srs","pets","gacha"].includes(mod)?1080:mod==="translate"?960:760,margin:"0 auto",padding:mod==="petAdventure"||mod==="petMonopoly"?"14px 18px calc(20px + env(safe-area-inset-bottom, 0px))":"12px 12px calc(16px + env(safe-area-inset-bottom, 0px))"}}>
       {!mod&&showAch&&<div className="eg-achievement-toast" role="status"><span aria-hidden="true">{showAch.icon}</span><div><b>新成就 · {showAch.name}</b><small>你的努力，已經收藏在成就牆。</small></div><button type="button" onClick={()=>setShowAch(null)} aria-label="關閉成就提醒">×</button></div>}
         {!mod?<MenuV2 lv={lv} onSelect={openModule} activeGroup={menuGroup} onGroupChange={changeMenuGroup} daily={daily} c={c} xp={xp} coins={coins} streak={learningStreak(streak,daily)} achUnlocked={achUnlocked} weakWords={levelWeakWords} pets={pets} eggs={eggs} onQuickStart={startMiniMission} lastActivity={lastActivity} loginGift={loginBonusModal} claimGift={claimLoginBonus}/>:
          mod==="wordsearch"?<WordSearchM lv={lv} onBack={back} onReviewCards={cards=>navigateEnglishGo({lv,mod:"srs",menuGroup:"learn",sharedWord:null,customDeck:{cards,source:"我的單字收藏"}})} onOpenCard={(word,level)=>navigateEnglishGo({lv:level||lv,mod:"srs",menuGroup:"learn",sharedWord:word,customDeck:null})}/>:
