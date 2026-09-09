@@ -37,17 +37,6 @@ export function makeDashRounds(words, random = Math.random, count = 5) {
   }));
 }
 
-// Rivals follow their own race clock, including a short hesitation at each door.
-export function dashRivalDistances(seconds, course, total) {
-  const finish = total * 32 - 3;
-  return Array.from({ length: 6 }, (_, i) => {
-    const speed = course.speed * (1.02 - i * .045);
-    const elapsed = Math.max(0, seconds - i * .35);
-    const cycle = 32 / speed + .7 + i * .22;
-    const section = Math.floor(elapsed / cycle);
-    return Math.min(finish, -2 + section * 32 + Math.min(32, (elapsed % cycle) * speed));
-  });
-}
 export function dashRaceRank(distance, rivals, finish) {
   return 1 + rivals.filter(value => value > distance || value >= finish).length;
 }

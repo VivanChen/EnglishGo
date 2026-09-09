@@ -1,8 +1,9 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import WordDash from './WordDash.jsx';
-import { DASH_COURSES, dashCourseObstacle, dashObstacleHit, dashRaceRank, dashCameraDistance, dashRivalDistances, makeDashRounds } from '../data/wordDash.js';
+import { DASH_COURSES, dashCourseObstacle, dashObstacleHit, dashRaceRank, dashCameraDistance, makeDashRounds } from '../data/wordDash.js';
 
+import { createDashRival, stepDashRival } from '../data/wordDashRace.js';
 let scene;
 vi.mock('../components/WordDashScene.jsx', () => ({ default: props => { scene = props; return <div data-testid="scene"/>; } }));
 const words = [{ w: 'apple', m: '蘋果' }, { w: 'cat', m: '貓' }, { w: 'dog', m: '狗' }, { w: 'book', m: '書' }, { w: 'fish', m: '魚' }];
@@ -12,12 +13,13 @@ afterEach(() => { vi.useRealTimers(); vi.clearAllMocks(); });
 describe('Word Dash', () => {
   it('keeps rivals moving and the camera steady while the player recoils', () => {
     const course = DASH_COURSES[0];
-    const before = dashRivalDistances(5, course, 5), after = dashRivalDistances(5.6, course, 5);
+    const runners = Array.from({ length: 6 }, (_, i) => ({ ...createDashRival(i, course), distance: 18 - i, delay: 0 }));
+    const before = runners.map(runner => runner.distance), after = runners.map(runner => stepDashRival(runner, .08, [], 5).distance);
     expect(after.every((distance, i) => distance >= before[i])).toBe(true);
     expect(dashCameraDistance(21, 15)).toBe(21);
     expect(dashCameraDistance(21, 22)).toBe(22);
     expect(dashRaceRank(15, after, 157)).toBeGreaterThan(dashRaceRank(21, before, 157));
-    expect(dashRaceRank(157, dashRivalDistances(100, course, 5), 157)).toBe(7);
+    expect(dashRaceRank(157, Array(6).fill(157), 157)).toBe(7);
   });
   it('shows a loss even after completing every word when all rivals finished first', async () => {
     const xp = await mount();
@@ -32,10 +34,7 @@ describe('Word Dash', () => {
     const rivals = [100, 90, 80, 70, 60, 50];
     [110, 95, 85, 75, 65, 55, 40].forEach((distance, i) => expect(dashRaceRank(distance, rivals, 157)).toBe(i + 1));
     expect(dashRaceRank(157, [157, 150, 140, 130, 120, 110], 157)).toBe(2);
-    const course = DASH_COURSES[0];
-    const early = dashRivalDistances(10, course, 5), later = dashRivalDistances(20, course, 5);
-    expect(later.every((distance, i) => distance > early[i])).toBe(true);
-    expect(dashRivalDistances(999, course, 5)).toEqual(Array(6).fill(157));
+
   });
   it('shows the live rank and preserves second place on the results screen', async () => {
     await mount(); act(() => scene.onRank(2));

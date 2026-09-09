@@ -157,3 +157,5 @@ to{scale:1;opacity:1}
 .dash-race-progress i{position:absolute;width:7px;height:7px;border:1px solid white;border-radius:50%;background:#ed6c9e;transform:translateX(-50%)}
 .dash-race-progress i.is-you{width:20px;height:17px;background:#6941b4;color:white;border-radius:5px;font-style:normal;text-align:center;z-index:1}
 @media(max-width:600px){.dash-race-progress{top:70px;gap:10px}}
+
+.dash-race-progress i.is-hit{background:#e66316;outline:2px solid #fff0ac}
