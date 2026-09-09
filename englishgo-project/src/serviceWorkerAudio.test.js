@@ -41,6 +41,7 @@ async function dispatchFetch(handler, request) {
   let responsePromise;
   handler({
     request,
+    waitUntil: () => {},
     respondWith: value => { responsePromise = Promise.resolve(value); },
   });
   return responsePromise;
@@ -83,5 +84,28 @@ describe("EnglishGo service worker audio streaming", () => {
 
     expect(response.status).toBe(206);
     expect(cacheStorage.open).not.toHaveBeenCalled();
+  });
+});
+
+
+describe("deployment chunk caching", () => {
+  const request = { method: "GET", url: "https://englishgo-vevan.netlify.app/assets/old.js", destination: "script", headers: new Headers() };
+  it("rejects HTML returned for a missing chunk without caching it", async () => {
+    const { listeners, cache } = loadWorker(vi.fn(async () => new Response("<html>fallback</html>", { headers: { "Content-Type": "text/html" } })));
+    const response = await dispatchFetch(listeners.fetch, request);
+    expect(response.status).toBe(404);
+    expect(cache.put).not.toHaveBeenCalled();
+  });
+  it("uses a previously cached chunk when a deployment removes the network file", async () => {
+    const fetchImpl = vi.fn();
+    const { listeners, cacheStorage } = loadWorker(fetchImpl);
+    cacheStorage.match.mockResolvedValue(new Response("export default 1", { headers: { "Content-Type": "text/javascript" } }));
+    expect(await (await dispatchFetch(listeners.fetch, request)).text()).toBe("export default 1");
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+  it("replaces a poisoned HTML cache entry with the real script", async () => {
+    const { listeners, cacheStorage } = loadWorker(vi.fn(async () => new Response("export default 2", { headers: { "Content-Type": "text/javascript" } })));
+    cacheStorage.match.mockResolvedValue(new Response("<html/>", { headers: { "Content-Type": "text/html" } }));
+    expect(await (await dispatchFetch(listeners.fetch, request)).text()).toBe("export default 2");
   });
 });

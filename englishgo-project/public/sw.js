@@ -1,5 +1,5 @@
 // EnglishGo Service Worker - offline-first PWA
-const CACHE_VERSION = 'englishgo-v1.2.3';
+const CACHE_VERSION = 'englishgo-v1.2.4';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 const DYNAMIC_CACHE_LIMIT = 160;
@@ -25,6 +25,8 @@ async function cacheDynamicResponse(request, response) {
   // byte-range requests, so attempting to cache one would turn a successful
   // network response into a rejected fetch chain.
   if (!response?.ok || response.status === 206) return;
+  if (new URL(request.url).pathname.startsWith('/assets/') &&
+      response.headers.get('content-type')?.includes('text/html')) return;
   const cache = await caches.open(DYNAMIC_CACHE);
   await cache.put(request, response.clone());
   await trimCache(DYNAMIC_CACHE);
@@ -44,7 +46,7 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((keys) => {
       return Promise.all(
         keys
-          .filter((key) => !key.startsWith(CACHE_VERSION))
+          .filter((key) => key.startsWith('englishgo-') && !key.startsWith(CACHE_VERSION))
           .map((key) => caches.delete(key))
       );
     }).then(() => self.clients.claim())
@@ -91,6 +93,21 @@ self.addEventListener('fetch', (event) => {
         return networkResponse.catch(() => caches.match('/icon-192.png'));
       })
     );
+    return;
+  }
+
+  // Preserve valid chunks for tabs opened before a deployment.
+  if (url.origin === location.origin && url.pathname.startsWith('/assets/')) {
+    event.respondWith((async () => {
+      const cached = await caches.match(request);
+      if (cached?.ok && !cached.headers.get('content-type')?.includes('text/html')) return cached;
+      const response = await fetch(request);
+      if (response.headers.get('content-type')?.includes('text/html')) {
+        return new Response('Asset unavailable', { status: 404 });
+      }
+      event.waitUntil(cacheDynamicResponse(request, response).catch(() => {}));
+      return response;
+    })());
     return;
   }
 
