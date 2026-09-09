@@ -11,6 +11,7 @@ import { getWeakVocabularyForLevel, mergeUniqueWordCards, parseVocabularyTopics,
 import { fetchAllCloudVocabularyRows } from "./data/cloudVocabulary.js";
 import { generateStoryPayload } from "./features/storyGeneration.js";
 
+const PictureBooks=lazy(()=>import("./features/PictureBooks.jsx"));
 const TranslationReader=lazy(()=>import("./features/TranslationReader.jsx"));
 const PetMonopolyM=lazy(()=>import("./features/PetMonopoly.jsx"));
 const LearningPractice=lazy(()=>import("./features/LearningPractice.jsx"));
@@ -2572,6 +2573,7 @@ export default function App(){
          mod==="petMonopoly"?<Suspense fallback={<ModuleLoading label="載入寵物大富翁..."/>}><PetMonopolyM quiet={quiet} setQuiet={setQuiet} onNavigate={navigatePet} onComplete={()=>incrTask("playToday")} lv={lv} onBack={back} onXp={n=>addXp(n,{awardCoins:false})} c={c} pets={pets} setPets={setPets} coins={coins} setCoins={setCoins} deps={{G,Hdr,S,V,escapeRegexSafe,getAdventurePetDef,levelUpPet,shuffleCopy}}/></Suspense>:
          mod==="grammar"?<GrammarM lv={lv} onBack={back} onXp={addXp} apiKey={gemKey} onOpenSettings={()=>openModule("settings","tools")}/>:
          mod==="reading"?<ReadingM lv={lv} onBack={back} onXp={addXp}/>:
+         mod==="pictureBooks"?<Suspense fallback={<ModuleLoading label="載入互動童書..."/>}><PictureBooks onBack={back} onXp={addXp} speak={speak} stopSpeech={stopSpeech}/></Suspense>:
          mod==="novels"?<NovelM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="songs"?<SongsM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="dictation"?<DictM lv={lv} onBack={back} onXp={addXp} onDone={()=>setStats(s=>({...s,dictDone:s.dictDone+1}))}/>:
@@ -2709,6 +2711,7 @@ function MenuV2({lv,onSelect,activeGroup="learn",onGroupChange,daily,c,xp,coins,
     {id:"ai",group:"learn",icon:"AI",t:"AI 家教",d:"用 Gemini 問英文問題",tag:"個別指導"},
     {id:"translate",group:"learn",icon:"⇄",t:"AI 翻譯朗讀",d:"短句互譯、翻譯解析與英文發音",tag:"每分鐘 1 次"},
     {id:"reading",group:"read",icon:"R",t:"閱讀理解",d:`${R?.[lv]?.length||0} 篇短文練習`,tag:"短文測驗"},
+    {id:"pictureBooks",group:"read",icon:"B",t:"互動童書",d:"點圖聽英文，走進雙語故事",tag:"有聲互動"},
     {id:"novels",group:"read",icon:"N",t:"英文小說",d:lv==="junior"?"國中奇幻長篇":"小學插圖故事",tag:"故事閱讀"},
     {id:"songs",group:"read",icon:"♪",t:"英文歌曲",d:(SONGS?.[lv]?.length||0)?`${SONGS[lv].length} 首歌曲`:"尚未建立歌曲",tag:"聽唱學習"},
     {id:"dictation",group:"read",icon:"D",t:"聽寫練習",d:"聽句子並輸入答案",tag:"聽力拼字"},
