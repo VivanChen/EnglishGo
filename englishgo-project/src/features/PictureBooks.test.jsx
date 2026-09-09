@@ -1,7 +1,9 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import PictureBooks from './PictureBooks.jsx';
 import { PICTURE_BOOKS, validatePictureBookProgress } from '../data/pictureBooks.js';
+
+vi.mock('../components/PictureBookStage.jsx', () => ({ default: () => <div data-testid="three-stage"/> }));
 
 function setup() {
   const props = { onBack: vi.fn(), onXp: vi.fn(), speak: vi.fn(() => ({})), stopSpeech: vi.fn() };
@@ -10,6 +12,30 @@ function setup() {
   return { ...props, ...view };
 }
 describe('interactive picture books', () => {
+  it('animates every letter, highlights real voice boundaries and advances continuous reading only after audio ends', () => {
+    vi.useFakeTimers();
+    try {
+      const props = setup();
+      expect(document.querySelectorAll('.pb-letter')).toHaveLength(PICTURE_BOOKS[0].pages[0].en.replace(/\s/g, '').length);
+      fireEvent.click(screen.getByRole('button', { name:'♫ 整本讀給我聽' }));
+      const first = props.speak.mock.calls.at(-1)[3];
+      expect(document.querySelector('.is-speaking')).toBeNull();
+      act(() => { first.onstart(); first.onboundary({name:'word',charIndex:9}); });
+      expect(screen.getByRole('button', {name:'朗讀單字 fox'})).toHaveAttribute('aria-current','true');
+      act(() => vi.advanceTimersByTime(2000));
+      expect(screen.getByLabelText(PICTURE_BOOKS[0].pages[0].en)).toBeVisible();
+      act(() => first.onend());
+      act(() => vi.advanceTimersByTime(800));
+      expect(screen.getByLabelText(PICTURE_BOOKS[0].pages[1].en)).toBeVisible();
+      expect(props.speak.mock.calls.at(-1)[0]).toBe(PICTURE_BOOKS[0].pages[1].en);
+      const second = props.speak.mock.calls.at(-1)[3];
+      fireEvent.click(screen.getByRole('button', {name:'第 4 頁'}));
+      act(() => { second.onstart(); second.onend(); vi.advanceTimersByTime(1000); });
+      expect(screen.getByLabelText(PICTURE_BOOKS[0].pages[3].en)).toBeVisible();
+      expect(screen.getByRole('button', { name:'♫ 整本讀給我聽' })).toHaveAttribute('aria-pressed','false');
+      props.unmount();
+    } finally { vi.useRealTimers(); }
+  });
   it('aligns bilingual content, scene targets and quiz answers', () => {
     for (const book of PICTURE_BOOKS) {
       expect(book.pages).toHaveLength(4);
@@ -28,13 +54,13 @@ describe('interactive picture books', () => {
     fireEvent.click(screen.getByRole('button', { name: '顯示中文' }));
     expect(screen.getByText(PICTURE_BOOKS[0].pages[0].zh)).toBeVisible();
     fireEvent.click(screen.getByRole('button', { name: '探索 fox' }));
-    expect(screen.getByRole('status')).toHaveTextContent('再找找 moon');
+    expect(screen.getByText('這是 fox（狐狸）。再找找 moon！')).toBeVisible();
     fireEvent.click(screen.getByRole('button', { name: '探索 moon' }));
     expect(props.speak).toHaveBeenLastCalledWith('moon', 'en-US', 0.8, expect.any(Object));
     fireEvent.click(screen.getByRole('button', { name: '下一頁 →' }));
     props.unmount();
     setup();
-    expect(screen.getByText(PICTURE_BOOKS[0].pages[1].en)).toBeVisible();
+    expect(screen.getByLabelText(PICTURE_BOOKS[0].pages[1].en)).toBeVisible();
     expect(JSON.parse(localStorage.getItem('eg_pictureBooks_v1'))['little-light'].found).toEqual([0]);
   });
   it('requires all exploration tasks, allows quiz retries and awards completion only once', () => {

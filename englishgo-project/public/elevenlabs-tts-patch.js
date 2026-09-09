@@ -92,7 +92,7 @@
     const lang = String(utterance?.lang || "en-US");
     if (!text || text.length > MAX_CHARS) return false;
     if (utterance?.__englishGoAudioUrl) return true;
-    if (typeof utterance.onboundary === "function") return false;
+    if (typeof utterance.onboundary === "function" && !utterance.__englishGoTrackWords) return false;
     if (/^en/i.test(lang)) return /[A-Za-z]/.test(text);
     if (isChineseLang(lang)) {
       return utterance?.__englishGoApiTts === true && CHINESE_RE.test(text);
@@ -183,6 +183,7 @@
       .then(async (res) => {
         if (!res.ok) throw new Error(`ElevenLabs TTS failed: ${res.status}`);
         const blob = await res.blob();
+        if (!blob.size || !/^audio\//i.test(blob.type)) throw new Error('TTS response is not audio');
         const url = URL.createObjectURL(blob);
         audioCache.set(cacheKey, url);
 
@@ -400,7 +401,16 @@
         audio.playbackRate = 1;
         audio.volume = typeof utterance.volume === "number" ? utterance.volume : 1;
         audio.oncanplay = () => hideTtsLoading(loadingToken);
-        audio.onplaying = () => hideTtsLoading(loadingToken);
+        let started = false;
+        audio.onplaying = () => {
+          if (activeAudio !== audio) return;
+          hideTtsLoading(loadingToken);
+          if (utterance.__englishGoTrackWords && !started) { started = true; emitStart(utterance); }
+        };
+        audio.ontimeupdate = () => {
+          if (activeAudio !== audio || audio.paused || !started || !utterance.__englishGoTrackWords) return;
+          utterance.onprogress?.({ currentTime: audio.currentTime, duration: audio.duration });
+        };
         audio.onended = () => {
           if (activeAudio === audio) {
             activeAudio = null;
@@ -410,6 +420,7 @@
           emitEnd(utterance);
         };
         audio.onerror = () => {
+          if (utterance.__englishGoTrackWords && activeAudio !== audio) return;
           if (activeAudio === audio) {
             activeAudio = null;
             activeAudioPaused = false;
@@ -417,13 +428,14 @@
           hideTtsLoading(loadingToken);
           nativeSpeak(utterance);
         };
-        emitStart(utterance);
+        if (!utterance.__englishGoTrackWords) emitStart(utterance);
         return unlockPlayback.then(() => activeAudioPaused ? null : audio.play()).then(() => hideTtsLoading(loadingToken)).catch((err) => {
           hideTtsLoading(loadingToken);
           throw err;
         });
       })
       .catch(() => {
+        if (utterance.__englishGoTrackWords && activeAudio !== audio) return;
         if (activeAudio === audio) {
           activeAudio = null;
           activeAudioPaused = false;

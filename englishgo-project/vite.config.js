@@ -17,8 +17,7 @@ export default defineConfig({
           if (!id.includes('node_modules')) return;
           if (id.includes('/three/') || id.includes('\\three\\')) return 'three';
           if (id.includes('@supabase')) return 'supabase';
-          if (id.includes('react') || id.includes('scheduler')) return 'react-vendor';
-          return 'vendor';
+          if (/node_modules[\\/](react|react-dom|scheduler)[\\/]/.test(id)) return 'react-vendor';
         },
       },
     },

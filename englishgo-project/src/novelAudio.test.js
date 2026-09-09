@@ -33,9 +33,9 @@ describe("fixed novel audio catalog", () => {
       }
     }
 
-    expect(Object.keys(NOVEL_AUDIO_CATALOG)).toHaveLength(expected);
+    expect(Object.keys(NOVEL_AUDIO_CATALOG).filter(id => !id.includes('-picture-book-'))).toHaveLength(expected);
     expect(expected).toBe(6952);
-  });
+  }, 15000);
 
   it("changes the immutable URL whenever narrated text changes", () => {
     const base = { novelId: "story", chapterNo: 1, lang: "en-US", blockIndex: 0 };

@@ -62,6 +62,53 @@ function loadPatch() {
 }
 
 describe("ElevenLabs TTS patch", () => {
+  it("does not report an HTML fallback page as downloaded audio", async () => {
+    installPatchEnv();
+    globalThis.fetch = vi.fn(() => Promise.resolve(new Response('<html>app</html>', { headers: { 'Content-Type': 'text/html' } })));
+    loadPatch();
+    const ready = await window.EnglishGoTTS.preloadMany([{ text: 'A fox.', audioUrl: '/missing-audio' }]);
+    expect(ready).toBe(0);
+    expect(URL.createObjectURL).not.toHaveBeenCalled();
+  });
+  it("starts story word tracking on actual playback, freezes paused progress, and ignores cancelled audio", async () => {
+    const { nativeSpeak } = installPatchEnv();
+    globalThis.fetch = vi.fn(() => Promise.resolve(new Response('mp3', {headers:{'Content-Type':'audio/mpeg'}})));
+    const audio = { play:vi.fn(() => Promise.resolve()), pause:vi.fn(), currentTime:0, duration:8, paused:false };
+    globalThis.Audio = vi.fn(() => audio);
+    loadPatch();
+    const utterance = new SpeechSynthesisUtterance('A little fox looks up.');
+    utterance.__englishGoTrackWords = true;
+    utterance.onboundary = vi.fn(); utterance.onstart = vi.fn(); utterance.onprogress = vi.fn();
+    window.speechSynthesis.speak(utterance);
+    await vi.waitFor(() => expect(audio.onplaying).toBeTypeOf('function'));
+    expect(nativeSpeak).not.toHaveBeenCalled();
+    expect(utterance.onstart).not.toHaveBeenCalled();
+    audio.onplaying(); audio.onplaying();
+    expect(utterance.onstart).toHaveBeenCalledOnce();
+    audio.currentTime = 2; audio.ontimeupdate();
+    expect(utterance.onprogress).toHaveBeenCalledWith({currentTime:2,duration:8});
+    audio.paused = true; audio.currentTime = 3; audio.ontimeupdate();
+    expect(utterance.onprogress).toHaveBeenCalledTimes(1);
+    window.speechSynthesis.cancel(); audio.paused = false; audio.ontimeupdate(); audio.onerror();
+    expect(utterance.onprogress).toHaveBeenCalledTimes(1);
+    expect(nativeSpeak).not.toHaveBeenCalled();
+  });
+
+  it("does not speak an old story when its request fails after cancellation", async () => {
+    const { nativeSpeak } = installPatchEnv();
+    let reject;
+    globalThis.fetch = vi.fn(() => new Promise((_, fail) => { reject = fail; }));
+    globalThis.Audio = vi.fn(() => ({play:vi.fn(() => Promise.resolve()),pause:vi.fn(),currentTime:0}));
+    loadPatch();
+    const utterance = new SpeechSynthesisUtterance('The old page.');
+    utterance.__englishGoTrackWords = true;
+    window.speechSynthesis.speak(utterance);
+    window.speechSynthesis.cancel();
+    reject(new Error('network unavailable'));
+    await new Promise(resolve => setTimeout(resolve, 0));
+    expect(nativeSpeak).not.toHaveBeenCalled();
+  });
+
   beforeEach(() => {
     vi.restoreAllMocks();
   });
@@ -118,7 +165,7 @@ describe("ElevenLabs TTS patch", () => {
 
   it("preserves capitalization and sentence punctuation in API requests", async () => {
     installPatchEnv();
-    globalThis.fetch = vi.fn(() => Promise.resolve(new Response(new Blob(["mp3"], { type: "audio/mpeg" }))));
+    globalThis.fetch = vi.fn(() => Promise.resolve(new Response("mp3", { headers: { "Content-Type": "audio/mpeg" } })));
     loadPatch();
 
     await window.EnglishGoTTS.getAudioUrl("Do I take the US bus?");
@@ -130,7 +177,7 @@ describe("ElevenLabs TTS patch", () => {
 
   it("loads fixed novel narration through its immutable GET URL", async () => {
     installPatchEnv();
-    globalThis.fetch = vi.fn(() => Promise.resolve(new Response(new Blob(["mp3"], { type: "audio/mpeg" }))));
+    globalThis.fetch = vi.fn(() => Promise.resolve(new Response("mp3", { headers: { "Content-Type": "audio/mpeg" } })));
     loadPatch();
     const audioUrl = "/.netlify/functions/elevenlabs-tts?novel=v1-story-c1-en-block-0-hash";
 
@@ -144,7 +191,7 @@ describe("ElevenLabs TTS patch", () => {
 
   it("preloads object-based English and Chinese novel audio items", async () => {
     installPatchEnv();
-    globalThis.fetch = vi.fn(() => Promise.resolve(new Response(new Blob(["mp3"], { type: "audio/mpeg" }))));
+    globalThis.fetch = vi.fn(() => Promise.resolve(new Response("mp3", { headers: { "Content-Type": "audio/mpeg" } })));
     loadPatch();
 
     const readyCount = await window.EnglishGoTTS.preloadMany([
@@ -160,7 +207,7 @@ describe("ElevenLabs TTS patch", () => {
   it("reports only successfully prepared audio items", async () => {
     installPatchEnv();
     globalThis.fetch = vi.fn(url => url === "/audio-ok"
-      ? Promise.resolve(new Response(new Blob(["mp3"], { type: "audio/mpeg" })))
+      ? Promise.resolve(new Response("mp3", { headers: { "Content-Type": "audio/mpeg" } }))
       : Promise.resolve(new Response("missing", { status: 404 })));
     loadPatch();
 

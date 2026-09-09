@@ -1,0 +1,73 @@
+import { act, renderHook } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { storyWords, usePictureBookNarration, wordAtBoundary, wordAtProgress } from './pictureBookNarration.js';
+
+afterEach(() => vi.useRealTimers());
+describe('storybook voice and animation timing', () => {
+  it('keeps punctuation and repeated words mapped to their actual character positions', () => {
+    const words = storyWords('A fox, a little fox.');
+    expect(words.map(w => w.text)).toEqual(['A','fox,','a','little','fox.']);
+    expect(wordAtBoundary(words, 16)).toBe(4);
+    expect(wordAtBoundary(words, 1)).toBe(-1);
+    expect(wordAtProgress(words, 0, 10)).toBe(0);
+    expect(wordAtProgress(words, 10, 10)).toBe(4);
+    expect(wordAtProgress(words, 2, NaN)).toBe(-1);
+  });
+  it('waits for audio, follows boundaries, and rejects late callbacks after changing pages', () => {
+    const speak = vi.fn(() => ({})), stop = vi.fn();
+    const { result } = renderHook(() => usePictureBookNarration(speak, stop));
+    act(() => result.current.start('A little fox.', { audioUrl: '/fixed-page.mp3', rate: .9 }));
+    expect(speak.mock.calls[0][2]).toBe(.9);
+    expect(speak.mock.calls[0][3].audioUrl).toBe('/fixed-page.mp3');
+    const first = speak.mock.calls[0][3];
+    expect(result.current.status).toBe('loading');
+    expect(result.current.word).toBe(-1);
+    act(() => first.onstart());
+    expect(result.current.status).toBe('playing');
+    act(() => first.onboundary({ name: 'word', charIndex: 9 }));
+    expect(result.current.word).toBe(2);
+    act(() => first.onprogress({ currentTime: 0, duration: 5 }));
+    expect(result.current.word).toBe(2);
+    act(() => result.current.start('A rabbit.'));
+    act(() => { first.onstart(); first.onboundary({ charIndex: 2 }); first.onend(); });
+    expect(result.current.status).toBe('loading');
+    expect(result.current.word).toBe(-1);
+  });
+  it('uses actual audio progress for approximate cloud guidance and preserves pause/resume', () => {
+    const speak = vi.fn(() => ({})), pause = vi.fn(), resume = vi.fn();
+    Object.defineProperty(window, 'speechSynthesis', { configurable:true, value:{pause,resume} });
+    const stop = vi.fn();
+    const { result } = renderHook(() => usePictureBookNarration(speak, stop));
+    act(() => result.current.start('The fox looks up.'));
+    const events = speak.mock.calls[0][3];
+    act(() => { events.onstart(); events.onprogress({currentTime:3,duration:4}); });
+    expect(result.current.approximate).toBe(true);
+    const position = result.current.word;
+    act(() => result.current.pause());
+    expect(pause).toHaveBeenCalledOnce();
+    expect(result.current.status).toBe('paused');
+    expect(result.current.word).toBe(position);
+    act(() => result.current.resume());
+    expect(resume).toHaveBeenCalledOnce();
+    expect(result.current.status).toBe('playing');
+  });
+  it('does not turn a page after cancellation or voice failure, and times out stalled loading', () => {
+    vi.useFakeTimers();
+    const speak = vi.fn(() => ({})), finish = vi.fn();
+    const stop = vi.fn();
+    const { result, unmount } = renderHook(() => usePictureBookNarration(speak, stop));
+    act(() => result.current.start('A fox.', {onFinish:finish}));
+    act(() => speak.mock.calls[0][3].onend());
+    act(() => result.current.stop());
+    act(() => vi.advanceTimersByTime(1000));
+    expect(finish).not.toHaveBeenCalled();
+    act(() => result.current.start('A fox.', {onFinish:finish}));
+    act(() => vi.advanceTimersByTime(20000));
+    expect(result.current.status).toBe('idle');
+    expect(result.current.error).toContain('準備時間較久');
+    unmount();
+    act(() => speak.mock.calls[1][3].onend());
+    act(() => vi.runAllTimers());
+    expect(finish).not.toHaveBeenCalled();
+  });
+});

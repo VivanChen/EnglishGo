@@ -27813,5 +27813,37 @@ export const NOVEL_AUDIO_CATALOG = Object.freeze({
   "v2-clock-tower-magic-school-c16-zh-block-103-5cb2f08f72503cba": {
     "text": "另一個秘密，正在等待甦醒。",
     "lang": "zh-TW"
+  },
+  "v1-picture-book-little-light-c1-en-block-0-8b553068d0942f8e": {
+    "text": "A little fox looks up at the moon.",
+    "lang": "en-US"
+  },
+  "v1-picture-book-little-light-c2-en-block-0-ca4b83c9626ba0cf": {
+    "text": "A small star falls beside a flower.",
+    "lang": "en-US"
+  },
+  "v1-picture-book-little-light-c3-en-block-0-621dbf106914c55c": {
+    "text": "The fox and a rabbit help the star.",
+    "lang": "en-US"
+  },
+  "v1-picture-book-little-light-c4-en-block-0-5712efd86198b6bb": {
+    "text": "The star shines above their home.",
+    "lang": "en-US"
+  },
+  "v1-picture-book-picnic-c1-en-block-0-9fd43d643463f995": {
+    "text": "Bear puts an apple in the basket.",
+    "lang": "en-US"
+  },
+  "v1-picture-book-picnic-c2-en-block-0-11961fb402abbf89": {
+    "text": "A bird sings in the tree.",
+    "lang": "en-US"
+  },
+  "v1-picture-book-picnic-c3-en-block-0-272012699769028e": {
+    "text": "Bear shares bread with a rabbit.",
+    "lang": "en-US"
+  },
+  "v1-picture-book-picnic-c4-en-block-0-da6262fb9a1b914d": {
+    "text": "The friends sit under a rainbow.",
+    "lang": "en-US"
   }
 });
