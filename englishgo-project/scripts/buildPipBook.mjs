@@ -26,7 +26,7 @@ console.log(`Preserved Pip: ${PIP_PAGES.length} pages, ${Object.keys(PIP_VOCAB).
 // Reuse the supplied physical-book engine, with independent story data and scenes.
 let milo=html.replace(/Pip and the Lost Star/g,'Prince Milo and the Little Storm')
  .replace('Pip and the<br>Lost Star','Prince Milo and<br>the Little Storm')
- .replace('🦊⭐','🐻👑').replace('Pip counted the stars. One star winked back.','Stop, breathe, and use your words.')
+ .replace('🦊⭐','👑💛').replace('Pip counted the stars. One star winked back.','Stop, breathe, and use your words.')
  .replace(/const VOCAB = [\s\S]*?(?=\/\* ================= SVG ART)/,
    'const VOCAB = '+JSON.stringify(MILO_VOCAB)+';\nconst PAGES = '+JSON.stringify(MILO_PAGES)+';\n')
  .replace('/picture-books/pip-audio-items.js','/picture-books/milo-audio-items.js')
