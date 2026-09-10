@@ -1541,7 +1541,7 @@ function normalizeEnglishGoNavigation(value={}){
   const level=value?.lv&&LV[value.lv]?value.lv:null;
   return{
     lv:level,
-    mod:level&&typeof value?.mod==="string"?value.mod:null,
+    mod:value?.mod==="settings"?"settings":level&&typeof value?.mod==="string"?value.mod:null,
     menuGroup:ENGLISHGO_MENU_GROUPS.has(value?.menuGroup)?value.menuGroup:"learn",
     sharedWord:level&&typeof value?.sharedWord==="string"?value.sharedWord:null,
     customDeck:level&&value?.customDeck&&typeof value.customDeck==="object"?value.customDeck:null,
@@ -2497,7 +2497,9 @@ export default function App(){
   useEffect(()=>()=>stopSpeech(),[lv,mod]);
   useEffect(()=>{if(mod)document.querySelector(".eg-feature-header h2")?.focus({preventScroll:true})},[mod]);
 
-  if(!lv)return<Landing onSelect={nextLv=>navigateEnglishGo({lv:nextLv,mod:null,menuGroup:"learn",sharedWord:null,customDeck:null})} comfort={comfort} lastLevel={lastLevel}/>;
+  const openKeySettings=()=>navigateEnglishGo({mod:"settings",menuGroup:"tools",sharedWord:null,customDeck:null});
+  if(!lv&&mod==="settings")return <div className="eg-app-shell"><nav className="eg-app-nav" aria-label="網站導覽"><Brand onClick={()=>backEnglishGo({lv:null,mod:null})}/><div className="eg-nav-spacer"/><ComfortControls {...comfort}/></nav><main className="eg-app-content is-module module-settings" style={{maxWidth:760,margin:"0 auto",padding:"12px"}}><SettingsPage onBack={()=>backEnglishGo({lv:null,mod:null})} c={LV.elementary} gemKey={gemKey} setGemKey={setGemKey} gifKey={gifKey} setGifKey={setGifKey}/></main></div>;
+  if(!lv)return<Landing onOpenSettings={openKeySettings} onSelect={nextLv=>navigateEnglishGo({lv:nextLv,mod:null,menuGroup:"learn",sharedWord:null,customDeck:null})} comfort={comfort} lastLevel={lastLevel}/>;
   const c=LV[lv],back=()=>backEnglishGo({lv,mod:null,menuGroup,sharedWord:null,customDeck:null});
   const openModule=(nextMod,group)=>{
     if(nextMod==="pets")setPetStartTab("home");
@@ -2565,6 +2567,7 @@ export default function App(){
       <RewardBurstHost/>
       <a className="eg-skip" href="#learning-content" onClick={followPageAnchor}>跳到學習內容</a>
       <nav className="eg-app-nav" aria-label="網站導覽"><Brand onClick={openHome}/><div className="eg-nav-spacer"/><button type="button" className="eg-level-switch" onClick={returnToLevelSelection} aria-label="返回學習階段選擇"> {c.l} · 換階段</button><ComfortControls {...comfort}/></nav>
+      {mod!=="settings"&&<div className="eg-key-entry"><button type="button" onClick={openKeySettings}>API Key 設定 · Gemini／Giphy</button><span>家長統一管理 AI 模型與動圖金鑰</span></div>}
       <main id="learning-content" tabIndex={-1} className={`eg-app-content ${mod?`is-module module-${mod}`:""}`} style={{maxWidth:!mod?940:mod==="petAdventure"?1280:mod==="petMonopoly"?1180:["srs","pets","gacha"].includes(mod)?1080:mod==="translate"?960:760,margin:"0 auto",padding:mod==="petAdventure"||mod==="petMonopoly"?"14px 18px calc(20px + env(safe-area-inset-bottom, 0px))":"12px 12px calc(16px + env(safe-area-inset-bottom, 0px))"}}>
       {!mod&&showAch&&<div className="eg-achievement-toast" role="status"><span aria-hidden="true">{showAch.icon}</span><div><b>新成就 · {showAch.name}</b><small>你的努力，已經收藏在成就牆。</small></div><button type="button" onClick={()=>setShowAch(null)} aria-label="關閉成就提醒">×</button></div>}
         {!mod?<MenuV2 lv={lv} onSelect={openModule} activeGroup={menuGroup} onGroupChange={changeMenuGroup} daily={daily} c={c} xp={xp} coins={coins} streak={learningStreak(streak,daily)} achUnlocked={achUnlocked} weakWords={levelWeakWords} pets={pets} eggs={eggs} onQuickStart={startMiniMission} lastActivity={lastActivity} loginGift={loginBonusModal} claimGift={claimLoginBonus}/>:
@@ -2595,7 +2598,7 @@ export default function App(){
          mod==="pets"?<PetsGuard onBack={back} onNavigate={navigatePet} initialTab={petStartTab} c={c} pets={pets} setPets={setPets} eggs={eggs} setEggs={setEggs} coins={coins} setCoins={setCoins} inventory={inventory} setInventory={setInventory} petAccount={petAccount} setPetAccount={setPetAccount} petTasks={petTasks} setPetTasks={setPetTasks} incrTask={incrTask}/>:
          mod==="petAdventure"?<PetAdventurePage incrTask={incrTask} petAccount={petAccount} lv={lv} onBack={back} onNavigate={navigatePet} c={c} pets={pets} setPets={setPets} eggs={eggs} setEggs={setEggs} coins={coins} setCoins={setCoins} inventory={inventory} setInventory={setInventory}/>:null}
       </main>
-      <footer className="eg-app-footer"><div>🌱 每天一點點，讓英文慢慢長大。</div><button type="button" onClick={()=>openModule("settings","tools")}>家長與老師設定</button><div>EnglishGo · 無廣告的學習小天地</div></footer>
+      <footer className="eg-app-footer"><div>🌱 每天一點點，讓英文慢慢長大。</div><button type="button" onClick={()=>openModule("settings","tools")}>API Key 設定（家長與老師）</button><div>EnglishGo · 無廣告的學習小天地</div></footer>
     </div>
   );
 }
@@ -2701,10 +2704,10 @@ function SettingsPage({onBack,c,gemKey,setGemKey,gifKey,setGifKey}){
 }
 
 // ═══ LANDING ════════════════════════════════════════════════════════
-function Landing({onSelect,comfort,lastLevel}){
+function Landing({onSelect,onOpenSettings,comfort,lastLevel}){
   const[levelCounts,setLevelCounts]=useState(()=>readLandingVocabularyCountCache());
   useEffect(()=>{let active=true;const fallback=readLandingVocabularyCountCache()||{};fetchLandingVocabularyCounts(fallback,()=>active).then(counts=>{if(active&&counts){setLevelCounts(counts);writeLandingVocabularyCountCache(counts)}}).catch(()=>{if(active)setLevelCounts(fallback)});return()=>{active=false}},[]);
-  return <WelcomeScreen levels={LV} counts={levelCounts} formatCount={formatLandingVocabularyBadge} onSelect={onSelect} comfort={comfort} lastLevel={lastLevel}/>;
+  return <WelcomeScreen levels={LV} counts={levelCounts} formatCount={formatLandingVocabularyBadge} onOpenSettings={onOpenSettings} onSelect={onSelect} comfort={comfort} lastLevel={lastLevel}/>;
 }
 
 function MenuV2({lv,onSelect,activeGroup="learn",onGroupChange,daily,c,xp,coins,streak,achUnlocked,weakWords,pets,eggs,onQuickStart,lastActivity,loginGift,claimGift}){

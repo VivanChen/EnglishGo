@@ -55,10 +55,11 @@ export function ComfortControls({ dark, setDark, calm, setCalm, quiet, setQuiet 
   </div>;
 }
 
-export function WelcomeScreen({ levels, counts, formatCount, onSelect, comfort, lastLevel }) {
+export function WelcomeScreen({ levels, counts, formatCount, onSelect, onOpenSettings, comfort, lastLevel }) {
   return <div className="eg-welcome">
     <a className="eg-skip" href="#choose-level" onClick={followPageAnchor}>跳到學習階段</a>
     <header className="eg-welcome-top"><Brand/><ComfortControls {...comfort}/></header>
+    <div className="eg-key-entry"><button type="button" onClick={onOpenSettings}>API Key 設定 · Gemini／Giphy</button><span>家長統一管理 AI 模型與動圖金鑰</span></div>
     <main className="eg-welcome-main">
       <section className="eg-welcome-hero">
         <div><span className="eg-eyebrow"><span className="eg-live-dot"/> 給每個好奇的小小學習家</span><h1>讓好奇心發芽，<br/>一起<span>玩出英文力。</span></h1><p>聽一聽、說一說，和小夥伴探索英文。<br/>從一個單字開始，每一小步都算數。</p><a href="#choose-level" onClick={followPageAnchor} className="eg-primary">開始我的學習旅程 <LearningIcon name="arrow" size={19}/></a><div className="eg-welcome-note">免費學習 <span>·</span> 沒有廣告 <span>·</span> 照自己的步調</div></div>
@@ -101,7 +102,7 @@ const modulePresentation = {
   achievements:['star','成長收藏冊','每一個徽章，都是努力的紀念。','我的成就'],
   weak:['learn','再練一下就會了','把還不熟的單字，再認識一次。','溫柔複習'],
   dashboard:['star','我的成長足跡','看看每天累積了哪些小進步。','學習報告'],
-  settings:['tools','家長與老師設定','設定 AI、動圖和進階學習工具。','大人協助'],
+  settings:['tools','API Key 設定','設定 AI、動圖和進階學習工具。','大人協助'],
 };
 
 export function LearningDashboard({ c, lv, modules, groups, activeGroup, onGroupChange, onSelect, todayWord, onSpeak, daily, xp, coins, streak, pets, eggs, weakWords, onQuickStart, lastActivity, rewardContent, showRewards, setShowRewards, loginGift, claimGift }) {
