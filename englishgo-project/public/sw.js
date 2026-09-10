@@ -1,5 +1,5 @@
 // EnglishGo Service Worker - offline-first PWA
-const CACHE_VERSION = 'englishgo-v1.2.4';
+const CACHE_VERSION = 'englishgo-v1.2.5';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 const DYNAMIC_CACHE_LIMIT = 160;
@@ -57,7 +57,8 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  if (request.method !== 'GET') return;
+  // Extension-injected fonts and other non-web resources belong to the browser.
+  if (request.method !== 'GET' || !['http:', 'https:'].includes(url.protocol)) return;
   // Prerecorded storybook packs have their own persistent audio cache.
   if (url.origin === location.origin && url.pathname.startsWith('/audio/picture-books/')) return;
 
@@ -83,7 +84,8 @@ self.addEventListener('fetch', (event) => {
   // Images/fonts: stale-while-revalidate so same-path media can still be updated.
   if (request.destination === 'image' || request.destination === 'font') {
     const networkResponse = fetch(request).then(async (response) => {
-      await cacheDynamicResponse(request, response);
+      // Cache quota/write failures must not discard a valid downloaded font.
+      await cacheDynamicResponse(request, response).catch(() => {});
       return response;
     });
     event.respondWith(
@@ -92,7 +94,9 @@ self.addEventListener('fetch', (event) => {
           event.waitUntil(networkResponse.catch(() => null));
           return cached;
         }
-        return networkResponse.catch(() => caches.match('/icon-192.png'));
+        return networkResponse.catch(() => request.destination === 'image'
+          ? caches.match('/icon-192.png')
+          : Response.error());
       })
     );
     return;

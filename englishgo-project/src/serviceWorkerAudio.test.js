@@ -109,3 +109,40 @@ describe("deployment chunk caching", () => {
     expect(await (await dispatchFetch(listeners.fetch, request)).text()).toBe("export default 2");
   });
 });
+
+describe("service worker font responses", () => {
+  const fontRequest = { method: "GET", url: "https://fonts.gstatic.com/font.woff2", destination: "font", headers: new Headers() };
+
+  it("leaves extension font requests to the browser", async () => {
+    const fetchImpl = vi.fn();
+    const { listeners, cacheStorage } = loadWorker(fetchImpl);
+    const response = await dispatchFetch(listeners.fetch, { ...fontRequest, url: "chrome-extension://adobe/browser/css/fonts/AdobeClean-Regular.otf" });
+    expect(response).toBeUndefined();
+    expect(fetchImpl).not.toHaveBeenCalled();
+    expect(cacheStorage.match).not.toHaveBeenCalled();
+  });
+
+  it("never substitutes the PNG icon for an unavailable font", async () => {
+    const { listeners, cacheStorage } = loadWorker(vi.fn(async () => { throw new TypeError("Network unavailable"); }));
+    cacheStorage.match.mockImplementation(async key => key === '/icon-192.png'
+      ? new Response(new Uint8Array([137, 80, 78, 71]), { headers: { 'Content-Type': 'image/png' } })
+      : undefined);
+    const response = await dispatchFetch(listeners.fetch, fontRequest);
+    expect(response.type).toBe('error');
+    expect(cacheStorage.match).not.toHaveBeenCalledWith('/icon-192.png');
+  });
+
+  it("returns downloaded fonts even when cache storage is full", async () => {
+    const { listeners, cache } = loadWorker(vi.fn(async () => new Response('wOF2', { headers: { 'Content-Type': 'font/woff2' } })));
+    cache.put.mockRejectedValue(new Error('QuotaExceededError'));
+    const response = await dispatchFetch(listeners.fetch, fontRequest);
+    expect(response.headers.get('content-type')).toBe('font/woff2');
+    expect(await response.text()).toBe('wOF2');
+  });
+
+  it("uses an available cached font when the network is offline", async () => {
+    const { listeners, cacheStorage } = loadWorker(vi.fn(async () => { throw new TypeError('Offline'); }));
+    cacheStorage.match.mockResolvedValue(new Response('cached font', { headers: { 'Content-Type': 'font/woff2' } }));
+    expect(await (await dispatchFetch(listeners.fetch, fontRequest)).text()).toBe('cached font');
+  });
+});

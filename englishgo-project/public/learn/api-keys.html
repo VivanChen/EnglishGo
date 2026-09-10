@@ -143,33 +143,16 @@
           </div>
         </article>
 
-        <article class="step">
-          <div class="step-no">3</div>
-          <div><h3>進入 Dashboard，按「Create an App」</h3><p>登入後若回到 GIPHY 一般首頁，請重新開啟 Developers 網站並點 <b>Dashboard</b>。在開發者 Dashboard 中選 <b>Create an App</b>。</p>
-            <div class="ui-shot"><div class="ui-bar"><span class="dots"><i></i><i></i><i></i></span>GIPHY Developers</div><div class="ui-body"><div class="ui-side"><div class="on">Dashboard</div><div>Docs</div><div>API Explorer</div></div><div class="ui-main"><div class="ui-title">Your Apps</div><div class="ui-sub">建立並管理 API Keys</div><span class="ui-button">＋ Create an App</span><span class="pin" style="left:37%;top:43%">3</span></div></div></div>
-          </div>
-        </article>
+        <article class="step"><div class="step-no">3</div><div><h3>進入 Dashboard，按「Create an API Key」</h3><p>登入後若回到 GIPHY 一般首頁，請重新開啟 Developers 網站並點 <b>Dashboard</b>。點選頁面上方或 Your API Keys 區塊中的 <b>Create an API Key</b>。</p><figure class="shot"><a href="/learn/images/api-guide/giphy-03-dashboard.png" target="_blank" rel="noopener noreferrer"><img src="/learn/images/api-guide/giphy-03-dashboard.png" loading="lazy" alt="Dashboard 的 Create an API Key 按鈕"></a><figcaption>實際畫面：點選紫色 Create an API Key 按鈕。（點圖可開啟大圖）</figcaption></figure></div></article>
 
-        <article class="step">
-          <div class="step-no">4</div>
-          <div><h3>選「API」，不要選 SDK</h3><p>EnglishGo 現在使用 GIPHY REST API，因此類型請選 <b>API</b>。接著填寫：</p><ul><li><b>App Name：</b>EnglishGo Vocabulary</li><li><b>App Description：</b>Show kid-friendly vocabulary GIFs in English flashcards.</li><li><b>Platform：</b>Web（若畫面有此欄位）</li></ul>
-            <div class="ui-shot"><div class="ui-bar"><span class="dots"><i></i><i></i><i></i></span>Create an App</div><div class="modal"><h4>Choose your integration</h4><div class="field selected">● API　— direct HTTP API access</div><div class="field">○ SDK　— GIPHY UI components</div><div class="field">App Name　EnglishGo Vocabulary</div><div class="field">Description　Vocabulary learning GIFs</div><span class="ui-button">Create App</span></div></div>
-          </div>
-        </article>
+        <article class="step"><div class="step-no">4</div><div><h3>第一頁：選擇 API，再按 Next Step</h3><p>在 <b>Create A New API Key 1/2</b> 視窗選擇右側 <b>API</b>。EnglishGo 使用 API 類型；即使左側 SDK 標示 Recommended，這裡仍請選 API。確認顯示 <b>API Selected</b> 後，點下方 <b>Next Step</b>。</p><figure class="shot"><a href="/learn/images/api-guide/giphy-04-api.png" target="_blank" rel="noopener noreferrer"><img src="/learn/images/api-guide/giphy-04-api.png" loading="lazy" alt="建立 Key 第一頁：右側 API Selected 與下方 Next Step"></a><figcaption>實際畫面：選右側 API，再點 Next Step。（點圖可開啟大圖）</figcaption></figure></div></article>
 
-        <article class="step">
-          <div class="step-no">5</div>
-          <div><h3>複製 Dashboard 顯示的 API Key</h3><p>App 建立後會得到 beta key。按 Key 旁的 Copy，完整複製，不要多複製空白。Beta key 目前上限是每小時 100 次 API 呼叫。</p>
-            <div class="ui-shot"><div class="ui-bar"><span class="dots"><i></i><i></i><i></i></span>EnglishGo Vocabulary</div><div class="ui-main"><div class="ui-title">API Key</div><div class="field fake-key">AbCd••••••••••••••••　<b class="copy">Copy</b></div><div class="ui-sub">Status: Beta · 100 calls/hour</div><span class="pin" style="left:70%;top:50%">4</span></div></div></div>
-          </div>
-        </article>
+        <article class="step"><div class="step-no">5</div><div><h3>第二頁：填寫資料，建立 API Key</h3><p>在 <b>Create A New API Key 2/2</b> 視窗依序填寫：</p><ul><li><b>Your App Name：</b>可填 EnglishGo Vocabulary（截圖中的 English 是名稱範例）。</li><li><b>Platform：</b>選 <b>Web</b>；使用手機瀏覽 EnglishGo 也選 Web。</li><li><b>App Description：</b>可填 <b>Show vocabulary GIFs for English learning.</b>，說明用於英文單字學習。</li></ul><p>閱讀 GIPHY API Terms，確認同意後勾選，再按 <b>Create API Key</b>。截圖中的說明欄尚未填寫，請填完再送出。</p><figure class="shot"><a href="/learn/images/api-guide/giphy-05-form.png" target="_blank" rel="noopener noreferrer"><img src="/learn/images/api-guide/giphy-05-form.png" loading="lazy" alt="建立 Key 第二頁：名稱、Web 平台、用途說明、條款與 Create API Key"></a><figcaption>實際畫面：完成三個欄位並確認條款後，點 Create API Key。（點圖可開啟大圖）</figcaption></figure></div></article>
 
-        <article class="step">
-          <div class="step-no">6</div>
-          <div><h3>貼到 EnglishGo 的 GIPHY 欄位</h3><p>回到同一個「API Key 設定」頁，往下找到 <b>Giphy API Key</b>，貼上後按 <b>儲存 Giphy Key</b>。接著開啟 SRS 單字卡即可測試。</p><div class="path"><span>選擇年級</span><i>→</i><span>工具</span><i>→</i><span>API Key 設定</span><i>→</i><span>Giphy</span></div>
-            <div class="ui-shot"><div class="ui-bar"><span class="dots"><i></i><i></i><i></i></span>EnglishGo · API Key 設定</div><div class="ui-main"><div class="ui-title">Giphy API Key</div><div class="ui-sub">可選，只用於 SRS 單字動圖</div><div class="field"><span class="key-demo">GiphyExampleKeyNeverUse</span></div><span class="ui-button" style="background:#0f6e56">儲存 Giphy Key</span><span class="pin" style="left:26%;top:76%">5</span></div></div></div>
-          </div>
-        </article>
+        <article class="step"><div class="step-no">6</div><div><h3>看到 App created.，複製 API Key</h3><p>回到 Dashboard 並看到 <b>App created.</b> 表示建立成功。在 <b>Your API Keys</b> 找到剛建立的項目，選取 <b>API Key</b> 欄位內的完整文字並複製，避免包含前後空白。若沒有 Copy 按鈕，可直接選取文字複製。</p><p>本教學截圖顯示 <b>Free Beta Key Access</b> 額度為每小時 100 次 API 呼叫；實際額度以 Dashboard 顯示為準。<b>Upgrade to Enterprise</b> 是升級入口，不是複製 Key 的按鈕。</p><div class="ui-shot"><div class="ui-bar">Dashboard · App created.</div><div class="ui-main"><div class="ui-title">Your API Keys</div><div class="ui-sub">EnglishGo Vocabulary · API</div><div>API Key</div><div class="field fake-key">你的 API Key（此處不顯示真實金鑰）</div><div class="ui-sub">Free Beta Key Access · 100 calls/hour</div></div></div><p>上圖為示意，避免公開真實 Key。請勿把 Key 貼到群組或公開截圖。</p></div></article>
+
+        <article class="step"><div class="step-no">7</div><div><h3>貼回 EnglishGo，儲存並測試</h3><p>回到首頁，點開 <b>給家長與老師｜學習資源與進階設定</b> → <b>API Key 設定（Gemini／Giphy）</b>，找到 <b>Giphy API Key</b>，貼上後按 <b>儲存 Giphy Key</b>。也可以從選擇年級後的「工具 → API Key 設定」進入。</p><p>儲存後開啟 SRS 單字卡查看動圖；若沒有合適的搜尋結果，仍會顯示內建圖片或圖示。Key 只儲存在目前瀏覽器，換裝置或瀏覽器時需重新設定。</p></div></article>
+
       </div>
     </section>
 
@@ -190,7 +173,7 @@
     </section>
 
     <div style="text-align:center;margin-top:22px"><a class="action" href="/">回到 EnglishGo →</a></div>
-    <footer class="footer"><div>教學核對日期：2026-09-04 · 官方介面可能更新，請以按鈕文字為準</div><div>AI Tutor powered by <b>Gemini</b> · GIFs powered by <b>GIPHY</b></div><div>© 2026 EnglishGo · 專為台灣學生設計</div></footer>
+    <footer class="footer"><div>Google 教學核對：2026-09-04 · GIPHY 流程依實際截圖更新：2026-09-10 · 官方介面可能更新，請以按鈕文字為準</div><div>AI Tutor powered by <b>Gemini</b> · GIFs powered by <b>GIPHY</b></div><div>© 2026 EnglishGo · 專為台灣學生設計</div></footer>
   </main>
 </body>
 </html>

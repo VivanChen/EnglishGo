@@ -2248,6 +2248,8 @@ export default function App(){
   const[petTasks,setPetTasks]=useLS("petTasks",{date:"",counts:{}});// daily task counters
   const[loginBonus,setLoginBonus]=useLS("loginBonus",{lastDate:"",streak:0,claimed:false});
   const[installPrompt,setInstallPrompt]=useState(null);// beforeinstallprompt event
+  const installPromptRef=useRef(null);
+  const[installError,setInstallError]=useState("");
   const[installDismissed,setInstallDismissed]=useLS("installDismissed",false);
   const[isOffline,setIsOffline]=useState(!navigator.onLine);
   const[streak,setStreak]=useLS("streak",1);
@@ -2346,24 +2348,36 @@ export default function App(){
 
   // PWA: listen for install prompt and online/offline
   useEffect(()=>{
-    const handleInstallPrompt=(e)=>{e.preventDefault();setInstallPrompt(e)};
+    const handleInstallPrompt=(e)=>{e.preventDefault();installPromptRef.current=e;setInstallPrompt(e);setInstallError("")};
+    const handleInstalled=()=>{installPromptRef.current=null;setInstallPrompt(null);setInstallError("")};
     const handleOnline=()=>setIsOffline(false);
     const handleOffline=()=>setIsOffline(true);
     window.addEventListener("beforeinstallprompt",handleInstallPrompt);
+    window.addEventListener("appinstalled",handleInstalled);
     window.addEventListener("online",handleOnline);
     window.addEventListener("offline",handleOffline);
     return()=>{
       window.removeEventListener("beforeinstallprompt",handleInstallPrompt);
+      window.removeEventListener("appinstalled",handleInstalled);
       window.removeEventListener("online",handleOnline);
       window.removeEventListener("offline",handleOffline);
     };
   },[]);
 
   const handleInstall=async()=>{
-    if(!installPrompt)return;
-    installPrompt.prompt();
-    const{outcome}=await installPrompt.userChoice;
-    if(outcome==="accepted"){setInstallPrompt(null);playSound("combo")}
+    const prompt=installPromptRef.current;
+    if(!prompt)return;
+    // Browser install events are single-use, even when the user cancels.
+    installPromptRef.current=null;
+    setInstallPrompt(null);
+    setInstallError("");
+    try{
+      await prompt.prompt();
+      const{outcome}=await prompt.userChoice;
+      if(outcome==="accepted")playSound("combo");
+    }catch{
+      setInstallError("暫時無法開啟安裝視窗，請從瀏覽器選單選擇「安裝應用程式」或「加入主畫面」。");
+    }
   };
 
   // Daily login bonus check on mount
@@ -2527,14 +2541,14 @@ export default function App(){
       </div>}
 
       {/* Install to home screen banner */}
-      {installPrompt&&!installDismissed&&<div style={{position:"sticky",top:isOffline?34:0,zIndex:99,background:`linear-gradient(135deg,${c.cl},${c.ac})`,color:"#fff",padding:"10px 14px",display:"flex",alignItems:"center",gap:10,boxShadow:"0 2px 8px rgba(0,0,0,.15)"}}>
+      {(installPrompt||installError)&&!installDismissed&&<div style={{position:"sticky",top:isOffline?34:0,zIndex:99,background:`linear-gradient(135deg,${c.cl},${c.ac})`,color:"#fff",padding:"10px 14px",display:"flex",alignItems:"center",gap:10,boxShadow:"0 2px 8px rgba(0,0,0,.15)"}}>
         <div style={{fontSize:24}}>📱</div>
         <div style={{flex:1,fontSize:12,lineHeight:1.4}}>
           <div style={{fontWeight:700}}>安裝 EnglishGo 到主畫面</div>
-          <div style={{opacity:.9,fontSize:11}}>離線也能用！像 App 一樣</div>
+          {installError?<div role="status" style={{opacity:.9,fontSize:11}}>{installError}</div>:<div style={{opacity:.9,fontSize:11}}>離線也能用！像 App 一樣</div>}
         </div>
-        <button onClick={handleInstall} style={{background:"#fff",color:c.cl,border:"none",borderRadius:8,padding:"8px 14px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>安裝</button>
-        <button onClick={()=>setInstallDismissed(true)} style={{background:"rgba(255,255,255,.2)",color:"#fff",border:"none",borderRadius:8,padding:"8px 10px",fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>✕</button>
+        {installPrompt&&<button onClick={handleInstall} style={{background:"#fff",color:c.cl,border:"none",borderRadius:8,padding:"8px 14px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>安裝</button>}
+        <button aria-label="關閉安裝提示" onClick={()=>setInstallDismissed(true)} style={{background:"rgba(255,255,255,.2)",color:"#fff",border:"none",borderRadius:8,padding:"8px 10px",fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>✕</button>
       </div>}
       {/* Global mobile styles */}
       <style>{`
