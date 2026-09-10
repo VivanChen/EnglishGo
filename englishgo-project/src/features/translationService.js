@@ -1,3 +1,4 @@
+import { serviceFetch, responseError } from '../lib/serviceErrors.js';
 import { getGeminiModels } from '../lib/geminiModels.js';
 export const MAX_ENGLISH_WORDS = 20;
 export const MAX_CHINESE_CHARACTERS = 20;
@@ -838,7 +839,7 @@ function buildGeminiRequestUrl(model, apiKey) {
 }
 
 function isRetryableStatus(status) {
-  return status === 429 || status === 503;
+  return status === 503;
 }
 
 function createFetchInit(body, signal) {
@@ -886,9 +887,9 @@ export async function translateStudentText({
   for (const model of models) {
     let response;
     try {
-      response = await fetchImpl(
+      response = await serviceFetch(
         buildGeminiRequestUrl(model, apiKey),
-        createFetchInit(requestBody, signal),
+        createFetchInit(requestBody, signal), fetchImpl,
       );
     } catch (error) {
       if (isAbortError(error)) {
@@ -897,13 +898,15 @@ export async function translateStudentText({
 
       throw createApiError({
         model,
+        kind: error?.kind,
         message: error instanceof Error ? error.message : String(error),
       });
     }
 
     if (!response?.ok) {
       const status = response?.status;
-      lastApiError = createApiError({ status, model });
+      const failure = responseError(response, await response.json());
+      lastApiError = createApiError({ status, model, kind: failure.kind });
 
       if (isRetryableStatus(status) && model !== models.at(-1)) {
         continue;

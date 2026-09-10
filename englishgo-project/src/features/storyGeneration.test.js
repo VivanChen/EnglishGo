@@ -56,6 +56,6 @@ describe('story requests',()=>{
   });
   it('does not retry an invalid key',async()=>{
     const fetchImpl=vi.fn().mockResolvedValue({ok:false,status:403,json:async()=>({error:{code:403}})});
-    await expect(generateStoryPayload({...options,fetchImpl})).rejects.toThrow('API Key 無效');expect(fetchImpl).toHaveBeenCalledTimes(1);
+    await expect(generateStoryPayload({...options,fetchImpl})).rejects.toMatchObject({kind:'auth',status:403});expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
 });

@@ -1,3 +1,4 @@
+import { serviceFetch, responseError } from '../lib/serviceErrors.js';
 import { getGeminiModels } from '../lib/geminiModels.js';
 // Resolve the parent-selected model for each new request.
 export async function requestTutor({ level, apiKey, contents, signal }) {
@@ -17,15 +18,15 @@ Do not imitate copyrighted songs, books, or specific artists.`;
   let lastError;
   for (const model of models) {
     if (signal?.aborted) throw Object.assign(new Error('Cancelled'), { name: 'AbortError' });
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey.trim())}`, {
+    const response = await serviceFetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey.trim())}`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, signal,
       body: JSON.stringify({ systemInstruction: { parts: [{ text: systemText }] }, contents, generationConfig: { maxOutputTokens: 900, temperature: .65, topP: .9 } }),
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok || data.error) {
       const code = data.error?.code || response.status;
-      lastError = new Error(`${code} ${data.error?.message || response.statusText || 'request failed'}`);
-      if (code === 429 || code === 503) continue;
+      lastError = responseError(response, data);
+      if (!lastError.noRetry && (code === 503 || code === 404)) continue;
       throw lastError;
     }
     const answer = data.candidates?.[0]?.content?.parts?.map(part => part.text || '').join('').trim();

@@ -1,3 +1,4 @@
+import { serviceErrorMessage } from '../lib/serviceErrors.js';
 import { Fragment, useEffect, useRef, useState } from "react";
 import {
   countChineseCharacters,
@@ -122,7 +123,7 @@ function getTranslationErrorMessage(error) {
   }
   if (error?.code === "missing_key") return "需要 Gemini API Key。";
   if (error?.name === "AbortError") return "";
-  return "AI 翻譯暫時無法使用，請稍後再試。";
+  return serviceErrorMessage(error, "AI 翻譯暫時無法使用，請稍後再試。");
 }
 
 export default function TranslationReader({
@@ -472,6 +473,7 @@ export default function TranslationReader({
         </p>
       ) : null}
 
+      {status === "error" && <button type="button" className="translation-reader-button" onClick={()=>onOpenSettings?.()}>API Key 設定</button>}
       {result && status === "success" ? (
         <div
           className="translation-reader-results"

@@ -27,7 +27,7 @@ describe('learning desk storage and requests', () => {
     const cancelled = deskRequest(() => pending, { signal: controller.signal }).catch(error => error.name); controller.abort(); expect(await cancelled).toBe('AbortError'); expect(vi.getTimerCount()).toBe(0);
   });
   it('uses the existing fallback order for a busy tutor provider', async () => {
-    const fetchMock = vi.fn().mockResolvedValueOnce({ ok: false, status: 429, json: async () => ({}) }).mockResolvedValueOnce({ ok: true, json: async () => ({ candidates: [{ content: { parts: [{ text: '**Hello**，你好。' }] } }] }) });
+    const fetchMock = vi.fn().mockResolvedValueOnce({ ok: false, status: 503, json: async () => ({}) }).mockResolvedValueOnce({ ok: true, json: async () => ({ candidates: [{ content: { parts: [{ text: '**Hello**，你好。' }] } }] }) });
     vi.stubGlobal('fetch', fetchMock); const answer = await requestTutor({ level: { l: '小學', en: 'Elementary' }, apiKey: 'test-key', contents: tutorContents([], 'hello') });
     expect(answer).toContain('Hello'); expect(fetchMock.mock.calls[0][0]).toContain('gemini-2.5-flash:'); expect(fetchMock.mock.calls[1][0]).toContain('gemini-2.5-flash-lite:');
     const body = JSON.parse(fetchMock.mock.calls[0][1].body); expect(body.systemInstruction.parts[0].text).toContain('Elementary'); expect(body.contents).toHaveLength(1);

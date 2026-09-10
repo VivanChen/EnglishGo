@@ -211,7 +211,7 @@ describe("Gemini translation contract", () => {
   });
 
   it("builds the Gemini request body with safety settings, schema, model URL, and signal", async () => {
-    const signal = { aborted: false };
+    const signal = new AbortController().signal;
     const fetchImpl = vi.fn(async () => ({
       ok: true,
       json: async () =>
@@ -235,7 +235,8 @@ describe("Gemini translation contract", () => {
     expect(url).toBe(
       "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=abc123",
     );
-    expect(init.signal).toBe(signal);
+    expect(init.signal).toBeInstanceOf(AbortSignal);
+    expect(init.signal.aborted).toBe(false);
     expect(init.method).toBe("POST");
     expect(init.headers["Content-Type"]).toBe("application/json");
 
@@ -618,7 +619,7 @@ describe("Gemini translation contract", () => {
     ).toEqual({ status: "unsafe" });
   });
 
-  it("falls back from 429 and 503 but not other statuses", async () => {
+  it("does not retry quota limits but falls back from temporary service errors", async () => {
     const fetchImpl = vi
       .fn()
       .mockResolvedValueOnce({
@@ -643,12 +644,8 @@ describe("Gemini translation contract", () => {
         apiKey: "test-key",
         fetchImpl,
       }),
-    ).resolves.toEqual(
-      expect.objectContaining({
-        status: "safe",
-      }),
-    );
-    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    ).rejects.toMatchObject({ code: "api_error", details: { status: 429, kind: "limited" } });
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
 
     const retry503 = vi
       .fn()
@@ -892,7 +889,7 @@ describe("Gemini translation contract", () => {
       .fn()
       .mockResolvedValueOnce({
         ok: false,
-        status: 429,
+        status: 503,
         json: async () => ({ error: { message: "rate limited" } }),
       })
       .mockResolvedValueOnce({

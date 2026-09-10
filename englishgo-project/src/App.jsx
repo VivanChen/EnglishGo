@@ -1,3 +1,4 @@
+import { serviceFetch, assertServiceResponse, serviceErrorMessage } from './lib/serviceErrors.js';
 import { getGeminiModels, getGeminiModelPreference, saveGeminiModelPreference, GEMINI_MODEL_OPTIONS } from './lib/geminiModels.js';
 import { followPageAnchor, withoutPageAnchor } from "./data/pageAnchors.js";
 import { refreshPetCare } from "./data/petCare.js";
@@ -1933,31 +1934,30 @@ async function generateExample(word, meaning, pos, apiKey){
 
 Return STRICT JSON only:
 {"en": "English sentence here", "zh": "中文翻譯"}`;
-  try{
-    const models=getGeminiModels();
-    for(const model of models){
-      try{
-        const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,{
-          method:"POST",headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:300,temperature:0.7}}),
-        });
-        const data=await res.json();
-        if(data?.error)continue;
-        let text=data?.candidates?.[0]?.content?.parts?.[0]?.text;
-        if(!text)continue;
-        text=text.trim().replace(/^```(?:json)?\s*/i,"").replace(/\s*```\s*$/,"");
-        const s=text.indexOf("{");const e=text.lastIndexOf("}");
-        if(s>=0&&e>s)text=text.slice(s,e+1);
-        const parsed=JSON.parse(text);
-        if(parsed.en&&parsed.zh){
-          _exampleCache[k]=parsed;
-          try{localStorage.setItem(`ex_${k}`,JSON.stringify(parsed))}catch{}
-          return parsed;
-        }
-      }catch{}
-    }
-  }catch{}
-  return null;
+  let lastError;
+  const models=getGeminiModels();
+  for(const model of models){
+    try{
+      const res=await serviceFetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:300,temperature:0.7}}),
+      });
+      const data=await res.json();
+      assertServiceResponse(res,data);
+      let text=data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      if(!text)continue;
+      text=text.trim().replace(/^```(?:json)?\s*/i,"").replace(/\s*```\s*$/,"");
+      const s=text.indexOf("{");const e=text.lastIndexOf("}");
+      if(s>=0&&e>s)text=text.slice(s,e+1);
+      const parsed=JSON.parse(text);
+      if(parsed.en&&parsed.zh){
+        _exampleCache[k]=parsed;
+        try{localStorage.setItem(`ex_${k}`,JSON.stringify(parsed))}catch{}
+        return parsed;
+      }
+    }catch(error){lastError=error;if(error.noRetry)throw error;}
+  }
+  throw lastError || new Error("AI 例句產生失敗");
 }
 
 // Curated emoji/icon illustrations for common words (better than random photos)
@@ -2617,7 +2617,7 @@ function SettingsPage({onBack,c,gemKey,setGemKey,gifKey,setGifKey}){
   const clearGif=()=>{setGifInp("");setGifKey("");flash("gif-clear")};
   const status=ok=>(
     <span style={{fontSize:11,fontWeight:900,color:ok?c.cl:S.t3,background:ok?c.bg:S.bg2,border:`1px solid ${ok?`${c.cl}33`:S.bd}`,borderRadius:999,padding:"4px 9px"}}>
-      {ok?"已設定":"未設定"}
+      {ok?"已填入・未驗證":"未填入"}
     </span>
   );
   const pill=t=><span key={t} style={{fontSize:11,color:c.cl,fontWeight:900,background:c.bg,border:`1px solid ${c.cl}26`,borderRadius:999,padding:"5px 9px"}}>{t}</span>;
@@ -2851,22 +2851,23 @@ async function generateExamAiWords({term,lv,apiKey,count=10}){
 
 請輸出 STRICT JSON：
 {"words":["apple","school","water"]}`;
+  let lastError;
   const models=getGeminiModels();
   for(const model of models){
     try{
-      const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey.trim())}`,{
+      const res=await serviceFetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey.trim())}`,{
         method:"POST",headers:{"Content-Type":"application/json"},
         body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:1800,temperature:0.55,responseMimeType:"application/json"}}),
       });
       const data=await res.json();
-      if(!res.ok||data?.error)continue;
+      assertServiceResponse(res,data);
       const text=(data?.candidates?.[0]?.content?.parts||[]).map(p=>p.text||"").join("");
       if(!text)continue;
       const words=normalizeExamAiWords(parseGrammarJson(text),count);
       if(words.length)return words;
-    }catch{}
+    }catch(error){lastError=error;if(error.noRetry)throw error;}
   }
-  throw new Error("AI 單字暫時產生失敗，請稍後再試。");
+  throw lastError || new Error("AI 單字暫時產生失敗，請稍後再試。");
 }
 function ExamReviewM(props){return <Suspense fallback={<ModuleLoading label="準備考前小書包..."/>}><ExamPlanner key={props.lv} {...props} deps={{Hdr,c:props.c,useLS,terms:EXAM_AI_TERMS,counts:EXAM_AI_COUNTS,defaultTerm:defaultExamTerm,generateWords:generateExamAiWords,fetchCloudWord,findAnyWord,orderCards:orderExamCards}}/></Suspense>}
 
@@ -3247,23 +3248,24 @@ ${analysisBlock}
 - 不要輸出中文諧音、注音符號、日文假名或逐字母拼音。
 - 文字要短，小學生也看得懂。
 - words 請固定回傳空陣列。`;
+  let lastError;
   const models=getGeminiModels();
   for(const model of models){
     try{
-      const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey.trim())}`,{
+      const res=await serviceFetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey.trim())}`,{
         method:"POST",headers:{"Content-Type":"application/json"},
         body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:900,temperature:0.35,responseMimeType:"application/json"}}),
       });
       const data=await res.json();
-      if(!res.ok||data?.error)continue;
+      assertServiceResponse(res,data);
       const text=(data?.candidates?.[0]?.content?.parts||[]).map(p=>p.text||"").join("");
       if(!text)continue;
       const normalized=normalizePronunciationGuide(parseGrammarJson(text),item,lv,"ai");
       try{localStorage.setItem(cacheKey,JSON.stringify(normalized))}catch{}
       return normalized;
-    }catch{}
+    }catch(error){lastError=error;if(error.noRetry)throw error;}
   }
-  throw new Error("AI 發音提示暫時產生失敗，請稍後再試。");
+  throw lastError || new Error("AI 發音提示暫時產生失敗，請稍後再試。");
 }
 
 function speakPassThreshold(item){return item?.type==="word"?80:70}
@@ -3399,23 +3401,24 @@ async function generateGrammarAiExplanation(rule,lv,apiKey){
 
 請用繁體中文輸出 STRICT JSON：
 {"simple":"用學生聽得懂的方式講解 2-3 句","examples":[{"en":"英文例句","zh":"繁中翻譯"}],"practice":{"prompt":"一題含 ___ 的練習題","answer":"答案","explanation":"為什麼"}}`;
+  let lastError;
   const models=getGeminiModels();
   for(const model of models){
     try{
-      const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey.trim())}`,{
+      const res=await serviceFetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey.trim())}`,{
         method:"POST",headers:{"Content-Type":"application/json"},
         body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:900,temperature:0.45,responseMimeType:"application/json"}}),
       });
       const data=await res.json();
-      if(!res.ok||data?.error)continue;
+      assertServiceResponse(res,data);
       const text=(data?.candidates?.[0]?.content?.parts||[]).map(p=>p.text||"").join("");
       if(!text)continue;
       const normalized=normalizeGrammarAi(parseGrammarJson(text),rule);
       try{localStorage.setItem(cacheKey,JSON.stringify(normalized))}catch{}
       return normalized;
-    }catch{}
+    }catch(error){lastError=error;if(error.noRetry)throw error;}
   }
-  throw new Error("AI 講解暫時產生失敗，請稍後再試。");
+  throw lastError || new Error("AI 講解暫時產生失敗，請稍後再試。");
 }
 function grammarCloze(sentence,fill,cl){
   const parts=String(sentence||"").split("___");
@@ -3870,16 +3873,7 @@ Return STRICT JSON only (no markdown, no explanations):
       setStep("reading");
     }catch(e){
       if(storyRequestRef.current!==controller||controller.signal.aborted)return;
-      const msg=e.message||"";
-      let userMsg="故事生成失敗";
-      if(msg.includes("忙碌")||msg.includes("demand")||msg.includes("overloaded")){
-        userMsg="AI 目前很忙，請稍後再試一次\n（已自動重試多次和切換模型）";
-      }else if(msg.includes("API")||msg.includes("key")||msg.includes("403")){
-        userMsg="API Key 無效，請檢查設定";
-      }else{
-        userMsg="故事生成失敗："+msg+"\n請再試一次";
-      }
-      setError(userMsg);
+      setError(serviceErrorMessage(e,e.message==="故事內容不完整"?"故事內容不完整，請再試一次。":"故事生成失敗，請再試一次。"));
       setStep("setup");
     }finally{
       if(storyRequestRef.current===controller)storyRequestRef.current=null;
@@ -3963,7 +3957,7 @@ Return STRICT JSON only (no markdown, no explanations):
         </div>
       </div>
 
-      {error&&<div role="alert" style={{padding:"10px 14px",background:"#FCEBEB",border:"1px solid #E24B4A",borderRadius:10,color:"#A32D2D",fontSize:12,marginBottom:12,whiteSpace:"pre-wrap"}}>❌ {error}</div>}
+      {error&&<div role="alert" style={{padding:"10px 14px",background:"#FCEBEB",border:"1px solid #E24B4A",borderRadius:10,color:"#A32D2D",fontSize:12,marginBottom:12,whiteSpace:"pre-wrap"}}>❌ {error}<div style={{marginTop:8}}><button onClick={()=>onOpenSettings?.()} style={S.btn}>API Key 設定</button></div></div>}
 
       <button onClick={genStory} style={{...S.btn,background:`linear-gradient(135deg,${c.cl},${c.ac})`,color:"#fff",width:"100%",padding:"16px",fontSize:15,boxShadow:`0 4px 12px ${c.cl}44`}}>✨ 開始生成故事</button>
 

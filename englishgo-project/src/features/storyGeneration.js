@@ -1,3 +1,4 @@
+import { responseError, serviceFetch } from '../lib/serviceErrors.js';
 import { getGeminiModels } from '../lib/geminiModels.js';
 // Each attempt must return a complete story using the current model preference.
 
@@ -44,20 +45,14 @@ export async function generateStoryPayload({ apiKey, prompt, pageCount, signal, 
       for (let attempt = 0; attempt < 3; attempt++) {
         controller.signal.throwIfAborted();
         try {
-          const response = await fetchImpl(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+          const response = await serviceFetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: controller.signal,
             body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 2500, temperature: 0.85, responseMimeType: 'application/json' } }),
-          });
+          }, fetchImpl, timeoutMs);
           const data = await response.json();
           controller.signal.throwIfAborted();
           if (!response.ok || data?.error) {
-            const status = data?.error?.code || response.status;
-            if (status === 400 || status === 401 || status === 403) {
-              const error = new Error('API Key 無效，請檢查設定');
-              error.noRetry = true;
-              throw error;
-            }
-            throw new Error(status === 429 || status === 503 ? '模型忙碌中' : 'AI 服務暫時無法使用');
+            throw responseError(response, data);
           }
           const text = data?.candidates?.[0]?.content?.parts?.map(part => part.text || '').join('');
           return parseStoryResponse(text, pageCount);

@@ -881,8 +881,8 @@ describe('EnglishGo app smoke flow', () => {
       expect(await screen.findByRole('heading', { name: /單字小花園/ })).toBeInTheDocument();
 
       await waitFor(() => {
-        expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('api.giphy.com/v1/gifs/translate'));
-        expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('s=accomplish'));
+        expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('api.giphy.com/v1/gifs/translate'), expect.any(Object));
+        expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('s=accomplish'), expect.any(Object));
       });
 
       await waitFor(() => {

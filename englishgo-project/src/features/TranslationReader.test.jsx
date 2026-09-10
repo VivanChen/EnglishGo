@@ -603,3 +603,14 @@ describe("TranslationReader", () => {
     expect(css).toContain("border-radius:8px");
   });
 });
+
+
+it('explains quota limits without losing the input and links to settings', async () => {
+  const props=renderReader({translateText:vi.fn().mockRejectedValue({details:{status:429}})});
+  fireEvent.change(screen.getByLabelText("輸入要翻譯的句子"),{target:{value:"Hello students."}});
+  fireEvent.click(screen.getByRole("button",{name:"AI 翻譯與檢核"}));
+  expect(await screen.findByRole("alert")).toHaveTextContent("可能是呼叫太頻繁或額度不足");
+  expect(screen.getByLabelText("輸入要翻譯的句子")).toHaveValue("Hello students.");
+  fireEvent.click(screen.getByRole("button",{name:"API Key 設定",exact:true}));
+  expect(props.onOpenSettings).toHaveBeenCalledTimes(1);
+});

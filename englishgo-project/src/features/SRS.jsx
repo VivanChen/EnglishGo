@@ -1,3 +1,5 @@
+import { fetchGif, forgetGif } from '../lib/giphy.js';
+import { serviceFetch, assertServiceResponse, serviceErrorMessage } from '../lib/serviceErrors.js';
 import { getGeminiModels } from '../lib/geminiModels.js';
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import {
@@ -10,27 +12,11 @@ import {
   selectVocabularyTopicRound,
 } from "../data/vocabularyTopics.js";
 
-const _gifCache = new Map();
 const _kidDictCache = new Map();
 const KID_DICT_CACHE_VERSION = 2;
 const HAS_CJK = /[\u3400-\u9fff]/;
 const HAS_LATIN = /[a-z]/i;
 
-async function fetchGif(word,apiKey){
-  const key=String(apiKey||"").trim();
-  const k=String(word||"").trim().toLowerCase();
-  if(!key||!k)return null;
-  const cacheKey=`${key}:${k}`;
-  if(_gifCache.has(cacheKey))return _gifCache.get(cacheKey);
-  try{
-    const res=await fetch(`https://api.giphy.com/v1/gifs/translate?api_key=${encodeURIComponent(key)}&s=${encodeURIComponent(k)}&rating=g&lang=en`);
-    if(!res.ok)return null;
-    const data=await res.json();
-    const url=data?.data?.images?.fixed_height_small?.url||data?.data?.images?.fixed_height?.url||null;
-    _gifCache.set(cacheKey,url);
-    return url;
-  }catch{return null}
-}
 
 function yahooDictionaryUrl(word){
   return `https://tw.dictionary.search.yahoo.com/search?p=${encodeURIComponent(String(word||"").trim())}`;
@@ -136,16 +122,17 @@ JSON 格式:
   "synonyms": [{"word":"similar word","zh":"中文意思"}],
   "tips": ["學習提醒"]
 }`;
+  let lastError;
   const models=getGeminiModels();
   for(const model of models){
     try{
-      const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey.trim())}`,{
+      const res=await serviceFetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey.trim())}`,{
         method:"POST",
         headers:{"Content-Type":"application/json"},
         body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:900,temperature:0.25,responseMimeType:"application/json"}}),
       });
       const data=await res.json();
-      if(data?.error)continue;
+      assertServiceResponse(res,data);
       const text=data?.candidates?.[0]?.content?.parts?.[0]?.text;
       if(!text)continue;
       const parsed=normalizeKidDictionary(extractJson(text),word,meaning,pos);
@@ -153,9 +140,9 @@ JSON 格式:
       _kidDictCache.set(key,parsed);
       try{localStorage.setItem(storageKey,JSON.stringify(parsed))}catch{}
       return parsed;
-    }catch{}
+    }catch(error){lastError=error;if(error.noRetry)throw error;}
   }
-  throw new Error("Gemini dictionary generation failed");
+  throw lastError || new Error("Gemini dictionary generation failed");
 }
 
 // ═══ ANIMATED EMOJI FOR CARDS ══════════════════════════════════════
@@ -261,6 +248,8 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
   const[poolSources,setPoolSources]=useState(()=>Object.fromEntries(Object.keys(V).map(level=>[level,"local"])));
   const[selectedTopic,setSelectedTopic]=useState(null);
   const[combo,setCombo]=useState(0);const[maxCombo,setMaxCombo]=useState(0);const[comboAnim,setComboAnim]=useState(false);const[showConfetti,setShowConfetti]=useState(false);const[flipAnim,setFlipAnim]=useState(false);const[mascotMood,setMascotMood]=useState("idle");
+  const[gifNotice,setGifNotice]=useState("");const[gifRetry,setGifRetry]=useState(0);
+  const[exampleError,setExampleError]=useState("");const[exampleRetry,setExampleRetry]=useState(0);const[dictRetry,setDictRetry]=useState(0);
   const[gifUrl,setGifUrl]=useState(null);const[gifLoading,setGifLoading]=useState(false);
   const[imgUrl,setImgUrl]=useState(null);
   const[mediaError,setMediaError]=useState("");
@@ -290,9 +279,17 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
   const cur=deck.queue[0]!==undefined?cards[deck.queue[0]]:null;const left=deck.queue.length;const done=left===0;const spokenExample=cur?(aiExample?.en||(!isPlaceholderExample(cur.ex,cur.w)?cur.ex:"")):"";
   useEffect(()=>{setDictOpen(false);setDictData(null);setDictError("")},[cur?.w]);
   useEffect(()=>{setMediaError("")},[cur?.w]);
-  useEffect(()=>{let active=true;if(!studyActive||!dictOpen||!cur){setDictLoading(false);return()=>{active=false}}if(!apiKey?.trim()){setDictLoading(false);setDictData(null);setDictError("");return()=>{active=false}}setDictLoading(true);setDictError("");generateKidDictionary(cur.w,cur.m,cur.p,lv,apiKey).then(data=>{if(!active)return;setDictData(data);setDictLoading(false)}).catch(()=>{if(!active)return;setDictData(null);setDictError("AI 字典目前產生失敗，請稍後再試，或使用 Yahoo 查詢。");setDictLoading(false)});return()=>{active=false}},[studyActive,dictOpen,cur?.w,apiKey,lv]);
+  useEffect(()=>{let active=true;if(!studyActive||!dictOpen||!cur){setDictLoading(false);return()=>{active=false}}if(!apiKey?.trim()){setDictLoading(false);setDictData(null);setDictError("");return()=>{active=false}}setDictLoading(true);setDictError("");generateKidDictionary(cur.w,cur.m,cur.p,lv,apiKey).then(data=>{if(!active)return;setDictData(data);setDictLoading(false)}).catch(error=>{if(!active)return;setDictData(null);setDictError(serviceErrorMessage(error,"AI 字典目前產生失敗，請稍後再試，或使用 Yahoo 查詢。"));setDictLoading(false)});return()=>{active=false}},[studyActive,dictOpen,cur?.w,apiKey,lv,dictRetry]);
   // When Giphy is enabled, search every word — including abstract vocabulary.
-  useEffect(()=>{let active=true;setGifUrl(null);if(!studyActive||!cur||!gifKey){setGifLoading(false);return()=>{active=false}}setGifLoading(true);fetchGif(cur.w,gifKey).then(url=>{if(!active)return;setGifUrl(url);setGifLoading(false)}).catch(()=>{if(active)setGifLoading(false)});return()=>{active=false}},[studyActive,cur?.w,gifKey]);
+  useEffect(()=>{
+    let active=true;const controller=new AbortController();setGifUrl(null);setGifNotice("");setMediaError("");
+    if(!studyActive||!cur||!gifKey?.trim()){setGifLoading(false);return()=>{active=false;controller.abort()}};
+    setGifLoading(true);
+    fetchGif(cur.w,gifKey,controller.signal).then(url=>{if(!active)return;setGifUrl(url);if(!url)setGifNotice("找不到合適動圖，已使用替代圖片或圖示，不影響練習。");})
+      .catch(error=>{if(active&&error.name!=="AbortError")setGifNotice(serviceErrorMessage(error,"動圖暫時無法載入，請稍後重試。","Giphy")+" 已使用替代圖片或圖示，不影響練習。");})
+      .finally(()=>{if(active)setGifLoading(false)});
+    return()=>{active=false;controller.abort()};
+  },[studyActive,cur?.w,gifKey,gifRetry]);
   // Static image — always available regardless of Giphy key
   useEffect(()=>{if(studyActive&&cur){setImgUrl(getWordImg(cur.w));const upcoming=deck.queue.slice(0,4).map(i=>cards[i]).filter(Boolean);preloadImgs(upcoming,0,upcoming.length)}else setImgUrl(null)},[studyActive,cur?.w,left,cards]);
   // Auto-detect bad examples and replace with AI-generated ones (when API key set)
@@ -300,6 +297,7 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
     let active=true;
     if(!studyActive||!cur){setAiExample(null);setExampleLoading(false);return()=>{active=false}};
     setAiExample(null);
+    setExampleError("");
     setExampleLoading(false);
     if(!isPlaceholderExample(cur.ex,cur.w)){return}// Original example is good, use it
     // Check if we have a cached AI example
@@ -310,11 +308,11 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
     if(apiKey){
       setExampleLoading(true);
       generateExample(cur.w,cur.m,cur.p,apiKey).then(ex=>{
-        if(active&&ex)setAiExample(ex);
-      }).finally(()=>{if(active)setExampleLoading(false)});
+        if(active){if(ex)setAiExample(ex);else setExampleError("AI 例句暫時無法產生，仍可繼續練習單字。");}
+      }).catch(error=>{if(active)setExampleError(serviceErrorMessage(error)+" 仍可繼續練習單字。");}).finally(()=>{if(active)setExampleLoading(false)});
     }
     return()=>{active=false};
-  },[studyActive,cur?.w,apiKey]);
+  },[studyActive,cur?.w,apiKey,exampleRetry]);
   useEffect(()=>{
     if(!studyActive||!cur||loading)return;
     const upcoming=deck.queue.slice(0,5).map(i=>cards[i]?.w).filter(Boolean);
@@ -497,6 +495,9 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
       <span style={{color:S.t3}}>完成 {deck.total-left}/{deck.total}</span>
       {[["#E24B4A",deck.stats.again],["#EF9F27",deck.stats.hard],["#1D9E75",deck.stats.good],["#185FA5",deck.stats.easy]].map(([cl,v],i)=><span className="srs-stat-dot" key={i} style={{color:cl}}>{v}</span>)}
     </div>
+    {gifNotice&&<div role="status" style={{padding:12,marginBottom:10,border:`1px solid ${S.bd}`,borderRadius:12,color:S.t2,fontSize:13,lineHeight:1.7}}>
+      <div>{gifNotice}</div><div style={{display:"flex",flexWrap:"wrap",gap:8,marginTop:8}}><button className="srs-pill-btn" disabled={gifLoading} onClick={()=>setGifRetry(n=>n+1)}>重試動圖</button><button className="srs-pill-btn" onClick={()=>onOpenSettings?.()}>API Key 設定</button></div>
+    </div>}
     <div className={`srs-study-grid ${dictOpen&&flip?"is-dict-open":""}`}>
       <section data-testid="srs-card" className={`srs-card-shell ${flip?"is-back":"is-front"} ${dictOpen?"is-dict-open":""}`} onClick={handleCardTap}>
         {!flip&&<CardSparkles color={c.cl}/>}
@@ -504,7 +505,7 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
         {!flip?(<>
           <div className="srs-front-media" data-testid="srs-front-media">
             <div className="srs-media-badge">{mediaLabel}</div>
-            {showGif?<img src={gifUrl} alt={cur.w} onError={()=>{setMediaError("gif");setGifUrl(null)}}/>
+            {showGif?<img src={gifUrl} alt={cur.w} onError={()=>{forgetGif(cur.w,gifKey);setMediaError("gif");setGifUrl(null);setGifNotice("動圖檔案無法載入，已使用替代圖片或圖示，不影響練習。")}}/>
             :showEmoji?<div className="srs-front-emoji">{imgUrl.value}</div>
             :showImg?<img src={imgUrl.value} alt={cur.w} onError={()=>setMediaError("image")}/>
             :gifLoading&&gifKey?<div style={{fontSize:13,color:S.t3,animation:"pulse 1s infinite"}}>載入圖片中...</div>
@@ -527,7 +528,7 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
               </div>
             </div>
             {!dictOpen&&<div className={`srs-back-thumb ${!showGif&&(showEmoji||!showImg)?"is-emoji":""}`} data-testid="srs-back-media">
-              {showGif?<img src={gifUrl} alt={cur.w} onError={()=>{setMediaError("gif");setGifUrl(null)}}/>:showEmoji?imgUrl.value:showImg?<img src={imgUrl.value} alt={cur.w} onError={()=>setMediaError("image")}/>:fallbackVisual.emoji}
+              {showGif?<img src={gifUrl} alt={cur.w} onError={()=>{forgetGif(cur.w,gifKey);setMediaError("gif");setGifUrl(null);setGifNotice("動圖檔案無法載入，已使用替代圖片或圖示，不影響練習。")}}/>:showEmoji?imgUrl.value:showImg?<img src={imgUrl.value} alt={cur.w} onError={()=>setMediaError("image")}/>:fallbackVisual.emoji}
             </div>}
           </div>
           {(()=>{
@@ -551,6 +552,7 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
               ✨ AI 正在生成例句...
             </div>);
           }
+          if(exampleError){return <div className="srs-example-card" role="status"><p>{exampleError}</p><div style={{display:"flex",flexWrap:"wrap",gap:8}}><button className="srs-pill-btn" onClick={e=>{e.stopPropagation();setExampleRetry(n=>n+1)}}>重試例句</button><button className="srs-pill-btn" onClick={e=>{e.stopPropagation();onOpenSettings?.()}}>API Key 設定</button></div></div>}
           // Missing optional generated example: keep the current word usable
           if(isPlaceholder&&!apiKey){
             return(<div className="srs-example-card" style={{textAlign:"center",color:S.t3}}>
@@ -604,7 +606,7 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
           <details style={{fontSize:12,marginTop:16}}><summary style={{cursor:"pointer",minHeight:44,display:"flex",alignItems:"center"}}>給家長與老師：更多字典解釋</summary><p>設定 AI 後，可加入更多解釋與搭配詞。內建字典可以繼續使用。</p><button type="button" onClick={()=>onOpenSettings?.()} style={{...S.btn,background:S.bg1,color:c.cl,padding:"8px 12px",fontSize:12}}>前往 Key 設定</button></details>
         </div>}
         {apiKey?.trim()&&dictLoading&&<div style={{padding:"28px 0",textAlign:"center",color:S.t3}}>AI 正在整理小朋友版字典...</div>}
-        {apiKey?.trim()&&!dictLoading&&dictError&&<div style={{padding:12,background:"#fff4f4",border:"1px solid #f2c7c7",borderRadius:12,color:"#9f2f2f"}}>{dictError}</div>}
+        {apiKey?.trim()&&!dictLoading&&dictError&&<div style={{padding:12,background:"#fff4f4",border:"1px solid #f2c7c7",borderRadius:12,color:"#9f2f2f"}} role="status">{dictError}<div style={{display:"flex",flexWrap:"wrap",gap:8,marginTop:8}}><button className="srs-pill-btn" onClick={()=>setDictRetry(n=>n+1)}>重試 AI 字典</button><button className="srs-pill-btn" onClick={()=>onOpenSettings?.()}>API Key 設定</button></div></div>}
         {apiKey?.trim()&&!dictLoading&&!dictError&&!dictData&&<div style={{padding:12,background:S.bg2,border:`1px solid ${S.bd}`,borderRadius:12,color:S.t3}}>尚未產生字典內容，可重新點擊查字典或使用 Yahoo 查詢。</div>}
         {apiKey?.trim()&&!dictLoading&&dictData&&<>
           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10,flexWrap:"wrap"}}>

@@ -1,3 +1,4 @@
+import { serviceErrorMessage } from '../lib/serviceErrors.js';
 export const wordIdentity = word => `${word?.level || ''}:${String(word?.w || '').toLowerCase()}`;
 export const isDeskWord = word => word && typeof word.w === 'string' && word.w.trim() && typeof word.m === 'string';
 export function readExplorer(raw) {
@@ -50,9 +51,11 @@ export function tutorContents(turns, question) {
   return [...complete.flatMap(turn => [{ role: 'user', parts: [{ text: turn.question }] }, { role: 'model', parts: [{ text: turn.answer }] }]), { role: 'user', parts: [{ text: question }] }];
 }
 export function tutorError(error) {
+  const classified = serviceErrorMessage(error, '');
+  if (classified) return classified + ' 問題已保留。';
   if (error?.name === 'TimeoutError') return '等候有點久，問題已保留，可以稍後再試。';
   const message = String(error?.message || '');
   if (/403|401|API.?KEY|permission|invalid/i.test(message)) return 'AI 設定需要檢查，請大人到設定頁幫忙。';
-  if (/429|quota|rate/i.test(message)) return 'AI 暫時達到使用上限，先休息一下，稍後再試。';
+  if (/429|quota|rate/i.test(message)) return serviceErrorMessage({status:429}) + ' 問題已保留。';
   return 'AI 暫時沒有回答，問題已保留，可以重試或換個練習。';
 }
