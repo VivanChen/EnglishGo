@@ -111,7 +111,15 @@ describe("deployment chunk caching", () => {
 });
 
 describe("service worker font responses", () => {
-  const fontRequest = { method: "GET", url: "https://fonts.gstatic.com/font.woff2", destination: "font", headers: new Headers() };
+  const fontRequest = { method: "GET", url: "https://englishgo-vevan.netlify.app/fonts/font.woff2", destination: "font", headers: new Headers() };
+
+  it("lets the browser load external fonts under font-src instead of worker connect-src", async () => {
+    const fetchImpl = vi.fn();
+    const { listeners, cacheStorage } = loadWorker(fetchImpl);
+    expect(await dispatchFetch(listeners.fetch, { ...fontRequest, url: 'https://fonts.gstatic.com/font.woff2' })).toBeUndefined();
+    expect(fetchImpl).not.toHaveBeenCalled();
+    expect(cacheStorage.match).not.toHaveBeenCalled();
+  });
 
   it("leaves extension font requests to the browser", async () => {
     const fetchImpl = vi.fn();

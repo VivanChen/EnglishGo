@@ -1,5 +1,5 @@
 // EnglishGo Service Worker - offline-first PWA
-const CACHE_VERSION = 'englishgo-v1.2.5';
+const CACHE_VERSION = 'englishgo-v1.2.6';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 const DYNAMIC_CACHE_LIMIT = 160;
@@ -59,6 +59,9 @@ self.addEventListener('fetch', (event) => {
 
   // Extension-injected fonts and other non-web resources belong to the browser.
   if (request.method !== 'GET' || !['http:', 'https:'].includes(url.protocol)) return;
+  // External fonts are permitted by font-src, not the worker's connect-src.
+  // Let the browser load/cache them without converting them into worker fetches.
+  if (request.destination === 'font' && url.origin !== location.origin) return;
   // Prerecorded storybook packs have their own persistent audio cache.
   if (url.origin === location.origin && url.pathname.startsWith('/audio/picture-books/')) return;
 
