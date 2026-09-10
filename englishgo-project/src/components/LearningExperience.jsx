@@ -59,7 +59,6 @@ export function WelcomeScreen({ levels, counts, formatCount, onSelect, onOpenSet
   return <div className="eg-welcome">
     <a className="eg-skip" href="#choose-level" onClick={followPageAnchor}>跳到學習階段</a>
     <header className="eg-welcome-top"><Brand/><ComfortControls {...comfort}/></header>
-    <div className="eg-key-entry"><button type="button" onClick={onOpenSettings}>API Key 設定 · Gemini／Giphy</button><span>家長統一管理 AI 模型與動圖金鑰</span></div>
     <main className="eg-welcome-main">
       <section className="eg-welcome-hero">
         <div><span className="eg-eyebrow"><span className="eg-live-dot"/> 給每個好奇的小小學習家</span><h1>讓好奇心發芽，<br/>一起<span>玩出英文力。</span></h1><p>聽一聽、說一說，和小夥伴探索英文。<br/>從一個單字開始，每一小步都算數。</p><a href="#choose-level" onClick={followPageAnchor} className="eg-primary">開始我的學習旅程 <LearningIcon name="arrow" size={19}/></a><div className="eg-welcome-note">免費學習 <span>·</span> 沒有廣告 <span>·</span> 照自己的步調</div></div>
@@ -69,7 +68,7 @@ export function WelcomeScreen({ levels, counts, formatCount, onSelect, onOpenSet
         <div className="eg-levels">{Object.entries(levels).map(([key,level],i)=><button className={`eg-level-choice tone-${i}`} type="button" onClick={()=>onSelect(key)} key={key}><span className="eg-level-symbol"><LearningIcon name={['learn','read','star'][i]} size={30}/></span><span className="eg-level-choice-title">{level.l}<small>{level.en}</small></span><p>{['從生活單字出發，快樂打好基礎','讀故事、練表達，一步步更有信心','拓展詞彙，探索更大的英文世界'][i]}</p><span className="eg-level-choice-bottom"><span className="eg-level-badge">{formatCount(counts?.[key],counts!==null)}</span><LearningIcon name="arrow" size={20}/></span>{lastLevel===key&&<span className="eg-last-level">上次的起點</span>}</button>)}</div>
       </section>
       <section className="eg-how"><div><span>01</span><h3>聽聽看，認識新單字</h3><p>有發音、有例句，不懂也沒關係。</p></div><div><span>02</span><h3>動動手，把英文玩起來</h3><p>配對、故事、歌曲，選你喜歡的方式。</p></div><div><span>03</span><h3>看看自己，又進步一點</h3><p>留下學習足跡，陪寵物一起長大。</p></div></section>
-      <details className="eg-grownup"><summary><LearningIcon name="tools" size={20}/> 給家長與老師 <span>學習資源與進階設定</span></summary><p>基本單字、遊戲和內建內容可以直接開始。AI 與動圖屬於選用功能，可由大人協助設定。</p><div><a href="/learn/srs-method.html">單字記憶方法 ↗</a><a href="/learn/speaking-tips.html">口說練習指南 ↗</a><a href="/learn/api-keys.html">API Key 教學 ↗</a><a href="/learn/gif-guide.html">單字動圖效果 ↗</a></div></details>
+      <details className="eg-grownup"><summary><LearningIcon name="tools" size={20}/> 給家長與老師 <span>學習資源與進階設定</span></summary><p>基本單字、遊戲和內建內容可以直接開始。AI 與動圖屬於選用功能，可由大人協助設定。</p><div><button type="button" className="eg-grownup-settings" onClick={onOpenSettings}>API Key 設定（Gemini／Giphy）</button><a href="/learn/srs-method.html">單字記憶方法 ↗</a><a href="/learn/speaking-tips.html">口說練習指南 ↗</a><a href="/learn/api-keys.html">API Key 教學 ↗</a><a href="/learn/gif-guide.html">單字動圖效果 ↗</a></div></details>
     </main><footer className="eg-welcome-footer"><span>EnglishGo · 讓學習，成為每天的小美好。</span><small>GIFs powered by <b>GIPHY</b> · Natural narration by ElevenLabs</small></footer>
   </div>;
 }
