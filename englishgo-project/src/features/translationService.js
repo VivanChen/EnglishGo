@@ -1,3 +1,4 @@
+import { getGeminiModels } from '../lib/geminiModels.js';
 export const MAX_ENGLISH_WORDS = 20;
 export const MAX_CHINESE_CHARACTERS = 20;
 
@@ -297,7 +298,7 @@ export function validateTranslationInput(text, direction = "auto") {
   };
 }
 
-const GEMINI_MODELS = ["gemini-2.5-flash-lite", "gemini-2.5-flash"];
+
 const GEMINI_API_BASE =
   "https://generativelanguage.googleapis.com/v1beta/models";
 const GEMINI_SAFETY_CATEGORIES = [
@@ -881,7 +882,8 @@ export async function translateStudentText({
   let lastApiError = null;
   onRequestStart?.();
 
-  for (const model of GEMINI_MODELS) {
+  const models = getGeminiModels();
+  for (const model of models) {
     let response;
     try {
       response = await fetchImpl(
@@ -903,7 +905,7 @@ export async function translateStudentText({
       const status = response?.status;
       lastApiError = createApiError({ status, model });
 
-      if (isRetryableStatus(status) && model !== GEMINI_MODELS.at(-1)) {
+      if (isRetryableStatus(status) && model !== models.at(-1)) {
         continue;
       }
 

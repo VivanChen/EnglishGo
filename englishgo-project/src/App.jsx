@@ -1,3 +1,4 @@
+import { getGeminiModels, getGeminiModelPreference, saveGeminiModelPreference, GEMINI_MODEL_OPTIONS } from './lib/geminiModels.js';
 import { followPageAnchor, withoutPageAnchor } from "./data/pageAnchors.js";
 import { refreshPetCare } from "./data/petCare.js";
 import { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense } from "react";
@@ -1933,7 +1934,7 @@ async function generateExample(word, meaning, pos, apiKey){
 Return STRICT JSON only:
 {"en": "English sentence here", "zh": "中文翻譯"}`;
   try{
-    const models=["gemini-2.5-flash-lite","gemini-2.5-flash","gemini-2.0-flash"];
+    const models=getGeminiModels();
     for(const model of models){
       try{
         const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,{
@@ -2600,6 +2601,8 @@ export default function App(){
 }
 
 function SettingsPage({onBack,c,gemKey,setGemKey,gifKey,setGifKey}){
+  const[modelChoice,setModelChoice]=useState(getGeminiModelPreference);
+  const[modelStatus,setModelStatus]=useState("");
   const[gemInp,setGemInp]=useState(gemKey||"");
   const[gifInp,setGifInp]=useState(gifKey||"");
   const[showGem,setShowGem]=useState(false);
@@ -2648,6 +2651,27 @@ function SettingsPage({onBack,c,gemKey,setGemKey,gifKey,setGifKey}){
         <a href="/learn/api-keys.html#google" target="_blank" rel="noopener noreferrer" style={{fontSize:12,color:c.cl,fontWeight:900,textDecoration:"underline"}}>圖解申請教學</a>
         <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" style={{fontSize:12,color:S.t3,fontWeight:800,textDecoration:"underline"}}>直接開啟 AI Studio</a>
         {(saved==="gem"||saved==="gem-clear")&&<span style={{fontSize:12,color:c.cl,fontWeight:900}}>已更新</span>}
+      </div>
+      <div style={{marginTop:20,borderTop:`1px solid ${S.bd}`,paddingTop:16}}>
+        <label htmlFor="gemini-model" style={{display:"block",fontSize:15,fontWeight:900,marginBottom:8}}>Gemini 模型</label>
+        <select id="gemini-model" value={modelChoice} onChange={e=>{const value=e.target.value;if(saveGeminiModelPreference(value)){setModelChoice(value);setModelStatus("已儲存，下一次 AI 請求生效。")}else{setModelStatus("無法儲存，請確認瀏覽器允許儲存網站資料。")}}} style={{...inputStyle,minWidth:0}}>
+          {GEMINI_MODEL_OPTIONS.map(option=><option key={option.value} value={option.value}>{option.label}</option>)}
+        </select>
+        <p role="status" style={{fontSize:12,color:c.cl}}>{modelStatus}</p>
+        <p style={{fontSize:13,color:S.t2,lineHeight:1.8}}>自動：一般功能先用 Flash-Lite，家教與故事先用 Flash；失敗時可能嘗試另一個模型。指定模型：只使用所選模型，不會自動切換。全站後續 AI 請求共用此設定，已儲存的內容不會重新生成。</p>
+        <div style={{background:S.bg2,borderRadius:12,padding:14,fontSize:13,color:S.t2,lineHeight:1.9,overflowWrap:"anywhere"}}>
+          <strong style={{color:S.t1}}>給家長：帳號、額度與費用</strong>
+          <p>請由家長自行申請 Google 帳號與 API Key。AI 用量歸屬這把 Key 所屬的 Google 專案；同專案的多把 Key 共用額度，各家庭使用自己的專案才各自計算。</p>
+          <p>以上兩個模型目前提供免費層額度，但選模型不等於切換免費方案。是否收費取決於您的 Google 專案方案；本站無法判斷帳務狀態，也不會替您開啟付費。請先到 AI Studio 確認 Free Tier、可用模型與額度。</p>
+          <p>免費層有每分鐘與每日等限制，用完需等待恢復；付費專案依實際用量計費。自動切換模型也不保證免費。免費服務的輸入與回覆可能被 Google 用於改善產品，請勿輸入個資或敏感資料。</p>
+          <p>家長申請 Key 不代表未成年使用限制已解除。Google 現行 Gemini API 條款不允許用於面向或可能由未滿 18 歲者使用的網站／應用程式；請勿提供孩子直接使用這些 AI 功能。一般題庫與已備妥教材可不填 Key 使用。</p>
+          <div style={{display:"flex",flexWrap:"wrap",gap:12}}>
+            <a href="https://aistudio.google.com/usage" target="_blank" rel="noopener noreferrer">查看用量與方案</a>
+            <a href="https://ai.google.dev/gemini-api/docs/pricing" target="_blank" rel="noopener noreferrer">官方價格</a>
+            <a href="https://ai.google.dev/gemini-api/terms" target="_blank" rel="noopener noreferrer">使用條款</a>
+          </div>
+          <p style={{marginBottom:0}}>模型設定與 Key 儲存在目前瀏覽器，換裝置需重新設定。模型及免費額度可能調整，請以 Google 官方與您的專案頁面為準。</p>
+        </div>
       </div>
     </section>
 
@@ -2827,7 +2851,7 @@ async function generateExamAiWords({term,lv,apiKey,count=10}){
 
 請輸出 STRICT JSON：
 {"words":["apple","school","water"]}`;
-  const models=["gemini-2.5-flash-lite","gemini-2.5-flash","gemini-2.0-flash"];
+  const models=getGeminiModels();
   for(const model of models){
     try{
       const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey.trim())}`,{
@@ -3223,7 +3247,7 @@ ${analysisBlock}
 - 不要輸出中文諧音、注音符號、日文假名或逐字母拼音。
 - 文字要短，小學生也看得懂。
 - words 請固定回傳空陣列。`;
-  const models=["gemini-2.5-flash-lite","gemini-2.5-flash","gemini-2.0-flash"];
+  const models=getGeminiModels();
   for(const model of models){
     try{
       const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey.trim())}`,{
@@ -3375,7 +3399,7 @@ async function generateGrammarAiExplanation(rule,lv,apiKey){
 
 請用繁體中文輸出 STRICT JSON：
 {"simple":"用學生聽得懂的方式講解 2-3 句","examples":[{"en":"英文例句","zh":"繁中翻譯"}],"practice":{"prompt":"一題含 ___ 的練習題","answer":"答案","explanation":"為什麼"}}`;
-  const models=["gemini-2.5-flash-lite","gemini-2.5-flash","gemini-2.0-flash"];
+  const models=getGeminiModels();
   for(const model of models){
     try{
       const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey.trim())}`,{

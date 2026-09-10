@@ -30,7 +30,7 @@ describe('story requests',()=>{
   it('rejects an exhausted malformed response rather than returning the last parsed object',async()=>{
     vi.useFakeTimers();const fetchImpl=vi.fn().mockResolvedValue(response({title:'Incomplete'}));
     const result=expect(generateStoryPayload({...options,fetchImpl})).rejects.toThrow('故事內容不完整');
-    await vi.runAllTimersAsync();await result;expect(fetchImpl).toHaveBeenCalledTimes(9);expect(vi.getTimerCount()).toBe(0);
+    await vi.runAllTimersAsync();await result;expect(fetchImpl).toHaveBeenCalledTimes(6);expect(vi.getTimerCount()).toBe(0);
   });
   it('recovers from an incomplete response with a complete retry',async()=>{
     vi.useFakeTimers();const fetchImpl=vi.fn().mockResolvedValueOnce(response({pages:[]})).mockResolvedValue(response(story()));

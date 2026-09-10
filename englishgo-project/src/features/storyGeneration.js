@@ -1,5 +1,6 @@
-// Keep the story's existing model order; each attempt must return a complete story.
-const STORY_MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash'];
+import { getGeminiModels } from '../lib/geminiModels.js';
+// Each attempt must return a complete story using the current model preference.
+
 
 const hasText = value => typeof value === 'string' && value.trim().length > 0;
 
@@ -39,7 +40,7 @@ export async function generateStoryPayload({ apiKey, prompt, pageCount, signal, 
   const timer = setTimeout(() => { timedOut = true; cancel(); }, timeoutMs);
   let lastError = new Error('生成失敗');
   try {
-    for (const model of STORY_MODELS) {
+    for (const model of getGeminiModels(true)) {
       for (let attempt = 0; attempt < 3; attempt++) {
         controller.signal.throwIfAborted();
         try {

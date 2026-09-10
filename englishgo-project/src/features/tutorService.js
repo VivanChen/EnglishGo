@@ -1,4 +1,5 @@
-// Preserve the existing tutor's providers, model order, and generation settings.
+import { getGeminiModels } from '../lib/geminiModels.js';
+// Resolve the parent-selected model for each new request.
 export async function requestTutor({ level, apiKey, contents, signal }) {
   const systemText = `You are EnglishGo AI Tutor for a Taiwanese ${level.l} student.
 Reply mainly in Traditional Chinese, with target English words or phrases in **bold**.
@@ -12,7 +13,7 @@ Use natural English examples with Traditional Chinese translation.
 For correction requests, show 原句, 修正版, 原因, 再練一句.
 Ask only one follow-up question at a time.
 Do not imitate copyrighted songs, books, or specific artists.`;
-  const models = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash'];
+  const models = getGeminiModels(true);
   let lastError;
   for (const model of models) {
     if (signal?.aborted) throw Object.assign(new Error('Cancelled'), { name: 'AbortError' });

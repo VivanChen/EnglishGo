@@ -1,3 +1,4 @@
+import { getGeminiModels } from '../lib/geminiModels.js';
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import {
   VOCABULARY_TOPIC_TARGET,
@@ -135,7 +136,7 @@ JSON 格式:
   "synonyms": [{"word":"similar word","zh":"中文意思"}],
   "tips": ["學習提醒"]
 }`;
-  const models=["gemini-2.5-flash-lite","gemini-2.5-flash","gemini-2.0-flash"];
+  const models=getGeminiModels();
   for(const model of models){
     try{
       const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey.trim())}`,{
