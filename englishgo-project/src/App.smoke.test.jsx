@@ -1498,8 +1498,10 @@ describe('EnglishGo app smoke flow', () => {
     try {
       fireEvent.click(screen.getByRole('button', { name: /小兔兔.*有點餓了/ }));
       fireEvent.click(await screen.findByTestId('pet-primary-care-action'));
-      fireEvent.click(screen.getAllByRole('button', { name: '選這份食物' })[0]);
-      fireEvent.click(await screen.findByTestId('pet-action-complete'));
+      fireEvent.click(screen.getAllByRole('button', { name: /選這份食物/ })[0]);
+      expect(await screen.findByTestId('pet-action-complete')).toBeDisabled();
+      for(let i=0;i<3;i++){fireEvent.click(screen.getByRole('button',{name:/拿起蘋果|食物拿好了/,hidden:true}));fireEvent.click(screen.getByRole('button',{name:'餵一口',hidden:true}));}
+      fireEvent.click(screen.getByTestId('pet-action-complete'));
 
       const result = await screen.findByTestId('pet-care-result');
       expect(result).toHaveTextContent('照顧完成');

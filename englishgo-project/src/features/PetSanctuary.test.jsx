@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import PetSanctuary from './PetSanctuary.jsx';
 const now=new Date().toISOString(),today=new Date().toDateString();
@@ -17,7 +17,7 @@ beforeAll(()=>{
   HTMLDialogElement.prototype.showModal=function(){this.setAttribute('open','')};
   HTMLDialogElement.prototype.close=function(){this.removeAttribute('open')};
 });
-afterEach(()=>{localStorage.clear();vi.clearAllMocks()});
+afterEach(()=>{vi.useRealTimers();localStorage.clear();vi.clearAllMocks()});
 describe('the complete pet home flow',()=>{
   it('lets a child with zero coins adopt one egg and routes to learning',()=>{
     render(<Harness initialTab="eggs"/>);
@@ -42,9 +42,71 @@ describe('the complete pet home flow',()=>{
   it('requires a food selection and only spends it when care is completed',()=>{
     render(<Harness initial={{pets:[bunny],eggs:[],coins:0,inventory:{apple:2}}}/>);
     fireEvent.click(screen.getByRole('button',{name:'陪陪我的夥伴 →'}));fireEvent.click(screen.getByTestId('pet-primary-care-action'));
-    fireEvent.click(screen.getByRole('button',{name:'選這份食物'}));expect(saved().inventory.apple).toBe(2);
-    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button',{name:'稍後再做'}));expect(saved().inventory.apple).toBe(2);
-    fireEvent.click(screen.getByRole('button',{name:'選這份食物'}));fireEvent.click(screen.getByTestId('pet-action-complete'));
+    fireEvent.click(screen.getByRole('button',{name:/選這份食物/}));expect(saved().inventory.apple).toBe(2);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByRole('button',{name:'查看小兔'})).toBeDisabled();
+    fireEvent.click(screen.getByRole('button',{name:/拿起蘋果|食物拿好了/}));fireEvent.click(screen.getByRole('button',{name:'餵一口'}));
+    expect(screen.getByTestId('pet-action-complete')).toBeDisabled();
+    fireEvent.click(screen.getByRole('button',{name:'稍後再做'}));expect(saved().inventory.apple).toBe(2);
+    fireEvent.click(screen.getByTestId('pet-primary-care-action'));fireEvent.click(screen.getByRole('button',{name:/選這份食物/}));
+    expect(screen.getByTestId('pet-action-complete')).toBeDisabled();
+    for(let i=0;i<3;i++){fireEvent.click(screen.getByRole('button',{name:/拿起蘋果|食物拿好了/}));fireEvent.click(screen.getByRole('button',{name:'餵一口'}));}
+    fireEvent.click(screen.getByTestId('pet-action-complete'));
     expect(saved()).toMatchObject({coins:5,inventory:{apple:1},pets:[{hunger:55,journey:{marks:1}}]});
   });
+  it('switches the showcase and applies care to the selected companion only',()=>{
+    render(<Harness initial={{pets:[bunny,{...bunny,petId:'chick',clean:20}],eggs:[],coins:0,inventory:{apple:2}}}/>);
+    fireEvent.click(screen.getByRole('button',{name:'陪陪我的夥伴 →'}));
+    fireEvent.click(screen.getByRole('button',{name:'查看小雞'}));
+    expect(screen.getByRole('button',{name:'查看小雞'})).toHaveAttribute('aria-pressed','true');
+    fireEvent.click(within(screen.getByTestId('pet-showcase')).getByRole('button',{name:'洗澡'}));
+    for(const n of [4,2,3,1])fireEvent.click(screen.getByRole('button',{name:`擦洗第 ${n} 處髒污`}));
+    fireEvent.click(screen.getByTestId('pet-action-complete'));
+    expect(saved().pets.find(p=>p.petId==='bunny').clean).toBe(10);
+    expect(saved().pets.find(p=>p.petId==='chick').clean).toBe(100);
+  });
+
+  it('keeps an empty food choice on the showcase and opens the shop without a reward',()=>{
+    render(<Harness initial={{pets:[bunny],eggs:[],coins:20,inventory:{}}}/>);
+    fireEvent.click(screen.getByRole('button',{name:'陪陪我的夥伴 →'}));
+    fireEvent.click(within(screen.getByTestId('pet-showcase')).getByRole('button',{name:'餵食'}));
+    expect(screen.getByTestId('pet-showcase')).toBeInTheDocument();
+    expect(screen.queryByTestId('pet-action-complete')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button',{name:'去補食物 →'}));
+    expect(screen.getByRole('button',{name:'買 1 份 · 10 金幣'})).toBeInTheDocument();
+    expect(saved().coins).toBe(20);expect(saved().pets[0].hunger).toBe(30);
+  });
+
+  it('settles fetch only after three returns, and repeats without charging energy again',()=>{
+    vi.useFakeTimers();render(<Harness initial={{pets:[bunny],eggs:[],coins:0,inventory:{}}}/>);
+    fireEvent.click(screen.getByRole('button',{name:'陪陪我的夥伴 →'}));
+    const start=()=>fireEvent.click(within(screen.getByTestId('pet-showcase')).getByRole('button',{name:'玩耍'}));
+    start();fireEvent.click(screen.getByRole('button',{name:'🎾 丟球給夥伴'}));
+    fireEvent.click(screen.getByRole('button',{name:'稍後再做'}));act(()=>vi.advanceTimersByTime(2000));
+    expect(saved().pets[0].energy).toBe(10);expect(saved().coins).toBe(0);
+    for(let round=0;round<2;round++){
+      start();expect(screen.getByTestId('pet-action-complete')).toBeDisabled();
+      for(let i=0;i<3;i++){fireEvent.click(screen.getByRole('button',{name:'🎾 丟球給夥伴'}));act(()=>vi.advanceTimersByTime(1200));}
+      fireEvent.click(screen.getByTestId('pet-action-complete'));
+      expect(saved().pets[0]).toMatchObject({energy:5,bond:10});expect(saved().coins).toBe(5);
+    }
+  });
+
+  it.each([[10,35],[90,100]])('settles bedtime once with starting energy %i and caps at %i',(energy,expected)=>{
+    render(<Harness initial={{pets:[{...bunny,energy}],eggs:[],coins:0,inventory:{}}}/>);
+    fireEvent.click(screen.getByRole('button',{name:'陪陪我的夥伴 →'}));
+    const start=()=>fireEvent.click(within(screen.getByTestId('pet-showcase')).getByRole('button',{name:'休息'}));
+    start();fireEvent.click(screen.getByRole('button',{name:'調暗小夜燈'}));
+    expect(screen.getByTestId('pet-action-complete')).toBeDisabled();
+    fireEvent.click(screen.getByRole('button',{name:'稍後再做'}));expect(saved().pets[0].energy).toBe(energy);expect(saved().coins).toBe(0);
+    for(let repeat=0;repeat<2;repeat++){
+      start();expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      for(const name of ['調暗小夜燈','蓋好小被被','輕聲說晚安'])fireEvent.click(screen.getByRole('button',{name}));
+      expect(saved().pets[0].energy).toBe(repeat?expected:energy);
+      fireEvent.click(screen.getByTestId('pet-action-complete'));
+      expect(saved().pets[0].energy).toBe(expected);expect(saved().coins).toBe(5);
+      expect(within(screen.getByTestId('pet-showcase')).getByText('休息完成')).toBeInTheDocument();
+    }
+  });
+
 });
