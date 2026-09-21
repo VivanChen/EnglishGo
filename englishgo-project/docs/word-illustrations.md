@@ -1,5 +1,22 @@
 # Elementary vocabulary illustrations
 
+## Image delivery repair (2026-09-22)
+
+The catalog now contains 44 images for 38 elementary words. All 44 public
+Supabase Storage downloads matched the bundled files by SHA-256 during the audit.
+The cloud metadata also points to the corresponding Storage and fallback paths.
+
+Both Netlify configurations permit Supabase in `img-src`. Previously, browsers
+blocked every cloud illustration, and only the initial 10 bundled images could
+recover through the fallback. The later 34 fallback files and their catalog are
+included together in this release.
+
+Missing vocabulary images return HTTP 404 instead of the SPA document. Service
+worker v1.2.7 clears the old caches, rejects HTML image responses, and bypasses
+old HTML cache entries. Offline vocabulary failures reach the card's accessible
+description instead of displaying the unrelated app icon. Valid cached images
+remain available offline.
+
 The first approved watercolor/pencil batch contains 10 illustrations for 7 words:
 apple, umbrella, jump, sleepy, happy (one each), under (two), internet (three).
 Each scene describes the same intended sense of its word with a matching English

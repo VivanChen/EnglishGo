@@ -1,5 +1,5 @@
 // EnglishGo Service Worker - offline-first PWA
-const CACHE_VERSION = 'englishgo-v1.2.6';
+const CACHE_VERSION = 'englishgo-v1.2.7';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 const DYNAMIC_CACHE_LIMIT = 160;
@@ -25,6 +25,7 @@ async function cacheDynamicResponse(request, response) {
   // byte-range requests, so attempting to cache one would turn a successful
   // network response into a rejected fetch chain.
   if (!response?.ok || response.status === 206) return;
+  if (request.destination === 'image' && response.headers.get('content-type')?.includes('text/html')) return;
   if (new URL(request.url).pathname.startsWith('/assets/') &&
       response.headers.get('content-type')?.includes('text/html')) return;
   const cache = await caches.open(DYNAMIC_CACHE);
@@ -87,17 +88,20 @@ self.addEventListener('fetch', (event) => {
   // Images/fonts: stale-while-revalidate so same-path media can still be updated.
   if (request.destination === 'image' || request.destination === 'font') {
     const networkResponse = fetch(request).then(async (response) => {
+      if (request.destination === 'image' && response.headers.get('content-type')?.includes('text/html')) {
+        return new Response('Image unavailable', { status: 404 });
+      }
       // Cache quota/write failures must not discard a valid downloaded font.
       await cacheDynamicResponse(request, response).catch(() => {});
       return response;
     });
     event.respondWith(
       caches.match(request).then((cached) => {
-        if (cached) {
+        if (cached && !(request.destination === 'image' && cached.headers.get('content-type')?.includes('text/html'))) {
           event.waitUntil(networkResponse.catch(() => null));
           return cached;
         }
-        return networkResponse.catch(() => request.destination === 'image'
+        return networkResponse.catch(() => request.destination === 'image' && !url.pathname.startsWith('/images/vocabulary/')
           ? caches.match('/icon-192.png')
           : Response.error());
       })

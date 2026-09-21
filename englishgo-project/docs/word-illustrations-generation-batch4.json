@@ -1,0 +1,62 @@
+[
+  {
+    "id": "rabbit-01",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Produce ONE finished square 1024x1024 elementary vocabulary flashcard illustration. The reference is STYLE ONLY: match its refined translucent watercolor and delicate graphite/colored-pencil children's book illustration, broken hand-drawn contours, natural proportions, warm ivory paper, nuanced ochre, vermilion, teal and indigo, generous clean negative space. Carefully observed materials, expressive brushwork, no glossy 3D, no oversized anime eyes, no uniform digital gradients. Entire subject fully visible and recognizable at small size. No letters, numbers, text, captions, border, logo or watermark. Target vocabulary: RABBIT. One small white rabbit with warm gray shadows sitting in three-quarter side view. Two long upright ears with soft pink interiors, natural small dark eyes, short fluffy tail, anatomically coherent paws. Plain ivory paper and delicate grounding shadow, no props.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c280-e212-7801-99f6-0613d7d2b3d5\\exec-6d3f4e1b-9c5f-4eba-baa2-b528dc65a632.png"
+  },
+  {
+    "id": "turtle-01",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Produce ONE finished square 1024x1024 elementary vocabulary flashcard illustration. The reference is STYLE ONLY: match its refined translucent watercolor and delicate graphite/colored-pencil children's book illustration, broken hand-drawn contours, natural proportions, warm ivory paper, nuanced ochre, vermilion, teal and indigo, generous clean negative space. Carefully observed materials, expressive brushwork, no glossy 3D, no oversized anime eyes, no uniform digital gradients. Entire subject fully visible and recognizable at small size. No letters, numbers, text, captions, border, logo or watermark. Target vocabulary: TURTLE. One friendly realistic small green freshwater turtle on dry ground in three-quarter view, domed olive shell with clear natural scute pattern, four short clawed feet, small head and short tail. Natural proportions, no sea-turtle flippers. Plain ivory background, no pond or props.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c280-e212-7801-99f6-0613d7d2b3d5\\exec-43d29aec-7721-4bd9-95be-341a071f339b.png"
+  },
+  {
+    "id": "bear-01",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Produce ONE finished square 1024x1024 elementary vocabulary flashcard illustration. The reference is STYLE ONLY: match its refined translucent watercolor and delicate graphite/colored-pencil children's book illustration, broken hand-drawn contours, natural proportions, warm ivory paper, nuanced ochre, vermilion, teal and indigo, generous clean negative space. Carefully observed materials, expressive brushwork, no glossy 3D, no oversized anime eyes, no uniform digital gradients. Entire subject fully visible and recognizable at small size. No letters, numbers, text, captions, border, logo or watermark. Target vocabulary: BEAR. One brown bear standing naturally on all four paws in three-quarter side view, rounded ears, broad muzzle, thick soft brown fur. Full body and paws visible, no clothing, no toys, no forest. Plain ivory background.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c280-e212-7801-99f6-0613d7d2b3d5\\exec-cf6c060e-5fcb-42ad-923e-8a7e51bd04af.png"
+  },
+  {
+    "id": "elephant-01",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Produce ONE finished square 1024x1024 elementary vocabulary flashcard illustration. The reference is STYLE ONLY: match its refined translucent watercolor and delicate graphite/colored-pencil children's book illustration, broken hand-drawn contours, natural proportions, warm ivory paper, nuanced ochre, vermilion, teal and indigo, generous clean negative space. Carefully observed materials, expressive brushwork, no glossy 3D, no oversized anime eyes, no uniform digital gradients. Entire subject fully visible and recognizable at small size. No letters, numbers, text, captions, border, logo or watermark. Target vocabulary: ELEPHANT. One gray elephant in three-quarter side view with large ears, long gently curling trunk, four thick legs and thin tail. Coherent realistic anatomy, gentle small eyes, finely observed skin in watercolor. Whole animal visible, no decorations, no background objects.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c280-e212-7801-99f6-0613d7d2b3d5\\exec-ef0118d4-3e13-43c1-88fc-5b77b92f0a99.png"
+  },
+  {
+    "id": "bus-01",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Produce ONE finished square 1024x1024 elementary vocabulary flashcard illustration. The reference is STYLE ONLY: match its refined translucent watercolor and delicate graphite/colored-pencil children's book illustration, broken hand-drawn contours, natural proportions, warm ivory paper, nuanced ochre, vermilion, teal and indigo, generous clean negative space. Carefully observed materials, expressive brushwork, no glossy 3D, no oversized anime eyes, no uniform digital gradients. Entire subject fully visible and recognizable at small size. No letters, numbers, text, captions, border, logo or watermark. Target vocabulary: BUS. One simple yellow city bus in three-quarter side view with large passenger windows, windshield, front entry door, headlights and coherent wheels. City bus, not American school bus. No writing, numbers, signs, logos or passengers. Complete vehicle isolated against ivory paper.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c280-e212-7801-99f6-0613d7d2b3d5\\exec-9d5e3b64-5646-45c3-858d-52e980cc4aed.png"
+  },
+  {
+    "id": "bike-01",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Produce ONE finished square 1024x1024 elementary vocabulary flashcard illustration. The reference is STYLE ONLY: match its refined translucent watercolor and delicate graphite/colored-pencil children's book illustration, broken hand-drawn contours, natural proportions, warm ivory paper, nuanced ochre, vermilion, teal and indigo, generous clean negative space. Carefully observed materials, expressive brushwork, no glossy 3D, no oversized anime eyes, no uniform digital gradients. Entire subject fully visible and recognizable at small size. No letters, numbers, text, captions, border, logo or watermark. Target vocabulary: BIKE. One teal bicycle in clean side view. Two equal circular wheels connected by a coherent diamond frame, two pedals on one crank, chain connecting crank to rear wheel, curved handlebars and brown saddle. No basket, rider, motor or training wheels. Complete bicycle isolated against ivory paper.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c280-e212-7801-99f6-0613d7d2b3d5\\exec-95bffe04-d0f8-4def-80e1-2b4396410d83.png"
+  },
+  {
+    "id": "car-01",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Produce ONE finished square 1024x1024 elementary vocabulary flashcard illustration. The reference is STYLE ONLY: match its refined translucent watercolor and delicate graphite/colored-pencil children's book illustration, broken hand-drawn contours, natural proportions, warm ivory paper, nuanced ochre, vermilion, teal and indigo, generous clean negative space. Carefully observed materials, expressive brushwork, no glossy 3D, no oversized anime eyes, no uniform digital gradients. Entire subject fully visible and recognizable at small size. No letters, numbers, text, captions, border, logo or watermark. Target vocabulary: CAR. One small red passenger car in three-quarter view, coherent four-wheel vehicle with windshield, side windows, headlights and clearly visible near-side tires. Simple rounded compact hatchback, no logos, text, number plates or people. Entire car visible against ivory paper.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c280-e212-7801-99f6-0613d7d2b3d5\\exec-e33ee962-35c6-4736-9dd5-4830d670d44f.png"
+  },
+  {
+    "id": "cake-01",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Produce ONE finished square 1024x1024 elementary vocabulary flashcard illustration. The reference is STYLE ONLY: match its refined translucent watercolor and delicate graphite/colored-pencil children's book illustration, broken hand-drawn contours, natural proportions, warm ivory paper, nuanced ochre, vermilion, teal and indigo, generous clean negative space. Carefully observed materials, expressive brushwork, no glossy 3D, no oversized anime eyes, no uniform digital gradients. Entire subject fully visible and recognizable at small size. No letters, numbers, text, captions, border, logo or watermark. Target vocabulary: CAKE. One round small cake with white cream frosting topped with three red strawberries, a single triangular slice removed and sitting close beside it to reveal yellow sponge and pink filling layers. Simple white plate beneath cake. No candles, words, numerals, cutlery or other props. Ivory background.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c280-e212-7801-99f6-0613d7d2b3d5\\exec-adfec2af-5573-42d3-9444-cef82ee05b3c.png"
+  },
+  {
+    "id": "sun-01",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Produce ONE finished square 1024x1024 elementary vocabulary flashcard illustration. The reference is STYLE ONLY: match its refined translucent watercolor and delicate graphite/colored-pencil children's book illustration, broken hand-drawn contours, natural proportions, warm ivory paper, nuanced ochre, vermilion, teal and indigo, generous clean negative space. Carefully observed materials, expressive brushwork, no glossy 3D, no oversized anime eyes, no uniform digital gradients. Entire subject fully visible and recognizable at small size. No letters, numbers, text, captions, border, logo or watermark. Target vocabulary: SUN. One luminous golden-yellow sun, a clear circular disk with a soft irregular watercolor halo and restrained short warm rays. A few small pale blue cloud wisps far to its lower sides indicate daytime, sun unobscured and dominant. Ivory paper background, no face, no text, no landscape.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c280-e212-7801-99f6-0613d7d2b3d5\\exec-175cbb87-ae90-4e71-b223-9e5573676475.png"
+  },
+  {
+    "id": "moon-01",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Produce ONE finished square 1024x1024 elementary vocabulary flashcard illustration. The reference is STYLE ONLY: match its refined translucent watercolor and delicate graphite/colored-pencil children's book illustration, broken hand-drawn contours, natural proportions, warm ivory paper, nuanced ochre, vermilion, teal and indigo, generous clean negative space. Carefully observed materials, expressive brushwork, no glossy 3D, no oversized anime eyes, no uniform digital gradients. Entire subject fully visible and recognizable at small size. No letters, numbers, text, captions, border, logo or watermark. Target vocabulary: MOON. One full round pale silver moon with subtle recognizable crater texture, floating in a soft small indigo night-sky watercolor wash fading into ivory paper margins. Three tiny distant stars spaced well away. Scientifically plausible moon, no face, no text, no sun or landscape.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c280-e212-7801-99f6-0613d7d2b3d5\\exec-e86f0719-00dc-4827-a745-c5e8c442769b.png"
+  }
+]

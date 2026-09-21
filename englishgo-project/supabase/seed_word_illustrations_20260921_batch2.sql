@@ -1,0 +1,21 @@
+-- Elementary watercolor illustrations, batch 2. Assets are uploaded before inserting metadata.
+BEGIN;
+-- Correct the existing cloud example for the elementary noun cat.
+UPDATE public.word_bank SET example = 'The cat is sitting.', example_zh = '貓正坐著。'
+WHERE level = 'elementary' AND word = 'cat'
+  AND example = 'The weather was cat, so they returned home early.';
+INSERT INTO public.word_illustrations (id, level, word, sort_order, sense, alt_zh, example, example_zh, image_url, local_path, style, version) VALUES
+('elementary-cat-01-v1', 'elementary', 'cat', 1, '貓', '一隻橘白色的貓安靜地坐著。', 'The cat is sitting.', '貓正坐著。', 'https://jbspxqebcrkilfcddluo.supabase.co/storage/v1/object/public/word-illustrations/elementary/cat-01-v1.webp', '/images/vocabulary/elementary/cat-01-v1.webp', 'watercolor-pencil-v1', 1),
+('elementary-dog-01-v1', 'elementary', 'dog', 1, '狗', '一隻垂耳的金棕色小狗坐著，張著嘴。', 'The dog looks happy.', '這隻狗看起來很開心。', 'https://jbspxqebcrkilfcddluo.supabase.co/storage/v1/object/public/word-illustrations/elementary/dog-01-v1.webp', '/images/vocabulary/elementary/dog-01-v1.webp', 'watercolor-pencil-v1', 1),
+('elementary-bird-01-v1', 'elementary', 'bird', 1, '鳥', '一隻褐色的小鳥站在樹枝上。', 'The bird is on a branch.', '鳥站在樹枝上。', 'https://jbspxqebcrkilfcddluo.supabase.co/storage/v1/object/public/word-illustrations/elementary/bird-01-v1.webp', '/images/vocabulary/elementary/bird-01-v1.webp', 'watercolor-pencil-v1', 1),
+('elementary-fish-01-v1', 'elementary', 'fish', 1, '魚', '一條橘色金魚在水中游泳。', 'The fish is swimming.', '魚正在游泳。', 'https://jbspxqebcrkilfcddluo.supabase.co/storage/v1/object/public/word-illustrations/elementary/fish-01-v1.webp', '/images/vocabulary/elementary/fish-01-v1.webp', 'watercolor-pencil-v1', 1),
+('elementary-banana-01-v1', 'elementary', 'banana', 1, '香蕉', '一根帶有褐色小斑點的黃色香蕉。', 'This banana is yellow.', '這根香蕉是黃色的。', 'https://jbspxqebcrkilfcddluo.supabase.co/storage/v1/object/public/word-illustrations/elementary/banana-01-v1.webp', '/images/vocabulary/elementary/banana-01-v1.webp', 'watercolor-pencil-v1', 1),
+('elementary-book-01-v1', 'elementary', 'book', 1, '書', '一本闔起的藍綠色精裝書，可以看見書頁。', 'This is my book.', '這是我的書。', 'https://jbspxqebcrkilfcddluo.supabase.co/storage/v1/object/public/word-illustrations/elementary/book-01-v1.webp', '/images/vocabulary/elementary/book-01-v1.webp', 'watercolor-pencil-v1', 1),
+('elementary-pencil-01-v1', 'elementary', 'pencil', 1, '鉛筆', '一枝削好的黃色鉛筆，末端有粉紅色橡皮擦。', 'My pencil is yellow.', '我的鉛筆是黃色的。', 'https://jbspxqebcrkilfcddluo.supabase.co/storage/v1/object/public/word-illustrations/elementary/pencil-01-v1.webp', '/images/vocabulary/elementary/pencil-01-v1.webp', 'watercolor-pencil-v1', 1),
+('elementary-chair-01-v1', 'elementary', 'chair', 1, '椅子', '一張有靠背和四隻腳的木椅。', 'This chair is made of wood.', '這張椅子是木頭做的。', 'https://jbspxqebcrkilfcddluo.supabase.co/storage/v1/object/public/word-illustrations/elementary/chair-01-v1.webp', '/images/vocabulary/elementary/chair-01-v1.webp', 'watercolor-pencil-v1', 1),
+('elementary-read-01-v1', 'elementary', 'read', 1, '閱讀', '一個孩子盤腿坐著，專心看手中的圖畫書。', 'I read a book.', '我讀一本書。', 'https://jbspxqebcrkilfcddluo.supabase.co/storage/v1/object/public/word-illustrations/elementary/read-01-v1.webp', '/images/vocabulary/elementary/read-01-v1.webp', 'watercolor-pencil-v1', 1),
+('elementary-hungry-01-v1', 'elementary', 'hungry', 1, '餓的', '一個孩子一手輕放肚子，一手伸向桌上的三明治。', 'I am hungry. I want a sandwich.', '我肚子餓了。我想吃一份三明治。', 'https://jbspxqebcrkilfcddluo.supabase.co/storage/v1/object/public/word-illustrations/elementary/hungry-01-v1.webp', '/images/vocabulary/elementary/hungry-01-v1.webp', 'watercolor-pencil-v1', 1),
+('elementary-between-01-v1', 'elementary', 'between', 1, '在……之間', '一隻貓坐在兩個藍色花盆之間。', 'The cat is between two flowerpots.', '貓在兩個花盆之間。', 'https://jbspxqebcrkilfcddluo.supabase.co/storage/v1/object/public/word-illustrations/elementary/between-01-v1.webp', '/images/vocabulary/elementary/between-01-v1.webp', 'watercolor-pencil-v1', 1),
+('elementary-between-02-v1', 'elementary', 'between', 2, '在……之間', '穿藍綠色上衣的孩子坐在兩位朋友之間。', 'I sit between my two friends.', '我坐在兩位朋友之間。', 'https://jbspxqebcrkilfcddluo.supabase.co/storage/v1/object/public/word-illustrations/elementary/between-02-v1.webp', '/images/vocabulary/elementary/between-02-v1.webp', 'watercolor-pencil-v1', 1)
+ON CONFLICT (id) DO NOTHING;
+COMMIT;

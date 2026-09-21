@@ -110,6 +110,36 @@ describe("deployment chunk caching", () => {
   });
 });
 
+describe("vocabulary image caching", () => {
+  const request = { method: 'GET', url: 'https://englishgo-vevan.netlify.app/images/vocabulary/elementary/milk-01-v1.webp', destination: 'image', headers: new Headers() };
+
+  it('replaces an old HTML fallback in the image cache with the downloaded image', async () => {
+    const { listeners, cacheStorage, cache } = loadWorker(vi.fn(async () => new Response('webp', { headers: { 'Content-Type': 'image/webp' } })));
+    cacheStorage.match.mockResolvedValue(new Response('<html/>', { headers: { 'Content-Type': 'text/html' } }));
+    const response = await dispatchFetch(listeners.fetch, request);
+    expect(response.headers.get('content-type')).toBe('image/webp');
+    expect(cache.put).toHaveBeenCalled();
+  });
+
+  it('rejects a missing image rewritten to HTML without caching it', async () => {
+    const { listeners, cache } = loadWorker(vi.fn(async () => new Response('<html/>', { headers: { 'Content-Type': 'text/html' } })));
+    expect((await dispatchFetch(listeners.fetch, request)).status).toBe(404);
+    expect(cache.put).not.toHaveBeenCalled();
+  });
+
+  it('preserves a valid cached illustration while offline', async () => {
+    const { listeners, cacheStorage } = loadWorker(vi.fn(async () => { throw new TypeError('Offline'); }));
+    cacheStorage.match.mockResolvedValue(new Response('cached image', { headers: { 'Content-Type': 'image/webp' } }));
+    expect(await (await dispatchFetch(listeners.fetch, request)).text()).toBe('cached image');
+  });
+
+  it('lets an unavailable vocabulary image fail instead of showing the app icon', async () => {
+    const { listeners, cacheStorage } = loadWorker(vi.fn(async () => { throw new TypeError('Offline'); }));
+    expect((await dispatchFetch(listeners.fetch, request)).type).toBe('error');
+    expect(cacheStorage.match).not.toHaveBeenCalledWith('/icon-192.png');
+  });
+});
+
 describe("service worker font responses", () => {
   const fontRequest = { method: "GET", url: "https://englishgo-vevan.netlify.app/fonts/font.woff2", destination: "font", headers: new Headers() };
 
