@@ -1,4 +1,5 @@
 import { fetchGif, forgetGif } from '../lib/giphy.js';
+import WordIllustrations from '../components/WordIllustrations.jsx';
 import { serviceFetch, assertServiceResponse, serviceErrorMessage } from '../lib/serviceErrors.js';
 import { getGeminiModels } from '../lib/geminiModels.js';
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
@@ -495,7 +496,7 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
       <span style={{color:S.t3}}>完成 {deck.total-left}/{deck.total}</span>
       {[["#E24B4A",deck.stats.again],["#EF9F27",deck.stats.hard],["#1D9E75",deck.stats.good],["#185FA5",deck.stats.easy]].map(([cl,v],i)=><span className="srs-stat-dot" key={i} style={{color:cl}}>{v}</span>)}
     </div>
-    {gifNotice&&<div role="status" style={{padding:12,marginBottom:10,border:`1px solid ${S.bd}`,borderRadius:12,color:S.t2,fontSize:13,lineHeight:1.7}}>
+    {(!flip||lv!=="elementary")&&gifNotice&&<div role="status" style={{padding:12,marginBottom:10,border:`1px solid ${S.bd}`,borderRadius:12,color:S.t2,fontSize:13,lineHeight:1.7}}>
       <div>{gifNotice}</div><div style={{display:"flex",flexWrap:"wrap",gap:8,marginTop:8}}><button className="srs-pill-btn" disabled={gifLoading} onClick={()=>setGifRetry(n=>n+1)}>重試動圖</button><button className="srs-pill-btn" onClick={()=>onOpenSettings?.()}>API Key 設定</button></div>
     </div>}
     <div className={`srs-study-grid ${dictOpen&&flip?"is-dict-open":""}`}>
@@ -527,10 +528,11 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
                 <div className="srs-flow-hint is-back" data-testid="srs-study-guidance"><b>下一步</b><span><strong>查字典補強</strong>，或直接評分進下一題</span></div>
               </div>
             </div>
-            {!dictOpen&&<div className={`srs-back-thumb ${!showGif&&(showEmoji||!showImg)?"is-emoji":""}`} data-testid="srs-back-media">
+            {lv!=="elementary"&&!dictOpen&&<div className={`srs-back-thumb ${!showGif&&(showEmoji||!showImg)?"is-emoji":""}`} data-testid="srs-back-media">
               {showGif?<img src={gifUrl} alt={cur.w} onError={()=>{forgetGif(cur.w,gifKey);setMediaError("gif");setGifUrl(null);setGifNotice("動圖檔案無法載入，已使用替代圖片或圖示，不影響練習。")}}/>:showEmoji?imgUrl.value:showImg?<img src={imgUrl.value} alt={cur.w} onError={()=>setMediaError("image")}/>:fallbackVisual.emoji}
             </div>}
           </div>
+          {lv==="elementary"&&<WordIllustrations key={`${lv}:${cur.w}`} level={lv} word={cur.w} fetchIllustrations={deps.fetchWordIllustrations} speak={speak}/>}
           {(()=>{
           // Decide which example to show
           const useAi=aiExample&&isPlaceholderExample(cur.ex,cur.w);

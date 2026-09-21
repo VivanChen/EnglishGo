@@ -4,6 +4,7 @@ import { MINISTRY_ELEMENTARY_WORDS } from "./ministryElementaryWords.js";
 import { JUNIOR_THEMED_REVIEW_WORDS, SENIOR_THEMED_REVIEW_WORDS } from "./themedReviewWords.js";
 
 const EXTRA_ELEMENTARY_WORDS = {
+  sleepy:{m:"想睡的",p:"adj.",ex:"I feel sleepy after reading my bedtime story.",ez:"讀完睡前故事後，我覺得想睡了。",c:["feel sleepy 覺得想睡"]},
   curious:["好奇的","adj."], explore:["探索","v."], forest:["森林","n."], edge:["邊緣","n."], glow:["發光","v."], shadow:["影子","n."],
   magic:["魔法","n."], brave:["勇敢的","adj."], guide:["引導","v."], trust:["信任","v."], fairy:["小精靈","n."], wing:["翅膀","n."],
   petal:["花瓣","n."], twig:["小樹枝","n."], helper:["幫助者","n."], path:["小路","n."], pond:["池塘","n."], crystal:["水晶","n."],

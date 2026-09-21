@@ -12,6 +12,7 @@ import { JUNIOR_SONGS } from "./data/juniorSongs.js";
 import { SENIOR_SONGS } from "./data/seniorSongs.js";
 import { getWeakVocabularyForLevel, mergeUniqueWordCards, parseVocabularyTopics, updateWeakVocabulary } from "./data/vocabularyTopics.js";
 import { fetchAllCloudVocabularyRows } from "./data/cloudVocabulary.js";
+import { loadWordIllustrations } from "./data/wordIllustrations.js";
 import { generateStoryPayload } from "./features/storyGeneration.js";
 
 const PictureBooks=lazy(()=>import("./features/PictureBooks.jsx"));
@@ -165,6 +166,10 @@ function hashText(text){
   let h=0;
   for(let i=0;i<text.length;i++)h=((h<<5)-h+text.charCodeAt(i))|0;
   return Math.abs(h);
+}
+
+async function fetchWordIllustrations(level, word) {
+  return loadWordIllustrations(await getSb(), level, word);
 }
 
 async function fetchCloudVocab(level, count = 20) {
@@ -2893,7 +2898,7 @@ function WordSearchM(props){return <Suspense fallback={<ModuleLoading label="準
 const _gifCache={};
 const LazySRS=lazy(()=>import("./features/SRS.jsx"));
 function SRS(props){
-  const deps={V,LV,S,fetchCloudVocab,fetchCloudVocabularyCatalog,fetchCloudWord,findAnyWord,loadExtraWords,shuffleCopy,sortCardsForStudy,createDeck,rateDeck,getWordImg,preloadImgs,isPlaceholderExample,exampleCache:_exampleCache,generateExample,preloadTts,speak,speakWebSpeech,speechTimer,playSound,triggerRewardBurst,parseCSV,Hdr,Confetti};
+  const deps={V,LV,S,fetchCloudVocab,fetchCloudVocabularyCatalog,fetchCloudWord,fetchWordIllustrations,findAnyWord,loadExtraWords,shuffleCopy,sortCardsForStudy,createDeck,rateDeck,getWordImg,preloadImgs,isPlaceholderExample,exampleCache:_exampleCache,generateExample,preloadTts,speak,speakWebSpeech,speechTimer,playSound,triggerRewardBurst,parseCSV,Hdr,Confetti};
   return <Suspense fallback={<ModuleLoading label="正在準備單字小花園…"/>}><LazySRS {...props} deps={deps}/></Suspense>;
 }
 

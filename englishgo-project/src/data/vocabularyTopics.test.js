@@ -84,7 +84,7 @@ describe("vocabulary topic coverage", () => {
   it("has enough elementary food and transport words for full topic rounds", () => {
     const coverage=byId(EXTRA_WORDS.elementary);
 
-    expect(coverage.all.count).toBe(871);
+    expect(coverage.all.count).toBe(872);
     expect(coverage.food).toMatchObject({count:88,status:"ready",ready:true,gap:0});
     expect(coverage.transport).toMatchObject({count:35,status:"ready",ready:true,gap:0});
   });
