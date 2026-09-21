@@ -1407,8 +1407,7 @@ describe('EnglishGo app smoke flow', () => {
     await openElementaryMenu();
     clickMenuStat('寵物');
 
-    const center = await screen.findByTestId('pet-care-center', {}, { timeout: 5000 });
-    expect(within(center).getByText('今天，先做這件事')).toBeInTheDocument();
+    const center = await screen.findByTestId('pet-sanctuary', {}, { timeout: 5000 });
     expect(within(center).getByText(/蛋可孵化/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /每日任務/ })).toHaveTextContent('1');
 
@@ -1450,7 +1449,7 @@ describe('EnglishGo app smoke flow', () => {
     await openElementaryMenu();
     clickMenuStat('寵物');
 
-    await screen.findByTestId('pet-care-center');
+    await screen.findByTestId('pet-sanctuary');
     fireEvent.click(screen.getByRole('button', { name: /孵化小屋/ }));
     const egg = screen.getByRole('heading', { name: '小雞 蛋' }).closest('article');
     expect(egg).toHaveTextContent('7/10');
@@ -1458,6 +1457,7 @@ describe('EnglishGo app smoke flow', () => {
     expect(within(egg).getByRole('button', { name: /學單字/ })).toBeEnabled();
     fireEvent.click(screen.getByRole('button', { name: /夥伴圖鑑/ }));
     expect(screen.getByRole('combobox', { name: '收藏狀態' })).toHaveTextContent('已收集 1 種');
+    fireEvent.change(screen.getByRole('combobox', { name: '收藏狀態' }), { target: { value: 'egg' } });
     expect(screen.getByRole('button', { name: /孵化中.*小雞/ })).toBeEnabled();
   }, 15000);
 
@@ -1489,7 +1489,7 @@ describe('EnglishGo app smoke flow', () => {
     await openElementaryMenu();
     clickMenuStat('寵物');
 
-    await screen.findByTestId('pet-care-center', {}, { timeout: 5000 });
+    await screen.findByTestId('pet-sanctuary', {}, { timeout: 5000 });
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: '我的夥伴', exact: true }));
     });
@@ -1503,6 +1503,7 @@ describe('EnglishGo app smoke flow', () => {
       for(let i=0;i<3;i++){fireEvent.click(screen.getByRole('button',{name:/拿起蘋果|食物拿好了/,hidden:true}));fireEvent.click(screen.getByRole('button',{name:'餵一口',hidden:true}));}
       fireEvent.click(screen.getByTestId('pet-action-complete'));
 
+      fireEvent.click(screen.getByRole('button', { name: '照顧紀錄', exact: true }));
       const result = await screen.findByTestId('pet-care-result');
       expect(result).toHaveTextContent('照顧完成');
       expect(result).toHaveTextContent(/餵|吃/);

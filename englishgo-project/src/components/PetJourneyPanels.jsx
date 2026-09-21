@@ -1,3 +1,4 @@
+import PetPages from './PetPages.jsx';
 import { PET_PATHS, PET_HABITATS, getPetJourney, choosePetPath, choosePetHabitat } from '../data/petJourney.js';
 import { PetHabitatScene } from './PetWorldArt.jsx';
 
@@ -14,8 +15,13 @@ export function PetHomeHub({pets,eggs,readyEggs,onCare,onEggs,onPlay,onNavigate,
   </section>;
 }
 
-export function PetGrowthPanel({pet,onChange,onCare,careLabel,onPlay}) {
+export function PetGrowthPanel({pet,onChange,onCare,careLabel,onPlay,paged=false}) {
   const journey=getPetJourney(pet),path=PET_PATHS.find(p=>p.id===journey.path),needed=(pet.level||1)*100;
+  if(paged)return <section className="pet-growth-panel pet-growth-paged" data-testid="pet-growth-panel"><PetPages label="成長與佈置">
+    <article><span className="pet-eyebrow">我們一起長大的故事</span><h2>{path.icon} {path.name}</h2><p>第 {journey.rank} 階 · 陪伴印記 {journey.marks} 枚</p><p>{journey.next?'再累積 '+(journey.next-journey.marks)+' 枚印記，能力就會提升':'三階能力都練成了'}</p><p>Lv.{pet.level||1} · {pet.exp||0}/{needed} XP · 親密 {pet.bond||0}</p><p>每天首次完成照顧、遊戲或冒險，留下一枚印記。</p><button className="pet-primary" onClick={onCare}>{careLabel||'一起讀書'} →</button><button className="pet-secondary" onClick={onPlay}>去遊樂園</button></article>
+    <article><h2>培育方向</h2><p>隨時更換，印記保留。下一次森林遠征生效。</p><div className="pet-compact-options">{PET_PATHS.map(item=><button key={item.id} aria-pressed={journey.path===item.id} onClick={()=>onChange(choosePetPath(pet,item.id))}><b>{item.icon} {item.name}</b><span>{item.effect}</span></button>)}</div></article>
+    <article><h2>家園佈置</h2><p>陪伴印記 {journey.marks} 枚</p><div className="pet-compact-options">{PET_HABITATS.map(h=><button key={h.id} aria-pressed={journey.habitat===h.id} disabled={journey.marks<h.marks} onClick={()=>onChange(choosePetHabitat(pet,h.id))}><b>{h.name}</b><span>{journey.marks<h.marks?h.marks+' 枚印記解鎖':journey.habitat===h.id?'正在使用':'換上這個風景'}</span></button>)}</div></article>
+  </PetPages></section>;
   return <section className="pet-growth-panel" data-testid="pet-growth-panel">
     <div className="pet-section-heading"><div><span className="pet-eyebrow">我們一起長大的故事</span><h2>{path.icon} {path.name}</h2><p>第 {journey.rank} 階 · {journey.next?`再累積 ${journey.next-journey.marks} 枚印記，能力就會提升`:'三階能力都練成了，繼續收藏陪伴的回憶'}</p></div><span className="pet-growth-count">{journey.marks}<small>陪伴印記</small></span></div>
     <div className="pet-growth-stops" aria-label="培育階段">{[3,6,12].map((n,i)=><div key={n} className={journey.marks>=n?'is-earned':''}><span>{journey.marks>=n?'✓':i+1}</span><b>{['初識默契','可靠夥伴','最佳拍檔'][i]}</b><small>{n} 枚印記</small></div>)}</div>

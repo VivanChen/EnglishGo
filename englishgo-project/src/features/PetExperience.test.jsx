@@ -10,7 +10,7 @@ const sounds={speak:vi.fn(),stopSpeech:vi.fn(),playSound:vi.fn()},c={cl:'#507d5b
 function useLS(key,initial){const [value,setValue]=useState(()=>JSON.parse(localStorage.getItem(key)||'null')??initial);return [value,next=>setValue(previous=>{const result=typeof next==='function'?next(previous):next;localStorage.setItem(key,JSON.stringify(result));return result})]}
 const gachaApi={Hdr,useLS,EGG_COST:50,EGG_HATCH_TASKS:{N:10,R:20,SR:30,SSR:40},GACHA_SR_PITY:20,RARITY_INFO:{N:{color:'#579164',label:'普通',rate:60},R:{color:'#479',label:'稀有',rate:30},SR:{color:'#749',label:'超稀有',rate:9},SSR:{color:'#a73',label:'傳說',rate:1}},PETS:{N:[{id:'bunny'}]},playSound:sounds.playSound,rollRarity:()=> 'N',randomPet:()=>({id:'bunny',name:'小兔',story:'小兔喜歡讀書。'}),RARITY_ORDER:{N:0,R:1,SR:2,SSR:3},DUPLICATE_EGG_PROGRESS:{N:3},getDuplicatePetReward:()=>({exp:20,bond:2,dupes:1}),applyDuplicatePetReward:(pet,reward)=>({...pet,exp:pet.exp+reward.exp,bond:pet.bond+reward.bond})};
 function GachaHarness(){const [coins,setCoins]=useState(50),[pets,setPets]=useState([]),[eggs,setEggs]=useState([]);return <><output data-testid="gacha-saved">{JSON.stringify({coins,eggs,pets})}</output><PetGachaStudio onBack={vi.fn()} onNavigate={vi.fn()} c={c} {...{coins,setCoins,pets,setPets,eggs,setEggs}} api={gachaApi}/></>}
-function PlayHarness(){const[pets,setPets]=useState([pet]),[coins,setCoins]=useState(0);return <><output data-testid="play-saved">{JSON.stringify({coins,pets})}</output><PetPlayground {...{pets,setPets,setCoins,c,foods,Hdr}} onBack={vi.fn()} getDef={()=>({name:'小兔'})} levelUpPet={value=>value} {...sounds}/></>}
+function PlayHarness({compact=false}){const[pets,setPets]=useState([pet]),[coins,setCoins]=useState(0);return <><output data-testid="play-saved">{JSON.stringify({coins,pets})}</output><PetPlayground compact={compact} {...{pets,setPets,setCoins,c,foods,Hdr}} onBack={vi.fn()} getDef={()=>({name:'小兔'})} levelUpPet={value=>value} {...sounds}/></>}
 afterEach(()=>{vi.useRealTimers();vi.clearAllMocks();localStorage.clear()});
 describe('pet experience safeguards',()=>{
   it('settles a gacha immediately, lets children skip the animation and never charges beyond the balance',async()=>{
@@ -37,6 +37,19 @@ describe('pet experience safeguards',()=>{
     }
     const saved=JSON.parse(screen.getByTestId('play-saved').textContent);expect(saved).toMatchObject({coins:8,pets:[{exp:18,bond:8,journey:{marks:1},playRecords:{'picnic:1':3}}]});
     fireEvent.click(screen.getByRole('button',{name:'回遊樂園'}));expect(screen.getByRole('button',{name:/默契練習/})).not.toBeDisabled();
+  });
+  it('keeps the chosen game while moving between one-screen setup steps',()=>{
+    render(<PlayHarness compact/>);
+    expect(screen.queryByRole('button',{name:'帶夥伴出發 →'})).not.toBeInTheDocument();
+    for(let n=0;n<2;n++)fireEvent.click(screen.getByRole('button',{name:'內容下一頁'}));
+    fireEvent.click(screen.getByRole('button',{name:/記憶尋寶/}));
+    fireEvent.click(screen.getByRole('button',{name:'內容上一頁'}));
+    fireEvent.click(screen.getByRole('button',{name:'內容下一頁'}));
+    expect(screen.getByRole('button',{name:/記憶尋寶/})).toHaveAttribute('aria-pressed','true');
+    for(let n=0;n<2;n++)fireEvent.click(screen.getByRole('button',{name:'內容下一頁'}));
+    fireEvent.click(screen.getByRole('button',{name:'帶夥伴出發 →'}));
+    expect(screen.getByRole('button',{name:'我記住了，開始尋寶'})).toBeEnabled();
+    expect(screen.getByTestId('play-saved')).toHaveTextContent('"coins":0');
   });
   it('never replaces a memory question on a timer and resumes its exact place after a tab pause',()=>{
     vi.useFakeTimers();render(<PlayHarness/>);fireEvent.click(screen.getByRole('button',{name:/記憶尋寶/}));fireEvent.click(screen.getByRole('button',{name:'帶夥伴出發 →'}));

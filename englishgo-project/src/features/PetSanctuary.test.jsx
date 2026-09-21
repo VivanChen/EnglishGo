@@ -30,7 +30,7 @@ describe('the complete pet home flow',()=>{
     render(<Harness initialTab="eggs" initial={{pets:[],eggs:[{id:'egg1',petId:'bunny',rarity:'N',progress:10,pendingDuplicateReward:{exp:40,bond:4,dupes:1}}],coins:0,inventory:{}}}/>);
     const hatch=screen.getByRole('button',{name:'🎉 可以孵化了！點我'});fireEvent.click(hatch);fireEvent.click(hatch);
     expect(saved()).toMatchObject({pets:[{petId:'bunny',exp:40,bond:4,dupes:1}],eggs:[]});
-    fireEvent.click(screen.getByRole('button',{name:'帶回小家，認識你 →'}));expect(screen.getByTestId('pet-growth-panel')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button',{name:'帶回小家，認識你 →'}));fireEvent.click(screen.getByRole('button',{name:'成長與佈置'}));expect(screen.getByTestId('pet-growth-panel')).toBeInTheDocument();
   });
   it('limits task claims and shop purchases to the available balance',()=>{
     render(<Harness initialTab="tasks" initial={{pets:[bunny],eggs:[],coins:0,inventory:{}}}/>);
@@ -57,7 +57,7 @@ describe('the complete pet home flow',()=>{
   it('switches the showcase and applies care to the selected companion only',()=>{
     render(<Harness initial={{pets:[bunny,{...bunny,petId:'chick',clean:20}],eggs:[],coins:0,inventory:{apple:2}}}/>);
     fireEvent.click(screen.getByRole('button',{name:'陪陪我的夥伴 →'}));
-    fireEvent.click(screen.getByRole('button',{name:'查看小雞'}));
+    fireEvent.click(screen.getByRole('button',{name:'寵物選擇下一頁'}));fireEvent.click(screen.getByRole('button',{name:'查看小雞'}));
     expect(screen.getByRole('button',{name:'查看小雞'})).toHaveAttribute('aria-pressed','true');
     fireEvent.click(within(screen.getByTestId('pet-showcase')).getByRole('button',{name:'洗澡'}));
     for(const n of [4,2,3,1])fireEvent.click(screen.getByRole('button',{name:`擦洗第 ${n} 處髒污`}));
