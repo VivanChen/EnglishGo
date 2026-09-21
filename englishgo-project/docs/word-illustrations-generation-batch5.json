@@ -1,0 +1,72 @@
+[
+  {
+    "id": "orange-01",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Produce ONE finished square 1024x1024 elementary vocabulary flashcard illustration. Match the attached reference ONLY in style: refined translucent watercolor and delicate graphite/colored-pencil children's book illustration, broken hand-drawn contours, natural proportions, warm ivory paper, nuanced ochre, vermilion, teal and indigo, generous clean negative space. Carefully observed materials and expressive brushwork. No glossy 3D, oversized anime eyes, uniform digital gradients. Entire subject fully visible and recognizable at small size. No letters, numbers, text, captions, border, logo or watermark. Target vocabulary: ORANGE, the fruit meaning. One whole ripe orange with a small green leaf and one cut orange half beside it, exposing juicy radial citrus segments. Both clearly oranges, not a tangerine. Small delicate grounding shadow on ivory paper, no plate or other objects.",
+    "reference": "public/images/vocabulary/elementary/cat-01-v1.webp",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c5eb-d958-7f20-b00d-ba330b9a97b1\\exec-b68bbfb7-f3a8-443e-a657-d2e9f1bda67a.png"
+  },
+  {
+    "id": "carrot-01",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Produce ONE finished square 1024x1024 elementary vocabulary flashcard illustration. Match the attached reference ONLY in style: refined translucent watercolor and delicate graphite/colored-pencil children's book illustration, broken hand-drawn contours, natural proportions, warm ivory paper, nuanced ochre, vermilion, teal and indigo, generous clean negative space. Carefully observed materials and expressive brushwork. No glossy 3D, oversized anime eyes, uniform digital gradients. Entire subject fully visible and recognizable at small size. No letters, numbers, text, captions, border, logo or watermark. Target vocabulary: CARROT. One freshly washed orange carrot lying diagonally with its full long tapered root and a compact spray of delicate green leaves attached. Show fine root ridges, natural vegetable shape, small grounding shadow. No soil, hands, plate or other vegetables; clean ivory paper.",
+    "reference": "public/images/vocabulary/elementary/cat-01-v1.webp",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c5eb-d958-7f20-b00d-ba330b9a97b1\\exec-24457b07-a678-4863-a7f8-9fd70252a39d.png"
+  },
+  {
+    "id": "tomato-01",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Produce ONE finished square 1024x1024 elementary vocabulary flashcard illustration. Match the attached reference ONLY in style: refined translucent watercolor and delicate graphite/colored-pencil children's book illustration, broken hand-drawn contours, natural proportions, warm ivory paper, nuanced ochre, vermilion, teal and indigo, generous clean negative space. Carefully observed materials and expressive brushwork. No glossy 3D, oversized anime eyes, uniform digital gradients. Entire subject fully visible and recognizable at small size. No letters, numbers, text, captions, border, logo or watermark. Target vocabulary: TOMATO. One plump ripe red tomato in three-quarter view with a fresh green star-shaped calyx attached on top. Natural rounded shape with subtle lobes, soft painterly highlight, delicate blue-gray grounding shadow. No face, plate, knife or other produce. Ivory paper backdrop.",
+    "reference": "public/images/vocabulary/elementary/cat-01-v1.webp",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c5eb-d958-7f20-b00d-ba330b9a97b1\\exec-9cc56904-05d1-4c2d-bde3-4acd52df5a17.png"
+  },
+  {
+    "id": "corn-01",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Produce ONE finished square 1024x1024 elementary vocabulary flashcard illustration. Match the attached reference ONLY in style: refined translucent watercolor and delicate graphite/colored-pencil children's book illustration, broken hand-drawn contours, natural proportions, warm ivory paper, nuanced ochre, vermilion, teal and indigo, generous clean negative space. Carefully observed materials and expressive brushwork. No glossy 3D, oversized anime eyes, uniform digital gradients. Entire subject fully visible and recognizable at small size. No letters, numbers, text, captions, border, logo or watermark. Target vocabulary: CORN. One golden-yellow ear of sweet corn lying diagonally, with its pale green husk peeled back at the stem to clearly reveal neat rows of rounded kernels. Whole cob and attached folded husk fully visible. Ivory paper and subtle grounding shadow, no butter, plate, utensils or text.",
+    "reference": "public/images/vocabulary/elementary/cat-01-v1.webp",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c5eb-d958-7f20-b00d-ba330b9a97b1\\exec-fb425c80-4ac8-49ff-8929-d3334da9c2da.png"
+  },
+  {
+    "id": "rice-01",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Produce ONE finished square 1024x1024 elementary vocabulary flashcard illustration. Match the attached reference ONLY in style: refined translucent watercolor and delicate graphite/colored-pencil children's book illustration, broken hand-drawn contours, natural proportions, warm ivory paper, nuanced ochre, vermilion, teal and indigo, generous clean negative space. Carefully observed materials and expressive brushwork. No glossy 3D, oversized anime eyes, uniform digital gradients. Entire subject fully visible and recognizable at small size. No letters, numbers, text, captions, border, logo or watermark. Target vocabulary: RICE, cooked white rice. One small pale blue ceramic rice bowl filled with a gentle mound of cooked white rice. Clearly defined tiny short rice grains, delicate warm highlights and blue-gray shadows, bowl fully visible in three-quarter view. No chopsticks, spoon, garnish or other foods. Ivory paper.",
+    "reference": "public/images/vocabulary/elementary/cat-01-v1.webp",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c5eb-d958-7f20-b00d-ba330b9a97b1\\exec-9c525dcf-9764-4a00-91ea-998d789102ed.png"
+  },
+  {
+    "id": "juice-01",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Produce ONE finished square 1024x1024 elementary vocabulary flashcard illustration. Match the attached reference ONLY in style: refined translucent watercolor and delicate graphite/colored-pencil children's book illustration, broken hand-drawn contours, natural proportions, warm ivory paper, nuanced ochre, vermilion, teal and indigo, generous clean negative space. Carefully observed materials and expressive brushwork. No glossy 3D, oversized anime eyes, uniform digital gradients. Entire subject fully visible and recognizable at small size. No letters, numbers, text, captions, border, logo or watermark. Target vocabulary: JUICE. One clear drinking glass three-quarters filled with orange juice, with one small cut orange half resting beside its base to establish the drink's fruit source. Simple transparent glass, vivid opaque golden-orange juice, no straw, face, lettering, ice, logos or extra props. Ivory background and soft grounding shadow.",
+    "reference": "public/images/vocabulary/elementary/cat-01-v1.webp",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c5eb-d958-7f20-b00d-ba330b9a97b1\\exec-252c0fab-ed33-45df-8808-e8ff2be563d3.png"
+  },
+  {
+    "id": "potato-01",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Produce ONE finished square 1024x1024 elementary vocabulary flashcard illustration. Match the attached reference ONLY in style: refined translucent watercolor and delicate graphite/colored-pencil children's book illustration, broken hand-drawn contours, natural proportions, warm ivory paper, nuanced ochre, vermilion, teal and indigo, generous clean negative space. Carefully observed materials and expressive brushwork. No glossy 3D, oversized anime eyes, uniform digital gradients. Entire subject fully visible and recognizable at small size. No letters, numbers, text, captions, border, logo or watermark. Target vocabulary: POTATO. Two freshly washed whole brown potatoes, one large and one small, resting side by side. Uneven oval forms, thin light tan speckled skin and a few shallow eyes, unmistakable ordinary potatoes, not sweet potatoes. No sprouts, green skin, dirt, plate or other objects. Ivory paper and delicate grounding shadows.",
+    "reference": "public/images/vocabulary/elementary/cat-01-v1.webp",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c5eb-d958-7f20-b00d-ba330b9a97b1\\exec-e8ddf520-919a-4816-8082-9a605723340f.png"
+  },
+  {
+    "id": "cookie-01",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Produce ONE finished square 1024x1024 elementary vocabulary flashcard illustration. Match the attached reference ONLY in style: refined translucent watercolor and delicate graphite/colored-pencil children's book illustration, broken hand-drawn contours, natural proportions, warm ivory paper, nuanced ochre, vermilion, teal and indigo, generous clean negative space. Carefully observed materials and expressive brushwork. No glossy 3D, oversized anime eyes, uniform digital gradients. Entire subject fully visible and recognizable at small size. No letters, numbers, text, captions, border, logo or watermark. Target vocabulary: COOKIE. One round golden-brown chocolate chip cookie, fully visible from a slightly elevated three-quarter angle. Clear dark chocolate chunks, lightly cracked baked surface and gently browned edge. One tiny crumb near its base; no bite missing, no milk, plate, packaging, text or other cookies. Soft grounding shadow on ivory paper.",
+    "reference": "public/images/vocabulary/elementary/cat-01-v1.webp",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c5eb-d958-7f20-b00d-ba330b9a97b1\\exec-ce974da3-4ed1-4d87-8fda-18a9df35c3a8.png"
+  },
+  {
+    "id": "soup-01",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Produce ONE finished square 1024x1024 elementary vocabulary flashcard illustration. Match the attached reference ONLY in style: refined translucent watercolor and delicate graphite/colored-pencil children's book illustration, broken hand-drawn contours, natural proportions, warm ivory paper, nuanced ochre, vermilion, teal and indigo, generous clean negative space. Carefully observed materials and expressive brushwork. No glossy 3D, oversized anime eyes, uniform digital gradients. Entire subject fully visible and recognizable at small size. No letters, numbers, text, captions, border, logo or watermark. Target vocabulary: SOUP. One round pale blue ceramic bowl of warm golden vegetable broth, seen slightly from above. A few clearly visible orange carrot slices and green peas float in the broth. Two very subtle wisps of steam suggest warmth. Bowl fully visible, no utensils, hands, bread or words, warm ivory paper background and delicate grounding shadow.",
+    "reference": "public/images/vocabulary/elementary/cat-01-v1.webp",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c5eb-d958-7f20-b00d-ba330b9a97b1\\exec-8383dff9-0896-4343-b0a2-2e1d5d5a2255.png"
+  },
+  {
+    "id": "sandwich-01",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Produce ONE finished square 1024x1024 elementary vocabulary flashcard illustration. Match the attached reference ONLY in style: refined translucent watercolor and delicate graphite/colored-pencil children's book illustration, broken hand-drawn contours, natural proportions, warm ivory paper, nuanced ochre, vermilion, teal and indigo, generous clean negative space. Carefully observed materials and expressive brushwork. No glossy 3D, oversized anime eyes, uniform digital gradients. Entire subject fully visible and recognizable at small size. No letters, numbers, text, captions, border, logo or watermark. Target vocabulary: SANDWICH. One simple sandwich cut diagonally into two triangular halves resting on a plain small white plate. Clearly visible layers of green lettuce, red tomato and pale yellow cheese between two slices of soft white bread with golden brown crusts. Slightly separate the halves so the filling is easy to recognize. Whole plate and food fully in frame, no toothpicks, flags, lettering, hands, drink or other food. Ivory paper.",
+    "reference": "public/images/vocabulary/elementary/cat-01-v1.webp",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c5eb-d958-7f20-b00d-ba330b9a97b1\\exec-a9252530-25e3-48fc-ab47-8071fe4849ef.png"
+  }
+]
