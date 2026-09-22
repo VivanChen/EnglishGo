@@ -100,7 +100,27 @@
     return false;
   }
 
-  function fallbackSpeech(utterance) {
+  function fallbackSpeech(utterance, error) {
+    const blocked = error?.name === "NotAllowedError";
+    const reason = blocked ? "playback-blocked" : error?.ttsReason || "audio-playback";
+    const detail = { text: normalizeText(utterance.text), reason, status: error?.status || null };
+    window.dispatchEvent(new CustomEvent("englishgo:tts-fallback", { detail }));
+    const notice = document.createElement("div");
+    notice.id = "eg-tts-status-toast";
+    notice.className = "show";
+    notice.setAttribute("role", "status");
+    notice.textContent = blocked ? "瀏覽器暫時阻擋播放，請再按一次發音按鈕。"
+      : utterance.__englishGoRequireApi ? "雲端發音暫時無法播放，請稍後再試。"
+      : reason === "network" ? "發音連線失敗，暫時使用裝置語音。"
+      : reason === "api" ? `雲端發音暫時無法使用（${detail.status}），暫時使用裝置語音。`
+      : "雲端音訊無法播放，暫時使用裝置語音。";
+    document.getElementById(notice.id)?.remove();
+    document.body.appendChild(notice);
+    window.setTimeout(() => notice.remove(), 5000);
+    if (blocked) {
+      utterance.onerror?.(new Event("error"));
+      return;
+    }
     if (utterance.__englishGoRequireApi) {
       utterance.onerror?.(new Event("error"));
       return;
@@ -163,7 +183,9 @@
 
   async function getAudioUrl(text, options = {}) {
     const baseSettings = getSettings();
-    const lang = options.lang || "en-US";
+    // English cloud voices are selected by voiceId, not by the device's locale.
+    // Use the same key for preloads and playback on en-GB/en-AU devices.
+    const lang = /^en/i.test(options.lang || "en-US") ? "en-US" : options.lang;
     const settings = {
       ...baseSettings,
       ...options,
@@ -197,7 +219,12 @@
           if (hit?.ok && /^audio\//i.test(hit.headers.get('content-type') || '')) return hit;
         } catch { saved = null; }
       }
-      const response = await fetch(requestUrl, requestOptions);
+      let response;
+      try {
+        response = await fetch(requestUrl, requestOptions);
+      } catch (cause) {
+        throw Object.assign(new Error("TTS network request failed", { cause }), { ttsReason: "network" });
+      }
       if (saved && response.ok && /^audio\//i.test(response.headers.get('content-type') || '')) {
         try { await saved.put(requestUrl, response.clone()); } catch { /* Storage may be full; playback still works. */ }
       }
@@ -205,7 +232,7 @@
     }
     const promise = fetchAudio()
       .then(async (res) => {
-        if (!res.ok) throw new Error(`ElevenLabs TTS failed: ${res.status}`);
+        if (!res.ok) throw Object.assign(new Error(`ElevenLabs TTS failed: ${res.status}`), { ttsReason: "api", status: res.status });
         const blob = await res.blob();
         if (!blob.size || !/^audio\//i.test(blob.type)) throw new Error('TTS response is not audio');
         const url = URL.createObjectURL(blob);
@@ -277,11 +304,12 @@
       #eg-tts-panel .eg-chip{font-size:12px;background:#eef8f4;border-radius:999px;padding:3px 8px;color:#087557;font-weight:700}
       #eg-tts-panel button{border:0;border-radius:10px;padding:7px 9px;background:#0f8f6f;color:#fff;font-weight:800;cursor:pointer;flex-shrink:0}
       #eg-tts-panel .eg-small{font-size:11px;color:#789;line-height:1.35}
-      #eg-tts-loading-toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(18px);display:flex;align-items:center;gap:9px;padding:10px 14px;border-radius:999px;background:rgba(15,143,111,.96);color:#fff;font:700 13px system-ui,-apple-system,'Segoe UI',sans-serif;box-shadow:0 10px 24px rgba(0,0,0,.22);z-index:2147483646;opacity:0;pointer-events:none;transition:opacity .18s ease,transform .18s ease;max-width:min(420px,calc(100vw - 32px))}
+      #eg-tts-loading-toast,#eg-tts-status-toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(18px);display:flex;align-items:center;gap:9px;padding:10px 14px;border-radius:999px;background:rgba(15,143,111,.96);color:#fff;font:700 13px system-ui,-apple-system,'Segoe UI',sans-serif;box-shadow:0 10px 24px rgba(0,0,0,.22);z-index:2147483646;opacity:0;pointer-events:none;transition:opacity .18s ease,transform .18s ease;max-width:min(420px,calc(100vw - 32px))}
       body[data-eg-module="srs"] #eg-tts-panel{bottom:calc(96px + env(safe-area-inset-bottom,0px))}
       body[data-eg-module="srs"] #eg-tts-loading-toast{bottom:calc(96px + env(safe-area-inset-bottom,0px))}
+      body[data-eg-module="srs"] #eg-tts-status-toast{bottom:calc(96px + env(safe-area-inset-bottom,0px))}
       body[data-eg-module="srs"]:has(.srs-page.has-dict) #eg-tts-panel{display:none}
-      #eg-tts-loading-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+      #eg-tts-loading-toast.show,#eg-tts-status-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
       .eg-tts-spinner{width:14px;height:14px;border-radius:999px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;animation:egTtsSpin .75s linear infinite;flex:0 0 auto}
       .eg-tts-loading-target{position:relative;animation:egTtsPulse .9s ease-in-out infinite!important;filter:drop-shadow(0 0 8px rgba(15,143,111,.5))}
       @media (max-width:640px){
@@ -293,7 +321,9 @@
         body[data-eg-module="srs"] #eg-tts-panel{display:none}
         body[data-eg-module="novels"] #eg-tts-panel{display:none}
         body[data-eg-module="srs"] #eg-tts-loading-toast{bottom:calc(112px + env(safe-area-inset-bottom,0px))}
+        body[data-eg-module="srs"] #eg-tts-status-toast{bottom:calc(112px + env(safe-area-inset-bottom,0px))}
         body[data-eg-module="novels"] #eg-tts-loading-toast{bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+        body[data-eg-module="novels"] #eg-tts-status-toast{bottom:calc(76px + env(safe-area-inset-bottom,0px))}
       }
       @keyframes egTtsSpin{to{transform:rotate(360deg)}}
       @keyframes egTtsPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.18)}}
@@ -379,6 +409,7 @@
   synth.cancel = function patchedCancel() {
     stopActiveAudio();
     hideTtsLoading();
+    document.getElementById("eg-tts-status-toast")?.remove();
     return nativeCancel();
   };
 
@@ -399,6 +430,7 @@
   };
 
   synth.speak = function patchedSpeak(utterance) {
+    document.getElementById("eg-tts-status-toast")?.remove();
     if (!shouldUseElevenLabs(utterance)) {
       stopActiveAudio();
       hideTtsLoading();
@@ -415,6 +447,14 @@
     activeAudioPaused = false;
     audio.muted = true;
     const unlockPlayback = audio.play().catch(() => {});
+    const fail = error => {
+      // A cancelled/replaced request must never resurrect its old system voice.
+      // Clearing activeAudio also makes duplicate media/play errors harmless.
+      if (activeAudio !== audio) return;
+      stopActiveAudio();
+      hideTtsLoading(loadingToken);
+      fallbackSpeech(utterance, error);
+    };
 
     getAudioUrl(text, { lang: utterance.lang, audioUrl: utterance.__englishGoAudioUrl })
       .then((url) => {
@@ -425,7 +465,7 @@
         audio.muted = false;
         audio.playbackRate = clamp(utterance.__englishGoPlaybackRate, 0.7, 1.2, 1);
         audio.volume = typeof utterance.volume === "number" ? utterance.volume : 1;
-        audio.oncanplay = () => hideTtsLoading(loadingToken);
+        audio.oncanplay = () => { if (activeAudio === audio) hideTtsLoading(loadingToken); };
         let started = false;
         audio.onplaying = () => {
           if (activeAudio !== audio) return;
@@ -437,6 +477,7 @@
           utterance.onprogress?.({ currentTime: audio.currentTime, duration: audio.duration });
         };
         audio.onended = () => {
+          if (activeAudio !== audio) return;
           if (activeAudio === audio) {
             activeAudio = null;
             activeAudioPaused = false;
@@ -444,31 +485,12 @@
           hideTtsLoading(loadingToken);
           emitEnd(utterance);
         };
-        audio.onerror = () => {
-          if (utterance.__englishGoTrackWords && activeAudio !== audio) return;
-          if (activeAudio === audio) {
-            activeAudio = null;
-            activeAudioPaused = false;
-          }
-          hideTtsLoading(loadingToken);
-          fallbackSpeech(utterance);
-        };
+        audio.onerror = () => fail(audio.error);
         if (!utterance.__englishGoTrackWords) emitStart(utterance);
-        return unlockPlayback.then(() => activeAudioPaused ? null : audio.play()).then(() => hideTtsLoading(loadingToken)).catch((err) => {
-          hideTtsLoading(loadingToken);
-          throw err;
-        });
+        return unlockPlayback.then(() => activeAudio !== audio || activeAudioPaused ? null : audio.play())
+          .then(() => { if (activeAudio === audio) hideTtsLoading(loadingToken); });
       })
-      .catch(() => {
-        if (utterance.__englishGoTrackWords && activeAudio !== audio) return;
-        if (activeAudio === audio) {
-          activeAudio = null;
-          activeAudioPaused = false;
-        }
-        try { audio.pause(); } catch {}
-        hideTtsLoading(loadingToken);
-        fallbackSpeech(utterance);
-      });
+      .catch(fail);
 
     return undefined;
   };

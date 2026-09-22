@@ -1,5 +1,5 @@
 import { fetchGif, forgetGif } from '../lib/giphy.js';
-import WordIllustrations from '../components/WordIllustrations.jsx';
+import { useWordIllustrations, WordIllustrationGallery } from '../components/WordIllustrations.jsx';
 import { serviceFetch, assertServiceResponse, serviceErrorMessage } from '../lib/serviceErrors.js';
 import { getGeminiModels } from '../lib/geminiModels.js';
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
@@ -254,6 +254,7 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
   const[gifUrl,setGifUrl]=useState(null);const[gifLoading,setGifLoading]=useState(false);
   const[imgUrl,setImgUrl]=useState(null);
   const[mediaError,setMediaError]=useState("");
+  const[failedIllustrations,setFailedIllustrations]=useState([]);
   const[dictOpen,setDictOpen]=useState(false);
   const[dictData,setDictData]=useState(null);const[dictLoading,setDictLoading]=useState(false);const[dictError,setDictError]=useState("");
   const[aiExample,setAiExample]=useState(null);// AI-generated example {en, zh}
@@ -279,7 +280,8 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
   const leaveStudy=()=>{if(selectedTopicMeta){setSelectedTopic(null);setCards([]);setDeck(createDeck([]));setFlip(false);setFlipAnim(false);setShowConfetti(false);completedRef.current=false;return}onBack()};
   const cur=deck.queue[0]!==undefined?cards[deck.queue[0]]:null;const left=deck.queue.length;const done=left===0;const spokenExample=cur?(aiExample?.en||(!isPlaceholderExample(cur.ex,cur.w)?cur.ex:"")):"";
   useEffect(()=>{setDictOpen(false);setDictData(null);setDictError("")},[cur?.w]);
-  useEffect(()=>{setMediaError("")},[cur?.w]);
+  const illustrations=useWordIllustrations(lv,studyActive?cur?.w:null,deps.fetchWordIllustrations);
+  useEffect(()=>{setMediaError("");setFailedIllustrations([])},[lv,cur?.w]);
   useEffect(()=>{let active=true;if(!studyActive||!dictOpen||!cur){setDictLoading(false);return()=>{active=false}}if(!apiKey?.trim()){setDictLoading(false);setDictData(null);setDictError("");return()=>{active=false}}setDictLoading(true);setDictError("");generateKidDictionary(cur.w,cur.m,cur.p,lv,apiKey).then(data=>{if(!active)return;setDictData(data);setDictLoading(false)}).catch(error=>{if(!active)return;setDictData(null);setDictError(serviceErrorMessage(error,"AI 字典目前產生失敗，請稍後再試，或使用 Yahoo 查詢。"));setDictLoading(false)});return()=>{active=false}},[studyActive,dictOpen,cur?.w,apiKey,lv,dictRetry]);
   // When Giphy is enabled, search every word — including abstract vocabulary.
   useEffect(()=>{
@@ -365,15 +367,16 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
   const speakTiny=(text,label="播放英文發音")=>{const clean=String(text||"").trim();return clean?<button type="button" onClick={()=>speakDict(clean)} title={label} aria-label={label} style={{border:`1px solid ${S.bd}`,background:S.bg1,color:c.cl,borderRadius:999,width:24,height:24,display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:12,cursor:"pointer",fontFamily:"inherit",verticalAlign:"middle",padding:0,flex:"0 0 auto"}}>🔊</button>:null};
   const fallbackVisual=getWordEmoji(cur);
   const showGif=Boolean(gifUrl&&mediaError!=="gif");
+  const illustrationUrl=illustrations.flatMap(item=>[item.image_url,item.local_path]).find(url=>url&&!failedIllustrations.includes(url));
   const showImg=Boolean(imgUrl?.type!=="emoji"&&imgUrl?.value&&mediaError!=="image");
   const showEmoji=Boolean(imgUrl?.type==="emoji");
-  const mediaLabel=showGif?"GIF 動圖":showImg?"內建圖片":showEmoji?"內建圖示":"備用圖示";
+  const mediaLabel=showGif?"GIF 動圖":illustrationUrl?"手繪插畫":showImg?"內建圖片":showEmoji?"內建圖示":"備用圖示";
   return(<div className={`srs-page ${dictOpen&&flip?"has-dict":""}`} style={{"--srs-accent":c.cl,"--srs-accent-2":c.ac,"--srs-soft":c.bg,"--srs-card":S.bg1,"--srs-surface":S.bg2,"--srs-border":S.bd,"--srs-text":S.t1,"--srs-muted":S.t2,"--srs-faint":S.t3}}><Hdr t="🃏 單字小花園" onBack={leaveStudy} cl={c.cl} extra={<div style={{display:"flex",gap:4}}><button type="button" onClick={()=>setInfo(!info)} aria-label={info?"關閉操作說明":"開啟操作說明"} title="操作說明" style={{background:"none",border:`1px solid ${S.bd}`,borderRadius:8,padding:"2px 6px",fontSize:12,cursor:"pointer",color:S.t2,minWidth:44,minHeight:44}}>ⓘ</button><label aria-label="匯入 CSV 單字卡" title="匯入 CSV 單字卡" style={{background:"none",border:`1px solid ${S.bd}`,borderRadius:8,padding:"2px 6px",fontSize:12,cursor:"pointer",color:S.t2,minWidth:44,minHeight:44,display:"inline-flex",alignItems:"center",justifyContent:"center"}}>📥<input ref={fr} aria-label="選擇 CSV 單字卡檔案" type="file" accept=".csv" onChange={handleCSV} style={{display:"none"}}/></label></div>}/>
     {selectedTopicMeta&&<div style={{marginBottom:10,padding:"9px 12px",border:`1px solid ${c.cl}33`,background:c.bg,borderRadius:12,color:S.t2,fontSize:12,display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,flexWrap:"wrap"}}><b style={{color:c.cl}}>{selectedTopicMeta.icon} {LV[lv].l} · {selectedTopicMeta.label}</b><button type="button" onClick={leaveStudy} style={{border:"none",background:"transparent",color:c.cl,font: "inherit",fontSize:12,fontWeight:900,cursor:"pointer",minHeight:32,padding:"4px 7px"}}>換分類</button></div>}
     {info&&<div style={{...S.card,padding:"12px 16px",marginBottom:10,fontSize:13,color:S.t2,lineHeight:1.7}}>💻 <b>Space</b> 翻牌/翻回 · <b>Enter</b> 朗讀 · <b>1</b>Again <b>2</b>Hard <b>3</b>Good <b>4</b>Easy<br/>📱 <b>點擊</b>翻牌 · 點 <b>🔙翻回</b> · <b>按鈕</b>評分<br/>🔎 <b>查字典</b>：翻到背面後點 <b>查字典</b>，可在右側查看小朋友版解釋、例句與常見搭配<div style={{marginTop:4,fontSize:11,color:S.t3}}>來源：{src} {gifKey?"· 🖼️ GIF 已啟用":""}</div>
       <div style={{borderTop:`1px solid ${S.bd}`,marginTop:8,paddingTop:8}}>
         <div style={{fontWeight:700,fontSize:12,color:S.t1,marginBottom:4}}>🖼️ 單字動圖 (Giphy，可選)</div>
-        <div style={{fontSize:11,color:S.t3,marginBottom:6,lineHeight:1.7}}>未設定也能使用內建圖片與表情符號；貼上 Giphy API Key 後，具體且有可靠圖片對應的單字會顯示相關 GIF，抽象字則保留中性圖示。<a href="/learn/gif-guide.html" target="_blank" rel="noreferrer" style={{color:c.cl,fontWeight:700}}>看效果與申請教學</a></div>
+        <div style={{fontSize:11,color:S.t3,marginBottom:6,lineHeight:1.7}}>貼上 Giphy API Key 後會搜尋單字相關動圖；沒有可用動圖時，優先顯示已有的手繪插畫，其次使用內建圖片或圖示。<a href="/learn/gif-guide.html" target="_blank" rel="noreferrer" style={{color:c.cl,fontWeight:700}}>看效果與申請教學</a></div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(2,minmax(0,1fr))",gap:6,marginBottom:7}}>
           <div style={{background:S.bg2,border:`1px solid ${S.bd}`,borderRadius:8,padding:"7px 8px",fontSize:11,color:S.t2}}><b style={{color:S.t1}}>未啟用</b><br/>顯示內建圖片 / emoji</div>
           <div style={{background:c.bg,border:`1px solid ${c.cl}33`,borderRadius:8,padding:"7px 8px",fontSize:11,color:S.t2}}><b style={{color:c.cl}}>啟用後</b><br/>依單字搜尋 GIF 動圖</div>
@@ -507,6 +510,7 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
           <div className="srs-front-media" data-testid="srs-front-media">
             <div className="srs-media-badge">{mediaLabel}</div>
             {showGif?<img src={gifUrl} alt={cur.w} onError={()=>{forgetGif(cur.w,gifKey);setMediaError("gif");setGifUrl(null);setGifNotice("動圖檔案無法載入，已使用替代圖片或圖示，不影響練習。")}}/>
+            :illustrationUrl?<img key={illustrationUrl} src={illustrationUrl} alt={cur.w} style={{objectFit:"contain"}} onError={()=>setFailedIllustrations(urls=>[...urls,illustrationUrl])}/>
             :showEmoji?<div className="srs-front-emoji">{imgUrl.value}</div>
             :showImg?<img src={imgUrl.value} alt={cur.w} onError={()=>setMediaError("image")}/>
             :gifLoading&&gifKey?<div style={{fontSize:13,color:S.t3,animation:"pulse 1s infinite"}}>載入圖片中...</div>
@@ -532,7 +536,7 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
               {showGif?<img src={gifUrl} alt={cur.w} onError={()=>{forgetGif(cur.w,gifKey);setMediaError("gif");setGifUrl(null);setGifNotice("動圖檔案無法載入，已使用替代圖片或圖示，不影響練習。")}}/>:showEmoji?imgUrl.value:showImg?<img src={imgUrl.value} alt={cur.w} onError={()=>setMediaError("image")}/>:fallbackVisual.emoji}
             </div>}
           </div>
-          {lv==="elementary"&&<WordIllustrations key={`${lv}:${cur.w}`} level={lv} word={cur.w} fetchIllustrations={deps.fetchWordIllustrations} speak={speak}/>}
+          {lv==="elementary"&&<WordIllustrationGallery key={`${lv}:${cur.w}`} word={cur.w} items={illustrations} speak={speak}/>}
           {(()=>{
           // Decide which example to show
           const useAi=aiExample&&isPlaceholderExample(cur.ex,cur.w);

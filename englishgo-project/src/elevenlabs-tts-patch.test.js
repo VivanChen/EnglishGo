@@ -62,6 +62,76 @@ function loadPatch() {
 }
 
 describe("ElevenLabs TTS patch", () => {
+  it.each(['cancel', 'replace'])("ignores an old word request failing after %s", async action => {
+    const { nativeSpeak } = installPatchEnv();
+    let reject;
+    globalThis.fetch = vi.fn().mockImplementationOnce(() => new Promise((_, fail) => { reject = fail; }))
+      .mockImplementation(() => new Promise(() => {}));
+    globalThis.Audio = vi.fn(() => ({ play: vi.fn(() => Promise.resolve()), pause: vi.fn() }));
+    loadPatch();
+    window.speechSynthesis.speak(new SpeechSynthesisUtterance('apple'));
+    if (action === 'cancel') window.speechSynthesis.cancel();
+    else window.speechSynthesis.speak(new SpeechSynthesisUtterance('book'));
+    reject(new Error('offline'));
+    await new Promise(resolve => setTimeout(resolve, 0));
+    expect(nativeSpeak).not.toHaveBeenCalled();
+    expect(document.getElementById('eg-tts-status-toast')).toBeNull();
+  });
+
+  it("shares English preloaded audio with a device using a British voice", async () => {
+    const { nativeSpeak } = installPatchEnv();
+    globalThis.fetch = vi.fn(() => Promise.resolve(new Response('mp3', { headers: { 'Content-Type': 'audio/mpeg' } })));
+    const audio = { play: vi.fn(() => Promise.resolve()), pause: vi.fn() };
+    globalThis.Audio = vi.fn(() => audio);
+    loadPatch();
+    await window.EnglishGoTTS.preload('apple');
+    const u = new SpeechSynthesisUtterance('apple'); u.lang = 'en-GB';
+    window.speechSynthesis.speak(u);
+    await vi.waitFor(() => expect(audio.play).toHaveBeenCalledTimes(2));
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+    expect(nativeSpeak).not.toHaveBeenCalled();
+  });
+
+  it("explains API failures while keeping the current word's device fallback", async () => {
+    const { nativeSpeak } = installPatchEnv();
+    globalThis.fetch = vi.fn(() => Promise.resolve(new Response('', { status: 500 })));
+    globalThis.Audio = vi.fn(() => ({ play: vi.fn(() => Promise.resolve()), pause: vi.fn() }));
+    loadPatch();
+    const u = new SpeechSynthesisUtterance('apple');
+    window.speechSynthesis.speak(u);
+    await vi.waitFor(() => expect(nativeSpeak).toHaveBeenCalledExactlyOnceWith(u));
+    expect(document.getElementById('eg-tts-status-toast')).toHaveTextContent('500');
+  });
+
+  it("asks for a new click when playback is blocked instead of switching voices", async () => {
+    const { nativeSpeak } = installPatchEnv();
+    globalThis.fetch = vi.fn(() => Promise.resolve(new Response('mp3', { headers: { 'Content-Type': 'audio/mpeg' } })));
+    const audio = { play: vi.fn().mockResolvedValueOnce().mockRejectedValue(new DOMException('blocked', 'NotAllowedError')), pause: vi.fn() };
+    globalThis.Audio = vi.fn(() => audio);
+    loadPatch();
+    window.speechSynthesis.speak(new SpeechSynthesisUtterance('apple'));
+    await vi.waitFor(() => expect(document.getElementById('eg-tts-status-toast')).toHaveTextContent('請再按一次'));
+    expect(nativeSpeak).not.toHaveBeenCalled();
+  });
+
+  it("ignores stale word audio events and only falls back once for a current media failure", async () => {
+    const { nativeSpeak } = installPatchEnv();
+    globalThis.fetch = vi.fn(() => Promise.resolve(new Response('mp3', { headers: { 'Content-Type': 'audio/mpeg' } })));
+    const audios = [];
+    globalThis.Audio = vi.fn(() => { const audio = { play: vi.fn(() => Promise.resolve()), pause: vi.fn() }; audios.push(audio); return audio; });
+    loadPatch();
+    const old = new SpeechSynthesisUtterance('apple'); old.onend = vi.fn();
+    window.speechSynthesis.speak(old);
+    await vi.waitFor(() => expect(audios[0].onerror).toBeTypeOf('function'));
+    const next = new SpeechSynthesisUtterance('book');
+    window.speechSynthesis.speak(next);
+    audios[0].onerror(); audios[0].onended();
+    expect(nativeSpeak).not.toHaveBeenCalled(); expect(old.onend).not.toHaveBeenCalled();
+    await vi.waitFor(() => expect(audios[1].onerror).toBeTypeOf('function'));
+    audios[1].onerror(); audios[1].onerror();
+    expect(nativeSpeak).toHaveBeenCalledExactlyOnceWith(next);
+  });
+
   it("reports API-only book failures instead of silently using a system voice", async () => {
     const { nativeSpeak } = installPatchEnv();
     globalThis.fetch = vi.fn(() => Promise.reject(new Error('offline')));

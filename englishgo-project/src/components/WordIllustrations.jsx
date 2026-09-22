@@ -12,22 +12,31 @@ function IllustrationImage({ item }) {
     }} />;
 }
 
-export default function WordIllustrations({ level, word, fetchIllustrations, speak }) {
-  const [items, setItems] = useState(() => getLocalWordIllustrations(level, word));
-  const [active, setActive] = useState(0);
-  const track = useRef(null);
+export function useWordIllustrations(level, word, fetchIllustrations) {
+  const [result, setResult] = useState(null);
+  const key = `${level}:${word}`;
   useEffect(() => {
     let current = true;
-    const local = getLocalWordIllustrations(level, word);
-    setItems(local); setActive(0);
-    if (typeof fetchIllustrations === 'function' && level === 'elementary') {
+    setResult(null);
+    if (word && typeof fetchIllustrations === 'function' && level === 'elementary') {
       Promise.resolve().then(() => fetchIllustrations(level, word)).then(rows => {
         const valid = normalizeWordIllustrations(rows, level, word);
-        if (current && valid.length) setItems(valid);
+        if (current && valid.length) setResult({ key, items: valid });
       }).catch(() => { /* The bundled illustrations remain available offline. */ });
     }
     return () => { current = false; };
-  }, [level, word, fetchIllustrations]);
+  }, [level, word, key, fetchIllustrations]);
+  return result?.key === key ? result.items : getLocalWordIllustrations(level, word);
+}
+
+export default function WordIllustrations({ level, word, fetchIllustrations, speak }) {
+  const items = useWordIllustrations(level, word, fetchIllustrations);
+  return <WordIllustrationGallery key={`${level}:${word}`} word={word} items={items} speak={speak}/>;
+}
+
+export function WordIllustrationGallery({ word, items, speak }) {
+  const [active, setActive] = useState(0);
+  const track = useRef(null);
   if (!items.length) return null;
   const select = index => {
     const next = Math.max(0, Math.min(items.length - 1, index));

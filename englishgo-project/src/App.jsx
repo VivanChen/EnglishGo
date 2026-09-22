@@ -2178,11 +2178,16 @@ function triggerRewardBurst(opts){
 function RewardBurstHost(){
   const[bursts,setBursts]=useState([]);
   useEffect(()=>{
+    const timers=new Set();
     _rewardBurstSetter=(b)=>{
       setBursts(prev=>[...prev,b]);
-      setTimeout(()=>setBursts(prev=>prev.filter(x=>x.id!==b.id)),(b.duration||1200)+200);
+      const timer=setTimeout(()=>{
+        timers.delete(timer);
+        setBursts(prev=>prev.filter(x=>x.id!==b.id));
+      },(b.duration||1200)+200);
+      timers.add(timer);
     };
-    return()=>{_rewardBurstSetter=null};
+    return()=>{_rewardBurstSetter=null;timers.forEach(clearTimeout);timers.clear()};
   },[]);
   return(<>
     <style>{`
