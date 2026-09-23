@@ -1,0 +1,72 @@
+[
+  {
+    "id": "cup-01",
+    "word": "cup",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Target word: cup. Subject: A single plain sky-blue ceramic cup with one curved handle, empty and viewed slightly from above. No saucer or other objects. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors and subtle ground shadow. Warm ivory paper background with ample breathing room, centered large subject entirely within frame. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, faces or unrelated objects.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c6d5-4596-7052-9886-3db4b5876b61\\exec-cbaa5495-3833-489b-9501-1117b17ea2e6.png"
+  },
+  {
+    "id": "glass-01",
+    "word": "glass",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Target word: glass. Subject: A single clear cylindrical drinking glass half full of still water, transparent walls and visible waterline, viewed slightly from above. No handle, straw or other objects. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors and subtle ground shadow. Warm ivory paper background with ample breathing room, centered large subject entirely within frame. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, faces or unrelated objects.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c6d5-4596-7052-9886-3db4b5876b61\\exec-e11d25d5-4292-4bb9-bbfc-a126689da531.png"
+  },
+  {
+    "id": "bowl-01",
+    "word": "bowl",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Target word: bowl. Subject: A single empty round pale blue ceramic bowl, clearly deep with its open interior visible from a three-quarter angle. No food or utensils. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors and subtle ground shadow. Warm ivory paper background with ample breathing room, centered large subject entirely within frame. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, faces or unrelated objects.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c6d5-4596-7052-9886-3db4b5876b61\\exec-20f8de39-b7d5-4393-823a-fd85772ec007.png"
+  },
+  {
+    "id": "bottle-01",
+    "word": "bottle",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Target word: bottle. Subject: A single clear reusable water bottle filled with water and closed with a solid blue screw cap. No labels, branding, straw or other objects. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors and subtle ground shadow. Warm ivory paper background with ample breathing room, centered large subject entirely within frame. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, faces or unrelated objects.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c6d5-4596-7052-9886-3db4b5876b61\\exec-33ebba0d-3deb-4eb6-a4f7-0abfa414ade7.png"
+  },
+  {
+    "id": "spoon-01",
+    "word": "spoon",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Target word: spoon. Subject: A single silver spoon with a rounded oval concave bowl and a smooth long handle, lying diagonally with the full silhouette clearly visible. No food or other cutlery. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors and subtle ground shadow. Warm ivory paper background with ample breathing room, centered large subject entirely within frame. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, faces or unrelated objects.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c6d5-4596-7052-9886-3db4b5876b61\\exec-76fc8305-27de-46d0-9eec-16cf7dcc7f31.png"
+  },
+  {
+    "id": "fork-01",
+    "word": "fork",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Target word: fork. Subject: A single silver dinner fork with exactly four straight tines and a smooth long handle, lying diagonally with the full silhouette clearly visible. No food or other cutlery. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors and subtle ground shadow. Warm ivory paper background with ample breathing room, centered large subject entirely within frame. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, faces or unrelated objects.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c6d5-4596-7052-9886-3db4b5876b61\\exec-ce16a89a-7c01-4305-b8d5-0a9039acc38d.png"
+  },
+  {
+    "id": "knife-01",
+    "word": "knife",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Target word: knife. Subject: A single child-friendly blunt table knife with a smooth rounded silver blade and a light wooden handle, lying diagonally. Not a sharp chef knife or weapon. No food or other cutlery. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors and subtle ground shadow. Warm ivory paper background with ample breathing room, centered large subject entirely within frame. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, faces or unrelated objects.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c6d5-4596-7052-9886-3db4b5876b61\\exec-eb62d133-77f5-466e-9e18-ff2d535567e8.png"
+  },
+  {
+    "id": "chopsticks-01",
+    "word": "chopsticks",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Target word: chopsticks. Subject: Exactly two straight smooth wooden chopsticks resting parallel diagonally, with slightly tapered tips, clearly separate and equal length. No food, rest or other cutlery. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors and subtle ground shadow. Warm ivory paper background with ample breathing room, centered large subject entirely within frame. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, faces or unrelated objects.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c6d5-4596-7052-9886-3db4b5876b61\\exec-7ea57014-6d8d-4329-9d70-44924597685a.png"
+  },
+  {
+    "id": "pumpkin-01",
+    "word": "pumpkin",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Target word: pumpkin. Subject: A single whole round orange pumpkin with deep natural vertical ribs and a short curved green-brown stem. Uncarved, no Halloween face, no other objects. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors and subtle ground shadow. Warm ivory paper background with ample breathing room, centered large subject entirely within frame. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, faces or unrelated objects.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c6d5-4596-7052-9886-3db4b5876b61\\exec-da3f3abe-a58a-438a-9f21-3869f850959b.png"
+  },
+  {
+    "id": "chocolate-01",
+    "word": "chocolate",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Target word: chocolate. Subject: A small brown chocolate bar divided into rectangular segments, with two broken chocolate squares beside it. No wrapper, lettering, plate or other foods. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors and subtle ground shadow. Warm ivory paper background with ample breathing room, centered large subject entirely within frame. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, faces or unrelated objects.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c6d5-4596-7052-9886-3db4b5876b61\\exec-7b86d5a0-4b18-4b70-abb0-7335305df1c1.png"
+  }
+]

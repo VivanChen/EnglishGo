@@ -458,7 +458,7 @@ describe('EnglishGo app smoke flow', () => {
     expect(within(overview).getByText('🌱 小學')).toBeInTheDocument();
     expect(within(overview).getByText('每輪 20 張')).toBeInTheDocument();
     expect(screen.queryByLabelText('選擇單字年級')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /交通工具，35 個單字/ })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /交通工具，36 個單字/ })).toBeEnabled();
   });
 
   it('uses the junior grade selected outside SRS for topic coverage', async () => {

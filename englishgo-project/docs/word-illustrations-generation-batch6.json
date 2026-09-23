@@ -1,0 +1,73 @@
+[
+  {
+    "id": "grape-01",
+    "word": "grape",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Target word: grape. Subject: A single bunch of plump purple grapes attached to a short brown stem with one green grape leaf. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors and subtle ground shadow. Warm ivory paper background with ample breathing room, centered large subject entirely within frame. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, faces or unrelated objects.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c636-9f82-7dc2-b481-0415f4a0d8cb\\exec-b6ed4318-2b0b-4336-bb19-f970af2ed986.png"
+  },
+  {
+    "id": "watermelon-01",
+    "word": "watermelon",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Target word: watermelon. Subject: One whole green striped watermelon behind one large triangular cut slice revealing red flesh, a few black seeds and green rind. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors and subtle ground shadow. Warm ivory paper background with ample breathing room, centered large subject entirely within frame. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, faces or unrelated objects.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c636-9f82-7dc2-b481-0415f4a0d8cb\\exec-cf312236-4f1a-4ecb-9807-548f1b59dab0.png"
+  },
+  {
+    "id": "strawberry-01",
+    "word": "strawberry",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Target word: strawberry. Subject: One large ripe red strawberry with tiny yellow seeds and a fresh green leafy top. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors and subtle ground shadow. Warm ivory paper background with ample breathing room, centered large subject entirely within frame. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, faces or unrelated objects.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c636-9f82-7dc2-b481-0415f4a0d8cb\\exec-ed03f6d3-4e59-4af4-919c-d89cd45f7664.png"
+  },
+  {
+    "id": "lemon-01",
+    "word": "lemon",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Target word: lemon. Subject: One whole bright yellow lemon with a small green leaf beside a neatly cut lemon half showing pale yellow juicy segments. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors and subtle ground shadow. Warm ivory paper background with ample breathing room, centered large subject entirely within frame. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, faces or unrelated objects.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c636-9f82-7dc2-b481-0415f4a0d8cb\\exec-4a43dc57-3ca1-4659-98ed-7e00db8b8a3e.png"
+  },
+  {
+    "id": "peach-01",
+    "word": "peach",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Target word: peach. Subject: One whole ripe pink and creamy yellow peach, with a visible natural crease, soft fuzzy skin, short stem and one green leaf. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors and subtle ground shadow. Warm ivory paper background with ample breathing room, centered large subject entirely within frame. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, faces or unrelated objects.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c636-9f82-7dc2-b481-0415f4a0d8cb\\exec-34faf24b-89ec-4275-9157-fce0fac31d0f.png"
+  },
+  {
+    "id": "ice-cream-01",
+    "word": "ice cream",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Target word: ice cream. Subject: One crisp golden waffle cone holding one round scoop of pink strawberry ice cream. Entire cone visible, no hands, no fruit toppings. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors and subtle ground shadow. Warm ivory paper background with ample breathing room, centered large subject entirely within frame. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, faces or unrelated objects.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c636-9f82-7dc2-b481-0415f4a0d8cb\\exec-c9847188-0951-4ccd-95ef-e263eed405e6.png"
+  },
+  {
+    "id": "pizza-01",
+    "word": "pizza",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Target word: pizza. Subject: A single triangular slice of cheese pizza on a small plain white plate, golden crust, melted cheese, visible red tomato sauce, no other toppings. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors and subtle ground shadow. Warm ivory paper background with ample breathing room, centered large subject entirely within frame. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, faces or unrelated objects.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c636-9f82-7dc2-b481-0415f4a0d8cb\\exec-d368d997-866b-4a96-8bfc-37b4ef07e691.png"
+  },
+  {
+    "id": "hamburger-01",
+    "word": "hamburger",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Target word: hamburger. Subject: One hamburger on a plain white plate, round golden sesame bun, brown cooked beef patty, crisp green lettuce and a red tomato slice clearly visible. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors and subtle ground shadow. Warm ivory paper background with ample breathing room, centered large subject entirely within frame. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, faces or unrelated objects.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c636-9f82-7dc2-b481-0415f4a0d8cb\\exec-80a2e600-e0e8-4c8e-b332-899e6eed761a.png"
+  },
+  {
+    "id": "candy-01",
+    "word": "candy",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Target word: candy. Subject: Three small wrapped hard candies spaced apart, one red wrapper, one yellow wrapper and one blue wrapper, each wrapper with clearly twisted ends. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors and subtle ground shadow. Warm ivory paper background with ample breathing room, centered large subject entirely within frame. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, faces or unrelated objects.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c636-9f82-7dc2-b481-0415f4a0d8cb\\exec-a73e6ada-f1df-4dcc-aadc-5103f8aaf4a0.png"
+  },
+  {
+    "id": "noodles-01",
+    "word": "noodles",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Target word: noodles. Subject: A pale blue ceramic bowl filled with long gently curled yellow wheat noodles and just a few chopped green scallions; a pair of wooden chopsticks resting neatly beside the bowl. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors and subtle ground shadow. Warm ivory paper background with ample breathing room, centered large subject entirely within frame. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, faces or unrelated objects.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c636-9f82-7dc2-b481-0415f4a0d8cb\\exec-1feda6a3-f3b3-4fc9-baa2-82a4bc575b13.png"
+  }
+]
+

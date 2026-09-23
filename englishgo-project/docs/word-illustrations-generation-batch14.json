@@ -1,0 +1,134 @@
+[
+  {
+    "id": "body-01",
+    "word": "body",
+    "sense": "身體",
+    "alt_zh": "一名穿著青綠色上衣和赭色短褲的孩子自然站立，從頭到腳都清楚可見。",
+    "example": "Exercise keeps my body strong for sports day.",
+    "example_zh": "運動讓我的身體在運動會時保持強壯。",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary flashcard, one single square 1024 × 1024 illustration. Style: refined translucent watercolor and delicate graphite/colored-pencil children's book art, natural proportions, broken hand-drawn contours, visible paper grain, carefully observed materials, soft warm colors with nuanced vermilion, ochre, teal and indigo. Warm ivory paper background, generous clean negative space, centered subject fully inside the frame and recognizable at small size. No glossy 3D, exaggerated anime features, text, letters, numbers, labels, border, logo, watermark or unrelated objects. Target word: body. Subject: One full-length elementary-age East Asian child standing in a relaxed neutral pose, head to shoes fully visible, wearing simple teal shirt, ochre shorts and plain shoes; arms slightly away from torso so the whole human body outline is easy to see, no props.",
+    "source": "C:/Users/vevanchen/.codex/generated_images/01a0cbad-c9cb-7000-b3a8-6c8c2aedea90/exec-9877a645-1983-4c5a-b066-1a7874cce08d.png"
+  },
+  {
+    "id": "tooth-01",
+    "word": "tooth",
+    "sense": "牙齒",
+    "alt_zh": "一顆小小的白色乳牙放在孩子張開的手掌上，後方有微笑的臉部。",
+    "example": "My loose tooth falls out after dinner.",
+    "example_zh": "我的鬆動牙齒在晚餐後掉了。",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary flashcard, one single square 1024 × 1024 illustration. Style: refined translucent watercolor and delicate graphite/colored-pencil children's book art, natural proportions, broken hand-drawn contours, visible paper grain, carefully observed materials, soft warm colors with nuanced vermilion, ochre, teal and indigo. Warm ivory paper background, generous clean negative space, centered subject fully inside the frame and recognizable at small size. No glossy 3D, exaggerated anime features, text, letters, numbers, labels, border, logo, watermark or unrelated objects. Target word: tooth. Subject: One small clean white child’s baby tooth resting clearly in an open child’s palm, simple recognizable crown and two short roots, a tiny warm smile vignette softly behind it for context; gentle and cheerful, no blood, no dental tools.",
+    "source": "C:/Users/vevanchen/.codex/generated_images/01a0cbad-c9cb-7000-b3a8-6c8c2aedea90/exec-47ec3925-6c78-434a-b475-c86487cefc17.png"
+  },
+  {
+    "id": "neck-01",
+    "word": "neck",
+    "sense": "脖子",
+    "alt_zh": "孩子微笑著用手指輕輕指向下巴與衣領之間的脖子。",
+    "example": "Wear a scarf around your neck on a cold morning.",
+    "example_zh": "寒冷的早晨把圍巾圍在脖子上。",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary flashcard, one single square 1024 × 1024 illustration. Style: refined translucent watercolor and delicate graphite/colored-pencil children's book art, natural proportions, broken hand-drawn contours, visible paper grain, carefully observed materials, soft warm colors with nuanced vermilion, ochre, teal and indigo. Warm ivory paper background, generous clean negative space, centered subject fully inside the frame and recognizable at small size. No glossy 3D, exaggerated anime features, text, letters, numbers, labels, border, logo, watermark or unrelated objects. Target word: neck. Subject: Upper-body portrait of an elementary-age East Asian child in three-quarter view, head and shoulders visible, one finger gently pointing to the visible neck between jaw and shirt collar; simple plain clothing, natural anatomy, no other hands or objects.",
+    "source": "C:/Users/vevanchen/.codex/generated_images/01a0cbad-c9cb-7000-b3a8-6c8c2aedea90/exec-5e548cfb-bab9-4379-bb0c-0e4eea1a9602.png"
+  },
+  {
+    "id": "shoulder-01",
+    "word": "shoulder",
+    "sense": "肩膀",
+    "alt_zh": "孩子從背後伸手觸碰肩膀，清楚呈現肩膀與上臂的連接處。",
+    "example": "The school bag feels heavy on my shoulder.",
+    "example_zh": "書包背在肩膀上感覺很重。",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary flashcard, one single square 1024 × 1024 illustration. Style: refined translucent watercolor and delicate graphite/colored-pencil children's book art, natural proportions, broken hand-drawn contours, visible paper grain, carefully observed materials, soft warm colors with nuanced vermilion, ochre, teal and indigo. Warm ivory paper background, generous clean negative space, centered subject fully inside the frame and recognizable at small size. No glossy 3D, exaggerated anime features, text, letters, numbers, labels, border, logo, watermark or unrelated objects. Target word: shoulder. Subject: Upper-body three-quarter rear view of an elementary-age child; one hand reaches across to rest gently on the rounded shoulder where the upper arm meets the torso, plain short-sleeved shirt clearly outlines the shoulder, no bag or other props.",
+    "source": "C:/Users/vevanchen/.codex/generated_images/01a0cbad-c9cb-7000-b3a8-6c8c2aedea90/exec-3dcbfd7f-c3a9-43ff-a9f2-0d792c07218c.png"
+  },
+  {
+    "id": "finger-01",
+    "word": "finger",
+    "sense": "手指",
+    "alt_zh": "一隻手豎起食指，其他手指自然彎曲。",
+    "example": "Point to each word with your finger as you read.",
+    "example_zh": "閱讀時用手指指著每一個單字。",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary flashcard, one single square 1024 × 1024 illustration. Style: refined translucent watercolor and delicate graphite/colored-pencil children's book art, natural proportions, broken hand-drawn contours, visible paper grain, carefully observed materials, soft warm colors with nuanced vermilion, ochre, teal and indigo. Warm ivory paper background, generous clean negative space, centered subject fully inside the frame and recognizable at small size. No glossy 3D, exaggerated anime features, text, letters, numbers, labels, border, logo, watermark or unrelated objects. Target word: finger. Subject: A child’s hand in a clear relaxed close-up, palm turned slightly toward the viewer, with the index finger gently extended and the other fingers naturally curled; all five fingers anatomically plausible and fully visible, simple teal sleeve.",
+    "source": "C:/Users/vevanchen/.codex/generated_images/01a0cbad-c9cb-7000-b3a8-6c8c2aedea90/exec-167e2187-d4de-47d7-9d82-4b2da9399bf9.png"
+  },
+  {
+    "id": "heart-01",
+    "word": "heart",
+    "sense": "心臟；心",
+    "alt_zh": "一顆粉紅紅色的人體心臟，帶有幾條紅色與藍色血管。",
+    "example": "My heart beats fast before I speak on stage.",
+    "example_zh": "上台說話前，我的心跳得很快。",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary flashcard, one single square 1024 × 1024 illustration. Style: refined translucent watercolor and delicate graphite/colored-pencil children's book art, natural proportions, broken hand-drawn contours, visible paper grain, carefully observed materials, soft warm colors with nuanced vermilion, ochre, teal and indigo. Warm ivory paper background, generous clean negative space, centered subject fully inside the frame and recognizable at small size. No glossy 3D, exaggerated anime features, text, letters, numbers, labels, border, logo, watermark or unrelated objects. Target word: heart. Subject: A gentle educational illustration of a small pink-red human heart organ with a few short blue and red vessels, softly rounded and anatomically recognizable but simplified for children, floating alone on ivory paper; no blood, no surgical detail, no cartoon face, no ECG symbols.",
+    "source": "C:/Users/vevanchen/.codex/generated_images/01a0cbad-c9cb-7000-b3a8-6c8c2aedea90/exec-47815a2e-c147-41da-9048-6c2eae61c740.png"
+  },
+  {
+    "id": "stomach-01",
+    "word": "stomach",
+    "sense": "胃；肚子",
+    "alt_zh": "一個簡化的粉紅色胃部器官連接食道與小腸。",
+    "example": "My stomach hurts when I eat too quickly.",
+    "example_zh": "我吃太快時肚子會痛。",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary flashcard, one single square 1024 × 1024 illustration. Style: refined translucent watercolor and delicate graphite/colored-pencil children's book art, natural proportions, broken hand-drawn contours, visible paper grain, carefully observed materials, soft warm colors with nuanced vermilion, ochre, teal and indigo. Warm ivory paper background, generous clean negative space, centered subject fully inside the frame and recognizable at small size. No glossy 3D, exaggerated anime features, text, letters, numbers, labels, border, logo, watermark or unrelated objects. Target word: stomach. Subject: A gentle educational illustration of one simple pink human stomach organ, clear curved pouch shape with a short esophagus at top and small intestine connection at bottom, softly watercolor-painted and anatomically recognizable for children; no person, no blood, no labels, no surrounding organs.",
+    "source": "C:/Users/vevanchen/.codex/generated_images/01a0cbad-c9cb-7000-b3a8-6c8c2aedea90/exec-89f2509e-1020-4950-8191-559747c08fa5.png"
+  },
+  {
+    "id": "knee-01",
+    "word": "knee",
+    "sense": "膝蓋",
+    "alt_zh": "孩子彎曲腿部，另一隻手指向膝蓋關節。",
+    "example": "I put a bandage on my knee after I fall.",
+    "example_zh": "我跌倒後在膝蓋貼上OK繃。",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary flashcard, one single square 1024 × 1024 illustration. Style: refined translucent watercolor and delicate graphite/colored-pencil children's book art, natural proportions, broken hand-drawn contours, visible paper grain, carefully observed materials, soft warm colors with nuanced vermilion, ochre, teal and indigo. Warm ivory paper background, generous clean negative space, centered subject fully inside the frame and recognizable at small size. No glossy 3D, exaggerated anime features, text, letters, numbers, labels, border, logo, watermark or unrelated objects. Target word: knee. Subject: Close view of an elementary-age child’s bent leg from mid-thigh to mid-shin, plain shorts and simple sock, one hand gently pointing to the rounded front of the knee; clearly show the knee joint, healthy skin, no bandage or injury.",
+    "source": "C:/Users/vevanchen/.codex/generated_images/01a0cbad-c9cb-7000-b3a8-6c8c2aedea90/exec-d668320c-0473-4bc7-9b0a-b19c9e2254fd.png"
+  },
+  {
+    "id": "doctor-01",
+    "word": "doctor",
+    "sense": "醫生",
+    "alt_zh": "醫生用聽診器為坐著的孩子檢查心跳。",
+    "example": "The doctor checks my throat when I am sick.",
+    "example_zh": "我生病時醫生檢查我的喉嚨。",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary flashcard, one single square 1024 × 1024 illustration. Style: refined translucent watercolor and delicate graphite/colored-pencil children's book art, natural proportions, broken hand-drawn contours, visible paper grain, carefully observed materials, soft warm colors with nuanced vermilion, ochre, teal and indigo. Warm ivory paper background, generous clean negative space, centered subject fully inside the frame and recognizable at small size. No glossy 3D, exaggerated anime features, text, letters, numbers, labels, border, logo, watermark or unrelated objects. Target word: doctor. Subject: A kind adult doctor in a white coat and teal stethoscope listens gently to a seated elementary-age child’s heartbeat through the shirt; both are fully in frame from waist up, calm friendly expressions, simple uncluttered scene.",
+    "source": "C:/Users/vevanchen/.codex/generated_images/01a0cbad-c9cb-7000-b3a8-6c8c2aedea90/exec-e2c6f4ab-ec74-41d8-a588-d41ec8dec063.png"
+  },
+  {
+    "id": "nurse-01",
+    "word": "nurse",
+    "sense": "護士",
+    "alt_zh": "護理師在孩子的手肘上貼一小片繃帶。",
+    "example": "The nurse puts a bandage on my knee.",
+    "example_zh": "護士在我的膝蓋貼上繃帶。",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary flashcard, one single square 1024 × 1024 illustration. Style: refined translucent watercolor and delicate graphite/colored-pencil children's book art, natural proportions, broken hand-drawn contours, visible paper grain, carefully observed materials, soft warm colors with nuanced vermilion, ochre, teal and indigo. Warm ivory paper background, generous clean negative space, centered subject fully inside the frame and recognizable at small size. No glossy 3D, exaggerated anime features, text, letters, numbers, labels, border, logo, watermark or unrelated objects. Target word: nurse. Subject: A caring nurse in light blue scrubs carefully places a small bandage on an elementary-age child’s elbow; the child sits calmly and smiles, both figures shown waist up, no medical machines or text.",
+    "source": "C:/Users/vevanchen/.codex/generated_images/01a0cbad-c9cb-7000-b3a8-6c8c2aedea90/exec-860ff55a-5ff2-41c5-b4db-23587364ae7b.png"
+  },
+  {
+    "id": "medicine-01",
+    "word": "medicine",
+    "sense": "藥物",
+    "alt_zh": "大人陪著孩子用湯匙服用藥水，旁邊有無標籤的藥瓶。",
+    "example": "Take the medicine after dinner, the doctor says.",
+    "example_zh": "醫生說晚餐後吃藥。",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary flashcard, one single square 1024 × 1024 illustration. Style: refined translucent watercolor and delicate graphite/colored-pencil children's book art, natural proportions, broken hand-drawn contours, visible paper grain, carefully observed materials, soft warm colors with nuanced vermilion, ochre, teal and indigo. Warm ivory paper background, generous clean negative space, centered subject fully inside the frame and recognizable at small size. No glossy 3D, exaggerated anime features, text, letters, numbers, labels, border, logo, watermark or unrelated objects. Target word: medicine. Subject: A parent supervises an elementary-age child taking a small spoonful of liquid medicine at home; show one plain amber bottle and dosing spoon held by the adult, no labels, no loose pills, warm calm scene, clearly safe adult supervision.",
+    "source": "C:/Users/vevanchen/.codex/generated_images/01a0cbad-c9cb-7000-b3a8-6c8c2aedea90/exec-98920a77-a925-4056-be4e-c93237b97631.png"
+  },
+  {
+    "id": "headache-01",
+    "word": "headache",
+    "sense": "頭痛",
+    "alt_zh": "孩子閉著眼睛、雙手放在太陽穴旁，表現出頭痛不適。",
+    "example": "I have a headache, so I rest in the nurse's office.",
+    "example_zh": "我頭痛，所以在保健室休息。",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary flashcard, one single square 1024 × 1024 illustration. Style: refined translucent watercolor and delicate graphite/colored-pencil children's book art, natural proportions, broken hand-drawn contours, visible paper grain, carefully observed materials, soft warm colors with nuanced vermilion, ochre, teal and indigo. Warm ivory paper background, generous clean negative space, centered subject fully inside the frame and recognizable at small size. No glossy 3D, exaggerated anime features, text, letters, numbers, labels, border, logo, watermark or unrelated objects. Target word: headache. Subject: An elementary-age child sits quietly with eyes gently closed and one hand resting on each temple, showing mild discomfort from a headache; a few very subtle curved watercolor marks near the head suggest throbbing, no injury, no thermometer, no other people.",
+    "source": "C:/Users/vevanchen/.codex/generated_images/01a0cbad-c9cb-7000-b3a8-6c8c2aedea90/exec-78790536-1322-41e1-bce5-7d9902e4aa7a.png"
+  }
+]

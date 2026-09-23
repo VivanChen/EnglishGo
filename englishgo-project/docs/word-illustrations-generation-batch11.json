@@ -1,0 +1,134 @@
+[
+  {
+    "id": "chicken-01",
+    "word": "chicken",
+    "sense": "雞",
+    "alt_zh": "一隻棕色母雞站著，有紅色雞冠、短喙和兩隻腳。",
+    "example": "The chicken pecks at seeds on the ground.",
+    "example_zh": "這隻雞啄食地上的種子。",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Target word: chicken. Subject: A brown domestic hen with a red comb and two feet, pecking a few small seeds on the ground, full body visible. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors and subtle ground shadow. Warm ivory paper background with ample breathing room, centered large subject entirely within frame. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, logos or unrelated objects.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c8f6-a0bd-7431-9337-d42d03142f4f\\exec-5e1dc2bb-1c4e-4c6d-981b-80361f8fadd4.png"
+  },
+  {
+    "id": "tiger-01",
+    "word": "tiger",
+    "sense": "老虎",
+    "alt_zh": "一隻橘色老虎站著，身上有黑色條紋和長尾巴。",
+    "example": "The tiger has black stripes on its orange fur.",
+    "example_zh": "老虎的橘色毛皮上有黑色條紋。",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Target word: tiger. Subject: A single calm orange tiger standing in side three-quarter view, clear black stripes, white cheeks, four anatomically natural legs and long tail, no bared teeth. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors and subtle ground shadow. Warm ivory paper background with ample breathing room, centered large subject entirely within frame. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, logos or unrelated objects.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c8f6-a0bd-7431-9337-d42d03142f4f\\exec-2ba12fc3-3a3e-440a-b6b0-e3e61524eabc.png"
+  },
+  {
+    "id": "lion-01",
+    "word": "lion",
+    "sense": "獅子",
+    "alt_zh": "一隻公獅子坐著，頭部周圍有濃密的棕色鬃毛。",
+    "example": "The lion has a thick brown mane.",
+    "example_zh": "這隻獅子有濃密的棕色鬃毛。",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Target word: lion. Subject: A single calm male lion sitting upright, golden fur, thick brown mane around the head, natural paws and tail with a tuft, entire body visible. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors and subtle ground shadow. Warm ivory paper background with ample breathing room, centered large subject entirely within frame. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, logos or unrelated objects.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c8f6-a0bd-7431-9337-d42d03142f4f\\exec-0a6cc009-1167-4a3d-ae15-8f648bb19269.png"
+  },
+  {
+    "id": "snake-01",
+    "word": "snake",
+    "sense": "蛇",
+    "alt_zh": "一條綠色蛇彎成平緩的 S 形，尾端逐漸變細。",
+    "example": "The green snake curves across the ground.",
+    "example_zh": "這條綠色的蛇彎著身體爬過地面。",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Target word: snake. Subject: A single green snake in a gentle S curve on the ground, natural small head, tapered tail and subtle scales, no legs, no bared fangs, non-threatening. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors and subtle ground shadow. Warm ivory paper background with ample breathing room, centered large subject entirely within frame. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, logos or unrelated objects.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c8f6-a0bd-7431-9337-d42d03142f4f\\exec-1d4e0316-700b-4695-9b95-f0882890a058.png"
+  },
+  {
+    "id": "goat-01",
+    "word": "goat",
+    "sense": "山羊",
+    "alt_zh": "一隻白色山羊站著，有短角、小鬍鬚和四隻蹄子。",
+    "example": "The goat has short horns and a little beard.",
+    "example_zh": "這隻山羊有短角和小鬍鬚。",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Target word: goat. Subject: A single white domestic goat standing in three-quarter view, short backward curving horns, little beard, four cloven hooves, short raised tail. Clearly a goat, not woolly. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors and subtle ground shadow. Warm ivory paper background with ample breathing room, centered large subject entirely within frame. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, logos or unrelated objects.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c8f6-a0bd-7431-9337-d42d03142f4f\\exec-d00c35c7-da5e-452e-a7f7-b8b1f13b5681.png"
+  },
+  {
+    "id": "kangaroo-01",
+    "word": "kangaroo",
+    "sense": "袋鼠",
+    "alt_zh": "一隻袋鼠用大後腳站著，粗長尾巴伸向身後。",
+    "example": "The kangaroo has strong back legs for jumping.",
+    "example_zh": "袋鼠有強壯的後腿，可以用來跳躍。",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Target word: kangaroo. Subject: A single tan kangaroo upright in side three-quarter view, large strong hind legs with long feet, two short forearms, long pointed ears and thick balancing tail fully visible. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors and subtle ground shadow. Warm ivory paper background with ample breathing room, centered large subject entirely within frame. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, logos or unrelated objects.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c8f6-a0bd-7431-9337-d42d03142f4f\\exec-0718b15b-6ba2-4f1d-bfa5-eaf5935d8709.png"
+  },
+  {
+    "id": "koala-01",
+    "word": "koala",
+    "sense": "無尾熊",
+    "alt_zh": "一隻灰色無尾熊抱著樹幹，有毛茸茸的圓耳朵和黑色鼻子。",
+    "example": "The koala holds on to the tree trunk.",
+    "example_zh": "這隻無尾熊抱著樹幹。",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Target word: koala. Subject: A single gray koala holding a short eucalyptus tree trunk, fluffy round ears, large dark nose and natural limbs, just a few eucalyptus leaves, full animal visible. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors and subtle ground shadow. Warm ivory paper background with ample breathing room, centered large subject entirely within frame. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, logos or unrelated objects.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c8f6-a0bd-7431-9337-d42d03142f4f\\exec-d50a9ada-4657-4fc3-8993-ce90f3e6cd0c.png"
+  },
+  {
+    "id": "panda-01",
+    "word": "panda",
+    "sense": "貓熊",
+    "alt_zh": "一隻黑白貓熊坐著，前掌拿著一根綠色竹子。",
+    "example": "The panda holds a green bamboo stalk.",
+    "example_zh": "這隻貓熊拿著一根綠色竹子。",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Target word: panda. Subject: A single black and white giant panda sitting, round dark ears and eye patches, holding one green bamboo stalk in its front paws, natural recognizable anatomy. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors and subtle ground shadow. Warm ivory paper background with ample breathing room, centered large subject entirely within frame. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, logos or unrelated objects.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c8f6-a0bd-7431-9337-d42d03142f4f\\exec-c6c53294-a5b0-4fb0-a034-c8e9ef4f797d.png"
+  },
+  {
+    "id": "airplane-01",
+    "word": "airplane",
+    "sense": "飛機",
+    "alt_zh": "一架白色客機在空中飛行，有藍色尾翼和兩側機翼。",
+    "example": "The airplane flies high in the sky.",
+    "example_zh": "飛機在高空中飛行。",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Target word: airplane. Subject: A single white passenger airplane flying, blue tail fin, two correctly attached wings and jet engines, clear three-quarter view, sparse pale blue sky wash, no airline branding. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors and subtle ground shadow. Warm ivory paper background with ample breathing room, centered large subject entirely within frame. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, logos or unrelated objects.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c8f6-a0bd-7431-9337-d42d03142f4f\\exec-bdf543a6-973b-4b27-b630-904f72b12561.png"
+  },
+  {
+    "id": "boat-01",
+    "word": "boat",
+    "sense": "小船",
+    "alt_zh": "一艘小木划船浮在水面上，船內放著一對船槳。",
+    "example": "The small boat floats on the water.",
+    "example_zh": "這艘小船浮在水面上。",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Target word: boat. Subject: A single small wooden rowboat floating on a small patch of pale blue water, two wooden oars resting inside, complete hull visible, three-quarter view, no people. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors and subtle ground shadow. Warm ivory paper background with ample breathing room, centered large subject entirely within frame. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, logos or unrelated objects.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c8f6-a0bd-7431-9337-d42d03142f4f\\exec-eb95ae43-541d-449c-9979-dd4083b4a06a.png"
+  },
+  {
+    "id": "truck-01",
+    "word": "truck",
+    "sense": "卡車",
+    "alt_zh": "一輛藍色貨車有封閉的貨斗和黑色輪胎。",
+    "example": "The blue truck carries boxes to the store.",
+    "example_zh": "這輛藍色卡車載箱子到商店。",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Target word: truck. Subject: A single blue delivery box truck with an enclosed pale blue cargo box, sturdy black wheels and clear cab, complete vehicle visible in three-quarter view, no text or branding. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors and subtle ground shadow. Warm ivory paper background with ample breathing room, centered large subject entirely within frame. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, logos or unrelated objects.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c8f6-a0bd-7431-9337-d42d03142f4f\\exec-e04c7f90-af9d-48eb-93df-e3a31bb9cb8f.png"
+  },
+  {
+    "id": "ship-01",
+    "word": "ship",
+    "sense": "輪船",
+    "alt_zh": "一艘大型輪船航行在水面上，有多層甲板和煙囪。",
+    "example": "The large ship sails across the sea.",
+    "example_zh": "這艘大輪船航行在海上。",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Target word: ship. Subject: A single large ocean passenger ship with multiple decks, small portholes, one funnel and a deep navy hull, clear side three-quarter view on a small pale blue sea wash, no text or branding. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors and subtle ground shadow. Warm ivory paper background with ample breathing room, centered large subject entirely within frame. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, logos or unrelated objects.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c8f6-a0bd-7431-9337-d42d03142f4f\\exec-2f4d3153-887d-4966-98bb-67a23e1d4a5a.png"
+  }
+]

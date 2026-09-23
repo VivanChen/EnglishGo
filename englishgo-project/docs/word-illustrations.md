@@ -1,5 +1,13 @@
 # Elementary vocabulary illustrations
 
+## Current catalog (batch 14, 2026-09-23)
+
+The catalog contains 180 illustrations for 174 elementary words. Batch 14 adds
+12 previously unillustrated words covering the body and health. Cloud assets and
+metadata are published; bundled assets are ready for the next website deployment.
+See `word-illustrations-batch14.md` and `word-illustrations-generation-batch14.json`
+for details and prompts.
+
 ## Image delivery repair (2026-09-22)
 
 The catalog now contains 44 images for 38 elementary words. All 44 public

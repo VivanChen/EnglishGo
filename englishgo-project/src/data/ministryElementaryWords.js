@@ -1,6 +1,7 @@
 const e = (m, p, ex, ez, c = []) => ({ m, p, ex, ez, c });
 
 export const MINISTRY_ELEMENTARY_WORDS = {
+  train: e("火車", "n.", "The red train travels along the tracks.", "這列紅色火車沿著鐵軌行駛。"),
   another: e("另外的", "adj.", "May I have another piece of paper for my drawing?", "我可以再拿一張紙來畫圖嗎？"),
   thing: e("事情；東西", "n.", "The first thing I do after school is wash my hands.", "我放學後做的第一件事是洗手。"),
   anything: e("任何事物", "pron.", "Ask me anything about today's English story.", "你可以問我任何關於今天英文故事的問題。"),

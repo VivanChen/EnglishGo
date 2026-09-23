@@ -1,0 +1,222 @@
+[
+  {
+    "id": "cloud-01",
+    "word": "cloud",
+    "sense": "雲",
+    "alt_zh": "一朵蓬鬆的白雲飄在淡藍色天空中。",
+    "example": "A white cloud floats in the blue sky.",
+    "example_zh": "一朵白雲飄在藍天中。",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors. Warm ivory paper background with ample breathing room, centered large subject entirely within frame; landscape scenes have a softly feathered vignette into ivory paper. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, logos or unrelated objects. Target word: cloud. Subject: One large fluffy white cumulus cloud in a small pale blue sky vignette; soft gray-blue shading makes the white cloud clearly visible.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c91b-917b-7b32-8424-a54d5772119f\\exec-0a4ba4c2-3f0d-4ee9-a462-ce5fb54f9b8f.png"
+  },
+  {
+    "id": "rainbow-01",
+    "word": "rainbow",
+    "sense": "彩虹",
+    "alt_zh": "一道彩虹跨過天空，兩端靠近綠色小山丘。",
+    "example": "A colorful rainbow arches over the hills.",
+    "example_zh": "一道繽紛的彩虹橫跨山丘上方。",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors. Warm ivory paper background with ample breathing room, centered large subject entirely within frame; landscape scenes have a softly feathered vignette into ivory paper. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, logos or unrelated objects. Target word: rainbow. Subject: A single complete semicircular rainbow over two low green hills, correctly ordered bands red outside then orange yellow green blue indigo violet inside, broad clean arc.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c91b-917b-7b32-8424-a54d5772119f\\exec-c89dc9fd-30b6-454b-bfd2-c1b04da12cb1.png"
+  },
+  {
+    "id": "rain-01",
+    "word": "rain",
+    "sense": "雨",
+    "alt_zh": "灰色雲朵下落著雨滴，地面有小水窪和漣漪。",
+    "example": "Rain falls into small puddles.",
+    "example_zh": "雨落進小水窪裡。",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors. Warm ivory paper background with ample breathing room, centered large subject entirely within frame; landscape scenes have a softly feathered vignette into ivory paper. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, logos or unrelated objects. Target word: rain. Subject: A soft gray rain cloud above clearly falling blue raindrops and small puddles with ripple rings on the ground, simple weather scene.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c91b-917b-7b32-8424-a54d5772119f\\exec-e2fdc8d3-fd95-43c4-89d5-33def956f610.png"
+  },
+  {
+    "id": "snow-01",
+    "word": "snow",
+    "sense": "雪",
+    "alt_zh": "白色雪花輕輕飄落，積雪覆蓋小樹和地面。",
+    "example": "Snow falls gently onto the ground.",
+    "example_zh": "雪輕輕飄落到地面上。",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors. Warm ivory paper background with ample breathing room, centered large subject entirely within frame; landscape scenes have a softly feathered vignette into ivory paper. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, logos or unrelated objects. Target word: snow. Subject: Gentle falling snow with a few large delicate six-branched snowflakes in foreground, snow covering the ground and two small evergreen trees, pale blue backdrop makes white snow visible.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c91b-917b-7b32-8424-a54d5772119f\\exec-0474b032-2c2a-4860-ab25-af813e2103aa.png"
+  },
+  {
+    "id": "wind-01",
+    "word": "wind",
+    "sense": "風",
+    "alt_zh": "風吹彎小樹，幾片葉子朝同一方向飛去。",
+    "example": "The wind blows leaves through the air.",
+    "example_zh": "風吹著葉子在空中飛舞。",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors. Warm ivory paper background with ample breathing room, centered large subject entirely within frame; landscape scenes have a softly feathered vignette into ivory paper. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, logos or unrelated objects. Target word: wind. Subject: A small leafy tree bending gently to the right in the wind, several detached leaves drifting rightward, grass leaning the same direction, a few delicate curved motion strokes make wind visible.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c91b-917b-7b32-8424-a54d5772119f\\exec-c19ecc3a-17b4-4b61-9a36-6d8125c4ae17.png"
+  },
+  {
+    "id": "leaf-01",
+    "word": "leaf",
+    "sense": "葉子",
+    "alt_zh": "一片綠色葉子有清楚的葉脈和短葉柄。",
+    "example": "The green leaf has tiny veins.",
+    "example_zh": "這片綠葉有細小的葉脈。",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors. Warm ivory paper background with ample breathing room, centered large subject entirely within frame; landscape scenes have a softly feathered vignette into ivory paper. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, logos or unrelated objects. Target word: leaf. Subject: One large fresh green oval leaf with pointed tip, recognizable branching veins and short petiole, isolated diagonal close-up.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c91b-917b-7b32-8424-a54d5772119f\\exec-f007b0f4-69d5-4c40-a28e-c41e462f1418.png"
+  },
+  {
+    "id": "branch-01",
+    "word": "branch",
+    "sense": "樹枝",
+    "alt_zh": "一根棕色樹枝分出幾根細枝，上面長著綠葉。",
+    "example": "Green leaves grow on the branch.",
+    "example_zh": "綠葉長在樹枝上。",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors. Warm ivory paper background with ample breathing room, centered large subject entirely within frame; landscape scenes have a softly feathered vignette into ivory paper. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, logos or unrelated objects. Target word: branch. Subject: One brown woody tree branch diagonally positioned, branching into two thinner twigs with a few green leaves, recognizable bark, isolated.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c91b-917b-7b32-8424-a54d5772119f\\exec-088c1e34-cc2c-451a-8ae1-5e8610250666.png"
+  },
+  {
+    "id": "grass-01",
+    "word": "grass",
+    "sense": "草",
+    "alt_zh": "一小片草地長著高矮不同的細長綠色草葉。",
+    "example": "Green grass grows in the yard.",
+    "example_zh": "綠草生長在院子裡。",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors. Warm ivory paper background with ample breathing room, centered large subject entirely within frame; landscape scenes have a softly feathered vignette into ivory paper. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, logos or unrelated objects. Target word: grass. Subject: A small patch of fresh green grass with clearly visible slender blades of different lengths and several tufts, low eye-level view, no flowers.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c91b-917b-7b32-8424-a54d5772119f\\exec-3dd38cef-86d4-4aad-8420-cf936be16471.png"
+  },
+  {
+    "id": "rock-01",
+    "word": "rock",
+    "sense": "岩石",
+    "alt_zh": "一塊灰色岩石有不規則的邊緣和粗糙的表面。",
+    "example": "The gray rock has a rough surface.",
+    "example_zh": "這塊灰色岩石有粗糙的表面。",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors. Warm ivory paper background with ample breathing room, centered large subject entirely within frame; landscape scenes have a softly feathered vignette into ivory paper. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, logos or unrelated objects. Target word: rock. Subject: One large irregular gray rock with angular edges, varied mineral texture and lightly shaded facets, resting alone on a tiny ground shadow.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c91b-917b-7b32-8424-a54d5772119f\\exec-6c65b2c3-d263-43e1-ae17-e1fba070551d.png"
+  },
+  {
+    "id": "sand-01",
+    "word": "sand",
+    "sense": "沙",
+    "alt_zh": "一小堆金黃色細沙散在地上，可看見細小沙粒。",
+    "example": "Fine sand forms a small pile.",
+    "example_zh": "細沙堆成一座小沙堆。",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors. Warm ivory paper background with ample breathing room, centered large subject entirely within frame; landscape scenes have a softly feathered vignette into ivory paper. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, logos or unrelated objects. Target word: sand. Subject: Close-up of a small low mound of fine golden sand with individual grains scattered around its base, clearly granular rather than a solid rock, no beach or tools.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c91b-917b-7b32-8424-a54d5772119f\\exec-52084f7a-5572-4ae8-a06d-47cdb530602a.png"
+  },
+  {
+    "id": "pond-01",
+    "word": "pond",
+    "sense": "池塘",
+    "alt_zh": "一座小池塘四周長著草，水面有睡蓮葉。",
+    "example": "Lily pads float on the small pond.",
+    "example_zh": "睡蓮葉漂浮在小池塘的水面上。",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors. Warm ivory paper background with ample breathing room, centered large subject entirely within frame; landscape scenes have a softly feathered vignette into ivory paper. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, logos or unrelated objects. Target word: pond. Subject: A small garden pond completely surrounded by close grassy banks, a few lily pads and reeds near edge, elevated view shows the whole compact pond.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c91b-917b-7b32-8424-a54d5772119f\\exec-7e2dc0b1-bde9-4077-ad34-7e929f6530cc.png"
+  },
+  {
+    "id": "cave-01",
+    "word": "cave",
+    "sense": "洞穴",
+    "alt_zh": "岩石山壁上有一個洞口，洞內光線較暗。",
+    "example": "The cave has a dark entrance.",
+    "example_zh": "這個洞穴有一個昏暗的入口。",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors. Warm ivory paper background with ample breathing room, centered large subject entirely within frame; landscape scenes have a softly feathered vignette into ivory paper. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, logos or unrelated objects. Target word: cave. Subject: A recognizable dark cave entrance in a low gray rocky hillside, clear arch-like irregular opening with visible interior receding in shadow, safe gentle daylight scene.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c91b-917b-7b32-8424-a54d5772119f\\exec-eb27b567-b199-4154-9b78-5fd5c18824ea.png"
+  },
+  {
+    "id": "towel-01",
+    "word": "towel",
+    "sense": "毛巾",
+    "alt_zh": "一條藍色毛巾掛在橫桿上，底部有細條紋。",
+    "example": "A blue towel hangs on the rail.",
+    "example_zh": "一條藍色毛巾掛在橫桿上。",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors. Warm ivory paper background with ample breathing room, centered large subject entirely within frame; landscape scenes have a softly feathered vignette into ivory paper. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, logos or unrelated objects. Target word: towel. Subject: One soft blue terrycloth hand towel hanging over a short simple wooden towel rail, visible fabric loops and subtle woven stripes near hem.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c91b-917b-7b32-8424-a54d5772119f\\exec-9503aa70-243d-4424-9c80-a5ea32d14082.png"
+  },
+  {
+    "id": "lamp-01",
+    "word": "lamp",
+    "sense": "檯燈",
+    "alt_zh": "一盞黃色檯燈有圓形底座和朝下照的燈罩。",
+    "example": "The yellow lamp shines on the desk.",
+    "example_zh": "這盞黃色檯燈照亮書桌。",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors. Warm ivory paper background with ample breathing room, centered large subject entirely within frame; landscape scenes have a softly feathered vignette into ivory paper. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, logos or unrelated objects. Target word: lamp. Subject: One yellow adjustable desk lamp with circular base and downward angled shade on a small hint of desktop, gentle warm pool of light below it, entire lamp visible.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c91b-917b-7b32-8424-a54d5772119f\\exec-a3348a66-5eee-4257-8ac8-980f1a01d68c.png"
+  },
+  {
+    "id": "sofa-01",
+    "word": "sofa",
+    "sense": "沙發",
+    "alt_zh": "一張綠色雙人沙發有柔軟的坐墊和兩側扶手。",
+    "example": "The green sofa has soft cushions.",
+    "example_zh": "這張綠色沙發有柔軟的坐墊。",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors. Warm ivory paper background with ample breathing room, centered large subject entirely within frame; landscape scenes have a softly feathered vignette into ivory paper. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, logos or unrelated objects. Target word: sofa. Subject: One green upholstered two-seat sofa with soft seat cushions, padded back and two armrests, three-quarter view, no other furniture.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c91b-917b-7b32-8424-a54d5772119f\\exec-0a1925f9-c383-4c7f-857b-afdf89a0b768.png"
+  },
+  {
+    "id": "refrigerator-01",
+    "word": "refrigerator",
+    "sense": "冰箱",
+    "alt_zh": "一台白色雙門冰箱打開下層門，露出架上的牛奶和蔬果。",
+    "example": "Milk and vegetables stay cool in the refrigerator.",
+    "example_zh": "牛奶和蔬菜在冰箱裡保持冰涼。",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors. Warm ivory paper background with ample breathing room, centered large subject entirely within frame; landscape scenes have a softly feathered vignette into ivory paper. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, logos or unrelated objects. Target word: refrigerator. Subject: One white household refrigerator with a closed upper freezer door and open lower main door revealing simple shelves with milk, carrots and lettuce, entire appliance visible, no text on containers.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c91b-917b-7b32-8424-a54d5772119f\\exec-9587b69d-3c64-4182-bc52-2a63d2e98cc2.png"
+  },
+  {
+    "id": "fan-01",
+    "word": "fan",
+    "sense": "電風扇",
+    "alt_zh": "一台藍色電風扇有圓形護網、三片扇葉和穩固底座。",
+    "example": "The blue fan blows cool air.",
+    "example_zh": "這台藍色電風扇吹出涼風。",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors. Warm ivory paper background with ample breathing room, centered large subject entirely within frame; landscape scenes have a softly feathered vignette into ivory paper. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, logos or unrelated objects. Target word: fan. Subject: One blue tabletop electric fan with round protective wire cage, three visible blades, short stem and stable oval base, slight three-quarter view.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c91b-917b-7b32-8424-a54d5772119f\\exec-df8cf398-c6bf-47ea-a526-9f2d955ce0ad.png"
+  },
+  {
+    "id": "television-01",
+    "word": "television",
+    "sense": "電視",
+    "alt_zh": "一台平面電視立在兩隻腳架上，螢幕顯示山丘和天空。",
+    "example": "The television shows green hills.",
+    "example_zh": "電視上顯示綠色山丘。",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors. Warm ivory paper background with ample breathing room, centered large subject entirely within frame; landscape scenes have a softly feathered vignette into ivory paper. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, logos or unrelated objects. Target word: television. Subject: One modern flat-screen television with dark slim bezel and two short stand legs, screen showing a simple watercolor landscape of green hills and blue sky, no characters or text.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c91b-917b-7b32-8424-a54d5772119f\\exec-00697b22-8867-4596-80bf-f67bb07568d9.png"
+  },
+  {
+    "id": "gate-01",
+    "word": "gate",
+    "sense": "大門",
+    "alt_zh": "一道木製大門連接兩側矮圍籬，門上有金屬門閂。",
+    "example": "The wooden gate opens into the garden.",
+    "example_zh": "這道木門通往花園。",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors. Warm ivory paper background with ample breathing room, centered large subject entirely within frame; landscape scenes have a softly feathered vignette into ivory paper. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, logos or unrelated objects. Target word: gate. Subject: One waist-high wooden garden gate with vertical slats, diagonal support brace, latch and hinges, between two short fence sections, a glimpse of greenery beyond, mostly closed.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c91b-917b-7b32-8424-a54d5772119f\\exec-dc68a675-a5dc-4229-9bb5-58a4c30e0578.png"
+  },
+  {
+    "id": "wall-01",
+    "word": "wall",
+    "sense": "牆壁",
+    "alt_zh": "一面紅磚牆由一排排交錯排列的磚塊砌成。",
+    "example": "Red bricks form a strong wall.",
+    "example_zh": "紅磚砌成一道堅固的牆。",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors. Warm ivory paper background with ample breathing room, centered large subject entirely within frame; landscape scenes have a softly feathered vignette into ivory paper. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, logos or unrelated objects. Target word: wall. Subject: One freestanding solid rectangular red brick wall segment with staggered brick courses and pale mortar, slight three-quarter view reveals thickness, complete wall visible, no gate or windows.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c91b-917b-7b32-8424-a54d5772119f\\exec-1b0518b4-be46-4438-9d56-363cc0a4e867.png"
+  }
+]

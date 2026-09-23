@@ -1,0 +1,134 @@
+[
+  {
+    "id": "train-01",
+    "word": "train",
+    "sense": "火車",
+    "alt_zh": "一列紅色火車有車頭和兩節車廂，行駛在鐵軌上。",
+    "example": "The red train travels along the tracks.",
+    "example_zh": "這列紅色火車沿著鐵軌行駛。",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Target word: train. Subject: A red passenger train with one locomotive and two connected carriages on a short section of railway tracks, side three-quarter view, entire train visible. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors. Warm ivory paper background with ample breathing room, centered large subject entirely within frame; for landscape scenes use a softly feathered vignette into ivory paper. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, logos or unrelated objects.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c90a-eaff-7103-99f1-c48f9e8e0b19\\exec-044c0e04-e6d5-41d5-a725-b20d2354bb12.png"
+  },
+  {
+    "id": "motorcycle-01",
+    "word": "motorcycle",
+    "sense": "機車",
+    "alt_zh": "一輛藍色機車停著，有兩個輪子、座墊和把手。",
+    "example": "The blue motorcycle has two wheels.",
+    "example_zh": "這輛藍色機車有兩個輪子。",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Target word: motorcycle. Subject: One blue standard road motorcycle parked on its kickstand, two wheels, saddle, handlebars, recognizable engine, side view, no rider. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors. Warm ivory paper background with ample breathing room, centered large subject entirely within frame; for landscape scenes use a softly feathered vignette into ivory paper. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, logos or unrelated objects.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c90a-eaff-7103-99f1-c48f9e8e0b19\\exec-9edbd783-4324-4d9f-aa66-c5eb0ba7dd4f.png"
+  },
+  {
+    "id": "taxi-01",
+    "word": "taxi",
+    "sense": "計程車",
+    "alt_zh": "一輛黃色計程車有車頂燈和黑色輪胎。",
+    "example": "The yellow taxi waits by the road.",
+    "example_zh": "這輛黃色計程車在路邊等候。",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Target word: taxi. Subject: A yellow four-door taxi cab with a plain blank roof light, natural car proportions, three-quarter view, no writing or symbols. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors. Warm ivory paper background with ample breathing room, centered large subject entirely within frame; for landscape scenes use a softly feathered vignette into ivory paper. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, logos or unrelated objects.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c90a-eaff-7103-99f1-c48f9e8e0b19\\exec-456a5221-b7a5-417d-ac9c-424cf15445c1.png"
+  },
+  {
+    "id": "bridge-01",
+    "word": "bridge",
+    "sense": "橋",
+    "alt_zh": "一座石拱橋橫跨小河，連接兩岸。",
+    "example": "The stone bridge crosses the river.",
+    "example_zh": "這座石橋跨過河流。",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Target word: bridge. Subject: A small stone arch footbridge spanning a narrow blue river and visibly joining two grassy banks, simple scene. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors. Warm ivory paper background with ample breathing room, centered large subject entirely within frame; for landscape scenes use a softly feathered vignette into ivory paper. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, logos or unrelated objects.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c90a-eaff-7103-99f1-c48f9e8e0b19\\exec-d5a91fb2-4161-439e-b12d-01d56fc71e38.png"
+  },
+  {
+    "id": "mountain-01",
+    "word": "mountain",
+    "sense": "山",
+    "alt_zh": "一座高山有尖尖的山頂，山腳有綠色坡地。",
+    "example": "The mountain rises high above the hills.",
+    "example_zh": "這座山高高聳立在丘陵之上。",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Target word: mountain. Subject: A single dominant tall mountain with a rocky pointed summit, green lower slopes and small foothills at its base, recognizable mountain silhouette. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors. Warm ivory paper background with ample breathing room, centered large subject entirely within frame; for landscape scenes use a softly feathered vignette into ivory paper. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, logos or unrelated objects.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c90a-eaff-7103-99f1-c48f9e8e0b19\\exec-b633e964-36f4-453d-8952-fdbd766bf395.png"
+  },
+  {
+    "id": "river-01",
+    "word": "river",
+    "sense": "河流",
+    "alt_zh": "一條藍色河流彎曲地流過兩側綠色河岸。",
+    "example": "The river flows between the green banks.",
+    "example_zh": "這條河流經兩側綠色河岸之間。",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Target word: river. Subject: A winding blue river visibly flowing from the distance toward the foreground between two continuous green grassy banks, no bridge, no lake. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors. Warm ivory paper background with ample breathing room, centered large subject entirely within frame; for landscape scenes use a softly feathered vignette into ivory paper. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, logos or unrelated objects.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c90a-eaff-7103-99f1-c48f9e8e0b19\\exec-f8acbb80-4956-432b-9a2c-33fb7b57ec6a.png"
+  },
+  {
+    "id": "beach-01",
+    "word": "beach",
+    "sense": "海灘",
+    "alt_zh": "金黃色沙灘旁有藍色海水和輕柔的白色浪花。",
+    "example": "Small waves wash onto the sandy beach.",
+    "example_zh": "小浪花沖上沙灘。",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Target word: beach. Subject: A golden sandy beach meeting turquoise sea, gentle white foamy waves curling onto broad sand in foreground, a few natural seashells, clear shoreline. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors. Warm ivory paper background with ample breathing room, centered large subject entirely within frame; for landscape scenes use a softly feathered vignette into ivory paper. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, logos or unrelated objects.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c90a-eaff-7103-99f1-c48f9e8e0b19\\exec-1b93345a-de52-4570-8fab-733dcc7ef1c1.png"
+  },
+  {
+    "id": "island-01",
+    "word": "island",
+    "sense": "島",
+    "alt_zh": "一座小島四周被藍色海水包圍，島上有綠地和樹木。",
+    "example": "Water surrounds the small island.",
+    "example_zh": "水環繞著這座小島。",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Target word: island. Subject: An elevated three-quarter aerial view of one small green island with a sandy rim and a few trees, visibly surrounded completely on all sides by blue water. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors. Warm ivory paper background with ample breathing room, centered large subject entirely within frame; for landscape scenes use a softly feathered vignette into ivory paper. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, logos or unrelated objects.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c90a-eaff-7103-99f1-c48f9e8e0b19\\exec-4eaf286e-218e-4fdb-beb1-89a542a93c5d.png"
+  },
+  {
+    "id": "lake-01",
+    "word": "lake",
+    "sense": "湖",
+    "alt_zh": "一片平靜的湖水四周被草地和低矮山丘環繞。",
+    "example": "The calm lake reflects the nearby trees.",
+    "example_zh": "平靜的湖水映照著附近的樹木。",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Target word: lake. Subject: An elevated view of a calm small blue lake completely enclosed by continuous grassy shore and low hills, a few trees reflected on the still water, no inflow or outflow. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors. Warm ivory paper background with ample breathing room, centered large subject entirely within frame; for landscape scenes use a softly feathered vignette into ivory paper. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, logos or unrelated objects.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c90a-eaff-7103-99f1-c48f9e8e0b19\\exec-44222044-65d7-428b-b343-cdf9eeb96e2b.png"
+  },
+  {
+    "id": "sea-01",
+    "word": "sea",
+    "sense": "海",
+    "alt_zh": "寬廣的藍色海面有層層波浪，遠處連著天空。",
+    "example": "Blue waves roll across the sea.",
+    "example_zh": "藍色波浪在海面上翻滾。",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Target word: sea. Subject: A wide expanse of open blue sea with gentle rolling waves, a distant straight horizon and pale sky, no land, no boats, ocean water as dominant subject. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors. Warm ivory paper background with ample breathing room, centered large subject entirely within frame; for landscape scenes use a softly feathered vignette into ivory paper. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, logos or unrelated objects.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c90a-eaff-7103-99f1-c48f9e8e0b19\\exec-24a6afc1-3c50-44da-9c9f-b31c8f105ad6.png"
+  },
+  {
+    "id": "forest-01",
+    "word": "forest",
+    "sense": "森林",
+    "alt_zh": "許多高矮不同的樹木緊密生長，形成一片森林。",
+    "example": "Many tall trees grow in the forest.",
+    "example_zh": "許多高大的樹木生長在森林裡。",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Target word: forest. Subject: A compact natural forest scene with many closely grouped leafy broadleaf trees and a few conifers, visible trunks at front, layered canopy receding behind, leafy forest floor. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors. Warm ivory paper background with ample breathing room, centered large subject entirely within frame; for landscape scenes use a softly feathered vignette into ivory paper. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, logos or unrelated objects.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c90a-eaff-7103-99f1-c48f9e8e0b19\\exec-ad918c31-8f02-4edc-8349-279749455e3e.png"
+  },
+  {
+    "id": "star-01",
+    "word": "star",
+    "sense": "星星",
+    "alt_zh": "夜空中有一顆明亮的星星，周圍有幾顆微小星點。",
+    "example": "A bright star shines in the night sky.",
+    "example_zh": "一顆明亮的星星在夜空中閃耀。",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Target word: star. Subject: One dominant bright white-gold luminous star with delicate radiant points in a small deep indigo night-sky watercolor vignette, just a few tiny distant star dots, celestial star not a solid toy or starfish, no moon. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors. Warm ivory paper background with ample breathing room, centered large subject entirely within frame; for landscape scenes use a softly feathered vignette into ivory paper. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, logos or unrelated objects.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c90a-eaff-7103-99f1-c48f9e8e0b19\\exec-3f674760-83bd-47ad-8ffb-f2db27a87b8d.png"
+  }
+]

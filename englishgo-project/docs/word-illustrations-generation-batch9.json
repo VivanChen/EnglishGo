@@ -1,0 +1,72 @@
+[
+  {
+    "id": "shirt-01",
+    "word": "shirt",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Target word: shirt. Subject: A single neatly laid out sky-blue long-sleeved button-up shirt, visible pointed collar, a vertical row of small buttons and two sleeves. No hanger. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors and subtle ground shadow. Warm ivory paper background with ample breathing room, centered large subject entirely within frame. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, faces, people or unrelated objects.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c70a-eb2c-7862-88ea-0ac667f92c97\\exec-cc46fea5-3ff7-43e9-baad-608a5da98461.png"
+  },
+  {
+    "id": "tshirt-01",
+    "word": "tshirt",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Target word: tshirt. Subject: A single neatly laid out plain sunny-yellow short-sleeved T-shirt with round neck. No buttons, collar, prints or hanger. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors and subtle ground shadow. Warm ivory paper background with ample breathing room, centered large subject entirely within frame. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, faces, people or unrelated objects.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c70a-eb2c-7862-88ea-0ac667f92c97\\exec-b361a1ab-e859-4c39-b10c-a4e16bf158b5.png"
+  },
+  {
+    "id": "pants-01",
+    "word": "pants",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Target word: pants. Subject: A single neatly laid out pair of blue full-length trousers, waistband and two complete long legs clearly visible. No belt or hanger. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors and subtle ground shadow. Warm ivory paper background with ample breathing room, centered large subject entirely within frame. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, faces, people or unrelated objects.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c70a-eb2c-7862-88ea-0ac667f92c97\\exec-0fea7d81-d427-4e43-a892-5b6f060d68a2.png"
+  },
+  {
+    "id": "shorts-01",
+    "word": "shorts",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Target word: shorts. Subject: A single neatly laid out pair of green shorts with waistband and two short leg openings clearly visible. No belt or hanger. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors and subtle ground shadow. Warm ivory paper background with ample breathing room, centered large subject entirely within frame. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, faces, people or unrelated objects.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c70a-eb2c-7862-88ea-0ac667f92c97\\exec-68d6a272-454d-4ff5-ab5c-b97f8fff3219.png"
+  },
+  {
+    "id": "skirt-01",
+    "word": "skirt",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Target word: skirt. Subject: A single neatly laid out pink pleated skirt with waistband and a gently flared hem. No shirt, torso or hanger. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors and subtle ground shadow. Warm ivory paper background with ample breathing room, centered large subject entirely within frame. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, faces, people or unrelated objects.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c70a-eb2c-7862-88ea-0ac667f92c97\\exec-2832f5cc-fb03-4a88-a573-4585484722f1.png"
+  },
+  {
+    "id": "dress-01",
+    "word": "dress",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Target word: dress. Subject: A single neatly laid out lavender short-sleeved dress with fitted upper part, round neck, waist seam and flared knee-length skirt, one connected garment. No hanger. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors and subtle ground shadow. Warm ivory paper background with ample breathing room, centered large subject entirely within frame. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, faces, people or unrelated objects.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c70a-eb2c-7862-88ea-0ac667f92c97\\exec-fcf085bb-9dcc-4490-a90b-06195e38cdc3.png"
+  },
+  {
+    "id": "shoes-01",
+    "word": "shoes",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Target word: shoes. Subject: A matched left and right pair of red low-top sneakers, white laces and white soles, side by side at a gentle three-quarter angle. Exactly two shoes. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors and subtle ground shadow. Warm ivory paper background with ample breathing room, centered large subject entirely within frame. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, faces, people or unrelated objects.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c70a-eb2c-7862-88ea-0ac667f92c97\\exec-b9b02c9f-b060-48bf-b9cc-d0eb0adb5200.png"
+  },
+  {
+    "id": "socks-01",
+    "word": "socks",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Target word: socks. Subject: A matched pair of blue ankle socks with white stripes around each cuff, heel and toe clearly shaped, laid side by side. Exactly two socks. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors and subtle ground shadow. Warm ivory paper background with ample breathing room, centered large subject entirely within frame. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, faces, people or unrelated objects.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c70a-eb2c-7862-88ea-0ac667f92c97\\exec-d37b0721-8b76-471c-a4dd-dcd757e0dfc8.png"
+  },
+  {
+    "id": "coat-01",
+    "word": "coat",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Target word: coat. Subject: A single neatly laid out warm tan knee-length winter coat with long sleeves, wide lapel collar, front buttons and two pockets. No hanger. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors and subtle ground shadow. Warm ivory paper background with ample breathing room, centered large subject entirely within frame. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, faces, people or unrelated objects.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c70a-eb2c-7862-88ea-0ac667f92c97\\exec-44880af1-283d-4652-87fa-f1afad6e2b41.png"
+  },
+  {
+    "id": "jacket-01",
+    "word": "jacket",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: elementary English vocabulary memory card, single square 1024 x 1024 illustration. Target word: jacket. Subject: A single neatly laid out short green zip-up jacket with long sleeves, front zipper, two pockets and ribbed cuffs, hip-length hem. No hanger. Style: gentle hand-painted watercolor and colored-pencil children's book illustration, natural recognizable proportions, visible paper grain, delicate pencil contours, soft warm colors and subtle ground shadow. Warm ivory paper background with ample breathing room, centered large subject entirely within frame. Match the established EnglishGo watercolor-pencil-v1 look. No text, lettering, labels, border, watermark, faces, people or unrelated objects.",
+    "source": "C:\\Users\\vevanchen\\.codex\\generated_images\\01a0c70a-eb2c-7862-88ea-0ac667f92c97\\exec-34d6927d-802f-486a-9514-4e0abdc7661a.png"
+  }
+]
