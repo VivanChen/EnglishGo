@@ -405,6 +405,7 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
       .srs-card-shell.is-back{cursor:default;justify-content:flex-start;align-items:stretch;text-align:left;padding:18px;background:linear-gradient(135deg,var(--srs-soft),var(--color-background-primary,#fff));border:2px solid color-mix(in srgb,var(--srs-accent) 70%,var(--srs-border));min-height:360px}
       .srs-card-shell.is-dict-open{min-height:500px}
       .srs-front-media{position:relative;z-index:1;width:min(84%,292px);height:184px;margin:0 auto 12px;border-radius:20px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:radial-gradient(circle at 30% 20%,rgba(255,255,255,.85),transparent 36%),linear-gradient(135deg,var(--srs-soft),var(--srs-card));box-shadow:0 14px 30px rgba(0,0,0,.12)}
+      .srs-front-media.is-illustration{width:min(84%,220px);height:auto;aspect-ratio:1}
       .srs-front-media img{width:100%;height:100%;object-fit:cover}
       .srs-front-emoji{font-size:110px;line-height:1;filter:drop-shadow(0 6px 16px rgba(0,0,0,.16))}
       .srs-media-badge{position:absolute;left:10px;top:10px;background:rgba(255,255,255,.82);border:1px solid color-mix(in srgb,var(--srs-accent) 22%,var(--srs-border));border-radius:999px;padding:4px 8px;color:var(--srs-accent);font-size:11px;font-weight:950;backdrop-filter:blur(10px)}
@@ -465,6 +466,7 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
         .srs-card-shell{min-height:300px;padding:22px 14px;border-radius:20px}
         .srs-card-shell.is-back{min-height:0;padding:13px}
         .srs-front-media{height:150px;width:min(82%,260px);margin-bottom:10px}
+        .srs-front-media.is-illustration{width:min(82%,190px);height:auto;aspect-ratio:1}
         .srs-front-emoji{font-size:88px}
         .srs-media-fallback strong{font-size:44px}
         .srs-front-word{font-size:35px}
@@ -507,7 +509,7 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
         {!flip&&<CardSparkles color={c.cl}/>}
         <Mascot mood={mascotMood}/>
         {!flip?(<>
-          <div className="srs-front-media" data-testid="srs-front-media">
+          <div className={`srs-front-media ${!showGif&&illustrationUrl?"is-illustration":""}`} data-testid="srs-front-media">
             <div className="srs-media-badge">{mediaLabel}</div>
             {showGif?<img src={gifUrl} alt={cur.w} onError={()=>{forgetGif(cur.w,gifKey);setMediaError("gif");setGifUrl(null);setGifNotice("動圖檔案無法載入，已使用替代圖片或圖示，不影響練習。")}}/>
             :illustrationUrl?<img key={illustrationUrl} src={illustrationUrl} alt={cur.w} style={{objectFit:"contain"}} onError={()=>setFailedIllustrations(urls=>[...urls,illustrationUrl])}/>
