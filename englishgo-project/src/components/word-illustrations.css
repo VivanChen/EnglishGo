@@ -4,7 +4,7 @@
 .word-art-heading>span{font-size:12px;color:var(--srs-muted)}
 .word-art-track{display:grid;grid-template-columns:repeat(var(--art-count),minmax(0,1fr));gap:14px;min-width:0;position:relative}
 .word-art-scene{margin:0;min-width:0;border:1px solid var(--srs-border,#deded5);border-radius:16px;overflow:hidden;background:var(--srs-card,#fff)}
-.word-art-scene:only-child{width:min(100%,82cqi,900px,72svh);justify-self:center}
+.word-art-scene:only-child{width:min(100%,96cqi,1024px,88svh);justify-self:center}
 .word-art-scene>img{display:block;width:100%;height:auto;aspect-ratio:1;object-fit:contain;background:#faf7ef}
 .word-art-scene figcaption{padding:12px 14px;line-height:1.65;overflow-wrap:anywhere}
 .word-art-en{display:flex;gap:8px;align-items:flex-start;justify-content:space-between;font-size:15px;font-weight:700}
