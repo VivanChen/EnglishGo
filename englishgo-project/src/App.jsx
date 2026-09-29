@@ -14,6 +14,7 @@ import { getWeakVocabularyForLevel, mergeUniqueWordCards, parseVocabularyTopics,
 import { fetchAllCloudVocabularyRows } from "./data/cloudVocabulary.js";
 import { loadWordIllustrations } from "./data/wordIllustrations.js";
 import { generateStoryPayload } from "./features/storyGeneration.js";
+import { lookupExamMeanings } from './features/examMeaningService.js';
 
 const PictureBooks=lazy(()=>import("./features/PictureBooks.jsx"));
 const TranslationReader=lazy(()=>import("./features/TranslationReader.jsx"));
@@ -2895,7 +2896,7 @@ async function generateExamAiWords({term,lv,apiKey,count=10}){
   }
   throw lastError || new Error("AI 單字暫時產生失敗，請稍後再試。");
 }
-function ExamReviewM(props){return <Suspense fallback={<ModuleLoading label="準備考前小書包..."/>}><ExamPlanner key={props.lv} {...props} deps={{Hdr,c:props.c,useLS,terms:EXAM_AI_TERMS,counts:EXAM_AI_COUNTS,defaultTerm:defaultExamTerm,generateWords:generateExamAiWords,fetchCloudWord,findAnyWord,orderCards:orderExamCards}}/></Suspense>}
+function ExamReviewM(props){return <Suspense fallback={<ModuleLoading label="準備考前小書包..."/>}><ExamPlanner key={props.lv} {...props} deps={{Hdr,c:props.c,useLS,terms:EXAM_AI_TERMS,counts:EXAM_AI_COUNTS,defaultTerm:defaultExamTerm,generateWords:generateExamAiWords,lookupMeanings:lookupExamMeanings,fetchCloudWord,findAnyWord,orderCards:orderExamCards}}/></Suspense>}
 
 function WordSearchM(props){return <Suspense fallback={<ModuleLoading label="準備單字探索室..."/>}><WordExplorer key={props.lv} {...props} deps={{Hdr,c:LV[props.lv],levels:LV,searchCloudWords,searchAnyWords,mergeWordResults,speakWebSpeech,stopSpeech}}/></Suspense>}
 

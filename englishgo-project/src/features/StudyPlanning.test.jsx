@@ -11,7 +11,7 @@ const click = name => fireEvent.click(button(name));
 const write = (name, value) => fireEvent.change(screen.getByRole('textbox', { name }), { target: { value } });
 const saved = () => JSON.parse(localStorage.getItem('eg_exam_planner_elementary'));
 function exam(extra = {}) {
-  const deps = { Hdr, c: { cl: '#507364' }, useLS: (key, initial) => useState(initial), terms: [['elementary-1a', '小一上']], counts: [5, 10], defaultTerm: () => 'elementary-1a', generateWords: vi.fn().mockResolvedValue(['book']), fetchCloudWord: vi.fn().mockResolvedValue(null), findAnyWord: vi.fn(async (lv, word) => word === 'unknown' ? null : { w: word, m: `字義 ${word}`, ex: 'Authored example.' }), orderCards: cards => [...cards].reverse(), ...extra };
+  const deps = { Hdr, c: { cl: '#507364' }, useLS: (key, initial) => useState(initial), terms: [['elementary-1a', '小一上']], counts: [5, 10], defaultTerm: () => 'elementary-1a', generateWords: vi.fn().mockResolvedValue(['book']), lookupMeanings: vi.fn().mockResolvedValue({ unknown: '未知的' }), fetchCloudWord: vi.fn().mockResolvedValue(null), findAnyWord: vi.fn(async (lv, word) => word === 'unknown' ? null : { w: word, m: `字義 ${word}`, ex: 'Authored example.' }), orderCards: cards => [...cards].reverse(), ...extra };
   const props = { lv: 'elementary', onBack: vi.fn(), onStart: vi.fn(), apiKey: 'test', deps };
   return { ...render(<StrictMode><ExamPlanner {...props} /></StrictMode>), props, deps };
 }
@@ -35,6 +35,23 @@ describe('exam planner', () => {
     write('這次要練的英文單字', 'dog'); fireEvent.click(screen.getByText('已收藏的範圍 · 1 / 12')); click(/^星期五/);
     expect(screen.getByRole('textbox', { name: '這次要練的英文單字' })).toHaveValue('apple book'); click('移除收藏 星期五'); expect(saved().lists).toHaveLength(0); click('還原'); expect(saved().lists).toHaveLength(1);
     expect(button('更新這份收藏')).toBeVisible(); click('更新這份收藏'); expect(saved().lists).toHaveLength(1);
+  });
+  it('fills missing meanings with AI and lets the adult correct the result', async () => {
+    const { deps } = exam(); write('這次要練的英文單字', 'unknown apple'); click('先確認單字與字義 →'); await screen.findByText('這次想練哪幾個？');
+    click('AI 查詢全部 1 個待確認字義'); await screen.findByText('AI 字義 · 請核對');
+    expect(deps.lookupMeanings).toHaveBeenCalledWith(expect.objectContaining({ words: ['unknown'], apiKey: 'test' }));
+    expect(saved().review.cards[0]).toMatchObject({ m: '未知的', source: 'AI 字義', customMissing: false });
+    expect(screen.getByRole('checkbox', { name: /unknown/ })).toBeChecked();
+    const row = screen.getByText('unknown').closest('.exam-review-row'); fireEvent.click(within(row).getByRole('button', { name: '修改字義' }));
+    write('請大人幫忙填寫「unknown」的字義', '不認識的'); click('存下 unknown 的字義');
+    expect(saved().review.cards[0]).toMatchObject({ m: '不認識的', source: '自填字義' });
+  });
+  it('ignores a delayed AI meaning after leaving the review', async () => {
+    let resolve; exam({ lookupMeanings: vi.fn(() => new Promise(done => { resolve = done; })) });
+    write('這次要練的英文單字', 'unknown'); click('先確認單字與字義 →'); await screen.findByText('這次想練哪幾個？');
+    click('AI 查詢 unknown 的字義'); click('1　放入範圍');
+    await act(async () => resolve({ unknown: '未知的' }));
+    expect(saved().review.cards[0].m).toBe('');
   });
   it('restores the reviewed draft and selections when undoing a fresh range', async () => {
     exam(); write('這次要練的英文單字', 'apple book'); write('範圍名稱', '小考'); click('先確認單字與字義 →'); await screen.findByText('這次想練哪幾個？');

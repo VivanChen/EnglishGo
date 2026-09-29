@@ -11,6 +11,8 @@
 .exam-word-chips button>span:last-child { color: var(--garden-muted); }
 .exam-ai-controls { display: grid; grid-template-columns: minmax(0,2fr) minmax(0,1fr); gap: 14px; margin-bottom: 18px; }
 .exam-ai-controls select { margin-top: 6px; min-height: 48px; }
+.exam-meaning-tools { margin-top: 18px; display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.exam-meaning-tools p { flex-basis: 100%; margin: 0; color: var(--garden-muted); font-size: 13px; }
 .exam-review-list { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; margin: 24px 0; }
 .exam-review-row { padding: 16px; border: 1px solid var(--garden-line); border-radius: 16px; }
 .exam-review-row>label { display: flex; align-items: center; gap: 14px; margin: 0; cursor: pointer; }
@@ -22,6 +24,7 @@
 .exam-review-row.is-pending { background: var(--garden-paper); border-style: dashed; }
 .exam-meaning { border-top: 1px solid var(--garden-line); margin-top: 16px; padding-top: 6px; }
 .exam-meaning button { margin-top: 10px; }
+.exam-edit-meaning { margin-top: 12px; }
 .exam-library summary,.journal-sharing summary { padding: 12px 0; min-height: 46px; cursor: pointer; color: var(--garden-green); font-weight: 750; }
 .exam-saved-row { display: flex; gap: 10px; align-items: center; margin: 10px 0; }
 .exam-saved-row>button:first-child { flex: 1; text-align: left; }
