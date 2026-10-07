@@ -72,13 +72,14 @@ function jsonResponse(statusCode, payload) {
 }
 
 function normalizeTextForTts(rawText) {
-  return String(rawText || "")
+  const normalized = String(rawText || "")
     .normalize("NFKC")
     .replace(/[\u2018\u2019]/g, "'")
     .replace(/[\u201C\u201D]/g, '"')
     .replace(/\s+/g, " ")
     .trim()
     .replace(/^['"“”‘’]+|['"“”‘’]+$/g, "");
+  return normalized === "i" ? "I" : normalized;
 }
 
 function clampNumber(value, min, max, fallback) {
@@ -109,9 +110,19 @@ function getEnglishVoiceId(requestedVoiceId) {
 }
 
 function makeCacheKey({ normalizedText, lang, voiceId, modelId, outputFormat, voiceSettings }) {
+  const pronunciationRevision = /^[A-Za-z]{1,3}$/.test(normalizedText) ? "short-words-v2" : "";
   const hash = crypto
     .createHash("sha256")
-    .update(JSON.stringify({ text: normalizedText, lang, voiceId, modelId, outputFormat, voiceSettings, format: "mp3" }))
+    .update(JSON.stringify({
+      text: normalizedText,
+      ...(pronunciationRevision ? { pronunciationRevision } : {}),
+      lang,
+      voiceId,
+      modelId,
+      outputFormat,
+      voiceSettings,
+      format: "mp3",
+    }))
     .digest("hex");
 
   return `${voiceId}/${hash}.mp3`;
@@ -163,7 +174,7 @@ async function tryReadFromSupabaseStorage({ bucket, cacheKey }) {
     const url = `${supabaseUrl}/storage/v1/object/${encodeURIComponent(bucket)}/${cacheKey}`;
     const res = await fetch(url, {
       method: "GET",
-      headers: supabaseHeaders(supabaseKey),
+      headers: supabaseHeaders(supabaseKey, { "Cache-Control": "no-cache" }),
     });
 
     if (!res.ok) {
@@ -179,7 +190,7 @@ async function tryReadFromSupabaseStorage({ bucket, cacheKey }) {
   }
 }
 
-async function tryUploadToSupabaseStorage({ bucket, cacheKey, audioBuffer, fixedAsset = false }) {
+async function tryUploadToSupabaseStorage({ bucket, cacheKey, audioBuffer, fixedAsset = false, forceRegenerate = false }) {
   const supabaseUrl = getSupabaseUrl();
   const supabaseKey = getSupabaseKey();
 
@@ -193,7 +204,7 @@ async function tryUploadToSupabaseStorage({ bucket, cacheKey, audioBuffer, fixed
       method: "POST",
       headers: supabaseHeaders(supabaseKey, {
         "Content-Type": "audio/mp3",
-        "Cache-Control": fixedAsset ? String(ONE_YEAR_SECONDS) : "86400",
+        "Cache-Control": fixedAsset ? String(ONE_YEAR_SECONDS) : forceRegenerate ? "0" : "86400",
         "x-upsert": "true",
       }),
       body: audioBuffer,
@@ -243,6 +254,7 @@ export default async function handler(req, context = {}) {
 
   const originalText = String(payload.text || "").trim();
   const normalizedText = normalizeTextForTts(originalText);
+  const forceRegenerate = !isFixedNovelAsset && payload.forceRegenerate === true;
   const lang = String(payload.lang || "en-US").trim();
   const voiceId = isChineseLang(lang)
     ? (isFixedNovelAsset ? NOVEL_AUDIO_CONFIG.chineseVoiceId : getEnv("ELEVENLABS_ZH_VOICE_ID"))
@@ -293,11 +305,14 @@ export default async function handler(req, context = {}) {
         "X-TTS-Playback-Speed": safeHeaderValue(playbackSpeed),
         "X-TTS-Has-Supabase-Url": String(hasSupabaseUrl),
         "X-TTS-Has-Supabase-Key": String(hasSupabaseKey),
+        "X-TTS-Force-Regenerate": String(forceRegenerate),
         ...(isFixedNovelAsset ? { "X-TTS-Novel-Asset": safeHeaderValue(novelAssetId) } : {}),
       }
     : {};
 
-  const cached = await tryReadFromSupabaseStorage({ bucket, cacheKey });
+  const cached = forceRegenerate
+    ? { ok: false, audioBuffer: null, reason: "forced_regeneration" }
+    : await tryReadFromSupabaseStorage({ bucket, cacheKey });
   if (cached.ok && cached.audioBuffer) {
     return audioResponse(cached.audioBuffer, "supabase-cache", {
       ...debugHeaders,
@@ -320,11 +335,12 @@ export default async function handler(req, context = {}) {
       return jsonResponse(502, { error: "ElevenLabs returned empty audio" });
     }
 
-    const awaitUpload = getEnv("TTS_AWAIT_CACHE_UPLOAD") === "true";
+    const awaitUpload = forceRegenerate || getEnv("TTS_AWAIT_CACHE_UPLOAD") === "true";
     if (awaitUpload) {
-      const upload = await tryUploadToSupabaseStorage({ bucket, cacheKey, audioBuffer, fixedAsset: isFixedNovelAsset });
+      const upload = await tryUploadToSupabaseStorage({ bucket, cacheKey, audioBuffer, fixedAsset: isFixedNovelAsset, forceRegenerate });
       return audioResponse(audioBuffer, "elevenlabs", {
         ...debugHeaders,
+        ...(forceRegenerate ? { "Cache-Control": "no-store" } : {}),
         "X-TTS-Cache-Read": safeHeaderValue(cached.reason),
         "X-TTS-Cache-Upload": upload.ok ? "ok" : "failed",
         "X-TTS-Cache-Upload-Detail": safeHeaderValue(upload.reason),

@@ -1684,6 +1684,8 @@ function makeUtterance(t,l="en-US",r=0.9,opts={},token=_speechToken){
   if(opts.trackWords)u.__englishGoTrackWords=true;
   if(opts.apiTts)u.__englishGoApiTts=true;
   if(opts.audioUrl)u.__englishGoAudioUrl=opts.audioUrl;
+  if(opts.requireApi)u.__englishGoRequireApi=true;
+  if(opts.forceRegenerate){u.__englishGoForceRegenerate=true;u.__englishGoRequireApi=true}
   u.cancel=()=>{if(token===_speechToken)stopSpeech()};
   return u;
 }
@@ -1701,6 +1703,13 @@ function speak(t,l="en-US",r=0.9,opts={}){
   if(typeof window==="undefined"||!window.speechSynthesis||!t)return null;
   const token=stopSpeech();
   const u=makeUtterance(t,l,r,opts,token);
+  startUtterance(u,token,opts.delay??0);
+  return u;
+}
+function regenerateSpeech(t,l="en-US",r=0.9,opts={}){
+  if(typeof window==="undefined"||!window.speechSynthesis||!t)return null;
+  const token=stopSpeech();
+  const u=makeUtterance(t,l,r,{...opts,forceRegenerate:true},token);
   startUtterance(u,token,opts.delay??0);
   return u;
 }
@@ -2904,7 +2913,7 @@ function WordSearchM(props){return <Suspense fallback={<ModuleLoading label="準
 const _gifCache={};
 const LazySRS=lazy(()=>import("./features/SRS.jsx"));
 function SRS(props){
-  const deps={V,LV,S,fetchCloudVocab,fetchCloudVocabularyCatalog,fetchCloudWord,fetchWordIllustrations,findAnyWord,loadExtraWords,shuffleCopy,sortCardsForStudy,createDeck,rateDeck,getWordImg,preloadImgs,isPlaceholderExample,exampleCache:_exampleCache,generateExample,preloadTts,speak,speakWebSpeech,speechTimer,playSound,triggerRewardBurst,parseCSV,Hdr,Confetti};
+  const deps={V,LV,S,fetchCloudVocab,fetchCloudVocabularyCatalog,fetchCloudWord,fetchWordIllustrations,findAnyWord,loadExtraWords,shuffleCopy,sortCardsForStudy,createDeck,rateDeck,getWordImg,preloadImgs,isPlaceholderExample,exampleCache:_exampleCache,generateExample,preloadTts,speak,speakWebSpeech,regenerateSpeech,speechTimer,playSound,triggerRewardBurst,parseCSV,Hdr,Confetti};
   return <Suspense fallback={<ModuleLoading label="正在準備單字小花園…"/>}><LazySRS {...props} deps={deps}/></Suspense>;
 }
 

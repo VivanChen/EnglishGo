@@ -260,7 +260,7 @@ function VocabularyTopicPicker({lv,levelPools,poolSources,weakWords,onBack,onSta
 // ═══ SRS FLASHCARD (Gamified) ═══════════════════════════════════
 
 export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,apiKey,weakWords=[],customCards=null,customSource="",onOpenSettings,deps}){
-  const {V,LV,S,fetchCloudVocab,fetchCloudVocabularyCatalog,fetchCloudWord,findAnyWord,loadExtraWords,shuffleCopy,sortCardsForStudy,createDeck,rateDeck,getWordImg,preloadImgs,isPlaceholderExample,exampleCache:_exampleCache,generateExample,preloadTts,speak,speakWebSpeech,speechTimer,playSound,triggerRewardBurst,parseCSV,Hdr,Confetti}=deps;
+  const {V,LV,S,fetchCloudVocab,fetchCloudVocabularyCatalog,fetchCloudWord,findAnyWord,loadExtraWords,shuffleCopy,sortCardsForStudy,createDeck,rateDeck,getWordImg,preloadImgs,isPlaceholderExample,exampleCache:_exampleCache,generateExample,preloadTts,speak,speakWebSpeech,regenerateSpeech,speechTimer,playSound,triggerRewardBurst,parseCSV,Hdr,Confetti}=deps;
   const built=V[lv];const[cards,setCards]=useState([]);const[deck,setDeck]=useState(()=>createDeck([]));const[flip,setFlip]=useState(false);const[info,setInfo]=useState(false);const[loading,setLoading]=useState(true);const[src,setSrc]=useState("built-in");const c=LV[lv];const fr=useRef();const completedRef=useRef(false);
   const[levelPools,setLevelPools]=useState(()=>Object.fromEntries(Object.keys(V).map(level=>[level,mergeUniqueWordCards(V[level]||[])])));
   const[poolSources,setPoolSources]=useState(()=>Object.fromEntries(Object.keys(V).map(level=>[level,"local"])));
@@ -432,6 +432,7 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
       .srs-media-fallback strong{font-size:52px;line-height:1;filter:drop-shadow(0 6px 14px rgba(0,0,0,.14))}
       .srs-front-word{position:relative;z-index:1;font-size:42px;font-weight:950;color:var(--srs-text);letter-spacing:0;line-height:1.1;display:inline-flex;align-items:center;justify-content:center;gap:6px}
       .srs-sound-btn{background:rgba(255,255,255,.64);border:1px solid var(--srs-border);border-radius:999px;color:var(--srs-accent);cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;justify-content:center;min-width:36px;min-height:36px;padding:4px;font-size:20px}
+      .srs-regenerate-btn{min-width:42px;padding:4px 6px;font-size:12px;font-weight:900}
       .srs-front-ph{position:relative;z-index:1;font-size:14px;color:var(--srs-faint);margin-top:5px}
       .srs-flow-hint{position:relative;z-index:1;margin-top:14px;display:inline-flex;align-items:center;gap:8px;padding:9px 18px;border-radius:999px;background:linear-gradient(135deg,var(--srs-accent),var(--srs-accent-2));color:#fff;font-size:13px;font-weight:900;box-shadow:0 10px 22px color-mix(in srgb,var(--srs-accent) 24%,transparent)}
       .srs-flow-hint span{font-size:11px;font-weight:750;opacity:.86}
@@ -544,7 +545,7 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
         </>):(<>
           <div className="srs-back-top" data-testid="srs-back-primary">
             <div className="srs-back-main">
-              <div className="srs-back-word">{cur.w}<span className="srs-back-pos">({cur.p})</span><button className="srs-sound-btn" onClick={e=>{e.stopPropagation();speak(cur.w)}} aria-label={`播放單字 ${cur.w}`}>🔊</button></div>
+              <div className="srs-back-word">{cur.w}<span className="srs-back-pos">({cur.p})</span><button className="srs-sound-btn" onClick={e=>{e.stopPropagation();speak(cur.w)}} aria-label={`播放單字 ${cur.w}`}>🔊</button><button className="srs-sound-btn srs-regenerate-btn" onClick={e=>{e.stopPropagation();regenerateSpeech?.(cur.w)}} aria-label={`重新產生單字發音 ${cur.w}`} title="發音有誤？重新呼叫語音 API 並更新快取">重產</button></div>
               {cur.ph&&<div className="srs-back-ph">{cur.ph}</div>}
               <div className="srs-back-meaning">{cur.m}<button className="srs-sound-btn" onClick={e=>{e.stopPropagation();speak(cur.m,"zh-TW",0.9)}} aria-label={`播放中文 ${cur.m}`}>🔈</button></div>
               <div className="srs-card-actions">

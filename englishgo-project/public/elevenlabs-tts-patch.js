@@ -9,6 +9,7 @@
   const nativeResume = typeof synth.resume === "function" ? synth.resume.bind(synth) : null;
   const audioCache = new Map();
   const inflight = new Map();
+  const cacheGenerations = new Map();
   const MAX_CHARS = 350;
   const LS_VOICE = "eg_tts_voice_id";
   const LS_SPEED = "eg_tts_speed";
@@ -25,6 +26,7 @@
   const ALLOWED_VOICE_IDS = new Set(VOICES.map(voice => voice.id));
   let activeAudio = null;
   let activeAudioPaused = false;
+  let lastRegenerableText = "";
   let loadingToast = null;
   let loadingButton = null;
   let loadingCounter = 0;
@@ -44,6 +46,12 @@
       .replace(/\s+/g, " ")
       .trim()
       .replace(/^['"“”‘’]+|['"“”‘’]+$/g, "");
+  }
+
+  function normalizeTtsText(text) {
+    const normalized = normalizeText(text);
+    // The vocabulary key is lowercase, but this entry means the pronoun “I”.
+    return normalized === "i" ? "I" : normalized;
   }
 
   function isChineseLang(lang) {
@@ -72,7 +80,9 @@
 
   function makeCacheKey(text, settings) {
     if (settings.audioUrl) return `asset|${settings.audioUrl}`;
-    return `${settings.lang || "en-US"}|${settings.voiceId || "server-default"}|${settings.speed || DEFAULT_SPEED}|${normalizeText(text)}`;
+    const normalized = normalizeTtsText(text);
+    const pronunciationRevision = /^[A-Za-z]{1,3}$/.test(normalized) ? "short-words-v2|" : "";
+    return `${settings.lang || "en-US"}|${settings.voiceId || "server-default"}|${settings.speed || DEFAULT_SPEED}|${pronunciationRevision}${normalized}`;
   }
 
   function stopActiveAudio() {
@@ -182,6 +192,7 @@
   }
 
   async function getAudioUrl(text, options = {}) {
+    const forceRegenerate = options.forceRegenerate === true;
     const baseSettings = getSettings();
     // English cloud voices are selected by voiceId, not by the device's locale.
     // Use the same key for preloads and playback on en-GB/en-AU devices.
@@ -193,11 +204,18 @@
       voiceId: options.voiceId ?? (isChineseLang(lang) ? undefined : baseSettings.voiceId),
       speed: isChineseLang(lang) ? 1 : options.speed ?? baseSettings.speed,
     };
-    const normalized = normalizeText(text);
+    const normalized = normalizeTtsText(text);
     if (!isEligibleText(normalized, settings.lang)) throw new Error("Text is not eligible for ElevenLabs TTS");
+    if (forceRegenerate && options.audioUrl) throw new Error("Fixed audio assets cannot be regenerated");
     const cacheKey = makeCacheKey(normalized, settings);
-    if (audioCache.has(cacheKey)) return audioCache.get(cacheKey);
-    if (inflight.has(cacheKey)) return inflight.get(cacheKey);
+    let generation = cacheGenerations.get(cacheKey) || 0;
+    if (forceRegenerate) {
+      generation += 1;
+      cacheGenerations.set(cacheKey, generation);
+    }
+    if (!forceRegenerate && audioCache.has(cacheKey)) return audioCache.get(cacheKey);
+    const inflightKey = forceRegenerate ? `${cacheKey}|regenerate|${Date.now()}|${Math.random()}` : cacheKey;
+    if (!forceRegenerate && inflight.has(cacheKey)) return inflight.get(cacheKey);
 
     const fixedAudioUrl = String(options.audioUrl || "").trim();
     const requestUrl = fixedAudioUrl || "/.netlify/functions/elevenlabs-tts";
@@ -205,8 +223,12 @@
       ? { method: "GET", cache: "force-cache", headers: { Accept: "audio/mpeg" } }
       : {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text: normalized, voiceId: settings.voiceId, lang: settings.lang, speed: settings.speed }),
+          ...(forceRegenerate ? { cache: "no-store" } : {}),
+          headers: {
+            "Content-Type": "application/json",
+            ...(forceRegenerate ? { "Cache-Control": "no-cache" } : {}),
+          },
+          body: JSON.stringify({ text: normalized, voiceId: settings.voiceId, lang: settings.lang, speed: settings.speed, forceRegenerate }),
         };
 
     async function fetchAudio() {
@@ -233,10 +255,29 @@
     const promise = fetchAudio()
       .then(async (res) => {
         if (!res.ok) throw Object.assign(new Error(`ElevenLabs TTS failed: ${res.status}`), { ttsReason: "api", status: res.status });
+        if (forceRegenerate) {
+          const saved = res.headers.get("X-TTS-Cache-Upload") === "ok";
+          const notice = document.createElement("div");
+          notice.id = "eg-tts-status-toast";
+          notice.className = "show";
+          notice.setAttribute("role", "status");
+          notice.textContent = saved
+            ? "已重新生成發音，並更新快取。"
+            : "已重新生成發音，但快取更新失敗；稍後播放可能仍是舊音訊。";
+          document.getElementById(notice.id)?.remove();
+          document.body.appendChild(notice);
+          window.setTimeout(() => notice.remove(), 5000);
+        }
         const blob = await res.blob();
         if (!blob.size || !/^audio\//i.test(blob.type)) throw new Error('TTS response is not audio');
         const url = URL.createObjectURL(blob);
-        audioCache.set(cacheKey, url);
+        if ((cacheGenerations.get(cacheKey) || 0) === generation) {
+          const previousUrl = audioCache.get(cacheKey);
+          audioCache.set(cacheKey, url);
+          if (previousUrl && previousUrl !== url) {
+            try { URL.revokeObjectURL(previousUrl); } catch {}
+          }
+        }
 
         if (audioCache.size > 512) {
           const firstKey = audioCache.keys().next().value;
@@ -245,9 +286,9 @@
         }
         return url;
       })
-      .finally(() => inflight.delete(cacheKey));
+      .finally(() => inflight.delete(inflightKey));
 
-    inflight.set(cacheKey, promise);
+    inflight.set(inflightKey, promise);
     return promise;
   }
 
@@ -345,6 +386,7 @@
         </div>
         <div class="eg-row">
           <button id="eg-tts-test" type="button">試聽</button>
+          <button id="eg-tts-regenerate" type="button" disabled>重產上次</button>
           <span class="eg-small">雲端自然語速；連線失敗時自動改用裝置語音</span>
         </div>
       </div>
@@ -357,6 +399,7 @@
     const speedLabel = panel.querySelector("#eg-tts-speed-label");
     const head = panel.querySelector(".eg-head");
     const toggle = panel.querySelector("#eg-tts-toggle");
+    const regenerate = panel.querySelector("#eg-tts-regenerate");
     if (panel.classList.contains("eg-mini")) toggle.textContent = "+";
 
     function sync() {
@@ -372,6 +415,9 @@
       window.EnglishGoTTS.setSettings({ speed: Number(speed.value) });
     });
     panel.querySelector("#eg-tts-test").addEventListener("click", () => window.EnglishGoTTS.speak("I packed three apples for our train ride this morning."));
+    regenerate.addEventListener("click", () => {
+      if (lastRegenerableText) window.EnglishGoTTS.regenerate(lastRegenerableText);
+    });
     head.addEventListener("click", () => {
       panel.classList.toggle("eg-mini");
       const minimized = panel.classList.contains("eg-mini");
@@ -397,6 +443,13 @@
         if (settings.speed != null) localStorage.setItem(LS_SPEED, String(clamp(settings.speed, 0.7, 1.2, DEFAULT_SPEED)));
       } catch {}
       window.dispatchEvent(new CustomEvent("englishgo:tts-settings-changed", { detail: getSettings() }));
+    },
+    regenerate(text, lang = "en-US") {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = lang;
+      utterance.__englishGoForceRegenerate = true;
+      utterance.__englishGoRequireApi = true;
+      return synth.speak(utterance);
     },
     speak(text) {
       const utterance = new SpeechSynthesisUtterance(text);
@@ -437,7 +490,12 @@
       return nativeSpeak(utterance);
     }
 
-    const text = String(utterance.text || "").trim();
+    const text = normalizeTtsText(utterance.text);
+    if (!utterance.__englishGoAudioUrl && /^en/i.test(String(utterance.lang || "en-US"))) {
+      lastRegenerableText = text;
+      const regenerateButton = document.getElementById("eg-tts-regenerate");
+      if (regenerateButton) regenerateButton.disabled = false;
+    }
 
     stopActiveAudio();
     nativeCancel();
@@ -456,7 +514,11 @@
       fallbackSpeech(utterance, error);
     };
 
-    getAudioUrl(text, { lang: utterance.lang, audioUrl: utterance.__englishGoAudioUrl })
+    getAudioUrl(text, {
+      lang: utterance.lang,
+      audioUrl: utterance.__englishGoAudioUrl,
+      forceRegenerate: utterance.__englishGoForceRegenerate === true,
+    })
       .then((url) => {
         if (activeAudio !== audio) return null;
         audio.pause();
