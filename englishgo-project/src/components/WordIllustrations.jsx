@@ -18,7 +18,7 @@ export function useWordIllustrations(level, word, fetchIllustrations) {
   useEffect(() => {
     let current = true;
     setResult(null);
-    if (word && typeof fetchIllustrations === 'function' && (level === 'elementary' || level === 'junior')) {
+    if (word && typeof fetchIllustrations === 'function') {
       Promise.resolve().then(() => fetchIllustrations(level, word)).then(rows => {
         const valid = normalizeWordIllustrations(rows, level, word);
         if (current && valid.length) setResult({ key, items: valid });

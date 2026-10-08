@@ -495,7 +495,7 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
         .srs-flow-hint.is-back{display:flex;padding:8px 10px;margin:0;grid-column:1/-1}
         .srs-flow-hint.is-back span{display:inline;font-size:10px}
         .srs-back-top{grid-template-columns:1fr}
-        .srs-back-thumb{display:none}
+        .srs-back-thumb{display:flex;justify-self:center;width:min(100%,190px);height:auto;aspect-ratio:4/3;margin:6px 0}
         .srs-back-word{font-size:29px;justify-content:center;text-align:center}
         .srs-back-meaning{font-size:21px;justify-content:center;text-align:center}
         .srs-back-ph{text-align:center}
@@ -554,11 +554,11 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
                 <div className="srs-flow-hint is-back" data-testid="srs-study-guidance"><b>下一步</b><span><strong>查字典補強</strong>，或直接評分進下一題</span></div>
               </div>
             </div>
-            {lv!=="elementary"&&!dictOpen&&<div className={`srs-back-thumb ${!showGif&&(showEmoji||!showImg)?"is-emoji":""}`} data-testid="srs-back-media">
+            {!illustrations.length&&!dictOpen&&<div className={`srs-back-thumb ${!showGif&&(showEmoji||!showImg)?"is-emoji":""}`} data-testid="srs-back-media">
               {showGif?<img src={gifUrl} alt={cur.w} onError={()=>{forgetGif(cur.w,gifKey);setMediaError("gif");setGifUrl(null);setGifNotice("動圖檔案無法載入，已使用替代圖片或圖示，不影響練習。")}}/>:showEmoji?imgUrl.value:showImg?<img src={imgUrl.value} alt={cur.w} onError={()=>setMediaError("image")}/>:fallbackVisual.emoji}
             </div>}
           </div>
-          {lv==="elementary"&&<WordIllustrationGallery key={`${lv}:${cur.w}`} word={cur.w} items={illustrations} speak={speak}/>}
+          <WordIllustrationGallery key={`${lv}:${cur.w}`} word={cur.w} items={illustrations} speak={speak}/>
           {(()=>{
           // Decide which example to show
           const useAi=aiExample&&isPlaceholderExample(cur.ex,cur.w);

@@ -39,6 +39,18 @@ describe('vocabulary illustrations', () => {
     await waitFor(() => expect(fetchIllustrations).toHaveBeenCalledWith('junior', 'account'));
     expect(await screen.findByRole('img')).toHaveAttribute('src', item.image_url);
   });
+  it('loads published cloud illustrations for senior cards', async () => {
+    const item = {
+      id: 'senior-account-01-v1', level: 'senior', word: 'account', sort_order: 1,
+      image_url: 'https://example.com/account.webp', local_path: '',
+      alt_zh: '高中單字「account」插圖。',
+      example: 'I have an account.', example_zh: '我有一個帳戶。',
+    };
+    const fetchIllustrations = vi.fn().mockResolvedValue([item]);
+    render(<WordIllustrations level="senior" word="account" fetchIllustrations={fetchIllustrations}/>);
+    await waitFor(() => expect(fetchIllustrations).toHaveBeenCalledWith('senior', 'account'));
+    expect(await screen.findByRole('img')).toHaveAttribute('src', item.image_url);
+  });
   it('falls back from a failed cloud image to the bundled illustration, then to its explanation', async () => {
     const item = { ...getLocalWordIllustrations('elementary', 'apple')[0], image_url: 'https://example.com/apple.webp' };
     render(<WordIllustrations level="elementary" word="apple" fetchIllustrations={async () => [item]}/>);
