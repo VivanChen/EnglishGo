@@ -23,7 +23,7 @@ export function normalizeWordIllustrations(rows, level, word) {
 
 export async function loadWordIllustrations(supabase, level, word) {
   const local = getLocalWordIllustrations(level, word);
-  if (level !== 'elementary' || !supabase) return local;
+  if (!supabase) return local;
   try {
     const { data, error } = await supabase.from('word_illustrations')
       .select('id,level,word,sense,image_url,local_path,alt_zh,example,example_zh,sort_order,style,version')
