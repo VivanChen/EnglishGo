@@ -2,7 +2,7 @@ import { serviceFetch, assertServiceResponse, serviceErrorMessage } from './lib/
 import { getGeminiModels, getGeminiModelPreference, saveGeminiModelPreference, GEMINI_MODEL_OPTIONS } from './lib/geminiModels.js';
 import { followPageAnchor, withoutPageAnchor } from "./data/pageAnchors.js";
 import { refreshPetCare } from "./data/petCare.js";
-import { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo, useContext, createContext, lazy, Suspense } from "react";
 import { Brand, ComfortControls, LearningDashboard, WelcomeScreen } from "./components/LearningExperience.jsx";
 import ReadingPractice from "./features/ReadingPractice.jsx";
 import { archiveStudyDay, dailyProgress, learningStreak, localDay } from "./data/studyProgress.js";
@@ -1683,6 +1683,7 @@ function makeUtterance(t,l="en-US",r=0.9,opts={},token=_speechToken){
   if(opts.playbackRate)u.__englishGoPlaybackRate=opts.playbackRate;
   if(opts.trackWords)u.__englishGoTrackWords=true;
   if(opts.apiTts)u.__englishGoApiTts=true;
+  if(opts.globalSpeed!==false)u.__englishGoUseGlobalSpeed=true;
   if(opts.audioUrl)u.__englishGoAudioUrl=opts.audioUrl;
   if(opts.requireApi)u.__englishGoRequireApi=true;
   if(opts.forceRegenerate){u.__englishGoForceRegenerate=true;u.__englishGoRequireApi=true}
@@ -1849,6 +1850,91 @@ function VoicePicker(){
       return(<option key={v.voiceURI} value={v.voiceURI}>{star}{v.name.replace(/Microsoft |Google |Apple /,"").slice(0,18)}{flag}</option>);
     })}
   </select>);
+}
+const TTS_SPEED_PRESETS=[{value:0.8,label:"慢速"},{value:1,label:"正常"},{value:1.2,label:"快速"}];
+const TTS_SPEED_MODULES=new Set(["srs","speak","pictureBooks","novels","translate","reading","dictation","story","grammar","quiz","exam","ai"]);
+const SpeechSpeedContext=createContext(false);
+function readTtsSettings(){
+  const fallback={voiceId:"21m00Tcm4TlvDq8ikWAM",speed:1};
+  if(typeof window==="undefined")return fallback;
+  try{
+    const current=window.EnglishGoTTS?.getSettings?.();
+    const rawSpeed=current?.speed??window.localStorage.getItem("eg_tts_speed");
+    const savedSpeed=rawSpeed==null||rawSpeed===""?fallback.speed:Number(rawSpeed);
+    return{
+      voiceId:current?.voiceId||window.localStorage.getItem("eg_tts_voice_id")||fallback.voiceId,
+      speed:Number.isFinite(savedSpeed)?Math.min(1.2,Math.max(0.7,savedSpeed)):fallback.speed,
+    };
+  }catch{return fallback}
+}
+function saveTtsSettings(settings){
+  if(typeof window==="undefined")return;
+  const next={...readTtsSettings(),...settings};
+  if(window.EnglishGoTTS?.setSettings){window.EnglishGoTTS.setSettings(next);return}
+  try{
+    window.localStorage.setItem("eg_tts_voice_id",next.voiceId);
+    window.localStorage.setItem("eg_tts_speed",String(next.speed));
+  }catch{}
+  window.dispatchEvent(new CustomEvent("englishgo:tts-settings-changed",{detail:next}));
+}
+function useTtsSettings(){
+  const[settings,setSettings]=useState(readTtsSettings);
+  useEffect(()=>{
+    const sync=()=>setSettings(readTtsSettings());
+    window.addEventListener("englishgo:tts-settings-changed",sync);
+    window.addEventListener("englishgo:tts-installed",sync);
+    sync();
+    return()=>{
+      window.removeEventListener("englishgo:tts-settings-changed",sync);
+      window.removeEventListener("englishgo:tts-installed",sync);
+    };
+  },[]);
+  return settings;
+}
+function TtsQuickSpeed(){
+  const settings=useTtsSettings();
+  const currentValue=Number(settings.speed.toFixed(2));
+  const isPreset=TTS_SPEED_PRESETS.some(option=>option.value===currentValue);
+  return(<label className="eg-tts-quick-speed"><span>朗讀</span><select aria-label="全站朗讀速度" value={currentValue} onChange={event=>saveTtsSettings({speed:Number(event.target.value)})}>
+    {!isPreset&&<option value={currentValue}>自訂 {currentValue.toFixed(2)}×</option>}
+    {TTS_SPEED_PRESETS.map(option=><option key={option.value} value={option.value}>{option.label} {option.value.toFixed(1)}×</option>)}
+  </select></label>);
+}
+function ReadingSettings({c}){
+  const settings=useTtsSettings();
+  const[voiceOptions,setVoiceOptions]=useState(()=>window.EnglishGoTTS?.getVoiceOptions?.()||[]);
+  const[lastRegenerableText,setLastRegenerableText]=useState(()=>window.EnglishGoTTS?.getLastRegenerableText?.()||"");
+  const[previewStatus,setPreviewStatus]=useState("");
+  useEffect(()=>{
+    const sync=()=>setVoiceOptions(window.EnglishGoTTS?.getVoiceOptions?.()||[]);
+    const updateLast=event=>setLastRegenerableText(event.detail?.text||window.EnglishGoTTS?.getLastRegenerableText?.()||"");
+    window.addEventListener("englishgo:tts-installed",sync);
+    window.addEventListener("englishgo:tts-last-regenerable",updateLast);
+    return()=>{
+      window.removeEventListener("englishgo:tts-installed",sync);
+      window.removeEventListener("englishgo:tts-last-regenerable",updateLast);
+    };
+  },[]);
+  const preview=()=>{
+    setPreviewStatus("正在試聽…");
+    if(window.EnglishGoTTS?.speak)window.EnglishGoTTS.speak("You can change the English reading speed here.");
+    else speak("You can change the English reading speed here.","en-US",settings.speed);
+    window.setTimeout(()=>setPreviewStatus(""),1800);
+  };
+  const inputStyle={width:"100%",accentColor:c.cl};
+  return(<section style={{...S.card,padding:20,marginBottom:12}}>
+    <h3 style={{margin:"0 0 6px",fontSize:17}}>朗讀設定</h3>
+    <p style={{fontSize:13,color:S.t2,lineHeight:1.7,margin:"0 0 16px"}}>調整全站英文朗讀的預設速度與雲端聲音，下次播放時生效。歌曲播放速度由歌曲播放器單獨控制。</p>
+    {voiceOptions.length>0?<label style={{display:"block",fontSize:13,fontWeight:800,color:S.t1,marginBottom:15}}>雲端英文聲音
+      <select aria-label="英文朗讀聲音" value={settings.voiceId} onChange={event=>saveTtsSettings({voiceId:event.target.value})} style={{display:"block",width:"100%",marginTop:6,padding:"10px 12px",borderRadius:10,border:`1px solid ${S.bd}`,background:S.bg1,color:S.t1,fontFamily:"inherit",fontSize:14}}>
+        {voiceOptions.map(voice=><option key={voice.id} value={voice.id}>{voice.label}{voice.accent?` · ${voice.accent}`:""}</option>)}
+      </select>
+    </label>:<div style={{display:"grid",gap:6,marginBottom:15,fontSize:13,color:S.t2}}>裝置語音備援<VoicePicker/></div>}
+    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,marginBottom:6}}><label htmlFor="eg-reading-speed" style={{fontSize:13,fontWeight:800,color:S.t1}}>預設語速</label><output htmlFor="eg-reading-speed" style={{fontSize:13,fontWeight:900,color:c.cl}}>{settings.speed.toFixed(2)}×</output></div>
+    <input id="eg-reading-speed" aria-label="預設朗讀速度" type="range" min="0.7" max="1.2" step="0.05" value={settings.speed} onChange={event=>saveTtsSettings({speed:Number(event.target.value)})} style={inputStyle}/>
+    <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:S.t3,marginTop:2}}><span>慢 0.7×</span><span>原速 1.0×</span><span>快 1.2×</span></div>
+    <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap",marginTop:14}}><button type="button" onClick={preview} style={{...S.btn,background:c.cl,color:"#fff",padding:"9px 15px",fontSize:13}}>試聽目前設定</button><button type="button" disabled={!lastRegenerableText} onClick={()=>window.EnglishGoTTS?.regenerateLast?.()} title={lastRegenerableText?`重產：${lastRegenerableText}`:"尚無可重產的發音"} style={{...S.btn,background:S.bg1,color:lastRegenerableText?c.cl:S.t3,border:`1px solid ${S.bd}`,padding:"8px 12px",fontSize:12,opacity:lastRegenerableText?1:.6,cursor:lastRegenerableText?"pointer":"not-allowed"}}>重產最近發音</button><span role="status" aria-live="polite" style={{fontSize:12,color:c.cl}}>{previewStatus}</span></div>
+  </section>);
 }
 function createDeck(c){return{queue:c.map((_,i)=>i),rm:[],stats:{again:0,hard:0,good:0,easy:0},total:c.length,lapses:{}}}
 function rateDeck(d,a){
@@ -2602,6 +2688,7 @@ export default function App(){
       <a className="eg-skip" href="#learning-content" onClick={followPageAnchor}>跳到學習內容</a>
       <nav className="eg-app-nav" aria-label="網站導覽"><Brand onClick={openHome}/><div className="eg-nav-spacer"/><button type="button" className="eg-level-switch" onClick={returnToLevelSelection} aria-label="返回學習階段選擇"> {c.l} · 換階段</button><ComfortControls {...comfort}/></nav>
       <main id="learning-content" tabIndex={-1} className={`eg-app-content ${mod?`is-module module-${mod}`:""}`} style={{maxWidth:!mod?940:mod==="petAdventure"?1280:mod==="petMonopoly"?1180:["srs","pets","gacha"].includes(mod)?1080:mod==="translate"?960:760,margin:"0 auto",padding:mod==="petAdventure"||mod==="petMonopoly"?"14px 18px calc(20px + env(safe-area-inset-bottom, 0px))":"12px 12px calc(16px + env(safe-area-inset-bottom, 0px))"}}>
+      <SpeechSpeedContext.Provider value={TTS_SPEED_MODULES.has(mod)}>
       {!mod&&showAch&&<div className="eg-achievement-toast" role="status"><span aria-hidden="true">{showAch.icon}</span><div><b>新成就 · {showAch.name}</b><small>你的努力，已經收藏在成就牆。</small></div><button type="button" onClick={()=>setShowAch(null)} aria-label="關閉成就提醒">×</button></div>}
         {!mod?<MenuV2 lv={lv} onSelect={openModule} activeGroup={menuGroup} onGroupChange={changeMenuGroup} daily={daily} c={c} xp={xp} coins={coins} streak={learningStreak(streak,daily)} achUnlocked={achUnlocked} weakWords={levelWeakWords} pets={pets} eggs={eggs} onQuickStart={startMiniMission} lastActivity={lastActivity} loginGift={loginBonusModal} claimGift={claimLoginBonus}/>:
          mod==="wordsearch"?<WordSearchM lv={lv} onBack={back} onReviewCards={cards=>navigateEnglishGo({lv,mod:"srs",menuGroup:"learn",sharedWord:null,customDeck:{cards,source:"我的單字收藏"}})} onOpenCard={(word,level)=>navigateEnglishGo({lv:level||lv,mod:"srs",menuGroup:"learn",sharedWord:word,customDeck:null})}/>:
@@ -2615,7 +2702,7 @@ export default function App(){
          mod==="petMonopoly"?<Suspense fallback={<ModuleLoading label="載入寵物大富翁..."/>}><PetMonopolyM quiet={quiet} setQuiet={setQuiet} onNavigate={navigatePet} onComplete={()=>incrTask("playToday")} lv={lv} onBack={back} onXp={n=>addXp(n,{awardCoins:false})} c={c} pets={pets} setPets={setPets} coins={coins} setCoins={setCoins} deps={{G,Hdr,S,V,escapeRegexSafe,getAdventurePetDef,levelUpPet,shuffleCopy}}/></Suspense>:
          mod==="grammar"?<GrammarM lv={lv} onBack={back} onXp={addXp} apiKey={gemKey} onOpenSettings={()=>openModule("settings","tools")}/>:
          mod==="reading"?<ReadingM lv={lv} onBack={back} onXp={addXp}/>:
-         mod==="pictureBooks"?<Suspense fallback={<ModuleLoading label="載入互動童書..."/>}><PictureBooks onBack={back} onXp={addXp} speak={speak} stopSpeech={stopSpeech}/></Suspense>:
+         mod==="pictureBooks"?<Suspense fallback={<ModuleLoading label="載入互動童書..."/>}><PictureBooks onBack={back} onXp={addXp} speak={speak} stopSpeech={stopSpeech} TtsQuickSpeed={TtsQuickSpeed}/></Suspense>:
          mod==="novels"?<NovelM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="songs"?<SongsM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="dictation"?<DictM lv={lv} onBack={back} onXp={addXp} onDone={()=>setStats(s=>({...s,dictDone:s.dictDone+1}))}/>:
@@ -2630,8 +2717,9 @@ export default function App(){
          mod==="gacha"?<GachaPage onBack={back} onNavigate={navigatePet} c={c} coins={coins} setCoins={setCoins} eggs={eggs} setEggs={setEggs} pets={pets} setPets={setPets}/>:
          mod==="pets"?<PetsGuard onBack={back} onNavigate={navigatePet} initialTab={petStartTab} c={c} pets={pets} setPets={setPets} eggs={eggs} setEggs={setEggs} coins={coins} setCoins={setCoins} inventory={inventory} setInventory={setInventory} petAccount={petAccount} setPetAccount={setPetAccount} petTasks={petTasks} setPetTasks={setPetTasks} incrTask={incrTask}/>:
          mod==="petAdventure"?<PetAdventurePage incrTask={incrTask} petAccount={petAccount} lv={lv} onBack={back} onNavigate={navigatePet} c={c} pets={pets} setPets={setPets} eggs={eggs} setEggs={setEggs} coins={coins} setCoins={setCoins} inventory={inventory} setInventory={setInventory}/>:null}
+      </SpeechSpeedContext.Provider>
       </main>
-      <footer className="eg-app-footer"><div>🌱 每天一點點，讓英文慢慢長大。</div><button type="button" onClick={()=>openModule("settings","tools")}>API Key 設定（家長與老師）</button><div>EnglishGo · 無廣告的學習小天地</div></footer>
+      <footer className="eg-app-footer"><div>🌱 每天一點點，讓英文慢慢長大。</div><button type="button" onClick={()=>openModule("settings","tools")}>設定（家長與老師）</button><div>EnglishGo · 無廣告的學習小天地</div></footer>
     </div>
   );
 }
@@ -2659,10 +2747,10 @@ function SettingsPage({onBack,c,gemKey,setGemKey,gifKey,setGifKey}){
   const pill=t=><span key={t} style={{fontSize:11,color:c.cl,fontWeight:900,background:c.bg,border:`1px solid ${c.cl}26`,borderRadius:999,padding:"5px 9px"}}>{t}</span>;
   const inputStyle={width:"100%",padding:"11px 12px",borderRadius:12,border:`1px solid ${S.bd}`,fontSize:13,fontFamily:"inherit",background:S.bg1,color:S.t1,outline:"none",boxSizing:"border-box"};
   return(<div>
-    <Hdr t="API Key 設定" onBack={onBack} cl={c.cl}/>
-    <section style={{...S.card,padding:20,marginBottom:12}}><h3 style={{margin:"0 0 8px",fontSize:17}}>朗讀聲音</h3><p style={{fontSize:13,color:S.t2,lineHeight:1.8}}>點右下角「發音設定」調整聲音與語速。使用瀏覽器備援發音時，可在下方選擇可用的英文聲音。右上方可關閉遊戲音效或減少動畫。</p><VoicePicker/></section>
+    <Hdr t="設定" onBack={onBack} cl={c.cl}/>
+    <ReadingSettings c={c}/>
     <div style={{...S.card,padding:"18px 20px",marginBottom:12,background:`linear-gradient(135deg,${c.bg},var(--color-background-primary,#fff))`}}>
-      <div style={{fontSize:18,fontWeight:1000,color:S.t1,marginBottom:6}}>統一管理外部服務 Key</div>
+      <div style={{fontSize:18,fontWeight:1000,color:S.t1,marginBottom:6}}>AI 與外部服務設定</div>
       <div style={{fontSize:13,color:S.t2,lineHeight:1.7}}>Key 只會儲存在目前瀏覽器的 localStorage，用來呼叫 Gemini 與 Giphy；不會寫入雲端資料庫。</div>
     </div>
 
@@ -2794,7 +2882,7 @@ function MenuV2({lv,onSelect,activeGroup="learn",onGroupChange,daily,c,xp,coins,
     {id:"achievements",group:"tools",icon:"★",t:"成就牆",d:`${achUnlocked.length}/${ACH_DEFS.length} 個已解鎖`,tag:"學習成果"},
     {id:"weak",group:"tools",icon:"!",t:"弱點單字",d:weakWords.length?`${weakWords.length} 個需要複習`:"目前沒有弱點紀錄",tag:"補強清單"},
     {id:"dashboard",group:"tools",icon:"▤",t:"學習報告",d:"查看 XP、連續天數與紀錄",tag:"進度分析"},
-    {id:"settings",group:"tools",icon:"Key",t:"API Key 設定",d:"Gemini 與 Giphy 統一管理",tag:"Key 管理"},
+    {id:"settings",group:"tools",icon:"Key",t:"設定",d:"朗讀、Gemini 與 Giphy 設定",tag:"設定"},
   ];
   const groups=[
     {id:"learn",icon:"▣",t:"學習",d:"單字、文法、口說",color:gradeTheme.groups?.learn||c.cl},
@@ -4116,5 +4204,5 @@ function GachaPage(props){return <Suspense fallback={<PetFeatureFallback/>}><Laz
 function PetsGuard(props){return <Suspense fallback={<PetFeatureFallback/>}><LazyPetsGuard {...props} deps={getPetsModuleDeps()}/></Suspense>}
 
 
-function Hdr({t,onBack,cl,extra}){return(<div className="eg-feature-header" style={{display:"flex",alignItems:"center",gap:4,marginBottom:8}}><button type="button" onClick={onBack} style={{background:"none",border:"none",fontSize:12,color:cl,cursor:"pointer",fontWeight:600,fontFamily:"inherit",padding:"6px 8px",minHeight:44,borderRadius:8,WebkitTapHighlightColor:"transparent"}}>← 返回</button><h2 tabIndex={-1} style={{fontSize:16,fontWeight:700,color:S.t1,margin:0,flex:1}}>{t}</h2>{extra}</div>)}
+function Hdr({t,onBack,cl,extra}){const showSpeechSpeed=useContext(SpeechSpeedContext);return(<div className="eg-feature-header" style={{display:"flex",alignItems:"center",gap:4,marginBottom:8,flexWrap:"wrap"}}><button type="button" onClick={onBack} style={{background:"none",border:"none",fontSize:12,color:cl,cursor:"pointer",fontWeight:600,fontFamily:"inherit",padding:"6px 8px",minHeight:44,borderRadius:8,WebkitTapHighlightColor:"transparent"}}>← 返回</button><h2 tabIndex={-1} style={{fontSize:16,fontWeight:700,color:S.t1,margin:0,flex:"1 1 120px"}}>{t}</h2>{showSpeechSpeed&&<TtsQuickSpeed/>}{extra}</div>)}
 function PB({v,mx,cl}){return(<div style={{display:"flex",alignItems:"center",gap:6,marginBottom:10,fontSize:12}}><div style={{flex:1,height:4,background:S.bg2,borderRadius:2}}><div style={{height:"100%",width:`${(v/mx)*100}%`,background:cl,borderRadius:2,transition:"width .3s"}}/></div><span style={{color:S.t3}}>{v+1}/{mx}</span></div>)}

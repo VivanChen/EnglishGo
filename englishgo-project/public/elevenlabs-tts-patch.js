@@ -78,6 +78,13 @@
     return { voiceId, speed };
   }
 
+  function applyGlobalSpeechSpeed(utterance) {
+    if (!utterance?.__englishGoUseGlobalSpeed || utterance.__englishGoGlobalSpeedApplied || isChineseLang(utterance.lang)) return;
+    const baseRate = Number(utterance.rate) || 1;
+    utterance.rate = Math.min(10, Math.max(0.1, baseRate * getSettings().speed));
+    utterance.__englishGoGlobalSpeedApplied = true;
+  }
+
   function makeCacheKey(text, settings) {
     if (settings.audioUrl) return `asset|${settings.audioUrl}`;
     const normalized = normalizeTtsText(text);
@@ -135,6 +142,7 @@
       utterance.onerror?.(new Event("error"));
       return;
     }
+    applyGlobalSpeechSpeed(utterance);
     return nativeSpeak(utterance);
   }
 
@@ -329,104 +337,22 @@
     return readyCount;
   }
 
-  function renderPanel() {
-    if (document.getElementById("eg-tts-panel")) return;
+  function renderTtsStyles() {
+    if (document.getElementById("eg-tts-styles")) return;
     const style = document.createElement("style");
+    style.id = "eg-tts-styles";
     style.textContent = `
-      #eg-tts-panel{position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom,0px));width:250px;background:rgba(255,255,255,.96);color:#123;border:1px solid rgba(0,0,0,.08);border-radius:16px;box-shadow:0 12px 30px rgba(0,0,0,.18);font-family:system-ui,-apple-system,'Segoe UI',sans-serif;z-index:2147483647;overflow:hidden;font-size:13px;backdrop-filter:blur(10px)}
-      #eg-tts-panel.eg-mini{width:auto}
-      #eg-tts-panel.eg-mini .eg-body{display:none}
-      #eg-tts-panel .eg-head{display:flex;width:100%;min-height:44px;align-items:center;justify-content:space-between;padding:10px 12px;border:0;border-radius:0;background:linear-gradient(135deg,#0f8f6f,#16b88f);color:#fff;font:800 13px system-ui,-apple-system,'Segoe UI',sans-serif;cursor:pointer;text-align:left}
-      #eg-tts-panel .eg-body{padding:12px;display:grid;gap:10px}
-      #eg-tts-panel label{display:block;font-size:12px;font-weight:700;color:#345;margin-bottom:4px}
-      #eg-tts-panel select,#eg-tts-panel input[type=range]{width:100%}
-      #eg-tts-panel select{border:1px solid #d9e2e7;border-radius:10px;padding:7px;background:#fff}
-      #eg-tts-panel .eg-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
-      #eg-tts-panel .eg-chip{font-size:12px;background:#eef8f4;border-radius:999px;padding:3px 8px;color:#087557;font-weight:700}
-      #eg-tts-panel button{border:0;border-radius:10px;padding:7px 9px;background:#0f8f6f;color:#fff;font-weight:800;cursor:pointer;flex-shrink:0}
-      #eg-tts-panel .eg-small{font-size:11px;color:#789;line-height:1.35}
       #eg-tts-loading-toast,#eg-tts-status-toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(18px);display:flex;align-items:center;gap:9px;padding:10px 14px;border-radius:999px;background:rgba(15,143,111,.96);color:#fff;font:700 13px system-ui,-apple-system,'Segoe UI',sans-serif;box-shadow:0 10px 24px rgba(0,0,0,.22);z-index:2147483646;opacity:0;pointer-events:none;transition:opacity .18s ease,transform .18s ease;max-width:min(420px,calc(100vw - 32px))}
-      body[data-eg-module="srs"] #eg-tts-panel{bottom:calc(96px + env(safe-area-inset-bottom,0px))}
-      body[data-eg-module="srs"] #eg-tts-loading-toast{bottom:calc(96px + env(safe-area-inset-bottom,0px))}
-      body[data-eg-module="srs"] #eg-tts-status-toast{bottom:calc(96px + env(safe-area-inset-bottom,0px))}
-      body[data-eg-module="srs"]:has(.srs-page.has-dict) #eg-tts-panel{display:none}
       #eg-tts-loading-toast.show,#eg-tts-status-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
       .eg-tts-spinner{width:14px;height:14px;border-radius:999px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;animation:egTtsSpin .75s linear infinite;flex:0 0 auto}
       .eg-tts-loading-target{position:relative;animation:egTtsPulse .9s ease-in-out infinite!important;filter:drop-shadow(0 0 8px rgba(15,143,111,.5))}
-      @media (max-width:640px){
-        #eg-tts-panel{right:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px));width:min(250px,calc(100vw - 20px))}
-        #eg-tts-panel.eg-mini{width:48px;height:48px;max-width:none;border-radius:999px}
-        #eg-tts-panel.eg-mini .eg-head{width:48px;height:48px;min-height:48px;padding:0;justify-content:center;border-radius:999px;font-size:0}
-        #eg-tts-panel.eg-mini .eg-head span:first-child:before{content:"🎧";font-size:21px}
-        #eg-tts-panel.eg-mini #eg-tts-toggle{display:none}
-        body[data-eg-module="srs"] #eg-tts-panel{display:none}
-        body[data-eg-module="novels"] #eg-tts-panel{display:none}
-        body[data-eg-module="srs"] #eg-tts-loading-toast{bottom:calc(112px + env(safe-area-inset-bottom,0px))}
-        body[data-eg-module="srs"] #eg-tts-status-toast{bottom:calc(112px + env(safe-area-inset-bottom,0px))}
-        body[data-eg-module="novels"] #eg-tts-loading-toast{bottom:calc(76px + env(safe-area-inset-bottom,0px))}
-        body[data-eg-module="novels"] #eg-tts-status-toast{bottom:calc(76px + env(safe-area-inset-bottom,0px))}
-      }
+      body[data-eg-module="srs"] #eg-tts-loading-toast,body[data-eg-module="srs"] #eg-tts-status-toast{bottom:calc(96px + env(safe-area-inset-bottom,0px))}
+      body[data-eg-module="novels"] #eg-tts-loading-toast,body[data-eg-module="novels"] #eg-tts-status-toast{bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+      @media (max-width:640px){body[data-eg-module="srs"] #eg-tts-loading-toast,body[data-eg-module="srs"] #eg-tts-status-toast{bottom:calc(112px + env(safe-area-inset-bottom,0px))}}
       @keyframes egTtsSpin{to{transform:rotate(360deg)}}
       @keyframes egTtsPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.18)}}
     `;
     document.head.appendChild(style);
-
-    const panel = document.createElement("div");
-    panel.id = "eg-tts-panel";
-    panel.innerHTML = `
-      <button type="button" class="eg-head" aria-label="發音設定" aria-expanded="false" aria-controls="eg-tts-body" title="展開發音設定"><span>🎧 發音設定</span><span id="eg-tts-toggle" aria-hidden="true">−</span></button>
-      <div class="eg-body" id="eg-tts-body">
-        <div>
-          <label for="eg-tts-voice">聲音</label>
-          <select id="eg-tts-voice">${VOICES.map(v => `<option value="${v.id}">${v.label}${v.accent ? ` · ${v.accent}` : ""}</option>`).join("")}</select>
-        </div>
-        <div>
-          <div class="eg-row"><label for="eg-tts-speed">語速</label><span class="eg-chip" id="eg-tts-speed-label"></span></div>
-          <input id="eg-tts-speed" type="range" min="0.7" max="1.2" step="0.05" />
-        </div>
-        <div class="eg-row">
-          <button id="eg-tts-test" type="button">試聽</button>
-          <button id="eg-tts-regenerate" type="button" disabled>重產上次</button>
-          <span class="eg-small">雲端自然語速；連線失敗時自動改用裝置語音</span>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(panel);
-    panel.classList.add("eg-mini");
-
-    const voice = panel.querySelector("#eg-tts-voice");
-    const speed = panel.querySelector("#eg-tts-speed");
-    const speedLabel = panel.querySelector("#eg-tts-speed-label");
-    const head = panel.querySelector(".eg-head");
-    const toggle = panel.querySelector("#eg-tts-toggle");
-    const regenerate = panel.querySelector("#eg-tts-regenerate");
-    if (panel.classList.contains("eg-mini")) toggle.textContent = "+";
-
-    function sync() {
-      const s = getSettings();
-      voice.value = s.voiceId;
-      speed.value = s.speed;
-      speedLabel.textContent = `${s.speed.toFixed(2)}x`;
-    }
-
-    voice.addEventListener("change", () => window.EnglishGoTTS.setSettings({ voiceId: voice.value }));
-    speed.addEventListener("input", () => {
-      speedLabel.textContent = `${Number(speed.value).toFixed(2)}x`;
-      window.EnglishGoTTS.setSettings({ speed: Number(speed.value) });
-    });
-    panel.querySelector("#eg-tts-test").addEventListener("click", () => window.EnglishGoTTS.speak("I packed three apples for our train ride this morning."));
-    regenerate.addEventListener("click", () => {
-      if (lastRegenerableText) window.EnglishGoTTS.regenerate(lastRegenerableText);
-    });
-    head.addEventListener("click", () => {
-      panel.classList.toggle("eg-mini");
-      const minimized = panel.classList.contains("eg-mini");
-      toggle.textContent = minimized ? "+" : "−";
-      head.setAttribute("aria-expanded", String(!minimized));
-      head.title = minimized ? "展開發音設定" : "收合發音設定";
-    });
-    window.addEventListener("englishgo:tts-settings-changed", sync);
-    sync();
   }
 
   window.EnglishGoTTS = {
@@ -436,6 +362,9 @@
     preloadMany,
     getVoiceOptions() {
       return VOICES.map(voice => ({ ...voice }));
+    },
+    getLastRegenerableText() {
+      return lastRegenerableText;
     },
     setSettings(settings = {}) {
       try {
@@ -451,12 +380,17 @@
       utterance.__englishGoRequireApi = true;
       return synth.speak(utterance);
     },
+    regenerateLast() {
+      return lastRegenerableText ? window.EnglishGoTTS.regenerate(lastRegenerableText) : null;
+    },
     speak(text) {
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = "en-US";
+      utterance.__englishGoUseGlobalSpeed = true;
       return synth.speak(utterance);
     },
   };
+  renderTtsStyles();
   window.dispatchEvent(new CustomEvent("englishgo:tts-installed"));
 
   synth.cancel = function patchedCancel() {
@@ -484,17 +418,20 @@
 
   synth.speak = function patchedSpeak(utterance) {
     document.getElementById("eg-tts-status-toast")?.remove();
+    if (utterance && !isChineseLang(utterance.lang) && utterance.__englishGoUseGlobalSpeed !== false) {
+      utterance.__englishGoUseGlobalSpeed = true;
+    }
     if (!shouldUseElevenLabs(utterance)) {
       stopActiveAudio();
       hideTtsLoading();
+      applyGlobalSpeechSpeed(utterance);
       return nativeSpeak(utterance);
     }
 
     const text = normalizeTtsText(utterance.text);
     if (!utterance.__englishGoAudioUrl && /^en/i.test(String(utterance.lang || "en-US"))) {
       lastRegenerableText = text;
-      const regenerateButton = document.getElementById("eg-tts-regenerate");
-      if (regenerateButton) regenerateButton.disabled = false;
+      window.dispatchEvent(new CustomEvent("englishgo:tts-last-regenerable", { detail: { text } }));
     }
 
     stopActiveAudio();
@@ -525,7 +462,12 @@
         audio.src = url;
         audio.currentTime = 0;
         audio.muted = false;
-        audio.playbackRate = clamp(utterance.__englishGoPlaybackRate, 0.7, 1.2, 1);
+        const isFixedEnglishAsset = utterance.__englishGoAudioUrl && utterance.__englishGoUseGlobalSpeed && !isChineseLang(utterance.lang);
+        const assetSpeed = isFixedEnglishAsset ? getSettings().speed : 1;
+        const localPlaybackRate = clamp(utterance.__englishGoPlaybackRate, 0.7, 1.2, 1);
+        audio.playbackRate = isFixedEnglishAsset
+          ? clamp(localPlaybackRate * assetSpeed, 0.49, 1.44, 1)
+          : clamp(utterance.__englishGoPlaybackRate, 0.7, 1.2, 1);
         audio.volume = typeof utterance.volume === "number" ? utterance.volume : 1;
         audio.oncanplay = () => { if (activeAudio === audio) hideTtsLoading(loadingToken); };
         let started = false;
@@ -557,9 +499,4 @@
     return undefined;
   };
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", renderPanel);
-  } else {
-    renderPanel();
-  }
 })();

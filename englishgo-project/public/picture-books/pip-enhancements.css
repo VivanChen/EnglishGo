@@ -1,5 +1,4 @@
 /* Keep the supplied book composition; refine material and allow readable mobile reflow. */
-#eg-tts-panel{display:none!important}
 #app{background:radial-gradient(ellipse at 20% 12%,#dcc29a77,transparent 60%),repeating-linear-gradient(91deg,#281a1214 0 2px,transparent 2px 72px),linear-gradient(120deg,#8c6b50,#5b4434 70%,#352820)}
 .board{background:repeating-linear-gradient(45deg,#f6eccc14 0 1px,transparent 1px 3px),#273e39;outline:1px solid #b49a66;outline-offset:-7px;box-shadow:0 5px #18302b,0 16px 20px #1d100c66}
 .page.near{box-shadow:0 3px #b9ac91,0 6px #f5eacf,0 8px #a6997e,0 11px #e8dcbe,inset 0 0 30px #9e8c6330}

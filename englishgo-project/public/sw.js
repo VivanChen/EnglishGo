@@ -1,5 +1,5 @@
 // EnglishGo Service Worker - offline-first PWA
-const CACHE_VERSION = 'englishgo-v1.2.7';
+const CACHE_VERSION = 'englishgo-v1.2.8';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 const DYNAMIC_CACHE_LIMIT = 160;

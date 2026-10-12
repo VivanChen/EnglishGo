@@ -1533,8 +1533,27 @@ html[data-eg-theme="dark"] .module-story .story-accent-text {
   text-underline-offset: 3px;
 }
 
-body:not([data-eg-module="settings"]) #eg-tts-panel {
-  display: none!important;
+.eg-tts-quick-speed {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: 0 0 auto;
+  color: var(--color-text-secondary, #73726c);
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.eg-tts-quick-speed select {
+  min-height: 36px;
+  max-width: 128px;
+  padding: 5px 7px;
+  border: 1px solid var(--color-border-tertiary, #e0dfd9);
+  border-radius: 9px;
+  background: var(--color-background-primary, #fff);
+  color: var(--color-text-primary, #2c2c2a);
+  font: inherit;
+  cursor: pointer;
 }
 
 .eg-hub .eg-activity p {

@@ -202,26 +202,22 @@ describe("ElevenLabs TTS patch", () => {
     expect(() => loadPatch()).not.toThrow();
   });
 
-  it("renders an accessible keyboard-operable settings toggle", () => {
+  it("exposes voice settings without injecting a floating panel", () => {
     installPatchEnv();
     loadPatch();
 
-    const toggle=document.querySelector("#eg-tts-panel .eg-head");
-    expect(toggle?.tagName).toBe("BUTTON");
-    expect(toggle).toHaveAttribute("aria-controls","eg-tts-body");
-    expect(toggle).toHaveAttribute("aria-expanded","false");
-
-    toggle.click();
-    expect(toggle).toHaveAttribute("aria-expanded","true");
+    expect(document.querySelector("#eg-tts-panel")).toBeNull();
+    expect(window.EnglishGoTTS.getVoiceOptions()).toHaveLength(3);
+    expect(window.EnglishGoTTS.getSettings().speed).toBe(1);
   });
 
-  it("keeps the floating voice panel away from the mobile novel reader", () => {
+  it("keeps TTS status feedback clear of the mobile novel reader", () => {
     installPatchEnv();
     loadPatch();
 
     const styles = Array.from(document.querySelectorAll("style")).map(style => style.textContent).join("\n");
-    expect(styles).toContain('body[data-eg-module="novels"] #eg-tts-panel{display:none}');
-    expect(styles).toContain('body[data-eg-module="novels"] #eg-tts-loading-toast{bottom:calc(76px + env(safe-area-inset-bottom,0px))}');
+    expect(styles).not.toContain("#eg-tts-panel");
+    expect(styles).toContain('body[data-eg-module="novels"] #eg-tts-loading-toast,body[data-eg-module="novels"] #eg-tts-status-toast{bottom:calc(76px + env(safe-area-inset-bottom,0px))}');
   });
 
   it("migrates the old custom voice to the clear recommended voice at natural speed", () => {
@@ -233,8 +229,8 @@ describe("ElevenLabs TTS patch", () => {
       voiceId: "21m00Tcm4TlvDq8ikWAM",
       speed: 1,
     });
-    expect(document.querySelector("#eg-tts-voice")?.value).toBe("21m00Tcm4TlvDq8ikWAM");
-    expect(document.querySelector("#eg-tts-panel")?.textContent).not.toContain("目前選用");
+    expect(window.EnglishGoTTS.getVoiceOptions()[0].id).toBe("21m00Tcm4TlvDq8ikWAM");
+    expect(document.querySelector("#eg-tts-panel")).toBeNull();
   });
 
   it("ignores unapproved voice ids", () => {

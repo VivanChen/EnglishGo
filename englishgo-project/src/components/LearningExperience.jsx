@@ -68,7 +68,7 @@ export function WelcomeScreen({ levels, counts, formatCount, onSelect, onOpenSet
         <div className="eg-levels">{Object.entries(levels).map(([key,level],i)=><button className={`eg-level-choice tone-${i}`} type="button" onClick={()=>onSelect(key)} key={key}><span className="eg-level-symbol"><LearningIcon name={['learn','read','star'][i]} size={30}/></span><span className="eg-level-choice-title">{level.l}<small>{level.en}</small></span><p>{['從生活單字出發，快樂打好基礎','讀故事、練表達，一步步更有信心','拓展詞彙，探索更大的英文世界'][i]}</p><span className="eg-level-choice-bottom"><span className="eg-level-badge">{formatCount(counts?.[key],counts!==null)}</span><LearningIcon name="arrow" size={20}/></span>{lastLevel===key&&<span className="eg-last-level">上次的起點</span>}</button>)}</div>
       </section>
       <section className="eg-how"><div><span>01</span><h3>聽聽看，認識新單字</h3><p>有發音、有例句，不懂也沒關係。</p></div><div><span>02</span><h3>動動手，把英文玩起來</h3><p>配對、故事、歌曲，選你喜歡的方式。</p></div><div><span>03</span><h3>看看自己，又進步一點</h3><p>留下學習足跡，陪寵物一起長大。</p></div></section>
-      <details className="eg-grownup"><summary><LearningIcon name="tools" size={20}/> 給家長與老師 <span>學習資源與進階設定</span></summary><p>基本單字、遊戲和內建內容可以直接開始。AI 與動圖屬於選用功能，可由大人協助設定。</p><div><button type="button" className="eg-grownup-settings" onClick={onOpenSettings}>API Key 設定（Gemini／Giphy）</button><a href="/learn/srs-method.html">單字記憶方法 ↗</a><a href="/learn/speaking-tips.html">口說練習指南 ↗</a><a href="/learn/api-keys.html">API Key 教學 ↗</a><a href="/learn/gif-guide.html">單字動圖效果 ↗</a></div></details>
+      <details className="eg-grownup"><summary><LearningIcon name="tools" size={20}/> 給家長與老師 <span>學習資源與進階設定</span></summary><p>基本單字、遊戲和內建內容可以直接開始。AI 與動圖屬於選用功能，可由大人協助設定。</p><div><button type="button" className="eg-grownup-settings" onClick={onOpenSettings}>設定（朗讀、Gemini／Giphy）</button><a href="/learn/srs-method.html">單字記憶方法 ↗</a><a href="/learn/speaking-tips.html">口說練習指南 ↗</a><a href="/learn/api-keys.html">API Key 教學 ↗</a><a href="/learn/gif-guide.html">單字動圖效果 ↗</a></div></details>
     </main><footer className="eg-welcome-footer"><span>EnglishGo · 讓學習，成為每天的小美好。</span><small>GIFs powered by <b>GIPHY</b> · Natural narration by ElevenLabs</small></footer>
   </div>;
 }
@@ -101,7 +101,7 @@ const modulePresentation = {
   achievements:['star','成長收藏冊','每一個徽章，都是努力的紀念。','我的成就'],
   weak:['learn','再練一下就會了','把還不熟的單字，再認識一次。','溫柔複習'],
   dashboard:['star','我的成長足跡','看看每天累積了哪些小進步。','學習報告'],
-  settings:['tools','API Key 設定','設定 AI、動圖和進階學習工具。','大人協助'],
+  settings:['tools','設定','設定朗讀、AI、動圖和進階學習工具。','大人協助'],
 };
 
 export function LearningDashboard({ c, lv, modules, groups, activeGroup, onGroupChange, onSelect, todayWord, onSpeak, daily, xp, coins, streak, pets, eggs, weakWords, onQuickStart, lastActivity, rewardContent, showRewards, setShowRewards, loginGift, claimGift }) {
