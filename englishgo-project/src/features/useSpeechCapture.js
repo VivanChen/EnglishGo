@@ -49,7 +49,7 @@ export function useSpeechCapture() {
       const hadInterim = results.some(row => row.text.trim());
       cancel(true, 'complete');
       if (transcript) onTranscript(transcript);
-      else setError(hadInterim ? '還沒收到完整的辨識結果，請再說一次，或先聽示範跟讀。' : '這次沒有聽到聲音，再試一次，或先聽示範跟讀。');
+      else setError(hadInterim ? '還沒收到完整的辨識結果，這次尚未評分。可以再試一次。' : '這次未取得辨識文字，尚未評分。若錄音能聽見聲音，可以分析錄音，或單獨重試文字辨識。');
     };
     const requestFinish = () => {
       if (!current() || stopping) return;

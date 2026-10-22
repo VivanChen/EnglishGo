@@ -3,14 +3,16 @@ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import SpeakingStudio from './SpeakingStudio.jsx';
 import { mockVoiceRecording } from '../test/voiceRecordingMock.js';
+import { assessRecording } from './recordingAssessmentService.js';
+vi.mock('./recordingAssessmentService.js', () => ({ assessRecording: vi.fn() }));
 
 let media;
 const original = [window.SpeechRecognition, window.webkitSpeechRecognition];
 const card = { word: 'water', meaning: '水', en: 'Please drink more water.', zh: '請多喝水。', type: 'sentence' };
 const click = name => fireEvent.click(screen.getByRole('button', { name, exact: true }));
-beforeEach(() => { media = mockVoiceRecording(); });
+beforeEach(() => { media = mockVoiceRecording(); assessRecording.mockReset(); });
 afterEach(() => { cleanup(); media.restore(); vi.restoreAllMocks(); [window.SpeechRecognition, window.webkitSpeechRecognition] = original; Object.defineProperty(document, 'hidden', { configurable: true, value: false }); });
-function setup(recognition = true) {
+function setup(recognition = true, extra = {}) {
   const instances = [];
   window.SpeechRecognition = recognition ? class {
     constructor() { instances.push(this); }
@@ -25,7 +27,7 @@ function setup(recognition = true) {
     speak: vi.fn(() => ({})), stopSpeech: vi.fn(), playSound: vi.fn(), localPronunciationGuide: () => null,
     compareWords: () => ({ pct: 100, result: [{ word: card.en, ok: true }], extra: [] }), speakPassThreshold: () => 80,
   };
-  const props = { lv: 'elementary', cardPractice: card, onBack: vi.fn(), onXp: vi.fn(), deps };
+  const props = { lv: 'elementary', cardPractice: card, onBack: vi.fn(), onXp: vi.fn(), onOpenSettings: vi.fn(), deps, ...extra };
   vi.spyOn(HTMLMediaElement.prototype, 'play').mockImplementation(function () { fireEvent.play(this); return Promise.resolve(); });
   vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(function () { fireEvent.pause(this); });
   return { ...render(<StrictMode><SpeakingStudio {...props} /></StrictMode>), props, deps, instances };
@@ -122,4 +124,61 @@ describe('speaking with own-voice playback', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     expect(view.props.onXp).not.toHaveBeenCalled();
   });
+  it('uses separate capture on Android and preserves the recording during a recognition-only retry', async () => {
+    vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue('Mozilla/5.0 (Linux; Android 15) Chrome/140.0 Mobile');
+    const view = setup();
+    await begin();
+    expect(view.instances).toHaveLength(0);
+    finish();
+    expect(screen.getByRole('heading', { name: '這段錄音尚未評分' })).toBeInTheDocument();
+    click('再說一次做文字比對');
+    expect(media.getUserMedia).toHaveBeenCalledOnce();
+    expect(media.tracks[0].stop).toHaveBeenCalled();
+    expect(view.instances).toHaveLength(1);
+    act(() => view.instances[0].answer());
+    expect(view.container.querySelector('audio')).toHaveAttribute('src', 'blob:voice-1');
+    expect(screen.getByText('以下是重新開口的文字比對，上方錄音未變動。')).toBeInTheDocument();
+    expect(view.props.onXp).toHaveBeenCalledOnce();
+  });
+  it('only analyzes recorded audio on an explicit click and compares the returned transcript', async () => {
+    const view = setup(true, { apiKey: 'test' });
+    await begin('只錄音回聽'); finish();
+    expect(assessRecording).not.toHaveBeenCalled();
+    const analysis = { speechDetected: true, transcript: 'Please drink water.', clarity: 'water 的尾音清楚。', rhythm: '句中稍有停頓。', practice: '接著練 drink more water。' };
+    assessRecording.mockResolvedValue(analysis);
+    await act(async () => click('分析這段錄音'));
+    expect(assessRecording).toHaveBeenCalledExactlyOnceWith({ blob: expect.any(Blob), apiKey: 'test', signal: expect.any(AbortSignal) });
+    expect(screen.getByText(analysis.clarity)).toBeInTheDocument();
+    expect(screen.getByText('依這段錄音的逐字稿比對')).toBeInTheDocument();
+    expect(view.props.onXp).toHaveBeenCalledOnce();
+    expect(view.instances).toHaveLength(0);
+  });
+  it('requires a configured key and does not manufacture scores when no speech is detected', async () => {
+    const view = setup();
+    await begin('只錄音回聽'); finish();
+    click('分析這段錄音');
+    expect(assessRecording).not.toHaveBeenCalled();
+    expect(screen.getByRole('alert')).toHaveTextContent('請先設定 Gemini API Key');
+    click('設定 Gemini API Key'); expect(view.props.onOpenSettings).toHaveBeenCalledOnce();
+    view.rerender(<StrictMode><SpeakingStudio {...view.props} apiKey="test" /></StrictMode>);
+    assessRecording.mockResolvedValue({ speechDetected: false });
+    await act(async () => click('分析這段錄音'));
+    expect(screen.getByText(/這段錄音未辨識到清楚的人聲/)).toBeInTheDocument();
+    expect(view.props.onXp).not.toHaveBeenCalled();
+    expect(screen.queryByText(/文字符合度/)).not.toBeInTheDocument();
+  });
+  it.each(['刪除錄音', '取消分析', '重新錄音'])('ignores late audio analysis after %s', async action => {
+    let resolve;
+    assessRecording.mockReturnValue(new Promise(r => { resolve = r; }));
+    const view = setup(true, { apiKey: 'test' });
+    await begin('只錄音回聽'); finish();
+    click('分析這段錄音');
+    const signal = assessRecording.mock.calls[0][0].signal;
+    await act(async () => click(action));
+    expect(signal.aborted).toBe(true);
+    await act(async () => resolve({ speechDetected: true, transcript: card.en, clarity: 'late', rhythm: 'late', practice: 'late' }));
+    expect(view.props.onXp).not.toHaveBeenCalled();
+    expect(screen.queryByText('late')).not.toBeInTheDocument();
+  });
+
 });

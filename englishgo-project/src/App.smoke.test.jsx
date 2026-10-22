@@ -683,7 +683,7 @@ describe('EnglishGo app smoke flow', () => {
       fireEvent.click(await screen.findByRole('button', { name: '開始口說小練習 →' }));
       expect(await screen.findByText('發音小老師')).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'AI 產生練習法' })).not.toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: 'AI 分析這次發音' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'AI 提供文字練習建議' })).not.toBeInTheDocument();
     } finally {
       restoreSpeechRecognition();
     }
@@ -750,7 +750,7 @@ describe('EnglishGo app smoke flow', () => {
       fireEvent.click(await screen.findByText('🎤 直接開說'));
 
       expect(await screen.findByText('再練一次')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'AI 分析這次發音' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'AI 提供文字練習建議' })).toBeInTheDocument();
 
       const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
         ok: true,
@@ -776,7 +776,7 @@ describe('EnglishGo app smoke flow', () => {
       });
 
       try {
-        fireEvent.click(screen.getByRole('button', { name: 'AI 分析這次發音' }));
+        fireEvent.click(screen.getByRole('button', { name: 'AI 提供文字練習建議' }));
 
         expect(await screen.findByText('這次少了 to eat，句子意思會不完整。')).toBeInTheDocument();
         const requestBody = JSON.parse(fetchMock.mock.calls[0][1].body);

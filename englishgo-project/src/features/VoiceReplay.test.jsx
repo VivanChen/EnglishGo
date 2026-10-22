@@ -1,0 +1,38 @@
+import { createRef } from 'react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, expect, it, vi } from 'vitest';
+import VoiceReplay from './VoiceReplay.jsx';
+
+afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.useRealTimers(); });
+it.each([79104, Infinity, NaN])('keeps a five-second recording within 0:05 despite bogus native metadata %s', nativeTime => {
+  vi.useFakeTimers();
+  const audioRef = createRef();
+  render(<VoiceReplay clip={{ url: 'blob:test', seconds: 5 }} audioRef={audioRef} onBeforePlay={() => {}} onDemo={() => {}} onRecord={() => {}} onDiscard={() => {}} />);
+  const audio = audioRef.current;
+  Object.defineProperty(audio, 'duration', { configurable: true, value: nativeTime });
+  audio.play = vi.fn(() => { fireEvent.play(audio); fireEvent.playing(audio); return Promise.resolve(); });
+  audio.pause = vi.fn(() => fireEvent.pause(audio));
+  const progress = () => screen.getByRole('progressbar', { name: '錄音回放進度' });
+  expect(audio).not.toHaveAttribute('controls');
+  fireEvent.loadedMetadata(audio);
+  expect(screen.getByText('0:00 / 0:05')).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: '▶ 聽我的錄音' }));
+  audio.currentTime = Number.isFinite(nativeTime) ? nativeTime : 0;
+  fireEvent.timeUpdate(audio);
+  act(() => vi.advanceTimersByTime(2100));
+  expect(screen.getByText('0:02 / 0:05')).toBeInTheDocument();
+  fireEvent.waiting(audio);
+  act(() => vi.advanceTimersByTime(3000));
+  expect(screen.getByText('0:02 / 0:05')).toBeInTheDocument();
+  fireEvent.playing(audio);
+  act(() => vi.advanceTimersByTime(10000));
+  expect(progress()).toHaveAttribute('value', '5');
+  expect(audio.pause).toHaveBeenCalled();
+  fireEvent.ended(audio);
+  expect(screen.getByText('0:05 / 0:05')).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: '▶ 聽我的錄音' }));
+  expect(progress()).toHaveAttribute('value', '0');
+  act(() => vi.advanceTimersByTime(1000));
+  fireEvent.click(screen.getByRole('button', { name: '■ 停止回放' }));
+  expect(progress()).toHaveAttribute('value', '0');
+});

@@ -7,6 +7,7 @@ import { useWorkshopStorage } from './workshopStorage.js';
 import { useSpeechCapture } from './useSpeechCapture.js';
 import { useVoiceRecording } from './useVoiceRecording.js';
 import VoiceReplay from './VoiceReplay.jsx';
+import RecordingAssessment from './RecordingAssessment.jsx';
 import SpeakingPhrases from './SpeakingPhrases.jsx';
 import ListeningPuzzle from './ListeningPuzzle.jsx';
 import ListeningRadio from '../components/ListeningRadio.jsx';
@@ -23,6 +24,9 @@ export default function SpeakingStudio({ lv, onBack, onXp, apiKey, onOpenSetting
   const [source, setSource] = useState(fallback), [mode, setMode] = useState('mixed'), [count, setCount] = useState(3), [active, setActive] = useState(!!practice);
   const { supported, phase: capturePhase, interim, error, start: startCapture, stop: finishCapture, cancel: stopCapture } = useSpeechCapture();
   const voice = useVoiceRecording();
+  // Android's native recognizer can take over microphone input. Keep its
+  // recognition retry separate from the recording session.
+  const separateCapture = /Android/i.test(navigator.userAgent);
   const voiceAudio = useRef(null), recordOnlyMode = useRef(false);
   const stopVoicePlayback = useCallback(() => { const audio = voiceAudio.current; if (audio) { audio.pause(); audio.currentTime = 0; } }, []);
   const cancelVoice = voice.cancel;
@@ -31,6 +35,7 @@ export default function SpeakingStudio({ lv, onBack, onXp, apiKey, onOpenSetting
   const [result, setResult] = useState(null), [heard, setHeard] = useState(''), [demoError, setDemoError] = useState(false);
   const [hideEnglish, setHideEnglish] = useState(false), [demoPlaying, setDemoPlaying] = useState(null);
   const [puzzleOpen, setPuzzleOpen] = useState(false);
+  const [resultSource, setResultSource] = useState('live');
   const puzzleButton = useRef(null), returnToPuzzleButton = useRef(false);
   const [guideAI, setGuideAI] = useState(null), [busy, setBusy] = useState(false), [aiError, setAiError] = useState('');
   const request = useRef(0), demoToken = useRef(0), mounted = useRef(false), title = useRef(null);
@@ -78,23 +83,30 @@ export default function SpeakingStudio({ lv, onBack, onXp, apiKey, onOpenSetting
     if (!next.items.length) return;
     cancel(); save(next); setResult(null); setHeard(''); setActive(true);
   };
+  const scoreTranscript = (item, transcript, source = 'live') => {
+    const comparison = compareWords(item.en, transcript);
+    const outcome = recordSpeakingAttempt(live.current, comparison, transcript, speakPassThreshold(item));
+    save(outcome.round); setResult(comparison); setResultSource(source); setHeard(transcript); setHideEnglish(false);
+    if (outcome.reward) onXp?.(outcome.reward);
+    playSound(comparison.pct >= speakPassThreshold(item) ? 'good' : 'flip');
+  };
   const startListening = (recordOnly = false) => {
     if ((!supported && !voice.supported) || listening || !active || live.current?.done) return;
     cancel(); setResult(null); setHeard(''); setGuideAI(null);
     recordOnlyMode.current = recordOnly;
     const item = live.current.items[live.current.queue[live.current.index]];
     const recognize = () => {
-      if (!supported || recordOnly) return;
-      startCapture(transcript => {
-        const comparison = compareWords(item.en, transcript);
-        const outcome = recordSpeakingAttempt(live.current, comparison, transcript, speakPassThreshold(item));
-        save(outcome.round); setResult(comparison); setHeard(transcript); setHideEnglish(false);
-        if (outcome.reward) onXp?.(outcome.reward);
-        playSound(comparison.pct >= speakPassThreshold(item) ? 'good' : 'flip');
-      }, reason => { if (reason === 'complete') voice.stop(); });
+      if (!supported || recordOnly || (separateCapture && voice.supported)) return;
+      startCapture(transcript => scoreTranscript(item, transcript), reason => { if (reason === 'complete') voice.stop(); });
     };
     if (voice.supported) voice.start(recognize, finishCapture);
     else recognize();
+  };
+  const recognizeAgain = () => {
+    if (!supported || listening) return;
+    stopCapture(); stopDemo(); stopVoicePlayback();
+    request.current++; setBusy(false); setPuzzleOpen(false); setResult(null); setHeard(''); setGuideAI(null);
+    startCapture(transcript => scoreTranscript(currentItem, transcript, 'retry'));
   };
   const finishListening = () => { voice.stop(); finishCapture(); };
   const replayStart = () => { stopCapture(); stopDemo(); };
@@ -132,13 +144,14 @@ export default function SpeakingStudio({ lv, onBack, onXp, apiKey, onOpenSetting
       {hideEnglish ? <div className="speaking-listen-cover"><p>先聽示範，試著說出你聽到的英文。</p></div> : <div className="workshop-spoken-target" lang="en"><SpeechHighlight text={currentItem.en} playback={demoPlaying} /></div>}
       {!hideEnglish && <SpeechHighlightNote playback={demoPlaying} />}
       <ListeningRadio state={demoPlaying ? demoPlaying.started ? 'playing' : 'loading' : 'idle'} />
-      <div className="practice-actions"><button onClick={() => demo(currentItem.en, .85, sentence ? '整句示範' : '單字示範')}>🔊 聽示範</button><button onClick={() => demo(currentItem.en, .65, '慢速示範')}>慢慢聽</button>{sentence && currentItem.en.trim().split(/\s+/).length > 1 && !listening && <button ref={puzzleButton} type="button" className="speaking-puzzle-launch" onClick={() => { stopDemo(); setDemoError(false); setHideEnglish(false); setPuzzleOpen(true); }}>🧩 聽音拼句</button>}</div>{playback}{sentence && !hideEnglish && !listening && phrases.length > 1 && <SpeakingPhrases key={currentItem.en} phrases={phrases} sentenceText={currentItem.en} playing={demoPlaying} playbackError={demoError} onPlay={demo} onStop={stopDemo} onPlaySentence={() => demo(currentItem.en, .85, '整句示範')} onComplete={finishSelfPractice} />}</>}<p className="speaking-step-note">2 · 換你說，聽聽自己的聲音。</p><div className="practice-actions">{(supported || voice.supported) && <button className="practice-primary" disabled={phase === 'starting' || phase === 'processing'} onClick={phase === 'listening' ? finishListening : () => startListening()}>{phase === 'starting' ? '準備麥克風…' : phase === 'processing' ? '正在整理結果…' : phase === 'listening' ? '■ 說好了，停止' : '🎤 直接開說'}</button>}{voice.supported && supported && !listening && <button type="button" onClick={() => startListening(true)}>只錄音回聽</button>}{listening && <button type="button" onClick={cancelCapture}>取消這次錄音</button>}</div>
+      <div className="practice-actions"><button onClick={() => demo(currentItem.en, .85, sentence ? '整句示範' : '單字示範')}>🔊 聽示範</button><button onClick={() => demo(currentItem.en, .65, '慢速示範')}>慢慢聽</button>{sentence && currentItem.en.trim().split(/\s+/).length > 1 && !listening && <button ref={puzzleButton} type="button" className="speaking-puzzle-launch" onClick={() => { stopDemo(); setDemoError(false); setHideEnglish(false); setPuzzleOpen(true); }}>🧩 聽音拼句</button>}</div>{playback}{sentence && !hideEnglish && !listening && phrases.length > 1 && <SpeakingPhrases key={currentItem.en} phrases={phrases} sentenceText={currentItem.en} playing={demoPlaying} playbackError={demoError} onPlay={demo} onStop={stopDemo} onPlaySentence={() => demo(currentItem.en, .85, '整句示範')} onComplete={finishSelfPractice} />}</>}<p className="speaking-step-note">2 · 換你說，聽聽自己的聲音。</p><div className="practice-actions">{(supported || voice.supported) && <button className="practice-primary" disabled={phase === 'starting' || phase === 'processing'} onClick={phase === 'listening' ? finishListening : () => startListening()}>{phase === 'starting' ? '準備麥克風…' : phase === 'processing' ? '正在整理結果…' : phase === 'listening' ? '■ 說好了，停止' : '🎤 直接開說'}</button>}{voice.supported && supported && !listening && <button type="button" onClick={() => separateCapture ? recognizeAgain() : startListening(true)}>{separateCapture ? '只做文字比對' : '只錄音回聽'}</button>}{listening && <button type="button" onClick={cancelCapture}>取消這次錄音</button>}</div>
       {listening && <div className="workshop-microphone" data-phase={phase} role="status"><b>{phase === 'starting' ? '準備麥克風，還沒開始收音' : phase === 'processing' ? '說好了，正在整理這次練習' : '正在聽，說完可以按停止'}</b><p>{interim || (phase === 'starting' ? '第一次使用，請在瀏覽器提示中允許麥克風。' : phase === 'processing' ? '稍等一下，就能看看這次的練習。' : '慢慢說，我在這裡。')}</p>{voice.phase === 'listening' && <span className="voice-recording-time">● 錄音中 · {voice.seconds} / {voice.maxSeconds} 秒</span>}</div>}{error && <div className="practice-hint" role="alert">{error}</div>}{voice.error && <div className="practice-hint" role="alert">{voice.error}</div>}{!supported && <div className="practice-hint">{voice.supported ? '這個瀏覽器無法辨識文字，仍可錄音、回聽自己的聲音。' : '目前無法辨識語音。可以先聽示範，跟著念，再記下練習進度。'}</div>}
-      {voice.supported ? <p className="voice-capture-note">按下開說後會錄下你的聲音，說完可回聽。每次最多 {voice.maxSeconds} 秒。{supported && '選「只錄音回聽」不會進行文字辨識。'}</p> : <p className="voice-capture-note">這個瀏覽器無法錄音回放，可以換用支援錄音的瀏覽器再試。</p>}
+      {voice.supported ? <p className="voice-capture-note">按下開說後會錄下你的聲音，說完可回聽。每次最多 {voice.maxSeconds} 秒。{separateCapture ? '錄音完成後，可分析這段錄音，或再說一次做文字比對。' : supported && '選「只錄音回聽」不會進行文字辨識。'}</p> : <p className="voice-capture-note">這個瀏覽器無法錄音回放，可以換用支援錄音的瀏覽器再試。</p>}
       {voice.clip && <VoiceReplay key={voice.clip.url} clip={voice.clip} audioRef={voiceAudio} onBeforePlay={replayStart} onDemo={() => demo()} onRecord={() => startListening(recordOnlyMode.current)} onDiscard={() => { stopVoicePlayback(); cancelVoice(); }} />}
-      {comparison && !hideEnglish && !puzzleOpen && <div className={`practice-feedback ${comparison.pct >= threshold ? 'is-correct' : ''}`} role="status"><h3>{comparison.pct >= threshold ? '通過' : '再練一次'}</h3><p>文字符合度 {comparison.pct}% · 通過參考 {threshold}%</p><p className="practice-save-note">依辨識到的文字比對；沒有聽清楚時，可以重說。</p><div className="practice-word-diff">{comparison.result.map((word, i) => <span key={i} className={word.ok ? 'is-match' : 'is-missing'}>{word.word}</span>)}</div><p>你說的是：<span lang="en">{heard}</span></p>{comparison.extra?.length > 0 && <p>另外聽到：{comparison.extra.join(' · ')}</p>}<div className="practice-actions">{comparison.result.filter(word => !word.ok).slice(0, 4).map((word, i) => <button key={i} onClick={() => demo(word.word, .65, '加強單字')}>練 {word.word} ♫</button>)}<button onClick={() => startListening()}>重說一次</button><button className="practice-primary" onClick={next}>{round.index + 1 === round.queue.length ? '完成' : '下一個'}</button></div></div>}
+      {voice.clip && <RecordingAssessment key={`assessment:${voice.clip.url}`} clip={voice.clip} apiKey={apiKey} onOpenSettings={onOpenSettings} onBeforeAnalyze={() => { stopCapture(); stopDemo(); stopVoicePlayback(); }} onResult={transcript => scoreTranscript(currentItem, transcript, 'audio')} onRecognize={recognizeAgain} recognitionAvailable={supported} textMatched={!!result && resultSource !== 'retry'} disabled={listening} />}
+      {comparison && !hideEnglish && !puzzleOpen && <div className={`practice-feedback ${comparison.pct >= threshold ? 'is-correct' : ''}`} role="status"><h3>{comparison.pct >= threshold ? '通過' : '再練一次'}</h3><p className="practice-save-note">{resultSource === 'audio' ? '依這段錄音的逐字稿比對' : resultSource === 'retry' ? '以下是重新開口的文字比對，上方錄音未變動。' : '以下依這次辨識文字比對'}</p><p>文字符合度 {comparison.pct}% · 通過參考 {threshold}%</p><p className="practice-save-note">依辨識到的文字比對；沒有聽清楚時，可以重說。</p><div className="practice-word-diff">{comparison.result.map((word, i) => <span key={i} className={word.ok ? 'is-match' : 'is-missing'}>{word.word}</span>)}</div><p>你說的是：<span lang="en">{heard}</span></p>{comparison.extra?.length > 0 && <p>另外聽到：{comparison.extra.join(' · ')}</p>}<div className="practice-actions">{comparison.result.filter(word => !word.ok).slice(0, 4).map((word, i) => <button key={i} onClick={() => demo(word.word, .65, '加強單字')}>練 {word.word} ♫</button>)}<button onClick={() => startListening()}>重說一次</button><button className="practice-primary" onClick={next}>{round.index + 1 === round.queue.length ? '完成' : '下一個'}</button></div></div>}
       {record && !comparison && <div><p className="practice-save-note">{record.passed ? `這題已通過，最高文字符合度 ${record.best}%。` : record.selfPracticed ? '這題已經自行跟讀過。' : `上次試過 ${record.attempts} 次，可以再說說看。`}</p>{(record.passed || record.selfPracticed) && <button className="practice-primary" onClick={next}>{round.index + 1 === round.queue.length ? '完成' : '下一個'}</button>}</div>}
       <details className="workshop-extra" open={!supported || undefined}><summary>今天想先跟讀，不用麥克風</summary><p>先跟著示範唸一次，再記下練習。這個選項不會算成辨識通過，也不會領取辨識獎勵。</p><button disabled={listening} onClick={finishSelfPractice}>我跟讀過了，繼續 →</button><a href={`https://youglish.com/pronounce/${encodeURIComponent(currentItem.en)}/english`} target="_blank" rel="noreferrer">另開視窗聽真人發音 ↗</a></details>
-      {guide?.target && !hideEnglish && !puzzleOpen && <section className="workshop-coach" aria-label="發音提示"><h3>發音小老師</h3><div className="workshop-coach-grid">{(sentence ? [['分段跟讀', guide.syllables], ['語調提醒', guide.stress]] : [['音節', guide.syllables], ['重音', guide.stress]]).map(([label, value]) => <div key={label}><b>{label}</b><p>{value}</p></div>)}</div><details><summary>嘴型與練習步驟</summary><p><b>嘴型：</b>{guide.mouth}</p><p><b>常見卡點：</b>{guide.mistake}</p><ol>{guide.steps?.map((step, i) => <li key={i}>{step}</li>)}</ol></details>{(comparison || record?.comparison) && <button onClick={explain} disabled={busy}>{busy ? '正在整理發音提示…' : 'AI 分析這次發音'}</button>}{aiError && <div role="status"><p>{aiError}</p><button onClick={()=>onOpenSettings?.()}>API Key 設定</button></div>}</section>}
+      {guide?.target && !hideEnglish && !puzzleOpen && <section className="workshop-coach" aria-label="發音提示"><h3>發音小老師</h3><div className="workshop-coach-grid">{(sentence ? [['分段跟讀', guide.syllables], ['語調提醒', guide.stress]] : [['音節', guide.syllables], ['重音', guide.stress]]).map(([label, value]) => <div key={label}><b>{label}</b><p>{value}</p></div>)}</div><details><summary>嘴型與練習步驟</summary><p><b>嘴型：</b>{guide.mouth}</p><p><b>常見卡點：</b>{guide.mistake}</p><ol>{guide.steps?.map((step, i) => <li key={i}>{step}</li>)}</ol></details>{(comparison || record?.comparison) && <button onClick={explain} disabled={busy}>{busy ? '正在整理發音提示…' : 'AI 提供文字練習建議'}</button>}{aiError && <div role="status"><p>{aiError}</p><button onClick={()=>onOpenSettings?.()}>API Key 設定</button></div>}</section>}
 </section>{note}</div>;
 }

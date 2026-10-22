@@ -33,7 +33,7 @@ export function useVoiceRecording() {
     const current = session.current;
     if (!current || current.stopping || current.started === null) return;
     current.stopping = true;
-    current.duration = Math.min(MAX_SECONDS, (Date.now() - current.started) / 1000);
+    current.duration = Math.min(MAX_SECONDS, Math.max(0, (performance.now() - current.started) / 1000));
     clearTimeout(current.timeout); clearInterval(current.clock);
     setPhase('processing');
     // Stop tracks immediately; wait for the final dataavailable event before
@@ -72,9 +72,9 @@ export function useVoiceRecording() {
       recorder.onstart = () => {
         if (!live()) return;
         clearTimeout(current.timeout);
-        current.started = Date.now();
+        current.started = performance.now();
         setPhase('listening');
-        current.clock = setInterval(() => { if (live()) setSeconds(Math.min(MAX_SECONDS, Math.floor((Date.now() - current.started) / 1000))); }, 250);
+        current.clock = setInterval(() => { if (live()) setSeconds(Math.min(MAX_SECONDS, Math.floor((performance.now() - current.started) / 1000))); }, 250);
         current.timeout = setTimeout(stop, MAX_SECONDS * 1000);
         onReady?.();
       };
@@ -82,13 +82,13 @@ export function useVoiceRecording() {
         if (!live()) return;
         clearTimeout(current.timeout); clearInterval(current.clock);
         release(stream);
-        const duration = current.duration ?? (current.started === null ? 0 : Math.min(MAX_SECONDS, (Date.now() - current.started) / 1000));
+        const duration = current.duration ?? (current.started === null ? 0 : Math.min(MAX_SECONDS, Math.max(0, (performance.now() - current.started) / 1000)));
         const blob = new Blob(current.chunks, { type: recorder.mimeType || current.chunks[0]?.type || '' });
         session.current = null;
         recorder.onstart = recorder.ondataavailable = recorder.onstop = recorder.onerror = null;
         setPhase('idle');
         if (blob.size) {
-          try { url.current = URL.createObjectURL(blob); setClip({ url: url.current, seconds: duration }); }
+          try { url.current = URL.createObjectURL(blob); setClip({ url: url.current, seconds: duration, blob }); }
           catch { setError('這個瀏覽器暫時無法準備錄音回放，請重新錄一次。'); }
         } else setError('這次沒有留下可播放的錄音，請重新錄一次。');
         current.notifyStop();

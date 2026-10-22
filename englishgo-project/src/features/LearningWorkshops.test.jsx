@@ -362,7 +362,7 @@ describe('learning workshops', () => {
   });
   it('starts speech only by gesture, ends empty captures, and ignores late events after errors', () => {
     const view = speaking(); expect(view.instances).toHaveLength(0); click('開始口說小練習 →'); expect(view.deps.speak).not.toHaveBeenCalled();
-    click('🎤 直接開說'); act(() => view.instances[0].onend()); expect(screen.getByRole('alert')).toHaveTextContent('沒有聽到聲音');
+    click('🎤 直接開說'); act(() => view.instances[0].onend()); expect(screen.getByRole('alert')).toHaveTextContent('未取得辨識文字，尚未評分');
     click('🎤 直接開說'); const recognition = view.instances[1], lateEnd = recognition.onend;
     act(() => recognition.onerror({ error: 'not-allowed' })); act(() => lateEnd());
     expect(screen.getByRole('alert')).toHaveTextContent('麥克風尚未獲得允許'); expect(button('🎤 直接開說')).toBeEnabled(); expect(view.props.onXp).not.toHaveBeenCalled();

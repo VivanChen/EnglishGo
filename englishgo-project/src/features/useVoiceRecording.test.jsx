@@ -11,6 +11,15 @@ const setup = () => renderHook(useVoiceRecording, { wrapper: StrictMode });
 const begin = async (view, ready = vi.fn(), stopped = vi.fn()) => { await act(async () => view.result.current.start(ready, stopped)); return { ready, stopped }; };
 
 describe('temporary voice recordings', () => {
+  it('measures elapsed recording time independently of wall-clock changes', async () => {
+    vi.useFakeTimers();
+    const view = setup();
+    await begin(view);
+    act(() => { vi.advanceTimersByTime(2000); vi.setSystemTime(Date.now() + 79104000); vi.advanceTimersByTime(3000); });
+    act(() => { view.result.current.stop(); media.instances[0].finish(); });
+    expect(view.result.current.clip.seconds).toBe(5);
+    expect(view.result.current.clip.blob).toBeInstanceOf(Blob);
+  });
   it('only requests audio after a gesture and builds a playable clip from final data, without autoplay or persistence', async () => {
     const view = setup();
     expect(media.getUserMedia).not.toHaveBeenCalled();
