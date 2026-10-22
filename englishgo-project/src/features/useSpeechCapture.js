@@ -8,10 +8,10 @@ export function useSpeechCapture() {
   const [phase, setPhase] = useState('idle');
   const [interim, setInterim] = useState('');
   const [error, setError] = useState('');
-  const capture = useRef(null), token = useRef(0), timer = useRef(null), finish = useRef(null);
+  const capture = useRef(null), token = useRef(0), timer = useRef(null), finish = useRef(null), settled = useRef(null);
   const supported = typeof window !== 'undefined' && !!(window.SpeechRecognition || window.webkitSpeechRecognition);
 
-  const cancel = useCallback((update = true) => {
+  const cancel = useCallback((update = true, reason = 'cancel') => {
     token.current++;
     clearTimeout(timer.current);
     timer.current = null;
@@ -23,17 +23,21 @@ export function useSpeechCapture() {
       try { recognition.abort(); } catch {}
     }
     if (update) { setPhase('idle'); setInterim(''); setError(''); }
+    const onSettled = settled.current;
+    settled.current = null;
+    onSettled?.(reason);
   }, []);
 
   useEffect(() => () => cancel(false), [cancel]);
 
-  const start = onTranscript => {
+  const start = (onTranscript, onSettled) => {
     if (!supported || capture.current) return;
     cancel();
+    settled.current = onSettled;
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     let recognition;
     try { recognition = new SR(); }
-    catch { setError('麥克風目前無法啟動，可以先聽示範跟讀。'); return; }
+    catch { cancel(true, 'error'); setError('麥克風目前無法啟動，可以先聽示範跟讀。'); return; }
 
     const id = ++token.current;
     let started = false, stopping = false, results = [];
@@ -43,7 +47,7 @@ export function useSpeechCapture() {
       // Interim text can change or disappear; only score confirmed results.
       const transcript = results.filter(row => row.final).map(row => row.text).join(' ').trim();
       const hadInterim = results.some(row => row.text.trim());
-      cancel();
+      cancel(true, 'complete');
       if (transcript) onTranscript(transcript);
       else setError(hadInterim ? '還沒收到完整的辨識結果，請再說一次，或先聽示範跟讀。' : '這次沒有聽到聲音，再試一次，或先聽示範跟讀。');
     };
@@ -88,16 +92,16 @@ export function useSpeechCapture() {
     recognition.onend = complete;
     recognition.onerror = event => {
       if (!current()) return;
-      cancel();
+      cancel(true, 'error');
       setError(event.error === 'not-allowed' || event.error === 'service-not-allowed' ? '麥克風尚未獲得允許。請在網址旁的網站設定允許麥克風，再按一次開始。也可以先用跟讀模式。' : event.error === 'audio-capture' ? '找不到可用的麥克風，先聽示範跟讀也可以。' : event.error === 'network' ? '語音辨識暫時連不上，稍後再試，或先聽示範跟讀。' : '這次沒有聽清楚，靠近一點，再試一次。');
     };
     timer.current = setTimeout(() => {
       if (!current()) return;
-      cancel();
+      cancel(true, 'error');
       setError('麥克風還沒有啟動。請確認瀏覽器的麥克風提示，也可以先聽示範跟讀。');
     }, START_TIMEOUT);
     try { recognition.start(); }
-    catch { if (current()) { cancel(); setError('麥克風沒有順利開始，再按一次試試，或先跟讀。'); } }
+    catch { if (current()) { cancel(true, 'error'); setError('麥克風沒有順利開始，再按一次試試，或先跟讀。'); } }
   };
 
   return { supported, phase, interim, error, start, stop: () => finish.current?.(), cancel };

@@ -1,0 +1,12 @@
+.voice-replay { margin-top: 18px; padding: clamp(16px, 3vw, 24px); border: 1px solid var(--garden-line); border-radius: 20px; background: var(--garden-green-soft); color: var(--garden-ink); text-align: left; }
+.voice-replay-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+.voice-replay h3 { margin: 5px 0 0; font-size: 1.3rem; }
+.voice-replay p { line-height: 1.65; }
+.voice-replay-duration { font-size: .85rem; font-variant-numeric: tabular-nums; border: 1px solid currentColor; border-radius: 99px; padding: 5px 10px; }
+.voice-replay audio { display: block; width: 100%; min-width: 0; margin: 14px 0; }
+.voice-replay-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+.voice-replay-footer p { flex: 1 1 220px; margin: 0; font-size: .8rem; color: var(--garden-muted); }
+.voice-replay-footer > div { display: flex; flex-wrap: wrap; gap: 8px; }
+.voice-capture-note { font-size: .85rem; line-height: 1.7; color: var(--garden-muted); }
+.voice-recording-time { display: block; margin-top: 8px; font-variant-numeric: tabular-nums; }
+@media (max-width: 400px) { .voice-replay .practice-actions { flex-direction: column; align-items: stretch; } }
