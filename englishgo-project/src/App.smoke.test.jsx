@@ -633,7 +633,7 @@ describe('EnglishGo app smoke flow', () => {
       fireEvent.click(screen.getByRole('button', { name: '句子練習' }));
       fireEvent.click(await screen.findByRole('button', { name: '開始口說小練習 →' }));
 
-      expect(await screen.findByText('I like to eat apples.', { selector: '.workshop-spoken-target' })).toBeInTheDocument();
+      await waitFor(() => expect(document.querySelector('.workshop-spoken-target')).toHaveTextContent('I like to eat apples.'));
       expect(screen.getByText('看中文，唸出完整英文句子')).toBeInTheDocument();
       expect(screen.getByText('i like to / eat apples')).toBeInTheDocument();
       fireEvent.click(screen.getByRole('button', { name: '先聽不看英文' }));
@@ -703,7 +703,7 @@ describe('EnglishGo app smoke flow', () => {
       fireEvent.click(await screen.findByRole('button', { name: '句子練習' }));
       fireEvent.click(await screen.findByRole('button', { name: '開始口說小練習 →' }));
 
-      expect(await screen.findByText('I like to eat apples.', { selector: '.workshop-spoken-target' })).toBeInTheDocument();
+      await waitFor(() => expect(document.querySelector('.workshop-spoken-target')).toHaveTextContent('I like to eat apples.'));
       expect(screen.queryByText(/重點單字：/)).not.toBeInTheDocument();
       expect(screen.getByText('分段跟讀')).toBeInTheDocument();
       expect(screen.getByText('語調提醒')).toBeInTheDocument();

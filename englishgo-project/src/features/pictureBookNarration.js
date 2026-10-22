@@ -1,23 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
-export function storyWords(text) {
-  return Array.from(text.matchAll(/\S+/g), match => ({ text: match[0], start: match.index, end: match.index + match[0].length }));
-}
-
-export function wordAtBoundary(words, charIndex) {
-  return words.findIndex(word => charIndex >= word.start && charIndex < word.end);
-}
-
-// Cloud audio supplies playback time, not forced alignment. Weighting by word length
-// gives an approximate reading guide; native speech word boundaries take precedence.
-export function wordAtProgress(words, currentTime, duration) {
-  if (!(duration > 0) || !Number.isFinite(duration) || !words.length) return -1;
-  const weights = words.map(word => Math.max(2, word.text.replace(/[^a-z]/gi, '').length) + (/[,.!?]$/.test(word.text) ? 2 : 0));
-  const position = Math.max(0, Math.min(1, currentTime / duration)) * weights.reduce((a, b) => a + b, 0);
-  let sum = 0;
-  for (let i = 0; i < words.length; i++) { sum += weights[i]; if (position < sum) return i; }
-  return words.length - 1;
-}
+import { storyWords, wordAtBoundary, wordAtProgress } from '../lib/speechTiming.js';
+export { storyWords, wordAtBoundary, wordAtProgress } from '../lib/speechTiming.js';
 
 export function usePictureBookNarration(speak, stopSpeech) {
   const [state, setState] = useState({ status: 'idle', word: -1, error: '', approximate: false });

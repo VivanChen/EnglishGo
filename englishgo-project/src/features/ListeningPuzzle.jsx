@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import ListeningRadio from '../components/ListeningRadio.jsx';
+import SpeechHighlight, { SpeechHighlightNote } from '../components/SpeechHighlight.jsx';
 import { createListeningPuzzle, matchesListeningPiece } from '../data/listeningPuzzle.js';
 
 export default function ListeningPuzzle({ sentence, playing, playbackError, onPlay, onStop, onExit }) {
@@ -52,12 +53,12 @@ export default function ListeningPuzzle({ sentence, playing, playbackError, onPl
     <p className="listening-puzzle-audio-status" aria-live="polite">{playing ? `${playing.started ? '正在播放' : '準備播放'} · ${playing.label}` : '可以重聽，也可以放慢聲音。'}</p>
     {playbackError && <p role="alert">聲音暫時無法播放，可以重試，或用小提示接句子。</p>}
     <div className="listening-puzzle-progress"><span>已接好 {picked.length} / {puzzle.pieces.length} 格</span><progress max={puzzle.pieces.length} value={picked.length} aria-label="拼句進度" /></div>
-    {done ? <p className="listening-puzzle-sentence" lang="en">{sentence}</p> : <>
+    {done ? <><p className="listening-puzzle-sentence" lang="en"><SpeechHighlight text={sentence} playback={playing} /></p><SpeechHighlightNote playback={playing} /></> : <>
       <ol className="listening-puzzle-slots" aria-label="已接好的句子">{puzzle.pieces.map((piece, index) => <li key={index} className={index < picked.length ? 'is-filled' : ''} aria-current={index === picked.length ? 'step' : undefined}>
         {index < picked.length ? <span lang="en">{piece}</span> : <span aria-label={`第 ${index + 1} 格${index === picked.length ? '，接下來填這格' : ''}`}>{index === picked.length ? '？' : index + 1}</span>}
       </li>)}</ol>
       <div className="listening-puzzle-bank" role="group" aria-label={`可選的${puzzle.unit}`}>{puzzle.tiles.map(tile => <button key={tile.id} ref={element => { if (element) tileButtons.current.set(tile.id, element); else tileButtons.current.delete(tile.id); }} type="button" lang="en" disabled={picked.includes(tile.id)}
-        className={feedback?.wrong === tile.id ? 'is-retry' : hinted && matchesListeningPiece(nextPiece, tile.text) ? 'is-hint' : ''} onClick={() => choose(tile)}>{tile.text}</button>)}</div>
+        className={feedback?.wrong === tile.id ? 'is-retry' : hinted && matchesListeningPiece(nextPiece, tile.text) ? 'is-hint' : ''} onClick={() => choose(tile)}><SpeechHighlight text={tile.text} playback={hinted && playing?.label === '拼句小提示' && matchesListeningPiece(nextPiece, tile.text) ? playing : null} /></button>)}</div>
     </>}
     <p className="listening-puzzle-feedback" role="status">{feedback?.message || '準備好了，從第 1 格開始。'}</p>
     <div className="practice-actions listening-puzzle-tools">

@@ -83,6 +83,21 @@ describe('practice experience', () => {
     fireEvent.click(screen.getByRole('button', { name: '■ 停止播放' }));
     act(() => third.onstart()); expect(radio()).toHaveAttribute('data-state', 'idle');
   });
+  it('highlights a revealed sentence while keeping the listening answer hidden until a hint is requested', () => {
+    const { deps, container } = setup('listening');
+    fireEvent.click(screen.getByRole('button', { name: '開始新的小任務 →' }));
+    fireEvent.click(screen.getByRole('button', { name: '▶ 聽這個句子' }));
+    const events = deps.speak.mock.lastCall[3], answer = saved('listening').questions[0].answer;
+    act(() => { events.onstart(); events.onboundary({ charIndex: 0 }); });
+    expect(container.querySelector('.is-current')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: '看句子提示' }));
+    expect(container.querySelector('.practice-hint .is-current')).toHaveTextContent(answer.split(' ')[0]);
+    fireEvent.click(screen.getByRole('button', { name: 'Ⅱ 先休息一下' }));
+    act(() => events.onboundary({ charIndex: 0 }));
+    fireEvent.click(screen.getByRole('button', { name: '繼續上次練習' }));
+    expect(container.querySelector('.is-current')).toBeNull();
+    expect(deps.speak).toHaveBeenCalledOnce();
+  });
   it('restores typed answers and accepts extra whitespace without repeating completion', () => {
     let view = setup('listening');
     fireEvent.click(screen.getByRole('button', { name: '自己打字挑戰' }));

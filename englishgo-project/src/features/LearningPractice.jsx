@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import PracticeArt from '../components/PracticeArt.jsx';
 import ListeningRadio from '../components/ListeningRadio.jsx';
+import SpeechHighlight, { SpeechHighlightNote } from '../components/SpeechHighlight.jsx';
+import { speechHighlightEvents } from '../lib/speechTiming.js';
 import { buildQuizQuestions, buildListeningQuestions, createPractice, readPractice, practiceReducer, practiceNeedsReview, compareDictation } from '../data/practiceJourney.js';
 
 const LABELS = { quiz: ['小小單字挑戰', '選一選，讓單字留下來', '每次一小步，答錯也能再試一次。'], listening: ['小耳朵練習', '聽一聽，把句子接起來', '準備好了再播放，用自己的速度慢慢聽。'] };
@@ -16,6 +18,7 @@ export default function LearningPractice({ kind, lv, onBack, onXp, onPerfect, on
   const [count, setCount] = useState(kind === 'quiz' ? 5 : 3), [rate, setRate] = useState(.75);
   const [speaking, setSpeaking] = useState(false), [audioError, setAudioError] = useState(false), [storageError, setStorageError] = useState(false);
   const [audioStarted, setAudioStarted] = useState(false);
+  const [speechPlayback, setSpeechPlayback] = useState(null);
   const heading = useRef(null), audioToken = useRef(0), input = useRef(null);
   const [title, headline, description] = LABELS[kind];
 
@@ -27,7 +30,7 @@ export default function LearningPractice({ kind, lv, onBack, onXp, onPerfect, on
     return () => { mounted = false; audioToken.current++; stopSpeech(); };
   }, [kind, lv, built, fetchCloudVocab, stopSpeech]);
 
-  const stop = () => { audioToken.current++; stopSpeech(); setSpeaking(false); setAudioStarted(false); };
+  const stop = () => { audioToken.current++; stopSpeech(); setSpeaking(false); setAudioStarted(false); setSpeechPlayback(null); };
   useEffect(() => {
     const hide = () => { if (document.hidden) { stop(); setActive(false); } };
     document.addEventListener('visibilitychange', hide);
@@ -68,9 +71,16 @@ export default function LearningPractice({ kind, lv, onBack, onXp, onPerfect, on
   const listen = (text, speed = rate) => {
     stop(); setAudioError(false); setSpeaking(true);
     const token = ++audioToken.current;
-    const settle = () => { if (token === audioToken.current) setSpeaking(false); };
-    const speech = speak(text, 'en-US', speed, { onstart: () => { if (token === audioToken.current) setAudioStarted(true); }, onend: settle, oncancel: settle, onerror: () => { if (token === audioToken.current) { setSpeaking(false); setAudioError(true); } } });
-    if (!speech) { setSpeaking(false); setAudioError(true); }
+    setSpeechPlayback({ text, started: false, word: -1, approximate: false });
+    const settle = () => { if (token === audioToken.current) { audioToken.current++; setSpeaking(false); setAudioStarted(false); setSpeechPlayback(null); } };
+    const fail = () => { if (token === audioToken.current) { settle(); setAudioError(true); } };
+    try {
+      const speech = speak(text, 'en-US', speed, {
+        ...speechHighlightEvents(text, update => { if (token === audioToken.current) { if (update.started) setAudioStarted(true); setSpeechPlayback(current => current ? { ...current, ...update } : null); } }),
+        onend: settle, oncancel: settle, onerror: fail,
+      });
+      if (!speech) fail();
+    } catch { fail(); }
   };
   const exit = () => { stop(); onBack(); };
   const pause = () => { stop(); setActive(false); };
@@ -87,7 +97,7 @@ export default function LearningPractice({ kind, lv, onBack, onXp, onPerfect, on
   const review = practiceNeedsReview(saved), firstScore = saved.records.filter(r => r.firstCorrect).length;
   const learned = saved.records.filter(r => r.earned).length;
   if (saved.status === 'done') return <div className="practice-world">{header}<section className="practice-complete" aria-label="小任務完成"><PracticeArt kind={kind} complete /><span className="practice-eyebrow">今天又多學會了一點</span><h2 ref={heading} tabIndex={-1}>{saved.round === 'review' ? '複習完成，辛苦了！' : '小任務完成了！'}</h2><p>留下這次的收穫，也留一點時間休息。</p><div className="practice-metrics"><div><b>{saved.questions.length}</b><span>練習過</span></div><div><b>{firstScore}</b><span>第一次就答對</span></div><div><b>{learned}</b><span>已答對過</span></div></div><div className="practice-actions">{review.length > 0 && <button className="practice-primary" onClick={() => act({ type: 'REVIEW' })}>只練需要再看的 {review.length} 題</button>}<button onClick={pause}>換個小任務</button><button onClick={exit}>回首頁休息</button></div><p className="practice-save-note">同一份任務，每題只領一次獎勵；複習不會重複領取。</p></section>
-    <section className="practice-review-list"><h3>把這些帶走</h3><p>點喇叭再聽一次，跟著念也很好。</p>{saved.questions.map((q, index) => <div key={index}><span className={`practice-leaf ${saved.records[index].firstCorrect && !saved.records[index].hinted ? 'is-learned' : ''}`} aria-hidden="true">♧</span><div><b lang="en">{kind === 'quiz' ? q.item.w : q.answer}</b>{kind === 'quiz' && <p>{q.item.m}</p>}<small>{saved.records[index].firstCorrect && !saved.records[index].hinted ? '第一次就做到了' : '值得再認識一次'}</small></div><button aria-label={`朗讀 ${kind === 'quiz' ? q.item.w : q.answer}`} onClick={() => listen(kind === 'quiz' ? q.item.w : q.answer)}>♫</button></div>)}{kind === 'quiz' && review.length > 0 && onReviewWords && <button onClick={() => { stop(); onReviewWords(review.map(i => saved.questions[i].item)); }}>用單字卡慢慢複習 →</button>}</section>{audioError && <p role="status">目前無法播放，稍後可以再試。</p>}{note}</div>;
+    <section className="practice-review-list"><h3>把這些帶走</h3><p>點喇叭再聽一次，跟著念也很好。</p>{saved.questions.map((q, index) => <div key={index}><span className={`practice-leaf ${saved.records[index].firstCorrect && !saved.records[index].hinted ? 'is-learned' : ''}`} aria-hidden="true">♧</span><div><b lang="en"><SpeechHighlight text={kind === 'quiz' ? q.item.w : q.answer} playback={speechPlayback} /></b>{kind === 'quiz' && <p>{q.item.m}</p>}<small>{saved.records[index].firstCorrect && !saved.records[index].hinted ? '第一次就做到了' : '值得再認識一次'}</small></div><button aria-label={`朗讀 ${kind === 'quiz' ? q.item.w : q.answer}`} onClick={() => listen(kind === 'quiz' ? q.item.w : q.answer)}>♫</button></div>)}{kind === 'quiz' && review.length > 0 && onReviewWords && <button onClick={() => { stop(); onReviewWords(review.map(i => saved.questions[i].item)); }}>用單字卡慢慢複習 →</button>}</section>{audioError && <p role="status">目前無法播放，稍後可以再試。</p>}{note}</div>;
 
   const comparison = kind === 'listening' && saved.feedback !== null ? compareDictation(question.answer, saved.answer) : null;
   return <div className="practice-world" data-practice-kind={kind}>{header}<div className="practice-toolbar"><span>{saved.round === 'review' ? '再認識一次' : title} · {saved.index + 1} / {saved.queue.length}</span><button onClick={pause}>Ⅱ 先休息一下</button></div><progress className="practice-progress" aria-label="小任務進度" max={saved.queue.length} value={saved.index + Number(saved.feedback !== null)} />
@@ -96,7 +106,7 @@ export default function LearningPractice({ kind, lv, onBack, onXp, onPerfect, on
       {kind === 'quiz' ? <><p>{question.kind === 'en2zh' ? '選出這個單字的中文意思' : '選出對應的英文單字'}</p><div className="practice-audio-tools"><button onClick={() => { if (question.kind === 'zh2en') act({ type: 'HINT' }); listen(question.item.w); }}>♫ {question.kind === 'en2zh' ? '聽單字' : '聽單字提示'}</button>{question.item.ex && <button aria-expanded={saved.hintShown} disabled={saved.feedback !== null} onClick={() => act({ type: 'HINT' })}>看例句線索</button>}</div>{saved.hintShown && question.item.ex && <aside className="practice-hint"><b>例句線索</b><p lang="en">{question.item.ex}</p>{question.item.ez && <p>{question.item.ez}</p>}</aside>}<div className="practice-answer-options">{question.options.map((option, i) => <button key={option} disabled={saved.feedback !== null} className={saved.feedback !== null ? option === question.answer ? 'is-correct' : saved.answer === option ? 'is-retry' : '' : ''} onClick={() => act({ type: 'ANSWER', value: option })}><span aria-hidden="true">{String.fromCharCode(65 + i)}</span><b>{option}</b>{saved.feedback !== null && option === question.answer && <small>正解</small>}</button>)}</div></> : <>
         <ListeningRadio state={speaking ? audioStarted ? 'playing' : 'loading' : saved.feedback === true ? 'complete' : 'idle'} /><p className="practice-save-note" aria-live="polite">{speaking ? audioStarted ? '正在播放，先專心聽。' : '正在準備聲音，隨時可以停止。' : '聽完可以點選單字，或把句子寫下來。'}</p><div className="practice-audio-tools"><button className="practice-primary" onClick={() => speaking ? stop() : listen(question.answer)}>{speaking ? '■ 停止播放' : '▶ 聽這個句子'}</button><div className="practice-speed" role="group" aria-label="朗讀速度">{[[.6, '慢慢聽'], [.75, '正常速度']].map(([value, label]) => <button key={value} aria-pressed={rate === value} onClick={() => { setRate(value); if (speaking) listen(question.answer, value); }}>{label}</button>)}</div></div>
         {saved.mode === 'tiles' ? <div className="practice-tiles-area"><p id="practice-tile-instruction">依序點選下面的單字。點上方已選的單字，可以放回去。</p><div className="practice-sentence" aria-label="你組成的句子">{saved.pickedTiles.length ? saved.pickedTiles.map(id => <button key={id} disabled={saved.feedback !== null} aria-label={`放回 ${question.tiles.find(t => t.id === id).text}`} onClick={() => act({ type: 'TILE', id })}>{question.tiles.find(t => t.id === id).text}</button>) : <span>句子會出現在這裡…</span>}</div><div className="practice-tile-bank" aria-describedby="practice-tile-instruction">{question.tiles.map(tile => <button key={tile.id} disabled={saved.feedback !== null || saved.pickedTiles.includes(tile.id)} onClick={() => act({ type: 'TILE', id: tile.id })}>{tile.text}</button>)}</div></div> : <div className="practice-writing"><label htmlFor="practice-listening-input">你聽到了什麼？</label><textarea ref={input} id="practice-listening-input" value={saved.answer} disabled={saved.feedback !== null} autoCapitalize="off" autoCorrect="off" spellCheck={false} rows={3} maxLength={500} placeholder="把聽到的英文寫在這裡…" onChange={e => act({ type: 'INPUT', value: e.target.value })} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing && !e.repeat) { e.preventDefault(); act({ type: 'ANSWER' }); } }} /><small>大小寫、標點和多餘空格不影響答案。</small></div>}
-        {saved.feedback === null && <div className="practice-actions"><button className="practice-primary" disabled={!saved.answer.trim()} onClick={() => { stop(); act({ type: 'ANSWER' }); }}>看看我的答案</button><button aria-expanded={saved.hintShown} onClick={() => act({ type: 'HINT' })}>看句子提示</button></div>}{saved.hintShown && <aside className="practice-hint"><b>先跟著念，再試一次</b><p lang="en">{question.answer}</p></aside>}
+        {saved.feedback === null && <div className="practice-actions"><button className="practice-primary" disabled={!saved.answer.trim()} onClick={() => { stop(); act({ type: 'ANSWER' }); }}>看看我的答案</button><button aria-expanded={saved.hintShown} onClick={() => act({ type: 'HINT' })}>看句子提示</button></div>}{saved.hintShown && <aside className="practice-hint"><b>先跟著念，再試一次</b><p lang="en"><SpeechHighlight text={question.answer} playback={speechPlayback} /></p><SpeechHighlightNote playback={speechPlayback} /></aside>}
       </>}
       {audioError && <p className="practice-audio-error" role="status">目前無法播放，可以稍後重試，或先看提示練習。</p>}
       {saved.feedback !== null && <div className={`practice-feedback ${saved.feedback ? 'is-correct' : ''}`} role="status"><h3>{saved.feedback ? record.attempts > 1 ? '再試一次，就做到了！' : '答對了，收下一點進步！' : '差一點點，一起再看看'}</h3>{kind === 'quiz' ? <><p><b lang="en">{question.item.w}</b> · {question.item.m}</p>{question.item.ex && <p lang="en">{question.item.ex}</p>}{question.item.ez && <p>{question.item.ez}</p>}</> : <><p>對照句子：綠色是已寫對的字，底線是需要再聽的地方。</p><div className="practice-word-diff" lang="en">{comparison.words.map((word, i) => <span key={i} className={word.match ? 'is-match' : 'is-missing'}>{word.word}</span>)}</div>{comparison.extras.length > 0 && <p>這些字可以再檢查：<b lang="en">{comparison.extras.join(' · ')}</b></p>}<button onClick={() => listen(question.answer, .6)}>♫ 再慢慢聽一次</button></>}

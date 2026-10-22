@@ -42,6 +42,43 @@ function songs() {
 }
 describe('learning workshops', () => {
   const phraseCard={word:'water',meaning:'水',en:'Please drink more water.',zh:'請多喝水。',type:'sentence'};
+  it('highlights actual spoken words and clears them on replay, end, errors, hiding English and microphone start',()=>{
+    const view=speaking(true,{}, {cardPractice:phraseCard});
+    const highlighted=()=>view.container.querySelector('.workshop-spoken-target .is-current')?.textContent;
+    click('🔊 聽示範');const first=view.deps.speak.mock.lastCall[3];
+    expect(first.trackWords).toBe(true);expect(highlighted()).toBeUndefined();
+    act(()=>{first.onstart();first.onboundary({name:'word',charIndex:7});});
+    expect(highlighted()).toBe('drink');
+    click('慢慢聽');const slow=view.deps.speak.mock.lastCall[3];
+    act(()=>first.onboundary({charIndex:18}));expect(highlighted()).toBeUndefined();
+    act(()=>{slow.onstart();slow.onprogress({currentTime:3.9,duration:4});});
+    expect(highlighted()).toBe('water.');
+    expect(screen.getByText('高亮依播放進度估算，可以跟著聲音慢慢唸。')).toBeInTheDocument();
+    act(()=>slow.onboundary({name:'word',charIndex:13}));expect(highlighted()).toBe('more');
+    expect(screen.queryByText('高亮依播放進度估算，可以跟著聲音慢慢唸。')).not.toBeInTheDocument();
+    act(()=>slow.onend());act(()=>slow.onboundary({charIndex:0}));expect(highlighted()).toBeUndefined();
+    click('🔊 聽示範');const failed=view.deps.speak.mock.lastCall[3];
+    act(()=>{failed.onstart();failed.onboundary({charIndex:0});failed.onerror();});
+    expect(highlighted()).toBeUndefined();
+    click('先聽不看英文');click('🔊 聽示範');const hidden=view.deps.speak.mock.lastCall[3];
+    act(()=>{hidden.onstart();hidden.onboundary({charIndex:0});});
+    expect(view.container.querySelector('.speech-highlight')).toBeNull();
+    click('顯示英文');click('🔊 聽示範');const beforeMic=view.deps.speak.mock.lastCall[3];
+    act(()=>{beforeMic.onstart();beforeMic.onboundary({charIndex:7});});
+    click('🎤 直接開說');act(()=>beforeMic.onboundary({charIndex:0}));
+    expect(highlighted()).toBeUndefined();expect(view.props.onXp).not.toHaveBeenCalled();
+  });
+  it('tracks the selected occurrence of repeated phrases in both the guide and the full example',()=>{
+    const view=speaking(true,{}, {cardPractice:{...phraseCard,en:'Go now. Go now.'}});
+    click('帶我逐段跟讀 →');click('這段練好了，下一段 →');
+    const events=view.deps.speak.mock.lastCall[3];
+    act(()=>{events.onstart();events.onboundary({charIndex:3});});
+    expect(view.container.querySelectorAll('.workshop-spoken-target .speech-highlight-word')[3]).toHaveClass('is-current');
+    expect(view.container.querySelectorAll('.workshop-spoken-target .speech-highlight-word')[1]).not.toHaveClass('is-current');
+    expect(view.container.querySelector('.speaking-guided h4 .is-current')).toHaveTextContent('now.');
+    click('■ 停止這段');
+    expect(view.container.querySelector('.is-current')).toBeNull();
+  });
   it('turns the exact card example into a listening puzzle with gentle retries and no speaking reward',()=>{
     const view=speaking(true,{}, {cardPractice:phraseCard});
     click('🧩 聽音拼句');
@@ -56,6 +93,8 @@ describe('learning workshops', () => {
     click('給我下一格提示 ♫');
     expect(view.deps.speak).toHaveBeenLastCalledWith('Please','en-US',.65,expect.any(Object));
     expect(button('Please')).toHaveClass('is-hint');
+    act(()=>{const events=view.deps.speak.mock.lastCall[3];events.onstart();events.onboundary({charIndex:0});});
+    expect(button('Please').querySelector('.is-current')).toHaveTextContent('Please');
     ['Please','drink','more','water.'].forEach(click);
     expect(screen.getByRole('heading',{name:'你把聲音接成一句話了！'})).toHaveFocus();
     expect(screen.getByText(phraseCard.en)).toHaveAttribute('lang','en');
@@ -63,7 +102,11 @@ describe('learning workshops', () => {
     expect(view.props.onXp).not.toHaveBeenCalled();
     expect(view.instances).toHaveLength(0);
     expect(localStorage.getItem(cardPracticeStorageKey('elementary',phraseCard))).toBeNull();
+    click('▶ 聽完整例句');
+    act(()=>{const events=view.deps.speak.mock.lastCall[3];events.onstart();events.onboundary({charIndex:18});});
+    expect(view.container.querySelector('.listening-puzzle-sentence .is-current')).toHaveTextContent('water.');
     click('再拼一次');
+    expect(view.container.querySelector('.is-current')).toBeNull();
     expect(screen.getByRole('progressbar',{name:'拼句進度'})).toHaveAttribute('value','0');
     expect(button('▶ 聽完整例句')).toHaveFocus();
     ['Please','drink','more','water.'].forEach(click);click('接著跟讀這一句 →');
@@ -201,7 +244,7 @@ describe('learning workshops', () => {
     click('先聽不看英文'); expect(screen.queryByText(cardPractice.en)).not.toBeInTheDocument();
     expect(within(screen.getByRole('region',{name:'來自單字卡'})).queryByText('dog')).not.toBeInTheDocument();
     click('🎤 直接開說');act(()=>view.instances[0].answer(cardPractice.en));
-    expect(screen.getByText(cardPractice.en,{selector:'.workshop-spoken-target'})).toBeInTheDocument();
+    expect(view.container.querySelector('.workshop-spoken-target')).toHaveTextContent(cardPractice.en);
     expect(view.props.onXp).toHaveBeenCalledExactlyOnceWith(15);
     expect(localStorage.getItem('eg_speaking_studio_elementary')).toBe(normal);
     view.unmount();

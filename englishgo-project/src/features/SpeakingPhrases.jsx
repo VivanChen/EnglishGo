@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import ListeningRadio from '../components/ListeningRadio.jsx';
+import SpeechHighlight, { SpeechHighlightNote } from '../components/SpeechHighlight.jsx';
 
 export default function SpeakingPhrases({ phrases, sentenceText, playing, playbackError, onPlay, onStop, onPlaySentence, onComplete }) {
   const [step, setStep] = useState(null);
@@ -15,7 +16,8 @@ export default function SpeakingPhrases({ phrases, sentenceText, playing, playba
     } else if (wasStarted.current) startButton.current?.focus({ preventScroll: true });
   }, [step]);
 
-  const playStep = index => { setStep(index); onPlay(phrases[index], .65, `第 ${index + 1} 段`); };
+  const playPhrase = index => onPlay(phrases[index], .65, `第 ${index + 1} 段`, { sourceText: sentenceText, wordOffset: phrases.slice(0, index).reduce((sum, phrase) => sum + phrase.split(/\s+/).length, 0) });
+  const playStep = index => { setStep(index); playPhrase(index); };
   const advance = () => {
     if (step + 1 < phrases.length) playStep(step + 1);
     else { onStop(); setStep(phrases.length); }
@@ -28,16 +30,17 @@ export default function SpeakingPhrases({ phrases, sentenceText, playing, playba
       <p>一次聽一段，留時間自己唸；準備好再前進，不用開麥克風。</p>
       <button ref={startButton} type="button" className="speaking-guided-start" onClick={() => playStep(0)}>帶我逐段跟讀 →</button>
       <div className="speaking-phrase-buttons">{phrases.map((phrase, index) => <button type="button" key={index}
-        aria-pressed={playing?.label === `第 ${index + 1} 段`} onClick={() => onPlay(phrase, .65, `第 ${index + 1} 段`)} aria-label={`聽第 ${index + 1} 段：${phrase}`}>
-        <span aria-hidden="true">♫</span><span lang="en">{phrase}</span>
+        aria-pressed={playing?.label === `第 ${index + 1} 段`} onClick={() => playPhrase(index)} aria-label={`聽第 ${index + 1} 段：${phrase}`}>
+        <span aria-hidden="true">♫</span><SpeechHighlight text={phrase} playback={playing?.label === `第 ${index + 1} 段` ? playing : null} />
       </button>)}</div>
     </> : <div className="speaking-guided">
       <div className="speaking-guided-toolbar"><span>{done ? '接著練整句' : `第 ${step + 1} / ${phrases.length} 段`}</span><button type="button" onClick={exit}>結束分段</button></div>
       <progress max={phrases.length} value={step} aria-label="分段跟讀進度" />
-      <h4 ref={heading} tabIndex={-1} lang={done ? 'zh-Hant' : 'en'}>{done ? '把小段連起來，再說一次整句。' : phrases[step]}</h4>
+      <h4 ref={heading} tabIndex={-1} lang={done ? 'zh-Hant' : 'en'}>{done ? '把小段連起來，再說一次整句。' : <SpeechHighlight text={phrases[step]} playback={isPlaying ? playing : null} />}</h4>
+      <SpeechHighlightNote playback={playing} />
       <ListeningRadio compact state={playing ? playing.started ? 'playing' : 'loading' : done ? 'complete' : 'idle'} />
       {done ? <>
-        <p className="speaking-guided-sentence" lang="en">{sentenceText}</p>
+        <p className="speaking-guided-sentence" lang="en"><SpeechHighlight text={sentenceText} playback={playing} /></p>
         <p>分段練好了！接著唸一次完整例句，再記下今天的練習。</p>
         <div className="practice-actions"><button type="button" onClick={playing ? onStop : onPlaySentence}>{playing ? '■ 停止示範' : '🔊 聽完整句'}</button><button type="button" onClick={() => playStep(0)}>再練分段</button></div>
         <button type="button" className="practice-primary" onClick={onComplete}>整句也跟讀過了，繼續 →</button>
@@ -45,7 +48,7 @@ export default function SpeakingPhrases({ phrases, sentenceText, playing, playba
       </> : <>
         <p role="status">{isPlaying ? '先聽這一段，聽完換你唸。' : playing ? '正在聽其他示範；想回來跟讀，可以再聽這段。' : playbackError ? '示範暫時無法播放，可以再聽一次，或照著文字跟讀。' : '換你跟著唸，準備好再前進。'}</p>
         <div className="practice-actions"><button type="button" disabled={step === 0} onClick={() => playStep(step - 1)}>← 上一段</button>
-          <button type="button" onClick={playing ? onStop : () => onPlay(phrases[step], .65, `第 ${step + 1} 段`)}>{playing ? (isPlaying ? '■ 停止這段' : '■ 停止示範') : '再聽這段'}</button>
+          <button type="button" onClick={playing ? onStop : () => playPhrase(step)}>{playing ? (isPlaying ? '■ 停止這段' : '■ 停止示範') : '再聽這段'}</button>
           <button type="button" className="practice-primary" onClick={advance}>{step + 1 === phrases.length ? '這段練好了，接回整句 →' : '這段練好了，下一段 →'}</button></div>
       </>}
     </div>}

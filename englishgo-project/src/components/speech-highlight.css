@@ -1,0 +1,10 @@
+.speech-highlight { white-space:pre-wrap; overflow-wrap:anywhere; }
+.speech-highlight-word { border-radius:.2em; box-decoration-break:clone; -webkit-box-decoration-break:clone; }
+.speech-highlight .is-current { background:#ffe08a; color:#3f321b; box-shadow:0 3px 0 #b37b20; animation:speech-highlight-arrive .18s ease-out; }
+.speech-highlight .is-active-phrase { background:var(--garden-green-soft); text-decoration:underline; text-decoration-color:var(--garden-green); text-decoration-thickness:2px; text-underline-offset:.17em; }
+.practice-world .speech-highlight-note { font-size:13px; color:var(--garden-muted); line-height:1.7; margin:10px 0; }
+.speaking-studio .practice-question:has(.speaking-guided)>.speech-highlight-note { display:none; }
+html[data-eg-theme=dark] .speech-highlight .is-current { background:#f1cd71; color:#292310; box-shadow:0 3px 0 #caac61; }
+@keyframes speech-highlight-arrive { from { box-shadow:0 0 0 3px #ffe08a66; } to { box-shadow:0 3px 0 #b37b20; } }
+html[data-eg-calm=true] .speech-highlight * { animation:none !important; transition:none !important; }
+@media(prefers-reduced-motion:reduce) { .speech-highlight * { animation:none !important; transition:none !important; } }
