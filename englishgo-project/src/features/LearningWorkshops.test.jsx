@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import GrammarWorkshop from './GrammarWorkshop.jsx';
 import SpeakingStudio from './SpeakingStudio.jsx';
 import SongsStudio from './SongsStudio.jsx';
+import { cardPracticeStorageKey } from '../data/cardSpeaking.js';
 const Hdr = ({ t, onBack }) => <header><button onClick={onBack}>返回</button><h1>{t}</h1></header>;
 const common = () => ({ Hdr, c: { cl: '#507364' }, speak: vi.fn(() => ({})), stopSpeech: vi.fn(), playSound: vi.fn() });
 const button = name => screen.getByRole('button', { name, exact: true });
@@ -15,8 +16,8 @@ function grammar(extra = {}) {
   return { ...render(<StrictMode><GrammarWorkshop {...props} /></StrictMode>), props, deps };
 }
 const originals = [window.SpeechRecognition, window.webkitSpeechRecognition];
-afterEach(() => { [window.SpeechRecognition, window.webkitSpeechRecognition] = originals; Object.defineProperty(document, 'hidden', { configurable: true, value: false }); });
-function speaking(supported = true, extra = {}) {
+afterEach(() => { vi.useRealTimers(); [window.SpeechRecognition, window.webkitSpeechRecognition] = originals; Object.defineProperty(document, 'hidden', { configurable: true, value: false }); });
+function speaking(supported = true, extra = {}, overrides = {}) {
   const instances = [];
   class Recognition {
     constructor() { instances.push(this); }
@@ -25,7 +26,7 @@ function speaking(supported = true, extra = {}) {
   }
   window.SpeechRecognition = supported ? Recognition : undefined; window.webkitSpeechRecognition = undefined;
   const deps = { ...common(), fallback: [{ en: 'apple', zh: '蘋果', type: 'word' }, { en: 'dog', zh: '狗', type: 'word' }], modes: [{ id: 'mixed', label: '混合練習' }], fetchSpeakItems: vi.fn().mockResolvedValue([]), selectSpeakItemsByMode: items => items, localPronunciationGuide: () => ({ target: 'apple', syllables: 'ap-ple', stress: 'ap', steps: [] }), generatePronunciationGuide: vi.fn(), compareWords: (target, heard) => ({ pct: target === heard ? 100 : 0, result: [{ word: target, ok: target === heard }], extra: [] }), speakPassThreshold: () => 80, normalizeText: s => s, ...extra };
-  const props = { lv: 'elementary', onBack: vi.fn(), onXp: vi.fn(), deps };
+  const props = { lv: 'elementary', onBack: vi.fn(), onXp: vi.fn(), deps, ...overrides };
   return { ...render(<StrictMode><SpeakingStudio {...props} /></StrictMode>), props, deps, instances };
 }
 const song = { id: 'song', title: 'One Song', audio: '/one.mp3', lines: [{ t: 2, en: 'One apple', zh: '一顆蘋果' }, { t: 5, en: 'Two dogs', zh: '兩隻狗' }], vocab: ['apple', 'dogs'], patterns: [] };
@@ -40,6 +41,124 @@ function songs() {
   return { ...view, props, audio };
 }
 describe('learning workshops', () => {
+  it('opens a card example without auto audio or recording, plays its phrases, and preserves normal speaking progress',()=>{
+    const normal=JSON.stringify({untouched:true});localStorage.setItem('eg_speaking_studio_elementary',normal);
+    const cardPractice={word:'dog',meaning:'狗',en:'My dog likes to run in the park.',zh:'我的狗喜歡在公園裡跑。',type:'sentence'};
+    const view=speaking(true,{}, {cardPractice});
+    expect(view.instances).toHaveLength(0); expect(view.deps.speak).not.toHaveBeenCalled();
+    expect(view.deps.fetchSpeakItems).not.toHaveBeenCalled();
+    click('慢慢聽');expect(view.deps.speak).toHaveBeenLastCalledWith(cardPractice.en,'en-US',.65,expect.any(Object));
+    const lateFinish=view.deps.speak.mock.lastCall[3].onend;
+    click('聽第 1 段：My dog likes to run');
+    expect(view.deps.speak).toHaveBeenLastCalledWith('My dog likes to run','en-US',.65,expect.any(Object));
+    expect(button('聽第 1 段：My dog likes to run')).toHaveAttribute('aria-pressed','true');
+    expect(screen.getByRole('status')).toHaveTextContent('正在播放 · 第 1 段');
+    act(()=>lateFinish());expect(button('■ 停止示範')).toBeInTheDocument();
+    click('■ 停止示範');expect(screen.queryByRole('button',{name:'■ 停止示範'})).not.toBeInTheDocument();
+    click('先聽不看英文'); expect(screen.queryByText(cardPractice.en)).not.toBeInTheDocument();
+    expect(within(screen.getByRole('region',{name:'來自單字卡'})).queryByText('dog')).not.toBeInTheDocument();
+    click('🎤 直接開說');act(()=>view.instances[0].answer(cardPractice.en));
+    expect(screen.getByText(cardPractice.en,{selector:'.workshop-spoken-target'})).toBeInTheDocument();
+    expect(view.props.onXp).toHaveBeenCalledExactlyOnceWith(15);
+    expect(localStorage.getItem('eg_speaking_studio_elementary')).toBe(normal);
+    view.unmount();
+    const resumed=speaking(true,{}, {cardPractice});
+    click('🎤 直接開說');act(()=>resumed.instances[0].answer(cardPractice.en));
+    expect(resumed.props.onXp).not.toHaveBeenCalled();
+    expect(JSON.parse(localStorage.getItem(cardPracticeStorageKey('elementary',cardPractice))).records).toBeTruthy();
+    click('完成');click('回到單字卡繼續複習');expect(resumed.props.onBack).toHaveBeenCalledOnce();
+  });
+  it('keeps a card practice after hiding the page and supports a microphone-free completion without rewards',()=>{
+    const cardPractice={word:'apple',meaning:'蘋果',en:'An apple.',zh:'一顆蘋果。',type:'sentence'};
+    const view=speaking(false,{}, {cardPractice});
+    Object.defineProperty(document,'hidden',{configurable:true,value:true});fireEvent(document,new Event('visibilitychange'));
+    click('繼續聽說練習');click('我跟讀過了，繼續 →');
+    expect(screen.getByRole('region',{name:'口說練習完成'})).toBeInTheDocument();
+    expect(view.props.onXp).not.toHaveBeenCalled();
+    click(`朗讀 ${cardPractice.en}`);
+    expect(screen.getByRole('status')).toHaveTextContent('成果重聽');
+    click(`停止朗讀 ${cardPractice.en}`);
+    expect(screen.queryByText(/正在播放/)).not.toBeInTheDocument();
+    click(`朗讀 ${cardPractice.en}`);click('■ 停止示範');
+    expect(button(`朗讀 ${cardPractice.en}`)).toHaveAttribute('aria-pressed','false');
+    click('再練一次');expect(screen.getByRole('heading',{name:cardPractice.zh})).toBeInTheDocument();
+  });
+  it('distinguishes microphone startup, listening and processing, and cancels without scoring late results', () => {
+    const view = speaking(); click('開始口說小練習 →'); click('🎤 直接開說');
+    const recognition = view.instances[0];
+    expect(button('準備麥克風…')).toBeDisabled();
+    expect(screen.getByRole('status')).toHaveTextContent('還沒開始收音');
+    act(() => recognition.onstart());
+    expect(screen.getByRole('status')).toHaveTextContent('正在聽');
+    recognition.stop.mockImplementation(() => {});
+    click('■ 說好了，停止');
+    expect(button('正在整理結果…')).toBeDisabled();
+    const lateResult = recognition.onresult, lateEnd = recognition.onend;
+    click('取消這次錄音');
+    act(() => { lateResult({ resultIndex: 0, results: [Object.assign([{ transcript: 'apple' }], { isFinal: true })] }); lateEnd(); });
+    expect(recognition.abort).toHaveBeenCalledOnce();
+    expect(button('🎤 直接開說')).toBeEnabled();
+    expect(view.props.onXp).not.toHaveBeenCalled();
+    expect(JSON.parse(localStorage.getItem('eg_speaking_studio_elementary')).records).toEqual({});
+  });
+  it('finishes a timed-out capture with confirmed words when the browser never sends an end event', () => {
+    vi.useFakeTimers();
+    const view = speaking(); click('開始口說小練習 →'); click('🎤 直接開說');
+    const recognition = view.instances[0]; recognition.stop.mockImplementation(() => {});
+    act(() => { recognition.onstart(); recognition.onresult({ resultIndex: 0, results: [Object.assign([{ transcript: 'apple' }], { isFinal: true })] }); });
+    act(() => vi.advanceTimersByTime(25000));
+    expect(recognition.stop).toHaveBeenCalledOnce();
+    expect(button('正在整理結果…')).toBeDisabled();
+    const lateEnd = recognition.onend;
+    act(() => vi.advanceTimersByTime(4000));
+    expect(view.props.onXp).toHaveBeenCalledExactlyOnceWith(15);
+    expect(screen.getByText('文字符合度 100% · 通過參考 80%')).toBeInTheDocument();
+    act(() => lateEnd());
+    expect(view.props.onXp).toHaveBeenCalledOnce();
+    expect(recognition.abort).toHaveBeenCalledOnce();
+  });
+  it('replaces provisional words and only scores confirmed recognition text', () => {
+    const compareWords = vi.fn((target, heard) => ({ pct: target === heard ? 100 : 0, result: [], extra: [] }));
+    const view = speaking(true, { compareWords }); click('開始口說小練習 →'); click('🎤 直接開說');
+    const recognition = view.instances[0];
+    const row = (transcript, isFinal) => Object.assign([{ transcript }], { isFinal });
+    act(() => recognition.onresult({ resultIndex: 0, results: [row('wrong', false), row('old words', false)] }));
+    expect(screen.getByRole('status')).toHaveTextContent('wrong old words');
+    act(() => recognition.onresult({ resultIndex: 0, results: [row('apple', true)] }));
+    expect(screen.getByRole('status')).not.toHaveTextContent('old words');
+    act(() => recognition.onresult({ resultIndex: 1, results: [row('apple', true), row('unconfirmed', false)] }));
+    click('■ 說好了，停止');
+    expect(compareWords).toHaveBeenCalledExactlyOnceWith('apple', 'apple');
+    click('重說一次');
+    act(() => { view.instances[1].onresult({ resultIndex: 0, results: [row('apple', false)] }); view.instances[1].onend(); });
+    expect(screen.getByRole('alert')).toHaveTextContent('還沒收到完整的辨識結果');
+    expect(compareWords).toHaveBeenCalledOnce();
+  });
+  it('recovers from a microphone that never starts, and aborts recording when a demo is requested', () => {
+    vi.useFakeTimers();
+    const view = speaking(); click('開始口說小練習 →'); click('🎤 直接開說');
+    const lateStart = view.instances[0].onstart;
+    act(() => vi.advanceTimersByTime(25000));
+    act(() => lateStart());
+    expect(screen.getByRole('alert')).toHaveTextContent('麥克風還沒有啟動');
+    expect(button('🎤 直接開說')).toBeEnabled();
+    click('🎤 直接開說'); const lateEnd = view.instances[1].onend;
+    click('🔊 聽示範'); act(() => lateEnd());
+    expect(view.instances[1].abort).toHaveBeenCalledOnce();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(view.props.onXp).not.toHaveBeenCalled();
+    expect(button('🎤 直接開說')).toBeEnabled();
+  });
+  it('clears pending capture completion when leaving the studio', () => {
+    vi.useFakeTimers();
+    const view = speaking(); click('開始口說小練習 →'); click('🎤 直接開說');
+    const recognition = view.instances[0]; recognition.stop.mockImplementation(() => {});
+    act(() => { recognition.onstart(); recognition.onresult({ resultIndex: 0, results: [Object.assign([{ transcript: 'apple' }], { isFinal: true })] }); });
+    click('■ 說好了，停止'); view.unmount();
+    act(() => vi.advanceTimersByTime(4000));
+    expect(view.props.onXp).not.toHaveBeenCalled();
+    expect(recognition.abort).toHaveBeenCalledOnce();
+  });
   it('gates grammar stages, persists a wrong answer, then awards only the first correct retry', () => {
     const view = grammar(); click(/第 01 課/);
     expect(screen.getByRole('button', { name: /3.*小挑戰/ })).toBeDisabled();

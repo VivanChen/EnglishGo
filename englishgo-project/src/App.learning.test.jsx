@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import App from './App.jsx';
 
@@ -57,6 +57,9 @@ describe('child friendly learning journey',()=>{
     await openHome();
     const search=screen.getByRole('textbox',{name:'尋找學習活動'});
     fireEvent.change(search,{target:{value:'歌曲'}});
+    expect(screen.queryByRole('region',{name:'今天的小任務'})).not.toBeInTheDocument();
+    expect(screen.getByRole('region',{name:'找到的學習活動'})).toBeInTheDocument();
+    expect(search).toHaveAttribute('aria-controls','eg-learning-panel');
     expect(document.querySelector('[data-module-id="songs"]')).toBeInTheDocument();
     expect(screen.getByText('找到 1 個學習活動')).toBeInTheDocument();
     expect(document.querySelector('[data-module-id="srs"]')).not.toBeInTheDocument();
@@ -64,6 +67,26 @@ describe('child friendly learning journey',()=>{
     fireEvent.click(screen.getByRole('button',{name:'看看全部活動'}));
     expect(document.querySelector('[data-module-id="srs"]')).toBeInTheDocument();
     expect(search).toHaveFocus();
+    expect(screen.getByRole('region',{name:'今天的小任務'})).toBeInTheDocument();
+  });
+  it('jumps directly to activities and clears a search with Escape without leaving the chosen category',async()=>{
+    await openHome();
+    fireEvent.click(screen.getByRole('button',{name:'瀏覽學習活動'}));
+    expect(screen.getByRole('tabpanel')).toHaveFocus();
+    fireEvent.click(document.querySelector('[data-group-id="read"]'));
+    const search=screen.getByRole('textbox',{name:'尋找學習活動'});
+    fireEvent.change(search,{target:{value:'  單字  '}});
+    expect(document.querySelector('[data-module-id="srs"]')).toBeInTheDocument();
+    fireEvent.submit(screen.getByRole('search',{name:'搜尋所有學習活動'}));
+    expect(screen.getByRole('region',{name:'找到的學習活動'})).toHaveFocus();
+    fireEvent.keyDown(search,{key:'Escape'});
+    expect(search).toHaveValue('');
+    expect(search).toHaveFocus();
+    expect(document.querySelector('[data-group-id="read"]')).toHaveAttribute('aria-selected','true');
+    expect(document.querySelector('[data-module-id="songs"]')).toBeInTheDocument();
+    expect(document.querySelector('[data-module-id="srs"]')).not.toBeInTheDocument();
+    fireEvent.change(search,{target:{value:'   '}});
+    expect(screen.queryByRole('region',{name:'找到的學習活動'})).not.toBeInTheDocument();
   });
   it('remembers comfort settings and supports arrow-key category navigation',async()=>{
     await openHome();
@@ -129,6 +152,22 @@ describe('child friendly learning journey',()=>{
     fireEvent.click(screen.getByRole('button',{name:'Blue',exact:true}));
     fireEvent.click(screen.getByRole('button',{name:'For safety',exact:true}));
     expect(JSON.parse(localStorage.getItem('eg_xp'))).toBe(10);
+  });
+  it('returns from a question to the story and back without losing answers or granting rewards',async()=>{
+    await openHome();openReading();
+    fireEvent.click(screen.getByRole('button',{name:'Mimi',exact:true}));
+    fireEvent.click(screen.getByRole('button',{name:'回短文找第 2 題的線索'}));
+    expect(screen.getByRole('heading',{name:'My Pet Cat',exact:true})).toHaveFocus();
+    fireEvent.click(screen.getByRole('button',{name:'回第 2 題 ↓'}));
+    expect(screen.getByRole('heading',{name:/What does Mimi like/})).toHaveFocus();
+    expect(within(screen.getByRole('region',{name:/What is the cat's name/})).getByRole('button',{name:/^Mimi/})).toBeDisabled();
+    expect(JSON.parse(localStorage.getItem('eg_xp'))).toBe(5);
+    fireEvent.click(screen.getByRole('button',{name:'回短文找第 2 題的線索'}));
+    fireEvent.change(screen.getByRole('combobox',{name:'選擇短文'}),{target:{value:'1'}});
+    expect(screen.queryByRole('button',{name:'回第 2 題 ↓'})).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button',{name:'找線索 ↓'}));
+    expect(document.activeElement).toHaveAttribute('id','eg-reading-q-0');
+    expect(JSON.parse(localStorage.getItem('eg_xp'))).toBe(5);
   });
   it('supports a gentle retry and gives each question reward once',async()=>{
     await openHome();openReading();

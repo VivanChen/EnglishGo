@@ -18,6 +18,7 @@ export default function ReadingPractice({ lv, onBack, onXp, deps }) {
   const { articles, translations, useLS, splitReadingSentences, readingKeywords, readingWords, readingEvidence, speak, speakStory, preloadTts, playSound, Hdr, c } = deps;
   const [notebook, setNotebook] = useLS(`reading_${lv}`, { selected: articles[0].t, articles: {} });
   const [largeText, setLargeText] = useLS('readingLargeText', false);
+  const [returnQuestion, setReturnQuestion] = useState(null);
   const notebookRef = useRef(notebook);
   const articleHandle = useRef(null), articleHeading = useRef(null), questionRefs = useRef([]);
   const [focus, setFocus] = useState(-1), [playing, setPlaying] = useState(false), [showZh, setShowZh] = useState(false);
@@ -47,8 +48,22 @@ export default function ReadingPractice({ lv, onBack, onXp, deps }) {
   }, [article, sentences, preloadTts]);
   useEffect(() => { if (done) setShowZh(true); }, [done, article]);
 
+  const focusReadingTarget = target => {
+    target?.focus({ preventScroll: true });
+    target?.scrollIntoView({ behavior: 'instant', block: 'start' });
+  };
+  const reviewStory = qi => {
+    setReturnQuestion(qi);
+    focusReadingTarget(articleHeading.current);
+  };
+  const continueQuestions = () => {
+    const next = returnQuestion ?? Math.max(0, article.qs.findIndex((_, index) => answers[index] === undefined));
+    focusReadingTarget(questionRefs.current[next]);
+    setReturnQuestion(null);
+  };
+
   const chooseArticle = index => {
-    stop(); setShowZh(false);
+    stop(); setShowZh(false); setReturnQuestion(null);
     save({ ...notebookRef.current, selected: articles[index].t });
     articleHeading.current?.focus({ preventScroll: true });
     articleHeading.current?.scrollIntoView({ behavior: 'instant', block: 'start' });
@@ -69,7 +84,7 @@ export default function ReadingPractice({ lv, onBack, onXp, deps }) {
     questionRefs.current[qi]?.focus({ preventScroll: true });
   };
   const resetArticle = () => {
-    stop(); saveRecord({ ...readRecord(notebookRef.current, article), answers: {} });
+    stop(); setReturnQuestion(null); saveRecord({ ...readRecord(notebookRef.current, article), answers: {} });
     questionRefs.current[0]?.focus({ preventScroll: true });
     questionRefs.current[0]?.scrollIntoView({ behavior: 'instant', block: 'start' });
   };
@@ -82,6 +97,11 @@ export default function ReadingPractice({ lv, onBack, onXp, deps }) {
     </div>
     <label className="eg-reading-picker"><span>今天想讀哪一篇？</span><select aria-label="選擇短文" value={ai} onChange={event => chooseArticle(Number(event.target.value))}>{articles.map((item, index) => <option key={item.t} value={index}>{index + 1}. {item.t}{Object.keys(readRecord(notebook, item).answers).length === item.qs.length ? ' ✓' : ''}</option>)}</select></label>
     <p className="eg-reading-save-note">🌱 作答進度會留在這個瀏覽器，下次可以接著讀。</p>
+    <nav className="eg-reading-wayfinding" aria-label="短文與練習導覽">
+      <button type="button" aria-controls="eg-reading-title" onClick={() => focusReadingTarget(articleHeading.current)}>↑ 讀短文</button>
+      <button type="button" aria-controls="eg-reading-questions" onClick={continueQuestions}>{returnQuestion != null ? `回第 ${returnQuestion + 1} 題 ↓` : done ? '查看作答 ↓' : '找線索 ↓'}</button>
+      <span aria-label={`本篇已作答 ${answered} 題，共 ${article.qs.length} 題`}>{answered}/{article.qs.length} 題</span>
+    </nav>
 
     <section className="eg-reading-story" aria-labelledby="eg-reading-title">
       <div className="eg-reading-story-heading"><div><h3 id="eg-reading-title" ref={articleHeading} tabIndex={-1}>{article.t}</h3><span>{readingWords(article.tx).length} words · 約 {Math.max(1, Math.ceil(readingWords(article.tx).length / 120))} 分鐘</span></div><span className="eg-reading-count">已練習 {answered}/{article.qs.length} 題</span></div>
@@ -96,7 +116,7 @@ export default function ReadingPractice({ lv, onBack, onXp, deps }) {
       {keywords.length > 0 && <details className="eg-reading-keywords"><summary>認識這篇的單字 · {keywords.length} 個</summary><div>{keywords.map(keyword => <button type="button" key={keyword.word} onClick={() => { stop(); speak(keyword.word); }}><b lang="en">{keyword.word}</b>{keyword.info?.m ? ` · ${keyword.info.m}` : ''}</button>)}</div></details>}
     </section>
 
-    <div className="eg-reading-question-intro"><h3>找找故事裡的線索</h3><p>不確定時，回去讀一讀就好。</p></div>
+    <div className="eg-reading-question-intro" id="eg-reading-questions"><h3>找找故事裡的線索</h3><p>不確定時，回去讀一讀就好。</p></div>
     {article.qs.map((question, qi) => {
       const selected = answers[qi], hasAnswer = selected !== undefined, correct = selected === question.a;
       return <section key={`${article.t}-${qi}`} className={`eg-reading-question ${hasAnswer ? correct ? 'is-correct' : 'needs-practice' : ''}`} aria-labelledby={`eg-reading-q-${qi}`}>
@@ -104,6 +124,7 @@ export default function ReadingPractice({ lv, onBack, onXp, deps }) {
         {showZh && zh.qs?.[qi] && <p className="eg-reading-question-zh">{zh.qs[qi]}</p>}
         <div className="eg-reading-options">{question.o.map((option, oi) => <button type="button" key={oi} disabled={hasAnswer} className={hasAnswer && oi === question.a ? 'is-answer' : selected === oi ? 'is-picked' : ''} onClick={() => pick(qi, oi)}><span lang="en">{option}</span>{hasAnswer && oi === question.a && <span aria-label="正確答案">✓</span>}{selected === oi && oi !== question.a && <span aria-label="你的選擇">↻</span>}</button>)}</div>
         {hasAnswer && <div className="eg-reading-feedback"><div role="status"><b>{correct ? '找到線索了！' : '再找找線索，你可以再試一次。'}</b><p>答案是：<span lang="en">{question.o[question.a]}</span></p></div><blockquote lang="en">{readingEvidence(article.tx, question)}</blockquote>{!correct && <button type="button" onClick={() => retry(qi)}>再試一次</button>}</div>}
+        <button type="button" className="eg-reading-review-link" aria-label={`回短文找第 ${qi + 1} 題的線索`} onClick={() => reviewStory(qi)}>↑ 回短文找線索</button>
       </section>;
     })}
     {done && <section className="eg-reading-complete" aria-label="短文練習完成"><span aria-hidden="true">🌱</span><h3>本篇完成</h3><p>每一題都練習過了！{score === article.qs.length ? '你找到了所有線索。' : '還不熟的地方，可以慢慢再看一次。'}</p><div><button type="button" onClick={resetArticle}>重做本篇</button><button type="button" className="eg-primary" onClick={() => chooseArticle((ai + 1) % articles.length)}>{ai + 1 === articles.length ? '回第一篇' : '下一篇'}</button><button type="button" onClick={onBack}>休息一下，回首頁</button></div></section>}

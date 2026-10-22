@@ -58,6 +58,6 @@ it('shows a Gemini permission error with a settings action and keeps local dicti
   expect(screen.getByTestId('srs-local-dictionary')).toBeInTheDocument();
   expect(screen.queryByText(/do-not-display-this-secret/)).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole('button',{name:'API Key 設定',exact:true}));
-  expect(await screen.findByRole('heading',{name:'API Key 設定'})).toBeInTheDocument();
+  expect(await screen.findByRole('heading',{name:'設定',exact:true})).toBeInTheDocument();
   expect(screen.getByText('已填入・未驗證')).toBeInTheDocument();
 });

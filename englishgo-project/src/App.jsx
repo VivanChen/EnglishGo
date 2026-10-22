@@ -4,6 +4,8 @@ import { followPageAnchor, withoutPageAnchor } from "./data/pageAnchors.js";
 import { refreshPetCare } from "./data/petCare.js";
 import { useState, useEffect, useCallback, useRef, useMemo, useContext, createContext, lazy, Suspense } from "react";
 import { Brand, ComfortControls, LearningDashboard, WelcomeScreen } from "./components/LearningExperience.jsx";
+import FeatureHeader from "./components/FeatureHeader.jsx";
+import { readCardPractice, readSrsSession } from './data/cardSpeaking.js';
 import ReadingPractice from "./features/ReadingPractice.jsx";
 import { archiveStudyDay, dailyProgress, learningStreak, localDay } from "./data/studyProgress.js";
 import { buildDailyMiniDeck } from "./data/learningJourney.js";
@@ -1551,6 +1553,8 @@ function normalizeEnglishGoNavigation(value={}){
     menuGroup:ENGLISHGO_MENU_GROUPS.has(value?.menuGroup)?value.menuGroup:"learn",
     sharedWord:level&&typeof value?.sharedWord==="string"?value.sharedWord:null,
     customDeck:level&&value?.customDeck&&typeof value.customDeck==="object"?value.customDeck:null,
+    cardPractice:level&&value?.mod==="speak"?readCardPractice(value.cardPractice):null,
+    srsSession:level&&value?.mod==="srs"?readSrsSession(value.srsSession,level):null,
     depth:Math.max(0,Number(value?.depth)||0),
   };
 }
@@ -2377,6 +2381,8 @@ export default function App(){
   const[showAch,setShowAch]=useState(null);
   const[sharedWord,setSharedWord]=useState(initialNavigation.sharedWord);
   const[customDeck,setCustomDeck]=useState(initialNavigation.customDeck);
+  const[cardPractice,setCardPractice]=useState(initialNavigation.cardPractice);
+  const[srsSession,setSrsSession]=useState(initialNavigation.srsSession);
   const navigationRef=useRef(initialNavigation);
   const levelWeakWords=useMemo(()=>getWeakVocabularyForLevel(weakWords,lv),[weakWords,lv]);
 
@@ -2388,6 +2394,8 @@ export default function App(){
     setMod(navigation.mod);
     setSharedWord(navigation.sharedWord);
     setCustomDeck(navigation.customDeck);
+    setCardPractice(navigation.cardPractice);
+    setSrsSession(navigation.srsSession);
   },[]);
 
   const navigateEnglishGo=useCallback((changes,{replace=false,url=null}={})=>{
@@ -2401,6 +2409,14 @@ export default function App(){
     window.history[replace?"replaceState":"pushState"](state,"",url||withoutPageAnchor(window.location.href));
     applyNavigation(navigation);
   },[applyNavigation]);
+
+  const rememberSrsSession=useCallback(session=>{
+    const current=navigationRef.current;
+    if(current?.mod!=="srs")return;
+    const navigation={...current,srsSession:session};
+    navigationRef.current=navigation;
+    window.history.replaceState({...window.history.state,[ENGLISHGO_HISTORY_KEY]:navigation},"",window.location.href);
+  },[]);
 
   const backEnglishGo=useCallback(fallback=>{
     if((navigationRef.current?.depth||0)>0){window.history.back();return}
@@ -2615,7 +2631,6 @@ export default function App(){
     return()=>{if(frame!==null&&typeof cancelAnimationFrame==="function")cancelAnimationFrame(frame)};
   },[lv,mod]);
   useEffect(()=>()=>stopSpeech(),[lv,mod]);
-  useEffect(()=>{if(mod)document.querySelector(".eg-feature-header h2")?.focus({preventScroll:true})},[mod]);
 
   const openKeySettings=()=>navigateEnglishGo({mod:"settings",menuGroup:"tools",sharedWord:null,customDeck:null});
   if(!lv&&mod==="settings")return <div className="eg-app-shell"><nav className="eg-app-nav" aria-label="網站導覽"><Brand onClick={()=>backEnglishGo({lv:null,mod:null})}/><div className="eg-nav-spacer"/><ComfortControls {...comfort}/></nav><main className="eg-app-content is-module module-settings" style={{maxWidth:760,margin:"0 auto",padding:"12px"}}><SettingsPage onBack={()=>backEnglishGo({lv:null,mod:null})} c={LV.elementary} gemKey={gemKey} setGemKey={setGemKey} gifKey={gifKey} setGifKey={setGifKey}/></main></div>;
@@ -2686,16 +2701,16 @@ export default function App(){
 
       <RewardBurstHost/>
       <a className="eg-skip" href="#learning-content" onClick={followPageAnchor}>跳到學習內容</a>
-      <nav className="eg-app-nav" aria-label="網站導覽"><Brand onClick={openHome}/><div className="eg-nav-spacer"/><button type="button" className="eg-level-switch" onClick={returnToLevelSelection} aria-label="返回學習階段選擇"> {c.l} · 換階段</button><ComfortControls {...comfort}/></nav>
+      <nav className="eg-app-nav" aria-label="網站導覽"><Brand onClick={openHome}/><div className="eg-nav-spacer"/><button type="button" className="eg-level-switch" onClick={returnToLevelSelection} aria-label="返回學習階段選擇"><span className="eg-level-current">{c.l} · </span>換階段</button><ComfortControls {...comfort}/></nav>
       <main id="learning-content" tabIndex={-1} className={`eg-app-content ${mod?`is-module module-${mod}`:""}`} style={{maxWidth:!mod?940:mod==="petAdventure"?1280:mod==="petMonopoly"?1180:["srs","pets","gacha"].includes(mod)?1080:mod==="translate"?960:760,margin:"0 auto",padding:mod==="petAdventure"||mod==="petMonopoly"?"14px 18px calc(20px + env(safe-area-inset-bottom, 0px))":"12px 12px calc(16px + env(safe-area-inset-bottom, 0px))"}}>
       <SpeechSpeedContext.Provider value={TTS_SPEED_MODULES.has(mod)}>
       {!mod&&showAch&&<div className="eg-achievement-toast" role="status"><span aria-hidden="true">{showAch.icon}</span><div><b>新成就 · {showAch.name}</b><small>你的努力，已經收藏在成就牆。</small></div><button type="button" onClick={()=>setShowAch(null)} aria-label="關閉成就提醒">×</button></div>}
         {!mod?<MenuV2 lv={lv} onSelect={openModule} activeGroup={menuGroup} onGroupChange={changeMenuGroup} daily={daily} c={c} xp={xp} coins={coins} streak={learningStreak(streak,daily)} achUnlocked={achUnlocked} weakWords={levelWeakWords} pets={pets} eggs={eggs} onQuickStart={startMiniMission} lastActivity={lastActivity} loginGift={loginBonusModal} claimGift={claimLoginBonus}/>:
          mod==="wordsearch"?<WordSearchM lv={lv} onBack={back} onReviewCards={cards=>navigateEnglishGo({lv,mod:"srs",menuGroup:"learn",sharedWord:null,customDeck:{cards,source:"我的單字收藏"}})} onOpenCard={(word,level)=>navigateEnglishGo({lv:level||lv,mod:"srs",menuGroup:"learn",sharedWord:word,customDeck:null})}/>:
          mod==="exam"?<ExamReviewM lv={lv} onBack={back} c={c} apiKey={gemKey} onOpenSettings={()=>openModule("settings","tools")} onStart={deck=>navigateEnglishGo({lv,mod:"srs",menuGroup:"learn",sharedWord:null,customDeck:deck})}/>:
-         mod==="srs"?<SRS lv={lv} onBack={back} onLevelChange={nextLv=>navigateEnglishGo({lv:nextLv,sharedWord:null,customDeck:null},{replace:true})} onXp={n=>addXpWithTask(n,"srsToday")} onDone={()=>setStats(s=>({...s,srsRounds:s.srsRounds+1}))} trackWeak={trackWeak} gifKey={gifKey} sharedWord={sharedWord} apiKey={gemKey} weakWords={levelWeakWords} customCards={customDeck?.cards||null} customSource={customDeck?.source||""} onOpenSettings={()=>openModule("settings","tools")}/>:
+         mod==="srs"?<SRS lv={lv} onBack={back} onLevelChange={nextLv=>navigateEnglishGo({lv:nextLv,sharedWord:null,customDeck:null},{replace:true})} onXp={n=>addXpWithTask(n,"srsToday")} onDone={()=>setStats(s=>({...s,srsRounds:s.srsRounds+1}))} trackWeak={trackWeak} gifKey={gifKey} sharedWord={sharedWord} apiKey={gemKey} weakWords={levelWeakWords} customCards={customDeck?.cards||null} customSource={customDeck?.source||""} resumeSession={srsSession} onSessionChange={rememberSrsSession} onPracticeSpeaking={practice=>navigateEnglishGo({lv,mod:"speak",menuGroup:"learn",sharedWord:null,customDeck:null,cardPractice:practice})} onOpenSettings={()=>openModule("settings","tools")}/>:
          mod==="quiz"?<QuizM lv={lv} onBack={back} onXp={n=>addXpWithTask(n,"quizToday")} onPerfect={()=>setStats(s=>({...s,perfectQuiz:s.perfectQuiz+1}))} trackWeak={trackWeak} onReviewWords={cards=>navigateEnglishGo({lv,mod:"srs",menuGroup:"learn",sharedWord:null,customDeck:{cards,source:"小任務複習"}})}/>:
-         mod==="speak"?<SpeakM lv={lv} onBack={back} onXp={n=>addXpWithTask(n,"speakToday")} apiKey={gemKey} onOpenSettings={()=>openModule("settings","tools")}/>:
+         mod==="speak"?<SpeakM lv={lv} cardPractice={cardPractice} onBack={back} onXp={n=>addXpWithTask(n,"speakToday")} apiKey={gemKey} onOpenSettings={()=>openModule("settings","tools")}/>:
          mod==="colorIsland"?<ColorIslandM lv={lv} onBack={back} onXp={addXp}/>:mod==="wordDash"?<WordDashM lv={lv} onBack={back} onXp={addXp}/>:mod==="whack"?<WhackM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="match"?<MatchM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="bomb"?<BombM lv={lv} onBack={back} onXp={addXp}/>:
@@ -3393,7 +3408,7 @@ ${analysisBlock}
 }
 
 function speakPassThreshold(item){return item?.type==="word"?80:70}
-function SpeakM(props){return <Suspense fallback={<ModuleLoading label="準備口說小練習..."/>}><SpeakingStudio key={props.lv} {...props} deps={{fallback:SPEAK_FALLBACK[props.lv],fetchSpeakItems,selectSpeakItemsByMode,modes:SPEAK_MODE_OPTIONS,localPronunciationGuide,generatePronunciationGuide,compareWords,speakPassThreshold,normalizeText,speak,stopSpeech,playSound,Hdr,c:LV[props.lv]}}/></Suspense>}
+function SpeakM(props){return <Suspense fallback={<ModuleLoading label="準備聽說小練習..."/>}><SpeakingStudio key={`${props.lv}:${props.cardPractice?.en||'general'}`} {...props} deps={{fallback:SPEAK_FALLBACK[props.lv],fetchSpeakItems,selectSpeakItemsByMode,modes:SPEAK_MODE_OPTIONS,localPronunciationGuide,generatePronunciationGuide,compareWords,speakPassThreshold,normalizeText,speak,stopSpeech,playSound,Hdr,c:LV[props.lv]}}/></Suspense>}
 // ═══ ILLUSTRATED ARCADE ════════════════════════════════════════
 const LazyColorIsland=lazy(()=>import("./features/ColorIsland.jsx"));
 function ColorIslandM(props){return <Suspense fallback={<ModuleLoading label="正在準備彩色浮島…"/>}><LazyColorIsland key={props.lv} {...props} deps={{speak:speakWebSpeech,stopSpeech,playSound}}/></Suspense>}
@@ -4204,5 +4219,5 @@ function GachaPage(props){return <Suspense fallback={<PetFeatureFallback/>}><Laz
 function PetsGuard(props){return <Suspense fallback={<PetFeatureFallback/>}><LazyPetsGuard {...props} deps={getPetsModuleDeps()}/></Suspense>}
 
 
-function Hdr({t,onBack,cl,extra}){const showSpeechSpeed=useContext(SpeechSpeedContext);return(<div className="eg-feature-header" style={{display:"flex",alignItems:"center",gap:4,marginBottom:8,flexWrap:"wrap"}}><button type="button" onClick={onBack} style={{background:"none",border:"none",fontSize:12,color:cl,cursor:"pointer",fontWeight:600,fontFamily:"inherit",padding:"6px 8px",minHeight:44,borderRadius:8,WebkitTapHighlightColor:"transparent"}}>← 返回</button><h2 tabIndex={-1} style={{fontSize:16,fontWeight:700,color:S.t1,margin:0,flex:"1 1 120px"}}>{t}</h2>{showSpeechSpeed&&<TtsQuickSpeed/>}{extra}</div>)}
+function Hdr({t,onBack,extra}){const showSpeechSpeed=useContext(SpeechSpeedContext);return <FeatureHeader title={t} onBack={onBack}>{showSpeechSpeed&&<TtsQuickSpeed/>}{extra}</FeatureHeader>}
 function PB({v,mx,cl}){return(<div style={{display:"flex",alignItems:"center",gap:6,marginBottom:10,fontSize:12}}><div style={{flex:1,height:4,background:S.bg2,borderRadius:2}}><div style={{height:"100%",width:`${(v/mx)*100}%`,background:cl,borderRadius:2,transition:"width .3s"}}/></div><span style={{color:S.t3}}>{v+1}/{mx}</span></div>)}

@@ -1,0 +1,1 @@
+drop policy if exists "codex_temp_elementary_pdf_gap_upload" on storage.objects;

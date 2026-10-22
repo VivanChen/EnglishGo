@@ -79,7 +79,7 @@ const modulePresentation = {
   wordsearch:['learn','找找單字','輸入中文或英文，一起找答案。','隨時查詢'],
   quiz:['star','小小挑戰','選一選，看看記住了哪些單字。','選擇練習'],
   grammar:['learn','句型積木','用簡單的規則，把句子搭起來。','一步一步'],
-  speak:['sound','勇敢說出口','先聽再說，每次開口都算進步。','需要麥克風'],
+  speak:['sound','勇敢說出口','單字與例句的聽說練習，先聽再開口。','可先跟讀'],
   ai:['star','問問小老師','有英文問題？讓小老師陪你想。','請大人設定'],
   translate:['read','句子的旅行','看看中英文，聽懂句子的意思。','每分鐘 1 次'],
   reading:['read','短文探險','讀一小篇，發現故事裡的線索。','讀一讀'],
@@ -115,7 +115,8 @@ export function LearningDashboard({ c, lv, modules, groups, activeGroup, onGroup
     return()=>{query?.removeEventListener('change',update);if(scrollFrame.current!==null)cancelAnimationFrame(scrollFrame.current)};
   },[]);
   const target=Math.max(1,Number(daily.target)||10),done=Math.max(0,Number(daily.done)||0),pct=Math.min(100,Math.round(done/target*100));
-  const visible=modules.filter(m=>(search.trim()?`${m.t} ${m.d} ${modulePresentation[m.id]?.join(' ')}`.toLowerCase().includes(search.trim().toLowerCase()):m.group===activeGroup));
+  const query=search.trim().toLowerCase();
+  const visible=modules.filter(m=>(query?`${m.t} ${m.d} ${modulePresentation[m.id]?.join(' ')}`.toLowerCase().includes(query):m.group===activeGroup));
   const group=groups.find(g=>g.id===activeGroup)||groups[0];
   const changeGroup=(id,focusPanel=false)=>{
     setSearch('');onGroupChange(id);
@@ -123,6 +124,7 @@ export function LearningDashboard({ c, lv, modules, groups, activeGroup, onGroup
     scrollFrame.current=requestAnimationFrame(()=>{panelRef.current?.scrollIntoView({behavior:'instant',block:'start'});if(focusPanel)panelRef.current?.focus({preventScroll:true})});
   };
   const clearSearch=()=>{setSearch('');searchRef.current?.focus()};
+  const focusActivities=()=>{panelRef.current?.scrollIntoView({behavior:'instant',block:'start'});panelRef.current?.focus({preventScroll:true})};
   const recent=lastActivity?.lv===lv?modules.find(m=>m.id===lastActivity.id):null;
   const friendlyGroups={learn:'學習小花園',read:'故事與音樂',game:'遊戲練習場',pet:'寵物小天地',tools:'我的工具箱'};
   return <div className="eg-hub">
@@ -132,14 +134,23 @@ export function LearningDashboard({ c, lv, modules, groups, activeGroup, onGroup
     </aside>
     <div className="eg-hub-main">
       <div className="eg-hub-heading"><div><span className="eg-eyebrow">MY LEARNING GARDEN</span><h1>嗨，小小探索家 <span className="eg-hello">✦</span></h1><p>今天想發現什麼呢？一起慢慢來。</p></div><span className="eg-grade-pill">{c.ic} {c.l}學習</span></div>
+      <form className="eg-activity-finder" role="search" aria-label="搜尋所有學習活動" onSubmit={event=>{event.preventDefault();focusActivities()}}>
+        <label htmlFor="eg-activity-query">今天想學什麼？<span>搜尋所有分類的活動</span></label>
+        <div className="eg-activity-search"><span aria-hidden="true">⌕</span><input id="eg-activity-query" ref={searchRef} aria-label="尋找學習活動" aria-controls="eg-learning-panel" autoComplete="off" enterKeyHint="search" placeholder="試試「單字」、「故事」、「歌曲」" value={search} onChange={e=>setSearch(e.target.value)} onKeyDown={event=>{if(event.key==='Escape'&&search){event.preventDefault();clearSearch()}}}/>{search&&<button type="button" onClick={clearSearch} aria-label="清除活動搜尋">×</button>}</div>
+        <button type="submit" className="eg-browse-activities">{query?'查看搜尋結果':'瀏覽學習活動'} <span aria-hidden="true">↓</span></button>
+      </form>
+      {recent&&!query&&<button type="button" className="eg-recent" onClick={()=>onSelect(recent.id,recent.group)}>上次探索：{recent.t}<span>再去看看 →</span></button>}
+      {!query&&<>
       <div className="eg-hub-overview"><section className="eg-mission" aria-label="今天的小任務"><div><span className="eg-mission-label"><LearningIcon name="star" size={17}/> 今天的小任務</span><h2>{pct>=100?<>今天的努力，<br/>已經開花了！</>:<>每天一點點，<br/>英文長大一點點。</>}</h2><p>{pct>=100?'可以休息一下，也可以自由探索。':'先認識 5 個單字，給好奇心澆澆水。'}</p><button type="button" className="eg-primary" onClick={pct>=100?()=>{changeGroup('read');document.getElementById('eg-learning-panel')?.scrollIntoView({behavior:'auto',block:'start'})}:onQuickStart}>{pct>=100?'探索故事與音樂':'開始 5 張單字小任務'}<LearningIcon name="arrow" size={18}/></button><span className="eg-mission-foot">{pct>=100?'每一份努力，都值得被記住。':'約 3–5 分鐘 · 可以隨時休息'}</span></div><div className="eg-mission-friend"><span>Hello!</span><SproutFriend/></div></section>
         <section className="eg-today"><div className="eg-today-heading"><b>我的小進步</b><LearningIcon name="star" size={20}/></div><div className="eg-daily-ring" style={{'--daily-progress':`${pct}%`}} role="progressbar" aria-label="今日學習進度" aria-valuemin={0} aria-valuemax={target} aria-valuenow={Math.min(done,target)}><div><strong>{Math.min(done,target)}<small> / {target}</small></strong><span>今日練習</span></div></div><p>{done===0?'準備好了就出發吧！':pct>=100?'今天的目標完成了！':'每次練習，都在慢慢進步。'}</p><div className="eg-today-stats"><span><b>{streak}</b> 天連續學習</span><span><b>{xp}</b> <span className="eg-menu-stat-label">XP</span></span></div></section></div>
       {loginGift&&<div className="eg-gift-inline" role="status"><span>🎁 歡迎回來！有一份小禮物等你領取。</span><button type="button" onClick={claimGift}>領取獎勵</button></div>}
       <div className="eg-discovery-row"><section className="eg-word-discovery"><span className="eg-word-icon"><LearningIcon name="learn" size={25}/></span><div><span className="eg-small-label">每天認識一個新朋友</span><div className="eg-word-inline"><strong>{todayWord.w}</strong><span>{todayWord.m}</span></div></div><button type="button" className="eg-icon-control" onClick={onSpeak} aria-label="朗讀今日單字"><LearningIcon name="sound"/></button></section><button type="button" className="eg-companion-link" onClick={()=>onSelect('pets','pet')}><span className="eg-companion-icon"><LearningIcon name="pet" size={25}/></span><span><b>和小夥伴打聲招呼</b><small>{pets.length?`${pets.length} 隻寵物等你來陪伴`:eggs.length?`${eggs.length} 顆蛋，等著和你一起成長`:'認識陪你一起學英文的朋友'}</small></span><LearningIcon name="arrow" size={18}/></button></div>
-      <section id="eg-learning-panel" ref={panelRef} tabIndex={-1} className="eg-learning-panel" role="tabpanel" aria-labelledby={`eg-tab-${activeGroup}`}><button type="button" className="eg-category-return" onClick={()=>{tabsRef.current?.scrollIntoView({behavior:'instant',block:'start'});document.getElementById(`eg-tab-${activeGroup}`)?.focus({preventScroll:true})}}>↑ 換個分類</button><div className="eg-section-heading"><div><h2>{search?'找到的學習活動':friendlyGroups[activeGroup]}</h2><p>{search?'選一個喜歡的，開始探索。':group.d+'，選自己喜歡的方式。'}</p></div><label className="eg-activity-search"><span aria-hidden="true">⌕</span><input ref={searchRef} aria-label="尋找學習活動" placeholder="找找想學的…" value={search} onChange={e=>setSearch(e.target.value)}/>{search&&<button type="button" onClick={clearSearch} aria-label="清除活動搜尋">×</button>}</label></div>
-        {search.trim()&&<p className="eg-search-count" role="status">找到 {visible.length} 個學習活動</p>}
-        {recent&&!search&&<button type="button" className="eg-recent" onClick={()=>onSelect(recent.id,recent.group)}>上次探索：{recent.t}<span>再去看看 →</span></button>}
-        {activeGroup==='game'&&!search.trim()?<ArcadeDiscovery lv={lv} onSelect={onSelect}/>:<div className="eg-activities">{visible.map(m=>{const [icon,title,desc,tag]=modulePresentation[m.id]||['learn',m.t,m.d,m.tag];return <button key={m.id} type="button" className={`eg-activity eg-menu-module activity-${m.group}`} data-module-id={m.id} onClick={()=>onSelect(m.id,m.group)}><span className="eg-activity-top"><span className="eg-activity-icon"><LearningIcon name={icon} size={26}/></span><span className="eg-activity-tag">{tag}</span></span><h3>{m.t}</h3><span className="eg-activity-nickname">{title}</span><p>{desc}</p><span className="eg-activity-bottom"><span>{m.id==='srs'?m.d:'一起試試看'}</span><LearningIcon name="arrow" size={18}/></span></button>})}</div>}
+      </>}
+      <section id="eg-learning-panel" ref={panelRef} tabIndex={-1} className="eg-learning-panel" role={query?'region':'tabpanel'} aria-labelledby={query?'eg-results-heading':`eg-tab-${activeGroup}`}>
+        {!query&&<button type="button" className="eg-category-return" onClick={()=>{tabsRef.current?.scrollIntoView({behavior:'instant',block:'start'});document.getElementById(`eg-tab-${activeGroup}`)?.focus({preventScroll:true})}}>↑ 換個分類</button>}
+        <div className="eg-section-heading"><div><h2 id="eg-results-heading">{query?'找到的學習活動':friendlyGroups[activeGroup]}</h2><p>{query?'選一個喜歡的，開始探索。':group.d+'，選自己喜歡的方式。'}</p></div></div>
+        <p className="eg-search-count" role="status" aria-atomic="true">{query?`找到 ${visible.length} 個學習活動`:''}</p>
+        {activeGroup==='game'&&!query?<ArcadeDiscovery lv={lv} onSelect={onSelect}/>:<div className="eg-activities">{visible.map(m=>{const [icon,title,desc,tag]=modulePresentation[m.id]||['learn',m.t,m.d,m.tag];return <button key={m.id} type="button" className={`eg-activity eg-menu-module activity-${m.group}`} data-module-id={m.id} onClick={()=>onSelect(m.id,m.group)}><span className="eg-activity-top"><span className="eg-activity-icon"><LearningIcon name={icon} size={26}/></span><span className="eg-activity-tag">{tag}</span></span><h3>{m.t}</h3><span className="eg-activity-nickname">{title}</span><p>{desc}</p><span className="eg-activity-bottom"><span>{m.id==='srs'?m.d:'一起試試看'}</span><LearningIcon name="arrow" size={18}/></span></button>})}</div>}
         {!visible.length&&<div className="eg-empty"><LearningIcon name="learn" size={34}/><h3>還沒找到這個活動</h3><p>試試「單字」、「故事」或「歌曲」。</p><button type="button" className="eg-secondary" onClick={clearSearch}>看看全部活動</button></div>}
       </section>
       <div className="eg-hub-bottom"><span>🌱 {weakWords.length?`${weakWords.length} 個單字還在發芽，慢慢複習就好。`:'每個人的步調都不一樣，找到你的就好。'}</span><div><button type="button" className="eg-menu-stat" onClick={()=>setShowRewards(!showRewards)} aria-expanded={showRewards} aria-controls="eg-menu-reward-center"><span className="eg-menu-stat-label">金幣</span> {coins}</button><button type="button" className="eg-menu-stat" onClick={()=>onSelect('pets','pet')}><span className="eg-menu-stat-label">寵物</span> {pets.length}</button>{weakWords.length>0&&<button type="button" onClick={()=>onSelect('weak','tools')}>再練一次 →</button>}</div></div>

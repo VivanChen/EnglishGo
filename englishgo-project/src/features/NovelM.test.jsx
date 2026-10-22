@@ -32,6 +32,20 @@ function jumpLast() {
 afterEach(() => { vi.restoreAllMocks(); Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1024 }); Object.defineProperty(window, 'innerHeight', { configurable: true, value: 768 }); });
 
 describe('novel reading continuity', () => {
+  it('previews the selected type size, spacing and language before returning to the same paragraph', async () => {
+    mount(); await open();
+    const before=screen.getAllByTestId('novel-reader-text')[0].textContent;
+    click('閱讀偏好');
+    const preview=screen.getByRole('region',{name:'閱讀外觀預覽'});
+    click('A+');click('寬行距');click('清楚字體');
+    expect(within(preview).getByText('A little story. A big adventure.')).toHaveStyle({fontSize:'20px',lineHeight:'1.95'});
+    expect(within(preview).getByText('小小的故事，大大的冒險。')).toHaveStyle({fontSize:'18px',lineHeight:'1.95'});
+    click('先讀英文');
+    expect(within(preview).queryByText('小小的故事，大大的冒險。')).not.toBeInTheDocument();
+    click('關閉工具面板');
+    expect(screen.getAllByTestId('novel-reader-text')[0].textContent).toBe(before);
+    expect(screen.getAllByTestId('novel-reader-text')[0]).toHaveStyle({fontSize:'20px',lineHeight:'1.95'});
+  });
   it('restores old chapter 7 progress and bookmarks, narrates the corrected pair, and does not migrate twice', async () => {
     localStorage.setItem('eg_novelReadingProgress', JSON.stringify({ [book.id]: { chapterNo: 7, blockIndex: 28, blockCount: 157, page: 14, pageCount: 79 } }));
     localStorage.setItem('eg_novelBookmarks', JSON.stringify({ [book.id]: [{ chapterNo: 7, blockIndex: 28, createdAt: 123 }] }));

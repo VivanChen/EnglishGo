@@ -330,7 +330,7 @@ describe('EnglishGo app smoke flow', () => {
     expect(settingsCard).toBeTruthy();
     fireEvent.click(settingsCard);
 
-    expect(await screen.findByText('API Key 設定')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: '設定', exact: true })).toBeInTheDocument();
     expect(screen.getByText('Gemini API Key')).toBeInTheDocument();
     expect(screen.getByText('Giphy API Key')).toBeInTheDocument();
   });
@@ -385,7 +385,7 @@ describe('EnglishGo app smoke flow', () => {
     fireEvent.click(translationCard);
 
     fireEvent.click(await screen.findByRole('button', { name: '前往 Key 設定' }));
-    expect(await screen.findByText('API Key 設定')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: '設定', exact: true })).toBeInTheDocument();
   });
 
   it('shows expanded grammar content with AI explanation for the current topic', async () => {
@@ -633,10 +633,13 @@ describe('EnglishGo app smoke flow', () => {
       fireEvent.click(screen.getByRole('button', { name: '句子練習' }));
       fireEvent.click(await screen.findByRole('button', { name: '開始口說小練習 →' }));
 
-      expect(await screen.findByText('I like to eat apples.')).toBeInTheDocument();
+      expect(await screen.findByText('I like to eat apples.', { selector: '.workshop-spoken-target' })).toBeInTheDocument();
       expect(screen.getByText('看中文，唸出完整英文句子')).toBeInTheDocument();
-      expect(screen.getAllByText('i').length).toBeGreaterThan(0);
-      expect(screen.getAllByText('apples').length).toBeGreaterThan(0);
+      expect(screen.getByText('i like to / eat apples')).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: '先聽不看英文' }));
+      expect(document.querySelector('.workshop-spoken-target')).not.toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: '顯示英文' }));
+      expect(document.querySelector('.workshop-spoken-target')).toHaveTextContent('I like to eat apples.');
     } finally {
       window.SpeechRecognition = OriginalSpeechRecognition;
       window.webkitSpeechRecognition = OriginalWebkitSpeechRecognition;
@@ -700,7 +703,7 @@ describe('EnglishGo app smoke flow', () => {
       fireEvent.click(await screen.findByRole('button', { name: '句子練習' }));
       fireEvent.click(await screen.findByRole('button', { name: '開始口說小練習 →' }));
 
-      expect(await screen.findByText('I like to eat apples.')).toBeInTheDocument();
+      expect(await screen.findByText('I like to eat apples.', { selector: '.workshop-spoken-target' })).toBeInTheDocument();
       expect(screen.queryByText(/重點單字：/)).not.toBeInTheDocument();
       expect(screen.getByText('分段跟讀')).toBeInTheDocument();
       expect(screen.getByText('語調提醒')).toBeInTheDocument();
@@ -970,7 +973,7 @@ describe('EnglishGo app smoke flow', () => {
     expect(screen.getByTestId('srs-rating-bar')).toBeInTheDocument();
     expect(screen.getByTestId('srs-support-actions')).toBeInTheDocument();
     expect(screen.getByTestId('srs-study-guidance')).toHaveTextContent('下一步');
-    expect(screen.getByText('查字典補強')).toBeInTheDocument();
+    expect(screen.getByText('查字典或練聽說')).toBeInTheDocument();
     expect(screen.getByTestId('srs-dictionary-action')).toHaveTextContent('小朋友字典');
 
     fireEvent.click(screen.getByText('🔎 查字典'));

@@ -34,7 +34,7 @@ export default function WordIllustrations({ level, word, fetchIllustrations, spe
   return <WordIllustrationGallery key={`${level}:${word}`} word={word} items={items} speak={speak}/>;
 }
 
-export function WordIllustrationGallery({ word, items, speak }) {
+export function WordIllustrationGallery({ word, items, speak, onPracticeExample }) {
   const [active, setActive] = useState(0);
   const track = useRef(null);
   if (!items.length) return null;
@@ -55,7 +55,7 @@ export function WordIllustrationGallery({ word, items, speak }) {
     }}>
       {items.map(item => <figure className="word-art-scene" key={`${item.id}:${item.image_url}`}>
         <IllustrationImage item={item} />
-        <figcaption><div className="word-art-en"><span>{item.example}</span>{speak && <button type="button" className="srs-sound-btn" aria-label={`朗讀插畫例句：${item.example}`} onClick={() => speak(item.example)}>🔊</button>}</div><p>{item.example_zh}</p></figcaption>
+        <figcaption><div className="word-art-en"><span>{item.example}</span>{speak && <button type="button" className="srs-sound-btn" aria-label={`朗讀插畫例句：${item.example}`} onClick={() => speak(item.example)}>🔊</button>}</div><p>{item.example_zh}</p>{onPracticeExample && item.example && <button type="button" className="srs-speaking-link" onClick={event => { event.stopPropagation(); onPracticeExample(item.example, item.example_zh); }} aria-label={`練插畫例句聽說：${item.example}`}>🎧 練這句聽說 →</button>}</figcaption>
       </figure>)}
     </div>
     {items.length > 1 && <nav className="word-art-navigation" aria-label="切換插畫">

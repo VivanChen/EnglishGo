@@ -1,6 +1,7 @@
 import { getElementaryExample } from "./elementaryExamples.js";
 import { JUNIOR_NOVEL_WORDS } from "./juniorNovelWords.js";
 import { MINISTRY_ELEMENTARY_WORDS } from "./ministryElementaryWords.js";
+import { EDUCATION_MINISTRY_ELEMENTARY_GAPS } from "./educationMinistryElementaryGaps.js";
 import { JUNIOR_THEMED_REVIEW_WORDS, SENIOR_THEMED_REVIEW_WORDS } from "./themedReviewWords.js";
 
 const EXTRA_ELEMENTARY_WORDS = {
@@ -105,10 +106,10 @@ function extraWordCard(word,meta){
   const example = Array.isArray(meta) || !meta.ex
     ? getElementaryExample(word, meaning, pos)
     : {ex:meta.ex,ez:meta.ez};
-  return{w:word,ph:"",p:pos,m:meaning,f:[],c:meta.c||[],ex:example.ex,ez:example.ez,img:meta.img||""};
+  return{w:word,ph:"",p:pos,m:meaning,f:meta.forms||[],c:meta.c||[],ex:example.ex,ez:example.ez,img:meta.img||"",category:meta.category||""};
 }
 
-const ELEMENTARY_WORDS = {...BASIC_ELEMENTARY_WORDS,...MORE_BASIC_ELEMENTARY_WORDS,...EXTRA_ELEMENTARY_WORDS,...MINISTRY_ELEMENTARY_WORDS};
+const ELEMENTARY_WORDS = {...BASIC_ELEMENTARY_WORDS,...MORE_BASIC_ELEMENTARY_WORDS,...EXTRA_ELEMENTARY_WORDS,...MINISTRY_ELEMENTARY_WORDS,...EDUCATION_MINISTRY_ELEMENTARY_GAPS};
 
 export const EXTRA_WORDS = {
   elementary: Object.entries(ELEMENTARY_WORDS).map(([word,meta])=>extraWordCard(word,meta)),

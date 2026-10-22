@@ -23,13 +23,18 @@ export function NovelJourney({ novel, chapterNo, completed, progress, bookmarks,
 export function NovelPreferences({ prefs, onChange }) {
   const size=Math.max(14,Math.min(22,Number(prefs.fontSize)||18));
   const spacious=Number(prefs.lineHeight)>=1.9;
+  const lineHeight=Math.max(1.5,Math.min(2.1,Number(prefs.lineHeight)||1.66));
   return <div className="novel-preferences">
     <p className="novel-tool-hint">選你讀起來舒服的樣子，下次會自動記住。</p>
+    <section className="novel-font-preview" aria-label="閱讀外觀預覽">
+      <span>閱讀預覽</span>
+      <p lang="en" style={{fontSize:size,lineHeight,fontFamily:prefs.fontFamily==='clear'?'Arial, "Noto Sans", sans-serif':'Georgia, Cambria, "Times New Roman", serif'}}>A little story. A big adventure.</p>
+      {prefs.showZh!==false&&<p lang="zh-Hant" style={{fontSize:Math.max(13,size-2),lineHeight}}>小小的故事，大大的冒險。</p>}
+    </section>
     <fieldset><legend>文字大小</legend><div className="novel-font-controls"><button aria-label="A-" onClick={()=>onChange({fontSize:Math.max(14,size-2)})} disabled={size<=14}>A−</button><output>{size} px</output><button aria-label="A+" onClick={()=>onChange({fontSize:Math.min(22,size+2)})} disabled={size>=22}>A＋</button></div></fieldset>
     <fieldset><legend>行與行的距離</legend><div className="novel-choice-row"><button aria-label="一般行距" aria-pressed={!spacious} onClick={()=>onChange({lineHeight:1.66})}>剛剛好</button><button aria-label="寬行距" aria-pressed={spacious} onClick={()=>onChange({lineHeight:1.95})}>寬鬆一點</button></div></fieldset>
     <fieldset><legend>書頁顏色</legend><div className="novel-choice-row">{[['paper', '暖白', '◯'], ['leaf', '柔綠', '♧'], ['night', '夜讀', '☾']].map(([value, label, icon]) => <button key={value} onClick={() => onChange({ tone: value })} aria-pressed={(prefs.tone || 'paper') === value}><span aria-hidden="true">{icon}</span>{label}</button>)}</div></fieldset>
     <fieldset><legend>英文字體</legend><div className="novel-choice-row">{[['book', '故事書字體'], ['clear', '清楚字體']].map(([value, label]) => <button key={value} onClick={() => onChange({ fontFamily: value })} aria-pressed={(prefs.fontFamily || 'book') === value}>{label}</button>)}</div></fieldset>
     <fieldset><legend>中文怎麼看</legend><div className="novel-choice-row"><button onClick={() => onChange({ showZh: true })} aria-pressed={prefs.showZh !== false}>英中一起看</button><button onClick={() => onChange({ showZh: false })} aria-pressed={prefs.showZh === false}>先讀英文</button></div><p className="novel-tool-hint">先讀英文時，也能只打開某一段的中文。</p></fieldset>
-    <div className="novel-font-preview" lang="en" style={{ fontFamily: prefs.fontFamily === 'clear' ? 'Arial, sans-serif' : 'Georgia, serif' }}>A little story.<br/>A big adventure.</div>
   </div>;
 }
