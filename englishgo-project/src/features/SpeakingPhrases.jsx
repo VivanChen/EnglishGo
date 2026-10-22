@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import ListeningRadio from '../components/ListeningRadio.jsx';
 
 export default function SpeakingPhrases({ phrases, sentenceText, playing, playbackError, onPlay, onStop, onPlaySentence, onComplete }) {
   const [step, setStep] = useState(null);
@@ -34,6 +35,7 @@ export default function SpeakingPhrases({ phrases, sentenceText, playing, playba
       <div className="speaking-guided-toolbar"><span>{done ? '接著練整句' : `第 ${step + 1} / ${phrases.length} 段`}</span><button type="button" onClick={exit}>結束分段</button></div>
       <progress max={phrases.length} value={step} aria-label="分段跟讀進度" />
       <h4 ref={heading} tabIndex={-1} lang={done ? 'zh-Hant' : 'en'}>{done ? '把小段連起來，再說一次整句。' : phrases[step]}</h4>
+      <ListeningRadio compact state={playing ? playing.started ? 'playing' : 'loading' : done ? 'complete' : 'idle'} />
       {done ? <>
         <p className="speaking-guided-sentence" lang="en">{sentenceText}</p>
         <p>分段練好了！接著唸一次完整例句，再記下今天的練習。</p>

@@ -1,5 +1,5 @@
 import { StrictMode, useState } from 'react';
-import { fireEvent, render, screen, within, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, within, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import LearningPractice from './LearningPractice.jsx';
 import ReviewGarden from './ReviewGarden.jsx';
@@ -62,6 +62,26 @@ describe('practice experience', () => {
     fireEvent.click(screen.getByRole('button', { name: '繼續上次練習' }));
     expect(deps.speak).toHaveBeenCalledTimes(1);
     expect(deps.stopSpeech).toHaveBeenCalled();
+  });
+  it('uses actual audio lifecycle events for the listening radio and ignores canceled playback', () => {
+    const { deps, container } = setup('listening');
+    fireEvent.click(screen.getByRole('button', { name: '開始新的小任務 →' }));
+    const radio = () => container.querySelector('.listening-radio');
+    expect(radio()).toHaveAttribute('data-state', 'idle');
+    fireEvent.click(screen.getByRole('button', { name: '▶ 聽這個句子' }));
+    const first = deps.speak.mock.lastCall[3];
+    expect(radio()).toHaveAttribute('data-state', 'loading');
+    act(() => first.onstart()); expect(radio()).toHaveAttribute('data-state', 'playing');
+    fireEvent.click(screen.getByRole('button', { name: '慢慢聽' }));
+    const second = deps.speak.mock.lastCall[3];
+    act(() => { first.onend(); first.onstart(); });
+    expect(radio()).toHaveAttribute('data-state', 'loading');
+    act(() => second.onstart()); expect(radio()).toHaveAttribute('data-state', 'playing');
+    act(() => second.onend()); expect(radio()).toHaveAttribute('data-state', 'idle');
+    fireEvent.click(screen.getByRole('button', { name: '▶ 聽這個句子' }));
+    const third = deps.speak.mock.lastCall[3];
+    fireEvent.click(screen.getByRole('button', { name: '■ 停止播放' }));
+    act(() => third.onstart()); expect(radio()).toHaveAttribute('data-state', 'idle');
   });
   it('restores typed answers and accepts extra whitespace without repeating completion', () => {
     let view = setup('listening');

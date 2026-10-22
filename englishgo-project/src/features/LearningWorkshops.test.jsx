@@ -42,6 +42,80 @@ function songs() {
 }
 describe('learning workshops', () => {
   const phraseCard={word:'water',meaning:'水',en:'Please drink more water.',zh:'請多喝水。',type:'sentence'};
+  it('turns the exact card example into a listening puzzle with gentle retries and no speaking reward',()=>{
+    const view=speaking(true,{}, {cardPractice:phraseCard});
+    click('🧩 聽音拼句');
+    expect(screen.getByRole('heading',{name:'聽音拼句'})).toHaveFocus();
+    expect(screen.queryByText(phraseCard.en)).not.toBeInTheDocument();
+    expect(screen.queryByRole('region',{name:'發音提示'})).not.toBeInTheDocument();
+    expect(within(screen.getByRole('region',{name:'來自單字卡'})).queryByText('water')).not.toBeInTheDocument();
+    expect(view.deps.speak).not.toHaveBeenCalled();
+    click('water.');
+    expect(screen.getByRole('progressbar',{name:'拼句進度'})).toHaveAttribute('value','0');
+    expect(screen.getByRole('status')).toHaveTextContent('這一格再聽聽看');
+    click('給我下一格提示 ♫');
+    expect(view.deps.speak).toHaveBeenLastCalledWith('Please','en-US',.65,expect.any(Object));
+    expect(button('Please')).toHaveClass('is-hint');
+    ['Please','drink','more','water.'].forEach(click);
+    expect(screen.getByRole('heading',{name:'你把聲音接成一句話了！'})).toHaveFocus();
+    expect(screen.getByText(phraseCard.en)).toHaveAttribute('lang','en');
+    expect(screen.getByRole('progressbar',{name:'拼句進度'})).toHaveAttribute('value','4');
+    expect(view.props.onXp).not.toHaveBeenCalled();
+    expect(view.instances).toHaveLength(0);
+    expect(localStorage.getItem(cardPracticeStorageKey('elementary',phraseCard))).toBeNull();
+    click('再拼一次');
+    expect(screen.getByRole('progressbar',{name:'拼句進度'})).toHaveAttribute('value','0');
+    expect(button('▶ 聽完整例句')).toHaveFocus();
+    ['Please','drink','more','water.'].forEach(click);click('接著跟讀這一句 →');
+    expect(button('🧩 聽音拼句')).toHaveFocus();
+    expect(button('帶我逐段跟讀 →')).toBeInTheDocument();
+    expect(view.props.onXp).not.toHaveBeenCalled();
+  });
+  it('animates only after audio starts and ignores stale callbacks when replaying or leaving a puzzle',()=>{
+    const view=speaking(true,{}, {cardPractice:phraseCard});
+    click('🧩 聽音拼句');click('▶ 聽完整例句');
+    const first=view.deps.speak.mock.lastCall[3];
+    const radio=()=>view.container.querySelector('.listening-radio');
+    expect(radio()).toHaveAttribute('data-state','loading');
+    act(()=>first.onstart());expect(radio()).toHaveAttribute('data-state','playing');
+    click('慢速重聽');const second=view.deps.speak.mock.lastCall[3];
+    expect(view.deps.speak).toHaveBeenLastCalledWith(phraseCard.en,'en-US',.65,expect.any(Object));
+    act(()=>{first.onstart();first.onend();first.onerror();});
+    expect(radio()).toHaveAttribute('data-state','loading');
+    act(()=>second.onstart());expect(radio()).toHaveAttribute('data-state','playing');
+    click('■ 停止播放');act(()=>second.onstart());
+    expect(radio()).toHaveAttribute('data-state','idle');
+    click('▶ 聽完整例句');const late=view.deps.speak.mock.lastCall[3];
+    click('Ⅱ 先休息一下');act(()=>late.onstart());click('繼續聽說練習');
+    expect(screen.queryByRole('region',{name:'聽音拼句'})).not.toBeInTheDocument();
+    expect(view.deps.speak).toHaveBeenCalledTimes(3);
+    expect(radio()).toHaveAttribute('data-state','idle');
+    expect(view.instances).toHaveLength(0);
+  });
+  it('accepts interchangeable repeated words and leaves the puzzle before microphone capture',()=>{
+    const card={...phraseCard,en:'Go go now.'};
+    const view=speaking(true,{}, {cardPractice:card});click('🧩 聽音拼句');
+    click('go');click('Go');click('now.');
+    expect(screen.getByRole('heading',{name:'你把聲音接成一句話了！'})).toBeInTheDocument();
+    click('▶ 聽完整例句');const callbacks=view.deps.speak.mock.lastCall[3];
+    click('🎤 直接開說');
+    expect(screen.queryByRole('region',{name:'聽音拼句'})).not.toBeInTheDocument();
+    expect(view.instances).toHaveLength(1);
+    act(()=>callbacks.onstart());
+    expect(view.container.querySelector('.listening-radio')).toHaveAttribute('data-state','idle');
+    click('取消這次錄音');expect(button('🧩 聽音拼句')).toBeInTheDocument();
+    expect(view.props.onXp).not.toHaveBeenCalled();
+  });
+  it('keeps puzzle hints available when audio fails and retries without opening a microphone',()=>{
+    const view=speaking(false,{speak:vi.fn(()=>null)}, {cardPractice:phraseCard});
+    click('🧩 聽音拼句');click('▶ 聽完整例句');
+    expect(screen.getByRole('alert')).toHaveTextContent('聲音暫時無法播放');
+    click('給我下一格提示 ♫');expect(button('Please')).toHaveClass('is-hint');
+    view.deps.speak.mockImplementation(()=>({}));click('慢速重聽');
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    click('回到跟讀');expect(button('🧩 聽音拼句')).toHaveFocus();
+    expect(view.instances).toHaveLength(0);
+  });
   it('guides each phrase at the learner pace, then records full-sentence self practice without a recognition reward',()=>{
     const view=speaking(true,{}, {cardPractice:phraseCard});
     click('帶我逐段跟讀 →');
@@ -119,6 +193,8 @@ describe('learning workshops', () => {
     click('聽第 1 段：My dog likes to');
     expect(view.deps.speak).toHaveBeenLastCalledWith('My dog likes to','en-US',.65,expect.any(Object));
     expect(button('聽第 1 段：My dog likes to')).toHaveAttribute('aria-pressed','true');
+    expect(screen.getByRole('status')).toHaveTextContent('準備播放 · 第 1 段');
+    act(()=>view.deps.speak.mock.lastCall[3].onstart());
     expect(screen.getByRole('status')).toHaveTextContent('正在播放 · 第 1 段');
     act(()=>lateFinish());expect(button('■ 停止示範')).toBeInTheDocument();
     click('■ 停止示範');expect(screen.queryByRole('button',{name:'■ 停止示範'})).not.toBeInTheDocument();

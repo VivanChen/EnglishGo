@@ -1,0 +1,57 @@
+.listening-radio { display:flex; align-items:center; justify-content:center; gap:16px; color:var(--garden-green); padding:12px 16px; margin:16px 0; border-radius:18px; background:var(--garden-green-soft); }
+.listening-radio svg { display:block; flex:0 0 144px; width:144px; height:66px; overflow:visible; }
+.listening-radio>span { font-size:14px; font-weight:700; text-align:left; }
+.listening-radio-body { fill:var(--garden-white); stroke:currentColor; stroke-width:3; }
+.listening-radio-speaker,.listening-radio-bars path { transform-box:fill-box; transform-origin:center; }
+.listening-radio-notes { opacity:.25; }
+.listening-radio-stars { display:none; }
+.listening-radio[data-state=playing] .listening-radio-bars path { animation:listening-bars .75s ease-in-out infinite alternate; }
+.listening-radio[data-state=playing] .listening-radio-speaker { animation:listening-speaker 1s ease-in-out infinite; }
+.listening-radio[data-state=playing] .listening-radio-notes { opacity:1; animation:listening-notes 1.5s ease-in-out infinite alternate; }
+.listening-radio[data-state=complete] .listening-radio-stars { display:block; animation:listening-arrive .4s ease-out; }
+.listening-radio.is-compact { margin:12px 0; padding:8px 12px; }
+.listening-radio.is-compact svg { flex-basis:110px; width:110px; height:51px; }
+.speaking-studio .practice-question:has(.speaking-guided)>.listening-radio { display:none; }
+.practice-world .speaking-puzzle-launch { border-color:var(--garden-green); background:var(--garden-green-soft); font-weight:750; scroll-margin-block:110px 24px; }
+.listening-puzzle { border:1px solid var(--garden-line); background:var(--garden-paper); border-radius:20px; padding:22px; margin-top:18px; text-align:left; scroll-margin-block:100px 24px; }
+.listening-puzzle-heading { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:8px; font-size:13px; font-weight:700; color:var(--garden-green); margin-bottom:12px; }
+.listening-puzzle-heading button { font-size:14px; }
+.listening-puzzle h3 { margin:0 0 8px; font-size:clamp(21px,3vw,27px); }
+.listening-puzzle h3:focus-visible { outline:2px solid var(--garden-green); outline-offset:5px; border-radius:4px; }
+.listening-puzzle>p { font-size:15px; }
+.listening-puzzle .listening-radio { background:var(--garden-white); }
+.listening-puzzle .practice-actions { justify-content:flex-start; }
+.listening-puzzle button { max-width:100%; white-space:normal; }
+.listening-puzzle .listening-puzzle-audio { margin-bottom:4px; }
+.listening-puzzle .listening-puzzle-audio-status { min-height:24px; font-size:13px; margin:4px 0 12px; }
+.listening-puzzle-progress { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:18px 0 12px; color:var(--garden-muted); font-size:13px; }
+.listening-puzzle-progress progress { flex:1; min-width:80px; height:8px; accent-color:var(--garden-green); }
+.listening-puzzle-slots { display:flex; flex-wrap:wrap; gap:8px; list-style:none; margin:0 0 18px; padding:14px; background:var(--garden-white); border:1px dashed var(--garden-line); border-radius:16px; }
+.listening-puzzle-slots li { display:grid; place-items:center; min-width:38px; min-height:42px; padding:6px 10px; border-radius:10px; border:1px dashed var(--garden-line); font-size:15px; color:var(--garden-muted); overflow-wrap:anywhere; max-width:100%; }
+.listening-puzzle-slots li[aria-current=step] { border:2px solid var(--garden-green); color:var(--garden-green); font-weight:750; }
+.listening-puzzle-slots .is-filled { background:var(--garden-green-soft); border:1px solid var(--garden-green); color:var(--garden-green); font-size:18px; animation:listening-arrive .22s ease-out; }
+.listening-puzzle-bank { display:flex; flex-wrap:wrap; gap:10px; }
+.listening-puzzle-bank button { font-size:18px; text-align:left; padding:10px 15px; }
+.listening-puzzle-bank button:disabled { opacity:.45; background:var(--garden-green-soft); }
+.listening-puzzle-bank .is-retry { border-style:dashed; border-color:var(--garden-muted); }
+.listening-puzzle-bank .is-hint { outline:2px solid var(--garden-green); outline-offset:2px; background:var(--garden-green-soft); }
+.listening-puzzle .listening-puzzle-feedback { min-height:28px; color:var(--garden-green); font-size:15px; margin:18px 0 8px; }
+.listening-puzzle .listening-puzzle-tools { margin:12px 0 0; }
+.listening-puzzle .listening-puzzle-sentence { font-size:clamp(23px,3vw,31px); font-weight:750; color:var(--garden-green); line-height:1.65; overflow-wrap:anywhere; margin:20px 0; animation:listening-arrive .25s ease-out; }
+@keyframes listening-bars { to { transform:scaleY(.45); } }
+@keyframes listening-speaker { 50% { transform:scale(.85); } }
+@keyframes listening-notes { to { transform:translateY(-5px); } }
+@keyframes listening-arrive { from { opacity:.3; transform:translateY(5px); } to { opacity:1; transform:none; } }
+html[data-eg-calm=true] .listening-radio *,html[data-eg-calm=true] .listening-puzzle * { animation:none !important; transition:none !important; }
+@media(prefers-reduced-motion:reduce) { .listening-radio *,.listening-puzzle * { animation:none !important; transition:none !important; } }
+@media(max-width:620px) {
+  .listening-radio { gap:8px; padding:12px 8px; }
+  .listening-radio svg { flex-basis:114px; width:114px; height:53px; }
+  .listening-radio>span { font-size:13px; }
+  .listening-puzzle { padding:16px 12px; }
+  .listening-puzzle .practice-actions { align-items:stretch; }
+  .listening-puzzle .listening-puzzle-tools>button { flex:1 1 100%; }
+  .listening-puzzle-bank { gap:8px; }
+  .listening-puzzle-bank button { padding:10px 12px; font-size:17px; }
+  .listening-puzzle-slots { padding:10px; gap:6px; }
+}
