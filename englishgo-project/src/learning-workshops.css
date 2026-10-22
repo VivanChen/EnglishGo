@@ -40,10 +40,22 @@
 .speaking-phrases { border-top:1px solid var(--garden-line); padding-top:18px; margin-top:22px; text-align:left; }
 .speaking-phrases h3 { font-size:16px; margin:0; }
 .speaking-phrases p { font-size:14px; margin:6px 0 12px; }
-.speaking-phrases>div { display:flex; flex-wrap:wrap; gap:10px; }
-.speaking-phrases button { display:flex; align-items:center; gap:10px; font-size:17px; line-height:1.6; text-align:left; max-width:100%; }
-.speaking-phrases button>span:last-child { min-width:0; overflow-wrap:anywhere; }
-.speaking-phrases button[aria-pressed=true] { border-color:var(--garden-green); background:var(--garden-green-soft); box-shadow:inset 0 0 0 1px var(--garden-green); }
+.speaking-phrase-buttons { display:flex; flex-wrap:wrap; gap:10px; }
+.speaking-phrase-buttons button { display:flex; align-items:center; gap:10px; font-size:17px; line-height:1.6; text-align:left; max-width:100%; }
+.speaking-phrase-buttons button>span:last-child { min-width:0; overflow-wrap:anywhere; }
+.speaking-phrase-buttons button[aria-pressed=true] { border-color:var(--garden-green); background:var(--garden-green-soft); box-shadow:inset 0 0 0 1px var(--garden-green); }
+.speaking-phrases .speaking-guided-start { font-weight:750; margin-bottom:14px; border-color:var(--garden-green); color:var(--garden-green); }
+.speaking-guided { margin-top:14px; padding:20px; border:1px solid var(--garden-line); border-radius:18px; background:var(--garden-paper); scroll-margin-block:100px 24px; }
+.speaking-guided-toolbar { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:10px; color:var(--garden-green); font-size:14px; font-weight:700; }
+.speaking-guided button { font-size:14px; line-height:1.6; max-width:100%; white-space:normal; }
+.speaking-guided .practice-actions>button:not(.practice-primary) { padding-inline:8px; }
+.speaking-guided progress { display:block; width:100%; height:8px; margin:12px 0 20px; accent-color:var(--garden-green); }
+.speaking-guided h4 { font-size:clamp(22px,3vw,29px); color:var(--garden-green); line-height:1.7; margin:0 0 12px; overflow-wrap:anywhere; }
+.speaking-guided h4:focus-visible { outline:2px solid var(--garden-green); outline-offset:4px; border-radius:4px; }
+.speaking-phrases .speaking-guided-sentence { font-size:clamp(22px,3vw,29px); line-height:1.7; font-weight:750; color:var(--garden-green); overflow-wrap:anywhere; margin:16px 0; }
+.speaking-guided .practice-actions { justify-content:flex-start; }
+.speaking-guided .practice-save-note { margin:12px 0 0; }
+.speaking-studio .practice-question:has(.speaking-guided)>.speaking-playback { display:none; }
 .speaking-playback { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin:16px 0; padding:12px 16px; border-radius:14px; background:var(--garden-green-soft); color:var(--garden-green); }
 .speaking-playback p { margin:0; font-size:14px; font-weight:650; }
 .speaking-playback button { font-size:14px; }
@@ -83,6 +95,9 @@ html[data-eg-theme=dark] .workshop-stepper button[aria-current=step] { color: #1
   .speaking-source strong { font-size:20px; }
   .speaking-source button { padding:8px; font-size:13px; }
   .speaking-listen-heading { align-items:stretch; }
+  .speaking-guided { padding:16px 12px; }
+  .speaking-guided .practice-actions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .speaking-guided .practice-primary { width:100%; grid-column:1/-1; }
   .workshop-topic-grid { grid-template-columns: 1fr; gap: 12px; }
   .practice-world .workshop-topic { padding: 20px; }
   .workshop-stepper { gap: 6px; }

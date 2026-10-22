@@ -14,11 +14,19 @@ export function cardPracticeStorageKey(level, practice) {
 export function speakingPhrases(text) {
   const words = String(text || '').trim().split(/\s+/).filter(Boolean), phrases = [];
   let part = [];
+  const appendClause = () => {
+    // Balance chunks so a six-word clause does not become five words + one.
+    // Four- and five-word clauses also get two small steps for early readers.
+    let groups = part.length <= 3 ? 1 : Math.max(2, Math.ceil(part.length / 5));
+    while (part.length) {
+      phrases.push(part.splice(0, Math.ceil(part.length / groups)).join(' '));
+      groups--;
+    }
+  };
   words.forEach((word, index) => {
     part.push(word);
-    if (part.length >= 5 || /[,;:.!?]["”']?$/.test(word) || index === words.length - 1) {
-      phrases.push(part.join(' ')); part = [];
-    }
+    const abbreviation = /^(?:Mr|Mrs|Ms|Dr|St|e\.g|i\.e)\.$/i.test(word);
+    if ((!abbreviation && /[,;:.!?]["”']?$/.test(word)) || index === words.length - 1) appendClause();
   });
   return phrases;
 }
