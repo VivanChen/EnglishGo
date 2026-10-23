@@ -1,5 +1,8 @@
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
+import { mockVoiceRecording } from './test/voiceRecordingMock.js';
+import { assessRecording } from './features/recordingAssessmentService.js';
+vi.mock('./features/recordingAssessmentService.js', () => ({ assessRecording: vi.fn() }));
 import App, { formatLandingVocabularyBadge } from './App.jsx';
 import {
   getPetMonopolyCpuBuyDecision,
@@ -561,46 +564,24 @@ describe('EnglishGo app smoke flow', () => {
     ]));
   });
 
-  it('opens speaking practice and scores a recognized word without crashing', async () => {
-    const OriginalSpeechRecognition = window.SpeechRecognition;
-    const OriginalWebkitSpeechRecognition = window.webkitSpeechRecognition;
-    class MockSpeechRecognition {
-      constructor() {
-        this.lang = '';
-        this.interimResults = false;
-        this.maxAlternatives = 1;
-        this.continuous = false;
-      }
-      start() {
-        const result = { 0: { transcript: 'apple', confidence: 0.99 }, length: 1, isFinal: true };
-        this.onresult?.({ resultIndex: 0, results: { 0: result, length: 1 } });
-        this.onend?.();
-      }
-      stop() {
-        this.onend?.();
-      }
-      abort() {}
-    }
-    window.SpeechRecognition = MockSpeechRecognition;
-    window.webkitSpeechRecognition = MockSpeechRecognition;
-
+  it('opens speaking practice and checks the recorded word without a separate text step', async () => {
+    const media = mockVoiceRecording();
+    const pauseAudio = vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => {});
+    localStorage.setItem('eg_gemkey', JSON.stringify('test-gemini-key'));
+    assessRecording.mockResolvedValue({ speechDetected: true, transcript: 'apple', delivery: 'clear', tip: 'keep_going', focus: 'apple' });
     try {
       await openElementaryMenu();
-
-      const speakCard = document.querySelector('[data-module-id="speak"]');
-      expect(speakCard).toBeTruthy();
-      fireEvent.click(speakCard);
-
+      fireEvent.click(document.querySelector('[data-module-id="speak"]'));
       fireEvent.click(await screen.findByRole('button', { name: '開始口說小練習 →' }));
       expect(await screen.findByText('蘋果')).toBeInTheDocument();
-      fireEvent.click(screen.getByText('🎤 直接開說'));
-
-      expect(await screen.findByText('通過')).toBeInTheDocument();
+      await act(async () => fireEvent.click(screen.getByRole('button', { name: '🎤 錄音並檢查' })));
+      fireEvent.click(screen.getByRole('button', { name: '■ 說好了' }));
+      await act(async () => media.instances[0].finish());
+      expect(await screen.findByText('這次說得很棒！')).toBeVisible();
+      expect(screen.getByText(/文字符合度/)).not.toBeVisible();
+      fireEvent.click(screen.getByText('給大人看：這次的練習紀錄'));
       expect(screen.getByText(/文字符合度/)).toHaveTextContent('100%');
-    } finally {
-      window.SpeechRecognition = OriginalSpeechRecognition;
-      window.webkitSpeechRecognition = OriginalWebkitSpeechRecognition;
-    }
+    } finally { cleanup(); media.restore(); pauseAudio.mockRestore(); }
   });
 
   it('switches speaking practice into sentence-focused mode with guidance', async () => {
@@ -714,85 +695,24 @@ describe('EnglishGo app smoke flow', () => {
     }
   });
 
-  it('sends the latest speaking result to AI for targeted pronunciation coaching', async () => {
+  it('turns the same recording into one small practice tip for the child', async () => {
+    const media = mockVoiceRecording();
+    const pauseAudio = vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => {});
     localStorage.setItem('eg_gemkey', JSON.stringify('test-gemini-key'));
-    localStorage.removeItem('speak_pron_elementary%3Ai%20like%20to%20eat%20apples%3Aheard-i%20like%20apples%3A60');
-    const OriginalSpeechRecognition = window.SpeechRecognition;
-    const OriginalWebkitSpeechRecognition = window.webkitSpeechRecognition;
-    class MockSpeechRecognition {
-      constructor() {
-        this.lang = '';
-        this.interimResults = false;
-        this.maxAlternatives = 1;
-        this.continuous = false;
-      }
-      start() {
-        const result = { 0: { transcript: 'I like apples', confidence: 0.99 }, length: 1, isFinal: true };
-        this.onresult?.({ resultIndex: 0, results: { 0: result, length: 1 } });
-        this.onend?.();
-      }
-      stop() {
-        this.onend?.();
-      }
-      abort() {}
-    }
-    window.SpeechRecognition = MockSpeechRecognition;
-    window.webkitSpeechRecognition = MockSpeechRecognition;
-
+    assessRecording.mockResolvedValue({ speechDetected: true, transcript: 'I like apples', delivery: 'practice', tip: 'listen_again', focus: '' });
     try {
       await openElementaryMenu();
-
-      const speakCard = document.querySelector('[data-module-id="speak"]');
-      expect(speakCard).toBeTruthy();
-      fireEvent.click(speakCard);
+      fireEvent.click(document.querySelector('[data-module-id="speak"]'));
       fireEvent.click(await screen.findByRole('button', { name: '句子練習' }));
       fireEvent.click(await screen.findByRole('button', { name: '開始口說小練習 →' }));
-      fireEvent.click(await screen.findByText('🎤 直接開說'));
-
-      expect(await screen.findByText('再練一次')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'AI 提供文字練習建議' })).toBeInTheDocument();
-
-      const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-        ok: true,
-        json: async () => ({
-          candidates: [{
-            content: {
-              parts: [{
-                text: JSON.stringify({
-                  zhSound: '先補上漏掉的短語，再說完整句。',
-                  syllables: 'I like / to eat / apples',
-                  stress: '先補上 to eat，再接 apples。',
-                  mouth: 'I like 後面不要直接跳到 apples。',
-                  mistake: '這次少了 to eat，句子意思會不完整。',
-                  steps: ['先練 to eat', '再練 like to eat', '最後說完整句'],
-                  words: [
-                    { word: 'to eat', zhSound: '漏掉的短語' },
-                  ],
-                }),
-              }],
-            },
-          }],
-        }),
-      });
-
-      try {
-        fireEvent.click(screen.getByRole('button', { name: 'AI 提供文字練習建議' }));
-
-        expect(await screen.findByText('這次少了 to eat，句子意思會不完整。')).toBeInTheDocument();
-        const requestBody = JSON.parse(fetchMock.mock.calls[0][1].body);
-        const promptText = requestBody.contents[0].parts[0].text;
-        expect(promptText).toContain('這次辨識結果：I like apples');
-        expect(promptText).toContain('這次分數：60%');
-        expect(promptText).toContain('漏掉或未通過：to, eat');
-        expect(promptText).toContain('請優先針對這次結果設計補強練習');
-        expect(promptText).not.toContain('中文近似音');
-      } finally {
-        fetchMock.mockRestore();
-      }
-    } finally {
-      window.SpeechRecognition = OriginalSpeechRecognition;
-      window.webkitSpeechRecognition = OriginalWebkitSpeechRecognition;
-    }
+      await act(async () => fireEvent.click(screen.getByRole('button', { name: '🎤 錄音並檢查' })));
+      fireEvent.click(screen.getByRole('button', { name: '■ 說好了' }));
+      await act(async () => media.instances[0].finish());
+      expect(await screen.findByText('我們先練「to」，再說一次。')).toBeVisible();
+      expect(screen.getByRole('button', { name: '🔊 聽小提示' })).toBeVisible();
+      expect(screen.queryByRole('button', { name: 'AI 提供文字練習建議' })).not.toBeInTheDocument();
+      expect(assessRecording.mock.lastCall[0].blob).toBe(media.createObjectURL.mock.calls[0][0]);
+    } finally { cleanup(); media.restore(); pauseAudio.mockRestore(); }
   });
 
   it('starts an exam-range SRS round from typed words', async () => {

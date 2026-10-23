@@ -1,10 +1,16 @@
 import { StrictMode } from 'react';
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import GrammarWorkshop from './GrammarWorkshop.jsx';
 import SpeakingStudio from './SpeakingStudio.jsx';
 import SongsStudio from './SongsStudio.jsx';
 import { cardPracticeStorageKey } from '../data/cardSpeaking.js';
+import { mockVoiceRecording } from '../test/voiceRecordingMock.js';
+import { assessRecording } from './recordingAssessmentService.js';
+vi.mock('./recordingAssessmentService.js', () => ({ assessRecording: vi.fn() }));
+let media, pauseAudio;
+beforeEach(() => { media = mockVoiceRecording(); pauseAudio = vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(() => {}); assessRecording.mockReset().mockResolvedValue({ speechDetected: true, transcript: 'apple', delivery: 'clear', tip: 'keep_going', focus: 'apple' }); });
+const finishRecording = async () => { click('■ 說好了'); await act(async () => media.instances.at(-1).finish()); };
 const Hdr = ({ t, onBack }) => <header><button onClick={onBack}>返回</button><h1>{t}</h1></header>;
 const common = () => ({ Hdr, c: { cl: '#507364' }, speak: vi.fn(() => ({})), stopSpeech: vi.fn(), playSound: vi.fn() });
 const button = name => screen.getByRole('button', { name, exact: true });
@@ -16,17 +22,12 @@ function grammar(extra = {}) {
   return { ...render(<StrictMode><GrammarWorkshop {...props} /></StrictMode>), props, deps };
 }
 const originals = [window.SpeechRecognition, window.webkitSpeechRecognition];
-afterEach(() => { vi.useRealTimers(); [window.SpeechRecognition, window.webkitSpeechRecognition] = originals; Object.defineProperty(document, 'hidden', { configurable: true, value: false }); });
+afterEach(() => { cleanup(); media.restore(); pauseAudio.mockRestore(); vi.useRealTimers(); [window.SpeechRecognition, window.webkitSpeechRecognition] = originals; Object.defineProperty(document, 'hidden', { configurable: true, value: false }); });
 function speaking(supported = true, extra = {}, overrides = {}) {
-  const instances = [];
-  class Recognition {
-    constructor() { instances.push(this); }
-    start = vi.fn(); abort = vi.fn(); stop = vi.fn(() => this.onend?.());
-    answer(text) { const row = Object.assign([{ transcript: text, confidence: 1 }], { isFinal: true }); this.onresult?.({ resultIndex: 0, results: [row] }); this.onend?.(); }
-  }
-  window.SpeechRecognition = supported ? Recognition : undefined; window.webkitSpeechRecognition = undefined;
+  const instances = media.instances;
+  if (!supported) Object.defineProperty(globalThis, 'MediaRecorder', { configurable: true, value: undefined });
   const deps = { ...common(), fallback: [{ en: 'apple', zh: '蘋果', type: 'word' }, { en: 'dog', zh: '狗', type: 'word' }], modes: [{ id: 'mixed', label: '混合練習' }], fetchSpeakItems: vi.fn().mockResolvedValue([]), selectSpeakItemsByMode: items => items, localPronunciationGuide: () => ({ target: 'apple', syllables: 'ap-ple', stress: 'ap', steps: [] }), generatePronunciationGuide: vi.fn(), compareWords: (target, heard) => ({ pct: target === heard ? 100 : 0, result: [{ word: target, ok: target === heard }], extra: [] }), speakPassThreshold: () => 80, normalizeText: s => s, ...extra };
-  const props = { lv: 'elementary', onBack: vi.fn(), onXp: vi.fn(), deps, ...overrides };
+  const props = { lv: 'elementary', onBack: vi.fn(), onXp: vi.fn(), deps, apiKey: 'test', ...overrides };
   return { ...render(<StrictMode><SpeakingStudio {...props} /></StrictMode>), props, deps, instances };
 }
 const song = { id: 'song', title: 'One Song', audio: '/one.mp3', lines: [{ t: 2, en: 'One apple', zh: '一顆蘋果' }, { t: 5, en: 'Two dogs', zh: '兩隻狗' }], vocab: ['apple', 'dogs'], patterns: [] };
@@ -65,7 +66,7 @@ describe('learning workshops', () => {
     expect(view.container.querySelector('.speech-highlight')).toBeNull();
     click('顯示英文');click('🔊 聽示範');const beforeMic=view.deps.speak.mock.lastCall[3];
     act(()=>{beforeMic.onstart();beforeMic.onboundary({charIndex:7});});
-    click('🎤 直接開說');act(()=>beforeMic.onboundary({charIndex:0}));
+    click('🎤 錄音並檢查');act(()=>beforeMic.onboundary({charIndex:0}));
     expect(highlighted()).toBeUndefined();expect(view.props.onXp).not.toHaveBeenCalled();
   });
   it('tracks the selected occurrence of repeated phrases in both the guide and the full example',()=>{
@@ -135,15 +136,15 @@ describe('learning workshops', () => {
     expect(radio()).toHaveAttribute('data-state','idle');
     expect(view.instances).toHaveLength(0);
   });
-  it('accepts interchangeable repeated words and leaves the puzzle before microphone capture',()=>{
+  it('accepts interchangeable repeated words and leaves the puzzle before microphone capture',async()=>{
     const card={...phraseCard,en:'Go go now.'};
     const view=speaking(true,{}, {cardPractice:card});click('🧩 聽音拼句');
     click('go');click('Go');click('now.');
     expect(screen.getByRole('heading',{name:'你把聲音接成一句話了！'})).toBeInTheDocument();
     click('▶ 聽完整例句');const callbacks=view.deps.speak.mock.lastCall[3];
-    click('🎤 直接開說');
+    click('🎤 錄音並檢查');
     expect(screen.queryByRole('region',{name:'聽音拼句'})).not.toBeInTheDocument();
-    expect(view.instances).toHaveLength(1);
+    await act(async () => {}); expect(view.instances).toHaveLength(1);
     act(()=>callbacks.onstart());
     expect(view.container.querySelector('.listening-radio')).toHaveAttribute('data-state','idle');
     click('取消這次錄音');expect(button('🧩 聽音拼句')).toBeInTheDocument();
@@ -204,7 +205,7 @@ describe('learning workshops', () => {
     expect(view.deps.stopSpeech).toHaveBeenCalledOnce();
     expect(screen.queryByRole('region',{name:'分段聽說'})).not.toBeInTheDocument();
     click('顯示英文');expect(view.deps.speak).toHaveBeenCalledOnce();
-    click('帶我逐段跟讀 →');click('🎤 直接開說');
+    click('帶我逐段跟讀 →');click('🎤 錄音並檢查');
     expect(screen.queryByRole('region',{name:'分段聽說'})).not.toBeInTheDocument();
     click('取消這次錄音');expect(button('帶我逐段跟讀 →')).toBeInTheDocument();
     click('帶我逐段跟讀 →');
@@ -225,7 +226,7 @@ describe('learning workshops', () => {
     expect(view.instances).toHaveLength(0);
     expect(view.props.onXp).not.toHaveBeenCalled();
   });
-  it('opens a card example without auto audio or recording, plays its phrases, and preserves normal speaking progress',()=>{
+  it('opens a card example without auto audio or recording, plays its phrases, and preserves normal speaking progress',async()=>{
     const normal=JSON.stringify({untouched:true});localStorage.setItem('eg_speaking_studio_elementary',normal);
     const cardPractice={word:'dog',meaning:'狗',en:'My dog likes to run in the park.',zh:'我的狗喜歡在公園裡跑。',type:'sentence'};
     const view=speaking(true,{}, {cardPractice});
@@ -243,13 +244,14 @@ describe('learning workshops', () => {
     click('■ 停止示範');expect(screen.queryByRole('button',{name:'■ 停止示範'})).not.toBeInTheDocument();
     click('先聽不看英文'); expect(screen.queryByText(cardPractice.en)).not.toBeInTheDocument();
     expect(within(screen.getByRole('region',{name:'來自單字卡'})).queryByText('dog')).not.toBeInTheDocument();
-    click('🎤 直接開說');act(()=>view.instances[0].answer(cardPractice.en));
+    assessRecording.mockResolvedValue({ speechDetected: true, transcript: cardPractice.en, delivery: 'clear', tip: 'keep_going', focus: '' });
+    await act(async()=>click('🎤 錄音並檢查')); await finishRecording();
     expect(view.container.querySelector('.workshop-spoken-target')).toHaveTextContent(cardPractice.en);
     expect(view.props.onXp).toHaveBeenCalledExactlyOnceWith(15);
     expect(localStorage.getItem('eg_speaking_studio_elementary')).toBe(normal);
     view.unmount();
     const resumed=speaking(true,{}, {cardPractice});
-    click('🎤 直接開說');act(()=>resumed.instances[0].answer(cardPractice.en));
+    await act(async()=>click('🎤 錄音並檢查')); await finishRecording();
     expect(resumed.props.onXp).not.toHaveBeenCalled();
     expect(JSON.parse(localStorage.getItem(cardPracticeStorageKey('elementary',cardPractice))).records).toBeTruthy();
     click('完成');click('回到單字卡繼續複習');expect(resumed.props.onBack).toHaveBeenCalledOnce();
@@ -269,82 +271,6 @@ describe('learning workshops', () => {
     expect(button(`朗讀 ${cardPractice.en}`)).toHaveAttribute('aria-pressed','false');
     click('再練一次');expect(screen.getByRole('heading',{name:cardPractice.zh})).toBeInTheDocument();
   });
-  it('distinguishes microphone startup, listening and processing, and cancels without scoring late results', () => {
-    const view = speaking(); click('開始口說小練習 →'); click('🎤 直接開說');
-    const recognition = view.instances[0];
-    expect(button('準備麥克風…')).toBeDisabled();
-    expect(screen.getByRole('status')).toHaveTextContent('還沒開始收音');
-    act(() => recognition.onstart());
-    expect(screen.getByRole('status')).toHaveTextContent('正在聽');
-    recognition.stop.mockImplementation(() => {});
-    click('■ 說好了，停止');
-    expect(button('正在整理結果…')).toBeDisabled();
-    const lateResult = recognition.onresult, lateEnd = recognition.onend;
-    click('取消這次錄音');
-    act(() => { lateResult({ resultIndex: 0, results: [Object.assign([{ transcript: 'apple' }], { isFinal: true })] }); lateEnd(); });
-    expect(recognition.abort).toHaveBeenCalledOnce();
-    expect(button('🎤 直接開說')).toBeEnabled();
-    expect(view.props.onXp).not.toHaveBeenCalled();
-    expect(JSON.parse(localStorage.getItem('eg_speaking_studio_elementary')).records).toEqual({});
-  });
-  it('finishes a timed-out capture with confirmed words when the browser never sends an end event', () => {
-    vi.useFakeTimers();
-    const view = speaking(); click('開始口說小練習 →'); click('🎤 直接開說');
-    const recognition = view.instances[0]; recognition.stop.mockImplementation(() => {});
-    act(() => { recognition.onstart(); recognition.onresult({ resultIndex: 0, results: [Object.assign([{ transcript: 'apple' }], { isFinal: true })] }); });
-    act(() => vi.advanceTimersByTime(25000));
-    expect(recognition.stop).toHaveBeenCalledOnce();
-    expect(button('正在整理結果…')).toBeDisabled();
-    const lateEnd = recognition.onend;
-    act(() => vi.advanceTimersByTime(4000));
-    expect(view.props.onXp).toHaveBeenCalledExactlyOnceWith(15);
-    expect(screen.getByText('文字符合度 100% · 通過參考 80%')).toBeInTheDocument();
-    act(() => lateEnd());
-    expect(view.props.onXp).toHaveBeenCalledOnce();
-    expect(recognition.abort).toHaveBeenCalledOnce();
-  });
-  it('replaces provisional words and only scores confirmed recognition text', () => {
-    const compareWords = vi.fn((target, heard) => ({ pct: target === heard ? 100 : 0, result: [], extra: [] }));
-    const view = speaking(true, { compareWords }); click('開始口說小練習 →'); click('🎤 直接開說');
-    const recognition = view.instances[0];
-    const row = (transcript, isFinal) => Object.assign([{ transcript }], { isFinal });
-    act(() => recognition.onresult({ resultIndex: 0, results: [row('wrong', false), row('old words', false)] }));
-    expect(screen.getByRole('status')).toHaveTextContent('wrong old words');
-    act(() => recognition.onresult({ resultIndex: 0, results: [row('apple', true)] }));
-    expect(screen.getByRole('status')).not.toHaveTextContent('old words');
-    act(() => recognition.onresult({ resultIndex: 1, results: [row('apple', true), row('unconfirmed', false)] }));
-    click('■ 說好了，停止');
-    expect(compareWords).toHaveBeenCalledExactlyOnceWith('apple', 'apple');
-    click('重說一次');
-    act(() => { view.instances[1].onresult({ resultIndex: 0, results: [row('apple', false)] }); view.instances[1].onend(); });
-    expect(screen.getByRole('alert')).toHaveTextContent('還沒收到完整的辨識結果');
-    expect(compareWords).toHaveBeenCalledOnce();
-  });
-  it('recovers from a microphone that never starts, and aborts recording when a demo is requested', () => {
-    vi.useFakeTimers();
-    const view = speaking(); click('開始口說小練習 →'); click('🎤 直接開說');
-    const lateStart = view.instances[0].onstart;
-    act(() => vi.advanceTimersByTime(25000));
-    act(() => lateStart());
-    expect(screen.getByRole('alert')).toHaveTextContent('麥克風還沒有啟動');
-    expect(button('🎤 直接開說')).toBeEnabled();
-    click('🎤 直接開說'); const lateEnd = view.instances[1].onend;
-    click('🔊 聽示範'); act(() => lateEnd());
-    expect(view.instances[1].abort).toHaveBeenCalledOnce();
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-    expect(view.props.onXp).not.toHaveBeenCalled();
-    expect(button('🎤 直接開說')).toBeEnabled();
-  });
-  it('clears pending capture completion when leaving the studio', () => {
-    vi.useFakeTimers();
-    const view = speaking(); click('開始口說小練習 →'); click('🎤 直接開說');
-    const recognition = view.instances[0]; recognition.stop.mockImplementation(() => {});
-    act(() => { recognition.onstart(); recognition.onresult({ resultIndex: 0, results: [Object.assign([{ transcript: 'apple' }], { isFinal: true })] }); });
-    click('■ 說好了，停止'); view.unmount();
-    act(() => vi.advanceTimersByTime(4000));
-    expect(view.props.onXp).not.toHaveBeenCalled();
-    expect(recognition.abort).toHaveBeenCalledOnce();
-  });
   it('gates grammar stages, persists a wrong answer, then awards only the first correct retry', () => {
     const view = grammar(); click(/第 01 課/);
     expect(screen.getByRole('button', { name: /3.*小挑戰/ })).toBeDisabled();
@@ -360,24 +286,16 @@ describe('learning workshops', () => {
     click(/第 01 課/); fireEvent.click(screen.getByText('需要多一點說明？')); click('AI 講解'); click('返回'); click('繼續上次這一課 →');
     await act(async () => resolve({ simple: 'old response' })); expect(screen.queryByText('old response')).not.toBeInTheDocument(); view.unmount();
   });
-  it('starts speech only by gesture, ends empty captures, and ignores late events after errors', () => {
-    const view = speaking(); expect(view.instances).toHaveLength(0); click('開始口說小練習 →'); expect(view.deps.speak).not.toHaveBeenCalled();
-    click('🎤 直接開說'); act(() => view.instances[0].onend()); expect(screen.getByRole('alert')).toHaveTextContent('未取得辨識文字，尚未評分');
-    click('🎤 直接開說'); const recognition = view.instances[1], lateEnd = recognition.onend;
-    act(() => recognition.onerror({ error: 'not-allowed' })); act(() => lateEnd());
-    expect(screen.getByRole('alert')).toHaveTextContent('麥克風尚未獲得允許'); expect(button('🎤 直接開說')).toBeEnabled(); expect(view.props.onXp).not.toHaveBeenCalled();
-  });
-  it('saves passed speech before reward and resumes without recording or awarding again', () => {
-    const view = speaking(); click('開始口說小練習 →'); click('🎤 直接開說');
-    const lateEnd = view.instances[0].onend; act(() => view.instances[0].answer('apple')); act(() => lateEnd());
+  it('saves the checked recording before reward and resumes without recording or awarding again', async () => {
+    const view = speaking(); click('開始口說小練習 →'); await act(async()=>click('🎤 錄音並檢查')); await finishRecording();
     expect(view.props.onXp).toHaveBeenCalledExactlyOnceWith(15); view.unmount();
-    const resumed = speaking(); click('繼續上次練習'); expect(resumed.instances).toHaveLength(0); click('下一個');
+    const resumed = speaking(); click('繼續上次練習'); expect(media.getUserMedia).toHaveBeenCalledOnce(); click('下一個');
     expect(screen.getByRole('heading', { name: '狗' })).toBeInTheDocument(); expect(resumed.props.onXp).not.toHaveBeenCalled();
   });
-  it('aborts recording on hide and allows unsupported browsers to finish by self practice', () => {
-    const view = speaking(); click('開始口說小練習 →'); click('🎤 直接開說');
+  it('aborts recording on hide and allows unsupported browsers to finish by self practice', async () => {
+    const view = speaking(); click('開始口說小練習 →'); await act(async()=>click('🎤 錄音並檢查'));
     Object.defineProperty(document, 'hidden', { configurable: true, value: true }); fireEvent(document, new Event('visibilitychange'));
-    expect(view.instances[0].abort).toHaveBeenCalled(); expect(button('繼續上次練習')).toBeInTheDocument(); view.unmount();
+    expect(media.tracks[0].stop).toHaveBeenCalled(); expect(button('繼續上次練習')).toBeInTheDocument(); view.unmount();
     const unsupported = speaking(false); click('繼續上次練習');
     for (let i = 0; i < 2; i++) { fireEvent.click(screen.getByText('今天想先跟讀，不用麥克風')); click('我跟讀過了，繼續 →'); }
     expect(screen.getByRole('region', { name: '口說練習完成' })).toBeInTheDocument(); expect(unsupported.props.onXp).not.toHaveBeenCalled();

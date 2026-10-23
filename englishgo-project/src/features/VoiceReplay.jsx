@@ -47,6 +47,6 @@ export default function VoiceReplay({ clip, audioRef, onBeforePlay, onDemo, onRe
     <div className="voice-replay-progress"><span aria-label="錄音回放時間">{time(elapsed)} / {time(duration)}</span><progress max={duration || 1} value={elapsed} aria-label="錄音回放進度" aria-valuetext={`${time(elapsed)} / ${time(duration)}`} /></div>
     <audio ref={audioRef} src={clip.url} preload="metadata" aria-hidden="true" onPlay={() => { onBeforePlay(); setError(''); setPlaying(true); }} onPlaying={() => { freeze(); clock.current.started = performance.now(); }} onWaiting={freeze} onPause={() => { freeze(); setPlaying(false); }} onSeeked={() => { if (audioRef.current?.currentTime === 0) { reset(); if (!audioRef.current.paused) clock.current.started = performance.now(); } }} onEnded={() => { clock.current = { elapsed: duration, started: null }; setElapsed(duration); setPlaying(false); }} onError={() => { freeze(); setPlaying(false); setError('錄音暫時無法播放，請重新錄一次。'); }} />
     {error && <p role="alert">{error}</p>}
-    <div className="voice-replay-footer"><p>回放用的錄音暫存在本頁；重錄、換題或離開時會清除。</p><div><button type="button" onClick={onRecord}>重新錄音</button><button type="button" onClick={onDiscard}>刪除錄音</button></div></div>
+    <div className="voice-replay-footer"><p>重錄、換題或離開時，會清除這段錄音。</p><div>{onRecord && <button type="button" onClick={onRecord}>重新錄音</button>}<button type="button" onClick={onDiscard}>刪除錄音</button></div></div>
   </section>;
 }

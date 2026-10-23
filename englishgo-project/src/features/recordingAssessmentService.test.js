@@ -2,7 +2,7 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { assessRecording, readRecordingAssessment } from './recordingAssessmentService.js';
 
 afterEach(() => vi.unstubAllGlobals());
-const report = { speechDetected: true, transcript: 'I drink water.', clarity: 'water 的開頭清楚。', rhythm: '句中稍有停頓。', practice: '把 drink water 接起來說。' };
+const report = { speechDetected: true, transcript: 'I drink water.', delivery: 'clear', tip: 'keep_going', focus: 'water' };
 const response = value => ({ ok: true, status: 200, json: async () => ({ candidates: [{ content: { parts: [{ text: JSON.stringify(value) }] } }] }) });
 it('sends actual recorded bytes and MIME type, without giving the model a target sentence to copy', async () => {
   const fetch = vi.fn().mockResolvedValue(response(report)); vi.stubGlobal('fetch', fetch);
@@ -20,7 +20,7 @@ it('sends actual recorded bytes and MIME type, without giving the model a target
 });
 it('treats silence as unassessed and rejects invented or incomplete result shapes', () => {
   expect(readRecordingAssessment({ speechDetected: false, transcript: 'fake words' })).toEqual({ speechDetected: false });
-  for (const invalid of [{}, { ...report, speechDetected: 'true' }, { ...report, transcript: '' }, { ...report, clarity: null }, { ...report, transcript: 'a'.repeat(1201) }]) {
+  for (const invalid of [{}, { ...report, speechDetected: 'true' }, { ...report, transcript: '' }, { ...report, delivery: null }, { ...report, tip: "long complicated explanation" }, { ...report, transcript: 'a'.repeat(1201) }]) {
     expect(() => readRecordingAssessment(invalid)).toThrow();
   }
 });

@@ -7,11 +7,11 @@
 .voice-replay-progress { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 18px 0; padding: 12px 14px; border-radius: 12px; background: var(--garden-white); }
 .voice-replay-progress span { font-variant-numeric: tabular-nums; font-size: .9rem; }
 .voice-replay-progress progress { flex: 1 1 100px; min-width: 0; height: 8px; accent-color: var(--garden-green); }
-.recording-assessment { margin-top: 18px; padding: 18px; border: 1px solid var(--garden-line); border-radius: 16px; text-align: left; }
-.recording-assessment h3 { font-size: 18px; }
-.recording-assessment dl { margin: 16px 0; }
-.recording-assessment dt { color: var(--garden-green); font-weight: 750; }
-.recording-assessment dd { margin: 4px 0 14px; line-height: 1.8; overflow-wrap: anywhere; }
+.recording-assessment { margin-top: 18px; padding: 18px; border: 1px solid var(--garden-line); border-radius: 16px; text-align: left; scroll-margin-top: 110px; }
+.recording-assessment h3 { font-size: clamp(20px, 4vw, 26px); line-height: 1.4; margin: 10px 0; }
+.recording-child-tip { font-size: 1.1rem; line-height: 1.8; margin: 12px 0 20px; overflow-wrap: anywhere; }
+.recording-adult-details { margin-top: 20px; border-top: 1px solid var(--garden-line); padding-top: 14px; font-size: .85rem; color: var(--garden-muted); line-height: 1.7; overflow-wrap: anywhere; }
+.recording-adult-details summary { cursor: pointer; min-height: 44px; display: list-item; align-content: center; }
 .voice-replay-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
 .voice-replay-footer p { flex: 1 1 220px; margin: 0; font-size: .8rem; color: var(--garden-muted); }
 .voice-replay-footer > div { display: flex; flex-wrap: wrap; gap: 8px; }
