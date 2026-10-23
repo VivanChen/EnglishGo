@@ -27,6 +27,7 @@ export default function SpeakingStudio({ lv, onBack, onXp, apiKey, onOpenSetting
   const phase = voice.phase;
   const listening = phase !== 'idle';
   const [result, setResult] = useState(null), [demoError, setDemoError] = useState(false);
+  const [retryCue, setRetryCue] = useState(null);
   const [hideEnglish, setHideEnglish] = useState(false), [demoPlaying, setDemoPlaying] = useState(null);
   const [puzzleOpen, setPuzzleOpen] = useState(false), [toolsOpen, setToolsOpen] = useState(false);
   const puzzleButton = useRef(null), returnToPuzzleButton = useRef(false);
@@ -51,10 +52,11 @@ export default function SpeakingStudio({ lv, onBack, onXp, apiKey, onOpenSetting
   const localGuide = useMemo(() => currentItem ? localPronunciationGuide(currentItem, lv) : null, [currentItem, lv, localPronunciationGuide]);
   const guide = localGuide;
   useEffect(() => {
-    setResult(null); setDemoError(false); setHideEnglish(false); setDemoPlaying(null); setPuzzleOpen(false); setToolsOpen(false);
+    setResult(null); setRetryCue(null); setDemoError(false); setHideEnglish(false); setDemoPlaying(null); setPuzzleOpen(false); setToolsOpen(false);
     stopVoicePlayback(); cancelVoice();
   }, [currentItem?.en, round?.review, stopVoicePlayback, cancelVoice]);
   useEffect(() => { title.current?.focus({ preventScroll: true }); title.current?.closest('.practice-world')?.scrollIntoView?.({ block: 'start', behavior: 'instant' }); }, [active, round?.index, round?.done]);
+  useEffect(() => { if (!active || round?.done) setRetryCue(null); }, [active, round?.done]);
   useEffect(() => {
     if (listening || voice.clip) {
       title.current?.closest('.practice-question')?.scrollIntoView?.({ block: 'start', behavior: 'instant' });
@@ -82,7 +84,7 @@ export default function SpeakingStudio({ lv, onBack, onXp, apiKey, onOpenSetting
   const start = () => {
     const next = createSpeakingRound(selectSpeakItemsByMode(source, mode), mode, count);
     if (!next.items.length) return;
-    cancel(); save(next); setResult(null); setActive(true);
+    cancel(); save(next); setResult(null); setRetryCue(null); setActive(true);
   };
   const scoreTranscript = (item, transcript) => {
     const comparison = compareWords(item.en, transcript);
@@ -99,15 +101,19 @@ export default function SpeakingStudio({ lv, onBack, onXp, apiKey, onOpenSetting
     voice.start();
   };
   const finishListening = () => voice.stop();
+  const retry = feedback => {
+    setRetryCue(feedback && !feedback.readyToContinue ? { target: currentItem.en, tip: feedback.retryTip, focus: feedback.focus } : null);
+    startListening();
+  };
   const replayStart = () => stopDemo();
-  const discard = () => { returnToRecord.current = true; stopVoicePlayback(); cancelVoice(); setResult(null); };
+  const discard = () => { returnToRecord.current = true; stopVoicePlayback(); cancelVoice(); setResult(null); setRetryCue(null); };
   const finishSelfPractice = () => {
-    cancel(); const current = live.current, item = current.items[current.queue[current.index]], key = speechItemKey(item);
+    cancel(); setRetryCue(null); const current = live.current, item = current.items[current.queue[current.index]], key = speechItemKey(item);
     const old = current.records[key] || { attempts: 0, best: 0, heard: '', passed: false, earned: false };
     save(advanceSpeakingRound({ ...current, records: { ...current.records, [key]: { ...old, selfPracticed: true } } })); setResult(null);
   };
-  const next = () => { cancel(); save(advanceSpeakingRound(live.current)); setResult(null); };
-  const pause = () => { cancel(); setActive(false); };
+  const next = () => { cancel(); save(advanceSpeakingRound(live.current)); setResult(null); setRetryCue(null); };
+  const pause = () => { cancel(); setRetryCue(null); setActive(false); };
   const leave = () => { cancel(); onBack(); };
   const header = <><Hdr t={practice ? "🎧 單字聽說練習" : "🗣️ 勇敢說出口"} onBack={leave} cl={c.cl} />
     {practice && <section className="speaking-source speaking-source-compact" aria-label="來自單字卡"><div><span>單字卡{practice.type === 'sentence' ? '例句' : '練習'}</span>{!hideEnglish && !puzzleOpen && <strong lang="en">{practice.word}</strong>}</div><button type="button" onClick={leave}>← 回到單字卡</button></section>}</>;
@@ -137,13 +143,14 @@ export default function SpeakingStudio({ lv, onBack, onXp, apiKey, onOpenSetting
         </>}
       </>}
       {!voice.clip && <section className="speaking-capture" aria-label="換你說">
+        {retryCue?.target === currentItem.en && <div className="speaking-retry-cue" role="note" aria-label="這次的小提醒"><span>小提醒</span><p>{retryCue.tip}{retryCue.focus !== currentItem.en && <> <b lang="en">{retryCue.focus}</b></>}</p></div>}
         <p className="speaking-capture-prompt">{listening ? '看著上面的英文，慢慢說。' : '換你說，準備好就按錄音。'}</p>
         {listening && <div className="workshop-microphone" data-phase={phase} role="status"><b>{phase === 'starting' ? '準備麥克風，還沒開始收音' : phase === 'processing' ? '正在收好這段錄音' : '正在錄音，慢慢說就好'}</b>{phase === 'starting' && <p>第一次使用，請允許麥克風。</p>}{phase === 'listening' && <span className="voice-recording-time">● 錄音中 · {voice.seconds} / {voice.maxSeconds} 秒</span>}</div>}
         <div className="practice-actions speaking-capture-actions">{voice.supported && <button ref={captureButton} className="practice-primary" disabled={phase === 'starting' || phase === 'processing'} onClick={phase === 'listening' ? finishListening : startListening}>{phase === 'starting' ? '準備麥克風…' : phase === 'processing' ? '正在收好錄音…' : phase === 'listening' ? '■ 說好了' : apiKey?.trim() ? '🎤 錄音並檢查' : '🎤 開始錄音'}</button>}{listening && <button type="button" onClick={() => { returnToRecord.current = true; cancelCapture(); }}>取消這次錄音</button>}</div>
         {voice.error && <div className="practice-hint" role="alert">{voice.error}</div>}
         {voice.supported ? <><p className="voice-capture-note">{apiKey?.trim() ? '說完按「說好了」，就會檢查這段錄音。' : '先錄音，聽聽自己的聲音。'}最長 {voice.maxSeconds} 秒。</p>{!apiKey?.trim() && !listening && <details className="speaking-setup"><summary>想要小提示？請大人幫忙設定</summary><p>設定語音小幫手後，錄完就能收到一句練習提示。</p><button type="button" onClick={onOpenSettings}>請大人幫忙設定</button></details>}{apiKey?.trim() && <p className="practice-save-note">錄音會傳給 Google Gemini 檢查，使用已設定的 API 額度。</p>}</> : <p className="practice-hint">這個瀏覽器暫時不能錄音，可以先聽示範，跟著唸。</p>}
       </section>}
-      {voice.clip && <RecordingAssessment key={`assessment:${voice.clip.url}`} clip={voice.clip} apiKey={apiKey} autoCheck={autoCheck.current} target={currentItem.en} comparison={comparison} threshold={threshold} onOpenSettings={onOpenSettings} onBeforeAnalyze={() => { stopDemo(); stopVoicePlayback(); }} onResult={transcript => scoreTranscript(currentItem, transcript)} onRecord={startListening} onNext={next} nextLabel={nextLabel} onListen={text => demoPlaying?.label === '跟著唸' ? stopDemo() : demo(text, .65, '跟著唸')} onReadTip={text => demoPlaying?.label === '小提示' ? stopDemo() : demo(text, .85, '小提示', {}, 'zh-TW')} playing={demoPlaying} playbackError={demoError}>
+      {voice.clip && <RecordingAssessment key={`assessment:${voice.clip.url}`} clip={voice.clip} apiKey={apiKey} autoCheck={autoCheck.current} target={currentItem.en} comparison={comparison} threshold={threshold} onOpenSettings={onOpenSettings} onBeforeAnalyze={() => { stopDemo(); stopVoicePlayback(); }} onResult={transcript => scoreTranscript(currentItem, transcript)} onRecord={retry} onNext={next} nextLabel={nextLabel} onListen={(text, wordOffset) => demoPlaying?.label === '跟著唸' ? stopDemo() : demo(text, .65, '跟著唸', { sourceText: currentItem.en, wordOffset })} onReadTip={text => demoPlaying?.label === '小提示' ? stopDemo() : demo(text, .85, '小提示', {}, 'zh-TW')} playing={demoPlaying} playbackError={demoError}>
         <VoiceReplay key={voice.clip.url} compact clip={voice.clip} audioRef={voiceAudio} onBeforePlay={replayStart} onDemo={() => demoPlaying?.label === '整句示範' ? stopDemo() : demo()} demoPlaying={demoPlaying?.label === '整句示範'} onDiscard={discard} />
       </RecordingAssessment>}
       {record && !comparison && !voice.clip && !listening && <div><p className="practice-save-note">{record.passed ? '這題已經練得很棒了。' : record.selfPracticed ? '這題已經自行跟讀過。' : `上次試過 ${record.attempts} 次，可以再說說看。`}</p>{(record.passed || record.selfPracticed) && <button className="practice-primary" onClick={next}>{nextLabel}</button>}</div>}

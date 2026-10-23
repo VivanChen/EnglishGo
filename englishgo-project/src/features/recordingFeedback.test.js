@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { recordingFeedback, recordingTips } from './recordingFeedback.js';
+import { recordingFeedback, recordingPracticeFocus, recordingTips } from './recordingFeedback.js';
 import { readRecordingAssessment } from './recordingAssessmentService.js';
 
 const report = { speechDetected: true, transcript: 'Please drink more water.', delivery: 'clear', tip: 'keep_going', focus: 'water' };
@@ -21,7 +21,18 @@ it('never displays model prose or an unrelated focus word in the child feedback'
 });
 it('chooses just the first word to practise, without accusing the child of a mistake', () => {
   const result = recordingFeedback(report, { pct: 50, result: [{ word: 'more', ok: false }, { word: 'water', ok: false }] }, report.transcript);
-  expect(result).toEqual({ title: '有聽到你，繼續加油！', tip: '我們先練「more」，再說一次。', focus: 'more' });
+  expect(result).toMatchObject({ title: '有聽到你，繼續加油！', tip: '先練這個字，再試一次。', focus: 'more', wordOffset: 2 });
+  expect(result.tip).not.toMatch(/[a-z]/i);
+});
+it('locates the specific repeated word and keeps the original spelling for playback', () => {
+  expect(recordingPracticeFocus('Go go now.', 'go', 1)).toEqual({ focus: 'go', wordOffset: 1 });
+  expect(recordingPracticeFocus('Please drink more water.', 'more water')).toEqual({ focus: 'more water.', wordOffset: 2 });
+  expect(recordingPracticeFocus("I don't know.", 'dont')).toEqual({ focus: "don't", wordOffset: 1 });
+  expect(recordingPracticeFocus('Go now.', 'not in sentence')).toEqual({ focus: 'Go now.', wordOffset: 0 });
+});
+it('never teaches a misheard word even when the text comparison accepts it', () => {
+  const result = recordingFeedback({ ...report, delivery: 'practice', tip: 'finish_word', focus: 'cap' }, { pct: 100, result: [{ word: 'cat', ok: true }] }, 'cat');
+  expect(result.focus).toBe('cat');
 });
 it('accepts only short, consecutive words actually heard in the recording', () => {
   expect(readRecordingAssessment({ ...report, focus: 'drink more' }).focus).toBe('drink more');

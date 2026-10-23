@@ -92,6 +92,7 @@ describe('one recording, one check', () => {
     expect(view.deps.compareWords).toHaveBeenCalledExactlyOnceWith(card.en, card.en);
     expect(screen.getByRole('heading', { name: '這次說得很棒！' })).toHaveFocus();
     expect(screen.getByText('這次練好了，可以繼續囉！')).toBeVisible();
+    expect(screen.queryByRole('button', { name: /^聽這個字：/ })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: '完成', exact: true })).toHaveClass('practice-primary');
     expect(view.props.onXp).toHaveBeenCalledOnce();
     expect(HTMLMediaElement.prototype.play).not.toHaveBeenCalled();
@@ -112,14 +113,14 @@ describe('one recording, one check', () => {
   it('gives one short action, reads it in Chinese and plays only the word to practise', async () => {
     assessRecording.mockResolvedValue({ ...report, transcript: 'Please drink water.', delivery: 'practice', tip: 'join_words' });
     const view = setup(); await begin(); await finish();
-    expect(screen.getByText('我們先練「more」，再說一次。')).toBeVisible();
+    expect(screen.getByText('先練這個字，再試一次。')).toBeVisible();
     expect(screen.getByRole('button', { name: '🎤 再說一次', exact: true })).toHaveClass('practice-primary');
     const feedback = screen.getByRole('region', { name: '這次錄音的小提示' });
     expect(feedback.querySelectorAll('.recording-child-tip')).toHaveLength(1);
     expect(within(feedback).queryByText('發音清晰度')).not.toBeInTheDocument();
     click('🔊 聽小提示');
-    expect(view.deps.speak).toHaveBeenLastCalledWith('有聽到你，繼續加油！我們先練「more」，再說一次。', 'zh-TW', .85, expect.any(Object));
-    click('♫ 跟著唸'); expect(view.deps.speak).toHaveBeenLastCalledWith('more', 'en-US', .65, expect.any(Object));
+    expect(view.deps.speak).toHaveBeenLastCalledWith('有聽到你，繼續加油！先練這個字，再試一次。', 'zh-TW', .85, expect.any(Object));
+    click('聽這個字：more'); expect(view.deps.speak).toHaveBeenLastCalledWith('more', 'en-US', .65, expect.any(Object));
     expect(view.props.onXp).not.toHaveBeenCalled();
     click('完成'); expect(screen.getByRole('region', { name: '口說練習完成' })).toBeVisible();
   });
@@ -133,6 +134,38 @@ describe('one recording, one check', () => {
     await act(async () => click('檢查這段錄音'));
     expect(assessRecording.mock.calls[0][0].apiKey).toBe('new-key');
     expect(media.getUserMedia).toHaveBeenCalledOnce();
+  });
+  it('highlights the practice word in the sentence and keeps its reminder during a rerecording', async () => {
+    assessRecording.mockResolvedValueOnce({ ...report, transcript: 'Please drink water.', delivery: 'practice', tip: 'join_words' });
+    const view = setup(); await begin(); await finish();
+    click('聽這個字：more');
+    expect(view.deps.speak).toHaveBeenLastCalledWith('more', 'en-US', .65, expect.any(Object));
+    const events = view.deps.speak.mock.lastCall[3];
+    act(() => { events.onstart(); events.onboundary({ charIndex: 0 }); });
+    expect(view.container.querySelector('.workshop-spoken-target .is-current')).toHaveTextContent('more');
+    expect(view.container.querySelector('.recording-focus-play .is-current')).toHaveTextContent('more');
+    await begin('🎤 再說一次');
+    const cue = screen.getByRole('note', { name: '這次的小提醒' });
+    expect(cue).toHaveTextContent('把這個字一起說出來。 more');
+    expect(cue.querySelector('[lang=en]')).toHaveTextContent('more');
+    expect(view.container.querySelector('.workshop-spoken-target')).toHaveTextContent(card.en);
+    act(() => events.onboundary({ charIndex: 0 }));
+    expect(view.container.querySelector('.is-current')).toBeNull();
+    expect(assessRecording).toHaveBeenCalledOnce();
+    click('取消這次錄音');
+    expect(screen.getByRole('note', { name: '這次的小提醒' })).toBeVisible();
+    await begin(); await finish();
+    expect(screen.queryByRole('note', { name: '這次的小提醒' })).not.toBeInTheDocument();
+    expect(screen.getByText('這次練好了，可以繼續囉！')).toBeVisible();
+    await begin('🎤 再說一次');
+    expect(screen.queryByRole('note', { name: '這次的小提醒' })).not.toBeInTheDocument();
+  });
+  it('clears a retry reminder when resting instead of carrying it into a fresh attempt', async () => {
+    assessRecording.mockResolvedValue({ ...report, transcript: 'Please drink water.', delivery: 'practice', tip: 'join_words' });
+    setup(); await begin(); await finish(); await begin('🎤 再說一次');
+    click('Ⅱ 先休息一下'); click('繼續聽說練習');
+    expect(screen.queryByRole('note', { name: '這次的小提醒' })).not.toBeInTheDocument();
+    expect(media.getUserMedia).toHaveBeenCalledTimes(2);
   });
   it('does not score silence or fabricate encouragement about pronunciation', async () => {
     assessRecording.mockResolvedValue({ speechDetected: false });

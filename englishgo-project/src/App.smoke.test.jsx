@@ -709,7 +709,7 @@ describe('EnglishGo app smoke flow', () => {
       await act(async () => fireEvent.click(screen.getByRole('button', { name: '🎤 錄音並檢查' })));
       fireEvent.click(screen.getByRole('button', { name: '■ 說好了' }));
       await act(async () => media.instances[0].finish());
-      expect(await screen.findByText('我們先練「to」，再說一次。')).toBeVisible();
+      expect(await screen.findByRole('button', { name: '聽這個字：to' })).toBeVisible();
       expect(screen.getByRole('button', { name: '🔊 聽小提示' })).toBeVisible();
       expect(screen.queryByRole('button', { name: 'AI 提供文字練習建議' })).not.toBeInTheDocument();
       expect(assessRecording.mock.lastCall[0].blob).toBe(media.createObjectURL.mock.calls[0][0]);

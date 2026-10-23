@@ -44,6 +44,14 @@
 .speaking-practice-card .recording-assessment { margin-top: 18px; padding: 18px 0 0; border: 0; border-top: 1px solid var(--garden-line); border-radius: 0; }
 .recording-assessment .recording-child-tip { margin: 8px 0 12px; color: var(--garden-ink); }
 .recording-assessment .recording-tip-actions { justify-content: flex-start; margin: 10px 0; }
+.recording-assessment .recording-tip-actions:has(.recording-focus-play) { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); align-items: stretch; }
+.recording-tip-actions .recording-focus-play { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; background: var(--garden-green-soft); border-color: var(--garden-green); }
+.recording-focus-play > span { font-size: 13px; }
+.recording-focus-play b { font-size: clamp(21px, 4vw, 27px); line-height: 1.35; overflow-wrap: anywhere; }
+.speaking-retry-cue { padding: 10px 12px; margin-bottom: 14px; border-left: 3px solid var(--garden-green); border-radius: 0 10px 10px 0; background: var(--garden-green-soft); text-align: left; }
+.speaking-retry-cue > span { font-size: 12px; font-weight: 750; color: var(--garden-green); }
+.speaking-retry-cue p { margin: 4px 0 0; color: var(--garden-ink); font-size: 15px; line-height: 1.65; }
+.speaking-retry-cue b { color: var(--garden-green); }
 .recording-assessment .voice-replay-compact { padding: 12px; margin: 16px 0; border-radius: 14px; }
 .speaking-practice-card .voice-replay-compact .practice-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 0; }
 .voice-replay-compact .practice-actions button { padding: 9px 6px; font-size: 14px; }
