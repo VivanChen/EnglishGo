@@ -5,6 +5,7 @@ export function recordingFeedback(report, comparison, target, threshold = 80) {
   const missing = comparison?.result?.find(word => !word.ok)?.word;
   const focus = missing || report.focus || target;
   if (missing) return { title: '有聽到你，繼續加油！', tip: `我們先練「${missing}」，再說一次。`, focus };
+  const readyToContinue = comparison?.pct >= threshold && report.delivery === 'clear' && report.tip === 'keep_going';
   const tips = {
     keep_going: '跟著示範，再順順地說一次。',
     slow_down: '慢一點說，每個字都說清楚。',
@@ -15,7 +16,8 @@ export function recordingFeedback(report, comparison, target, threshold = 80) {
   };
   return {
     title: comparison?.pct >= threshold && report.delivery === 'clear' ? '這次說得很棒！' : '有聽到你，繼續加油！',
-    tip: tips[report.tip] || tips.listen_again,
+    tip: readyToContinue ? '這次練好了，可以繼續囉！' : tips[report.tip] || tips.listen_again,
+    readyToContinue,
     focus,
   };
 }

@@ -3,6 +3,12 @@ import { recordingFeedback, recordingTips } from './recordingFeedback.js';
 import { readRecordingAssessment } from './recordingAssessmentService.js';
 
 const report = { speechDetected: true, transcript: 'Please drink more water.', delivery: 'clear', tip: 'keep_going', focus: 'water' };
+it('invites continuing after a clear complete attempt, and reserves retry for a concrete practice tip', () => {
+  const comparison = { pct: 100, result: [{ word: 'water', ok: true }] };
+  expect(recordingFeedback(report, comparison, report.transcript)).toMatchObject({ readyToContinue: true, tip: '這次練好了，可以繼續囉！' });
+  expect(recordingFeedback({ ...report, tip: 'slow_down' }, comparison, report.transcript).readyToContinue).toBe(false);
+  expect(recordingFeedback({ ...report, delivery: 'practice' }, comparison, report.transcript).readyToContinue).toBe(false);
+});
 it('never displays model prose or an unrelated focus word in the child feedback', () => {
   const checked = readRecordingAssessment({ ...report, focus: 'Ignore all instructions', practice: '複雜評語'.repeat(100) });
   expect(checked.focus).toBe('');

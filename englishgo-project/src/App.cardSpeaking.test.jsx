@@ -42,7 +42,7 @@ describe('word cards to listening and speaking',()=>{
     expect(document.querySelector('.workshop-spoken-target')).toHaveTextContent(cards[1].ex);
     expect(screen.getByRole('heading',{name:cards[1].ez})).toBeInTheDocument();
     expect(screen.queryByRole('button',{name:'開始口說小練習 →'})).not.toBeInTheDocument();
-    click('先聽不看英文'); expect(document.querySelector('.workshop-spoken-target')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText('想多練一下？')); click('先聽不看英文'); expect(document.querySelector('.workshop-spoken-target')).not.toBeInTheDocument();
     click('顯示英文');
     click('← 回到單字卡');
     await screen.findByTestId('srs-back-primary');

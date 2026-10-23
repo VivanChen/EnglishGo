@@ -26,9 +26,56 @@ function setup(extra = {}) {
   return { ...render(<StrictMode><SpeakingStudio {...props} /></StrictMode>), props, deps, recognition };
 }
 const begin = async (label = '🎤 錄音並檢查') => { await act(async () => click(label)); };
-const finish = async () => { click('■ 說好了'); await act(async () => media.instances.at(-1).finish()); };
+const finish = async () => { await act(async () => { click('■ 說好了'); media.instances.at(-1).finish(); }); };
 
 describe('one recording, one check', () => {
+  it('keeps optional activities out of the recording path and restores the sentence on retry', async () => {
+    const view = setup();
+    const steps = screen.getByRole('list', { name: '練習步驟' });
+    expect(steps.querySelector('[aria-current=step]')).toHaveTextContent('聽一聽');
+    expect(screen.queryByRole('button', { name: '🧩 聽音拼句' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText('想多練一下？')); click('帶我逐段跟讀 →');
+    const oldSpeech = view.deps.speak.mock.lastCall[3];
+    fireEvent.click(screen.getByText('想多練一下？'));
+    act(() => oldSpeech.onstart());
+    expect(screen.queryByRole('region', { name: '分段聽說' })).not.toBeInTheDocument();
+    expect(view.container.querySelector('.is-current')).toBeNull();
+    await begin();
+    expect(steps.querySelector('[aria-current=step]')).toHaveTextContent('說一說');
+    expect(screen.queryByText('想多練一下？')).not.toBeInTheDocument();
+    await finish();
+    expect(steps.querySelector('[aria-current=step]')).toHaveTextContent('聽回饋');
+    expect(within(screen.getByRole('region', { name: '這次錄音的小提示' })).getByRole('region', { name: '我的錄音' })).toBeVisible();
+    await begin('🎤 再說一次');
+    expect(screen.getByRole('heading', { name: card.zh })).toHaveFocus();
+    expect(view.container.querySelector('.workshop-spoken-target')).toHaveTextContent(card.en);
+    click('取消這次錄音');
+    expect(screen.getByRole('button', { name: '🎤 錄音並檢查' })).toHaveFocus();
+  });
+  it.each(['no key', 'silence', 'error'])('allows continuing after %s without a false pass or reward', async scenario => {
+    if (scenario === 'silence') assessRecording.mockResolvedValue({ speechDetected: false });
+    if (scenario === 'error') assessRecording.mockRejectedValue({ kind: 'network' });
+    const view = setup({ apiKey: scenario === 'no key' ? '' : 'test' });
+    await begin(scenario === 'no key' ? '🎤 開始錄音' : '🎤 錄音並檢查'); await finish();
+    click('先跳過這題 →');
+    expect(screen.getByRole('region', { name: '口說練習完成' })).toBeVisible();
+    expect(view.props.onXp).not.toHaveBeenCalled();
+    expect(view.deps.compareWords).not.toHaveBeenCalled();
+    expect(screen.getByText('下次可以再練')).toBeVisible();
+    expect(media.revokeObjectURL).toHaveBeenCalledWith('blob:voice-1');
+  });
+  it('does not move focus away from replay when an asynchronous check finishes', async () => {
+    let resolve; assessRecording.mockReturnValue(new Promise(r => { resolve = r; }));
+    const view = setup(); await begin(); await finish();
+    const replay = screen.getByRole('button', { name: '▶ 聽我的錄音' });
+    replay.focus(); click('▶ 聽我的錄音');
+    await act(async () => resolve(report));
+    expect(replay).toHaveFocus();
+    expect(screen.getByRole('button', { name: '■ 停止回放' })).toBeVisible();
+    fireEvent.click(screen.getByText('錄音選項')); click('刪除錄音');
+    expect(screen.getByRole('button', { name: '🎤 錄音並檢查' })).toHaveFocus();
+    expect(view.container.querySelector('audio')).toBeNull();
+  });
   it.each(['Desktop Chrome', 'Mozilla/5.0 (Linux; Android 15) Chrome/140.0 Mobile'])('checks the exact replayable clip once, only after finishing (%s)', async userAgent => {
     vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(userAgent);
     const view = setup();
@@ -44,6 +91,8 @@ describe('one recording, one check', () => {
     expect(assessRecording).toHaveBeenCalledExactlyOnceWith({ blob: media.createObjectURL.mock.calls[0][0], apiKey: 'test', signal: expect.any(AbortSignal) });
     expect(view.deps.compareWords).toHaveBeenCalledExactlyOnceWith(card.en, card.en);
     expect(screen.getByRole('heading', { name: '這次說得很棒！' })).toHaveFocus();
+    expect(screen.getByText('這次練好了，可以繼續囉！')).toBeVisible();
+    expect(screen.getByRole('button', { name: '完成', exact: true })).toHaveClass('practice-primary');
     expect(view.props.onXp).toHaveBeenCalledOnce();
     expect(HTMLMediaElement.prototype.play).not.toHaveBeenCalled();
     expect(screen.getByText(/文字符合度/)).not.toBeVisible();
@@ -64,6 +113,7 @@ describe('one recording, one check', () => {
     assessRecording.mockResolvedValue({ ...report, transcript: 'Please drink water.', delivery: 'practice', tip: 'join_words' });
     const view = setup(); await begin(); await finish();
     expect(screen.getByText('我們先練「more」，再說一次。')).toBeVisible();
+    expect(screen.getByRole('button', { name: '🎤 再說一次', exact: true })).toHaveClass('practice-primary');
     const feedback = screen.getByRole('region', { name: '這次錄音的小提示' });
     expect(feedback.querySelectorAll('.recording-child-tip')).toHaveLength(1);
     expect(within(feedback).queryByText('發音清晰度')).not.toBeInTheDocument();
@@ -102,14 +152,14 @@ describe('one recording, one check', () => {
     expect(assessRecording.mock.calls[0][0].blob).toBe(assessRecording.mock.calls[1][0].blob);
     expect(media.getUserMedia).toHaveBeenCalledOnce(); expect(view.props.onXp).toHaveBeenCalledOnce();
   });
-  it.each(['刪除錄音', '先不用檢查', '🎤 再說一次', 'Ⅱ 先休息一下', '返回', 'hide', 'unmount'])('ignores late checks after %s', async action => {
+  it.each(['刪除錄音', '先跳過這題 →', '🎤 再說一次', 'Ⅱ 先休息一下', '返回', 'hide', 'unmount'])('ignores late checks after %s', async action => {
     let resolve; assessRecording.mockReturnValue(new Promise(r => { resolve = r; }));
     const view = setup(); await begin(); await finish();
     const signal = assessRecording.mock.calls[0][0].signal;
     await act(async () => {
       if (action === 'unmount') view.unmount();
       else if (action === 'hide') { Object.defineProperty(document, 'hidden', { configurable: true, value: true }); fireEvent(document, new Event('visibilitychange')); }
-      else click(action);
+      else { if (action === '刪除錄音') fireEvent.click(screen.getByText('錄音選項')); click(action); }
     });
     expect(signal.aborted).toBe(true);
     await act(async () => resolve(report));
@@ -128,10 +178,10 @@ describe('one recording, one check', () => {
     const resumed = setup(); expect(media.getUserMedia).toHaveBeenCalledTimes(2); expect(assessRecording).toHaveBeenCalledTimes(2);
     click('完成'); expect(resumed.props.onXp).not.toHaveBeenCalled();
   });
-  it('cancels a pending microphone before a demo and never checks a late stream', async () => {
+  it('keeps demos out of the way while the microphone is pending and releases a late stream on cancel', async () => {
     let resolve; media.getUserMedia.mockReturnValueOnce(new Promise(r => { resolve = r; }));
     setup(); const track = { stop: vi.fn() };
-    await begin(); click('🔊 聽示範');
+    await begin(); expect(screen.queryByRole('button', { name: '🔊 聽示範' })).not.toBeInTheDocument(); click('取消這次錄音'); click('🔊 聽示範');
     await act(async () => resolve({ getTracks: () => [track] }));
     expect(track.stop).toHaveBeenCalled(); expect(assessRecording).not.toHaveBeenCalled();
   });

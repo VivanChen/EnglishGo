@@ -15,6 +15,7 @@ const Hdr = ({ t, onBack }) => <header><button onClick={onBack}>返回</button><
 const common = () => ({ Hdr, c: { cl: '#507364' }, speak: vi.fn(() => ({})), stopSpeech: vi.fn(), playSound: vi.fn() });
 const button = name => screen.getByRole('button', { name, exact: true });
 const click = name => fireEvent.click(button(name));
+const openTools = () => { const summary = screen.getByText('想多練一下？'); if (!summary.closest('details').open) fireEvent.click(summary); };
 const rule = { t: 'Be 動詞', q: { s: 'I ___ ready.', o: ['am', 'is'], a: 0 } };
 function grammar(extra = {}) {
   const deps = { ...common(), rules: [rule], grammarDrills: () => [rule.q], grammarGuide: () => ({ pattern: 'I + am', zh: '認識自己', tips: ['I 配 am'], examples: [{ en: 'I am ready.', zh: '我準備好了。' }], mistake: '留意主詞' }), generateGrammarAiExplanation: vi.fn(), ...extra };
@@ -61,7 +62,7 @@ describe('learning workshops', () => {
     click('🔊 聽示範');const failed=view.deps.speak.mock.lastCall[3];
     act(()=>{failed.onstart();failed.onboundary({charIndex:0});failed.onerror();});
     expect(highlighted()).toBeUndefined();
-    click('先聽不看英文');click('🔊 聽示範');const hidden=view.deps.speak.mock.lastCall[3];
+    openTools();click('先聽不看英文');click('🔊 聽示範');const hidden=view.deps.speak.mock.lastCall[3];
     act(()=>{hidden.onstart();hidden.onboundary({charIndex:0});});
     expect(view.container.querySelector('.speech-highlight')).toBeNull();
     click('顯示英文');click('🔊 聽示範');const beforeMic=view.deps.speak.mock.lastCall[3];
@@ -71,7 +72,7 @@ describe('learning workshops', () => {
   });
   it('tracks the selected occurrence of repeated phrases in both the guide and the full example',()=>{
     const view=speaking(true,{}, {cardPractice:{...phraseCard,en:'Go now. Go now.'}});
-    click('帶我逐段跟讀 →');click('這段練好了，下一段 →');
+    openTools();click('帶我逐段跟讀 →');click('這段練好了，下一段 →');
     const events=view.deps.speak.mock.lastCall[3];
     act(()=>{events.onstart();events.onboundary({charIndex:3});});
     expect(view.container.querySelectorAll('.workshop-spoken-target .speech-highlight-word')[3]).toHaveClass('is-current');
@@ -82,7 +83,7 @@ describe('learning workshops', () => {
   });
   it('turns the exact card example into a listening puzzle with gentle retries and no speaking reward',()=>{
     const view=speaking(true,{}, {cardPractice:phraseCard});
-    click('🧩 聽音拼句');
+    openTools();click('🧩 聽音拼句');
     expect(screen.getByRole('heading',{name:'聽音拼句'})).toHaveFocus();
     expect(screen.queryByText(phraseCard.en)).not.toBeInTheDocument();
     expect(screen.queryByRole('region',{name:'發音提示'})).not.toBeInTheDocument();
@@ -117,7 +118,7 @@ describe('learning workshops', () => {
   });
   it('animates only after audio starts and ignores stale callbacks when replaying or leaving a puzzle',()=>{
     const view=speaking(true,{}, {cardPractice:phraseCard});
-    click('🧩 聽音拼句');click('▶ 聽完整例句');
+    openTools();click('🧩 聽音拼句');click('▶ 聽完整例句');
     const first=view.deps.speak.mock.lastCall[3];
     const radio=()=>view.container.querySelector('.listening-radio');
     expect(radio()).toHaveAttribute('data-state','loading');
@@ -138,7 +139,7 @@ describe('learning workshops', () => {
   });
   it('accepts interchangeable repeated words and leaves the puzzle before microphone capture',async()=>{
     const card={...phraseCard,en:'Go go now.'};
-    const view=speaking(true,{}, {cardPractice:card});click('🧩 聽音拼句');
+    const view=speaking(true,{}, {cardPractice:card});openTools();click('🧩 聽音拼句');
     click('go');click('Go');click('now.');
     expect(screen.getByRole('heading',{name:'你把聲音接成一句話了！'})).toBeInTheDocument();
     click('▶ 聽完整例句');const callbacks=view.deps.speak.mock.lastCall[3];
@@ -146,13 +147,13 @@ describe('learning workshops', () => {
     expect(screen.queryByRole('region',{name:'聽音拼句'})).not.toBeInTheDocument();
     await act(async () => {}); expect(view.instances).toHaveLength(1);
     act(()=>callbacks.onstart());
-    expect(view.container.querySelector('.listening-radio')).toHaveAttribute('data-state','idle');
-    click('取消這次錄音');expect(button('🧩 聽音拼句')).toBeInTheDocument();
+    expect(view.container.querySelector('.listening-radio')).toBeNull();
+    click('取消這次錄音');openTools();expect(button('🧩 聽音拼句')).toBeInTheDocument();
     expect(view.props.onXp).not.toHaveBeenCalled();
   });
   it('keeps puzzle hints available when audio fails and retries without opening a microphone',()=>{
     const view=speaking(false,{speak:vi.fn(()=>null)}, {cardPractice:phraseCard});
-    click('🧩 聽音拼句');click('▶ 聽完整例句');
+    openTools();click('🧩 聽音拼句');click('▶ 聽完整例句');
     expect(screen.getByRole('alert')).toHaveTextContent('聲音暫時無法播放');
     click('給我下一格提示 ♫');expect(button('Please')).toHaveClass('is-hint');
     view.deps.speak.mockImplementation(()=>({}));click('慢速重聽');
@@ -162,7 +163,7 @@ describe('learning workshops', () => {
   });
   it('guides each phrase at the learner pace, then records full-sentence self practice without a recognition reward',()=>{
     const view=speaking(true,{}, {cardPractice:phraseCard});
-    click('帶我逐段跟讀 →');
+    openTools();click('帶我逐段跟讀 →');
     expect(view.deps.speak).toHaveBeenLastCalledWith('Please drink','en-US',.65,expect.any(Object));
     expect(screen.getByRole('heading',{name:'Please drink'})).toHaveFocus();
     expect(button('← 上一段')).toBeDisabled();
@@ -189,7 +190,7 @@ describe('learning workshops', () => {
   });
   it('replays and revisits phrases, ignores an earlier audio finish, and exits with keyboard focus restored',()=>{
     const view=speaking(true,{}, {cardPractice:phraseCard});
-    click('帶我逐段跟讀 →');const firstEnd=view.deps.speak.mock.lastCall[3].onend;
+    openTools();click('帶我逐段跟讀 →');const firstEnd=view.deps.speak.mock.lastCall[3].onend;
     click('這段練好了，下一段 →');act(()=>firstEnd());
     expect(button('■ 停止這段')).toBeInTheDocument();
     click('■ 停止這段');click('再聽這段');expect(view.deps.speak.mock.lastCall[0]).toBe('more water.');
@@ -201,23 +202,23 @@ describe('learning workshops', () => {
   });
   it('cancels guided audio when hiding English, recording, or pausing, without automatically restarting it',()=>{
     const view=speaking(true,{}, {cardPractice:phraseCard});
-    click('帶我逐段跟讀 →');view.deps.stopSpeech.mockClear();click('先聽不看英文');
+    openTools();click('帶我逐段跟讀 →');view.deps.stopSpeech.mockClear();openTools();click('先聽不看英文');
     expect(view.deps.stopSpeech).toHaveBeenCalledOnce();
     expect(screen.queryByRole('region',{name:'分段聽說'})).not.toBeInTheDocument();
     click('顯示英文');expect(view.deps.speak).toHaveBeenCalledOnce();
-    click('帶我逐段跟讀 →');click('🎤 錄音並檢查');
+    openTools();click('帶我逐段跟讀 →');click('🎤 錄音並檢查');
     expect(screen.queryByRole('region',{name:'分段聽說'})).not.toBeInTheDocument();
-    click('取消這次錄音');expect(button('帶我逐段跟讀 →')).toBeInTheDocument();
-    click('帶我逐段跟讀 →');
+    click('取消這次錄音');openTools();expect(button('帶我逐段跟讀 →')).toBeInTheDocument();
+    openTools();click('帶我逐段跟讀 →');
     Object.defineProperty(document,'hidden',{configurable:true,value:true});fireEvent(document,new Event('visibilitychange'));
     const plays=view.deps.speak.mock.calls.length;
-    click('繼續聽說練習');expect(button('帶我逐段跟讀 →')).toBeInTheDocument();
+    click('繼續聽說練習');openTools();expect(button('帶我逐段跟讀 →')).toBeInTheDocument();
     expect(view.deps.speak).toHaveBeenCalledTimes(plays);
     expect(view.props.onXp).not.toHaveBeenCalled();
   });
   it('allows guided practice to recover from unavailable audio without starting the microphone',()=>{
     const view=speaking(false,{speak:vi.fn(()=>null)}, {cardPractice:phraseCard});
-    click('帶我逐段跟讀 →');
+    openTools();click('帶我逐段跟讀 →');
     expect(screen.getByText('示範暫時無法播放，可以再聽一次，或照著文字跟讀。')).toBeInTheDocument();
     view.deps.speak.mockImplementation(()=>({}));click('再聽這段');
     expect(button('■ 停止這段')).toBeInTheDocument();
@@ -234,15 +235,15 @@ describe('learning workshops', () => {
     expect(view.deps.fetchSpeakItems).not.toHaveBeenCalled();
     click('慢慢聽');expect(view.deps.speak).toHaveBeenLastCalledWith(cardPractice.en,'en-US',.65,expect.any(Object));
     const lateFinish=view.deps.speak.mock.lastCall[3].onend;
-    click('聽第 1 段：My dog likes to');
+    openTools();click('聽第 1 段：My dog likes to');
     expect(view.deps.speak).toHaveBeenLastCalledWith('My dog likes to','en-US',.65,expect.any(Object));
     expect(button('聽第 1 段：My dog likes to')).toHaveAttribute('aria-pressed','true');
-    expect(screen.getByRole('status')).toHaveTextContent('準備播放 · 第 1 段');
+    expect(view.container.querySelector('.listening-radio')).toHaveAttribute('data-state','loading');
     act(()=>view.deps.speak.mock.lastCall[3].onstart());
-    expect(screen.getByRole('status')).toHaveTextContent('正在播放 · 第 1 段');
+    expect(view.container.querySelector('.listening-radio')).toHaveAttribute('data-state','playing');
     act(()=>lateFinish());expect(button('■ 停止示範')).toBeInTheDocument();
     click('■ 停止示範');expect(screen.queryByRole('button',{name:'■ 停止示範'})).not.toBeInTheDocument();
-    click('先聽不看英文'); expect(screen.queryByText(cardPractice.en)).not.toBeInTheDocument();
+    openTools();click('先聽不看英文'); expect(screen.queryByText(cardPractice.en)).not.toBeInTheDocument();
     expect(within(screen.getByRole('region',{name:'來自單字卡'})).queryByText('dog')).not.toBeInTheDocument();
     assessRecording.mockResolvedValue({ speechDetected: true, transcript: cardPractice.en, delivery: 'clear', tip: 'keep_going', focus: '' });
     await act(async()=>click('🎤 錄音並檢查')); await finishRecording();

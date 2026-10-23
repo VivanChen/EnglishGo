@@ -615,8 +615,9 @@ describe('EnglishGo app smoke flow', () => {
       fireEvent.click(await screen.findByRole('button', { name: '開始口說小練習 →' }));
 
       await waitFor(() => expect(document.querySelector('.workshop-spoken-target')).toHaveTextContent('I like to eat apples.'));
-      expect(screen.getByText('看中文，唸出完整英文句子')).toBeInTheDocument();
+      expect(screen.getByRole('list', { name: '練習步驟' })).toHaveTextContent('聽一聽');
       expect(screen.getByText('i like to / eat apples')).toBeInTheDocument();
+      fireEvent.click(screen.getByText('想多練一下？'));
       fireEvent.click(screen.getByRole('button', { name: '先聽不看英文' }));
       expect(document.querySelector('.workshop-spoken-target')).not.toBeInTheDocument();
       fireEvent.click(screen.getByRole('button', { name: '顯示英文' }));

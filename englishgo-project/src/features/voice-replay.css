@@ -18,3 +18,44 @@
 .voice-capture-note { font-size: .85rem; line-height: 1.7; color: var(--garden-muted); }
 .voice-recording-time { display: block; margin-top: 8px; font-variant-numeric: tabular-nums; }
 @media (max-width: 400px) { .voice-replay .practice-actions { flex-direction: column; align-items: stretch; } }
+
+/* Keep the sentence, recording and response in one predictable place. */
+.speaking-source.speaking-source-compact { padding: 8px 12px; margin-bottom: 10px; gap: 8px; }
+.speaking-source.speaking-source-compact > div { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; min-width: 0; }
+.speaking-source.speaking-source-compact strong { margin: 0; font-size: 16px; }
+.speaking-source-compact button { font-size: 13px; padding: 6px 10px; }
+.speaking-practice-card { scroll-margin-top: 100px; }
+.speaking-flow-steps { display: flex; justify-content: space-between; gap: 8px; list-style: none; margin: 0 0 20px; padding: 0; color: var(--garden-muted); font-size: 13px; }
+.speaking-flow-steps li { display: flex; align-items: center; gap: 5px; }
+.speaking-flow-steps li > span { display: grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--garden-line); border-radius: 50%; font-size: 12px; }
+.speaking-flow-steps [aria-current=step] { color: var(--garden-green); font-weight: 750; }
+.speaking-flow-steps [aria-current=step] > span { background: var(--garden-green); color: var(--garden-white); border-color: var(--garden-green); }
+.speaking-practice-card h2 { font-size: clamp(18px, 3vw, 22px); margin: 8px 0; }
+.speaking-capture { border-top: 1px solid var(--garden-line); padding-top: 16px; margin-top: 20px; }
+.speaking-capture .speaking-capture-prompt { color: var(--garden-ink); margin: 0 0 12px; font-weight: 650; }
+.speaking-capture .workshop-microphone { margin: 12px 0; padding: 14px; }
+.speaking-capture .speaking-capture-actions { margin: 12px 0; }
+.speaking-capture-actions > .practice-primary { min-height: 54px; min-width: min(100%, 250px); font-size: 18px; }
+.speaking-tools, .speaking-setup { text-align: left; font-size: 14px; color: var(--garden-muted); }
+.speaking-tools { border-top: 1px solid var(--garden-line); margin-top: 20px; padding-top: 8px; }
+.speaking-tools > summary, .speaking-setup > summary, .voice-replay-options > summary { cursor: pointer; min-height: 44px; align-content: center; }
+.speaking-tools > summary { color: var(--garden-green); font-weight: 650; }
+.speaking-practice-card .workshop-extra, .speaking-practice-card .workshop-coach { margin-top: 8px; padding-top: 8px; }
+.speaking-practice-card .recording-assessment { margin-top: 18px; padding: 18px 0 0; border: 0; border-top: 1px solid var(--garden-line); border-radius: 0; }
+.recording-assessment .recording-child-tip { margin: 8px 0 12px; color: var(--garden-ink); }
+.recording-assessment .recording-tip-actions { justify-content: flex-start; margin: 10px 0; }
+.recording-assessment .voice-replay-compact { padding: 12px; margin: 16px 0; border-radius: 14px; }
+.speaking-practice-card .voice-replay-compact .practice-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 0; }
+.voice-replay-compact .practice-actions button { padding: 9px 6px; font-size: 14px; }
+.voice-replay-compact .voice-replay-progress { padding: 0; margin: 12px 0 0; background: transparent; gap: 8px; }
+.voice-replay-options { font-size: 12px; color: var(--garden-muted); }
+.voice-replay-options summary { min-height: 36px; }
+.recording-assessment .recording-next-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 18px 0 0; }
+.recording-next-actions button { min-height: 54px; }
+.recording-recovery-actions:empty { display: none; }
+@media (max-width: 400px) {
+  .speaking-flow-steps { gap: 4px; font-size: 12px; }
+  .speaking-flow-steps li { gap: 4px; }
+  .speaking-flow-steps li > span { width: 20px; height: 20px; }
+  .speaking-practice-card .recording-next-actions button { padding: 10px 6px; font-size: 14px; }
+}
