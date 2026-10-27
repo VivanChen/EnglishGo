@@ -4,6 +4,9 @@
   publish = "dist"
   functions = "netlify/functions"
 
+[build.environment]
+  NODE_VERSION = "24.22.1"
+
 # Missing build chunks must never fall through to the SPA HTML.
 [[redirects]]
   from = "/assets/*"

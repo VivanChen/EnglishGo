@@ -1,6 +1,8 @@
 import crypto from "node:crypto";
 import { NOVEL_AUDIO_CATALOG, NOVEL_AUDIO_CONFIG } from "./novel-audio-catalog.js";
 
+console.info("[EnglishGo runtime]", JSON.stringify({ node: process.version }));
+
 const DEFAULT_VOICE_ID = "21m00Tcm4TlvDq8ikWAM";
 const ALLOWED_ENGLISH_VOICE_IDS = new Set([
   "21m00Tcm4TlvDq8ikWAM",
