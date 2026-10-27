@@ -223,7 +223,7 @@ async function tryUploadToSupabaseStorage({ bucket, cacheKey, audioBuffer, fixed
 
 export default async function handler(req, context = {}) {
   if (!runtimeVersionLogged) {
-    console.info("[EnglishGo runtime]", JSON.stringify({ node: process.version }));
+    console.info(`[EnglishGo runtime] node=${process.version}`);
     runtimeVersionLogged = true;
   }
 
