@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import { NOVEL_AUDIO_CATALOG, NOVEL_AUDIO_CONFIG } from "./novel-audio-catalog.js";
 
-console.info("[EnglishGo runtime]", JSON.stringify({ node: process.version }));
+let runtimeVersionLogged = false;
 
 const DEFAULT_VOICE_ID = "21m00Tcm4TlvDq8ikWAM";
 const ALLOWED_ENGLISH_VOICE_IDS = new Set([
@@ -222,6 +222,11 @@ async function tryUploadToSupabaseStorage({ bucket, cacheKey, audioBuffer, fixed
 }
 
 export default async function handler(req, context = {}) {
+  if (!runtimeVersionLogged) {
+    console.info("[EnglishGo runtime]", JSON.stringify({ node: process.version }));
+    runtimeVersionLogged = true;
+  }
+
   if (req.method !== "POST" && req.method !== "GET") {
     return jsonResponse(405, { error: "Method not allowed" });
   }
