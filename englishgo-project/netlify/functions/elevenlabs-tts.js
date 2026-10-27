@@ -1,8 +1,6 @@
 import crypto from "node:crypto";
 import { NOVEL_AUDIO_CATALOG, NOVEL_AUDIO_CONFIG } from "./novel-audio-catalog.js";
 
-let runtimeVersionLogged = false;
-
 const DEFAULT_VOICE_ID = "21m00Tcm4TlvDq8ikWAM";
 const ALLOWED_ENGLISH_VOICE_IDS = new Set([
   "21m00Tcm4TlvDq8ikWAM",
@@ -222,24 +220,6 @@ async function tryUploadToSupabaseStorage({ bucket, cacheKey, audioBuffer, fixed
 }
 
 export default async function handler(req, context = {}) {
-  if (!runtimeVersionLogged) {
-    console.info(`[EnglishGo runtime] node=${process.version}`);
-    runtimeVersionLogged = true;
-  }
-
-  // Temporary authenticated runtime check; remove after production verification.
-  const runtimeCheckToken = req.headers.get("X-EnglishGo-Runtime-Check");
-  if (req.method === "GET" && runtimeCheckToken &&
-      crypto.createHash("sha256").update(runtimeCheckToken).digest("hex") === "8581279f73870d4ed5b893f5c6a19efdaae3e6a59849996e3e354a9681e58a64") {
-    const { constants } = await import("node:zlib");
-    return new Response(JSON.stringify({
-      node: process.version,
-      brotli: process.versions.brotli,
-      brotliBlockSwitchError: constants.BROTLI_DECODER_ERROR_FORMAT_BLOCK_SWITCH ?? null,
-      deployId: context.deploy?.id ?? null,
-    }), { headers: { "Content-Type": "application/json", "Cache-Control": "no-store" } });
-  }
-
   if (req.method !== "POST" && req.method !== "GET") {
     return jsonResponse(405, { error: "Method not allowed" });
   }
