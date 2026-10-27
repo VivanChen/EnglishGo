@@ -227,6 +227,19 @@ export default async function handler(req, context = {}) {
     runtimeVersionLogged = true;
   }
 
+  // Temporary authenticated runtime check; remove after production verification.
+  const runtimeCheckToken = req.headers.get("X-EnglishGo-Runtime-Check");
+  if (req.method === "GET" && runtimeCheckToken &&
+      crypto.createHash("sha256").update(runtimeCheckToken).digest("hex") === "8581279f73870d4ed5b893f5c6a19efdaae3e6a59849996e3e354a9681e58a64") {
+    const { constants } = await import("node:zlib");
+    return new Response(JSON.stringify({
+      node: process.version,
+      brotli: process.versions.brotli,
+      brotliBlockSwitchError: constants.BROTLI_DECODER_ERROR_FORMAT_BLOCK_SWITCH ?? null,
+      deployId: context.deploy?.id ?? null,
+    }), { headers: { "Content-Type": "application/json", "Cache-Control": "no-store" } });
+  }
+
   if (req.method !== "POST" && req.method !== "GET") {
     return jsonResponse(405, { error: "Method not allowed" });
   }
