@@ -61,7 +61,7 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
     if (changedScene) setFocus(false);
     setStatus('loading');
     if (/jsdom/i.test(navigator.userAgent)) { setStatus('fallback'); return; }
-    Promise.all([import('three'), import('three/addons/controls/OrbitControls.js'), import('three/addons/loaders/GLTFLoader.js'), import('./townModels.js')]).then(async ([T, { OrbitControls }, { GLTFLoader }, { applyGrowthAppearance }]) => {
+    Promise.all([import('three'), import('three/addons/controls/OrbitControls.js'), import('three/addons/loaders/GLTFLoader.js'), import('./townModels.js'), import('./townPerformance.js')]).then(async ([T, { OrbitControls }, { GLTFLoader }, { applyGrowthAppearance }, { batchTownScenery, smoothFactor }]) => {
       if (disposed || !host.current) return;
       let renderer;
       try { renderer = new T.WebGLRenderer({ antialias: quality !== 'low', alpha: false, powerPreference: 'low-power' }); }
@@ -69,7 +69,7 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
       const container = host.current, stage = new T.Scene();
       stage.background = new T.Color(night ? '#364f72' : '#d8eceb');
       stage.fog = new T.Fog(night ? '#364f72' : '#d8eceb', 25, 65);
-      renderer.setPixelRatio(Math.min(devicePixelRatio || 1, quality === 'low' ? 1 : 1.5));
+      renderer.setPixelRatio(Math.min(devicePixelRatio || 1, quality === 'low' ? 1 : quality === 'high' ? 1.5 : 1.25));
       renderer.outputColorSpace = T.SRGBColorSpace;
       renderer.toneMapping = T.ACESFilmicToneMapping; renderer.toneMappingExposure = night ? 1.1 : 1.03;
       renderer.shadowMap.enabled = quality !== 'low'; renderer.shadowMap.type = T.PCFSoftShadowMap;
@@ -101,7 +101,9 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
       const cylinder = (parent, color, pos, top, bottom, height, sides = 24, opts) => add(parent, new T.CylinderGeometry(top, bottom, height, sides), color, pos, [1, 1, 1], opts);
       const group = (parent, pos = [0, 0, 0]) => { const g = new T.Group(); g.position.set(...pos); parent.add(g); return g; };
       const world = group(stage), decorGroup = group(world), actorsGroup = group(world), effectGroup = group(world), storyGroup = group(world);
+      let effectSignature = '';
       const clearVisuals = parent => {
+        if (parent === effectGroup) effectSignature = '';
         parent.traverse(node => {
           if (node.geometry && geometrySet.has(node.geometry)) { node.geometry.dispose(); geometrySet.delete(node.geometry); }
           for (const m of node.material ? (Array.isArray(node.material) ? node.material : [node.material]) : []) if (temporaryMaterials.has(m)) { m.dispose(); temporaryMaterials.delete(m); materialSet.delete(m); }
@@ -347,8 +349,8 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
       const play = (actor, name, restart = false) => {
         if ((!restart && actor.clip === name) || !actor.actions[name]) return;
         if (actor.clip === name) { actor.actions[name].reset().play(); return; }
-        actor.actions[actor.clip]?.fadeOut(.24);
-        actor.actions[name].reset().fadeIn(.24).play(); actor.clip = name;
+        actor.actions[actor.clip]?.fadeOut(.14);
+        actor.actions[name].reset().fadeIn(.14).play(); actor.clip = name;
       };
       const setPets = (items, selectedId) => {
         active = selectedId;
@@ -371,6 +373,7 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
             const currentPet = latest.current.pets.find(p => p.id === pet.id && p.speciesId === pet.speciesId) || pet;
             applyGrowthAppearance(model, currentPet.exp || 0);
             const mixer = new T.AnimationMixer(model), actions = Object.fromEntries(gltf.animations.map(clip => [clip.name, mixer.clipAction(clip)]));
+            actions.walk?.setEffectiveTimeScale(1.6); actions.run?.setEffectiveTimeScale(1.3);
             for (const name of ['shake', 'pounce', 'settle', 'wake']) if (actions[name]) { actions[name].setLoop(T.LoopOnce, 1); actions[name].clampWhenFinished = true; }
             const actor = { root: actorRoot, model, mixer, actions, clip: '', target: null, path: [], speciesId: pet.speciesId, idleUntil: elapsed + 8 + index * 4 };
             actors.set(pet.id, actor); play(actor, 'idle');
@@ -402,6 +405,13 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
         if (!latest.current.motion || matchMedia('(prefers-reduced-motion: reduce)').matches) actor.mixer.update(.6);
         latest.current.onEnvironment?.({ phase: 'arrived', petId: visit.petId, placementId: visit.placement.id, text: visit.text });
       };
+      const updateCareProps = value => {
+        const foam = value.phase === 'dry' || value.phase === 'shake' ? 0 : value.phase === 'rinse' ? Math.round(14 * (1 - (value.progress || 0))) : 6 + Math.round(8 * (value.progress || 0));
+        for (const node of effectGroup.children) {
+          if (node.userData.float !== undefined) node.visible = node.userData.float < foam;
+          if (node.userData.toy) { node.userData.direction = ((value.point?.x ?? .75) - .5) * 2; node.userData.depth = ((value.point?.y ?? .5) - .5) * 1.5; }
+        }
+      };
       const perform = value => {
         if (value && `${value.nonce || value.id || ''}:${value.type}:${value.petId || active}` === lastActivityKey) return;
         if (environmentVisit) {
@@ -426,7 +436,9 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
         play(actor, clip, !value.sustained || !actor.actions[clip]?.isRunning());
         effectDeadline = value.sustained || value.resting ? Infinity : elapsed + (value.type === 'sleep' ? 12 : 3);
         if (!latest.current.motion || matchMedia('(prefers-reduced-motion: reduce)').matches) actor.mixer.update(.45);
-        clearVisuals(effectGroup);
+        const signature = `${value.petId || active}:${value.type}:${value.phase || ''}`;
+        if (effectSignature === signature && ['feed','wash','play','sleep'].includes(value.type)) { updateCareProps(value); return; }
+        clearVisuals(effectGroup); effectSignature = signature;
         if (value.type === 'environment' && latest.current.environmentEnabled) {
           const placement = latest.current.placements.find(p => p.id === value.placementId);
           const approach = placement && findEnvironmentApproach(actor.root.position, placement, latest.current.placements);
@@ -456,8 +468,7 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
           const bath = add(tub, new T.LatheGeometry(profile, 48), '#f2e6d0'); bath.scale.z = 1.35;
           const water = cylinder(tub, '#afd1d2', [0, .15, 0], .54, .54, .02, 40, { transparent: true, opacity: .64, roughness: .17 }); water.scale.z = 1.35;
           const towel = box(tub, '#b4c5af', [.52, .25, .2], [.14, .09, .42]); towel.rotation.z = -.2;
-          const foamCount = value.phase === 'dry' || value.phase === 'shake' ? 0 : value.phase === 'rinse' ? Math.round(14 * (1 - (value.progress || 0))) : 6 + Math.round(8 * (value.progress || 0));
-          for (let i = 0; i < foamCount; i++) { const bubble = add(effectGroup, new T.SphereGeometry(.04 + i % 3 * .025, 12, 8), material('#e8f4ec', { transparent: true, opacity: .55, roughness: .16 }), [actor.root.position.x + Math.sin(i * 2.4) * .6, .5 + i * .075, actor.root.position.z + Math.cos(i * 2.4) * .5]); bubble.userData.float = i; bubble.userData.baseY = bubble.position.y; }
+          for (let i = 0; i < 14; i++) { const bubble = add(effectGroup, new T.SphereGeometry(.04 + i % 3 * .025, 12, 8), material('#e8f4ec', { transparent: true, opacity: .55, roughness: .16 }), [actor.root.position.x + Math.sin(i * 2.4) * .6, .5 + i * .075, actor.root.position.z + Math.cos(i * 2.4) * .5]); bubble.userData.float = i; bubble.userData.baseY = bubble.position.y; }
           if (value.phase === 'rinse' || value.phase === 'shake') {
             for (let i = 0; i < 22; i++) {
               const drop = ball(effectGroup, '#86c7e0', [actor.root.position.x + Math.sin(i * 2.4) * .55, .6 + (i % 7) * .16, actor.root.position.z + Math.cos(i * 2.4) * .5], [.025, .07, .025]);
@@ -471,7 +482,9 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
         } else if (value.type === 'sleep') {
           const cushion = furniture({ id: 'care-bed', itemId: 'harbor-cushion', x: actor.root.position.x, z: actor.root.position.z, rotation: 0 }); cushion.scale.set(1.45, .55, 1.9); effectGroup.add(cushion);
         }
+        updateCareProps(value);
       };
+      batchTownScenery(world, new Set([actorsGroup, decorGroup, effectGroup, storyGroup, ...waveRings]), g => geometrySet.add(g));
       runtime.current = { setPets, setPlacements, perform, setStoryMoment, focus: value => { focusWanted = value; }, reset: () => { focusWanted = false; controls.target.set(0, .6, -.3); camera.position.set(10, 8.5, 12.5); controls.update(); } };
       setPets(latest.current.pets, latest.current.activePetId); setPlacements(latest.current.placements); setStoryMoment(latest.current.storyMoment);
       let down = null;
@@ -514,12 +527,12 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
       const observer = new ResizeObserver(resize); observer.observe(container); resize();
       const visibilityObserver = new IntersectionObserver(entries => { sceneVisible = entries[0]?.isIntersecting ?? true; }); visibilityObserver.observe(container);
       const reduced = matchMedia('(prefers-reduced-motion: reduce)');
-      const direction = new T.Vector3(), desiredCamera = new T.Vector3();
+      const direction = new T.Vector3(), desiredCamera = new T.Vector3(), cameraCenter = new T.Vector3();
       function draw(time) {
         if (disposed || failed) return;
         frame = requestAnimationFrame(draw);
-        if (document.hidden || !sceneVisible || time - previousTime < 31) return;
-        const dt = previousTime ? Math.min(.06, (time - previousTime) / 1000) : .033; previousTime = time; elapsed += dt;
+        if (document.hidden || !sceneVisible) { previousTime = 0; return; }
+        const dt = previousTime ? Math.min(.12, (time - previousTime) / 1000) : 1 / 60; previousTime = time; elapsed += dt;
         const moving = latest.current.motion && !reduced.matches;
         for (const [id, actor] of actors) {
           if (moving) actor.mixer.update(dt);
@@ -532,7 +545,7 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
           if (actor.target) {
             direction.subVectors(actor.target, actor.root.position); direction.y = 0;
             if (direction.length() < .08) { actor.target = actor.path.shift() || null; if (!actor.target) { if (environmentVisit?.petId === id) arriveAtObject(actor); else { play(actor, actor.arrival || 'idle'); actor.arrival = null; actor.reactionUntil = elapsed + 2; actor.idleUntil = elapsed + 10; } } }
-            else { const angle = Math.atan2(direction.x, direction.z); actor.root.rotation.y = angle; actor.root.position.addScaledVector(direction.normalize(), dt * (actor.arrival ? 1.8 : actor.speciesId === 'garden-rabbit' ? .8 : .9)); actor.root.position.y += (groundHeight(actor.root.position.x, actor.root.position.z) - actor.root.position.y) * .3; if (moving) play(actor, actor.arrival ? 'run' : 'walk'); }
+            else { const distance = direction.length(), angle = Math.atan2(direction.x, direction.z); actor.root.rotation.y += Math.atan2(Math.sin(angle - actor.root.rotation.y), Math.cos(angle - actor.root.rotation.y)) * smoothFactor(18, dt); actor.root.position.addScaledVector(direction.normalize(), Math.min(distance, dt * (actor.arrival ? 2.7 : 1.65))); actor.root.position.y += (groundHeight(actor.root.position.x, actor.root.position.z) - actor.root.position.y) * smoothFactor(18, dt); if (moving) play(actor, actor.arrival ? 'run' : 'walk'); }
           } else if (actor.reactionUntil && elapsed > actor.reactionUntil && !effectDeadline) { actor.reactionUntil = 0; play(actor, 'idle'); }
           else if (effectDeadline && elapsed > effectDeadline && actor === effectActor) { play(actor, 'idle'); }
           else if (!(effectDeadline && effectActor === actor) && moving && elapsed > actor.idleUntil) {
@@ -566,12 +579,13 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
         }
         if (focusWanted) {
           const actor = actors.get(active) || actors.values().next().value;
-          if (actor) { const center = actor.root.position.clone().add(new T.Vector3(0, .8, 0)); controls.target.lerp(center, .09); desiredCamera.copy(center).add(new T.Vector3(3.2, 2.5, 5)); camera.position.lerp(desiredCamera, .08); }
+          if (actor) { cameraCenter.copy(actor.root.position); cameraCenter.y += .8; controls.target.lerp(cameraCenter, smoothFactor(12, dt)); desiredCamera.copy(cameraCenter); desiredCamera.x += 3.2; desiredCamera.y += 2.5; desiredCamera.z += 5; camera.position.lerp(desiredCamera, smoothFactor(10, dt)); }
         }
         const companion = actors.get(active);
-        renderer.domElement.dataset.petAction = companion?.clip || 'loading';
-        renderer.domElement.dataset.environmentTarget = environmentVisit?.placement.id || '';
-        renderer.domElement.dataset.petMoving = companion?.target ? 'true' : 'false';
+        const diagnostics = renderer.domElement.dataset, action = companion?.clip || 'loading', targetId = environmentVisit?.placement.id || '', traveling = companion?.target ? 'true' : 'false';
+        if (diagnostics.petAction !== action) diagnostics.petAction = action;
+        if (diagnostics.environmentTarget !== targetId) diagnostics.environmentTarget = targetId;
+        if (diagnostics.petMoving !== traveling) diagnostics.petMoving = traveling;
         controls.update(); renderer.render(stage, camera);
       }
       frame = requestAnimationFrame(draw);
