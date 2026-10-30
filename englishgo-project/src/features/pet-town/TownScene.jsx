@@ -378,7 +378,7 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
         });
       };
       const perform = value => {
-        if (!value) { controls.enabled = true; effectActor = null; effectDeadline = 0; lastActivityKey = ''; clearVisuals(effectGroup); actors.forEach(actor => { if (!actor.target) play(actor, 'idle'); }); return; }
+        if (!value) { controls.enabled = true; effectActor = null; effectDeadline = 0; lastActivityKey = ''; clearVisuals(effectGroup); actors.forEach(actor => { if (actor.arrival) { actor.arrival = null; actor.target = null; actor.path = []; } if (!actor.target) play(actor, 'idle'); }); return; }
         const key = `${value.nonce || value.id || ''}:${value.type}:${value.petId || active}`;
         if (key === lastActivityKey) return;
         const actor = actors.get(value.petId || active) || actors.values().next().value;
@@ -386,15 +386,23 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
         lastActivityKey = key;
         if (['feed', 'wash', 'clean', 'play', 'sleep', 'pet', 'wake'].includes(value.type)) { focusWanted = true; setFocus(true); }
         controls.enabled = !value.sustained;
-        actor.target = null; actor.path = []; effectActor = actor; effectStart = elapsed;
+        actor.target = null; actor.path = []; actor.arrival = null; effectActor = actor; effectStart = elapsed;
         if (value.sustained) actor.root.rotation.y = .55;
         const map = { feed: 'eat', wash: 'wash', clean: 'wash', play: 'play', sleep: 'sleep', pet: 'pet', wake: 'wake', happy: 'happy', curious: 'curious' };
         const clip = value.phase || map[value.type] || 'happy';
         // Continuous strokes should not rewind the animation before it can react.
         play(actor, clip, !value.sustained || !actor.actions[clip]?.isRunning());
-        effectDeadline = value.sustained ? Infinity : elapsed + (value.type === 'sleep' ? 12 : 3);
+        effectDeadline = value.sustained || value.resting ? Infinity : elapsed + (value.type === 'sleep' ? 12 : 3);
         if (!latest.current.motion || matchMedia('(prefers-reduced-motion: reduce)').matches) actor.mixer.update(.45);
         clearVisuals(effectGroup);
+        if (value.type === 'come') {
+          focusWanted = true; setFocus(true);
+          const path = findTownPath(actor.root.position, { x: 0, z: 2.8 }, latest.current.placements, FURNITURE);
+          if (latest.current.motion && !matchMedia('(prefers-reduced-motion: reduce)').matches && path.length) {
+            actor.path = path.map(p => new T.Vector3(p.x, groundHeight(p.x, p.z), p.z)); actor.target = actor.path.shift(); actor.arrival = 'happy';
+            effectDeadline = 0; play(actor, 'run');
+          } else { play(actor, 'happy', true); }
+        }
         if (value.type === 'feed' && value.phase !== 'happy') {
           const bowl = furniture({ id: 'care-bowl', itemId: 'harbor-bowl', x: 0, z: 0, rotation: 0 }); bowl.position.copy(actor.root.position).add(new T.Vector3(0, 0, .7).applyAxisAngle(new T.Vector3(0, 1, 0), actor.root.rotation.y)); effectGroup.add(bowl);
         } else if (value.type === 'wash') {
@@ -404,7 +412,7 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
           const water = cylinder(tub, '#afd1d2', [0, .15, 0], .54, .54, .02, 40, { transparent: true, opacity: .64, roughness: .17 }); water.scale.z = 1.35;
           const towel = box(tub, '#b4c5af', [.52, .25, .2], [.14, .09, .42]); towel.rotation.z = -.2;
           const foamCount = value.phase === 'dry' || value.phase === 'shake' ? 0 : value.phase === 'rinse' ? Math.round(14 * (1 - (value.progress || 0))) : 6 + Math.round(8 * (value.progress || 0));
-          for (let i = 0; i < foamCount; i++) { const bubble = add(effectGroup, new T.SphereGeometry(.04 + i % 3 * .025, 12, 8), material('#e8f4ec', { transparent: true, opacity: .55, roughness: .16 }), [actor.root.position.x + Math.sin(i * 2.4) * .6, .5 + i * .075, actor.root.position.z + Math.cos(i * 2.4) * .5]); bubble.userData.float = i; }
+          for (let i = 0; i < foamCount; i++) { const bubble = add(effectGroup, new T.SphereGeometry(.04 + i % 3 * .025, 12, 8), material('#e8f4ec', { transparent: true, opacity: .55, roughness: .16 }), [actor.root.position.x + Math.sin(i * 2.4) * .6, .5 + i * .075, actor.root.position.z + Math.cos(i * 2.4) * .5]); bubble.userData.float = i; bubble.userData.baseY = bubble.position.y; }
           if (value.phase === 'rinse' || value.phase === 'shake') {
             for (let i = 0; i < 22; i++) {
               const drop = ball(effectGroup, '#86c7e0', [actor.root.position.x + Math.sin(i * 2.4) * .55, .6 + (i % 7) * .16, actor.root.position.z + Math.cos(i * 2.4) * .5], [.025, .07, .025]);
@@ -413,7 +421,7 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
           }
           if (value.phase === 'dry') { const cloth = box(effectGroup, '#e7c39a', [actor.root.position.x, .85, actor.root.position.z], [.55,.06,.42]); cloth.userData.cloth = true; cloth.userData.baseX = cloth.position.x; }
         } else if (value.type === 'play') {
-          const ballToy = ball(effectGroup, actor.speciesId === 'garden-rabbit' ? '#d9a474' : '#bdd3b3', [actor.root.position.x + .5, .22, actor.root.position.z + .7], [.14, .14, .14]); ballToy.userData.toy = true; ballToy.userData.baseX = ballToy.position.x; ballToy.userData.baseZ = ballToy.position.z; ballToy.userData.direction = (value.point?.x ?? .75) > .5 ? 1 : -1;
+          const ballToy = ball(effectGroup, actor.speciesId === 'garden-rabbit' ? '#d9a474' : '#bdd3b3', [actor.root.position.x + .5, .22, actor.root.position.z + .7], [.14, .14, .14]); ballToy.userData.toy = true; ballToy.userData.baseX = ballToy.position.x; ballToy.userData.baseZ = ballToy.position.z; ballToy.userData.direction = ((value.point?.x ?? .75) - .5) * 2; ballToy.userData.depth = ((value.point?.y ?? .5) - .5) * 1.5; actor.root.rotation.y = .55 + ballToy.userData.direction * .45;
           if (actor.speciesId === 'harbor-cat') { const wand = cylinder(effectGroup, '#bb9d78', [actor.root.position.x + .7, .65, actor.root.position.z + .6], .018, .018, .85, 8); wand.rotation.z = -.5; }
         } else if (value.type === 'sleep') {
           const cushion = furniture({ id: 'care-bed', itemId: 'harbor-cushion', x: actor.root.position.x, z: actor.root.position.z, rotation: 0 }); cushion.scale.set(1.45, .55, 1.9); effectGroup.add(cushion);
@@ -433,6 +441,7 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
         const hits = raycaster.intersectObjects([...actorsGroup.children, ...decorGroup.children], true);
         if (hits[0]?.object.userData.petId) { latest.current.onPet?.(hits[0].object.userData.petId); return; }
         if (hits[0]?.object.userData.placementId) { latest.current.onPlacementSelect?.(hits[0].object.userData.placementId); return; }
+        if (latest.current.activity?.resting) return;
         if (raycaster.ray.intersectPlane(floorPlane, target) && Math.abs(target.x) < 4.5 && target.z > -1.3 && target.z < 3.6) {
           const actor = actors.get(active) || actors.values().next().value;
           if (actor) {
@@ -441,7 +450,7 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
             if (!latest.current.motion || reduced.matches) {
               const end = path.at(-1); actor.root.position.set(end.x, groundHeight(end.x, end.z), end.z); actor.path = []; actor.target = null; play(actor, 'idle'); return;
             }
-            actor.path = path.map(p => new T.Vector3(p.x, groundHeight(p.x, p.z), p.z));
+            actor.arrival = null; actor.path = path.map(p => new T.Vector3(p.x, groundHeight(p.x, p.z), p.z));
             actor.target = actor.path.shift(); effectDeadline = 0; clearVisuals(effectGroup); play(actor, 'walk'); latest.current.onMove?.({ x: target.x, z: target.z });
           }
         }
@@ -469,10 +478,11 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
           if (actor.target && !moving) { actor.target = null; actor.path = []; play(actor, 'idle'); }
           if (actor.target) {
             direction.subVectors(actor.target, actor.root.position); direction.y = 0;
-            if (direction.length() < .08) { actor.target = actor.path.shift() || null; if (!actor.target) { play(actor, 'idle'); actor.idleUntil = elapsed + 10; } }
-            else { const angle = Math.atan2(direction.x, direction.z); actor.root.rotation.y = angle; actor.root.position.addScaledVector(direction.normalize(), dt * (actor.speciesId === 'garden-rabbit' ? .8 : .9)); actor.root.position.y += (groundHeight(actor.root.position.x, actor.root.position.z) - actor.root.position.y) * .3; if (moving) play(actor, 'walk'); }
-          } else if (effectDeadline && elapsed > effectDeadline && actor === effectActor) { play(actor, 'idle'); }
-          else if (!effectDeadline && moving && elapsed > actor.idleUntil) {
+            if (direction.length() < .08) { actor.target = actor.path.shift() || null; if (!actor.target) { play(actor, actor.arrival || 'idle'); actor.arrival = null; actor.reactionUntil = elapsed + 2; actor.idleUntil = elapsed + 10; } }
+            else { const angle = Math.atan2(direction.x, direction.z); actor.root.rotation.y = angle; actor.root.position.addScaledVector(direction.normalize(), dt * (actor.arrival ? 1.8 : actor.speciesId === 'garden-rabbit' ? .8 : .9)); actor.root.position.y += (groundHeight(actor.root.position.x, actor.root.position.z) - actor.root.position.y) * .3; if (moving) play(actor, actor.arrival ? 'run' : 'walk'); }
+          } else if (actor.reactionUntil && elapsed > actor.reactionUntil && !effectDeadline) { actor.reactionUntil = 0; play(actor, 'idle'); }
+          else if (effectDeadline && elapsed > effectDeadline && actor === effectActor) { play(actor, 'idle'); }
+          else if (!(effectDeadline && effectActor === actor) && moving && elapsed > actor.idleUntil) {
             actor.idleUntil = elapsed + 12 + (id.length % 4);
             if (id !== active && !id.startsWith('preview') && latest.current.pets.length > 1) {
               const choice = Math.floor(elapsed / 12 + id.length) % 4;
@@ -481,8 +491,9 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
               actor.path = path.map(p => new T.Vector3(p.x, groundHeight(p.x, p.z), p.z)); actor.target = actor.path.shift() || null;
               play(actor, actor.target ? 'walk' : 'curious');
             } else {
-              play(actor, 'curious');
-              const timer = setTimeout(() => { timers.delete(timer); if (!disposed && !failed && actors.get(id) === actor && !actor.target && !effectDeadline) play(actor, 'idle'); }, 3000); timers.add(timer);
+              const habits = actor.speciesId === 'sunny-dog' ? ['sniff','happy','curious'] : actor.speciesId === 'garden-rabbit' ? ['curious','sniff','wake'] : ['pet','wake','curious'];
+              play(actor, habits[Math.floor(elapsed / 12) % habits.length]);
+              const timer = setTimeout(() => { timers.delete(timer); if (!disposed && !failed && actors.get(id) === actor && !actor.target && !(effectDeadline && effectActor === actor)) play(actor, 'idle'); }, 3000); timers.add(timer);
             }
           }
         }
@@ -491,10 +502,10 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
           waveRings.forEach((r, i) => { const scale = 1 + Math.sin(elapsed * .55 - i) * .018; r.scale.set(scale, .8 * scale, 1); });
           effectGroup.children.forEach(n => {
             const age = elapsed - effectStart;
-            if (n.userData.float !== undefined) n.position.y += dt * .06;
+            if (n.userData.float !== undefined) n.position.y = n.userData.baseY + Math.sin(age * 1.5 + n.userData.float) * .08;
             if (n.userData.water !== undefined) n.position.y = .3 + ((n.userData.baseY - age * 1.8) % 1.2 + 1.2) % 1.2;
             if (n.userData.cloth) n.position.x = n.userData.baseX + Math.sin(age * 8) * .22;
-            if (n.userData.toy) { n.position.y = .22 + Math.abs(Math.sin(Math.min(age, 1.2) / 1.2 * Math.PI)) * .9; n.position.x = n.userData.baseX + Math.sin(Math.min(age, 1.2) / 1.2 * Math.PI) * n.userData.direction * .8; n.rotation.x += dt * 4; }
+            if (n.userData.toy) { n.position.y = .22 + Math.abs(Math.sin(Math.min(age, 1.2) / 1.2 * Math.PI)) * .9; n.position.x = n.userData.baseX + Math.sin(Math.min(age, 1.2) / 1.2 * Math.PI) * n.userData.direction * 1.3; n.position.z = n.userData.baseZ + Math.sin(Math.min(age, 1.2) / 1.2 * Math.PI) * n.userData.depth; n.rotation.x += dt * 4; }
           });
           storyTransition = Math.min(1, storyTransition + dt * 1.8); storyGroup.scale.setScalar(.8 + storyTransition * .2);
           storyGroup.children.forEach(n => { if (n.userData.storyFloat) n.rotation.z = Math.sin(elapsed * 1.8) * .09; });
@@ -503,6 +514,9 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
           const actor = actors.get(active) || actors.values().next().value;
           if (actor) { const center = actor.root.position.clone().add(new T.Vector3(0, .8, 0)); controls.target.lerp(center, .09); desiredCamera.copy(center).add(new T.Vector3(3.2, 2.5, 5)); camera.position.lerp(desiredCamera, .08); }
         }
+        const companion = actors.get(active);
+        renderer.domElement.dataset.petAction = companion?.clip || 'loading';
+        renderer.domElement.dataset.petMoving = companion?.target ? 'true' : 'false';
         controls.update(); renderer.render(stage, camera);
       }
       frame = requestAnimationFrame(draw);

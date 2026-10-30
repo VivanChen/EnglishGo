@@ -68,3 +68,8 @@ Care now uses a captured pointer surface over the live 3D scene. Mouse/touch str
 Bathing has four phases (lather, scrub, rinse, towel dry), followed by a shake. Foam reduces while rinsing, water drops fall, and the towel moves. Feeding anticipates with sniffing; toys follow a bouncing arc with pouncing. All three GLBs now contain 18 animation clips, with seven new care clips. One-shot pounce/shake/settle/wake clips hold their end pose instead of snapping into a loop. Care props stay present until cancellation/completion; camera orbit and ground-walk cannot interrupt care. Reduced-motion mode retains interactive progress and static pose feedback. No progress reset or database change is part of this update.
 
 Validation: `npx vitest run src/features/pet-town`, `npm run build`, and `node scripts/qa-pet-care.mjs` (desktop plus narrow touch viewport).
+
+
+### Companion presence follow-up
+
+Calling a companion uses obstacle-aware paths, the run clip and a happy arrival without awarding care rewards. Cat/dog/rabbit idle reactions now vary. Completed rest remains asleep within the current scene until an explicit wake or another activity; waking has no extra reward and sleep is not a persisted account flag. Low needs suggest a relevant care action. Completion messages use each care routine's existing response. Toy arcs respond to both horizontal and vertical touch position, and foam gently bobs instead of floating out of the scene. The care browser audit also checks call/arrival, sleep beyond the old 12-second cutoff, waking, and unchanged bond rewards.

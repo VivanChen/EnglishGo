@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('./TownScene.jsx', () => ({
-  default: ({ pets, placements, scene }) => <div data-testid="town-scene-mock" data-pets={JSON.stringify(pets)} data-placements={JSON.stringify(placements)} data-scene={scene}/>,
+  default: ({ pets, placements, scene, activity }) => <div data-testid="town-scene-mock" data-pets={JSON.stringify(pets)} data-placements={JSON.stringify(placements)} data-scene={scene} data-activity={JSON.stringify(activity)}/>,
   PetPortrait: ({ speciesId }) => <span aria-hidden="true" data-species={speciesId}/>,
 }));
 vi.mock('./cloudAccount.js', () => ({ hashPin: vi.fn(), legacyPinHash: vi.fn(), requestPetAccount: vi.fn() }));
@@ -98,6 +98,27 @@ describe('Seabreeze town complete UI flows', () => {
     tab('出遊'); tab('家園');
     expect(screen.queryByRole('progressbar', { name: '照顧進度' })).not.toBeInTheDocument();
     expect(readTownSnapshot(null).worldState.ownedPets[0]).toMatchObject({ clean: 90, bond: 0 });
+  });
+
+  it('keeps a completed rest asleep until explicitly waking, without another reward', () => {
+    render(<Harness/>); adopt(); click('休息'); finishStage('鋪好小毯子'); finishStage('輕聲說晚安');
+    expect(JSON.parse(screen.getByTestId('town-scene-mock').dataset.activity)).toMatchObject({ type: 'sleep', resting: true });
+    expect(readTownSnapshot(null).worldState.ownedPets[0]).toMatchObject({ energy: 100, bond: 2 });
+    click('輕輕叫醒');
+    expect(JSON.parse(screen.getByTestId('town-scene-mock').dataset.activity).type).toBe('wake');
+    expect(screen.queryByRole('button', { name: '輕輕叫醒' })).not.toBeInTheDocument();
+    expect(readTownSnapshot(null).worldState.ownedPets[0].bond).toBe(2);
+  });
+
+  it('calls and stretches a companion without manufacturing care rewards', () => {
+    render(<Harness/>); adopt();
+    const before = readTownSnapshot(null).worldState;
+    click('叫凪凪過來');
+    expect(JSON.parse(screen.getByTestId('town-scene-mock').dataset.activity).type).toBe('come');
+    click('伸個懶腰');
+    expect(JSON.parse(screen.getByTestId('town-scene-mock').dataset.activity).type).toBe('wake');
+    expect(readTownSnapshot(null).worldState).toEqual(before);
+    click('洗澡'); expect(screen.queryByText(/聽見你了/)).not.toBeInTheDocument();
   });
 
   it('completes and replays a chapter while awarding global XP and story gifts once', () => {

@@ -50,6 +50,12 @@ try {
       report.push({ width, name, label, errors: [...errors], overflow });
       console.log(`${width}: ${label}`);
     };
+    await page.getByRole('button', { name: `叫${name}過來`, exact: true }).click();
+    await page.locator('.town-scene-wrap').scrollIntoViewIfNeeded();
+    await page.waitForFunction(() => document.querySelector('.town-scene canvas')?.dataset.petAction === 'run');
+    await page.waitForFunction(() => document.querySelector('.town-scene canvas')?.dataset.petMoving === 'false');
+    assert.equal((await saved()).bond, 0);
+    await inspect('come');
     await page.getByRole('button', { name: '洗澡', exact: true }).click();
     await page.waitForTimeout(1000);
     await stroke();
@@ -72,6 +78,17 @@ try {
       await page.getByRole('button', { name: action, exact: true }).click();
       for (let i = 0; i < hits; i++) { await tap(); if (i === Math.floor(hits / 2)) await inspect(action); }
       assert.equal(await surface.count(), 0);
+      if (action === '休息') {
+        await page.locator('.town-scene-wrap').scrollIntoViewIfNeeded();
+        await page.waitForTimeout(width === 1440 ? 14000 : 1000);
+        assert.equal(await page.locator('.town-scene canvas').getAttribute('data-pet-action'), 'sleep');
+        await inspect('sleeping');
+        const bond = (await saved()).bond;
+        await page.getByRole('button', { name: '輕輕叫醒', exact: true }).click();
+        await page.waitForFunction(() => document.querySelector('.town-scene canvas')?.dataset.petAction === 'wake');
+        assert.equal((await saved()).bond, bond);
+        await inspect('wake');
+      }
     }
     assert.equal((await saved()).bond, 10);
     await page.getByRole('button', { name: '洗澡', exact: true }).click();
