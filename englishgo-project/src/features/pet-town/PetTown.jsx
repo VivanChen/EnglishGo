@@ -57,7 +57,7 @@ export default function PetTown({ lv = 'elementary', onBack, onNavigate, coins =
   const authRequest = useRef(0), careLock = useRef(false), ambience = useRef(null);
   const [soundPlaying,setSoundPlaying] = useState(false);
   const sounds = useRef(null), soundRequest = useRef(0), soundStarting = useRef(false);
-  const playSound = (name, volume) => { if (!quiet && soundPlaying) sounds.current?.play(name, volume); };
+  const playSound = (name, volume, pan) => { if (!quiet && soundPlaying) sounds.current?.play(name, volume, pan); };
   const pets = world.ownedPets || [], selected = pets.find(p => p.id === world.activePetId) || pets[0];
   const def = PETS.find(p => p.id === (selected?.speciesId || preview)) || PETS[0];
   const stage = selected ? getPetStage(selected) : null;
@@ -115,7 +115,7 @@ export default function PetTown({ lv = 'elementary', onBack, onNavigate, coins =
   };
   const environmentEvent = event => {
     if (event.petId !== selected?.id || tab !== 'home' || careRef.current) return;
-    if (event.phase === 'arrived') { setEnvironment({ id: event.placementId, phase: 'interacting' }); setMoment({ text: `${def.name}${event.text}` }); }
+    if (event.phase === 'arrived' || event.phase === 'responding') { setEnvironment({ id: event.placementId, phase: 'interacting' }); setMoment({ text: `${def.name}${event.text}` }); }
     else if (event.phase === 'blocked') { setEnvironment(null); setActivity(null); setMoment({ text: '這裡暫時走不過去，試著在布置裡挪出一點空間。' }); }
     else if (event.phase === 'finished') { setEnvironment(null); setActivity(null); }
   };

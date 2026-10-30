@@ -61,7 +61,7 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
     if (changedScene) setFocus(false);
     setStatus('loading');
     if (/jsdom/i.test(navigator.userAgent)) { setStatus('fallback'); return; }
-    Promise.all([import('three'), import('three/addons/controls/OrbitControls.js'), import('three/addons/loaders/GLTFLoader.js'), import('./townModels.js'), import('./townPerformance.js')]).then(async ([T, { OrbitControls }, { GLTFLoader }, { applyGrowthAppearance }, { batchTownScenery, smoothFactor }]) => {
+    Promise.all([import('three'), import('three/addons/controls/OrbitControls.js'), import('three/addons/loaders/GLTFLoader.js'), import('./townModels.js'), import('./townPerformance.js'), import('./environmentMotion.js')]).then(async ([T, { OrbitControls }, { GLTFLoader }, { applyGrowthAppearance }, { batchTownScenery, smoothFactor }, { bindEnvironmentMotion, environmentFollowup }]) => {
       if (disposed || !host.current) return;
       let renderer;
       try { renderer = new T.WebGLRenderer({ antialias: quality !== 'low', alpha: false, powerPreference: 'low-power' }); }
@@ -274,7 +274,7 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
           cylinder(g, accent, [0, .04, 0], .21, .24, .08, 16); cylinder(g, color, [0, .32, 0], .18, .18, .48, 8, { emissive: '#e7bd76', emissiveIntensity: night ? .8 : .1 }); cylinder(g, accent, [0, .59, 0], .23, .20, .08, 8);
           for (const x of [-.14, .14]) for (const z of [-.14, .14]) box(g, accent, [x, .33, z], [.025, .5, .025]);
         } else if (kind === 'mailbox') {
-          box(g, '#ad9779', [0, .5, 0], [.13, 1, .13]); box(g, color, [0, 1.03, 0], [.5, .39, .45]); box(g, accent, [0, 1.03, .23], [.38, .028, .015]); roof(group(g, [0, 1.22, 0]), .6, .5, .17, accent);
+          box(g, '#ad9779', [0, .5, 0], [.13, 1, .13]); box(g, color, [0, 1.03, 0], [.5, .39, .45]); const door = group(g, [0, .84, .24]); door.userData.environmentRole = 'door'; box(door, accent, [0, .18, 0], [.43, .34, .025]); box(g, '#667d72', [0, 1.03, .228], [.39, .28, .008]); const letter = group(g, [0, 1.03, .27]); box(letter, '#fff2cf', [0, 0, 0], [.32, .18, .012]); box(letter, '#bd8d79', [0, 0, .01], [.045, .045, .008]).rotation.z = Math.PI / 4; letter.userData.environmentRole = 'letter'; letter.visible = false; roof(group(g, [0, 1.22, 0]), .6, .5, .17, accent);
         } else if (kind === 'shells') {
           for (let i = 0; i < 5; i++) { const shell = ball(g, i % 2 ? color : accent, [Math.sin(i * 2.4) * .25, .08, Math.cos(i * 2.4) * .25], [.11, .07, .14]); shell.rotation.y = i; }
         } else if (kind === 'planter') {
@@ -314,7 +314,10 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
           ball(g, color, [.34, 1.17, 0], [.16, .15, .16]).userData.envChime = true; box(g, accent, [.34, .89, 0], [.09, .25, .008]).userData.envChime = true;
         } else if (kind === 'fountain') {
           cylinder(g, accent, [0, .10, 0], .55, .6, .19, 40); cylinder(g, '#a7c8ca', [0, .20, 0], .45, .45, .035, 40, { roughness: .2 }); cylinder(g, color, [0, .43, 0], .11, .16, .52, 24); cylinder(g, accent, [0, .70, 0], .28, .22, .08, 32);
+          for (let i = 0; i < 3; i++) { const ripple = add(g, new T.RingGeometry(.24, .255, 32), material('#eaf9f5', { transparent: true, opacity: .2, depthWrite: false, side: T.DoubleSide }), [0, .223 + i * .001, 0]); ripple.rotation.x = -Math.PI / 2; ripple.castShadow = false; ripple.userData.environmentRole = 'ripple'; }
         } else box(g, color, [0, .2, 0], [.5, .4, .5]);
+        g.userData.environmentKind = kind;
+        g.userData.environmentMotion = bindEnvironmentMotion(g, kind, m => { materialSet.add(m); temporaryMaterials.add(m); });
         g.position.set(item.x, .06, item.z); g.rotation.y = item.rotation || 0;
         g.traverse(n => { n.userData.placementId = item.id; });
         return g;
@@ -386,12 +389,11 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
           });
         });
       };
-      const swayEnvironment = angle => {
-        if (environmentVisit?.item.kind !== 'chime') return;
-        decorGroup.children.find(g => g.userData.placementId === environmentVisit.placement.id)?.traverse(n => { if (n.userData.envChime) n.rotation.z = angle; });
-      };
+      const restoreEnvironment = () => { decorGroup.children.forEach(g => g.userData.environmentMotion?.restore()); };
+      const audioPosition = new T.Vector3();
+      const soundAt = (name, volume, position) => { audioPosition.copy(position).project(camera); latest.current.onSound?.(name, volume, Math.max(-.8, Math.min(.8, audioPosition.x))); };
       const finishVisit = phase => {
-        swayEnvironment(0);
+        restoreEnvironment();
         const visit = environmentVisit; environmentVisit = null;
         if (visit) latest.current.onEnvironment?.({ phase, petId: visit.petId, placementId: visit.placement.id, text: visit.text });
       };
@@ -401,7 +403,8 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
         actor.target = null; actor.path = []; actor.arrival = null; actor.reactionUntil = 0;
         actor.root.rotation.y = Math.atan2(visit.placement.x - actor.root.position.x, visit.placement.z - actor.root.position.z);
         if (visit.item.kind === 'cushion') { actor.root.rotation.y = visit.placement.rotation || 0; actor.root.position.y = .15; }
-        latest.current.onSound?.(({ chime: 'chime', fountain: 'water', wateringCan: 'water', shells: 'toy', bowl: 'rustle' })[visit.item.kind] || 'rustle', .25);
+        visit.arrivedAt = elapsed; visit.responded = false; effectStart = elapsed;
+        soundAt(({ chime: 'chime', fountain: 'water', wateringCan: 'water', shells: 'toy', bowl: 'rustle' })[visit.item.kind] || 'rustle', .25, actor.root.position);
         play(actor, visit.clip, true); effectDeadline = elapsed + visit.duration;
         if (!latest.current.motion || matchMedia('(prefers-reduced-motion: reduce)').matches) actor.mixer.update(.6);
         latest.current.onEnvironment?.({ phase: 'arrived', petId: visit.petId, placementId: visit.placement.id, text: visit.text });
@@ -416,7 +419,7 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
       const perform = value => {
         if (value && `${value.nonce || value.id || ''}:${value.type}:${value.petId || active}` === lastActivityKey) return;
         if (environmentVisit) {
-          swayEnvironment(0);
+          restoreEnvironment();
           const previous = actors.get(environmentVisit.petId);
           if (previous) { previous.path = []; previous.target = null; previous.root.position.y = groundHeight(previous.root.position.x, previous.root.position.z); play(previous, 'idle'); }
           environmentVisit = null;
@@ -485,6 +488,17 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
         }
         updateCareProps(value);
       };
+      // One small particle batch adds drifting seeds / fireflies without per-frame allocation.
+      const moteGeometry = new T.BufferGeometry(), motePositions = new Float32Array(48);
+      moteGeometry.setAttribute('position', new T.BufferAttribute(motePositions, 3)); geometrySet.add(moteGeometry);
+      const moteCanvas = document.createElement('canvas'); moteCanvas.width = moteCanvas.height = 32;
+      const moteContext = moteCanvas.getContext('2d'), glow = moteContext.createRadialGradient(16,16,0,16,16,16);
+      glow.addColorStop(0, '#fff8cf'); glow.addColorStop(.3, '#fff8cfb0'); glow.addColorStop(1, '#fff8cf00');
+      moteContext.fillStyle = glow; moteContext.fillRect(0,0,32,32);
+      const moteTexture = new T.CanvasTexture(moteCanvas); textures.add(moteTexture);
+      const moteMaterial = new T.PointsMaterial({ map: moteTexture, color: night ? '#ffe9a5' : '#fff8e9', size: night ? .11 : .07, transparent: true, opacity: night ? .7 : .42, depthWrite: false }); materialSet.add(moteMaterial);
+      const ambientMotes = new T.Points(moteGeometry, moteMaterial); ambientMotes.frustumCulled = false; world.add(ambientMotes);
+      let nextWindChime = 12;
       batchTownScenery(world, new Set([actorsGroup, decorGroup, effectGroup, storyGroup, ...waveRings]), g => geometrySet.add(g));
       runtime.current = { setPets, setPlacements, perform, setStoryMoment, focus: value => { focusWanted = value; }, reset: () => { focusWanted = false; controls.target.set(0, .6, -.3); camera.position.set(10, 8.5, 12.5); controls.update(); } };
       setPets(latest.current.pets, latest.current.activePetId); setPlacements(latest.current.placements); setStoryMoment(latest.current.storyMoment);
@@ -508,7 +522,7 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
             if (nearby) { latest.current.onPlacementSelect?.(nearby.id); return; }
             const path = findTownPath(actor.root.position, target, latest.current.placements, FURNITURE);
             if (!path.length) return;
-            swayEnvironment(0); environmentVisit = null; actor.reactionUntil = 0; effectDeadline = 0; clearVisuals(effectGroup);
+            restoreEnvironment(); environmentVisit = null; actor.reactionUntil = 0; effectDeadline = 0; clearVisuals(effectGroup);
             if (!latest.current.motion || reduced.matches) {
               const end = path.at(-1); actor.root.position.set(end.x, groundHeight(end.x, end.z), end.z); actor.path = []; actor.target = null; play(actor, 'idle'); latest.current.onMove?.({ x: target.x, z: target.z }); return;
             }
@@ -544,7 +558,7 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
           }
           if (actor.target && !moving) { if (environmentVisit?.petId === id) { const end = environmentVisit.point; actor.root.position.set(end.x,groundHeight(end.x,end.z),end.z); arriveAtObject(actor); } else { actor.target = null; actor.path = []; play(actor, 'idle'); } }
           if (actor.target) {
-            if (moving && id === active && elapsed >= (actor.nextStep || 0)) { actor.nextStep = elapsed + (actor.arrival ? .26 : .36); latest.current.onSound?.('step', .12); }
+            if (moving && id === active && elapsed >= (actor.nextStep || 0)) { actor.nextStep = elapsed + (actor.arrival ? .26 : .36); soundAt('step', .12, actor.root.position); }
             direction.subVectors(actor.target, actor.root.position); direction.y = 0;
             if (direction.length() < .08) { actor.target = actor.path.shift() || null; if (!actor.target) { if (environmentVisit?.petId === id) arriveAtObject(actor); else { play(actor, actor.arrival || 'idle'); actor.arrival = null; actor.reactionUntil = elapsed + 2; actor.idleUntil = elapsed + 10; } } }
             else { const distance = direction.length(), angle = Math.atan2(direction.x, direction.z); actor.root.rotation.y += Math.atan2(Math.sin(angle - actor.root.rotation.y), Math.cos(angle - actor.root.rotation.y)) * smoothFactor(18, dt); actor.root.position.addScaledVector(direction.normalize(), Math.min(distance, dt * (actor.arrival ? 2.7 : 1.65))); actor.root.position.y += (groundHeight(actor.root.position.x, actor.root.position.z) - actor.root.position.y) * smoothFactor(18, dt); if (moving) play(actor, actor.arrival ? 'run' : 'walk'); }
@@ -566,8 +580,22 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
           }
         }
         if (effectDeadline && elapsed > effectDeadline) { if (effectActor) { effectActor.root.position.y = groundHeight(effectActor.root.position.x, effectActor.root.position.z); effectActor.idleUntil = elapsed + 8; } effectDeadline = 0; effectActor = null; controls.enabled = true; clearVisuals(effectGroup); finishVisit('finished'); }
+        const contactAge = environmentVisit?.arrivedAt == null ? null : elapsed - environmentVisit.arrivedAt;
+        decorGroup.children.forEach(g => g.userData.environmentMotion?.update(elapsed, g.userData.placementId === environmentVisit?.placement.id ? contactAge : null, moving, environmentVisit?.duration));
+        if (moving && contactAge > 1.8 && !environmentVisit.responded) {
+          environmentVisit.responded = true;
+          const next = environmentFollowup(environmentVisit.item.kind), actor = actors.get(environmentVisit.petId);
+          if (next && actor) {
+            play(actor, next[0], true);
+            latest.current.onEnvironment?.({ phase: 'responding', petId: environmentVisit.petId, placementId: environmentVisit.placement.id, text: next[1] });
+            if (['chime', 'fountain', 'shells', 'mailbox'].includes(environmentVisit.item.kind)) soundAt(environmentVisit.item.kind === 'fountain' ? 'water' : environmentVisit.item.kind === 'chime' ? 'chime' : 'rustle', .17, actor.root.position);
+          }
+        }
+        ambientMotes.visible = moving;
         if (moving) {
-          if (environmentVisit && effectDeadline !== Infinity) swayEnvironment(Math.sin((elapsed - effectStart) * 5) * .2);
+          for (let i=0;i<16;i++) { motePositions[i*3] = Math.sin(i*2.4)*4.8 + Math.sin(elapsed*.22+i)*.3; motePositions[i*3+1] = .5 + (i%5)*.25 + Math.sin(elapsed*.5+i)*.16; motePositions[i*3+2] = Math.cos(i*2.4)*3 + .4 + Math.cos(elapsed*.17+i)*.2; }
+          moteGeometry.attributes.position.needsUpdate = true;
+          if (elapsed > nextWindChime) { nextWindChime = elapsed + 18; const chime = decorGroup.children.find(g => g.userData.environmentKind === 'chime'); if (chime && !environmentVisit && !latest.current.activity?.sustained && !latest.current.activity?.resting) soundAt('chime', .07, chime.position); }
           waveRings.forEach((r, i) => { const scale = 1 + Math.sin(elapsed * .55 - i) * .018; r.scale.set(scale, .8 * scale, 1); });
           effectGroup.children.forEach(n => {
             const age = elapsed - effectStart;
@@ -581,13 +609,15 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
         }
         if (focusWanted) {
           const actor = actors.get(active) || actors.values().next().value;
-          if (actor) { cameraCenter.copy(actor.root.position); cameraCenter.y += .8; controls.target.lerp(cameraCenter, smoothFactor(12, dt)); desiredCamera.copy(cameraCenter); desiredCamera.x += 3.2; desiredCamera.y += 2.5; desiredCamera.z += 5; camera.position.lerp(desiredCamera, smoothFactor(10, dt)); }
+          if (actor) { cameraCenter.copy(actor.root.position); cameraCenter.y += .8; if (environmentVisit) { cameraCenter.x += (environmentVisit.placement.x - cameraCenter.x) * .32; cameraCenter.z += (environmentVisit.placement.z - cameraCenter.z) * .32; } controls.target.lerp(cameraCenter, moving ? smoothFactor(12, dt) : 1); desiredCamera.copy(cameraCenter); desiredCamera.x += 3.2; desiredCamera.y += 2.5; desiredCamera.z += 5; camera.position.lerp(desiredCamera, moving ? smoothFactor(10, dt) : 1); }
         }
         const companion = actors.get(active);
         const diagnostics = renderer.domElement.dataset, action = companion?.clip || 'loading', targetId = environmentVisit?.placement.id || '', traveling = companion?.target ? 'true' : 'false';
         if (diagnostics.petAction !== action) diagnostics.petAction = action;
         if (diagnostics.environmentTarget !== targetId) diagnostics.environmentTarget = targetId;
         if (diagnostics.petMoving !== traveling) diagnostics.petMoving = traveling;
+        const phase = environmentVisit ? environmentVisit.arrivedAt == null ? 'approaching' : environmentVisit.responded ? 'response' : 'contact' : '';
+        if (diagnostics.environmentPhase !== phase) diagnostics.environmentPhase = phase;
         controls.update(); renderer.render(stage, camera);
       }
       frame = requestAnimationFrame(draw);

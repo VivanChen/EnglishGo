@@ -30,15 +30,19 @@ export function createTownSounds() {
       if (disposed || request !== generation) return false;
       enabled = context.state === 'running'; return enabled;
     },
-    play(name, volume = .35) {
+    play(name, volume = .35, pan = 0) {
       if (!enabled || disposed || document.hidden || context?.state !== 'running' || !buffers.has(name)) return false;
       const now = context.currentTime, gap = name === 'step' ? .22 : .16;
       if (now - (last.get(name) ?? -Infinity) < gap || active.size >= 4) return false;
       last.set(name, now);
       const source = context.createBufferSource(), gain = context.createGain();
       source.buffer = buffers.get(name); gain.gain.value = Math.max(0, Math.min(.65, volume));
-      source.connect(gain); gain.connect(context.destination); active.add(source);
-      source.onended = () => { active.delete(source); source.disconnect(); gain.disconnect(); };
+      const panner = context.createStereoPanner?.();
+      source.connect(gain);
+      if (panner) { panner.pan.value = Math.max(-1, Math.min(1, pan)); gain.connect(panner); panner.connect(context.destination); }
+      else gain.connect(context.destination);
+      active.add(source);
+      source.onended = () => { active.delete(source); source.disconnect(); gain.disconnect(); panner?.disconnect(); };
       source.start(); return true;
     },
     stop,

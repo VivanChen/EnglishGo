@@ -24,7 +24,7 @@ const actions = {
 const flat = new Set(['rug', 'picnic', 'cushion', 'shells']);
 export function getEnvironmentInteraction(placement) {
   const item = FURNITURE.find(f => f.id === placement?.itemId), action = actions[item?.kind];
-  return action ? { placement, item, label: action[0], clip: action[1], text: action[2], duration: item.kind === 'cushion' ? 8 : 4 } : null;
+  return action ? { placement, item, label: action[0], clip: action[1], text: action[2], duration: item.kind === 'cushion' ? 8 : 6 } : null;
 }
 
 // Match the navigation grid's inflated furniture footprints, including rotation.
