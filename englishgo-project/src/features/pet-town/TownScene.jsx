@@ -41,9 +41,9 @@ function FlatTown({ pets }) {
   </div>;
 }
 
-export default function TownScene({ pets = [], activePetId, placements = [], activity, storyMoment, motion = true, quality = 'auto', scene = 'home', onPet, onStatus, onMove, onPlacementSelect }) {
+export default function TownScene({ pets = [], activePetId, placements = [], activity, careAim, storyMoment, motion = true, quality = 'auto', scene = 'home', onPet, onStatus, onMove, onPlacementSelect }) {
   const host = useRef(null), runtime = useRef(null), latest = useRef({}), previousScene = useRef(scene);
-  latest.current = { pets, activePetId, placements, activity, storyMoment, motion, onPet, onStatus, onMove, onPlacementSelect };
+  latest.current = { pets, activePetId, placements, activity, careAim, storyMoment, motion, onPet, onStatus, onMove, onPlacementSelect };
   const [status, setStatus] = useState('loading'), [night, setNight] = useState(false), [focus, setFocus] = useState(false);
   useEffect(() => { onStatus?.(status); }, [status, onStatus]);
   useEffect(() => { runtime.current?.setPets(pets, activePetId); }, [pets, activePetId]);
@@ -475,6 +475,11 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
         const moving = latest.current.motion && !reduced.matches;
         for (const [id, actor] of actors) {
           if (moving) actor.mixer.update(dt);
+          if (moving && actor === effectActor && latest.current.activity?.sustained && latest.current.activity.type !== 'sleep') {
+            const aim = latest.current.careAim?.current || { x: .5 };
+            const facing = .55 + (aim.x - .5) * (latest.current.activity.type === 'play' ? .9 : .35);
+            actor.root.rotation.y += (facing - actor.root.rotation.y) * Math.min(1, dt * 8);
+          }
           if (actor.target && !moving) { actor.target = null; actor.path = []; play(actor, 'idle'); }
           if (actor.target) {
             direction.subVectors(actor.target, actor.root.position); direction.y = 0;
@@ -504,7 +509,7 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
             const age = elapsed - effectStart;
             if (n.userData.float !== undefined) n.position.y = n.userData.baseY + Math.sin(age * 1.5 + n.userData.float) * .08;
             if (n.userData.water !== undefined) n.position.y = .3 + ((n.userData.baseY - age * 1.8) % 1.2 + 1.2) % 1.2;
-            if (n.userData.cloth) n.position.x = n.userData.baseX + Math.sin(age * 8) * .22;
+            if (n.userData.cloth) n.position.x = n.userData.baseX + ((latest.current.careAim?.current?.x ?? .5) - .5) * .6 + Math.sin(age * 8) * .08;
             if (n.userData.toy) { n.position.y = .22 + Math.abs(Math.sin(Math.min(age, 1.2) / 1.2 * Math.PI)) * .9; n.position.x = n.userData.baseX + Math.sin(Math.min(age, 1.2) / 1.2 * Math.PI) * n.userData.direction * 1.3; n.position.z = n.userData.baseZ + Math.sin(Math.min(age, 1.2) / 1.2 * Math.PI) * n.userData.depth; n.rotation.x += dt * 4; }
           });
           storyTransition = Math.min(1, storyTransition + dt * 1.8); storyGroup.scale.setScalar(.8 + storyTransition * .2);

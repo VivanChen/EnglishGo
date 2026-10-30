@@ -73,3 +73,10 @@ Validation: `npx vitest run src/features/pet-town`, `npm run build`, and `node s
 ### Companion presence follow-up
 
 Calling a companion uses obstacle-aware paths, the run clip and a happy arrival without awarding care rewards. Cat/dog/rabbit idle reactions now vary. Completed rest remains asleep within the current scene until an explicit wake or another activity; waking has no extra reward and sleep is not a persisted account flag. Low needs suggest a relevant care action. Completion messages use each care routine's existing response. Toy arcs respond to both horizontal and vertical touch position, and foam gently bobs instead of floating out of the scene. The care browser audit also checks call/arrival, sleep beyond the old 12-second cutoff, waking, and unchanged bond rewards.
+
+
+### Care tool polish
+
+Care uses original SVG tools instead of platform-dependent emoji, a compact step list, per-step counts, and a bounded six-point pointer trail. A ref carries normalized pointer aim into the existing render loop, so aiming does not rebuild the 3D care props or award extra tap progress. Companions gently turn toward the tool and towels follow its horizontal position. Secondary-pointer release cannot cancel the primary drag. Reduced-motion mode hides trails and movement; narrow care scenes expand to keep all actions visible.
+
+The care surface explicitly overrides the town button touch-action rule: browsers must not claim a scrub gesture as scrolling. Browser QA asserts the computed touch-action, a live trail before pointer release, and an unclipped care HUD on narrow screens.

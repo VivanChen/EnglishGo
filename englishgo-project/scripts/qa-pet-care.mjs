@@ -11,7 +11,7 @@ await fs.mkdir(output, { recursive: true });
 const browser = await chromium.launch({ channel: 'msedge', headless: true });
 const report = [];
 try {
-  for (const [width, name] of [[1440, '凪凪'], [390, '晴晴'], [360, '小麥']]) {
+  for (const [width, name] of [[1440, '凪凪'], [390, '晴晴'], [360, '小麥']].filter(([w]) => !process.env.QA_WIDTHS || process.env.QA_WIDTHS.split(',').map(Number).includes(w))) {
     const context = await browser.newContext({ viewport: { width, height: width > 900 ? 1000 : 844 }, hasTouch: width < 900, isMobile: width < 900, serviceWorkers: 'block' });
     const page = await context.newPage(), errors = [], media = [];
     page.on('pageerror', error => errors.push(error.message));
@@ -28,11 +28,13 @@ try {
     const surface = page.locator('.town-care-surface');
     const tap = async () => {
       await surface.scrollIntoViewIfNeeded();
+      assert.equal(await surface.evaluate(e => getComputedStyle(e).touchAction), 'none');
       const box = await surface.boundingBox(), x = box.x + box.width * .55, y = box.y + box.height * .55;
       if (width < 900) await page.touchscreen.tap(x, y); else await page.mouse.click(x, y);
     };
     const stroke = async () => {
       await surface.scrollIntoViewIfNeeded();
+      assert.equal(await surface.evaluate(e => getComputedStyle(e).touchAction), 'none');
       const box = await surface.boundingBox(), y = box.y + box.height * .55, x = box.x + box.width * .32;
       if (width < 900) await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
       else { await page.mouse.move(x, y); await page.mouse.down(); }
@@ -41,11 +43,19 @@ try {
         if (width < 900) await client.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x + i * 28, y }] });
         else await page.mouse.move(x + i * 28, y);
       }
+      assert(await page.locator('.town-care-trail polyline').getAttribute('points'), 'drag trail follows movement');
       if (width < 900) await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); else await page.mouse.up();
     };
     const inspect = async label => {
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 2);
       assert.equal(overflow, false, `${width}: overflow`); assert.deepEqual(errors, []); assert.deepEqual(media, []);
+      if (await surface.count()) {
+        assert.equal(await page.locator('.town-care-tool svg[data-care-tool]').count(), 1);
+        assert.equal(await page.locator('.town-care-stages [aria-current="step"]').count(), 1);
+        const sceneBox = await page.locator('.town-scene-wrap').boundingBox();
+        const hudBox = await page.locator('.town-care-hud').boundingBox();
+        assert(hudBox.y + hudBox.height <= sceneBox.y + sceneBox.height + 1, 'care controls must not be clipped');
+      }
       await page.locator('.town-scene-wrap').screenshot({ path: path.join(output, `${width}-${label}.png`) });
       report.push({ width, name, label, errors: [...errors], overflow });
       console.log(`${width}: ${label}`);

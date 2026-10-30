@@ -7,7 +7,8 @@ async function openHome({gift=false}={}){
   const view=render(<App/>);
   fireEvent.click(screen.getByText('Elementary').closest('button'));
   await screen.findByRole('button',{name:'開始 5 張單字小任務'});
-  await waitFor(()=>expect(document.querySelector('[data-module-id="srs"]')).toHaveTextContent(/目前.*個單字可練習/));
+  // The first visit also imports the vocabulary bank; give it the same budget as SRS.
+  await waitFor(()=>expect(document.querySelector('[data-module-id="srs"]')).toHaveTextContent(/目前.*個單字可練習/), {timeout:5000});
   return view;
 }
 
