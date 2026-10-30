@@ -1,5 +1,5 @@
 {
-  "revision": 2,
+  "revision": 3,
   "license": "Original EnglishGo assets; no third-party model or texture",
   "animationNames": [
     "idle",
@@ -19,26 +19,32 @@
     "dry",
     "shake",
     "pounce",
-    "settle"
+    "settle",
+    "stretch",
+    "greet",
+    "groom",
+    "hop",
+    "listen",
+    "yawn"
   ],
   "models": [
     {
       "speciesId": "harbor-cat",
       "file": "harbor-cat.glb",
-      "bytes": 1171288,
-      "animations": 18
+      "bytes": 1185552,
+      "animations": 24
     },
     {
       "speciesId": "sunny-dog",
       "file": "sunny-dog.glb",
-      "bytes": 979488,
-      "animations": 18
+      "bytes": 993740,
+      "animations": 24
     },
     {
       "speciesId": "garden-rabbit",
       "file": "garden-rabbit.glb",
-      "bytes": 1015576,
-      "animations": 18
+      "bytes": 1029812,
+      "animations": 24
     }
   ]
 }

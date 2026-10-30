@@ -88,7 +88,17 @@ Home furniture can be selected in the 3D scene or through the keyboard/touch obj
 
 These exploratory reactions are visual only; they do not grant coins, XP, bond, or full-care stat restoration. Existing care actions remain responsible for those rewards. No database or account schema changes are required.
 
-## Rendering and movement performance
+## Sound and companion animation (2026-10-30)
+
+All three companions now ship 24 clips, including greeting, stretching, grooming, hopping, attentive listening and a sleepy yawn. Four home buttons trigger expressive animations without rewards; idle habits and selected furniture use the new clips too. The camera focuses on these actions and brings the scene into view on phones. Existing reduced-motion handling still applies.
+
+The header sound switch explicitly enables both shoreline ambience and interaction sounds. Ten small, original procedural WAV assets provide footsteps, bubbles, rinse water, towel rubs, toy bounces, chimes, success notes, stylized greetings and rustling. They are synthesized Foley, not API-generated animal recordings. Clips load/decode once after opt-in, with a four-voice cap and per-sound cooldowns. Global mute, backgrounding and unmount stop playback; re-enabling requires a gesture. These optional sounds do not change English pronunciation providers.
+
+`node scripts/generatePetFoley.mjs` reproduces the offline pack. `node scripts/generatePetSounds.mjs` can replace it with ElevenLabs Sound Effects v2 using server-side/local `ELEVENLABS_API_KEY`. The generator reuses existing MP3s, stops on errors and switches the manifest only after the full set succeeds. No key or runtime generation endpoint is shipped to the browser. API reference: https://elevenlabs.io/docs/api-reference/text-to-sound-effects/convert . The existing deployment credential returned HTTP 401 (`invalid_api_key`) during this change, so the committed pack uses original procedural Foley.
+
+Validation adds sound lifecycle tests and `node scripts/qa-pet-sounds.mjs` for desktop/390px/360px playback, all four action clips, immediate mute, media loading, unchanged rewards and layout. Existing care and environment audits cover regression behavior.
+
+## Rendering and movement performance details
 
 The scene now renders at the browser's animation cadence instead of imposing a 31 ms frame gate. Static scenery sharing materials and shadow settings is merged once; pets, clickable furniture, story effects and animated water remain independent. Hidden subtrees and mesh parents are retained. The automatic quality setting caps pixel ratio at 1.25 (high remains 1.5). Off-screen/hidden scenes still skip rendering.
 

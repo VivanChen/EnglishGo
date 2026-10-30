@@ -1,0 +1,28 @@
+{
+  "provider": "Original procedural Foley",
+  "license": "Original EnglishGo assets",
+  "files": {
+    "step": "step.wav",
+    "bubbles": "bubbles.wav",
+    "water": "water.wav",
+    "towel": "towel.wav",
+    "toy": "toy.wav",
+    "chime": "chime.wav",
+    "success": "success.wav",
+    "cat": "cat.wav",
+    "dog": "dog.wav",
+    "rustle": "rustle.wav"
+  },
+  "durations": {
+    "step": 0.2,
+    "bubbles": 0.7,
+    "water": 1.2,
+    "towel": 0.6,
+    "toy": 0.4,
+    "chime": 1.6,
+    "success": 1.2,
+    "cat": 0.6,
+    "dog": 0.35,
+    "rustle": 0.5
+  }
+}

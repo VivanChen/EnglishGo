@@ -42,9 +42,9 @@ function FlatTown({ pets }) {
   </div>;
 }
 
-export default function TownScene({ pets = [], activePetId, placements = [], activity, careAim, environmentEnabled = false, onEnvironment, storyMoment, motion = true, quality = 'auto', scene = 'home', onPet, onStatus, onMove, onPlacementSelect }) {
+export default function TownScene({ pets = [], activePetId, placements = [], activity, careAim, onSound, environmentEnabled = false, onEnvironment, storyMoment, motion = true, quality = 'auto', scene = 'home', onPet, onStatus, onMove, onPlacementSelect }) {
   const host = useRef(null), runtime = useRef(null), latest = useRef({}), previousScene = useRef(scene);
-  latest.current = { pets, activePetId, placements, activity, careAim, environmentEnabled, onEnvironment, storyMoment, motion, onPet, onStatus, onMove, onPlacementSelect };
+  latest.current = { pets, activePetId, placements, activity, careAim, onSound, environmentEnabled, onEnvironment, storyMoment, motion, onPet, onStatus, onMove, onPlacementSelect };
   const [status, setStatus] = useState('loading'), [night, setNight] = useState(false), [focus, setFocus] = useState(false);
   useEffect(() => { onStatus?.(status); }, [status, onStatus]);
   useEffect(() => { runtime.current?.setPets(pets, activePetId); }, [pets, activePetId]);
@@ -374,7 +374,7 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
             applyGrowthAppearance(model, currentPet.exp || 0);
             const mixer = new T.AnimationMixer(model), actions = Object.fromEntries(gltf.animations.map(clip => [clip.name, mixer.clipAction(clip)]));
             actions.walk?.setEffectiveTimeScale(1.6); actions.run?.setEffectiveTimeScale(1.3);
-            for (const name of ['shake', 'pounce', 'settle', 'wake']) if (actions[name]) { actions[name].setLoop(T.LoopOnce, 1); actions[name].clampWhenFinished = true; }
+            for (const name of ['shake', 'pounce', 'settle', 'wake', 'stretch', 'greet', 'groom', 'hop', 'listen', 'yawn']) if (actions[name]) { actions[name].setLoop(T.LoopOnce, 1); actions[name].clampWhenFinished = true; }
             const actor = { root: actorRoot, model, mixer, actions, clip: '', target: null, path: [], speciesId: pet.speciesId, idleUntil: elapsed + 8 + index * 4 };
             actors.set(pet.id, actor); play(actor, 'idle');
             if (!pending.size) setStatus('ready');
@@ -401,6 +401,7 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
         actor.target = null; actor.path = []; actor.arrival = null; actor.reactionUntil = 0;
         actor.root.rotation.y = Math.atan2(visit.placement.x - actor.root.position.x, visit.placement.z - actor.root.position.z);
         if (visit.item.kind === 'cushion') { actor.root.rotation.y = visit.placement.rotation || 0; actor.root.position.y = .15; }
+        latest.current.onSound?.(({ chime: 'chime', fountain: 'water', wateringCan: 'water', shells: 'toy', bowl: 'rustle' })[visit.item.kind] || 'rustle', .25);
         play(actor, visit.clip, true); effectDeadline = elapsed + visit.duration;
         if (!latest.current.motion || matchMedia('(prefers-reduced-motion: reduce)').matches) actor.mixer.update(.6);
         latest.current.onEnvironment?.({ phase: 'arrived', petId: visit.petId, placementId: visit.placement.id, text: visit.text });
@@ -426,11 +427,11 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
         const actor = actors.get(value.petId || active) || actors.values().next().value;
         if (!actor) return;
         lastActivityKey = key;
-        if (['feed', 'wash', 'clean', 'play', 'sleep', 'pet', 'wake'].includes(value.type)) { focusWanted = true; setFocus(true); }
+        if (['feed', 'wash', 'clean', 'play', 'sleep', 'pet', 'wake', 'greet', 'stretch', 'groom', 'hop'].includes(value.type)) { focusWanted = true; setFocus(true); }
         controls.enabled = !value.sustained;
         actor.target = null; actor.path = []; actor.arrival = null; effectActor = actor; effectStart = elapsed;
         if (value.sustained) actor.root.rotation.y = .55;
-        const map = { feed: 'eat', wash: 'wash', clean: 'wash', play: 'play', sleep: 'sleep', pet: 'pet', wake: 'wake', happy: 'happy', curious: 'curious' };
+        const map = { stretch: 'stretch', greet: 'greet', groom: 'groom', hop: 'hop', feed: 'eat', wash: 'wash', clean: 'wash', play: 'play', sleep: 'sleep', pet: 'pet', wake: 'wake', happy: 'happy', curious: 'curious' };
         const clip = value.phase || map[value.type] || 'happy';
         // Continuous strokes should not rewind the animation before it can react.
         play(actor, clip, !value.sustained || !actor.actions[clip]?.isRunning());
@@ -543,6 +544,7 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
           }
           if (actor.target && !moving) { if (environmentVisit?.petId === id) { const end = environmentVisit.point; actor.root.position.set(end.x,groundHeight(end.x,end.z),end.z); arriveAtObject(actor); } else { actor.target = null; actor.path = []; play(actor, 'idle'); } }
           if (actor.target) {
+            if (moving && id === active && elapsed >= (actor.nextStep || 0)) { actor.nextStep = elapsed + (actor.arrival ? .26 : .36); latest.current.onSound?.('step', .12); }
             direction.subVectors(actor.target, actor.root.position); direction.y = 0;
             if (direction.length() < .08) { actor.target = actor.path.shift() || null; if (!actor.target) { if (environmentVisit?.petId === id) arriveAtObject(actor); else { play(actor, actor.arrival || 'idle'); actor.arrival = null; actor.reactionUntil = elapsed + 2; actor.idleUntil = elapsed + 10; } } }
             else { const distance = direction.length(), angle = Math.atan2(direction.x, direction.z); actor.root.rotation.y += Math.atan2(Math.sin(angle - actor.root.rotation.y), Math.cos(angle - actor.root.rotation.y)) * smoothFactor(18, dt); actor.root.position.addScaledVector(direction.normalize(), Math.min(distance, dt * (actor.arrival ? 2.7 : 1.65))); actor.root.position.y += (groundHeight(actor.root.position.x, actor.root.position.z) - actor.root.position.y) * smoothFactor(18, dt); if (moving) play(actor, actor.arrival ? 'run' : 'walk'); }
@@ -557,7 +559,7 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
               actor.path = path.map(p => new T.Vector3(p.x, groundHeight(p.x, p.z), p.z)); actor.target = actor.path.shift() || null;
               play(actor, actor.target ? 'walk' : 'curious');
             } else {
-              const habits = actor.speciesId === 'sunny-dog' ? ['sniff','happy','curious'] : actor.speciesId === 'garden-rabbit' ? ['curious','sniff','wake'] : ['pet','wake','curious'];
+              const habits = actor.speciesId === 'sunny-dog' ? ['greet','stretch','listen','yawn'] : actor.speciesId === 'garden-rabbit' ? ['listen','hop','groom','yawn'] : ['groom','stretch','listen','yawn'];
               play(actor, habits[Math.floor(elapsed / 12) % habits.length]);
               const timer = setTimeout(() => { timers.delete(timer); if (!disposed && !failed && actors.get(id) === actor && !actor.target && !(effectDeadline && effectActor === actor)) play(actor, 'idle'); }, 3000); timers.add(timer);
             }

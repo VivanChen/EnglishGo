@@ -23,6 +23,7 @@ try {
     await page.locator('.town-starter-list button').filter({ hasText: name }).click();
     await page.getByRole('button', { name: `和${name}一起回家`, exact: true }).click();
     await page.locator('[data-renderer="ready"]').waitFor({ timeout: 60000 });
+    page.setDefaultTimeout(30000);
     const saved = () => page.evaluate(() => JSON.parse(localStorage.getItem('eg_pet_world_v2:guest')).worldState.ownedPets[0]);
     const client = await context.newCDPSession(page);
     const surface = page.locator('.town-care-surface');

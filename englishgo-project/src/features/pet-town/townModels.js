@@ -3,8 +3,8 @@ import * as T from 'three';
 // Original, reproducible model sources. The body and limbs use continuous lofted
 // surfaces; articulation is baked into the exported GLB node hierarchy.
 export const TOWN_SPECIES = ['harbor-cat', 'sunny-dog', 'garden-rabbit'];
-export const TOWN_ANIMATIONS = ['idle', 'walk', 'run', 'happy', 'curious', 'pet', 'eat', 'wash', 'play', 'sleep', 'wake', 'sniff', 'scrub', 'rinse', 'dry', 'shake', 'pounce', 'settle'];
-export const MODEL_REVISION = 2;
+export const TOWN_ANIMATIONS = ['idle', 'walk', 'run', 'happy', 'curious', 'pet', 'eat', 'wash', 'play', 'sleep', 'wake', 'sniff', 'scrub', 'rinse', 'dry', 'shake', 'pounce', 'settle', 'stretch', 'greet', 'groom', 'hop', 'listen', 'yawn'];
+export const MODEL_REVISION = 3;
 
 const palettes = {
   'harbor-cat': { fur: '#e9b57f', cream: '#fff1db', dark: '#c78b5a', pink: '#d3a1a0', ribbon: '#789e9b' },
@@ -202,6 +202,13 @@ function buildAnimations(kind, neutral) {
   make('shake', 1.2, [qTrack('Body', shakeT, [0,1,-1,1,-1,.7,-.4,0].map(v=>[0,v*.16,v*(kind==='rabbit'?.06:.12)])), qTrack('Head', shakeT, [0,-1,1,-1,1,-.7,.4,0].map(v=>[0,v*.32,0])), qTrack('EarL', shakeT, [0,1,-1,1,-1,.7,-.4,0].map(v=>[v*.25,0,v*.3])), qTrack('EarR', shakeT, [0,-1,1,-1,1,-.7,.4,0].map(v=>[v*.25,0,v*.3]))]);
   make('pounce', 1.2, [pTrack('Body', t, [[0,0,0],[0,-.12,-.12],[0,kind==='rabbit'?.35:.22,.22],[0,.04,.12],[0,0,0]]), qTrack('FrontL',t,[[0,0,0],[.3,0,0],[-.7,0,-.1],[-.2,0,0],[0,0,0]]), qTrack('FrontR',t,[[0,0,0],[.3,0,0],[-.7,0,.1],[-.2,0,0],[0,0,0]]), qTrack('Tail',t,[[0,-wag,0],[0,wag,0],[0,-wag,0],[0,wag,0],[0,-wag,0]])]);
   make('settle', 2, [pTrack('Body',[0,1,2],[[0,0,0],[0,-.08,0],[0,-.16,0]]), qTrack('Neck',[0,1,2],[[0,0,0],[.12,0,0],[.25,-.12,0]]), ...['FrontL','FrontR','BackL','BackR'].map(leg=>qTrack(leg,[0,1,2],[[0,0,0],[-.35,0,0],[-.7,0,0]]))]);
+  const beat = [0, .6, 1.2, 1.8, 2.4];
+  make('stretch', 2.4, [pTrack('Body', beat, [[0,0,0],[0,-.08,.04],[0,-.12,.09],[0,-.06,.04],[0,0,0]]), qTrack('Body', beat, [[0,0,0],[.1,0,0],[.18,0,0],[.08,0,0],[0,0,0]]), ...['FrontL','FrontR'].map(leg => qTrack(leg,beat,[[0,0,0],[-.5,0,0],[-.8,0,0],[-.4,0,0],[0,0,0]])), qTrack('Neck',beat,[[0,0,0],[-.15,0,0],[-.25,0,0],[-.1,0,0],[0,0,0]])]);
+  make('greet', 2.4, [qTrack('FrontL',beat,[[0,0,0],[-.9,0,-.3],[-.65,0,.1],[-.9,0,-.3],[0,0,0]]), qTrack('Head',beat,[[0,0,0],[-.1,0,-.15],[-.1,0,.1],[-.1,0,-.1],[0,0,0]]), qTrack('Tail',beat,[[0,0,0],[0,wag,0],[0,-wag,0],[0,wag,0],[0,0,0]])]);
+  make('groom', 2.4, [qTrack('FrontR',beat,[[0,0,0],[-1.1,0,.2],[-.8,0,-.1],[-1.1,0,.2],[0,0,0]]), qTrack('Neck',beat,[[0,0,0],[.35,-.2,.1],[.2,-.1,0],[.35,-.2,.1],[0,0,0]]), ...eyes(2.4,.25)]);
+  make('hop', 1.2, [pTrack('Body',t,[[0,0,0],[0,-.08,0],[0,kind==='rabbit'?.42:.25,0],[0,.04,0],[0,0,0]]), ...['FrontL','FrontR','BackL','BackR'].map(leg=>qTrack(leg,t,[[0,0,0],[.2,0,0],[-.45,0,0],[.1,0,0],[0,0,0]])), qTrack('EarL',t,[[0,0,0],[.12,0,0],[-.2,0,-.15],[.1,0,0],[0,0,0]])]);
+  make('listen', 2.4, [qTrack('Head',beat,[[0,0,0],[-.12,-.2,-.2],[-.1,.2,.2],[-.1,0,-.1],[0,0,0]]), qTrack('EarL',beat,[[0,0,0],[-.18,0,-.15],[.1,0,0],[-.15,0,0],[0,0,0]]), qTrack('EarR',beat,[[0,0,0],[.1,0,0],[-.18,0,.15],[0,0,0],[0,0,0]])]);
+  make('yawn', 2.4, [qTrack('Neck',beat,[[0,0,0],[-.15,0,0],[-.3,0,0],[-.1,0,0],[0,0,0]]), ...eyes(2.4,.08), qTrack('EarL',beat,[[0,0,0],[.1,0,0],[.25,0,-.1],[.1,0,0],[0,0,0]])]);
   return clips;
 }
 
