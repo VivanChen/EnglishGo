@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from './App.jsx';
 
 const patchSource = readFileSync(path.join(process.cwd(), 'public', 'elevenlabs-tts-patch.js'), 'utf8');
-const openaiSetupNote = 'OpenAI 需由管理者完成金鑰設定後才能使用；尚未啟用時會使用裝置語音。';
+const openaiSetupNote = '使用 OpenAI 生成自然發音；雲端無法使用時會切換為裝置語音。';
 let nativeSpeak;
 
 function installSpeechAdapter() {
@@ -63,7 +63,7 @@ describe('pronunciation settings', () => {
     const provider = screen.getByRole('combobox', { name: '發音服務' });
     expect(provider).toHaveValue('elevenlabs');
     expect(within(provider).getByRole('option', { name: 'ElevenLabs（原本的發音）' }).selected).toBe(true);
-    expect(within(provider).getByRole('option', { name: 'OpenAI（需啟用）' })).toBeInTheDocument();
+    expect(within(provider).getByRole('option', { name: 'OpenAI（自然發音）' })).toBeInTheDocument();
     expect(within(provider).getByRole('option', { name: '裝置語音（免 API）' })).toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: '英文朗讀聲音' })).toHaveDisplayValue('清晰美式（推薦） · US');
     expect(screen.queryByText(openaiSetupNote)).not.toBeInTheDocument();

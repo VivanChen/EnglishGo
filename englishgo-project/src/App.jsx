@@ -1938,11 +1938,11 @@ function ReadingSettings({c}){
     <label style={{display:"block",fontSize:13,fontWeight:800,color:S.t1,marginBottom:15}}>發音服務
       <select aria-label="發音服務" value={settings.provider} onChange={event=>saveTtsSettings({provider:event.target.value})} style={{display:"block",width:"100%",marginTop:6,padding:"10px 12px",borderRadius:10,border:`1px solid ${S.bd}`,background:S.bg1,color:S.t1,fontFamily:"inherit",fontSize:14}}>
         <option value="elevenlabs">ElevenLabs（原本的發音）</option>
-        <option value="openai">OpenAI（需啟用）</option>
+        <option value="openai">OpenAI（自然發音）</option>
         <option value="device">裝置語音（免 API）</option>
       </select>
     </label>
-    {settings.provider==="openai"&&<p style={{fontSize:12,color:S.t2,lineHeight:1.7,margin:"-6px 0 15px"}}>OpenAI 需由管理者完成金鑰設定後才能使用；尚未啟用時會使用裝置語音。</p>}
+    {settings.provider==="openai"&&<p style={{fontSize:12,color:S.t2,lineHeight:1.7,margin:"-6px 0 15px"}}>使用 OpenAI 生成自然發音；雲端無法使用時會切換為裝置語音。</p>}
     {voiceOptions.length>0?<label style={{display:"block",fontSize:13,fontWeight:800,color:S.t1,marginBottom:15}}>{settings.provider==="openai"?"OpenAI":"ElevenLabs"} 英文聲音
       <select aria-label="英文朗讀聲音" value={settings.voiceId} onChange={event=>saveTtsSettings({voiceId:event.target.value})} style={{display:"block",width:"100%",marginTop:6,padding:"10px 12px",borderRadius:10,border:`1px solid ${S.bd}`,background:S.bg1,color:S.t1,fontFamily:"inherit",fontSize:14}}>
         {voiceOptions.map(voice=><option key={voice.id} value={voice.id}>{voice.label}{voice.accent?` · ${voice.accent}`:""}</option>)}
