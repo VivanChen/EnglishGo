@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { FURNITURE } from './worldData.js';
 import { findTownPath } from './townNavigation.js';
+import { findEnvironmentApproach, nearbyEnvironment } from './environmentInteractions.js';
 
 const names = { 'harbor-cat': '小貓', 'sunny-dog': '小狗', 'garden-rabbit': '小兔' };
 const knownSpecies = Object.keys(names);
@@ -41,9 +42,9 @@ function FlatTown({ pets }) {
   </div>;
 }
 
-export default function TownScene({ pets = [], activePetId, placements = [], activity, careAim, storyMoment, motion = true, quality = 'auto', scene = 'home', onPet, onStatus, onMove, onPlacementSelect }) {
+export default function TownScene({ pets = [], activePetId, placements = [], activity, careAim, environmentEnabled = false, onEnvironment, storyMoment, motion = true, quality = 'auto', scene = 'home', onPet, onStatus, onMove, onPlacementSelect }) {
   const host = useRef(null), runtime = useRef(null), latest = useRef({}), previousScene = useRef(scene);
-  latest.current = { pets, activePetId, placements, activity, careAim, storyMoment, motion, onPet, onStatus, onMove, onPlacementSelect };
+  latest.current = { pets, activePetId, placements, activity, careAim, environmentEnabled, onEnvironment, storyMoment, motion, onPet, onStatus, onMove, onPlacementSelect };
   const [status, setStatus] = useState('loading'), [night, setNight] = useState(false), [focus, setFocus] = useState(false);
   useEffect(() => { onStatus?.(status); }, [status, onStatus]);
   useEffect(() => { runtime.current?.setPets(pets, activePetId); }, [pets, activePetId]);
@@ -308,7 +309,7 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
           ball(g, '#6b8da4', [.17, 1.16, 0], [.12, .03, .12]).rotation.z = -.55;
         } else if (kind === 'chime') {
           box(g, '#ac9678', [0, .7, 0], [.07, 1.4, .07]); box(g, '#ac9678', [.19, 1.4, 0], [.45, .06, .06]);
-          ball(g, color, [.34, 1.17, 0], [.16, .15, .16]); box(g, accent, [.34, .89, 0], [.09, .25, .008]);
+          ball(g, color, [.34, 1.17, 0], [.16, .15, .16]).userData.envChime = true; box(g, accent, [.34, .89, 0], [.09, .25, .008]).userData.envChime = true;
         } else if (kind === 'fountain') {
           cylinder(g, accent, [0, .10, 0], .55, .6, .19, 40); cylinder(g, '#a7c8ca', [0, .20, 0], .45, .45, .035, 40, { roughness: .2 }); cylinder(g, color, [0, .43, 0], .11, .16, .52, 24); cylinder(g, accent, [0, .70, 0], .28, .22, .08, 32);
         } else box(g, color, [0, .2, 0], [.5, .4, .5]);
@@ -321,6 +322,11 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
         const signature = JSON.stringify(items);
         if (signature === placementSignature) return;
         placementSignature = signature;
+        if (environmentVisit) {
+          const actor = actors.get(environmentVisit.petId);
+          if (actor) { actor.path = []; actor.target = null; play(actor, 'idle'); actor.root.position.y = groundHeight(actor.root.position.x, actor.root.position.z); }
+          effectDeadline = 0; clearVisuals(effectGroup); finishVisit('blocked');
+        }
         clearVisuals(decorGroup);
         items.forEach(item => decorGroup.add(furniture(item)));
       };
@@ -329,7 +335,7 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
       const target = new T.Vector3(), raycaster = new T.Raycaster(), pointer = new T.Vector2();
       const floorPlane = new T.Plane(new T.Vector3(0, 1, 0), -.08);
       let active = activePetId, sceneVisible = true, previousTime = 0, frame = 0, elapsed = 0;
-      let focusWanted = initialFocus, effectDeadline = 0, lastActivityKey = '', effectActor = null, effectStart = 0;
+      let focusWanted = initialFocus, effectDeadline = 0, lastActivityKey = '', effectActor = null, effectStart = 0, environmentVisit = null;
       const loadedMaterials = new Set(), loadedGeometry = new Set();
       const releaseModel = model => {
         const geometries = new Set(), materials = new Set();
@@ -377,7 +383,33 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
           });
         });
       };
+      const swayEnvironment = angle => {
+        if (environmentVisit?.item.kind !== 'chime') return;
+        decorGroup.children.find(g => g.userData.placementId === environmentVisit.placement.id)?.traverse(n => { if (n.userData.envChime) n.rotation.z = angle; });
+      };
+      const finishVisit = phase => {
+        swayEnvironment(0);
+        const visit = environmentVisit; environmentVisit = null;
+        if (visit) latest.current.onEnvironment?.({ phase, petId: visit.petId, placementId: visit.placement.id, text: visit.text });
+      };
+      const arriveAtObject = actor => {
+        const visit = environmentVisit;
+        if (!visit || !latest.current.placements.some(p => p.id === visit.placement.id && p.x === visit.placement.x && p.z === visit.placement.z && p.rotation === visit.placement.rotation && p.itemId === visit.placement.itemId)) { finishVisit('blocked'); return; }
+        actor.target = null; actor.path = []; actor.arrival = null; actor.reactionUntil = 0;
+        actor.root.rotation.y = Math.atan2(visit.placement.x - actor.root.position.x, visit.placement.z - actor.root.position.z);
+        if (visit.item.kind === 'cushion') { actor.root.rotation.y = visit.placement.rotation || 0; actor.root.position.y = .15; }
+        play(actor, visit.clip, true); effectDeadline = elapsed + visit.duration;
+        if (!latest.current.motion || matchMedia('(prefers-reduced-motion: reduce)').matches) actor.mixer.update(.6);
+        latest.current.onEnvironment?.({ phase: 'arrived', petId: visit.petId, placementId: visit.placement.id, text: visit.text });
+      };
       const perform = value => {
+        if (value && `${value.nonce || value.id || ''}:${value.type}:${value.petId || active}` === lastActivityKey) return;
+        if (environmentVisit) {
+          swayEnvironment(0);
+          const previous = actors.get(environmentVisit.petId);
+          if (previous) { previous.path = []; previous.target = null; previous.root.position.y = groundHeight(previous.root.position.x, previous.root.position.z); play(previous, 'idle'); }
+          environmentVisit = null;
+        }
         if (!value) { controls.enabled = true; effectActor = null; effectDeadline = 0; lastActivityKey = ''; clearVisuals(effectGroup); actors.forEach(actor => { if (actor.arrival) { actor.arrival = null; actor.target = null; actor.path = []; } if (!actor.target) play(actor, 'idle'); }); return; }
         const key = `${value.nonce || value.id || ''}:${value.type}:${value.petId || active}`;
         if (key === lastActivityKey) return;
@@ -395,6 +427,19 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
         effectDeadline = value.sustained || value.resting ? Infinity : elapsed + (value.type === 'sleep' ? 12 : 3);
         if (!latest.current.motion || matchMedia('(prefers-reduced-motion: reduce)').matches) actor.mixer.update(.45);
         clearVisuals(effectGroup);
+        if (value.type === 'environment' && latest.current.environmentEnabled) {
+          const placement = latest.current.placements.find(p => p.id === value.placementId);
+          const approach = placement && findEnvironmentApproach(actor.root.position, placement, latest.current.placements);
+          if (!approach) { latest.current.onEnvironment?.({ phase: 'blocked', petId: value.petId, placementId: value.placementId }); return; }
+          environmentVisit = { ...approach, petId: value.petId };
+          focusWanted = true; setFocus(true);
+          const marker = add(effectGroup, new T.RingGeometry(.48, .53, 40), '#d4ba7a', [approach.point.x, .09, approach.point.z]); marker.rotation.x = -Math.PI / 2;
+          effectDeadline = Infinity;
+          if (!latest.current.motion || matchMedia('(prefers-reduced-motion: reduce)').matches || !approach.path.length) {
+            actor.root.position.set(approach.point.x, groundHeight(approach.point.x, approach.point.z), approach.point.z); arriveAtObject(actor);
+          } else { actor.path = approach.path.map(p => new T.Vector3(p.x, groundHeight(p.x,p.z), p.z)); actor.target = actor.path.shift(); play(actor, 'walk'); }
+          return;
+        }
         if (value.type === 'come') {
           focusWanted = true; setFocus(true);
           const path = findTownPath(actor.root.position, { x: 0, z: 2.8 }, latest.current.placements, FURNITURE);
@@ -445,10 +490,13 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
         if (raycaster.ray.intersectPlane(floorPlane, target) && Math.abs(target.x) < 4.5 && target.z > -1.3 && target.z < 3.6) {
           const actor = actors.get(active) || actors.values().next().value;
           if (actor) {
+            const nearby = latest.current.environmentEnabled && nearbyEnvironment(target, latest.current.placements);
+            if (nearby) { latest.current.onPlacementSelect?.(nearby.id); return; }
             const path = findTownPath(actor.root.position, target, latest.current.placements, FURNITURE);
             if (!path.length) return;
+            swayEnvironment(0); environmentVisit = null; actor.reactionUntil = 0; effectDeadline = 0; clearVisuals(effectGroup);
             if (!latest.current.motion || reduced.matches) {
-              const end = path.at(-1); actor.root.position.set(end.x, groundHeight(end.x, end.z), end.z); actor.path = []; actor.target = null; play(actor, 'idle'); return;
+              const end = path.at(-1); actor.root.position.set(end.x, groundHeight(end.x, end.z), end.z); actor.path = []; actor.target = null; play(actor, 'idle'); latest.current.onMove?.({ x: target.x, z: target.z }); return;
             }
             actor.arrival = null; actor.path = path.map(p => new T.Vector3(p.x, groundHeight(p.x, p.z), p.z));
             actor.target = actor.path.shift(); effectDeadline = 0; clearVisuals(effectGroup); play(actor, 'walk'); latest.current.onMove?.({ x: target.x, z: target.z });
@@ -480,10 +528,10 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
             const facing = .55 + (aim.x - .5) * (latest.current.activity.type === 'play' ? .9 : .35);
             actor.root.rotation.y += (facing - actor.root.rotation.y) * Math.min(1, dt * 8);
           }
-          if (actor.target && !moving) { actor.target = null; actor.path = []; play(actor, 'idle'); }
+          if (actor.target && !moving) { if (environmentVisit?.petId === id) { const end = environmentVisit.point; actor.root.position.set(end.x,groundHeight(end.x,end.z),end.z); arriveAtObject(actor); } else { actor.target = null; actor.path = []; play(actor, 'idle'); } }
           if (actor.target) {
             direction.subVectors(actor.target, actor.root.position); direction.y = 0;
-            if (direction.length() < .08) { actor.target = actor.path.shift() || null; if (!actor.target) { play(actor, actor.arrival || 'idle'); actor.arrival = null; actor.reactionUntil = elapsed + 2; actor.idleUntil = elapsed + 10; } }
+            if (direction.length() < .08) { actor.target = actor.path.shift() || null; if (!actor.target) { if (environmentVisit?.petId === id) arriveAtObject(actor); else { play(actor, actor.arrival || 'idle'); actor.arrival = null; actor.reactionUntil = elapsed + 2; actor.idleUntil = elapsed + 10; } } }
             else { const angle = Math.atan2(direction.x, direction.z); actor.root.rotation.y = angle; actor.root.position.addScaledVector(direction.normalize(), dt * (actor.arrival ? 1.8 : actor.speciesId === 'garden-rabbit' ? .8 : .9)); actor.root.position.y += (groundHeight(actor.root.position.x, actor.root.position.z) - actor.root.position.y) * .3; if (moving) play(actor, actor.arrival ? 'run' : 'walk'); }
           } else if (actor.reactionUntil && elapsed > actor.reactionUntil && !effectDeadline) { actor.reactionUntil = 0; play(actor, 'idle'); }
           else if (effectDeadline && elapsed > effectDeadline && actor === effectActor) { play(actor, 'idle'); }
@@ -502,8 +550,9 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
             }
           }
         }
-        if (effectDeadline && elapsed > effectDeadline) { effectDeadline = 0; effectActor = null; controls.enabled = true; clearVisuals(effectGroup); }
+        if (effectDeadline && elapsed > effectDeadline) { if (effectActor) { effectActor.root.position.y = groundHeight(effectActor.root.position.x, effectActor.root.position.z); effectActor.idleUntil = elapsed + 8; } effectDeadline = 0; effectActor = null; controls.enabled = true; clearVisuals(effectGroup); finishVisit('finished'); }
         if (moving) {
+          if (environmentVisit && effectDeadline !== Infinity) swayEnvironment(Math.sin((elapsed - effectStart) * 5) * .2);
           waveRings.forEach((r, i) => { const scale = 1 + Math.sin(elapsed * .55 - i) * .018; r.scale.set(scale, .8 * scale, 1); });
           effectGroup.children.forEach(n => {
             const age = elapsed - effectStart;
@@ -521,6 +570,7 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
         }
         const companion = actors.get(active);
         renderer.domElement.dataset.petAction = companion?.clip || 'loading';
+        renderer.domElement.dataset.environmentTarget = environmentVisit?.placement.id || '';
         renderer.domElement.dataset.petMoving = companion?.target ? 'true' : 'false';
         controls.update(); renderer.render(stage, camera);
       }

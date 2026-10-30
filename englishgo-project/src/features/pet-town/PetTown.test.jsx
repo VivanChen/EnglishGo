@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('./TownScene.jsx', () => ({
-  default: ({ pets, placements, scene, activity }) => <div data-testid="town-scene-mock" data-pets={JSON.stringify(pets)} data-placements={JSON.stringify(placements)} data-scene={scene} data-activity={JSON.stringify(activity)}/>,
+  default: ({ pets, placements, scene, activity, onPlacementSelect, onEnvironment }) => <div data-testid="town-scene-mock" data-pets={JSON.stringify(pets)} data-placements={JSON.stringify(placements)} data-scene={scene} data-activity={JSON.stringify(activity)}><button onClick={() => onPlacementSelect?.('placement-harbor-bowl')}>模擬點選餐碗</button>{activity?.type === 'environment' && <button onClick={() => onEnvironment?.({ phase: 'arrived', petId: activity.petId, placementId: activity.placementId, text: '正低頭享用碗裡的點心。' })}>模擬抵達物件</button>}</div>,
   PetPortrait: ({ speciesId }) => <span aria-hidden="true" data-species={speciesId}/>,
 }));
 vi.mock('./cloudAccount.js', () => ({ hashPin: vi.fn(), legacyPinHash: vi.fn(), requestPetAccount: vi.fn() }));
@@ -119,6 +119,24 @@ describe('Seabreeze town complete UI flows', () => {
     expect(JSON.parse(screen.getByTestId('town-scene-mock').dataset.activity).type).toBe('wake');
     expect(readTownSnapshot(null).worldState).toEqual(before);
     click('洗澡'); expect(screen.queryByText(/聽見你了/)).not.toBeInTheDocument();
+  });
+
+  it('routes furniture clicks to an interruptible home interaction without granting care rewards', () => {
+    render(<Harness/>); adopt(); const before = readTownSnapshot(null).worldState;
+    click('模擬點選餐碗');
+    expect(JSON.parse(screen.getByTestId('town-scene-mock').dataset.activity)).toMatchObject({ type: 'environment', placementId: 'placement-harbor-bowl' });
+    click('模擬抵達物件'); expect(screen.getByText(/正低頭享用碗裡的點心/)).toBeInTheDocument();
+    click('停止這次互動'); expect(JSON.parse(screen.getByTestId('town-scene-mock').dataset.activity)).toBeNull();
+    expect(readTownSnapshot(null).worldState).toEqual(before);
+    click('模擬點選餐碗'); click('洗澡');
+    expect(JSON.parse(screen.getByTestId('town-scene-mock').dataset.activity).type).toBe('wash');
+    expect(screen.queryByRole('button', { name: '停止這次互動' })).not.toBeInTheDocument();
+  });
+
+  it('keeps furniture clicks in decorate mode editing the placement', () => {
+    render(<Harness/>); adopt(); tab('布置'); click('模擬點選餐碗');
+    expect(screen.getByRole('button', { name: '確認放置' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '停止這次互動' })).not.toBeInTheDocument();
   });
 
   it('completes and replays a chapter while awarding global XP and story gifts once', () => {

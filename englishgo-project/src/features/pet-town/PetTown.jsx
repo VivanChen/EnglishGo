@@ -7,6 +7,7 @@ import useTownWorld from './useTownWorld.js';
 import { createTownAmbience } from './townAmbience.js';
 import './pet-town.css';
 import FurnishingArt from './FurnishingArt.jsx';
+import { getEnvironmentInteraction } from './environmentInteractions.js';
 
 const LEVELS = { elementary: '國小', junior: '國中', senior: '高中' };
 import CareInteraction, { CARE, careStage } from './CareInteraction.jsx';
@@ -80,15 +81,32 @@ export default function PetTown({ lv = 'elementary', onBack, onNavigate, coins =
   useEffect(() => { if (!notice) return; const timer = setTimeout(() => setNotice(''), 6500); return () => clearTimeout(timer); }, [notice, setNotice]);
 
   const careRef = useRef(null), careNonce = useRef(0), careAim = useRef({ x: .5, y: .55 });
-  const [moment, setMoment] = useState(null);
+  const [moment, setMoment] = useState(null), [environment, setEnvironment] = useState(null);
+  const environmentItems = world.placements.map(getEnvironmentInteraction).filter(Boolean);
   const sleeping = !care && activity?.resting && activity.petId === selected?.id;
   useEffect(() => { if (!moment) return; const timer = setTimeout(() => setMoment(null), 6000); return () => clearTimeout(timer); }, [moment]);
-  useEffect(() => { setMoment(null); }, [selected?.id, tab]);
+  useEffect(() => { setMoment(null); setEnvironment(null); }, [selected?.id, tab]);
   const companionAction = type => {
     if (!selected || careRef.current) return;
-    setActivity({ type, petId: selected.id, nonce: ++careNonce.current });
+    setEnvironment(null); setActivity({ type, petId: selected.id, nonce: ++careNonce.current });
     setMoment({ text: type === 'come' ? `${def.name}聽見你了！想和你再靠近一點。` : '伸個懶腰，今天還有好多事想和你一起做。' });
   };
+  const visitEnvironment = id => {
+    if (!selected || careRef.current || tab !== 'home') return;
+    const interaction = environmentItems.find(item => item.placement.id === id);
+    if (!interaction) return;
+    setEnvironment({ id, phase: 'walking' });
+    setMoment({ text: `${def.name}想去${interaction.item.name}旁看看。` });
+    setActivity({ type: 'environment', placementId: id, petId: selected.id, nonce: ++careNonce.current });
+    requestAnimationFrame(() => document.querySelector('.town-scene-wrap')?.scrollIntoView?.({ block: 'center', behavior: calm ? 'instant' : 'smooth' }));
+  };
+  const environmentEvent = event => {
+    if (event.petId !== selected?.id || tab !== 'home' || careRef.current) return;
+    if (event.phase === 'arrived') { setEnvironment({ id: event.placementId, phase: 'interacting' }); setMoment({ text: `${def.name}${event.text}` }); }
+    else if (event.phase === 'blocked') { setEnvironment(null); setActivity(null); setMoment({ text: '這裡暫時走不過去，試著在布置裡挪出一點空間。' }); }
+    else if (event.phase === 'finished') { setEnvironment(null); setActivity(null); }
+  };
+  const stopEnvironment = () => { setEnvironment(null); setMoment(null); setActivity(null); };
   const needs = selected ? [
     { value: selected.hunger, type: 'feed', text: '肚子有一點空空的，一起吃點心吧。', label: '準備點心' },
     { value: selected.clean, type: 'wash', text: '玩了一整天，想洗個舒服的澡。', label: '一起洗澡' },
@@ -98,7 +116,7 @@ export default function PetTown({ lv = 'elementary', onBack, onNavigate, coins =
   const cancelCare = () => { careRef.current = null; setCare(null); setActivity(null); };
   const startCare = type => {
     if (!selected) return;
-    careLock.current = false; setMoment(null); careAim.current = { x: .5, y: .55 };
+    careLock.current = false; setMoment(null); setEnvironment(null); careAim.current = { x: .5, y: .55 };
     const next = { type, step: 0, count: 0, petId: selected.id };
     careRef.current = next; setCare(next);
     setActivity({ ...next, phase: careStage(next).animation, sustained: true, nonce: ++careNonce.current });
@@ -165,7 +183,7 @@ export default function PetTown({ lv = 'elementary', onBack, onNavigate, coins =
     {notice && <div className="town-toast" role="status"><TownIcon name="check" size={18}/><span>{notice}</span><button aria-label="關閉通知" onClick={() => setNotice('')}><TownIcon name="close" size={16}/></button></div>}
     <nav className="town-tabs" aria-label="海風小鎮導覽">{[['home','home','家園'],['explore','compass','出遊'],['decorate','decor','布置'],['companions','paw','夥伴']].map(([id,icon,label]) => <button key={id} aria-current={tab === id ? 'page' : undefined} disabled={!pets.length && id !== 'home'} onClick={() => changeTab(id)}><TownIcon name={icon}/><span>{label}</span>{id === 'companions' && canAdopt && <i/>}</button>)}</nav>
     {(tab === 'home' || tab === 'decorate' || chapter) && <div className={`town-live-layout ${chapter ? 'is-story' : ''}`}>
-      <div className="town-scene-wrap"><TownScene pets={displayPets} activePetId={selected?.id || 'preview'} placements={placements} activity={activity} careAim={careAim} motion={!calm && world.settings.motion} quality={world.settings.quality} scene={chapter?.regionId || 'home'} storyMoment={chapter ? { chapterId, step, complete: step >= 2 } : null} onPet={id => { if (careRef.current || tab !== 'home') return; if(id && id !== selected?.id) { dispatch({type: 'SELECT_PET',petId:id}); cancelCare(); return; } sleeping ? companionAction('wake') : startCare('pet'); }} onStatus={setRenderer} onPlacementSelect={id => tab === 'decorate' && setDraft(world.placements.find(p => p.id === id))}/>{care && <CareInteraction care={care} name={def.name} onInteract={advanceCare} onAim={point => { careAim.current = point; }} onCancel={cancelCare} motion={!calm && world.settings.motion}/>}{!care && tab === 'home' && (sleeping || moment) && <div className={`town-companion-bubble ${sleeping ? 'is-sleeping' : ''}`} role="status"><TownIcon name={sleeping ? 'moon' : 'heart'} size={20}/><span>{sleeping ? `${def.name}睡著了，陪牠安靜待一會兒。` : moment.text}</span>{sleeping && <button className="town-text-button" onClick={() => companionAction('wake')}>輕輕叫醒</button>}</div>}<div className="town-scene-label"><span className="town-live-dot"/><b>{chapterRegion?.name || '海邊小屋'}</b><span className="town-scene-caption">{chapter ? '故事進行中' : 'HOME SWEET HOME'}</span></div><div className="town-scene-bottom"><span><TownIcon name="sun" size={16}/>{chapter ? `第 ${chapter.order} 章 · ${LEVELS[level]}` : '慢慢來，這裡沒有倒數計時。'}</span><small>{renderer === 'fallback' ? '輕量模式・所有操作仍可使用' : '拖曳轉動 · 滾輪／雙指縮放'}</small></div></div>
+      <div className="town-scene-wrap"><TownScene pets={displayPets} activePetId={selected?.id || 'preview'} placements={placements} activity={activity} careAim={careAim} environmentEnabled={tab === 'home' && !!selected} onEnvironment={environmentEvent} onMove={() => { setEnvironment(null); setMoment(null); setActivity(null); }} motion={!calm && world.settings.motion} quality={world.settings.quality} scene={chapter?.regionId || 'home'} storyMoment={chapter ? { chapterId, step, complete: step >= 2 } : null} onPet={id => { if (careRef.current || tab !== 'home') return; if(id && id !== selected?.id) { dispatch({type: 'SELECT_PET',petId:id}); cancelCare(); return; } sleeping ? companionAction('wake') : startCare('pet'); }} onStatus={setRenderer} onPlacementSelect={id => tab === 'decorate' ? setDraft(world.placements.find(p => p.id === id)) : visitEnvironment(id)}/>{care && <CareInteraction care={care} name={def.name} onInteract={advanceCare} onAim={point => { careAim.current = point; }} onCancel={cancelCare} motion={!calm && world.settings.motion}/>}{!care && tab === 'home' && (sleeping || moment) && <div className={`town-companion-bubble ${sleeping ? 'is-sleeping' : ''}`} role="status"><TownIcon name={sleeping ? 'moon' : 'heart'} size={20}/><span>{sleeping ? `${def.name}睡著了，陪牠安靜待一會兒。` : moment.text}</span>{sleeping && <button className="town-text-button" onClick={() => companionAction('wake')}>輕輕叫醒</button>}</div>}<div className="town-scene-label"><span className="town-live-dot"/><b>{chapterRegion?.name || '海邊小屋'}</b><span className="town-scene-caption">{chapter ? '故事進行中' : 'HOME SWEET HOME'}</span></div><div className="town-scene-bottom"><span><TownIcon name="sun" size={16}/>{chapter ? `第 ${chapter.order} 章 · ${LEVELS[level]}` : '慢慢來，這裡沒有倒數計時。'}</span><small>{renderer === 'fallback' ? '輕量模式・所有操作仍可使用' : '點地面散步 · 點家具互動 · 拖曳轉動'}</small></div></div>
       <aside className="town-side-panel">
         {!pets.length ? <><span className="town-eyebrow">OUR FIRST HELLO</span><h2>你好，我們可以當朋友嗎？</h2><p className="town-muted">選一位一起搬進小屋。旅途中，另外兩位也會來到你身邊。</p><div className="town-starter-list">{PETS.map(p => <button key={p.id} aria-pressed={preview === p.id} onClick={() => setPreview(p.id)}><PetPortrait speciesId={p.id} size={64}/><span><strong>{p.name}</strong><small>{p.trait}</small></span><span className="town-choice-circle">{preview === p.id && <TownIcon name="check" size={14}/>}</span></button>)}</div><button className="town-primary" onClick={() => dispatch({ type: 'ADOPT_STARTER', speciesId: preview })}>和{def.name}一起回家<TownIcon name="arrow" size={18}/></button><small className="town-footnote">免費領養 · 可以隨時照顧 · 沒有抽取機率</small></>
         : chapter ? <>
@@ -180,6 +198,7 @@ export default function PetTown({ lv = 'elementary', onBack, onNavigate, coins =
       </aside>
     </div>}
 
+    {tab === 'home' && selected && !care && <section className="town-environment" aria-label="家園物件互動"><div><span className="town-eyebrow">LITTLE THINGS TO DISCOVER</span><h2>走近一點，發現小驚喜。</h2><p>點場景中的家具，或選下面的物件。走到附近，也會停下來看看。</p></div><div className="town-environment-options">{environmentItems.map(item => <button key={item.placement.id} className="town-environment-item" aria-label={`去${item.item.name}：${item.label}`} disabled={renderer !== 'ready'} aria-pressed={environment?.id === item.placement.id} onClick={() => visitEnvironment(item.placement.id)}><FurnishingArt item={item.item}/><span><strong>{item.item.name}</strong><small>{item.label}</small></span><TownIcon name="arrow" size={15}/></button>)}</div>{environment && <button className="town-text-button" onClick={stopEnvironment}>停止這次互動</button>}{renderer === 'fallback' && <p>目前使用平面場景，可以繼續用照顧按鈕陪伴夥伴。</p>}</section>}
     {tab === 'home' && pets.length > 0 && <div className="town-home-notes"><button className="town-next-story" onClick={() => { changeTab('explore'); if (nextChapter) openChapter(nextChapter); }}><span className="town-round-icon"><TownIcon name="book" size={25}/></span><span><small>下一段小小旅程</small><strong>{nextChapter?.title || '九段故事，收藏了一整座小島。'}</strong><span>{nextChapter ? '約 3–5 分鐘 · 帶一點英文，一起出門' : '回到喜歡的地方，再讀一次也很好。'}</span></span><TownIcon name="arrow"/></button><div className="town-island-note"><TownIcon name="leaf" size={26}/><p>照自己的步調。<br/><span>今天只是來摸摸牠，也很好。</span></p><span className="town-note-stamp">SLOW<br/>DAYS</span></div></div>}
 
     {tab === 'explore' && !chapter && <div className="town-explore"><div className="town-explore-summary"><span><TownIcon name="compass"/> 小島旅行手帳</span><strong>{completed.length}<small> / 9 段回憶</small></strong></div>{REGIONS.map((region,ri) => <section className={`town-region region-${region.id}`} key={region.id}><div className="town-region-art"><div className="town-region-sun"/><div className="town-region-hill hill-one"/><div className="town-region-hill hill-two"/><div className="town-region-building"><span/><i/></div><span className="town-region-number">0{ri + 1}</span><div><small>{region.enName || ['THE HARBOR','THE ORCHARD','THE STARLIGHT'][ri]}</small><h2>{region.name}</h2><p>{region.description || ['把第一聲 hello，送給海邊的朋友。','聽見葉子，也聽懂生活的小事情。','帶著一路上的回憶，去看看星星。'][ri]}</p></div></div><div className="town-chapter-list">{CHAPTERS.filter(c => c.regionId === region.id).map(item => { const done = completed.includes(item.id), unlocked = chapterReady(item), saved = world.chapterProgress[`${item.id}:${level}`]?.step; return <button key={item.id} disabled={!unlocked} onClick={() => openChapter(item)}><span className={`town-chapter-index ${done ? 'is-done' : ''}`}>{done ? <TownIcon name="check" size={18}/> : unlocked ? String(item.order).padStart(2,'0') : <TownIcon name="lock" size={17}/>}</span><span><strong>{item.title}</strong><small>{item.enTitle}</small><em>{done ? '回憶已收藏 · 可以再玩' : unlocked ? saved ? '旅程進行中 · 繼續故事' : '兩個英文互動 · 約 3–5 分鐘' : '完成前一章後出發'}</em></span>{unlocked && <TownIcon name="arrow" size={18}/>}</button>; })}</div></section>)}<p className="town-footnote">不需要麥克風或 AI 金鑰。答錯可以再試，旅程不會催促你。</p></div>}

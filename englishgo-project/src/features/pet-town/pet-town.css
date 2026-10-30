@@ -44,3 +44,6 @@
 @media(max-width:760px){.town-scene-wrap:has(.town-care-overlay){min-height:480px}}
 
 .pet-town .town-care-surface:not(:disabled):active{transform:none}
+
+.town-environment{margin:20px 0;padding:20px;background:#f5f5eccc;border:1px solid #dce4d6;border-radius:18px}.town-environment h2{font-size:18px;margin:7px 0}.town-environment p{font-size:12px;line-height:1.8;color:#668077}.town-environment-options{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;margin-top:15px}.town-environment-item{display:flex;align-items:center;gap:10px;min-width:0;text-align:left;padding:10px;border:1px solid #dce5d8;border-radius:12px;background:#fffdf6;color:#456b62}.town-environment-item>svg:first-child{width:54px;height:48px}.town-environment-item span{flex:1;min-width:0}.town-environment-item strong,.town-environment-item small{display:block;line-height:1.8}.town-environment-item strong{font-size:12px}.town-environment-item small{font-size:10px;color:#8a9782}.town-environment-item[aria-pressed=true]{border-color:#6a9b8d;background:#e9f1e5}.town-environment-item:hover:not(:disabled){background:#eef3e7}
+@media(max-width:760px){.town-environment{padding:16px}.town-environment-options{grid-template-columns:1fr}.town-environment h2{font-size:16px}}

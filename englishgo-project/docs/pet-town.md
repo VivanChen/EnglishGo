@@ -80,3 +80,10 @@ Calling a companion uses obstacle-aware paths, the run clip and a happy arrival 
 Care uses original SVG tools instead of platform-dependent emoji, a compact step list, per-step counts, and a bounded six-point pointer trail. A ref carries normalized pointer aim into the existing render loop, so aiming does not rebuild the 3D care props or award extra tap progress. Companions gently turn toward the tool and towels follow its horizontal position. Secondary-pointer release cannot cancel the primary drag. Reduced-motion mode hides trails and movement; narrow care scenes expand to keep all actions visible.
 
 The care surface explicitly overrides the town button touch-action rule: browsers must not claim a scrub gesture as scrolling. Browser QA asserts the computed touch-action, a live trail before pointer release, and an unclipped care HUD on narrow screens.
+
+
+## Environmental interaction
+
+Home furniture can be selected in the 3D scene or through the keyboard/touch object list. Ground destinations within 0.4 world units of a furniture footprint use the same interaction route. Every catalog kind has a visual reaction (eating at the bowl, resting on cushions, sniffing plants, investigating lights and water). The navigation planner selects a clear snapped approach point around solid objects and uses the center of soft furnishings; a blocked approach explains how to make room instead of claiming arrival. Reactions begin after arrival, face the object, and expire after 4–8 seconds. New movement, care, selection, navigation or Stop interrupts the visit. Decoration mode still edits furniture. Reduced-motion mode moves directly to the valid approach point and displays a static pose. WebGL fallback offers normal care instead of pretending to animate a visit.
+
+These exploratory reactions are visual only; they do not grant coins, XP, bond, or full-care stat restoration. Existing care actions remain responsible for those rewards. No database or account schema changes are required.
