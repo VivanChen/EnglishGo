@@ -69,7 +69,7 @@ export function WelcomeScreen({ levels, counts, formatCount, onSelect, onOpenSet
       </section>
       <section className="eg-how"><div><span>01</span><h3>聽聽看，認識新單字</h3><p>有發音、有例句，不懂也沒關係。</p></div><div><span>02</span><h3>動動手，把英文玩起來</h3><p>配對、故事、歌曲，選你喜歡的方式。</p></div><div><span>03</span><h3>看看自己，又進步一點</h3><p>留下學習足跡，陪寵物一起長大。</p></div></section>
       <details className="eg-grownup"><summary><LearningIcon name="tools" size={20}/> 給家長與老師 <span>學習資源與進階設定</span></summary><p>基本單字、遊戲和內建內容可以直接開始。AI 與動圖屬於選用功能，可由大人協助設定。</p><div><button type="button" className="eg-grownup-settings" onClick={onOpenSettings}>設定（朗讀、Gemini／Giphy）</button><a href="/learn/srs-method.html">單字記憶方法 ↗</a><a href="/learn/speaking-tips.html">口說練習指南 ↗</a><a href="/learn/api-keys.html">API Key 教學 ↗</a><a href="/learn/gif-guide.html">單字動圖效果 ↗</a></div></details>
-    </main><footer className="eg-welcome-footer"><span>EnglishGo · 讓學習，成為每天的小美好。</span><small>GIFs powered by <b>GIPHY</b> · Natural narration by ElevenLabs</small></footer>
+    </main><footer className="eg-welcome-footer"><span>EnglishGo · 讓學習，成為每天的小美好。</span><small>GIFs powered by <b>GIPHY</b> · 雲端發音由 AI 生成</small></footer>
   </div>;
 }
 
@@ -94,10 +94,7 @@ const modulePresentation = {
   match:['game','配對翻牌','幫英文和中文找到彼此，點亮星座。','3 段關卡'],
   bomb:['game','拼字挑戰','解開字母謎題，讓火箭飛向下一站。','3 段關卡'],
   scramble:['learn','句子重組','排好單字車廂，讓英文小火車出發。','3 段關卡'],
-  petMonopoly:['game','一起玩桌遊','走一格、學一點，和寵物逛世界。','自選遊戲'],
-  gacha:['pet','迎接新夥伴','用學習累積的金幣，迎接寵物蛋。','50 金幣／次'],
-  pets:['pet','我的小夥伴','照顧、陪伴，看著夥伴慢慢長大。','照顧與收藏'],
-  petAdventure:['pet','夥伴出任務','帶上寵物，一起解開英文挑戰。','組隊冒險'],
+  pets:['pet','海風小鎮','三位夥伴、海邊小屋，和九段一起探索的英文故事。','全新 3D 家園'],
   achievements:['star','成長收藏冊','每一個徽章，都是努力的紀念。','我的成就'],
   weak:['learn','再練一下就會了','把還不熟的單字，再認識一次。','溫柔複習'],
   dashboard:['star','我的成長足跡','看看每天累積了哪些小進步。','學習報告'],

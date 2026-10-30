@@ -2,6 +2,10 @@ import { serviceFetch, assertServiceResponse, serviceErrorMessage } from './lib/
 import { getGeminiModels, getGeminiModelPreference, saveGeminiModelPreference, GEMINI_MODEL_OPTIONS } from './lib/geminiModels.js';
 import { followPageAnchor, withoutPageAnchor } from "./data/pageAnchors.js";
 import { refreshPetCare } from "./data/petCare.js";
+import { readTownSnapshot, recordTownLearning, operationId as townOperationId } from './features/pet-town/townStorage.js';
+import { PETS as TOWN_PETS } from './features/pet-town/worldData.js';
+import { PetPortrait as TownPetPortrait } from './features/pet-town/TownScene.jsx';
+import { getPetStage } from "./data/petAppearance.js";
 import { useState, useEffect, useCallback, useRef, useMemo, useContext, createContext, lazy, Suspense } from "react";
 import { Brand, ComfortControls, LearningDashboard, WelcomeScreen } from "./components/LearningExperience.jsx";
 import FeatureHeader from "./components/FeatureHeader.jsx";
@@ -15,12 +19,15 @@ import { SENIOR_SONGS } from "./data/seniorSongs.js";
 import { getWeakVocabularyForLevel, mergeUniqueWordCards, parseVocabularyTopics, updateWeakVocabulary } from "./data/vocabularyTopics.js";
 import { fetchAllCloudVocabularyRows } from "./data/cloudVocabulary.js";
 import { loadWordIllustrations } from "./data/wordIllustrations.js";
+import { findVocabularyWord } from "./data/vocabularyLookup.js";
+import { isPlaceholderExample, normalizeCardExample, parseVocabularyCSV as parseCSV } from './data/vocabularyCardText.js';
+import { getCuratedVocabularyExample } from './data/curatedVocabularyExamples.js';
 import { generateStoryPayload } from "./features/storyGeneration.js";
 import { lookupExamMeanings } from './features/examMeaningService.js';
 
 const PictureBooks=lazy(()=>import("./features/PictureBooks.jsx"));
+const PetTown=lazy(()=>import('./features/pet-town/PetTown.jsx'));
 const TranslationReader=lazy(()=>import("./features/TranslationReader.jsx"));
-const PetMonopolyM=lazy(()=>import("./features/PetMonopoly.jsx"));
 const LearningPractice=lazy(()=>import("./features/LearningPractice.jsx"));
 const ReviewGarden=lazy(()=>import("./features/ReviewGarden.jsx"));
 const GrammarWorkshop=lazy(()=>import("./features/GrammarWorkshop.jsx"));
@@ -126,10 +133,10 @@ async function petCloudSave(username,pinHash,payload){
 }
 
 function mapWord(r){
-  const localExample=r?.level==="elementary"&&r?.category==="Supplemental"
+  const localExample=getCuratedVocabularyExample(r?.level,r?.word)||(r?.level==="elementary"&&r?.category==="Supplemental"
     ?getElementaryExample(r.word,r.meaning,r.pos)
-    :null;
-  try{return{w:r.word,ph:r.phonetic||'',p:r.pos||'',m:r.meaning,
+    :null);
+  try{return{w:r.word,ph:r.phonetic||'',p:r.pos||'',m:localExample?.m||r.meaning,
     f:typeof r.forms==='string'?JSON.parse(r.forms||'[]'):(r.forms||[]),
     c:typeof r.collocations==='string'?JSON.parse(r.collocations||'[]'):(r.collocations||[]),
     ex:localExample?.ex||r.example||'',ez:localExample?.ez||r.example_zh||'',img:'',level:r.level,category:r.category||'',topics:parseVocabularyTopics(r.category),ceecLevel:r.ceec_level}}catch{return null}
@@ -392,25 +399,27 @@ const V = {
     {w:"improve",ph:"/ɪmˈpruːv/",p:"v.",m:"改善",f:[{w:"improvement",p:"n.",n:"改善"}],c:["improve skills 提升技能"],ex:"Practice can improve your English.",ez:"練習可以提升英文。"},
   ],
   senior: [
-    {w:"comprehensive",ph:"/ˌkɑːm.prɪˈhen.sɪv/",p:"adj.",m:"全面的",f:[{w:"comprehension",p:"n.",n:"理解力"}],c:["comprehensive analysis 全面分析"],ex:"The report provides a comprehensive analysis.",ez:"報告提供了全面分析。"},
+    {w:"comprehensive",ph:"/ˌkɑːm.prɪˈhen.sɪv/",p:"adj.",m:"全面的",f:[{w:"comprehension",p:"n.",n:"理解力"}],c:["comprehensive analysis 全面分析"],ex:"Our class created a comprehensive guide to recycling at school.",ez:"我們班製作了一份全面的校園回收指南。"},
     {w:"controversial",ph:"/ˌkɑːn.trəˈvɝː.ʃəl/",p:"adj.",m:"有爭議的",f:[{w:"controversy",p:"n.",n:"爭議"}],c:["controversial topic 爭議話題"],ex:"The policy is highly controversial.",ez:"這項政策極具爭議。"},
-    {w:"phenomenon",ph:"/fɪˈnɑː.mə.nɑːn/",p:"n.",m:"現象",f:[{w:"phenomena",p:"n.",n:"複數"}],c:["natural phenomenon 自然現象"],ex:"Climate change is a global phenomenon.",ez:"氣候變遷是全球現象。"},
-    {w:"sophisticated",ph:"/səˈfɪs.tɪ.keɪ.tɪd/",p:"adj.",m:"精密的",f:[{w:"sophistication",p:"n.",n:"精密"}],c:["sophisticated technology 精密科技"],ex:"The system uses sophisticated technology.",ez:"系統使用精密科技。"},
-    {w:"alleviate",ph:"/əˈliː.vi.eɪt/",p:"v.",m:"減輕",f:[{w:"alleviation",p:"n.",n:"減輕"}],c:["alleviate pain 減輕疼痛"],ex:"This medicine can alleviate the pain.",ez:"這藥可以減輕疼痛。"},
-    {w:"unprecedented",ph:"/ʌnˈpres.ə.den.tɪd/",p:"adj.",m:"史無前例的",f:[{w:"precedent",p:"n.",n:"先例"}],c:["unprecedented challenge 史無前例挑戰"],ex:"The pandemic caused unprecedented challenges.",ez:"疫情造成史無前例的挑戰。"},
-    {w:"deteriorate",ph:"/dɪˈtɪr.i.ə.reɪt/",p:"v.",m:"惡化",f:[{w:"deterioration",p:"n.",n:"惡化"}],c:["health deteriorates 健康惡化"],ex:"His health began to deteriorate.",ez:"他的健康開始惡化。"},
-    {w:"sustainable",ph:"/səˈsteɪ.nə.bəl/",p:"adj.",m:"可持續的",f:[{w:"sustainability",p:"n.",n:"可持續性"}],c:["sustainable development 永續發展"],ex:"We need sustainable energy solutions.",ez:"我們需要可持續能源方案。"},
-    {w:"ambiguous",ph:"/æmˈbɪɡ.ju.əs/",p:"adj.",m:"模稜兩可的",f:[{w:"ambiguity",p:"n.",n:"模糊性"}],c:["ambiguous meaning 模糊的意思"],ex:"The instructions were ambiguous.",ez:"這些指示很模糊。"},
-    {w:"facilitate",ph:"/fəˈsɪl.ɪ.teɪt/",p:"v.",m:"促進",f:[{w:"facilitator",p:"n.",n:"引導者"}],c:["facilitate learning 促進學習"],ex:"Technology can facilitate learning.",ez:"科技可以促進學習。"},
+    {w:"phenomenon",ph:"/fɪˈnɑː.mə.nɑːn/",p:"n.",m:"現象",f:[{w:"phenomena",p:"n.",n:"複數"}],c:["natural phenomenon 自然現象"],ex:"A rainbow is a natural phenomenon that often appears after rain.",ez:"彩虹是一種常在雨後出現的自然現象。"},
+    {w:"sophisticated",ph:"/səˈfɪs.tɪ.keɪ.tɪd/",p:"adj.",m:"精密的",f:[{w:"sophistication",p:"n.",n:"精密"}],c:["sophisticated technology 精密科技"],ex:"The robot uses a sophisticated camera system to sort recyclable materials.",ez:"這台機器人用精密的攝影系統分類可回收物。"},
+    {w:"alleviate",ph:"/əˈliː.vi.eɪt/",p:"v.",m:"減輕",f:[{w:"alleviation",p:"n.",n:"減輕"}],c:["alleviate pain 減輕疼痛"],ex:"A shady resting place helped alleviate the hikers' discomfort in the heat.",ez:"陰涼的休息處幫助減輕了登山者在酷熱中的不適。"},
+    {w:"unprecedented",ph:"/ʌnˈpres.ə.den.tɪd/",p:"adj.",m:"史無前例的",f:[{w:"precedent",p:"n.",n:"先例"}],c:["unprecedented challenge 史無前例挑戰"],ex:"The school saw unprecedented participation in this year's science fair.",ez:"今年學校科展的參與人數創下空前紀錄。"},
+    {w:"deteriorate",ph:"/dɪˈtɪr.i.ə.reɪt/",p:"v.",m:"惡化",f:[{w:"deterioration",p:"n.",n:"惡化"}],c:["health deteriorates 健康惡化"],ex:"The abandoned wooden bridge began to deteriorate after years of rain.",ez:"那座廢棄木橋經過多年雨淋後開始朽壞。"},
+    {w:"sustainable",ph:"/səˈsteɪ.nə.bəl/",p:"adj.",m:"可持續的",f:[{w:"sustainability",p:"n.",n:"可持續性"}],c:["sustainable development 永續發展"],ex:"Cycling to school is a sustainable way to travel.",ez:"騎自行車上學是一種永續的交通方式。"},
+    {w:"ambiguous",ph:"/æmˈbɪɡ.ju.əs/",p:"adj.",m:"模稜兩可的",f:[{w:"ambiguity",p:"n.",n:"模糊性"}],c:["ambiguous meaning 模糊的意思"],ex:"The ambiguous arrow left us unsure which path to take.",ez:"那個模稜兩可的箭頭讓我們不確定該走哪條路。"},
+    {w:"facilitate",ph:"/fəˈsɪl.ɪ.teɪt/",p:"v.",m:"促進",f:[{w:"facilitator",p:"n.",n:"引導者"}],c:["facilitate learning 促進學習"],ex:"The new ramp will facilitate access to the school library.",ez:"新設的坡道將方便大家進入學校圖書館。"},
   ],
 };
 
 let _extraWordsPromise=null;
 let _extraWordsCache=null;
+let _extraWordsEnricher=null;
+function enrichVocabularyCard(card,level){return _extraWordsEnricher?.(card,level)||card}
 async function loadExtraWords(){
   if(_extraWordsCache)return _extraWordsCache;
   if(!_extraWordsPromise){
-    _extraWordsPromise=import("./data/extraWords.js").then(m=>m.EXTRA_WORDS||{}).catch(()=>({elementary:[],junior:[],senior:[]}));
+    _extraWordsPromise=import("./data/extraWords.js").then(m=>{_extraWordsEnricher=m.enrichVocabularyCard;return m.EXTRA_WORDS||{}}).catch(()=>({elementary:[],junior:[],senior:[]}));
   }
   _extraWordsCache=await _extraWordsPromise;
   return _extraWordsCache;
@@ -449,11 +458,6 @@ function scoreWordMatch(word,raw,candidates){
   }
   return 9;
 }
-function findLocalWord(level,word){
-  const candidates=wordQueryCandidates(word);if(!candidates.length)return null;
-  for(const l of preferredLevels(level)){const hit=(V[l]||[]).find(w=>candidates.includes(String(w.w).toLowerCase()));if(hit)return{...hit,level:l,source:"本地單字卡"}}
-  return null;
-}
 function searchLocalWords(level,query,limit=16,scope="all"){
   const raw=String(query||"").trim();const candidates=wordQueryCandidates(query);if(!candidates.length&&!raw)return[];
   const out=[];const seen=new Set();
@@ -465,14 +469,10 @@ function searchLocalWords(level,query,limit=16,scope="all"){
   return mergeWordResults(out,limit,level);
 }
 async function findAnyWord(level,word){
-  const local=findLocalWord(level,word);if(local)return local;
   const candidates=wordQueryCandidates(word);if(!candidates.length)return null;
   const extra=await loadExtraWords();
-  for(const l of preferredLevels(level)){
-    const hit=(extra[l]||[]).find(w=>candidates.includes(String(w.w).toLowerCase()));
-    if(hit)return{...hit,level:l,source:"補充重點單字"};
-  }
-  return null;
+  const found=findVocabularyWord(V,extra,preferredLevels(level),candidates);
+  return found?enrichVocabularyCard(found,found.level):null;
 }
 async function searchAnyWords(level,query,limit=16,scope="all"){
   const raw=String(query||"").trim();const candidates=wordQueryCandidates(query);
@@ -909,12 +909,6 @@ const ACTION_PROMPTS = {
 // Each pet goes through 4 stages: egg → baby → adult → evolved
 // Stage is determined by level: 1-3 baby, 4-9 adult, 10+ evolved
 const STAGE_NAMES={baby:"幼寵",adult:"成寵",evolved:"進化形態"};
-function getPetStage(pet){
-  if(!pet||!pet.level)return"baby";
-  if(pet.level>=10)return"evolved";
-  if(pet.level>=4)return"adult";
-  return"baby";
-}
 
 // Size multiplier per stage (for display)
 function getPetSize(stage){
@@ -1547,10 +1541,11 @@ const ENGLISHGO_MENU_GROUPS=new Set(["learn","read","game","pet","tools"]);
 
 function normalizeEnglishGoNavigation(value={}){
   const level=value?.lv&&LV[value.lv]?value.lv:null;
+  const retiredPetRoute=["gacha","petAdventure","petMonopoly"].includes(value?.mod);
   return{
     lv:level,
-    mod:value?.mod==="settings"?"settings":level&&typeof value?.mod==="string"?value.mod:null,
-    menuGroup:ENGLISHGO_MENU_GROUPS.has(value?.menuGroup)?value.menuGroup:"learn",
+    mod:value?.mod==="settings"?"settings":level&&typeof value?.mod==="string"?(retiredPetRoute?"pets":value.mod):null,
+    menuGroup:retiredPetRoute?"pet":ENGLISHGO_MENU_GROUPS.has(value?.menuGroup)?value.menuGroup:"learn",
     sharedWord:level&&typeof value?.sharedWord==="string"?value.sharedWord:null,
     customDeck:level&&value?.customDeck&&typeof value.customDeck==="object"?value.customDeck:null,
     cardPractice:level&&value?.mod==="speak"?readCardPractice(value.cardPractice):null,
@@ -1858,25 +1853,32 @@ function VoicePicker(){
 const TTS_SPEED_PRESETS=[{value:0.8,label:"慢速"},{value:1,label:"正常"},{value:1.2,label:"快速"}];
 const TTS_SPEED_MODULES=new Set(["srs","speak","pictureBooks","novels","translate","reading","dictation","story","grammar","quiz","exam","ai"]);
 const SpeechSpeedContext=createContext(false);
+const TTS_PROVIDER_VOICES={elevenlabs:["21m00Tcm4TlvDq8ikWAM","EXAVITQu4vr4xnSDxMaL","ErXwobaYiN019PkySvjV"],openai:["marin","cedar","coral"],device:[]};
 function readTtsSettings(){
-  const fallback={voiceId:"21m00Tcm4TlvDq8ikWAM",speed:1};
+  const fallback={provider:"elevenlabs",voiceId:TTS_PROVIDER_VOICES.elevenlabs[0],speed:1};
   if(typeof window==="undefined")return fallback;
   try{
     const current=window.EnglishGoTTS?.getSettings?.();
     const rawSpeed=current?.speed??window.localStorage.getItem("eg_tts_speed");
     const savedSpeed=rawSpeed==null||rawSpeed===""?fallback.speed:Number(rawSpeed);
+    const savedProvider=current?.provider||window.localStorage.getItem("eg_tts_provider");
+    const provider=Object.hasOwn(TTS_PROVIDER_VOICES,savedProvider)?savedProvider:fallback.provider;
+    const voiceId=current?.voiceId||window.localStorage.getItem(provider==="openai"?"eg_openai_tts_voice":"eg_tts_voice_id");
+    const voices=TTS_PROVIDER_VOICES[provider];
     return{
-      voiceId:current?.voiceId||window.localStorage.getItem("eg_tts_voice_id")||fallback.voiceId,
+      provider,
+      voiceId:voices.includes(voiceId)?voiceId:voices[0]||"",
       speed:Number.isFinite(savedSpeed)?Math.min(1.2,Math.max(0.7,savedSpeed)):fallback.speed,
     };
   }catch{return fallback}
 }
 function saveTtsSettings(settings){
   if(typeof window==="undefined")return;
+  if(window.EnglishGoTTS?.setSettings){window.EnglishGoTTS.setSettings(settings);return}
   const next={...readTtsSettings(),...settings};
-  if(window.EnglishGoTTS?.setSettings){window.EnglishGoTTS.setSettings(next);return}
   try{
-    window.localStorage.setItem("eg_tts_voice_id",next.voiceId);
+    if(Object.hasOwn(TTS_PROVIDER_VOICES,next.provider))window.localStorage.setItem("eg_tts_provider",next.provider);
+    if(settings.voiceId&&TTS_PROVIDER_VOICES[next.provider]?.includes(settings.voiceId))window.localStorage.setItem(next.provider==="openai"?"eg_openai_tts_voice":"eg_tts_voice_id",settings.voiceId);
     window.localStorage.setItem("eg_tts_speed",String(next.speed));
   }catch{}
   window.dispatchEvent(new CustomEvent("englishgo:tts-settings-changed",{detail:next}));
@@ -1909,13 +1911,16 @@ function ReadingSettings({c}){
   const[voiceOptions,setVoiceOptions]=useState(()=>window.EnglishGoTTS?.getVoiceOptions?.()||[]);
   const[lastRegenerableText,setLastRegenerableText]=useState(()=>window.EnglishGoTTS?.getLastRegenerableText?.()||"");
   const[previewStatus,setPreviewStatus]=useState("");
+  const canRegenerate=Boolean(lastRegenerableText)&&settings.provider!=="device";
   useEffect(()=>{
     const sync=()=>setVoiceOptions(window.EnglishGoTTS?.getVoiceOptions?.()||[]);
     const updateLast=event=>setLastRegenerableText(event.detail?.text||window.EnglishGoTTS?.getLastRegenerableText?.()||"");
     window.addEventListener("englishgo:tts-installed",sync);
+    window.addEventListener("englishgo:tts-settings-changed",sync);
     window.addEventListener("englishgo:tts-last-regenerable",updateLast);
     return()=>{
       window.removeEventListener("englishgo:tts-installed",sync);
+      window.removeEventListener("englishgo:tts-settings-changed",sync);
       window.removeEventListener("englishgo:tts-last-regenerable",updateLast);
     };
   },[]);
@@ -1928,16 +1933,25 @@ function ReadingSettings({c}){
   const inputStyle={width:"100%",accentColor:c.cl};
   return(<section style={{...S.card,padding:20,marginBottom:12}}>
     <h3 style={{margin:"0 0 6px",fontSize:17}}>朗讀設定</h3>
-    <p style={{fontSize:13,color:S.t2,lineHeight:1.7,margin:"0 0 16px"}}>調整全站英文朗讀的預設速度與雲端聲音，下次播放時生效。歌曲播放速度由歌曲播放器單獨控制。</p>
-    {voiceOptions.length>0?<label style={{display:"block",fontSize:13,fontWeight:800,color:S.t1,marginBottom:15}}>雲端英文聲音
+    <p style={{fontSize:13,color:S.t2,lineHeight:1.7,margin:"0 0 8px"}}>選擇單字與例句的發音服務、聲音與速度，下次播放時生效。雲端聲音由 AI 生成。</p>
+    <p style={{fontSize:12,color:S.t3,lineHeight:1.7,margin:"0 0 16px"}}>雲端無法使用時會切換為裝置語音。字典使用裝置發音；小說、童書與歌曲使用各自的音檔。</p>
+    <label style={{display:"block",fontSize:13,fontWeight:800,color:S.t1,marginBottom:15}}>發音服務
+      <select aria-label="發音服務" value={settings.provider} onChange={event=>saveTtsSettings({provider:event.target.value})} style={{display:"block",width:"100%",marginTop:6,padding:"10px 12px",borderRadius:10,border:`1px solid ${S.bd}`,background:S.bg1,color:S.t1,fontFamily:"inherit",fontSize:14}}>
+        <option value="elevenlabs">ElevenLabs（原本的發音）</option>
+        <option value="openai">OpenAI（需啟用）</option>
+        <option value="device">裝置語音（免 API）</option>
+      </select>
+    </label>
+    {settings.provider==="openai"&&<p style={{fontSize:12,color:S.t2,lineHeight:1.7,margin:"-6px 0 15px"}}>OpenAI 需由管理者完成金鑰設定後才能使用；尚未啟用時會使用裝置語音。</p>}
+    {voiceOptions.length>0?<label style={{display:"block",fontSize:13,fontWeight:800,color:S.t1,marginBottom:15}}>{settings.provider==="openai"?"OpenAI":"ElevenLabs"} 英文聲音
       <select aria-label="英文朗讀聲音" value={settings.voiceId} onChange={event=>saveTtsSettings({voiceId:event.target.value})} style={{display:"block",width:"100%",marginTop:6,padding:"10px 12px",borderRadius:10,border:`1px solid ${S.bd}`,background:S.bg1,color:S.t1,fontFamily:"inherit",fontSize:14}}>
         {voiceOptions.map(voice=><option key={voice.id} value={voice.id}>{voice.label}{voice.accent?` · ${voice.accent}`:""}</option>)}
       </select>
-    </label>:<div style={{display:"grid",gap:6,marginBottom:15,fontSize:13,color:S.t2}}>裝置語音備援<VoicePicker/></div>}
+    </label>:<div style={{display:"grid",gap:6,marginBottom:15,fontSize:13,color:S.t2}}>{settings.provider==="device"?"使用這台裝置的內建語音":"裝置語音備援"}<VoicePicker/></div>}
     <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,marginBottom:6}}><label htmlFor="eg-reading-speed" style={{fontSize:13,fontWeight:800,color:S.t1}}>預設語速</label><output htmlFor="eg-reading-speed" style={{fontSize:13,fontWeight:900,color:c.cl}}>{settings.speed.toFixed(2)}×</output></div>
     <input id="eg-reading-speed" aria-label="預設朗讀速度" type="range" min="0.7" max="1.2" step="0.05" value={settings.speed} onChange={event=>saveTtsSettings({speed:Number(event.target.value)})} style={inputStyle}/>
     <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:S.t3,marginTop:2}}><span>慢 0.7×</span><span>原速 1.0×</span><span>快 1.2×</span></div>
-    <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap",marginTop:14}}><button type="button" onClick={preview} style={{...S.btn,background:c.cl,color:"#fff",padding:"9px 15px",fontSize:13}}>試聽目前設定</button><button type="button" disabled={!lastRegenerableText} onClick={()=>window.EnglishGoTTS?.regenerateLast?.()} title={lastRegenerableText?`重產：${lastRegenerableText}`:"尚無可重產的發音"} style={{...S.btn,background:S.bg1,color:lastRegenerableText?c.cl:S.t3,border:`1px solid ${S.bd}`,padding:"8px 12px",fontSize:12,opacity:lastRegenerableText?1:.6,cursor:lastRegenerableText?"pointer":"not-allowed"}}>重產最近發音</button><span role="status" aria-live="polite" style={{fontSize:12,color:c.cl}}>{previewStatus}</span></div>
+    <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap",marginTop:14}}><button type="button" onClick={preview} style={{...S.btn,background:c.cl,color:"#fff",padding:"9px 15px",fontSize:13}}>試聽目前設定</button><button type="button" disabled={!canRegenerate} onClick={()=>window.EnglishGoTTS?.regenerateLast?.()} title={settings.provider==="device"?"裝置語音不需要重產":lastRegenerableText?`重產：${lastRegenerableText}`:"尚無可重產的發音"} style={{...S.btn,background:S.bg1,color:canRegenerate?c.cl:S.t3,border:`1px solid ${S.bd}`,padding:"8px 12px",fontSize:12,opacity:canRegenerate?1:.6,cursor:canRegenerate?"pointer":"not-allowed"}}>重產最近發音</button><span role="status" aria-live="polite" style={{fontSize:12,color:c.cl}}>{previewStatus}</span></div>
   </section>);
 }
 function createDeck(c){return{queue:c.map((_,i)=>i),rm:[],stats:{again:0,hard:0,good:0,easy:0},total:c.length,lapses:{}}}
@@ -1979,60 +1993,23 @@ function orderExamCards(cards,lv){
 function countExamRawItems(text){
   return String(text||"").split(/[^A-Za-z'-]+/).map(w=>w.trim()).filter(Boolean).length;
 }
-function parseCSV(t){return t.trim().split("\n").slice(1).map(l=>{const m=l.match(/^"?([^",]+)"?\s*,\s*"?([\s\S]*?)"?\s*$/);if(!m)return null;const w=m[1].trim(),b=m[2].trim(),p=b.match(/\(([a-z.\/]+)\)\s*(.+?)(?:\n|$)/);return{w,ph:"",p:p?.[1]||"",m:p?.[2]?.trim()||b.split("\n")[0],f:[],c:[],ex:"",ez:""}}).filter(Boolean)}
 // ═══ EXAMPLE QUALITY DETECTION & GENERATION ═══════════════════════════
-// Detect placeholder/low-quality examples like "Example: word.", "This is a word.", "I have a word."
 function escapeRegexSafe(s){return s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")}
-
-function isPlaceholderExample(example, word){
-  if(!example||!word)return true;
-  const ex=example.trim();
-  const exLower=ex.toLowerCase();
-  const w=word.toLowerCase();
-
-  // 1. 太短（少於 8 字元）
-  if(ex.length<8)return true;
-
-  // 2. "Example:" 開頭的垃圾模板
-  if(/^example\s*[:\-]/i.test(ex))return true;
-  if(/^\(example\)/i.test(ex))return true;
-
-  // 3. 只有單字本身
-  if(new RegExp(`^${escapeRegexSafe(w)}\\.?$`,"i").test(ex))return true;
-
-  // 4. 例句不包含原單字（允許變化形）
-  const wordRoot=w.replace(/(ing|ed|s|es|ly)$/i,"");
-  if(!exLower.includes(w)&&wordRoot.length>=3&&!exLower.includes(wordRoot))return true;
-
-  // 5. 字數少於 3 個英文字
-  const wordCount=ex.replace(/[^\w\s]/g,"").split(/\s+/).filter(Boolean).length;
-  if(wordCount<3)return true;
-
-  // 6. 制式破碎模板
-  const garbage=[
-    /^(this|that)\s+is\s+\w+\.?$/i,
-    /^\w+\s+is\s+(good|nice|great|bad)\.?$/i,
-    /^see\s+\w+\.?$/i,
-    /^the\s+\w+\.?$/i,
-  ];
-  if(garbage.some(p=>p.test(ex)))return true;
-
-  return false;
-}
-
 // AI-generate a quality example sentence (cached per word)
 const _exampleCache={};
 async function generateExample(word, meaning, pos, apiKey){
   if(!word||!apiKey)return null;
   const k=word.toLowerCase();
-  if(_exampleCache[k])return _exampleCache[k];
+  const memory=normalizeCardExample(_exampleCache[k],word);
+  if(memory)return memory;
+  delete _exampleCache[k];
   // Check localStorage for persisted cache
   try{
     const cached=localStorage.getItem(`ex_${k}`);
     if(cached){
-      const obj=JSON.parse(cached);
-      _exampleCache[k]=obj;
-      return obj;
+      const obj=normalizeCardExample(JSON.parse(cached),word);
+      if(obj){_exampleCache[k]=obj;return obj;}
+      localStorage.removeItem(`ex_${k}`);
     }
   }catch{}
   const prompt=`Create one short, natural English example sentence (8-15 words) using the word "${word}" (meaning: ${meaning}, part of speech: ${pos}). Then provide a Traditional Chinese translation.
@@ -2054,8 +2031,8 @@ Return STRICT JSON only:
       text=text.trim().replace(/^```(?:json)?\s*/i,"").replace(/\s*```\s*$/,"");
       const s=text.indexOf("{");const e=text.lastIndexOf("}");
       if(s>=0&&e>s)text=text.slice(s,e+1);
-      const parsed=JSON.parse(text);
-      if(parsed.en&&parsed.zh){
+      const parsed=normalizeCardExample(JSON.parse(text),word);
+      if(parsed){
         _exampleCache[k]=parsed;
         try{localStorage.setItem(`ex_${k}`,JSON.stringify(parsed))}catch{}
         return parsed;
@@ -2343,6 +2320,7 @@ export default function App(){
   const initialNavigation=useMemo(()=>{
     const params=new URLSearchParams(window.location.search);
     const shared=params.get("word"),sharedLevel=params.get("lv");
+    if(params.get("view")==="pets")return normalizeEnglishGoNavigation({lv:LV[sharedLevel]?sharedLevel:"elementary",mod:"pets",menuGroup:"pet",depth:0});
     if(shared&&sharedLevel&&LV[sharedLevel])return normalizeEnglishGoNavigation({lv:sharedLevel,mod:"srs",menuGroup:"learn",sharedWord:shared,depth:0});
     return readEnglishGoNavigation(window.history.state)||normalizeEnglishGoNavigation();
   },[]);
@@ -2536,22 +2514,15 @@ export default function App(){
     playSound("combo");
   };
 
-  // Auto-sync pet data to cloud (debounced)
-  useEffect(()=>{
-    if(!petAccount)return;
-    const t=setTimeout(()=>{
-      petCloudSave(petAccount.username,petAccount.pinHash,{pets,eggs,inventory,coins});
-    },1500);
-    return()=>clearTimeout(t);
-  },[pets,eggs,inventory,coins,petAccount]);
+  // The versioned town owns account-scoped synchronization. Legacy pet saves
+  // must never run in the background and revive retired pets or eggs.
 
   const addXp=(n=5,{awardCoins=true}={})=>{
     rollStudyDay();
     setXp(x=>x+n);
     if(awardCoins)setCoins(co=>co+Math.max(1,Math.floor(n/3)));// 1-5 coins per learning action
     setDaily(d=>{const current=dailyProgress(d);return{...d,target:current.target,done:Math.min(current.done+1,current.target)}});
-    // Progress eggs
-    setEggs(es=>es.map(e=>e.progress<EGG_HATCH_TASKS[e.rarity]?{...e,progress:e.progress+1}:e));
+    if(mod!=="pets"&&mod!=="srs")recordTownLearning({id:townOperationId(),source:mod,level:lv,kind:"practice",outcome:"participated",occurredAt:new Date().toISOString(),coinDelta:awardCoins?Math.max(1,Math.floor(n/3)):0},petAccount,coins+(awardCoins?Math.max(1,Math.floor(n/3)):0));
   };
   // Track daily pet task progress
   const incrTask=(key,amount=1)=>{
@@ -2567,6 +2538,7 @@ export default function App(){
     if(taskKey)incrTask(taskKey);
   };
   const trackWeak=(word,amount=1)=>setWeakWords(words=>updateWeakVocabulary(words,word,amount,50,lv));
+  const onTownLearningEvent=event=>{const coinDelta=event.source==="srs"&&["good","easy"].includes(event.rating)?1:0;recordTownLearning({...event,coinDelta},petAccount,coins+coinDelta)};
 
   useEffect(()=>{
     const r=document.documentElement.style;
@@ -2636,12 +2608,13 @@ export default function App(){
   if(!lv&&mod==="settings")return <div className="eg-app-shell"><nav className="eg-app-nav" aria-label="網站導覽"><Brand onClick={()=>backEnglishGo({lv:null,mod:null})}/><div className="eg-nav-spacer"/><ComfortControls {...comfort}/></nav><main className="eg-app-content is-module module-settings" style={{maxWidth:760,margin:"0 auto",padding:"12px"}}><SettingsPage onBack={()=>backEnglishGo({lv:null,mod:null})} c={LV.elementary} gemKey={gemKey} setGemKey={setGemKey} gifKey={gifKey} setGifKey={setGifKey}/></main></div>;
   if(!lv)return<Landing onOpenSettings={openKeySettings} onSelect={nextLv=>navigateEnglishGo({lv:nextLv,mod:null,menuGroup:"learn",sharedWord:null,customDeck:null})} comfort={comfort} lastLevel={lastLevel}/>;
   const c=LV[lv],back=()=>backEnglishGo({lv,mod:null,menuGroup,sharedWord:null,customDeck:null});
+  const townPets=readTownSnapshot(petAccount,coins).worldState.ownedPets;
   const openModule=(nextMod,group)=>{
     if(nextMod==="pets")setPetStartTab("home");
     setLastActivity({id:nextMod,lv});
     navigateEnglishGo({lv,mod:nextMod,menuGroup:group||menuGroup,sharedWord:null,customDeck:null});
   };
-  const navigatePet=(nextMod,tab="home")=>{openModule(nextMod,["srs","quiz","speak"].includes(nextMod)?"learn":nextMod==="petMonopoly"?"game":"pet");setPetStartTab(tab)};
+  const navigatePet=(nextMod,tab="home")=>{openModule(nextMod,["srs","quiz","speak","grammar"].includes(nextMod)?"learn":["reading","novels","songs","dictation","pictureBooks"].includes(nextMod)?"read":"pet");setPetStartTab(tab)};
   const changeMenuGroup=nextGroup=>navigateEnglishGo({menuGroup:nextGroup},{replace:true});
   const openHome=()=>{if(!mod){window.scrollTo({top:0,behavior:"auto"});return}navigateEnglishGo({lv,mod:null,sharedWord:null,customDeck:null})};
   const startMiniMission=()=>{
@@ -2702,36 +2675,34 @@ export default function App(){
       <RewardBurstHost/>
       <a className="eg-skip" href="#learning-content" onClick={followPageAnchor}>跳到學習內容</a>
       <nav className="eg-app-nav" aria-label="網站導覽"><Brand onClick={openHome}/><div className="eg-nav-spacer"/><button type="button" className="eg-level-switch" onClick={returnToLevelSelection} aria-label="返回學習階段選擇"><span className="eg-level-current">{c.l} · </span>換階段</button><ComfortControls {...comfort}/></nav>
-      <main id="learning-content" tabIndex={-1} className={`eg-app-content ${mod?`is-module module-${mod}`:""}`} style={{maxWidth:!mod?940:mod==="petAdventure"?1280:mod==="petMonopoly"?1180:["srs","pets","gacha"].includes(mod)?1080:mod==="translate"?960:760,margin:"0 auto",padding:mod==="petAdventure"||mod==="petMonopoly"?"14px 18px calc(20px + env(safe-area-inset-bottom, 0px))":"12px 12px calc(16px + env(safe-area-inset-bottom, 0px))"}}>
+      <main id="learning-content" tabIndex={-1} className={`eg-app-content ${mod?`is-module module-${mod}`:""}`} style={{maxWidth:!mod?940:mod==="pets"?1380:mod==="petAdventure"?1280:mod==="petMonopoly"?1180:["srs","pets","gacha"].includes(mod)?1080:mod==="translate"?960:760,margin:"0 auto",padding:mod==="petAdventure"||mod==="petMonopoly"?"14px 18px calc(20px + env(safe-area-inset-bottom, 0px))":"12px 12px calc(16px + env(safe-area-inset-bottom, 0px))"}}>
       <SpeechSpeedContext.Provider value={TTS_SPEED_MODULES.has(mod)}>
       {!mod&&showAch&&<div className="eg-achievement-toast" role="status"><span aria-hidden="true">{showAch.icon}</span><div><b>新成就 · {showAch.name}</b><small>你的努力，已經收藏在成就牆。</small></div><button type="button" onClick={()=>setShowAch(null)} aria-label="關閉成就提醒">×</button></div>}
-        {!mod?<MenuV2 lv={lv} onSelect={openModule} activeGroup={menuGroup} onGroupChange={changeMenuGroup} daily={daily} c={c} xp={xp} coins={coins} streak={learningStreak(streak,daily)} achUnlocked={achUnlocked} weakWords={levelWeakWords} pets={pets} eggs={eggs} onQuickStart={startMiniMission} lastActivity={lastActivity} loginGift={loginBonusModal} claimGift={claimLoginBonus}/>:
+        {!mod?<MenuV2 lv={lv} onSelect={openModule} activeGroup={menuGroup} onGroupChange={changeMenuGroup} daily={daily} c={c} xp={xp} coins={coins} streak={learningStreak(streak,daily)} achUnlocked={achUnlocked} weakWords={levelWeakWords} pets={townPets} eggs={[]} onQuickStart={startMiniMission} lastActivity={lastActivity} loginGift={loginBonusModal} claimGift={claimLoginBonus}/>:
          mod==="wordsearch"?<WordSearchM lv={lv} onBack={back} onReviewCards={cards=>navigateEnglishGo({lv,mod:"srs",menuGroup:"learn",sharedWord:null,customDeck:{cards,source:"我的單字收藏"}})} onOpenCard={(word,level)=>navigateEnglishGo({lv:level||lv,mod:"srs",menuGroup:"learn",sharedWord:word,customDeck:null})}/>:
          mod==="exam"?<ExamReviewM lv={lv} onBack={back} c={c} apiKey={gemKey} onOpenSettings={()=>openModule("settings","tools")} onStart={deck=>navigateEnglishGo({lv,mod:"srs",menuGroup:"learn",sharedWord:null,customDeck:deck})}/>:
-         mod==="srs"?<SRS lv={lv} onBack={back} onLevelChange={nextLv=>navigateEnglishGo({lv:nextLv,sharedWord:null,customDeck:null},{replace:true})} onXp={n=>addXpWithTask(n,"srsToday")} onDone={()=>setStats(s=>({...s,srsRounds:s.srsRounds+1}))} trackWeak={trackWeak} gifKey={gifKey} sharedWord={sharedWord} apiKey={gemKey} weakWords={levelWeakWords} customCards={customDeck?.cards||null} customSource={customDeck?.source||""} resumeSession={srsSession} onSessionChange={rememberSrsSession} onPracticeSpeaking={practice=>navigateEnglishGo({lv,mod:"speak",menuGroup:"learn",sharedWord:null,customDeck:null,cardPractice:practice})} onOpenSettings={()=>openModule("settings","tools")}/>:
+         mod==="srs"?<SRS lv={lv} onBack={back} onLevelChange={nextLv=>navigateEnglishGo({lv:nextLv,sharedWord:null,customDeck:null},{replace:true})} onXp={n=>addXpWithTask(n,"srsToday")} onLearningEvent={onTownLearningEvent} onDone={()=>setStats(s=>({...s,srsRounds:s.srsRounds+1}))} trackWeak={trackWeak} gifKey={gifKey} sharedWord={sharedWord} apiKey={gemKey} weakWords={levelWeakWords} customCards={customDeck?.cards||null} customSource={customDeck?.source||""} resumeSession={srsSession} onSessionChange={rememberSrsSession} onPracticeSpeaking={practice=>navigateEnglishGo({lv,mod:"speak",menuGroup:"learn",sharedWord:null,customDeck:null,cardPractice:practice})} onOpenSettings={()=>openModule("settings","tools")}/>:
          mod==="quiz"?<QuizM lv={lv} onBack={back} onXp={n=>addXpWithTask(n,"quizToday")} onPerfect={()=>setStats(s=>({...s,perfectQuiz:s.perfectQuiz+1}))} trackWeak={trackWeak} onReviewWords={cards=>navigateEnglishGo({lv,mod:"srs",menuGroup:"learn",sharedWord:null,customDeck:{cards,source:"小任務複習"}})}/>:
          mod==="speak"?<SpeakM lv={lv} cardPractice={cardPractice} onBack={back} onXp={n=>addXpWithTask(n,"speakToday")} apiKey={gemKey} onOpenSettings={()=>openModule("settings","tools")}/>:
          mod==="colorIsland"?<ColorIslandM lv={lv} onBack={back} onXp={addXp}/>:mod==="wordDash"?<WordDashM lv={lv} onBack={back} onXp={addXp}/>:mod==="whack"?<WhackM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="match"?<MatchM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="bomb"?<BombM lv={lv} onBack={back} onXp={addXp}/>:
-         mod==="petMonopoly"?<Suspense fallback={<ModuleLoading label="載入寵物大富翁..."/>}><PetMonopolyM quiet={quiet} setQuiet={setQuiet} onNavigate={navigatePet} onComplete={()=>incrTask("playToday")} lv={lv} onBack={back} onXp={n=>addXp(n,{awardCoins:false})} c={c} pets={pets} setPets={setPets} coins={coins} setCoins={setCoins} deps={{G,Hdr,S,V,escapeRegexSafe,getAdventurePetDef,levelUpPet,shuffleCopy}}/></Suspense>:
          mod==="grammar"?<GrammarM lv={lv} onBack={back} onXp={addXp} apiKey={gemKey} onOpenSettings={()=>openModule("settings","tools")}/>:
          mod==="reading"?<ReadingM lv={lv} onBack={back} onXp={addXp}/>:
-         mod==="pictureBooks"?<Suspense fallback={<ModuleLoading label="載入互動童書..."/>}><PictureBooks onBack={back} onXp={addXp} speak={speak} stopSpeech={stopSpeech} TtsQuickSpeed={TtsQuickSpeed}/></Suspense>:
+         mod==="pictureBooks"?<Suspense fallback={<ModuleLoading label="載入互動童書..."/>}><PictureBooks onBack={back} onLearningEvent={onTownLearningEvent} onXp={addXp} speak={speak} stopSpeech={stopSpeech} TtsQuickSpeed={TtsQuickSpeed}/></Suspense>:
          mod==="novels"?<NovelM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="songs"?<SongsM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="dictation"?<DictM lv={lv} onBack={back} onXp={addXp} onDone={()=>setStats(s=>({...s,dictDone:s.dictDone+1}))}/>:
          mod==="scramble"?<ScramM lv={lv} onBack={back} onXp={addXp} onDone={()=>setStats(s=>({...s,scramDone:s.scramDone+1}))}/>:
          mod==="ai"?<AIT lv={lv} onBack={back} onOpenPractice={()=>openModule("grammar","learn")} apiKey={gemKey} onOpenSettings={()=>openModule("settings","tools")}/>:
          mod==="translate"?<Suspense fallback={<ModuleLoading label="載入翻譯朗讀..."/>}><TranslationReader apiKey={gemKey} onBack={back} onOpenSettings={()=>openModule("settings","tools")} speak={speak} speakWebSpeech={speakWebSpeech} stopSpeech={stopSpeech} Header={Hdr} theme={{accent:c.cl,accentSoft:c.ac,surface:S.bg1,surfaceAlt:S.bg2,border:S.bd,text:S.t1,muted:S.t2}}/></Suspense>:
-         mod==="story"?<StoryMode lv={lv} onBack={back} apiKey={gemKey} pets={pets} c={c} onXp={addXp} trackWeak={trackWeak} onOpenSettings={()=>openModule("settings","tools")}/>:
+         mod==="story"?<StoryMode lv={lv} onBack={back} apiKey={gemKey} pets={townPets} onOpenPets={()=>openModule("pets","pet")} c={c} onXp={addXp} trackWeak={trackWeak} onOpenSettings={()=>openModule("settings","tools")}/>:
          mod==="achievements"?<AchPage onBack={back} onOpen={openModule} onQuickStart={startMiniMission} unlocked={achUnlocked} values={{...stats,xp,streak:learningStreak(streak,daily)}} c={c}/>:
          mod==="weak"?<WeakPage onBack={back} weakWords={levelWeakWords} allWeakWords={weakWords} setWeakWords={setWeakWords} c={c} lv={lv} onCards={cards=>navigateEnglishGo({lv,mod:"srs",menuGroup:"learn",sharedWord:null,customDeck:{cards,source:"單字再練一次"}})} onSearch={()=>openModule("wordsearch","learn")}/>:
          mod==="dashboard"?<Dashboard onBack={back} onOpen={openModule} onQuickStart={startMiniMission} c={c} xp={xp} streak={learningStreak(streak,daily)} stats={stats} daily={daily} weakWords={levelWeakWords} history={history} achUnlocked={achUnlocked} lv={lv}/>:
          mod==="settings"?<SettingsPage onBack={back} c={c} gemKey={gemKey} setGemKey={setGemKey} gifKey={gifKey} setGifKey={setGifKey}/>:
-         mod==="gacha"?<GachaPage onBack={back} onNavigate={navigatePet} c={c} coins={coins} setCoins={setCoins} eggs={eggs} setEggs={setEggs} pets={pets} setPets={setPets}/>:
-         mod==="pets"?<PetsGuard onBack={back} onNavigate={navigatePet} initialTab={petStartTab} c={c} pets={pets} setPets={setPets} eggs={eggs} setEggs={setEggs} coins={coins} setCoins={setCoins} inventory={inventory} setInventory={setInventory} petAccount={petAccount} setPetAccount={setPetAccount} petTasks={petTasks} setPetTasks={setPetTasks} incrTask={incrTask}/>:
-         mod==="petAdventure"?<PetAdventurePage incrTask={incrTask} petAccount={petAccount} lv={lv} onBack={back} onNavigate={navigatePet} c={c} pets={pets} setPets={setPets} eggs={eggs} setEggs={setEggs} coins={coins} setCoins={setCoins} inventory={inventory} setInventory={setInventory}/>:null}
+         mod==="pets"?<Suspense fallback={<PetFeatureFallback/>}><PetTown lv={lv} onBack={back} onNavigate={navigatePet} coins={coins} setCoins={setCoins} petAccount={petAccount} setPetAccount={setPetAccount} speak={speak} stopSpeech={stopSpeech} onXp={n=>addXp(n,{awardCoins:false})} quiet={quiet} calm={calm}/></Suspense>:
+         null}
       </SpeechSpeedContext.Provider>
       </main>
       <footer className="eg-app-footer"><div>🌱 每天一點點，讓英文慢慢長大。</div><button type="button" onClick={()=>openModule("settings","tools")}>設定（家長與老師）</button><div>EnglishGo · 無廣告的學習小天地</div></footer>
@@ -2890,10 +2861,7 @@ function MenuV2({lv,onSelect,activeGroup="learn",onGroupChange,daily,c,xp,coins,
     {id:"match",group:"game",icon:"M",t:"記憶星空",d:"英文與中文快速配對",tag:"記憶配對"},
     {id:"bomb",group:"game",icon:"B",t:"火箭拼字",d:"字母積木補充火箭能量",tag:"拼字挑戰"},
     {id:"scramble",group:"game",icon:"S",t:"句子小火車",d:"把單字排成正確句子",tag:"語順練習"},
-    {id:"petMonopoly",group:"game",icon:"🎲",t:"寵物大富翁",d:"立體島嶼，選路蓋房當島主",tag:"3D 策略桌遊"},
-    {id:"gacha",group:"pet",icon:"G",t:"森林扭蛋屋",d:`${coins} 金幣可使用`,tag:"取得寵物"},
-    {id:"pets",group:"pet",icon:"P",t:"寵物小家園",d:`${pets.length} 隻寵物 · ${eggs.length} 顆蛋`,tag:"培養照顧"},
-    {id:"petAdventure",group:"pet",icon:"A",t:"寵物冒險",d:pets.length?`${pets.length} 隻可組隊戰鬥`:"先取得寵物再挑戰",tag:"英文戰鬥"},
+    {id:"pets",group:"pet",icon:"P",t:"海風小鎮",d:"三位新夥伴、海邊家園與九段英文故事",tag:"3D 陪伴與探索"},
     {id:"achievements",group:"tools",icon:"★",t:"成就牆",d:`${achUnlocked.length}/${ACH_DEFS.length} 個已解鎖`,tag:"學習成果"},
     {id:"weak",group:"tools",icon:"!",t:"弱點單字",d:weakWords.length?`${weakWords.length} 個需要複習`:"目前沒有弱點紀錄",tag:"補強清單"},
     {id:"dashboard",group:"tools",icon:"▤",t:"學習報告",d:"查看 XP、連續天數與紀錄",tag:"進度分析"},
@@ -2903,7 +2871,7 @@ function MenuV2({lv,onSelect,activeGroup="learn",onGroupChange,daily,c,xp,coins,
     {id:"learn",icon:"▣",t:"學習",d:"單字、文法、口說",color:gradeTheme.groups?.learn||c.cl},
     {id:"read",icon:"R",t:"閱讀聽力",d:"短文、小說、歌曲",color:gradeTheme.groups?.read||"#185FA5"},
     {id:"game",icon:"▶",t:"遊戲",d:"用遊戲加強反應",color:gradeTheme.groups?.game||"#D97706"},
-    {id:"pet",icon:"P",t:"寵物",d:"扭蛋、培養、冒險",color:gradeTheme.groups?.pet||"#DB2777"},
+    {id:"pet",icon:"P",t:"寵物",d:"海風小鎮、陪伴、英文故事",color:gradeTheme.groups?.pet||"#DB2777"},
     {id:"tools",icon:"▤",t:"工具",d:"報告、弱點、設定",color:gradeTheme.groups?.tools||"#7C3AED"},
   ];
   return <LearningDashboard c={c} lv={lv} modules={modules} groups={groups} activeGroup={activeGroup} onGroupChange={setActiveGroup} onSelect={onSelect} todayWord={todayWord} onSpeak={()=>speak(todayWord.w)} daily={daily} xp={xp} coins={coins} streak={streak} pets={pets} eggs={eggs} weakWords={weakWords} onQuickStart={onQuickStart} lastActivity={lastActivity} loginGift={loginGift} claimGift={claimGift} showRewards={showRewards} setShowRewards={setShowRewards} rewardContent={showRewards&&(
@@ -2928,9 +2896,9 @@ function MenuV2({lv,onSelect,activeGroup="learn",onGroupChange,daily,c,xp,coins,
             </div>
             <div className="eg-menu-reward-block">
               <div className="eg-menu-reward-block-title">現在可以做什麼</div>
-              <div className="eg-menu-reward-line"><span>寵物食物</span><strong>{coins>=8?"可以購買":`還差 ${8-coins}`}</strong></div>
-              <div className="eg-menu-reward-line"><span>寵物扭蛋（50／次）</span><strong>{coins>=50?`可抽 ${Math.floor(coins/50)} 次`:`還差 ${50-coins}`}</strong></div>
-              <div className="eg-menu-reward-line"><span>寵物大富翁</span><strong>免費遊玩</strong></div>
+              <div className="eg-menu-reward-line"><span>三位小鎮夥伴</span><strong>免費領養</strong></div>
+              <div className="eg-menu-reward-line"><span>海邊家園家具</span><strong>故事解鎖・金幣選購</strong></div>
+              <div className="eg-menu-reward-line"><span>九段英文故事</span><strong>免費探索</strong></div>
             </div>
             <div className="eg-menu-reward-block">
               <div className="eg-menu-reward-block-title">答錯會怎樣</div>
@@ -2941,11 +2909,9 @@ function MenuV2({lv,onSelect,activeGroup="learn",onGroupChange,daily,c,xp,coins,
           </div>
 
           <div className="eg-menu-spend-actions" aria-label="金幣使用入口">
-            <button type="button" className="eg-menu-spend-action" aria-label="前往寵物照顧" style={{"--spend-color":"#0F9F7A"}} onClick={()=>onSelect("pets","pet")}><strong>前往寵物照顧</strong><span>進入後可開食物商店，8 金幣起並順便學生活單字。</span></button>
-            <button type="button" className="eg-menu-spend-action" aria-label="前往扭蛋" style={{"--spend-color":"#DB2777"}} onClick={()=>onSelect("gacha","pet")}><strong>前往扭蛋</strong><span>每次 50 金幣，取得寵物蛋並用學習進度孵化。</span></button>
-            <button type="button" className="eg-menu-spend-action" aria-label="前往寵物大富翁" style={{"--spend-color":"#D97706"}} onClick={()=>onSelect("petMonopoly","game")}><strong>前往寵物大富翁</strong><span>免費玩 6 或 10 回合，完成後領取學習獎勵；島嶼旅費只在這一局使用。</span></button>
+            <button type="button" className="eg-menu-spend-action" aria-label="前往海風小鎮" style={{"--spend-color":"#327b7c"}} onClick={()=>onSelect("pets","pet")}><strong>前往海風小鎮</strong><span>和凪凪、晴晴、小麥一起生活，用學習金幣布置你喜歡的家。</span></button>
           </div>
-          <div className="eg-menu-reward-rule"><span aria-hidden="true">✓</span><span><strong>保護規則：</strong>學習答錯不會扣學習金幣。大富翁的島嶼旅費與你的錢包分開，遊戲結束後依成果給獎勵。</span></div>
+          <div className="eg-menu-reward-rule"><span aria-hidden="true">✓</span><span><strong>照自己的步調：</strong>學習答錯不扣金幣。基本照顧與故事免費，金幣只用來選購家園家具。</span></div>
         </section>
       )}/>;
 }
@@ -3016,7 +2982,7 @@ function WordSearchM(props){return <Suspense fallback={<ModuleLoading label="準
 const _gifCache={};
 const LazySRS=lazy(()=>import("./features/SRS.jsx"));
 function SRS(props){
-  const deps={V,LV,S,fetchCloudVocab,fetchCloudVocabularyCatalog,fetchCloudWord,fetchWordIllustrations,findAnyWord,loadExtraWords,shuffleCopy,sortCardsForStudy,createDeck,rateDeck,getWordImg,preloadImgs,isPlaceholderExample,exampleCache:_exampleCache,generateExample,preloadTts,speak,speakWebSpeech,regenerateSpeech,speechTimer,playSound,triggerRewardBurst,parseCSV,Hdr,Confetti};
+  const deps={V,LV,S,fetchCloudVocab,fetchCloudVocabularyCatalog,fetchCloudWord,fetchWordIllustrations,findAnyWord,loadExtraWords,enrichVocabularyCard,shuffleCopy,sortCardsForStudy,createDeck,rateDeck,getWordImg,preloadImgs,isPlaceholderExample,exampleCache:_exampleCache,generateExample,preloadTts,speak,speakWebSpeech,regenerateSpeech,speechTimer,playSound,triggerRewardBurst,parseCSV,shareLine,Hdr,Confetti};
   return <Suspense fallback={<ModuleLoading label="正在準備單字小花園…"/>}><LazySRS {...props} deps={deps}/></Suspense>;
 }
 
@@ -3794,7 +3760,7 @@ function StoryReader({story,pageIdx,setPageIdx,selectedPet,c,onNext,onExit}){
       {playing&&<div style={{position:"absolute",top:10,right:10,background:c.cl,color:"#fff",borderRadius:10,padding:"3px 8px",fontSize:10,fontWeight:700,animation:"emojiPulse 1s infinite"}}>🎙️ 朗讀中</div>}
 
       <div style={{display:"flex",justifyContent:"center",marginBottom:14}}>
-        <PixelPet petId={selectedPet.petId} stage={getPetStage(selectedPet)} size={96} animate={playing}/>
+        {selectedPet.speciesId?<TownPetPortrait speciesId={selectedPet.speciesId} size={96}/>:<PixelPet petId={selectedPet.petId} stage={getPetStage(selectedPet)} size={96} animate={playing}/>}
       </div>
 
       {focusLine&&<div style={{display:"flex",justifyContent:"center",marginBottom:10}}>
@@ -3934,7 +3900,7 @@ function normalizeStoryPayload(raw,{lv,petName,themeName}){
   };
 }
 
-export function StoryMode({lv,onBack,apiKey,pets,c,onXp,trackWeak,onOpenSettings}){
+export function StoryMode({lv,onBack,apiKey,pets,c,onXp,trackWeak,onOpenSettings,onOpenPets}){
   const[step,setStep]=useState("setup");// setup | loading | reading | quiz | done
   const[selectedPet,setSelectedPet]=useState(pets[0]||null);
   const[theme,setTheme]=useState("adventure");
@@ -3964,15 +3930,15 @@ export function StoryMode({lv,onBack,apiKey,pets,c,onXp,trackWeak,onOpenSettings
   const genStory=async()=>{
     if(storyRequestRef.current)return;
     if(!apiKey?.trim()){onOpenSettings?.();setShowApiKeyInput(true);return}
-    if(!selectedPet){setError("請先擁有一隻寵物！去扭蛋機抽一隻吧");return}
+    if(!selectedPet){setError("先到海風小鎮迎接一位夥伴，再一起創造故事。");return}
     const controller=new AbortController();storyRequestRef.current=controller;
     setStep("loading");setError("");
-    const petName=PETS[selectedPet.rarity].find(p=>p.id===selectedPet.petId)?.name||"寵物";
+    const petName=TOWN_PETS.find(p=>p.id===selectedPet.speciesId)?.name||PETS[selectedPet.rarity]?.find(p=>p.id===selectedPet.petId)?.name||"夥伴";
     const themeObj=themes.find(t=>t.id===theme);
     const levelProfile=storyProfile;
     const prompt=`Create an engaging, school-safe English story for a Taiwanese ${levelProfile.promptName} student.
 
-Main character: A pet named "${petName}" (${selectedPet.petId}).
+Main character: A pet named "${petName}" (${selectedPet.speciesId||selectedPet.petId}).
 Theme: ${themeObj.name} (${themeObj.desc}).
 Level rules for ${levelProfile.promptName}:
 - ${levelProfile.pageRule}
@@ -4058,7 +4024,7 @@ Return STRICT JSON only (no markdown, no explanations):
           <div style={{fontSize:56}}>🐾</div>
           <div style={{fontSize:16,fontWeight:600,color:S.t1,marginTop:8}}>還沒有寵物</div>
           <div style={{fontSize:13,color:S.t2,marginTop:4}}>要先擁有一隻寵物才能當故事主角喔！</div>
-          <div style={{fontSize:12,color:S.t3,marginTop:12}}>去「🎰 扭蛋機」抽一隻寵物吧</div>
+          <button onClick={()=>onOpenPets?.()} style={{...S.btn,background:c.cl,color:"#fff",marginTop:16}}>前往海風小鎮，免費領養夥伴</button>
         </div>
       </div>);
     }
@@ -4076,10 +4042,10 @@ Return STRICT JSON only (no markdown, no explanations):
       <div style={{...S.card,padding:"14px 16px",marginBottom:12}}>
         <div style={{fontSize:13,fontWeight:600,color:S.t1,marginBottom:10}}>🐾 選主角</div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(104px,1fr))",gap:8}}>
-          {pets.map(p=>{const pd=PETS[p.rarity].find(x=>x.id===p.petId);if(!pd)return null;const ri=RARITY_INFO[p.rarity];const sel=selectedPet?.petId===p.petId;return(<div key={p.petId} onClick={()=>setSelectedPet(p)} style={{padding:"10px 6px",border:sel?`2px solid ${c.cl}`:`1px solid ${S.bd}`,borderRadius:10,textAlign:"center",cursor:"pointer",background:sel?`${c.cl}11`:"transparent"}}>
-            <div style={{display:"flex",justifyContent:"center"}}><PixelPet petId={p.petId} stage={getPetStage(p)} size={44} animate={false}/></div>
+          {pets.map(p=>{const pd=TOWN_PETS.find(x=>x.id===p.speciesId)||PETS[p.rarity]?.find(x=>x.id===p.petId);if(!pd)return null;const ri=RARITY_INFO[p.rarity]||{color:"#749783"};const sel=(selectedPet?.speciesId||selectedPet?.petId)===(p.speciesId||p.petId);return(<div key={p.speciesId||p.petId} onClick={()=>setSelectedPet(p)} style={{padding:"10px 6px",border:sel?`2px solid ${c.cl}`:`1px solid ${S.bd}`,borderRadius:10,textAlign:"center",cursor:"pointer",background:sel?`${c.cl}11`:"transparent"}}>
+            <div style={{display:"flex",justifyContent:"center"}}>{p.speciesId?<TownPetPortrait speciesId={p.speciesId} size={70}/>:<PixelPet petId={p.petId} stage={getPetStage(p)} size={44} animate={false}/>}</div>
             <div style={{fontSize:11,fontWeight:600,color:S.t1,marginTop:4}}>{pd.name}</div>
-            <div style={{fontSize:9,color:ri.color}}>Lv.{p.level}</div>
+            <div style={{fontSize:9,color:ri.color}}>{p.speciesId?pd.trait:`Lv.${p.level}`}</div>
           </div>)})}
         </div>
       </div>
@@ -4110,7 +4076,7 @@ Return STRICT JSON only (no markdown, no explanations):
   if(step==="loading"){
     return(<div><Hdr t="✨ 創作中..." onBack={cancelGeneration} cl={c.cl}/>
       <div style={{...S.card,padding:"48px 20px",textAlign:"center"}}>
-        <div style={{display:"flex",justifyContent:"center",animation:"emojiBounce 1s ease-in-out infinite"}}>{selectedPet&&<PixelPet petId={selectedPet.petId} stage={getPetStage(selectedPet)} size={96}/>}</div>
+        <div style={{display:"flex",justifyContent:"center",animation:"emojiBounce 1s ease-in-out infinite"}}>{selectedPet&&(selectedPet.speciesId?<TownPetPortrait speciesId={selectedPet.speciesId} size={96}/>:<PixelPet petId={selectedPet.petId} stage={getPetStage(selectedPet)} size={96}/>)}</div>
         <div style={{fontSize:16,color:S.t1,fontWeight:600,marginTop:16}}>正在為你創作故事</div>
         <div style={{fontSize:12,color:S.t2,marginTop:6}}>AI 正在編寫專屬於你的冒險...</div>
         <div style={{fontSize:11,color:S.t3,marginTop:4}}>AI 忙碌時會自動重試，最多等待 60 秒。你可以隨時返回取消。</div>
@@ -4209,14 +4175,7 @@ const LazyPixelPet=lazy(()=>import("./components/PixelPet.jsx"));
 function PixelPetFallback({size=180}){return <span style={{display:"inline-block",width:size,height:size,borderRadius:12,background:"linear-gradient(135deg,var(--color-background-secondary,#f3f2ee),var(--color-background-primary,#fff))"}}/>}
 function PixelPet(props){return <Suspense fallback={<PixelPetFallback size={props.size}/>}> <LazyPixelPet {...props}/> </Suspense>}
 
-const LazyPetAdventurePage=lazy(()=>import("./features/PetsModule.jsx").then(m=>({default:m.PetAdventurePage})));
-const LazyGachaPage=lazy(()=>import("./features/PetsModule.jsx").then(m=>({default:m.GachaPage})));
-const LazyPetsGuard=lazy(()=>import("./features/PetsModule.jsx").then(m=>({default:m.PetsGuard})));
-function getPetsModuleDeps(){return {ACTION_PROMPTS:ACTION_PROMPTS,BOND_MILESTONES:BOND_MILESTONES,DAILY_TASK_DEFS:DAILY_TASK_DEFS,DUPLICATE_EGG_PROGRESS:DUPLICATE_EGG_PROGRESS,DUPLICATE_PET_REWARD:DUPLICATE_PET_REWARD,EGG_COST:EGG_COST,EGG_HATCH_TASKS:EGG_HATCH_TASKS,GACHA_SR_PITY:GACHA_SR_PITY,Hdr:Hdr,MAX_STAT:MAX_STAT,PETS:PETS,PET_ACTIONS:PET_ACTIONS,PET_ADVENTURE_BOSS_REQUIRED_CLEARS:PET_ADVENTURE_BOSS_REQUIRED_CLEARS,PET_ADVENTURE_ENEMY_ICONS:PET_ADVENTURE_ENEMY_ICONS,PET_ADVENTURE_SKILLS:PET_ADVENTURE_SKILLS,PET_ADVENTURE_SKILL_UNLOCKS:PET_ADVENTURE_SKILL_UNLOCKS,PET_ADVENTURE_SKILL_VISUALS:PET_ADVENTURE_SKILL_VISUALS,PET_CULTIVATION_ACTIONS:PET_CULTIVATION_ACTIONS,PET_EVENTS:PET_EVENTS,PET_FOODS:PET_FOODS,RARITY_INFO:RARITY_INFO,RARITY_ORDER:RARITY_ORDER,S:S,STAGE_NAMES:STAGE_NAMES,STAGE_SAYINGS:STAGE_SAYINGS,TIME_GREETINGS:TIME_GREETINGS,applyDuplicatePetReward:applyDuplicatePetReward,buildPetAdventureStages:buildPetAdventureStages,calcDecay:calcDecay,choosePetFoodForNeed:choosePetFoodForNeed,completePetAdventureProgress:completePetAdventureProgress,createPetAdventureBgm:createPetAdventureBgm,getAdventureAnswerLine:getAdventureAnswerLine,getAdventureCorrectSpeech:getAdventureCorrectSpeech,getAdventurePetDef:getAdventurePetDef,getAdventureQuestionMeta:getAdventureQuestionMeta,getAdventureQuestionSpeech:getAdventureQuestionSpeech,getBondLevel:getBondLevel,getCareCount:getCareCount,getDuplicateEnergyInfo:getDuplicateEnergyInfo,getDuplicatePetReward:getDuplicatePetReward,getEventCenter:getEventCenter,getNextPetAdventureSkillCard:getNextPetAdventureSkillCard,getPetAdventureDifficulty:getPetAdventureDifficulty,getPetAdventureFatigue:getPetAdventureFatigue,getPetAdventurePower:getPetAdventurePower,getPetAdventureProgress:getPetAdventureProgress,getPetAdventureScore:getPetAdventureScore,getPetAdventureSkill:getPetAdventureSkill,getPetAdventureSkillCards:getPetAdventureSkillCards,getPetCareAverage:getPetCareAverage,getPetCareSuggestion:getPetCareSuggestion,getPetCultivationPlan:getPetCultivationPlan,getPetDailyCultivation:getPetDailyCultivation,getPetMood:getPetMood,getPetReadiness:getPetReadiness,getPetSize:getPetSize,getPetStage:getPetStage,getPetUrgentNeed:getPetUrgentNeed,getSelectedPetAdventureSkill:getSelectedPetAdventureSkill,getTeamAdventureMorale:getTeamAdventureMorale,getTimeOfDay:getTimeOfDay,hashPin:hashPin,improvePetAfterAdventure:improvePetAfterAdventure,isPetAdventureBossReady:isPetAdventureBossReady,isPetSleeping:isPetSleeping,levelUpPet:levelUpPet,loadPetAdventureQuestions:loadPetAdventureQuestions,petCloudLogin:petCloudLogin,petCloudSignup:petCloudSignup,playPetAdventureSkillSound:playPetAdventureSkillSound,playSound:playSound,randomPet:randomPet,rollRarity:rollRarity,savePetAdventureProgress:savePetAdventureProgress,speak:speak,triggerRewardBurst:triggerRewardBurst,stopSpeech:stopSpeech,useLS:useLS}}
-function PetFeatureFallback(){return <div style={{textAlign:"center",padding:"48px 16px",color:S.t3}}>Loading pets...</div>}
-function PetAdventurePage(props){return <Suspense fallback={<PetFeatureFallback/>}><LazyPetAdventurePage {...props} deps={getPetsModuleDeps()}/></Suspense>}
-function GachaPage(props){return <Suspense fallback={<PetFeatureFallback/>}><LazyGachaPage {...props} deps={getPetsModuleDeps()}/></Suspense>}
-function PetsGuard(props){return <Suspense fallback={<PetFeatureFallback/>}><LazyPetsGuard {...props} deps={getPetsModuleDeps()}/></Suspense>}
+function PetFeatureFallback(){return <div style={{textAlign:"center",padding:"48px 16px",color:S.t3}}>正在打開海風小鎮…</div>}
 
 
 function Hdr({t,onBack,extra}){const showSpeechSpeed=useContext(SpeechSpeedContext);return <FeatureHeader title={t} onBack={onBack}>{showSpeechSpeed&&<TtsQuickSpeed/>}{extra}</FeatureHeader>}

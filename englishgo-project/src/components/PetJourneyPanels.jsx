@@ -1,6 +1,20 @@
 import PetPages from './PetPages.jsx';
 import { PET_PATHS, PET_HABITATS, getPetJourney, choosePetPath, choosePetHabitat } from '../data/petJourney.js';
 import { PetHabitatScene } from './PetWorldArt.jsx';
+import PetCompanion from './PetCompanion.jsx';
+import { getPetStage, PET_GROWTH_STAGES } from '../data/petAppearance.js';
+
+function PetGrowthLooks({pet}) {
+  const current = getPetStage(pet);
+  return <section className="pet-growth-looks" aria-label="外觀成長">
+    <h3>一起長大的模樣</h3>
+    <div>{PET_GROWTH_STAGES.map(stage => <figure key={stage.id} aria-current={stage.id===current?'step':undefined}>
+      <PetCompanion petId={pet.petId} stage={stage.id} size={94}/>
+      <figcaption><b>{stage.name}</b><span>{stage.id===current?'現在的模樣':`Lv.${stage.level}${(pet.level||1)>=stage.level?' 已解鎖':' 解鎖'}`}</span></figcaption>
+    </figure>)}</div>
+    <p>Lv.4 戴上小領巾，Lv.10 換上金色領巾與星星徽章。</p>
+  </section>;
+}
 
 export function PetHomeHub({pets,eggs,readyEggs,onCare,onEggs,onPlay,onNavigate,getDef}) {
   const pet=pets[0],def=pet&&getDef(pet),journey=getPetJourney(pet);
@@ -23,6 +37,7 @@ export function PetGrowthPanel({pet,onChange,onCare,careLabel,onPlay,paged=false
     <article><h2>家園佈置</h2><p>陪伴印記 {journey.marks} 枚</p><div className="pet-compact-options">{PET_HABITATS.map(h=><button key={h.id} aria-pressed={journey.habitat===h.id} disabled={journey.marks<h.marks} onClick={()=>onChange(choosePetHabitat(pet,h.id))}><b>{h.name}</b><span>{journey.marks<h.marks?h.marks+' 枚印記解鎖':journey.habitat===h.id?'正在使用':'換上這個風景'}</span></button>)}</div></article>
   </PetPages></section>;
   return <section className="pet-growth-panel" data-testid="pet-growth-panel">
+    <PetGrowthLooks pet={pet}/>
     <div className="pet-section-heading"><div><span className="pet-eyebrow">我們一起長大的故事</span><h2>{path.icon} {path.name}</h2><p>第 {journey.rank} 階 · {journey.next?`再累積 ${journey.next-journey.marks} 枚印記，能力就會提升`:'三階能力都練成了，繼續收藏陪伴的回憶'}</p></div><span className="pet-growth-count">{journey.marks}<small>陪伴印記</small></span></div>
     <div className="pet-growth-stops" aria-label="培育階段">{[3,6,12].map((n,i)=><div key={n} className={journey.marks>=n?'is-earned':''}><span>{journey.marks>=n?'✓':i+1}</span><b>{['初識默契','可靠夥伴','最佳拍檔'][i]}</b><small>{n} 枚印記</small></div>)}</div>
     <div className="pet-growth-tip">每天第一次完成每種照顧、每款遊戲或冒險，可留下一枚印記。<b>今天收集 {journey.today.length} 枚</b></div>

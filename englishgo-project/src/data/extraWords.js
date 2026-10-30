@@ -1,8 +1,13 @@
 import { getElementaryExample } from "./elementaryExamples.js";
+import { getCuratedVocabularyExample } from './curatedVocabularyExamples.js';
+import { enrichVocabularyCard, enrichVocabularyLevels } from './vocabularyEnrichment.js';
+export { enrichVocabularyCard };
+import JUNIOR_VOCABULARY_REPAIRS from './juniorVocabularyRepairs.json';
 import { JUNIOR_NOVEL_WORDS } from "./juniorNovelWords.js";
 import { MINISTRY_ELEMENTARY_WORDS } from "./ministryElementaryWords.js";
 import { EDUCATION_MINISTRY_ELEMENTARY_GAPS } from "./educationMinistryElementaryGaps.js";
 import { JUNIOR_THEMED_REVIEW_WORDS, SENIOR_THEMED_REVIEW_WORDS } from "./themedReviewWords.js";
+import SENIOR_ILLUSTRATION_WORDS from "./seniorIllustrationWords.json";
 
 const EXTRA_ELEMENTARY_WORDS = {
   sleepy:{m:"想睡的",p:"adj.",ex:"I feel sleepy after reading my bedtime story.",ez:"讀完睡前故事後，我覺得想睡了。",c:["feel sleepy 覺得想睡"]},
@@ -103,16 +108,26 @@ const MORE_BASIC_ELEMENTARY_WORDS = {
 
 function extraWordCard(word,meta){
   const [meaning,pos]=Array.isArray(meta)?meta:[meta.m,meta.p];
-  const example = Array.isArray(meta) || !meta.ex
+  const example = getCuratedVocabularyExample('elementary',word)||(Array.isArray(meta) || !meta.ex
     ? getElementaryExample(word, meaning, pos)
-    : {ex:meta.ex,ez:meta.ez};
+    : {ex:meta.ex,ez:meta.ez});
   return{w:word,ph:"",p:pos,m:meaning,f:meta.forms||[],c:meta.c||[],ex:example.ex,ez:example.ez,img:meta.img||"",category:meta.category||""};
 }
 
 const ELEMENTARY_WORDS = {...BASIC_ELEMENTARY_WORDS,...MORE_BASIC_ELEMENTARY_WORDS,...EXTRA_ELEMENTARY_WORDS,...MINISTRY_ELEMENTARY_WORDS,...EDUCATION_MINISTRY_ELEMENTARY_GAPS};
 
-export const EXTRA_WORDS = {
+const JUNIOR_WORDS = new Map([...JUNIOR_NOVEL_WORDS,...JUNIOR_THEMED_REVIEW_WORDS].map(card=>[card.w,card]));
+for(const card of JUNIOR_VOCABULARY_REPAIRS) {
+  if(!JUNIOR_WORDS.has(card.w))JUNIOR_WORDS.set(card.w,card);
+}
+
+const SENIOR_WORDS = new Map(SENIOR_THEMED_REVIEW_WORDS.map(card => [card.w, card]));
+for (const card of SENIOR_ILLUSTRATION_WORDS) {
+  SENIOR_WORDS.set(card.w, { ph: "", f: [], c: [], ...SENIOR_WORDS.get(card.w), ...card });
+}
+
+export const EXTRA_WORDS = enrichVocabularyLevels({
   elementary: Object.entries(ELEMENTARY_WORDS).map(([word,meta])=>extraWordCard(word,meta)),
-  junior: [...JUNIOR_NOVEL_WORDS,...JUNIOR_THEMED_REVIEW_WORDS],
-  senior: SENIOR_THEMED_REVIEW_WORDS,
-};
+  junior: [...JUNIOR_WORDS.values()].map(card=>({...card,...getCuratedVocabularyExample('junior',card.w)})),
+  senior: [...SENIOR_WORDS.values()],
+});

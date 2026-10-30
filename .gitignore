@@ -4,3 +4,8 @@ englishgo-project/vite-dev*.log
 englishgo-project/.novel-audio-prewarm.json
 .worktrees/
 .superpowers/
+.env
+.env.*
+!.env.example
+.codex-remote-attachments/
+englishgo-project/supabase/.temp/

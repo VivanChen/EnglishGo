@@ -20,7 +20,8 @@ describe('child friendly learning journey',()=>{
   it('clears card reaction timers when leaving the module',async()=>{
     const view=await openHome();
     fireEvent.click(screen.getByRole('button',{name:'開始 5 張單字小任務'}));
-    await screen.findByTestId('srs-card');
+    // The first visit loads the SRS module, which can exceed the default 1s under test load.
+    await screen.findByTestId('srs-card', {}, {timeout:5000});
     const timerSpy=vi.spyOn(globalThis,'setTimeout'),clearSpy=vi.spyOn(globalThis,'clearTimeout');
     try{
       fireEvent.click(screen.getByRole('button',{name:'點卡片看答案'}));

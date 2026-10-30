@@ -1,6 +1,8 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import App from './App.jsx';
+
+beforeAll(async()=>{await import('./features/SpeakingStudio.jsx')});
 
 const cards = [
   { w:'apple',m:'蘋果',p:'n.',ex:'I eat an apple after lunch.',ez:'午餐後我吃一顆蘋果。' },

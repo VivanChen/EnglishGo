@@ -20,7 +20,7 @@ it('explains Giphy quota failures, preserves the card, and lets a user retry suc
   await openCards();
   expect(await screen.findByText(/Giphy 目前達到使用限制/)).toBeInTheDocument();
   expect(screen.getByTestId('srs-card')).toBeInTheDocument();
-  expect(screen.getByTestId('srs-front-media').querySelector('img')).toHaveAttribute('src','/images/vocabulary/elementary/apple-01-v1.webp');
+  expect(screen.getByTestId('srs-front-media').querySelector('img')).toHaveAttribute('src','https://jbspxqebcrkilfcddluo.supabase.co/storage/v1/object/public/word-illustrations/elementary/apple-01-v1.webp');
   expect(fetchMock.mock.calls.filter(([url])=>url.includes('api.giphy.com'))).toHaveLength(1);
   recover=true;fireEvent.click(screen.getByRole('button',{name:'重試動圖'}));
   await waitFor(()=>expect(document.querySelector('img[src="https://media.giphy.com/feedback.gif"]')).toBeTruthy());
@@ -31,7 +31,7 @@ it('uses hand-drawn art without a GIF key and preserves a fallback when that ima
   await openCards();
   const media=screen.getByTestId('srs-front-media');
   expect(media).toHaveTextContent('手繪插畫');
-  expect(media.querySelector('img')).toHaveAttribute('src','/images/vocabulary/elementary/apple-01-v1.webp');
+  expect(media.querySelector('img')).toHaveAttribute('src','https://jbspxqebcrkilfcddluo.supabase.co/storage/v1/object/public/word-illustrations/elementary/apple-01-v1.webp');
   fireEvent.error(media.querySelector('img'));
   expect(media).not.toHaveTextContent('手繪插畫');
   expect(screen.getByRole('button',{name:'播放單字 apple'})).toBeInTheDocument();
@@ -44,7 +44,7 @@ it('uses hand-drawn art when the GIF file cannot load and keeps the back illustr
   const media=screen.getByTestId('srs-front-media');
   await waitFor(()=>expect(media.querySelector('img')).toHaveAttribute('src','https://media.giphy.com/broken.gif'));
   fireEvent.error(media.querySelector('img'));
-  expect(media.querySelector('img')).toHaveAttribute('src','/images/vocabulary/elementary/apple-01-v1.webp');
+  expect(media.querySelector('img')).toHaveAttribute('src','https://jbspxqebcrkilfcddluo.supabase.co/storage/v1/object/public/word-illustrations/elementary/apple-01-v1.webp');
   fireEvent.click(card);
   expect(await screen.findByTestId('srs-back-illustrations')).toHaveTextContent('This is a red apple.');
 });

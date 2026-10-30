@@ -1,12 +1,19 @@
 import catalog from './wordIllustrations.json';
+import { getCuratedVocabularyExample } from './curatedVocabularyExamples.js';
 
 export const ILLUSTRATION_STYLE = 'watercolor-pencil-v1';
 export const normalizeIllustrationWord = word => String(word || '').trim().toLowerCase();
+const BUNDLED_LOCAL_PATHS = new Set(catalog.map(row=>row.local_path).filter(Boolean));
+
+function withCuratedExample(row) {
+  const example=getCuratedVocabularyExample(row.level,row.word);
+  return example ? {...row,example:example.ex,example_zh:example.ez,sense:example.m||row.sense} : row;
+}
 
 export function getLocalWordIllustrations(level, word) {
   const key = normalizeIllustrationWord(word);
   return catalog.filter(row => row.level === level && row.word === key)
-    .sort((a, b) => a.sort_order - b.sort_order);
+    .sort((a, b) => a.sort_order - b.sort_order).map(withCuratedExample);
 }
 
 // Only image URLs belonging to an explicit illustration record are used on the back.
@@ -17,7 +24,7 @@ export function normalizeWordIllustrations(rows, level, word) {
   const safeImage = src => typeof src === 'string' && (/^\/images\/vocabulary\//.test(src) || /^https:\/\//.test(src));
   return rows.filter(row => row.level === level && normalizeIllustrationWord(row.word) === key
     && safeImage(row.image_url) && row.alt_zh && row.example && row.example_zh)
-    .map(row => ({ ...row, local_path: safeImage(row.local_path) ? row.local_path : '' }))
+    .map(row => withCuratedExample({ ...row, local_path: safeImage(row.local_path) && BUNDLED_LOCAL_PATHS.has(row.local_path) ? row.local_path : '' }))
     .sort((a, b) => a.sort_order - b.sort_order);
 }
 

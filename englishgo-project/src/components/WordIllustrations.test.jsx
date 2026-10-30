@@ -1,9 +1,25 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import WordIllustrations from './WordIllustrations.jsx';
-import { getLocalWordIllustrations, loadWordIllustrations } from '../data/wordIllustrations.js';
+import WordIllustrations, { WordIllustrationGallery } from './WordIllustrations.jsx';
+import { getLocalWordIllustrations, loadWordIllustrations, normalizeWordIllustrations } from '../data/wordIllustrations.js';
 
 describe('vocabulary illustrations', () => {
+  it('does not retry a local image path that is absent from the bundled catalog', () => {
+    const apple=getLocalWordIllustrations('elementary','apple')[0];
+    const [item]=normalizeWordIllustrations([{...apple,local_path:'/images/vocabulary/elementary/missing.webp'}],'elementary','apple');
+    expect(item.local_path).toBe('');
+  });
+  it('returns to the first scene when refreshed cloud results contain fewer pictures', () => {
+    const base=getLocalWordIllustrations('elementary','under');
+    const items=[...base,{...base[0],id:'third-scene'}];
+    const view=render(<WordIllustrationGallery word="under" items={items}/>);
+    fireEvent.click(screen.getByRole('button',{name:'下一張插畫'}));
+    fireEvent.click(screen.getByRole('button',{name:'下一張插畫'}));
+    expect(screen.getByText('3 / 3')).toBeInTheDocument();
+    view.rerender(<WordIllustrationGallery word="under" items={base}/>);
+    expect(screen.getByText('1 / 2')).toBeInTheDocument();
+    expect(screen.getByRole('button',{name:'上一張插畫'})).toBeDisabled();
+  });
   it('shows the two under situations, readable captions, navigation, and speech', () => {
     const speak = vi.fn();
     render(<WordIllustrations level="elementary" word="under" speak={speak}/>);
@@ -52,9 +68,9 @@ describe('vocabulary illustrations', () => {
     expect(await screen.findByRole('img')).toHaveAttribute('src', item.image_url);
   });
   it('falls back from a failed cloud image to the bundled illustration, then to its explanation', async () => {
-    const item = { ...getLocalWordIllustrations('elementary', 'apple')[0], image_url: 'https://example.com/apple.webp' };
-    render(<WordIllustrations level="elementary" word="apple" fetchIllustrations={async () => [item]}/>);
-    await waitFor(() => expect(screen.getByRole('img')).toHaveAttribute('src', item.image_url));
+    const item = { ...getLocalWordIllustrations('elementary', 'apple')[0], image_url: 'https://example.com/apple.webp',local_path:'/images/vocabulary/elementary/bundled-apple.webp' };
+    render(<WordIllustrationGallery word="apple" items={[item]}/>);
+    expect(screen.getByRole('img')).toHaveAttribute('src', item.image_url);
     fireEvent.error(screen.getByRole('img'));
     expect(screen.getByRole('img')).toHaveAttribute('src', item.local_path);
     fireEvent.error(screen.getByRole('img'));

@@ -1,4 +1,5 @@
 import { readSrsSession } from '../data/cardSpeaking.js';
+import { normalizeCardExample } from '../data/vocabularyCardText.js';
 import { fetchGif, forgetGif } from '../lib/giphy.js';
 import { useWordIllustrations, WordIllustrationGallery } from '../components/WordIllustrations.jsx';
 import { serviceFetch, assertServiceResponse, serviceErrorMessage } from '../lib/serviceErrors.js';
@@ -33,15 +34,9 @@ function extractJson(text){
 }
 
 function partOfSpeechToZh(pos){
-  const value=String(pos||"").toLowerCase();
-  if(value.includes("noun")||value.includes("n."))return "名詞";
-  if(value.includes("verb")||value.includes("v."))return "動詞";
-  if(value.includes("adj"))return "形容詞";
-  if(value.includes("adv"))return "副詞";
-  if(value.includes("prep"))return "介系詞";
-  if(value.includes("conj"))return "連接詞";
-  if(value.includes("pron"))return "代名詞";
-  return "單字";
+  const labels={n:"名詞",noun:"名詞",v:"動詞",verb:"動詞",adj:"形容詞",adjective:"形容詞",adv:"副詞",adverb:"副詞",prep:"介系詞",preposition:"介系詞",conj:"連接詞",conjunction:"連接詞",pron:"代名詞",pronoun:"代名詞",interj:"感嘆詞",int:"感嘆詞",num:"數詞",det:"限定詞"};
+  const parts=String(pos||"").toLowerCase().split(/[^a-z]+/).map(part=>labels[part]).filter(Boolean);
+  return [...new Set(parts)].join("／")||"單字";
 }
 
 export function normalizeKidDictionary(raw={},word,meaning,pos){
@@ -162,11 +157,7 @@ const ANIM_STYLES=["emojiBounce","emojiFloat","emojiSpin","emojiWiggle","emojiPu
 
 function getWordEmoji(word){
   if(word.img)return{emoji:word.img,anim:ANIM_STYLES[word.w.length%ANIM_STYLES.length]};
-  // Hash word to pick consistent emoji
-  const h=word.w.split("").reduce((a,c)=>a+c.charCodeAt(0),0);
-  const pos=word.p||"n.";
-  const pool=ANIM_MAP[pos]||ANIM_MAP["n."];
-  return{emoji:pool[h%pool.length],anim:ANIM_STYLES[h%ANIM_STYLES.length]};
+  return{emoji:"📘",anim:"emojiFloat"};
 }
 
 // Floating sparkles on card background
@@ -260,8 +251,16 @@ function VocabularyTopicPicker({lv,levelPools,poolSources,weakWords,onBack,onSta
 
 // ═══ SRS FLASHCARD (Gamified) ═══════════════════════════════════
 
-export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,apiKey,weakWords=[],customCards=null,customSource="",resumeSession=null,onSessionChange,onPracticeSpeaking,onOpenSettings,deps}){
-  const {V,LV,S,fetchCloudVocab,fetchCloudVocabularyCatalog,fetchCloudWord,findAnyWord,loadExtraWords,shuffleCopy,sortCardsForStudy,createDeck,rateDeck,getWordImg,preloadImgs,isPlaceholderExample,exampleCache:_exampleCache,generateExample,preloadTts,speak,speakWebSpeech,regenerateSpeech,speechTimer,playSound,triggerRewardBurst,parseCSV,Hdr,Confetti}=deps;
+function withSrsLearningCursor(deck){
+  const validId=typeof deck.learningSessionId==="string"&&deck.learningSessionId.length>0&&deck.learningSessionId.length<=80;
+  const learningSessionId=validId?deck.learningSessionId:(globalThis.crypto?.randomUUID?.()||`${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`);
+  const attempts=Object.values(deck.stats||{}).reduce((total,value)=>total+(Number.isInteger(value)&&value>0?value:0),0);
+  return {...deck,learningSessionId,learningCursor:Math.max(attempts,Number.isInteger(deck.learningCursor)&&deck.learningCursor>=0?deck.learningCursor:0)};
+}
+
+export default function SRS({lv,onBack,onXp,onDone,onLearningEvent,trackWeak,gifKey,sharedWord,apiKey,weakWords=[],customCards=null,customSource="",resumeSession=null,onSessionChange,onPracticeSpeaking,onOpenSettings,deps}){
+  const {V,LV,S,fetchCloudVocab,fetchCloudVocabularyCatalog,fetchCloudWord,findAnyWord,loadExtraWords,enrichVocabularyCard=(card)=>card,shuffleCopy,sortCardsForStudy,createDeck:buildDeck,rateDeck,getWordImg,preloadImgs,isPlaceholderExample,exampleCache:_exampleCache,generateExample,preloadTts,speak,speakWebSpeech,regenerateSpeech,speechTimer,playSound,triggerRewardBurst,parseCSV,shareLine,Hdr,Confetti}=deps;
+  const createDeck=items=>withSrsLearningCursor(buildDeck(items));
   const built=V[lv];const[cards,setCards]=useState([]);const[deck,setDeck]=useState(()=>createDeck([]));const[flip,setFlip]=useState(false);const[info,setInfo]=useState(false);const[loading,setLoading]=useState(true);const[src,setSrc]=useState("built-in");const c=LV[lv];const fr=useRef();const completedRef=useRef(false);
   const[levelPools,setLevelPools]=useState(()=>Object.fromEntries(Object.keys(V).map(level=>[level,mergeUniqueWordCards(V[level]||[])])));
   const[poolSources,setPoolSources]=useState(()=>Object.fromEntries(Object.keys(V).map(level=>[level,"local"])));
@@ -275,9 +274,11 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
   const[failedIllustrations,setFailedIllustrations]=useState([]);
   const[dictOpen,setDictOpen]=useState(false);
   const[dictData,setDictData]=useState(null);const[dictLoading,setDictLoading]=useState(false);const[dictError,setDictError]=useState("");
-  const[aiExample,setAiExample]=useState(null);// AI-generated example {en, zh}
+  const[aiExampleResult,setAiExampleResult]=useState(null);
+  const[actionNotice,setActionNotice]=useState("");
+  const dictionaryActionRef=useRef(null),dictionaryPanelRef=useRef(null);
   const[exampleLoading,setExampleLoading]=useState(false);
-  useEffect(()=>{let active=true;(async()=>{setLoading(true);completedRef.current=false;setFlip(false);setFlipAnim(false);setCombo(0);setMaxCombo(0);setSelectedTopic(null);const extra=await loadExtraWords();if(!active)return;let pools=Object.fromEntries(Object.keys(V).map(level=>[level,mergeUniqueWordCards(V[level]||[],extra[level]||[])]));setLevelPools(pools);setPoolSources(Object.fromEntries(Object.keys(V).map(level=>[level,"local"])));const restored=readSrsSession(resumeSession,lv);if(restored){if(!customCards?.length&&!sharedWord&&typeof fetchCloudVocabularyCatalog==="function"){const cloud=await fetchCloudVocabularyCatalog(lv);if(!active)return;pools={...pools,[lv]:mergeUniqueWordCards(pools[lv]||[],cloud||[])};setLevelPools(pools);setPoolSources(sources=>({...sources,[lv]:cloud?.length?"hybrid":"local"}))}setCards(restored.cards);setDeck(restored.deck);setSelectedTopic(restored.selectedTopic);setSrc(restored.src||"單字複習");setFlip(restored.flip);setCombo(restored.combo);setMaxCombo(restored.maxCombo);completedRef.current=restored.deck.queue.length===0;setLoading(false);return}if(Array.isArray(customCards)&&customCards.length){const ordered=sortCardsForStudy(customCards,weakWords,sharedWord);setCards(ordered);setDeck(createDeck(ordered));setSelectedTopic("direct");setSrc(customSource||`考試範圍 (${ordered.length}字)`);setLoading(false);return}if(!sharedWord){const cloud=typeof fetchCloudVocabularyCatalog==="function"?await fetchCloudVocabularyCatalog(lv):null;if(!active)return;pools={...pools,[lv]:mergeUniqueWordCards(pools[lv]||[],cloud||[])};setLevelPools(pools);setPoolSources(sources=>({...sources,[lv]:cloud?.length?"hybrid":"local"}));setCards([]);setDeck(createDeck([]));setSrc(`${LV[lv].l}分類字庫`);setLoading(false);return}const cloud=await fetchCloudVocab(lv,20);if(!active)return;if(cloud&&cloud.length>0){
+  useEffect(()=>{let active=true;(async()=>{setLoading(true);completedRef.current=false;setFlip(false);setFlipAnim(false);setCombo(0);setMaxCombo(0);setSelectedTopic(null);const extra=await loadExtraWords();if(!active)return;let pools=Object.fromEntries(Object.keys(V).map(level=>[level,mergeUniqueWordCards((V[level]||[]).map(card=>enrichVocabularyCard(card,level)),extra[level]||[])]));setLevelPools(pools);setPoolSources(Object.fromEntries(Object.keys(V).map(level=>[level,"local"])));const restored=readSrsSession(resumeSession,lv);if(restored){if(!customCards?.length&&!sharedWord&&typeof fetchCloudVocabularyCatalog==="function"){const cloud=await fetchCloudVocabularyCatalog(lv);if(!active)return;pools={...pools,[lv]:mergeUniqueWordCards(pools[lv]||[],cloud||[])};setLevelPools(pools);setPoolSources(sources=>({...sources,[lv]:cloud?.length?"hybrid":"local"}))}setCards(restored.cards.map(card=>enrichVocabularyCard(card,lv)));setDeck(restored.deck);setSelectedTopic(restored.selectedTopic);setSrc(restored.src||"單字複習");setFlip(restored.flip);setCombo(restored.combo);setMaxCombo(restored.maxCombo);completedRef.current=restored.deck.queue.length===0;setLoading(false);return}if(Array.isArray(customCards)&&customCards.length){const ordered=sortCardsForStudy(customCards.map(card=>enrichVocabularyCard(card,lv)),weakWords,sharedWord);setCards(ordered);setDeck(createDeck(ordered));setSelectedTopic("direct");setSrc(customSource||`考試範圍 (${ordered.length}字)`);setLoading(false);return}if(!sharedWord){const cloud=typeof fetchCloudVocabularyCatalog==="function"?await fetchCloudVocabularyCatalog(lv):null;if(!active)return;pools={...pools,[lv]:mergeUniqueWordCards(pools[lv]||[],cloud||[])};setLevelPools(pools);setPoolSources(sources=>({...sources,[lv]:cloud?.length?"hybrid":"local"}));setCards([]);setDeck(createDeck([]));setSrc(`${LV[lv].l}分類字庫`);setLoading(false);return}const cloud=await fetchCloudVocab(lv,20);if(!active)return;if(cloud&&cloud.length>0){
     // If sharedWord, put it first in the deck
     let ordered=cloud;
     if(sharedWord){const si=cloud.findIndex(w=>w.w.toLowerCase()===sharedWord.toLowerCase());if(si>0){ordered=[cloud[si],...cloud.slice(0,si),...cloud.slice(si+1)]}else if(si<0){
@@ -302,8 +303,15 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
   const startTopic=topicId=>{const option=topicCatalog.find(topic=>topic.id===topicId);if(!option?.ready)return;const matches=filterCardsByTopic(levelPools[lv]||[],topicId);const picked=selectVocabularyTopicRound(matches,{weakWords});const ordered=sortCardsForStudy(picked,weakWords,sharedWord);completedRef.current=false;setCards(ordered);setDeck(createDeck(ordered));setSelectedTopic(topicId);setSrc(`${LV[lv].l} · ${option.label} (${matches.length}字中抽 ${ordered.length}字)`);setFlip(false);setFlipAnim(false);setInfo(false);setCombo(0);setMaxCombo(0);setShowConfetti(false)};
   const startKangHsuanGrade=grade=>{const meta=KANG_HSUAN_ELEMENTARY_GRADES.find(item=>item.grade===Number(grade));if(!meta||lv!=="elementary")return;const matches=getKangHsuanCardsForGrade(levelPools.elementary||[],meta.grade);if(!matches.length)return;const picked=selectVocabularyTopicRound(matches,{weakWords});const ordered=sortCardsForStudy(picked,weakWords,sharedWord);completedRef.current=false;setCards(ordered);setDeck(createDeck(ordered));setSelectedTopic(meta.id);setSrc(`康軒 · ${meta.label}（${matches.length} 字中抽 ${ordered.length} 張）`);setFlip(false);setFlipAnim(false);setInfo(false);setCombo(0);setMaxCombo(0);setShowConfetti(false)};
   const leaveStudy=()=>{if(selectedTopicMeta||selectedKangHsuanGrade){setSelectedTopic(null);setCards([]);setDeck(createDeck([]));setFlip(false);setFlipAnim(false);setShowConfetti(false);completedRef.current=false;return}onBack()};
-  const cur=deck.queue[0]!==undefined?cards[deck.queue[0]]:null;const left=deck.queue.length;const done=left===0;const spokenExample=cur?(aiExample?.en||(!isPlaceholderExample(cur.ex,cur.w)?cur.ex:"")):"";
+  const cur=deck.queue[0]!==undefined?cards[deck.queue[0]]:null;const left=deck.queue.length;const done=left===0;
+  const exampleKey=JSON.stringify([lv,cur?.w,cur?.m,cur?.p,cur?.ex,cur?.ez]);
+  const aiExample=aiExampleResult?.key===exampleKey?aiExampleResult:null;
+  const spokenExample=cur?(aiExample?.en||(!isPlaceholderExample(cur.ex,cur.w)?cur.ex:"")):"";
+  const spokenExampleZh=spokenExample?(aiExample?.zh||cur?.ez||""):"";
+  useEffect(()=>{if(!loading&&studyActive&&cur&&typeof window!=="undefined"&&!/jsdom/i.test(window.navigator?.userAgent||""))window.scrollTo({top:0,left:0,behavior:"auto"})},[exampleKey,loading,studyActive]);
   useEffect(()=>{setDictOpen(false);setDictData(null);setDictError("")},[cur?.w]);
+  const closeDictionary=()=>{setDictOpen(false);dictionaryActionRef.current?.focus()};
+  useEffect(()=>{if(dictOpen&&flip)dictionaryPanelRef.current?.focus()},[dictOpen,flip]);
   const illustrations=useWordIllustrations(lv,studyActive?cur?.w:null,deps.fetchWordIllustrations);
   useEffect(()=>{setMediaError("");setFailedIllustrations([])},[lv,cur?.w]);
   useEffect(()=>{let active=true;if(!studyActive||!dictOpen||!cur){setDictLoading(false);return()=>{active=false}}if(!apiKey?.trim()){setDictLoading(false);setDictData(null);setDictError("");return()=>{active=false}}setDictLoading(true);setDictError("");generateKidDictionary(cur.w,cur.m,cur.p,lv,apiKey).then(data=>{if(!active)return;setDictData(data);setDictLoading(false)}).catch(error=>{if(!active)return;setDictData(null);setDictError(serviceErrorMessage(error,"AI 字典目前產生失敗，請稍後再試，或使用 Yahoo 查詢。"));setDictLoading(false)});return()=>{active=false}},[studyActive,dictOpen,cur?.w,apiKey,lv,dictRetry]);
@@ -322,6 +330,7 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
   // Auto-detect bad examples and replace with AI-generated ones (when API key set)
   useEffect(()=>{
     let active=true;
+    const setAiExample=example=>setAiExampleResult(example?{...example,key:exampleKey}:null);
     if(!studyActive||!cur){setAiExample(null);setExampleLoading(false);return()=>{active=false}};
     setAiExample(null);
     setExampleError("");
@@ -329,17 +338,20 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
     if(!isPlaceholderExample(cur.ex,cur.w)){return}// Original example is good, use it
     // Check if we have a cached AI example
     const k=cur.w.toLowerCase();
-    if(_exampleCache[k]){setAiExample(_exampleCache[k]);return}
-    try{const cached=localStorage.getItem(`ex_${k}`);if(cached){const obj=JSON.parse(cached);_exampleCache[k]=obj;setAiExample(obj);return}}catch{}
+    const memory=normalizeCardExample(_exampleCache[k],cur.w);
+    if(memory){setAiExample(memory);return}
+    delete _exampleCache[k];
+    try{const cached=localStorage.getItem(`ex_${k}`);if(cached){const obj=normalizeCardExample(JSON.parse(cached),cur.w);if(obj){_exampleCache[k]=obj;setAiExample(obj);return}localStorage.removeItem(`ex_${k}`)}}catch{}
     // No cache - if API key available, generate
-    if(apiKey){
+    if(apiKey?.trim()){
       setExampleLoading(true);
       generateExample(cur.w,cur.m,cur.p,apiKey).then(ex=>{
-        if(active){if(ex)setAiExample(ex);else setExampleError("AI 例句暫時無法產生，仍可繼續練習單字。");}
+        const valid=normalizeCardExample(ex,cur.w);
+        if(active){if(valid)setAiExample(valid);else setExampleError("AI 例句暫時無法產生，仍可繼續練習單字。");}
       }).catch(error=>{if(active)setExampleError(serviceErrorMessage(error)+" 仍可繼續練習單字。");}).finally(()=>{if(active)setExampleLoading(false)});
     }
     return()=>{active=false};
-  },[studyActive,cur?.w,apiKey,exampleRetry]);
+  },[studyActive,exampleKey,apiKey,exampleRetry]);
   useEffect(()=>{
     if(!studyActive||!cur||loading)return;
     const upcoming=deck.queue.slice(0,5).map(i=>cards[i]?.w).filter(Boolean);
@@ -356,8 +368,12 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
   },[]);
   useEffect(()=>()=>{Object.values(reactionTimers.current).forEach(timer=>clearTimeout(timer));reactionTimers.current={}},[]);
   const rate=useCallback(a=>{
-    if(!flip||!cur||Date.now()-rateGuardRef.current<180)return;
-    rateGuardRef.current=Date.now();
+    if(!flip||dictOpen||!cur||!["again","hard","good","easy"].includes(a)||Date.now()-rateGuardRef.current<180)return;
+    rateGuardRef.current=Date.now();setActionNotice("");
+    const currentDeck=withSrsLearningCursor(deck),nextCursor=currentDeck.learningCursor+1;
+    const nextDeck={...rateDeck(currentDeck,a),learningSessionId:currentDeck.learningSessionId,learningCursor:nextCursor};
+    setDeck(nextDeck);setFlip(false);setFlipAnim(false);
+    onLearningEvent?.({id:`srs:${currentDeck.learningSessionId}:${nextCursor}`,sessionId:currentDeck.learningSessionId,source:'srs',level:lv,contentId:cur.w,kind:'practice',outcome:'participated',rating:a,occurredAt:new Date().toISOString()});
     if(a==="again"||a==="hard")trackWeak(cur.w,1);
     else trackWeak(cur.w,a==="easy"?-2:-1);
     if(a==="easy"||a==="good"){
@@ -375,16 +391,17 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
       setCombo(0);setMascotMood("think");playSound("flip");
     }else{setMascotMood("think");playSound("flip")}
     scheduleReaction("mascot",()=>setMascotMood("idle"),1500);
-    setDeck(previous=>rateDeck(previous,a));setFlip(false);setFlipAnim(false);
-  },[onXp,cur,trackWeak,flip,combo]);
-  useEffect(()=>{const h=e=>{if(!studyActive||done||e.repeat||e.altKey||e.ctrlKey||e.metaKey||e.target?.closest?.("input,textarea,select,button,a,summary,[contenteditable=true],[role=dialog]"))return;if(e.code==="Space"){e.preventDefault();if(!flip){setFlip(true);setFlipAnim(true);playSound("flip");if(spokenExample)speechTimer(()=>speak(spokenExample),350)}else{setFlip(false);setFlipAnim(false)}}if(flip){if(e.key==="1")rate("again");if(e.key==="2")rate("hard");if(e.key==="3")rate("good");if(e.key==="4")rate("easy")}if(e.key==="Enter"){e.preventDefault();if(cur)speak(flip?(spokenExample||cur.w):cur.w)}};window.addEventListener("keydown",h);return()=>window.removeEventListener("keydown",h)},[studyActive,flip,done,cur,rate,spokenExample]);
+  },[onXp,onLearningEvent,lv,deck,cur,trackWeak,flip,combo,dictOpen]);
+  useEffect(()=>{const h=e=>{if(dictOpen){if(e.key==="Escape"){e.preventDefault();closeDictionary()}return}if(!studyActive||done||e.repeat||e.altKey||e.ctrlKey||e.metaKey||e.target?.closest?.("input,textarea,select,button,a,summary,[contenteditable=true],[role=dialog]"))return;if(e.code==="Space"){e.preventDefault();if(!flip){setFlip(true);setFlipAnim(true);playSound("flip");if(spokenExample)speechTimer(()=>speak(spokenExample),350)}else{setFlip(false);setFlipAnim(false)}}if(flip){if(e.key==="1")rate("again");if(e.key==="2")rate("hard");if(e.key==="3")rate("good");if(e.key==="4")rate("easy")}if(e.key==="Enter"){e.preventDefault();if(cur)speak(flip?(spokenExample||cur.w):cur.w)}};window.addEventListener("keydown",h);return()=>window.removeEventListener("keydown",h)},[studyActive,flip,done,cur,rate,spokenExample,dictOpen]);
   const handleCardTap=()=>{if(!flip){setFlip(true);setFlipAnim(true);playSound("flip");if(spokenExample)speechTimer(()=>speak(spokenExample),350)}};
-  const handleCSV=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{const p=parseCSV(ev.target.result);if(p.length){setCards(p);setDeck(createDeck(p));setFlip(false)}};r.readAsText(f,"utf-8")};
+  const handleCSV=e=>{const input=e.target,f=input.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{const p=parseCSV(ev.target.result);input.value="";if(!p.length){setActionNotice("沒有找到可匯入的單字，請確認 CSV 包含單字和中文意思。");return}completedRef.current=false;rateGuardRef.current=0;setCards(p);setDeck(createDeck(p));setSelectedTopic("imported");setSrc(`CSV 匯入（${p.length} 字）`);setFlip(false);setFlipAnim(false);setCombo(0);setMaxCombo(0);setDictOpen(false);setActionNotice(`已匯入 ${p.length} 個單字。`)};r.onerror=()=>{input.value="";setActionNotice("檔案讀取失敗，請重新選擇 CSV 檔案。")};r.readAsText(f,"utf-8")};
+  const shareText=()=>{const url=`https://englishgo-vevan.netlify.app/?word=${encodeURIComponent(cur.w)}&lv=${lv}`;return{url,text:`📘 ${cur.w}${cur.ph?` ${cur.ph}`:""} — ${cur.m}${spokenExample?`\n📖 ${spokenExample}`:""}${spokenExampleZh?`\n   ${spokenExampleZh}`:""}\n${url}`}};
+  const copyCard=async()=>{try{if(!navigator.clipboard?.writeText)throw Error("clipboard unavailable");await navigator.clipboard.writeText(shareText().text);setActionNotice("✅ 已複製單字與例句！")}catch{setActionNotice("目前無法複製，請允許剪貼簿權限後重試。")}};
   useEffect(()=>{if(studyActive&&done&&!loading&&!completedRef.current){completedRef.current=true;onDone();playSound("done");setShowConfetti(true);scheduleReaction("confetti",()=>setShowConfetti(false),3500)}},[studyActive,done,loading]);
-  const restartRound=async()=>{setLoading(true);completedRef.current=false;setShowConfetti(false);setCombo(0);setMaxCombo(0);if(selectedKangHsuanGrade){const matches=getKangHsuanCardsForGrade(levelPools.elementary||[],selectedKangHsuanGrade.grade);const picked=selectVocabularyTopicRound(matches,{weakWords,previousWords:cards});const next=sortCardsForStudy(picked,weakWords,sharedWord);setCards(next);setDeck(createDeck(next));setFlip(false);setSrc(`康軒 · ${selectedKangHsuanGrade.label}（${matches.length} 字中抽 ${next.length} 張）`);setLoading(false);return}if(selectedTopicMeta){const matches=filterCardsByTopic(levelPools[lv]||[],selectedTopicMeta.id);const picked=selectVocabularyTopicRound(matches,{weakWords,previousWords:cards});const next=sortCardsForStudy(picked,weakWords,sharedWord);setCards(next);setDeck(createDeck(next));setFlip(false);setLoading(false);return}if(Array.isArray(customCards)&&customCards.length){const next=sortCardsForStudy(customCards,weakWords,sharedWord);setCards(next);setDeck(createDeck(next));setFlip(false);setSrc(customSource||`考試範圍 (${next.length}字)`);setLoading(false);return}const cloud=await fetchCloudVocab(lv,20);const next=sortCardsForStudy(cloud?.length?cloud:cards,weakWords,sharedWord);setCards(next);setDeck(createDeck(next));setFlip(false);setLoading(false)};
+  const restartRound=async()=>{setLoading(true);completedRef.current=false;setShowConfetti(false);setCombo(0);setMaxCombo(0);if(selectedKangHsuanGrade){const matches=getKangHsuanCardsForGrade(levelPools.elementary||[],selectedKangHsuanGrade.grade);const picked=selectVocabularyTopicRound(matches,{weakWords,previousWords:cards});const next=sortCardsForStudy(picked,weakWords,sharedWord);setCards(next);setDeck(createDeck(next));setFlip(false);setSrc(`康軒 · ${selectedKangHsuanGrade.label}（${matches.length} 字中抽 ${next.length} 張）`);setLoading(false);return}if(selectedTopicMeta){const matches=filterCardsByTopic(levelPools[lv]||[],selectedTopicMeta.id);const picked=selectVocabularyTopicRound(matches,{weakWords,previousWords:cards});const next=sortCardsForStudy(picked,weakWords,sharedWord);setCards(next);setDeck(createDeck(next));setFlip(false);setLoading(false);return}if(selectedTopic==="imported"){setDeck(createDeck(cards));setFlip(false);setLoading(false);return}if(Array.isArray(customCards)&&customCards.length){const next=sortCardsForStudy(customCards.map(card=>enrichVocabularyCard(card,lv)),weakWords,sharedWord);setCards(next);setDeck(createDeck(next));setFlip(false);setSrc(customSource||`考試範圍 (${next.length}字)`);setLoading(false);return}const cloud=await fetchCloudVocab(lv,20);const next=sortCardsForStudy(cloud?.length?cloud:cards,weakWords,sharedWord);setCards(next);setDeck(createDeck(next));setFlip(false);setLoading(false)};
   if(loading)return(<div><Hdr t="🃏 單字小花園" onBack={onBack} cl={c.cl}/><div style={{textAlign:"center",padding:"48px 16px",color:S.t3,fontSize:14}}><div style={{fontSize:40,animation:"emojiBounce 1s infinite"}}>📚</div><div style={{marginTop:8}}>正在準備{c.l}主題字庫...</div><div style={{width:120,height:4,background:S.bg2,borderRadius:2,margin:"12px auto",overflow:"hidden"}}><div style={{width:"60%",height:"100%",background:`linear-gradient(90deg,${c.cl},${c.ac})`,borderRadius:2,animation:"pulse 1s infinite"}}/></div></div></div>);
   if(!studyActive)return <VocabularyTopicPicker lv={lv} levelPools={levelPools} poolSources={poolSources} weakWords={weakWords} onBack={onBack} onStart={startTopic} onStartKangHsuan={startKangHsuanGrade} LV={LV} S={S} Hdr={Hdr}/>;
-  if(done){const{stats,total}=deck;const attempts=stats.again+stats.hard+stats.good+stats.easy;const goodPct=Math.round(((stats.good+stats.easy)/total)*100);return(<div>{showConfetti&&<Confetti/>}<Hdr t="🃏 單字小花園" onBack={leaveStudy} cl={c.cl}/><div style={{textAlign:"center",padding:"32px 16px"}}><div style={{fontSize:56,animation:"bounceIn .5s ease-out"}}>{goodPct>=80?"🏆":goodPct>=60?"🎉":"💪"}</div><h2 style={{fontSize:22,fontWeight:700,color:S.t1,marginTop:8}}>練習完成！共 {total} 張</h2>{selectedTopicMeta&&<div style={{fontSize:13,color:c.cl,fontWeight:800,marginTop:4}}>{selectedTopicMeta.icon} {selectedTopicMeta.label} · {LV[lv].l}</div>}{maxCombo>=3&&<div style={{fontSize:13,color:"#EF9F27",fontWeight:600,marginTop:4}}>🔥 最高 {maxCombo} 連擊！</div>}<div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,maxWidth:400,margin:"16px auto"}}>{[["🌱 再看看",stats.again,"#927044"],["🤔 有點難",stats.hard,"#A37D40"],["😊 記住了",stats.good,"#437650"],["🌟 很熟悉",stats.easy,"#547E9D"]].map(([l,v,cl])=>(<div key={l} style={{...S.card,padding:"12px 6px",textAlign:"center",borderTop:`3px solid ${cl}`}}><div style={{fontSize:26,fontWeight:700,color:cl}}>{v}</div><div style={{fontSize:11,color:S.t3,marginTop:2}}>{l}</div></div>))}</div><div style={{textAlign:"center",fontSize:13,color:S.t2,margin:"8px 0"}}>掌握率 {goodPct}% · 答題 {attempts} 次</div><div style={{fontSize:14,color:S.t2,marginBottom:14}}>{goodPct>=80?"太厲害了！🌟":goodPct>=60?"表現不錯！繼續加油 💪":"多練習幾次會更好！📖"}</div><button onClick={restartRound} style={{...S.btn,background:c.cl,color:"#fff",marginRight:8,fontSize:14}}>🔄 新一輪</button>{selectedTopicMeta&&<button onClick={leaveStudy} style={{...S.btn,background:S.bg2,color:c.cl,marginRight:8,fontSize:14}}>🧭 換分類</button>}<button onClick={onBack} style={{...S.btn,background:S.bg2,color:S.t1,fontSize:14}}>休息一下，回首頁</button></div></div>)}
+  if(done){const{stats,total}=deck;const attempts=stats.again+stats.hard+stats.good+stats.easy;const goodPct=attempts?Math.round(((stats.good+stats.easy)/attempts)*100):0;return(<div>{showConfetti&&<Confetti/>}<Hdr t="🃏 單字小花園" onBack={leaveStudy} cl={c.cl}/><div style={{textAlign:"center",padding:"32px 16px"}}><div style={{fontSize:56,animation:"bounceIn .5s ease-out"}}>{goodPct>=80?"🏆":goodPct>=60?"🎉":"💪"}</div><h2 style={{fontSize:22,fontWeight:700,color:S.t1,marginTop:8}}>練習完成！共 {total} 張</h2>{selectedTopicMeta&&<div style={{fontSize:13,color:c.cl,fontWeight:800,marginTop:4}}>{selectedTopicMeta.icon} {selectedTopicMeta.label} · {LV[lv].l}</div>}{maxCombo>=3&&<div style={{fontSize:13,color:"#EF9F27",fontWeight:600,marginTop:4}}>🔥 最高 {maxCombo} 連擊！</div>}<div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,maxWidth:400,margin:"16px auto"}}>{[["🌱 再看看",stats.again,"#927044"],["🤔 有點難",stats.hard,"#A37D40"],["😊 記住了",stats.good,"#437650"],["🌟 很熟悉",stats.easy,"#547E9D"]].map(([l,v,cl])=>(<div key={l} style={{...S.card,padding:"12px 6px",textAlign:"center",borderTop:`3px solid ${cl}`}}><div style={{fontSize:26,fontWeight:700,color:cl}}>{v}</div><div style={{fontSize:11,color:S.t3,marginTop:2}}>{l}</div></div>))}</div><div style={{textAlign:"center",fontSize:13,color:S.t2,margin:"8px 0"}}>本輪記住率 {goodPct}% · 答題 {attempts} 次</div><div style={{fontSize:14,color:S.t2,marginBottom:14}}>{goodPct>=80?"太厲害了！🌟":goodPct>=60?"表現不錯！繼續加油 💪":"多練習幾次會更好！📖"}</div><button onClick={restartRound} style={{...S.btn,background:c.cl,color:"#fff",marginRight:8,fontSize:14}}>🔄 新一輪</button>{selectedTopicMeta&&<button onClick={leaveStudy} style={{...S.btn,background:S.bg2,color:c.cl,marginRight:8,fontSize:14}}>🧭 換分類</button>}<button onClick={onBack} style={{...S.btn,background:S.bg2,color:S.t1,fontSize:14}}>休息一下，回首頁</button></div></div>)}
   const pct=Math.round(((deck.total-left)/deck.total)*100);
   const speakDict=speakWebSpeech||speak;
   const rateTooltip=deck.total-left===0?"第一張卡片！加油 💪":"";const comboLabel=combo>=10?"🔥🔥🔥 UNSTOPPABLE!":combo>=7?"🔥🔥 ON FIRE!":combo>=5?"🔥 COMBO x"+combo:combo>=3?"✨ "+combo+" 連擊！":"";
@@ -416,6 +433,7 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
       <div style={{color:S.t2,flex:"1 1 220px"}}><b style={{color:S.t1}}>🖼️ 單字動圖尚未啟用</b><br/>目前使用內建圖片；申請 Giphy Key 後可自動顯示單字相關 GIF。</div>
       <div style={{display:"flex",gap:6,flexWrap:"wrap"}}><a href="/learn/gif-guide.html" target="_blank" rel="noreferrer" style={{...S.btn,background:S.bg2,color:c.cl,padding:"8px 12px",fontSize:12,textDecoration:"none"}}>看效果</a><button onClick={()=>onOpenSettings?.()} style={{...S.btn,background:c.cl,color:"#fff",padding:"8px 12px",fontSize:12}}>設定 Key</button></div>
     </div>}
+    {actionNotice&&<div role="status" aria-live="polite" style={{padding:"10px 12px",marginBottom:10,color:S.t2,fontSize:13}}>{actionNotice}</div>}
     {comboLabel&&<div style={{textAlign:"center",fontSize:combo>=7?16:13,fontWeight:700,color:"#EF9F27",marginBottom:4,animation:comboAnim?"comboFlash .5s ease-out":"none"}}>{comboLabel}</div>}
     {Array.isArray(customCards)&&customCards.length>0&&<div style={{marginBottom:10,padding:"8px 11px",border:`1px solid ${c.cl}33`,background:c.bg,borderRadius:12,color:S.t2,fontSize:12,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}><b style={{color:c.cl}}>{customSource==="每日小任務"?"🌱 每日小任務":"考試範圍模式"}</b><span>{customCards.length} 個單字</span><span style={{color:S.t3}}>{customSource==="每日小任務"?"聽一聽、想一想，再翻開答案。":"系統自動排序，輸入順序不會決定出題順序"}</span></div>}
     <style>{`
@@ -521,6 +539,10 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
         .srs-dict-backdrop{display:block;position:fixed;inset:0;background:rgba(15,23,42,.22);z-index:68;border:0}
         .srs-dict-panel{position:fixed!important;left:10px;right:10px;bottom:calc(8px + env(safe-area-inset-bottom,0px));max-height:min(78vh,620px)!important;z-index:70;border-radius:22px!important;animation:dictFadeIn .16s ease-out}
       }
+      .srs-card-shell.is-back{padding-top:48px}
+      .srs-front-word{max-width:100%;flex-wrap:wrap}
+      .srs-headword{min-width:0;max-width:100%;overflow-wrap:anywhere}
+      .srs-headword.is-long{font-size:clamp(19px,5.4vw,1em)}
       @keyframes dictFadeIn{from{opacity:.72}to{opacity:1}}
     `}</style>
     <div className="srs-progress-row">
@@ -545,19 +567,19 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
             :gifLoading&&gifKey?<div style={{fontSize:13,color:S.t3,animation:"pulse 1s infinite"}}>載入圖片中...</div>
             :<div className="srs-media-fallback" data-testid="srs-media-fallback"><strong>{fallbackVisual.emoji}</strong><span>使用備用圖示</span></div>}
           </div>
-          <div className="srs-front-word">{cur.w}<button className="srs-sound-btn" onClick={e=>{e.stopPropagation();speak(cur.w)}} aria-label={`播放單字 ${cur.w}`}>🔊</button></div>
+          <div className="srs-front-word"><span className={`srs-headword ${cur.w.length>12?"is-long":""}`}>{cur.w}</span><button className="srs-sound-btn" onClick={e=>{e.stopPropagation();speak(cur.w)}} aria-label={`播放單字 ${cur.w}`}>🔊</button></div>
           {cur.ph&&<div className="srs-front-ph">{cur.ph}</div>}
           <div className="srs-flow-hint" data-testid="srs-study-guidance"><button type="button" className="srs-reveal" onClick={e=>{e.stopPropagation();handleCardTap()}}>點卡片看答案</button><span>先在心裡想中文，再翻面確認</span></div>
           <div className="srs-front-sub">電腦可按 Space</div>
         </>):(<>
           <div className="srs-back-top" data-testid="srs-back-primary">
             <div className="srs-back-main">
-              <div className="srs-back-word">{cur.w}<span className="srs-back-pos">({cur.p})</span><button className="srs-sound-btn" onClick={e=>{e.stopPropagation();speak(cur.w)}} aria-label={`播放單字 ${cur.w}`}>🔊</button><button className="srs-sound-btn srs-regenerate-btn" onClick={e=>{e.stopPropagation();regenerateSpeech?.(cur.w)}} aria-label={`重新產生單字發音 ${cur.w}`} title="發音有誤？重新呼叫語音 API 並更新快取">重產</button></div>
+              <div className="srs-back-word"><span className={`srs-headword ${cur.w.length>12?"is-long":""}`}>{cur.w}</span><span className="srs-back-pos">({cur.p})</span><button className="srs-sound-btn" onClick={e=>{e.stopPropagation();speak(cur.w)}} aria-label={`播放單字 ${cur.w}`}>🔊</button><button className="srs-sound-btn srs-regenerate-btn" onClick={e=>{e.stopPropagation();regenerateSpeech?.(cur.w)}} aria-label={`重新產生單字發音 ${cur.w}`} title="發音有誤？重新呼叫語音 API 並更新快取">重產</button></div>
               {cur.ph&&<div className="srs-back-ph">{cur.ph}</div>}
               <div className="srs-back-meaning">{cur.m}<button className="srs-sound-btn" onClick={e=>{e.stopPropagation();speak(cur.m,"zh-TW",0.9)}} aria-label={`播放中文 ${cur.m}`}>🔈</button></div>
               <div className="srs-card-actions">
-                <button data-testid="srs-dictionary-action" className="srs-pill-btn srs-dict-cta" onClick={e=>{e.stopPropagation();setDictOpen(true)}}><span>🔎 查字典</span><small>小朋友字典</small></button>
-                <button className="srs-pill-btn" onClick={e=>{e.stopPropagation();speak(spokenExample||cur.w)}}>🔊 朗讀例句</button>
+                <button ref={dictionaryActionRef} data-testid="srs-dictionary-action" className="srs-pill-btn srs-dict-cta" onClick={e=>{e.stopPropagation();setDictOpen(true)}}><span>🔎 查字典</span><small>小朋友字典</small></button>
+                {spokenExample&&<button className="srs-pill-btn" onClick={e=>{e.stopPropagation();speak(spokenExample)}}>🔊 朗讀例句</button>}
                 {onPracticeSpeaking&&<button type="button" className="srs-pill-btn" onClick={event=>{event.stopPropagation();onPracticeSpeaking({word:cur.w,meaning:cur.m||'',en:cur.w,zh:cur.m||'',type:'word'});}}>🎤 練單字發音</button>}
                 <div className="srs-flow-hint is-back" data-testid="srs-study-guidance"><b>下一步</b><span><strong>查字典或練聽說</strong>，再評分進下一題</span></div>
               </div>
@@ -591,7 +613,7 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
           }
           if(exampleError){return <div className="srs-example-card" role="status"><p>{exampleError}</p><div style={{display:"flex",flexWrap:"wrap",gap:8}}><button className="srs-pill-btn" onClick={e=>{e.stopPropagation();setExampleRetry(n=>n+1)}}>重試例句</button><button className="srs-pill-btn" onClick={e=>{e.stopPropagation();onOpenSettings?.()}}>API Key 設定</button></div></div>}
           // Missing optional generated example: keep the current word usable
-          if(isPlaceholder&&!apiKey){
+          if(isPlaceholder&&!apiKey?.trim()){
             return(<div className="srs-example-card" style={{textAlign:"center",color:S.t3}}>
               🌱 先記住這個單字的意思，就很棒了。<br/>
               <button className="srs-pill-btn" onClick={(e)=>{e.stopPropagation();onOpenSettings?.()}} style={{marginTop:8}}>請大人協助加入例句</button>
@@ -623,8 +645,8 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
           </details>
       </>)}
       </section>
-      {dictOpen&&flip&&cur&&<div className="srs-dict-backdrop" onClick={()=>setDictOpen(false)} aria-hidden="true"/>}
-      {dictOpen&&flip&&cur&&<aside className="srs-dict-panel" role="complementary" aria-label="Dictionary results" style={S.card}>
+      {dictOpen&&flip&&cur&&<div className="srs-dict-backdrop" onClick={closeDictionary} aria-hidden="true"/>}
+      {dictOpen&&flip&&cur&&<aside ref={dictionaryPanelRef} tabIndex={-1} className="srs-dict-panel" role="complementary" aria-label="Dictionary results" style={S.card}>
       <div className="srs-dict-head">
         <div style={{flex:1,minWidth:0}}>
           <div className="srs-dict-title">單字學習助手</div>
@@ -632,7 +654,7 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
           <div className="srs-dict-hint"><span>AI 字典留在頁面內</span>；Yahoo 會開新分頁查更多外部釋義與例句。</div>
         </div>
         <a href={yahooDictionaryUrl(cur.w)} target="_blank" rel="noreferrer" title="開新分頁到 Yahoo 字典查詢" aria-label={`開新分頁到 Yahoo 字典查詢 ${cur.w}`} style={{...S.btn,background:c.cl,color:"#fff",padding:"7px 10px",fontSize:12,textDecoration:"none",minHeight:34,display:"inline-flex",alignItems:"center",gap:4,boxShadow:`0 8px 18px ${c.cl}22`,whiteSpace:"nowrap"}}>Yahoo 外站 ↗</a>
-        <button onClick={()=>setDictOpen(false)} aria-label="Close dictionary" style={{background:S.bg2,border:`1px solid ${S.bd}`,borderRadius:10,width:34,height:34,cursor:"pointer",color:S.t2,fontSize:16}}>×</button>
+        <button onClick={closeDictionary} aria-label="Close dictionary" style={{background:S.bg2,border:`1px solid ${S.bd}`,borderRadius:10,width:34,height:34,cursor:"pointer",color:S.t2,fontSize:16}}>×</button>
       </div>
       <div className="srs-dict-body">
         {(!apiKey?.trim()||dictError)&&<div data-testid="srs-local-dictionary" style={{padding:16,background:S.bg2,border:`1px solid ${S.bd}`,borderRadius:14,color:S.t2,lineHeight:1.8}}>
@@ -640,7 +662,7 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
           <h3 style={{fontSize:24,color:S.t1,margin:"8px 0"}}>{cur.m}</h3>
           <div>{partOfSpeechToZh(cur.p)} {cur.ph}</div>
           <button type="button" onClick={()=>speakDict(cur.w)} style={{...S.btn,background:c.cl,color:"#fff",padding:"8px 12px",fontSize:13,marginTop:10}}>播放單字</button>
-          {cur.ex&&!isPlaceholderExample(cur.ex,cur.w)&&<div style={{paddingTop:14,marginTop:14,borderTop:`1px solid ${S.bd}`}}><b style={{color:S.t1}}>試著說一句</b><p style={{color:S.t1,margin:"8px 0"}}>{cur.ex} {speakTiny(cur.ex,"播放字典例句")}</p><p style={{margin:"4px 0",fontSize:14}}>{cur.ez}</p></div>}
+          {spokenExample&&<div style={{paddingTop:14,marginTop:14,borderTop:`1px solid ${S.bd}`}}><b style={{color:S.t1}}>試著說一句</b><p style={{color:S.t1,margin:"8px 0"}}>{spokenExample} {speakTiny(spokenExample,"播放字典例句")}</p><p style={{margin:"4px 0",fontSize:14}}>{spokenExampleZh}</p></div>}
           <details style={{fontSize:12,marginTop:16}}><summary style={{cursor:"pointer",minHeight:44,display:"flex",alignItems:"center"}}>給家長與老師：更多字典解釋</summary><p>設定 AI 後，可加入更多解釋與搭配詞。內建字典可以繼續使用。</p><button type="button" onClick={()=>onOpenSettings?.()} style={{...S.btn,background:S.bg1,color:c.cl,padding:"8px 12px",fontSize:12}}>前往 Key 設定</button></details>
         </div>}
         {apiKey?.trim()&&dictLoading&&<div style={{padding:"28px 0",textAlign:"center",color:S.t3}}>AI 正在整理小朋友版字典...</div>}
@@ -689,10 +711,10 @@ export default function SRS({lv,onBack,onXp,onDone,trackWeak,gifKey,sharedWord,a
     {flip&&<>
       <div data-testid="srs-support-actions" className="srs-support-actions">
         <button onClick={()=>{setFlip(false);setFlipAnim(false)}} style={{background:S.bg2,border:`1px solid ${S.bd}`,borderRadius:14,padding:"10px 20px",fontSize:14,cursor:"pointer",color:S.t2,fontFamily:"inherit",minHeight:44}}>🔙 翻回</button>
-        <button onClick={()=>{const url=`https://englishgo-vevan.netlify.app/?word=${encodeURIComponent(cur.w)}&lv=${lv}`;const t=`📘 今天學了一個英文單字！\n\n📝 ${cur.w}${cur.ph?` ${cur.ph}`:""}\n   ${cur.p} ${cur.m}\n${cur.ex?`\n📖 ${cur.ex}`:""}\n${cur.ez?`   ${cur.ez}`:""}\n\n一起來學英文 👇\n${url}`;shareLine(t,url)}} style={{background:"#06C755",border:"none",borderRadius:14,padding:"10px 16px",fontSize:14,cursor:"pointer",color:"#fff",fontFamily:"inherit",minHeight:44,fontWeight:600}}>📤 LINE</button>
-        <button onClick={()=>{const url=`https://englishgo-vevan.netlify.app/?word=${encodeURIComponent(cur.w)}&lv=${lv}`;const t=`📘 ${cur.w}${cur.ph?` ${cur.ph}`:""} — ${cur.m}${cur.ex?`\n📖 ${cur.ex}`:""}${cur.ez?`\n   ${cur.ez}`:""}\n${url}`;navigator.clipboard?.writeText(t).then(()=>{const d=document.createElement("div");d.textContent="✅ 已複製！";d.style.cssText="position:fixed;top:20%;left:50%;transform:translateX(-50%);background:#1D9E75;color:#fff;padding:10px 24px;border-radius:20px;font-size:14px;font-weight:600;z-index:9999;animation:fadeUp .3s";document.body.appendChild(d);setTimeout(()=>d.remove(),1500)})}} style={{background:S.bg2,border:`1px solid ${S.bd}`,borderRadius:14,padding:"10px 16px",fontSize:14,cursor:"pointer",color:S.t2,fontFamily:"inherit",minHeight:44}}>📋 複製</button>
+        <button onClick={()=>{const {text,url}=shareText();shareLine(text,url)}} style={{background:"#06C755",border:"none",borderRadius:14,padding:"10px 16px",fontSize:14,cursor:"pointer",color:"#fff",fontFamily:"inherit",minHeight:44,fontWeight:600}}>📤 LINE</button>
+        <button onClick={copyCard} style={{background:S.bg2,border:`1px solid ${S.bd}`,borderRadius:14,padding:"10px 16px",fontSize:14,cursor:"pointer",color:S.t2,fontFamily:"inherit",minHeight:44}}>📋 複製</button>
       </div>
-      <div data-testid="srs-rating-bar" className="srs-rating-bar">{[{k:"again",l:"Again",n:"1",cl:"#E24B4A",bg:"#FCEBEB",em:"😅"},{k:"hard",l:"Hard",n:"2",cl:"#BA7517",bg:"#FAEEDA",em:"🤔"},{k:"good",l:"Good",n:"3",cl:"#0F6E56",bg:"#E1F5EE",em:"😊"},{k:"easy",l:"Easy",n:"4",cl:"#185FA5",bg:"#E6F1FB",em:"🤩"}].map(b=>(<button className="srs-rate-btn" key={b.k} onClick={()=>rate(b.k)} style={{background:b.bg,color:b.cl}} onTouchStart={e=>e.currentTarget.style.transform="scale(0.93)"} onTouchEnd={e=>e.currentTarget.style.transform="scale(1)"} onMouseDown={e=>e.currentTarget.style.transform="scale(0.95)"} onMouseUp={e=>e.currentTarget.style.transform="scale(1)"}><span>{b.em}</span>{({again:"再看看",hard:"有點難",good:"記住了",easy:"很熟悉"})[b.k]}<small>{b.l} {b.n}</small></button>))}</div>
+      <div data-testid="srs-rating-bar" className="srs-rating-bar">{[{k:"again",l:"Again",n:"1",cl:"#E24B4A",bg:"#FCEBEB",em:"😅"},{k:"hard",l:"Hard",n:"2",cl:"#BA7517",bg:"#FAEEDA",em:"🤔"},{k:"good",l:"Good",n:"3",cl:"#0F6E56",bg:"#E1F5EE",em:"😊"},{k:"easy",l:"Easy",n:"4",cl:"#185FA5",bg:"#E6F1FB",em:"🤩"}].map(b=>(<button className="srs-rate-btn" key={b.k} disabled={dictOpen} title={dictOpen?"請先關閉字典再評分":undefined} onClick={()=>rate(b.k)} style={{background:b.bg,color:b.cl,opacity:dictOpen?0.45:1,cursor:dictOpen?"not-allowed":"pointer"}} onTouchStart={e=>e.currentTarget.style.transform="scale(0.93)"} onTouchEnd={e=>e.currentTarget.style.transform="scale(1)"} onMouseDown={e=>e.currentTarget.style.transform="scale(0.95)"} onMouseUp={e=>e.currentTarget.style.transform="scale(1)"}><span>{b.em}</span>{({again:"再看看",hard:"有點難",good:"記住了",easy:"很熟悉"})[b.k]}<small>{b.l} {b.n}</small></button>))}</div>
       
     </>}
   </div>);

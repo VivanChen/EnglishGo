@@ -1,0 +1,17 @@
+{
+  "date": "2026-10-26",
+  "rows": 5677,
+  "missingPhonetics": 0,
+  "mismatches": [],
+  "changedExistingPhonetics": [],
+  "changedOtherContent": [],
+  "highFrequencyRows": 725,
+  "missingHighFrequencyCollocations": [],
+  "examFocusRows": 22,
+  "missingExamFocusCollocations": [],
+  "tests": {
+    "full": 922,
+    "finalTargeted": 17
+  },
+  "browserChecks": 12
+}

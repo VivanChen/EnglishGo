@@ -1,0 +1,61 @@
+{
+  "date": "2026-10-26",
+  "scope": "本機程式修正；正式站未部署，雲端資料未寫入",
+  "coverage": [
+    {
+      "level": "小學",
+      "words": 1348,
+      "missingPhonetics": 989,
+      "noForms": 1253,
+      "noCollocations": 1222
+    },
+    {
+      "level": "國中",
+      "words": 1491,
+      "missingPhonetics": 1000,
+      "noForms": 1243,
+      "noCollocations": 1307
+    },
+    {
+      "level": "高中",
+      "words": 2838,
+      "missingPhonetics": 2530,
+      "noForms": 2698,
+      "noCollocations": 2710
+    }
+  ],
+  "fixes": {
+    "repairedPrimaryImageUrls": 180,
+    "removedMissingFallbackPaths": 380,
+    "reviewedBilingualExamples": 92,
+    "addedJuniorFallbackCards": 87,
+    "addedJuniorIllustrationMetadata": 87
+  },
+  "verification": {
+    "fullTests": 914,
+    "fullTestFiles": 86,
+    "finalRegressionTests": 54,
+    "finalRegressionFiles": 10,
+    "browserFlowChecks": 36,
+    "edgeCases": 3,
+    "overflow": 0,
+    "brokenImages": 0,
+    "runtimeErrors": 0,
+    "cloudIllustrationRecords": 5692,
+    "missingCloudStorageObjects": 0,
+    "audioHttpStatus": 200,
+    "build": "passed",
+    "diffCheck": "passed"
+  },
+  "limitations": [
+    "圖片語意採抽樣人工比對；未逐張人工審查 5,692 張圖片。",
+    "Giphy 與 Gemini 的失敗及重試流程已有測試；未以使用者金鑰進行成功呼叫。",
+    "圖片首次載入需要網路；離線可用範圍取決於瀏覽器已有的圖片快取。",
+    "音標與常用搭配仍需補充；部分詞性原本就不需要詞形變化。",
+    "正式版主要 JavaScript 檔約 2.13 MB，gzip 約 538 KB，仍有分包改善空間。"
+  ],
+  "followUp": {
+    "report": "vocabulary-enrichment-2026-10-26.html",
+    "missingCloudPhonetics": 0
+  }
+}

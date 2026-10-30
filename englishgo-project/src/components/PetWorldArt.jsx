@@ -1,3 +1,4 @@
+import { getPetStage } from '../data/petAppearance.js';
 import { useId } from 'react';
 import PetCompanion from './PetCompanion.jsx';
 import { getPetJourney } from '../data/petJourney.js';
@@ -27,7 +28,7 @@ export function PetHabitatScene({pets=[],theme,caption,celebrate=false,compact=f
   return <div className={`pet-habitat ${compact?'is-compact':''} ${celebrate?'is-celebrating':''}`} data-theme={selected}>
     <PetLandscape theme={selected}/>
     {caption&&<div className="pet-scene-caption">{caption}</div>}
-    <div className="pet-scene-friends">{pets.slice(0,3).map((pet,i)=><div className="pet-scene-friend" key={pet.petId||i}><PetCompanion petId={pet.petId||'bunny'} stage={(pet.level||1)>=10?'evolved':(pet.level||1)>=4?'adult':'baby'} size={compact?90:180}/>{pet.nickname&&<span>{pet.nickname}</span>}</div>)}</div>
+    <div className="pet-scene-friends">{pets.slice(0,3).map((pet,i)=><div className="pet-scene-friend" key={pet.petId||i}><PetCompanion petId={pet.petId||'bunny'} stage={getPetStage(pet)} size={compact?90:180}/>{pet.nickname&&<span>{pet.nickname}</span>}</div>)}</div>
     {celebrate&&<div className="pet-scene-sparkles" aria-hidden="true">✦<span>♡</span>✧</div>}
   </div>;
 }

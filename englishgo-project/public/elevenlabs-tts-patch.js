@@ -9,21 +9,35 @@
   const nativeResume = typeof synth.resume === "function" ? synth.resume.bind(synth) : null;
   const audioCache = new Map();
   const inflight = new Map();
+  const regenerations = new Map();
+  const lookupMisses = new Map();
+  const LOOKUP_MISS_TTL = 30_000;
+  const MAX_LOOKUP_MISSES = 128;
   const cacheGenerations = new Map();
+  const deferredRevocations = new Set();
+  const MAX_CACHE_BYTES = 24 * 1024 * 1024;
+  const MAX_CACHE_ENTRIES = 128;
+  let cacheBytes = 0;
   const MAX_CHARS = 350;
-  const LS_VOICE = "eg_tts_voice_id";
+  const LS_PROVIDER = "eg_tts_provider";
   const LS_SPEED = "eg_tts_speed";
-  const LEGACY_CUSTOM_VOICE = "1AKkSX7KMPHIWuz76m0n";
-  const DEFAULT_VOICE = "21m00Tcm4TlvDq8ikWAM";
+  const DEFAULT_PROVIDER = "elevenlabs";
   const DEFAULT_SPEED = 1;
   const SILENT_AUDIO_URL = "data:audio/wav;base64,UklGRiwAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQgAAACAgICAgICAgA==";
   const CHINESE_RE = /[\u3400-\u9FFF\uF900-\uFAFF]/;
-  const VOICES = [
-    { id: "21m00Tcm4TlvDq8ikWAM", label: "清晰美式（推薦）", accent: "US" },
-    { id: "EXAVITQu4vr4xnSDxMaL", label: "溫暖美式", accent: "US" },
-    { id: "ErXwobaYiN019PkySvjV", label: "沉穩美式", accent: "US" },
-  ];
-  const ALLOWED_VOICE_IDS = new Set(VOICES.map(voice => voice.id));
+  const PROVIDERS = {
+    elevenlabs: { voiceKey: "eg_tts_voice_id", voices: [
+      { id: "21m00Tcm4TlvDq8ikWAM", label: "清晰美式（推薦）", accent: "US" },
+      { id: "EXAVITQu4vr4xnSDxMaL", label: "溫暖美式", accent: "US" },
+      { id: "ErXwobaYiN019PkySvjV", label: "沉穩美式", accent: "US" },
+    ] },
+    openai: { voiceKey: "eg_openai_tts_voice", voices: [
+      { id: "marin", label: "清晰自然（推薦）" },
+      { id: "cedar", label: "溫暖沉穩" },
+      { id: "coral", label: "明亮親切" },
+    ] },
+    device: { voices: [] },
+  };
   let activeAudio = null;
   let activeAudioPaused = false;
   let lastRegenerableText = "";
@@ -65,17 +79,21 @@
   }
 
   function getSettings() {
-    let voiceId = DEFAULT_VOICE;
+    let provider = DEFAULT_PROVIDER;
+    let voiceId = PROVIDERS[provider].voices[0].id;
     let speed = DEFAULT_SPEED;
     try {
-      voiceId = localStorage.getItem(LS_VOICE) || DEFAULT_VOICE;
-      if (voiceId === LEGACY_CUSTOM_VOICE || !ALLOWED_VOICE_IDS.has(voiceId)) {
-        voiceId = DEFAULT_VOICE;
-        localStorage.setItem(LS_VOICE, DEFAULT_VOICE);
+      const savedProvider = localStorage.getItem(LS_PROVIDER);
+      if (Object.hasOwn(PROVIDERS, savedProvider)) provider = savedProvider;
+      const { voiceKey, voices } = PROVIDERS[provider];
+      voiceId = voiceKey ? localStorage.getItem(voiceKey) || voices[0].id : "";
+      if (voiceKey && !voices.some(voice => voice.id === voiceId)) {
+        voiceId = voices[0].id;
+        localStorage.setItem(voiceKey, voiceId);
       }
       speed = clamp(localStorage.getItem(LS_SPEED), 0.7, 1.2, DEFAULT_SPEED);
     } catch {}
-    return { voiceId, speed };
+    return { provider, voiceId, speed };
   }
 
   function applyGlobalSpeechSpeed(utterance) {
@@ -89,7 +107,40 @@
     if (settings.audioUrl) return `asset|${settings.audioUrl}`;
     const normalized = normalizeTtsText(text);
     const pronunciationRevision = /^[A-Za-z]{1,3}$/.test(normalized) ? "short-words-v2|" : "";
-    return `${settings.lang || "en-US"}|${settings.voiceId || "server-default"}|${settings.speed || DEFAULT_SPEED}|${pronunciationRevision}${normalized}`;
+    return `${settings.provider}-v1|${settings.lang || "en-US"}|${settings.voiceId || "server-default"}|${settings.speed || DEFAULT_SPEED}|${pronunciationRevision}${normalized}`;
+  }
+
+  function revokeUnusedUrl(url) {
+    // Let promise consumers attach the URL before deciding whether it is active.
+    window.setTimeout(() => {
+      if (activeAudio?.src === url) deferredRevocations.add(url);
+      else { try { URL.revokeObjectURL(url); } catch {} }
+    }, 0);
+  }
+
+  function releaseDeferredUrls() {
+    for (const url of deferredRevocations) {
+      if (activeAudio?.src === url) continue;
+      deferredRevocations.delete(url);
+      try { URL.revokeObjectURL(url); } catch {}
+    }
+  }
+
+  function removeCachedAudio(key) {
+    const entry = audioCache.get(key);
+    if (!entry) return;
+    audioCache.delete(key);
+    cacheBytes -= entry.bytes;
+    revokeUnusedUrl(entry.url);
+  }
+
+  function cacheAudio(key, url, bytes) {
+    removeCachedAudio(key);
+    audioCache.set(key, { url, bytes });
+    cacheBytes += bytes;
+    while (audioCache.size > MAX_CACHE_ENTRIES || cacheBytes > MAX_CACHE_BYTES) {
+      removeCachedAudio(audioCache.keys().next().value);
+    }
   }
 
   function stopActiveAudio() {
@@ -101,14 +152,16 @@
         activeAudioPaused = false;
       }
     } catch {}
+    releaseDeferredUrls();
   }
 
-  function shouldUseElevenLabs(utterance) {
+  function shouldUseCloudSpeech(utterance) {
     if (utterance?.__englishGoWebSpeechOnly) return false;
     const text = String(utterance?.text || "").trim();
     const lang = String(utterance?.lang || "en-US");
     if (!text || text.length > MAX_CHARS) return false;
     if (utterance?.__englishGoAudioUrl) return true;
+    if (getSettings().provider === "device") return false;
     if (typeof utterance.onboundary === "function" && !utterance.__englishGoTrackWords) return false;
     if (/^en/i.test(lang)) return /[A-Za-z]/.test(text);
     if (isChineseLang(lang)) {
@@ -181,6 +234,8 @@
     if (!loadingToast) {
       loadingToast = document.createElement("div");
       loadingToast.id = "eg-tts-loading-toast";
+      loadingToast.setAttribute("role", "status");
+      loadingToast.setAttribute("aria-live", "polite");
       loadingToast.innerHTML = `<span class="eg-tts-spinner"></span><span class="eg-tts-loading-text"></span>`;
       document.body.appendChild(loadingToast);
     }
@@ -201,6 +256,8 @@
 
   async function getAudioUrl(text, options = {}) {
     const forceRegenerate = options.forceRegenerate === true;
+    const fixedAudioUrl = String(options.audioUrl || "").trim();
+    const cacheOnly = !fixedAudioUrl && options.cacheOnly === true;
     const baseSettings = getSettings();
     // English cloud voices are selected by voiceId, not by the device's locale.
     // Use the same key for preloads and playback on en-GB/en-AU devices.
@@ -212,21 +269,42 @@
       voiceId: options.voiceId ?? (isChineseLang(lang) ? undefined : baseSettings.voiceId),
       speed: isChineseLang(lang) ? 1 : options.speed ?? baseSettings.speed,
     };
+    // Provider choice is a learner setting, never an arbitrary URL in options.
+    settings.provider = baseSettings.provider;
+    if (settings.provider === "device" && !options.audioUrl) return null;
     const normalized = normalizeTtsText(text);
-    if (!isEligibleText(normalized, settings.lang)) throw new Error("Text is not eligible for ElevenLabs TTS");
+    if (!isEligibleText(normalized, settings.lang)) throw new Error("Text is not eligible for cloud speech");
     if (forceRegenerate && options.audioUrl) throw new Error("Fixed audio assets cannot be regenerated");
+    if (forceRegenerate && cacheOnly) throw new Error("Cache lookups cannot regenerate speech");
     const cacheKey = makeCacheKey(normalized, settings);
+    // A click or a second regeneration should wait for the newest requested
+    // audio, instead of reusing an older result or paying for another synthesis.
+    if (regenerations.has(cacheKey)) return regenerations.get(cacheKey);
     let generation = cacheGenerations.get(cacheKey) || 0;
     if (forceRegenerate) {
       generation += 1;
       cacheGenerations.set(cacheKey, generation);
+      lookupMisses.delete(cacheKey);
+      // Older requests may finish, but later clicks must never join their
+      // invalidated generation if this regeneration fails first.
+      inflight.delete(cacheKey);
+      inflight.delete(`${cacheKey}|lookup`);
     }
-    if (!forceRegenerate && audioCache.has(cacheKey)) return audioCache.get(cacheKey);
-    const inflightKey = forceRegenerate ? `${cacheKey}|regenerate|${Date.now()}|${Math.random()}` : cacheKey;
+    if (!forceRegenerate && audioCache.has(cacheKey)) {
+      const entry = audioCache.get(cacheKey);
+      audioCache.delete(cacheKey);
+      audioCache.set(cacheKey, entry);
+      return entry.url;
+    }
+    const inflightKey = forceRegenerate ? `${cacheKey}|regenerate` : cacheOnly ? `${cacheKey}|lookup` : cacheKey;
     if (!forceRegenerate && inflight.has(cacheKey)) return inflight.get(cacheKey);
+    if (!forceRegenerate && inflight.has(inflightKey)) return inflight.get(inflightKey);
+    if (cacheOnly && lookupMisses.has(cacheKey)) {
+      if (lookupMisses.get(cacheKey) > Date.now()) return null;
+      lookupMisses.delete(cacheKey);
+    }
 
-    const fixedAudioUrl = String(options.audioUrl || "").trim();
-    const requestUrl = fixedAudioUrl || "/.netlify/functions/elevenlabs-tts";
+    const requestUrl = fixedAudioUrl || `/.netlify/functions/${settings.provider === "openai" ? "openai" : "elevenlabs"}-tts`;
     const requestOptions = fixedAudioUrl
       ? { method: "GET", cache: "force-cache", headers: { Accept: "audio/mpeg" } }
       : {
@@ -236,7 +314,7 @@
             "Content-Type": "application/json",
             ...(forceRegenerate ? { "Cache-Control": "no-cache" } : {}),
           },
-          body: JSON.stringify({ text: normalized, voiceId: settings.voiceId, lang: settings.lang, speed: settings.speed, forceRegenerate }),
+          body: JSON.stringify({ text: normalized, voiceId: settings.voiceId, lang: settings.lang, speed: settings.speed, forceRegenerate, cacheOnly }),
         };
 
     async function fetchAudio() {
@@ -262,7 +340,21 @@
     }
     const promise = fetchAudio()
       .then(async (res) => {
-        if (!res.ok) throw Object.assign(new Error(`ElevenLabs TTS failed: ${res.status}`), { ttsReason: "api", status: res.status });
+        if (!res.ok) throw Object.assign(new Error(`Cloud speech failed: ${res.status}`), { ttsReason: "api", status: res.status });
+        if (cacheOnly && res.status === 204) {
+          if ((cacheGenerations.get(cacheKey) || 0) === generation && !audioCache.has(cacheKey)) {
+            lookupMisses.delete(cacheKey);
+            lookupMisses.set(cacheKey, Date.now() + LOOKUP_MISS_TTL);
+            while (lookupMisses.size > MAX_LOOKUP_MISSES) lookupMisses.delete(lookupMisses.keys().next().value);
+          }
+          return null;
+        }
+        const blob = await res.blob();
+        if (!blob.size || !/^audio\//i.test(blob.type)) throw new Error('TTS response is not audio');
+        if (blob.size > MAX_CACHE_BYTES) throw new Error('TTS audio is too large');
+        if ((cacheGenerations.get(cacheKey) || 0) !== generation) {
+          throw Object.assign(new Error("Speech was superseded by regeneration"), { ttsReason: "stale" });
+        }
         if (forceRegenerate) {
           const saved = res.headers.get("X-TTS-Cache-Upload") === "ok";
           const notice = document.createElement("div");
@@ -276,32 +368,24 @@
           document.body.appendChild(notice);
           window.setTimeout(() => notice.remove(), 5000);
         }
-        const blob = await res.blob();
-        if (!blob.size || !/^audio\//i.test(blob.type)) throw new Error('TTS response is not audio');
         const url = URL.createObjectURL(blob);
-        if ((cacheGenerations.get(cacheKey) || 0) === generation) {
-          const previousUrl = audioCache.get(cacheKey);
-          audioCache.set(cacheKey, url);
-          if (previousUrl && previousUrl !== url) {
-            try { URL.revokeObjectURL(previousUrl); } catch {}
-          }
-        }
-
-        if (audioCache.size > 512) {
-          const firstKey = audioCache.keys().next().value;
-          try { URL.revokeObjectURL(audioCache.get(firstKey)); } catch {}
-          audioCache.delete(firstKey);
-        }
+        lookupMisses.delete(cacheKey);
+        cacheAudio(cacheKey, url, blob.size);
         return url;
       })
-      .finally(() => inflight.delete(inflightKey));
+      .finally(() => {
+        if (inflight.get(inflightKey) === promise) inflight.delete(inflightKey);
+        if (regenerations.get(cacheKey) === promise) regenerations.delete(cacheKey);
+      });
 
     inflight.set(inflightKey, promise);
+    if (forceRegenerate) regenerations.set(cacheKey, promise);
     return promise;
   }
 
   function preload(text, options = {}) {
-    return getAudioUrl(text, options).catch(() => null);
+    const preloadOptions = options.audioUrl ? options : { ...options, cacheOnly: true, forceRegenerate: false };
+    return getAudioUrl(text, preloadOptions).catch(() => null);
   }
 
   async function preloadMany(texts, options = {}) {
@@ -361,19 +445,24 @@
     preload,
     preloadMany,
     getVoiceOptions() {
-      return VOICES.map(voice => ({ ...voice }));
+      return PROVIDERS[getSettings().provider].voices.map(voice => ({ ...voice }));
     },
     getLastRegenerableText() {
       return lastRegenerableText;
     },
     setSettings(settings = {}) {
+      const current = getSettings();
+      const provider = Object.hasOwn(PROVIDERS, settings.provider) ? settings.provider : current.provider;
+      const { voiceKey, voices } = PROVIDERS[provider];
       try {
-        if (settings.voiceId && ALLOWED_VOICE_IDS.has(settings.voiceId)) localStorage.setItem(LS_VOICE, settings.voiceId);
+        if (Object.hasOwn(PROVIDERS, settings.provider)) localStorage.setItem(LS_PROVIDER, provider);
+        if (voiceKey && voices.some(voice => voice.id === settings.voiceId)) localStorage.setItem(voiceKey, settings.voiceId);
         if (settings.speed != null) localStorage.setItem(LS_SPEED, String(clamp(settings.speed, 0.7, 1.2, DEFAULT_SPEED)));
       } catch {}
       window.dispatchEvent(new CustomEvent("englishgo:tts-settings-changed", { detail: getSettings() }));
     },
     regenerate(text, lang = "en-US") {
+      if (getSettings().provider === "device") return null;
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = lang;
       utterance.__englishGoForceRegenerate = true;
@@ -421,7 +510,7 @@
     if (utterance && !isChineseLang(utterance.lang) && utterance.__englishGoUseGlobalSpeed !== false) {
       utterance.__englishGoUseGlobalSpeed = true;
     }
-    if (!shouldUseElevenLabs(utterance)) {
+    if (!shouldUseCloudSpeech(utterance)) {
       stopActiveAudio();
       hideTtsLoading();
       applyGlobalSpeechSpeed(utterance);
@@ -448,6 +537,7 @@
       if (activeAudio !== audio) return;
       stopActiveAudio();
       hideTtsLoading(loadingToken);
+      if (error?.ttsReason === "stale") return;
       fallbackSpeech(utterance, error);
     };
 
@@ -486,6 +576,7 @@
             activeAudio = null;
             activeAudioPaused = false;
           }
+          releaseDeferredUrls();
           hideTtsLoading(loadingToken);
           emitEnd(utterance);
         };

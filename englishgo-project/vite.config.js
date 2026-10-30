@@ -1,8 +1,10 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import localSpeechPlugin from './scripts/localSpeechPlugin.mjs';
+import localPetAccountPlugin from './scripts/localPetAccountPlugin.mjs';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), localSpeechPlugin(), localPetAccountPlugin()],
   test: {
     environment: 'jsdom',
     setupFiles: './src/test/setup.js',

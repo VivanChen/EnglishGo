@@ -4,6 +4,10 @@ import { mockVoiceRecording } from './test/voiceRecordingMock.js';
 import { assessRecording } from './features/recordingAssessmentService.js';
 vi.mock('./features/recordingAssessmentService.js', () => ({ assessRecording: vi.fn() }));
 import App, { formatLandingVocabularyBadge } from './App.jsx';
+import { createWorld as createTownWorld, applyWorldAction as applyTownAction } from './features/pet-town/worldState.js';
+import { PETS as TOWN_PETS, CHAPTERS as TOWN_CHAPTERS } from './features/pet-town/worldData.js';
+import { readTownSnapshot, saveTownSnapshot } from './features/pet-town/townStorage.js';
+import { resetProgressOnce } from './data/progressReset.js';
 import {
   getPetMonopolyCpuBuyDecision,
   settlePetMonopolyBankruptComputers,
@@ -262,7 +266,7 @@ describe('EnglishGo app smoke flow', () => {
       const badges = [...document.querySelectorAll('.eg-level-badge')];
       expect(badges).toHaveLength(3);
       badges.forEach((badge) => expect(badge).toHaveTextContent(/^\d[\d,]* 字可練$/));
-    });
+    }, { timeout: 5000 });
   });
 
   it('removes retired sponsorship state from the browser', async () => {
@@ -300,7 +304,7 @@ describe('EnglishGo app smoke flow', () => {
     await openElementaryMenu();
     clickFirstButtonWithText('單字卡');
 
-    expect(await screen.findByRole('heading', { name: /類型複習/ })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /類型複習/ }, { timeout: 5000 })).toBeInTheDocument();
 
     await act(async () => {
       window.history.back();
@@ -484,9 +488,9 @@ describe('EnglishGo app smoke flow', () => {
     expect(within(overview).getByText('🎓 高中')).toBeInTheDocument();
     expect(screen.queryByLabelText('選擇單字年級')).not.toBeInTheDocument();
     expect(await screen.findByText(/所有主題都能開始練習/)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /學校學習，26 個單字/ })).toBeEnabled();
-    expect(screen.getByRole('button', { name: /家庭人物，21 個單字/ })).toBeEnabled();
-    expect(screen.getByRole('button', { name: /動物自然，22 個單字/ })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /學校學習，[1-9]\d* 個單字$/ })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /家庭人物，[1-9]\d* 個單字$/ })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /動物自然，[1-9]\d* 個單字$/ })).toBeEnabled();
   });
 
   it('recommends the topic with weak words and puts the weakest card first', async () => {
@@ -572,7 +576,8 @@ describe('EnglishGo app smoke flow', () => {
     try {
       await openElementaryMenu();
       fireEvent.click(document.querySelector('[data-module-id="speak"]'));
-      fireEvent.click(await screen.findByRole('button', { name: '開始口說小練習 →' }));
+      // Allow the first lazy module import to finish when the full suite runs concurrently.
+      fireEvent.click(await screen.findByRole('button', { name: '開始口說小練習 →' }, { timeout: 5000 }));
       expect(await screen.findByText('蘋果')).toBeInTheDocument();
       await act(async () => fireEvent.click(screen.getByRole('button', { name: '🎤 錄音並檢查' })));
       fireEvent.click(screen.getByRole('button', { name: '■ 說好了' }));
@@ -906,10 +911,7 @@ describe('EnglishGo app smoke flow', () => {
 
   it('generates a level-aware AI story with reading guidance', async () => {
     localStorage.setItem('eg_gemkey', JSON.stringify('test-gemini-key'));
-    localStorage.setItem(
-      'eg_pets',
-      JSON.stringify([{ petId: 'bunny', rarity: 'N', level: 3, exp: 0, bond: 8 }]),
-    );
+    saveTownSnapshot(null, { worldState: applyTownAction(createTownWorld(), { type: 'ADOPT_STARTER', speciesId: 'garden-rabbit' }).world, coins: 0, revision: 0, pending: [] });
 
     const storyPayload = {
       title: 'Bunny and the Library Map',
@@ -1194,83 +1196,49 @@ describe('EnglishGo app smoke flow', () => {
     setViewportWidth(1024);
   });
 
-  it('explains coin earning, spending, and child-safe penalties before opening gacha', async () => {
-    await openElementaryMenu();
-
-    clickMenuStat('金幣');
-
-    const rewardCenter = screen.getByTestId('reward-center');
-    expect(rewardCenter).toHaveTextContent('學習功能永遠免費');
-    expect(rewardCenter).toHaveTextContent('完成一個學習動作');
-    expect(rewardCenter).toHaveTextContent('寵物食物');
-    expect(rewardCenter).toHaveTextContent('一般練習');
-    expect(rewardCenter).toHaveTextContent('不扣金幣');
-    expect(rewardCenter).toHaveTextContent('島嶼旅費與你的錢包分開');
-    expect(rewardCenter).toHaveTextContent('免費玩 6 或 10 回合');
-
-    fireEvent.click(within(rewardCenter).getByRole('button', { name: '前往扭蛋' }));
-    expect(await screen.findByRole('heading', { name: /森林扭蛋屋/ }, { timeout: 5000 })).toBeInTheDocument();
+  it('explains free learning and directs optional furniture spending to the new town', async () => {
+    await openElementaryMenu(); clickMenuStat('金幣');
+    const center = screen.getByTestId('reward-center');
+    for (const text of ['學習功能永遠免費', '完成一個學習動作', '免費領養', '海邊家園家具', '不扣金幣']) expect(center).toHaveTextContent(text);
+    expect(center).not.toHaveTextContent('扭蛋');
+    fireEvent.click(within(center).getByRole('button', { name: '前往海風小鎮' }));
+    expect(await screen.findByTestId('pet-town', {}, { timeout: 5000 })).toBeInTheDocument();
   });
 
-  it('opens the lazy pet guard module from the pet stat', async () => {
+  it('opens the new pet town from the pet stat with exactly three free starter choices', async () => {
+    await openElementaryMenu(); clickMenuStat('寵物');
+    const town = await screen.findByTestId('pet-town', {}, { timeout: 5000 });
+    expect(town.querySelectorAll('.town-starter-list button')).toHaveLength(3);
+    for (const pet of TOWN_PETS) expect(within(town).getByRole('button', { name: new RegExp(pet.name + '.*' + pet.trait) })).toBeInTheDocument();
+    expect(screen.queryByTestId('pet-sanctuary')).not.toBeInTheDocument();
+  });
+
+  it('returns to the selected pet category after leaving the new town', async () => {
+    await openJuniorMenu(); fireEvent.click(document.querySelector('[data-group-id="pet"]'));
+    fireEvent.click(document.querySelector('[data-module-id="pets"]'));
+    expect(await screen.findByTestId('pet-town', {}, { timeout: 5000 })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '學習首頁' }));
+    await waitFor(() => expect(document.querySelector('[data-group-id="pet"]')).toHaveAttribute('aria-selected', 'true'));
+    expect(screen.getByRole('heading', { name: '海風小鎮' })).toBeInTheDocument();
+  });
+
+  it('retires gacha, combat and monopoly entry cards from both menu categories', async () => {
     await openElementaryMenu();
+    for (const group of ['pet', 'game']) {
+      fireEvent.click(document.querySelector('[data-group-id="' + group + '"]'));
+      for (const retired of ['gacha', 'petAdventure', 'petMonopoly']) expect(document.querySelector('[data-module-id="' + retired + '"]')).toBeNull();
+    }
+    fireEvent.click(document.querySelector('[data-group-id="pet"]'));
+    expect(document.querySelector('[data-module-id="pets"]')).toBeTruthy();
+  });
 
-    clickMenuStat('寵物');
-
-    expect(await screen.findByText('歡迎來到寵物樂園！', {}, { timeout: 5000 })).toBeInTheDocument();
-  }, 15000);
-
-  it('returns to the same menu category after opening a module from that category', async () => {
-    localStorage.setItem(
-      'eg_pets',
-      JSON.stringify([{ petId: 'bunny', rarity: 'N', level: 3, exp: 0, bond: 8 }]),
-    );
-    await openJuniorMenu();
-
-    const petTab = document.querySelector('[data-group-id="pet"]');
-    expect(petTab).toBeTruthy();
-    fireEvent.click(petTab);
-
-    const adventureCard = document.querySelector('[data-module-id="petAdventure"]');
-    expect(adventureCard).toBeTruthy();
-    fireEvent.click(adventureCard);
-
-    expect(await screen.findByText(/寵物冒險/, {}, { timeout: 5000 })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: '← 返回' }));
-
-    await waitFor(() => {
-      const returnedPetTab = document.querySelector('[data-group-id="pet"]');
-      expect(returnedPetTab).toHaveAttribute('aria-selected', 'true');
-      expect(screen.getByText('森林扭蛋屋')).toBeInTheDocument();
-      expect(screen.getByText('寵物小家園')).toBeInTheDocument();
-    });
-  }, 15000);
-
-  it('opens the 3D game and buys land without requiring an English answer',async()=>{
-    const restoreDice=mockPetMonopolyDice([1,1]);localStorage.setItem('eg_coins',JSON.stringify(120));
-    await openElementaryPetMonopoly({cpuCount:1,stake:100});rollPetIsland();
-    fireEvent.click(await screen.findByTestId('pet-monopoly-buy',{}, {timeout:5000}));
-    expect(screen.getByTestId('pet-monopoly-tile-word-market')).toHaveAttribute('data-owner','player');
-    expect(screen.queryByTestId('pet-monopoly-choice-correct')).not.toBeInTheDocument();expect(JSON.parse(localStorage.getItem('eg_coins'))).toBe(120);restoreDice();
-  },15000);
-  it('shows separate chance and fate decks and resolves a chance card without learning',async()=>{
-    const restoreDice=mockPetMonopolyDice([3]);await openElementaryPetMonopoly({cpuCount:1,stake:100});
-    expect(screen.getByTestId('pet-monopoly-event-deck-size')).toHaveAttribute('data-event-count','12');rollPetIsland();
-    expect(await screen.findByTestId('pet-island-event-card',{}, {timeout:5000})).toHaveTextContent('CHANCE');
-    fireEvent.click(screen.getByTestId('pet-island-event-option-0'));expect(screen.queryByTestId('pet-monopoly-choice-correct')).not.toBeInTheDocument();restoreDice();
-  },15000);
-  it('collects rent with a doubled tool effect and waits for acknowledgement',async()=>{
-    const restoreDice=mockPetMonopolyDice([4,1]);await openElementaryPetMonopoly({cpuCount:1,stake:100});
-    fireEvent.click(screen.getByTestId('pet-monopoly-card-rent'));rollPetIsland();fireEvent.click(await screen.findByTestId('pet-monopoly-buy',{}, {timeout:5000}));
-    expect(await screen.findByTestId('pet-monopoly-rent-dialog',{}, {timeout:7000})).toHaveTextContent('16');
-    expect(screen.getByTestId('pet-monopoly-roll')).toBeDisabled();fireEvent.click(screen.getByTestId('pet-monopoly-rent-confirm'));
-    await waitFor(()=>expect(screen.getByTestId('pet-monopoly-roll')).toBeEnabled(),{timeout:5000});restoreDice();
-  },15000);
-  it('keeps six remotely controlled destinations outside the board',async()=>{
-    await openElementaryPetMonopoly({cpuCount:1,stake:100});fireEvent.click(screen.getByTestId('pet-monopoly-card-control'));fireEvent.click(screen.getByTestId('pet-monopoly-roll'));
-    expect(document.querySelectorAll('[data-testid^="pet-island-route-"]')).toHaveLength(6);
-    expect(screen.getByTestId('pet-monopoly-board')).not.toContainElement(screen.getByTestId('pet-monopoly-overlay'));
-  },15000);
+  it.each(['gacha', 'petAdventure', 'petMonopoly'])('redirects a saved %s route into the new town', async retired => {
+    window.history.replaceState({ englishGoNavigation: { lv: 'elementary', mod: retired, menuGroup: 'game', depth: 0 } }, '', '/');
+    localStorage.setItem('eg_loginBonus', JSON.stringify({ lastDate: new Date().toDateString(), streak: 1, claimed: true }));
+    render(<App/>);
+    expect(await screen.findByTestId('pet-town', {}, { timeout: 5000 })).toBeInTheDocument();
+    expect(window.history.state.englishGoNavigation).toMatchObject({ mod: 'pets', menuGroup: 'pet' });
+  });
 
   it('retires bankrupt pet monopoly computers and releases their properties', () => {
     const settled = settlePetMonopolyBankruptComputers(
@@ -1300,145 +1268,62 @@ describe('EnglishGo app smoke flow', () => {
     expect(decision.buy).toBe(false);
   });
 
-  it('prioritizes ready eggs and shows actionable companion care hints', async () => {
-    const today = new Date().toDateString();
-    localStorage.setItem('eg_petAcc', JSON.stringify({ username: 'Kid', pinHash: 'demo', lastSync: today }));
-    localStorage.setItem(
-      'eg_pets',
-      JSON.stringify([
-        {
-          petId: 'bunny',
-          rarity: 'N',
-          level: 2,
-          exp: 30,
-          bond: 20,
-          hunger: 18,
-          clean: 82,
-          energy: 76,
-          poops: [],
-          lastUpdate: new Date().toISOString(),
-        },
-      ]),
-    );
-    localStorage.setItem(
-      'eg_eggs',
-      JSON.stringify([{ id: 'egg-1', petId: 'chick', rarity: 'N', progress: 10, date: new Date().toISOString() }]),
-    );
+  it('starts the new release with empty pets, coins and learning without an archive', async () => {
+    localStorage.setItem('eg_pets', JSON.stringify([{ petId: 'bunny', level: 99 }]));
+    localStorage.setItem('eg_eggs', JSON.stringify([{ id: 'old-egg', petId: 'dragon', progress: 40 }]));
     localStorage.setItem('eg_inv', JSON.stringify({ apple: 2 }));
-    localStorage.setItem('eg_petTasks', JSON.stringify({ date: today, counts: { feedToday: 1 } }));
-    localStorage.setItem('eg_claimedTasks', JSON.stringify({ date: today, ids: [] }));
+    localStorage.setItem('eg_coins', '123'); localStorage.setItem('eg_xp', '456');
+    localStorage.setItem('eg_stats', JSON.stringify({ srsRounds: 99 }));
+    resetProgressOnce(localStorage);
+    await openElementaryMenu(); clickMenuStat('寵物'); await screen.findByTestId('pet-town', {}, { timeout: 5000 });
+    expect(JSON.parse(localStorage.getItem('eg_pets'))).toEqual([]);
+    expect(JSON.parse(localStorage.getItem('eg_eggs'))).toEqual([]);
+    expect(localStorage.getItem('eg_pet_legacy_backup:guest')).toBeNull();
+    expect(readTownSnapshot(null).worldState.ownedPets).toEqual([]);
+    expect(JSON.parse(localStorage.getItem('eg_coins'))).toBe(0); expect(JSON.parse(localStorage.getItem('eg_xp'))).toBe(0);
+    expect(JSON.parse(localStorage.getItem('eg_stats')).srsRounds).toBe(0);
+  });
 
-    await openElementaryMenu();
-    clickMenuStat('寵物');
+  it('adopts and cares for a new companion without charging or manufacturing global coins', async () => {
+    localStorage.setItem('eg_coins', '77');
+    await openElementaryMenu(); clickMenuStat('寵物'); await screen.findByTestId('pet-town', {}, { timeout: 5000 });
+    fireEvent.click(screen.getByRole('button', { name: '和' + TOWN_PETS[0].name + '一起回家' }));
+    fireEvent.click(screen.getByRole('button', { name: '餵食', exact: true }));
+    for (const label of ['準備好點心', '餵第一口', '餵最後一口']) fireEvent.click(screen.getByRole('button', { name: label }));
+    const pet = readTownSnapshot(null).worldState.ownedPets[0];
+    expect(pet.speciesId).toBe('harbor-cat'); expect(pet.hunger).toBeCloseTo(100, 1); expect(pet.bond).toBe(2);
+    expect(JSON.parse(localStorage.getItem('eg_coins'))).toBe(77);
+  });
 
-    const center = await screen.findByTestId('pet-sanctuary', {}, { timeout: 5000 });
-    expect(within(center).getByText(/蛋可孵化/)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /每日任務/ })).toHaveTextContent('1');
+  it('records a real SRS rating for the new pet while preserving the single global coin award', async () => {
+    const worldState = applyTownAction(createTownWorld(), { type: 'ADOPT_STARTER', speciesId: 'harbor-cat' }).world;
+    saveTownSnapshot(null, { worldState, coins: 100, revision: 0, pending: [] }); localStorage.setItem('eg_coins', '100');
+    await openElementaryMenu(); clickFirstModuleCard(); await startAllWordsSrsRound();
+    expect(readTownSnapshot(null).worldState.ownedPets[0].exp).toBe(0);
+    fireEvent.click(await screen.findByTestId('srs-card'));
+    fireEvent.click(within(await screen.findByTestId('srs-rating-bar')).getByRole('button', { name: /記住了/ }));
+    await waitFor(() => expect(readTownSnapshot(null).worldState.ownedPets[0].exp).toBe(2));
+    expect(JSON.parse(localStorage.getItem('eg_coins'))).toBe(101); expect(readTownSnapshot(null).coins).toBe(101);
+  });
 
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: '我的夥伴', exact: true }));
-    });
-    const nextStep = screen.getByRole('button', { name: /小兔兔.*有點餓了/ });
-    expect(nextStep).toHaveTextContent('去陪伴');
-  }, 15000);
-
-  it('connects the nursery progress and collection filters', async () => {
-    const today = new Date().toDateString();
-    localStorage.setItem('eg_petAcc', JSON.stringify({ username: 'Kid', pinHash: 'demo', lastSync: today }));
-    localStorage.setItem(
-      'eg_pets',
-      JSON.stringify([
-        {
-          petId: 'bunny',
-          rarity: 'N',
-          level: 2,
-          exp: 30,
-          bond: 20,
-          hunger: 82,
-          clean: 82,
-          energy: 76,
-          poops: [],
-          lastUpdate: new Date().toISOString(),
-        },
-      ]),
-    );
-    localStorage.setItem(
-      'eg_eggs',
-      JSON.stringify([{ id: 'egg-1', petId: 'chick', rarity: 'N', progress: 7, date: new Date().toISOString() }]),
-    );
-    localStorage.setItem('eg_inv', JSON.stringify({ apple: 2 }));
-    localStorage.setItem('eg_petTasks', JSON.stringify({ date: today, counts: {} }));
-    localStorage.setItem('eg_claimedTasks', JSON.stringify({ date: today, ids: [] }));
-
-    await openElementaryMenu();
-    clickMenuStat('寵物');
-
-    await screen.findByTestId('pet-sanctuary');
-    fireEvent.click(screen.getByRole('button', { name: /孵化小屋/ }));
-    const egg = screen.getByRole('heading', { name: '小雞 蛋' }).closest('article');
-    expect(egg).toHaveTextContent('7/10');
-    expect(egg).toHaveTextContent('還需要 3 次學習進度');
-    expect(within(egg).getByRole('button', { name: /學單字/ })).toBeEnabled();
-    fireEvent.click(screen.getByRole('button', { name: /夥伴圖鑑/ }));
-    expect(screen.getByRole('combobox', { name: '收藏狀態' })).toHaveTextContent('已收集 1 種');
-    fireEvent.change(screen.getByRole('combobox', { name: '收藏狀態' }), { target: { value: 'egg' } });
-    expect(screen.getByRole('button', { name: /孵化中.*小雞/ })).toBeEnabled();
-  }, 15000);
-
-  it('shows a clear result after completing a pet care action', async () => {
-    const today = new Date().toDateString();
-    localStorage.setItem('eg_petAcc', JSON.stringify({ username: 'Kid', pinHash: 'demo', lastSync: today }));
-    localStorage.setItem(
-      'eg_pets',
-      JSON.stringify([
-        {
-          petId: 'bunny',
-          rarity: 'N',
-          level: 2,
-          exp: 30,
-          bond: 20,
-          hunger: 18,
-          clean: 82,
-          energy: 76,
-          poops: [],
-          lastUpdate: new Date().toISOString(),
-        },
-      ]),
-    );
-    localStorage.setItem('eg_eggs', JSON.stringify([]));
-    localStorage.setItem('eg_inv', JSON.stringify({ apple: 2 }));
-    localStorage.setItem('eg_petTasks', JSON.stringify({ date: today, counts: {} }));
-    localStorage.setItem('eg_claimedTasks', JSON.stringify({ date: today, ids: [] }));
-
-    await openElementaryMenu();
-    clickMenuStat('寵物');
-
-    await screen.findByTestId('pet-sanctuary', {}, { timeout: 5000 });
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: '我的夥伴', exact: true }));
-    });
-
-    const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.99);
-    try {
-      fireEvent.click(screen.getByRole('button', { name: /小兔兔.*有點餓了/ }));
-      fireEvent.click(await screen.findByTestId('pet-primary-care-action'));
-      fireEvent.click(screen.getAllByRole('button', { name: /選這份食物/ })[0]);
-      expect(await screen.findByTestId('pet-action-complete')).toBeDisabled();
-      for(let i=0;i<3;i++){fireEvent.click(screen.getByRole('button',{name:/拿起蘋果|食物拿好了/,hidden:true}));fireEvent.click(screen.getByRole('button',{name:'餵一口',hidden:true}));}
-      fireEvent.click(screen.getByTestId('pet-action-complete'));
-
-      fireEvent.click(screen.getByRole('button', { name: '照顧紀錄', exact: true }));
-      const result = await screen.findByTestId('pet-care-result');
-      expect(result).toHaveTextContent('照顧完成');
-      expect(result).toHaveTextContent(/餵|吃/);
-      expect(result).toHaveTextContent('金幣 +5');
-      expect(result).toHaveTextContent('今日培養 1/3');
-      expect(JSON.parse(localStorage.getItem('eg_inv')).apple).toBe(1);
-      expect(JSON.parse(localStorage.getItem('eg_pets'))[0].hunger).toBeGreaterThan(18);
-    } finally {
-      randomSpy.mockRestore();
+  it('awards a town chapter exactly 15 global XP and 5 coins across completion and replay', async () => {
+    const worldState = applyTownAction(createTownWorld(), { type: 'ADOPT_STARTER', speciesId: 'harbor-cat' }).world;
+    saveTownSnapshot(null, { worldState, coins: 100, revision: 0, pending: [] }); localStorage.setItem('eg_coins', '100');
+    await openElementaryMenu(); clickMenuStat('寵物'); await screen.findByTestId('pet-town', {}, { timeout: 5000 });
+    fireEvent.click(within(screen.getByRole('navigation', { name: '海風小鎮導覽' })).getByRole('button', { name: '出遊' }));
+    const chapter = TOWN_CHAPTERS[0];
+    for (let play = 0; play < 2; play++) {
+      fireEvent.click(screen.getByRole('button', { name: new RegExp(chapter.title) }));
+      chapter.levels.elementary.challenges.forEach((challenge, step) => {
+        fireEvent.click(within(document.querySelector('.town-answer-options')).getAllByRole('button')[challenge.answer]);
+        fireEvent.click(screen.getByRole('button', { name: step === 0 ? '繼續往前走' : '看看這段旅程的收穫' }));
+      });
+      fireEvent.click(screen.getByRole('button', { name: '完成旅程，收進回憶' }));
+      await waitFor(() => expect(JSON.parse(localStorage.getItem('eg_xp'))).toBe(15));
+      expect(JSON.parse(localStorage.getItem('eg_coins'))).toBe(105); expect(readTownSnapshot(null).coins).toBe(105);
     }
-  }, 15000);
+    expect(readTownSnapshot(null).worldState.ownedPets[0].exp).toBe(chapter.petXp + 10);
+  });
 
   it('shows hidden timing calibration controls for songs', async () => {
     await openSeniorMenu('/?timing=1');

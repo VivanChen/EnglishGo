@@ -8,9 +8,9 @@ const foods=[{id:'apple',word:'apple',name:'蘋果',emoji:'🍎',feed:25,cost:10
 function useLS(key,value){return useState(()=>JSON.parse(localStorage.getItem(key)||'null')??value)}
 const api={Hdr:({t,onBack,extra})=><header><button onClick={onBack}>返回</button><h1>{t}</h1>{extra}</header>,useLS,PETS:{N:[{id:'bunny',name:'小兔',words:['rabbit'],story:'小兔喜歡讀書'},{id:'chick',name:'小雞',words:['chick']}]},EGG_HATCH_TASKS:{N:10},RARITY_INFO:{N:{label:'普通'}},DAILY_TASK_DEFS:[{id:'srs_5',name:'複習5字',icon:'📖',statKey:'srsToday',target:5,reward:{coins:20,exp:15}}],PET_FOODS:foods,ACTION_PROMPTS:{feed:['Eat an apple.'],clean:['Wash together.'],sleep:['Good night.'],study:['Let’s read.']},levelUpPet:p=>p,calcDecay:p=>p,speak:vi.fn(),stopSpeech:vi.fn(),playSound:vi.fn(),getDuplicatePetReward:()=>({exp:40,bond:4,dupes:1}),applyDuplicatePetReward:(p,r)=>({...p,exp:(p.exp||0)+r.exp,bond:(p.bond||0)+r.bond,dupes:(p.dupes||0)+r.dupes})};
 const navigate=vi.fn();
-function Harness({initial={pets:[],eggs:[],coins:0,inventory:{}},initialTab='home'}){
+function Harness({initial={pets:[],eggs:[],coins:0,inventory:{}},initialTab='home',taskDefs=api.DAILY_TASK_DEFS,counts={srsToday:5}}){
   const [pets,setPets]=useState(initial.pets),[eggs,setEggs]=useState(initial.eggs),[coins,setCoins]=useState(initial.coins),[inventory,setInventory]=useState(initial.inventory);
-  return <><output data-testid="saved">{JSON.stringify({pets,eggs,coins,inventory})}</output><PetSanctuary {...{pets,setPets,eggs,setEggs,coins,setCoins,inventory,setInventory,api,initialTab}} c={{cl:'#365'}} petTasks={{date:today,counts:{srsToday:5}}} onBack={vi.fn()} onNavigate={navigate}/></>;
+  return <><output data-testid="saved">{JSON.stringify({pets,eggs,coins,inventory})}</output><PetSanctuary {...{pets,setPets,eggs,setEggs,coins,setCoins,inventory,setInventory,initialTab}} api={{...api,DAILY_TASK_DEFS:taskDefs}} c={{cl:'#365'}} petTasks={{date:today,counts}} onBack={vi.fn()} onNavigate={navigate}/></>;
 }
 const saved=()=>JSON.parse(screen.getByTestId('saved').textContent);
 beforeAll(()=>{
@@ -19,6 +19,44 @@ beforeAll(()=>{
 });
 afterEach(()=>{vi.useRealTimers();localStorage.clear();vi.clearAllMocks()});
 describe('the complete pet home flow',()=>{
+  it.each([[3,'baby'],[4,'adult'],[10,'evolved']])('keeps level %s appearance consistent in care, collection and growth previews', (level,stage)=>{
+    render(<Harness initial={{pets:[{...bunny,level}],eggs:[],coins:0,inventory:{apple:2}}}/>);
+    expect(screen.getByTestId('pet-character')).toHaveAttribute('data-stage',stage);
+    expect(within(screen.getByTestId('pet-character')).getByRole('img')).toHaveAttribute('data-stage',stage);
+    fireEvent.click(screen.getByRole('button',{name:'洗澡'}));
+    expect(screen.getByTestId('pet-character')).toHaveAttribute('data-stage',stage);
+    fireEvent.click(screen.getByRole('button',{name:'稍後再做'}));
+    fireEvent.click(screen.getByRole('button',{name:'夥伴詳情'}));
+    const looks=screen.getByRole('region',{name:'外觀成長'});
+    expect(within(looks).getAllByRole('img')).toHaveLength(3);
+    expect(looks.querySelector('figure[aria-current] svg')).toHaveAttribute('data-stage',stage);
+    fireEvent.click(screen.getByRole('button',{name:'收藏'}));
+    expect(within(screen.getByRole('button',{name:/已收集/})).getByRole('img')).toHaveAttribute('data-stage',stage);
+  });
+  it('opens care directly with three destinations and remembers the chosen companion',()=>{
+    render(<Harness initial={{pets:[bunny,{...bunny,petId:'chick',bond:200}],eggs:[],coins:0,inventory:{}}}/>);
+    expect(within(screen.getByRole('navigation',{name:'家園分頁'})).getAllByRole('button')).toHaveLength(3);
+    expect(screen.getByRole('combobox',{name:'選擇陪伴夥伴'})).toHaveValue('chick');
+    fireEvent.change(screen.getByRole('combobox',{name:'選擇陪伴夥伴'}),{target:{value:'bunny'}});
+    fireEvent.click(screen.getByRole('button',{name:'收藏'}));
+    expect(screen.getAllByRole('button',{name:/已收集/})).toHaveLength(2);
+    fireEvent.click(screen.getByRole('button',{name:'陪伴'}));
+    expect(screen.getByRole('combobox',{name:'選擇陪伴夥伴'})).toHaveValue('bunny');
+  });
+
+  it('claims only completed tasks once in a batch and keeps each rounded bond bonus',()=>{
+    const tasks=[...api.DAILY_TASK_DEFS,{id:'feed_1',name:'餵食',statKey:'feedToday',target:1,reward:{coins:11,exp:6}},{id:'quiz_3',name:'測驗',statKey:'quizToday',target:3,reward:{coins:15,exp:10}}];
+    render(<Harness initialTab="tasks" taskDefs={tasks} counts={{srsToday:5,feedToday:1,quizToday:2}} initial={{pets:[{...bunny,bond:200}],eggs:[],coins:0,inventory:{}}}/>);
+    const claim=screen.getByRole('button',{name:'一鍵領取 2 份獎勵'});
+    fireEvent.click(claim);fireEvent.click(claim);
+    expect(saved()).toMatchObject({coins:37,pets:[{exp:25}]});
+    expect(screen.getByRole('button',{name:'目前沒有待領獎勵'})).toBeDisabled();
+    fireEvent.click(screen.getByRole('button',{name:'陪伴'}));
+    fireEvent.click(screen.getByRole('button',{name:'學習'}));
+    expect(screen.getByRole('button',{name:'目前沒有待領獎勵'})).toBeDisabled();
+    expect(saved().coins).toBe(37);
+  });
+
   it('lets a child with zero coins adopt one egg and routes to learning',()=>{
     render(<Harness initialTab="eggs"/>);
     const adopt=screen.getByRole('button',{name:'領養這位夥伴的蛋 →'});fireEvent.click(adopt);fireEvent.click(adopt);
@@ -30,7 +68,7 @@ describe('the complete pet home flow',()=>{
     render(<Harness initialTab="eggs" initial={{pets:[],eggs:[{id:'egg1',petId:'bunny',rarity:'N',progress:10,pendingDuplicateReward:{exp:40,bond:4,dupes:1}}],coins:0,inventory:{}}}/>);
     const hatch=screen.getByRole('button',{name:'🎉 可以孵化了！點我'});fireEvent.click(hatch);fireEvent.click(hatch);
     expect(saved()).toMatchObject({pets:[{petId:'bunny',exp:40,bond:4,dupes:1}],eggs:[]});
-    fireEvent.click(screen.getByRole('button',{name:'帶回小家，認識你 →'}));fireEvent.click(screen.getByRole('button',{name:'成長與佈置'}));expect(screen.getByTestId('pet-growth-panel')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button',{name:'帶回小家，認識你 →'}));fireEvent.click(screen.getByRole('button',{name:'夥伴詳情'}));expect(screen.getByTestId('pet-growth-panel')).toBeInTheDocument();
   });
   it('limits task claims and shop purchases to the available balance',()=>{
     render(<Harness initialTab="tasks" initial={{pets:[bunny],eggs:[],coins:0,inventory:{}}}/>);
@@ -41,10 +79,10 @@ describe('the complete pet home flow',()=>{
   });
   it('requires a food selection and only spends it when care is completed',()=>{
     render(<Harness initial={{pets:[bunny],eggs:[],coins:0,inventory:{apple:2}}}/>);
-    fireEvent.click(screen.getByRole('button',{name:'陪陪我的夥伴 →'}));fireEvent.click(screen.getByTestId('pet-primary-care-action'));
+    fireEvent.click(screen.getByTestId('pet-primary-care-action'));
     fireEvent.click(screen.getByRole('button',{name:/選這份食物/}));expect(saved().inventory.apple).toBe(2);
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    expect(screen.getByRole('button',{name:'查看小兔'})).toBeDisabled();
+    expect(screen.getByRole('combobox',{name:'選擇陪伴夥伴'})).toBeDisabled();
     fireEvent.click(screen.getByRole('button',{name:/拿起蘋果|食物拿好了/}));fireEvent.click(screen.getByRole('button',{name:'餵一口'}));
     expect(screen.getByTestId('pet-action-complete')).toBeDisabled();
     fireEvent.click(screen.getByRole('button',{name:'稍後再做'}));expect(saved().inventory.apple).toBe(2);
@@ -56,9 +94,9 @@ describe('the complete pet home flow',()=>{
   });
   it('switches the showcase and applies care to the selected companion only',()=>{
     render(<Harness initial={{pets:[bunny,{...bunny,petId:'chick',clean:20}],eggs:[],coins:0,inventory:{apple:2}}}/>);
-    fireEvent.click(screen.getByRole('button',{name:'陪陪我的夥伴 →'}));
-    fireEvent.click(screen.getByRole('button',{name:'寵物選擇下一頁'}));fireEvent.click(screen.getByRole('button',{name:'查看小雞'}));
-    expect(screen.getByRole('button',{name:'查看小雞'})).toHaveAttribute('aria-pressed','true');
+
+    fireEvent.change(screen.getByRole('combobox',{name:'選擇陪伴夥伴'}),{target:{value:'chick'}});
+    expect(screen.getByRole('combobox',{name:'選擇陪伴夥伴'})).toHaveValue('chick');
     fireEvent.click(within(screen.getByTestId('pet-showcase')).getByRole('button',{name:'洗澡'}));
     for(const n of [4,2,3,1])fireEvent.click(screen.getByRole('button',{name:`擦洗第 ${n} 處髒污`}));
     fireEvent.click(screen.getByTestId('pet-action-complete'));
@@ -68,7 +106,7 @@ describe('the complete pet home flow',()=>{
 
   it('keeps an empty food choice on the showcase and opens the shop without a reward',()=>{
     render(<Harness initial={{pets:[bunny],eggs:[],coins:20,inventory:{}}}/>);
-    fireEvent.click(screen.getByRole('button',{name:'陪陪我的夥伴 →'}));
+
     fireEvent.click(within(screen.getByTestId('pet-showcase')).getByRole('button',{name:'餵食'}));
     expect(screen.getByTestId('pet-showcase')).toBeInTheDocument();
     expect(screen.queryByTestId('pet-action-complete')).not.toBeInTheDocument();
@@ -79,7 +117,7 @@ describe('the complete pet home flow',()=>{
 
   it('settles fetch only after three returns, and repeats without charging energy again',()=>{
     vi.useFakeTimers();render(<Harness initial={{pets:[bunny],eggs:[],coins:0,inventory:{}}}/>);
-    fireEvent.click(screen.getByRole('button',{name:'陪陪我的夥伴 →'}));
+
     const start=()=>fireEvent.click(within(screen.getByTestId('pet-showcase')).getByRole('button',{name:'玩耍'}));
     start();fireEvent.click(screen.getByRole('button',{name:'🎾 丟球給夥伴'}));
     fireEvent.click(screen.getByRole('button',{name:'稍後再做'}));act(()=>vi.advanceTimersByTime(2000));
@@ -94,7 +132,7 @@ describe('the complete pet home flow',()=>{
 
   it.each([[10,35],[90,100]])('settles bedtime once with starting energy %i and caps at %i',(energy,expected)=>{
     render(<Harness initial={{pets:[{...bunny,energy}],eggs:[],coins:0,inventory:{}}}/>);
-    fireEvent.click(screen.getByRole('button',{name:'陪陪我的夥伴 →'}));
+
     const start=()=>fireEvent.click(within(screen.getByTestId('pet-showcase')).getByRole('button',{name:'休息'}));
     start();fireEvent.click(screen.getByRole('button',{name:'調暗小夜燈'}));
     expect(screen.getByTestId('pet-action-complete')).toBeDisabled();

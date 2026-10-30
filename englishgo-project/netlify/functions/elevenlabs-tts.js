@@ -15,6 +15,8 @@ const MAX_TEXT_LENGTH = 900;
 const NOVEL_ENGLISH_SPEED = NOVEL_AUDIO_CONFIG.englishRate;
 const NOVEL_CHINESE_SPEED = NOVEL_AUDIO_CONFIG.chineseRate;
 const ONE_YEAR_SECONDS = 31536000;
+const STORAGE_TIMEOUT_MS = 2000;
+const PROVIDER_TIMEOUT_MS = 25000;
 
 function getEnv(name) {
   try {
@@ -67,8 +69,50 @@ function audioResponse(audioBuffer, source = "elevenlabs", extraHeaders = {}, fi
 function jsonResponse(statusCode, payload) {
   return new Response(JSON.stringify(payload), {
     status: statusCode,
-    headers: { "Content-Type": "application/json; charset=utf-8" },
+    headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" },
   });
+}
+
+async function withTimeout(operation, milliseconds) {
+  const controller = new AbortController();
+  let timer;
+  try {
+    const timeout = new Promise((_, reject) => {
+      timer = setTimeout(() => {
+        reject(Object.assign(new Error("Speech request timed out"), { code: "tts_timeout" }));
+        controller.abort();
+      }, milliseconds);
+    });
+    return await Promise.race([operation(controller.signal), timeout]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function isAudioResponse(response) {
+  const type = (response.headers.get("content-type") || "").split(";", 1)[0].trim().toLowerCase();
+  return ["audio/mpeg", "audio/mp3", "audio/x-mp3", "application/octet-stream"].includes(type);
+}
+
+async function storageError(response) {
+  try { return await response.json(); } catch { return {}; }
+}
+
+function isMissingObject(status, error) {
+  if (status !== 400 && status !== 404) return false;
+  const code = error?.code || error?.error || "";
+  const message = error?.message || "";
+  return code === "NoSuchKey" || (
+    ["", "not_found", "StorageUnknownError"].includes(code)
+    && /^Object not found\.?$/i.test(message)
+  );
+}
+
+function isDuplicateObject(status, error) {
+  return status === 409 || (status === 400 && (
+    ["ResourceAlreadyExists", "KeyAlreadyExists", "already_exists", "Duplicate"].includes(error?.code || error?.error)
+    || /^(?:Asset Already Exists|The resource already exists)\.?$/i.test(error?.message || "")
+  ));
 }
 
 function normalizeTextForTts(rawText) {
@@ -132,26 +176,24 @@ async function convertTextToSpeech({ apiKey, voiceId, normalizedText, modelId, o
   const url = new URL(`https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voiceId)}`);
   if (outputFormat) url.searchParams.set("output_format", outputFormat);
 
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      Accept: "audio/mpeg",
-      "Content-Type": "application/json",
-      "xi-api-key": apiKey,
-    },
-    body: JSON.stringify({
-      text: normalizedText,
-      model_id: modelId,
-      voice_settings: voiceSettings,
-    }),
-  });
-
-  if (!res.ok) {
-    const detail = await res.text().catch(() => "");
-    throw new Error(`ElevenLabs TTS failed ${res.status}: ${detail.slice(0, 240)}`);
-  }
-
-  return Buffer.from(await res.arrayBuffer());
+  return withTimeout(async signal => {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        Accept: "audio/mpeg",
+        "Content-Type": "application/json",
+        "xi-api-key": apiKey,
+      },
+      body: JSON.stringify({
+        text: normalizedText,
+        model_id: modelId,
+        voice_settings: voiceSettings,
+      }),
+      signal,
+    });
+    if (!res.ok || !isAudioResponse(res)) throw new Error("Speech provider is unavailable");
+    return Buffer.from(await res.arrayBuffer());
+  }, PROVIDER_TIMEOUT_MS);
 }
 
 function supabaseHeaders(key, extra = {}) {
@@ -167,26 +209,30 @@ async function tryReadFromSupabaseStorage({ bucket, cacheKey }) {
   const supabaseKey = getSupabaseKey();
 
   if (!supabaseUrl || !supabaseKey) {
-    return { ok: false, audioBuffer: null, reason: "missing_supabase_env" };
+    return { ok: false, audioBuffer: null, reason: "missing_supabase_env", state: "disabled" };
   }
 
   try {
-    const url = `${supabaseUrl}/storage/v1/object/${encodeURIComponent(bucket)}/${cacheKey}`;
-    const res = await fetch(url, {
-      method: "GET",
-      headers: supabaseHeaders(supabaseKey, { "Cache-Control": "no-cache" }),
-    });
+    return await withTimeout(async signal => {
+      const url = `${supabaseUrl}/storage/v1/object/${encodeURIComponent(bucket)}/${cacheKey}`;
+      const res = await fetch(url, {
+        method: "GET",
+        headers: supabaseHeaders(supabaseKey, { "Cache-Control": "no-cache" }),
+        signal,
+      });
 
-    if (!res.ok) {
-      return { ok: false, audioBuffer: null, reason: `read_${res.status}` };
-    }
-
-    const audioBuffer = Buffer.from(await res.arrayBuffer());
-    return audioBuffer.length
-      ? { ok: true, audioBuffer, reason: "hit" }
-      : { ok: false, audioBuffer: null, reason: "empty_cache_file" };
+      if (!res.ok) {
+        const missing = isMissingObject(res.status, await storageError(res));
+        return { ok: false, audioBuffer: null, reason: `read_${res.status}`, state: missing ? "miss" : "unavailable" };
+      }
+      if (!isAudioResponse(res)) return { ok: false, audioBuffer: null, reason: "invalid_cache_type", state: "unavailable" };
+      const audioBuffer = Buffer.from(await res.arrayBuffer());
+      return audioBuffer.length
+        ? { ok: true, audioBuffer, reason: "hit", state: "hit" }
+        : { ok: false, audioBuffer: null, reason: "empty_cache_file", state: "unavailable" };
+    }, STORAGE_TIMEOUT_MS);
   } catch (err) {
-    return { ok: false, audioBuffer: null, reason: `read_error_${err?.message || String(err)}` };
+    return { ok: false, audioBuffer: null, reason: err?.code === "tts_timeout" ? "read_timeout" : "read_error", state: "unavailable" };
   }
 }
 
@@ -199,23 +245,24 @@ async function tryUploadToSupabaseStorage({ bucket, cacheKey, audioBuffer, fixed
   }
 
   try {
-    const url = `${supabaseUrl}/storage/v1/object/${encodeURIComponent(bucket)}/${cacheKey}`;
-    const res = await fetch(url, {
-      method: "POST",
-      headers: supabaseHeaders(supabaseKey, {
-        "Content-Type": "audio/mp3",
-        "Cache-Control": fixedAsset ? String(ONE_YEAR_SECONDS) : forceRegenerate ? "0" : "86400",
-        "x-upsert": "true",
-      }),
-      body: audioBuffer,
-    });
-
-    if (res.ok) return { ok: true, reason: "uploaded" };
-
-    const detail = await res.text().catch(() => "");
-    return { ok: false, reason: `upload_${res.status}_${detail.slice(0, 180)}` };
+    return await withTimeout(async signal => {
+      const url = `${supabaseUrl}/storage/v1/object/${encodeURIComponent(bucket)}/${cacheKey}`;
+      const res = await fetch(url, {
+        method: "POST",
+        headers: supabaseHeaders(supabaseKey, {
+          "Content-Type": "audio/mp3",
+          "Cache-Control": fixedAsset ? String(ONE_YEAR_SECONDS) : forceRegenerate ? "0" : "86400",
+          "x-upsert": forceRegenerate ? "true" : "false",
+        }),
+        body: audioBuffer,
+        signal,
+      });
+      if (res.ok) return { ok: true, reason: "uploaded" };
+      if (!forceRegenerate && isDuplicateObject(res.status, await storageError(res))) return { ok: true, reason: "preserved" };
+      return { ok: false, reason: `upload_${res.status}` };
+    }, STORAGE_TIMEOUT_MS);
   } catch (err) {
-    return { ok: false, reason: `upload_error_${err?.message || String(err)}` };
+    return { ok: false, reason: err?.code === "tts_timeout" ? "upload_timeout" : "upload_error" };
   }
 }
 
@@ -238,11 +285,6 @@ export default async function handler(req, context = {}) {
     if (!payload) return jsonResponse(404, { error: "Unknown novel audio asset" });
   }
 
-  const apiKey = getEnv("ELEVENLABS_API_KEY");
-  if (!apiKey) {
-    return jsonResponse(500, { error: "Missing ELEVENLABS_API_KEY" });
-  }
-
   if (!isFixedNovelAsset) {
     try {
       const body = await req.text();
@@ -250,11 +292,15 @@ export default async function handler(req, context = {}) {
     } catch {
       return jsonResponse(400, { error: "Invalid JSON body" });
     }
+    if (!payload || typeof payload !== "object" || Array.isArray(payload)) return jsonResponse(400, { error: "Invalid JSON body" });
+    if (Object.hasOwn(payload, "cacheOnly") && typeof payload.cacheOnly !== "boolean") return jsonResponse(400, { error: "cacheOnly must be a boolean" });
+    if (payload.cacheOnly === true && payload.forceRegenerate === true) return jsonResponse(400, { error: "cacheOnly cannot be combined with forceRegenerate" });
   }
 
   const originalText = String(payload.text || "").trim();
   const normalizedText = normalizeTextForTts(originalText);
   const forceRegenerate = !isFixedNovelAsset && payload.forceRegenerate === true;
+  const cacheOnly = !isFixedNovelAsset && payload.cacheOnly === true;
   const lang = String(payload.lang || "en-US").trim();
   const voiceId = isChineseLang(lang)
     ? (isFixedNovelAsset ? NOVEL_AUDIO_CONFIG.chineseVoiceId : getEnv("ELEVENLABS_ZH_VOICE_ID"))
@@ -321,6 +367,12 @@ export default async function handler(req, context = {}) {
     }, isFixedNovelAsset);
   }
 
+  if (cached.state === "unavailable") return jsonResponse(503, { error: "Saved speech is temporarily unavailable. Please try again." });
+  if (cacheOnly) return new Response(null, { status: 204, headers: { "Cache-Control": "no-store", "X-TTS-Cache-Read": "miss" } });
+
+  const apiKey = getEnv("ELEVENLABS_API_KEY");
+  if (!apiKey) return jsonResponse(500, { error: "Missing ELEVENLABS_API_KEY" });
+
   try {
     const audioBuffer = await convertTextToSpeech({
       apiKey,
@@ -335,14 +387,14 @@ export default async function handler(req, context = {}) {
       return jsonResponse(502, { error: "ElevenLabs returned empty audio" });
     }
 
-    const awaitUpload = forceRegenerate || getEnv("TTS_AWAIT_CACHE_UPLOAD") === "true";
+    const awaitUpload = forceRegenerate || getEnv("TTS_AWAIT_CACHE_UPLOAD") === "true" || typeof context.waitUntil !== "function";
     if (awaitUpload) {
       const upload = await tryUploadToSupabaseStorage({ bucket, cacheKey, audioBuffer, fixedAsset: isFixedNovelAsset, forceRegenerate });
       return audioResponse(audioBuffer, "elevenlabs", {
         ...debugHeaders,
         ...(forceRegenerate ? { "Cache-Control": "no-store" } : {}),
         "X-TTS-Cache-Read": safeHeaderValue(cached.reason),
-        "X-TTS-Cache-Upload": upload.ok ? "ok" : "failed",
+        "X-TTS-Cache-Upload": upload.ok ? upload.reason === "preserved" ? "preserved" : "ok" : "failed",
         "X-TTS-Cache-Upload-Detail": safeHeaderValue(upload.reason),
       }, isFixedNovelAsset);
     }
@@ -367,6 +419,8 @@ export default async function handler(req, context = {}) {
       "X-TTS-Cache-Upload-Detail": typeof context.waitUntil === "function" ? "waitUntil" : "best-effort",
     }, isFixedNovelAsset);
   } catch (err) {
-    return jsonResponse(500, { error: err?.message || String(err) });
+    return err?.code === "tts_timeout"
+      ? jsonResponse(504, { error: "Speech took too long. Please try again." })
+      : jsonResponse(502, { error: "Speech is temporarily unavailable. Please try again." });
   }
 }

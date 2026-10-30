@@ -1,14 +1,17 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
+import { resetProgressOnce } from './data/progressReset.js';
 import './ui-polish.css';
 import './learning-experience.css';
 import './arcade.css';
-import './pet-world.css';
 import './practice-world.css';
 import './learning-workshops.css';
 import './study-planning.css';
 import './learning-desk.css';
+
+try { resetProgressOnce(localStorage, sessionStorage, window.history); }
+catch (error) { console.warn('[Progress] Unable to reset local progress', error); }
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

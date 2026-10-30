@@ -92,22 +92,24 @@ describe("vocabulary topic coverage", () => {
   it("fills every junior review topic to at least one complete round", () => {
     const coverage=byId(EXTRA_WORDS.junior);
 
-    expect(coverage.all.count).toBe(199);
-    expect(coverage.transport).toMatchObject({count:21,status:"ready",ready:true,gap:0});
-    expect(coverage.food).toMatchObject({count:21,status:"ready",ready:true,gap:0});
-    expect(coverage.business).toMatchObject({count:22,status:"ready",ready:true,gap:0});
+    expect(coverage.all.count).toBe(EXTRA_WORDS.junior.length);
+    expect(coverage.all.count).toBeGreaterThanOrEqual(286);
+    for(const [topic,minimum] of Object.entries({transport:21,food:21,business:22})) {
+      expect(coverage[topic].count).toBeGreaterThanOrEqual(minimum);
+      expect(coverage[topic]).toMatchObject({status:"ready",ready:true,gap:0});
+    }
     expect(Object.values(coverage).every(topic=>topic.ready)).toBe(true);
   });
 
   it("fills every senior review topic to at least one complete round", () => {
     const coverage=byId(EXTRA_WORDS.senior);
 
-    expect(coverage.all.count).toBe(116);
-    expect(coverage.food).toMatchObject({count:21,status:"ready",ready:true,gap:0});
-    expect(coverage.transport).toMatchObject({count:21,status:"ready",ready:true,gap:0});
-    expect(coverage.school).toMatchObject({count:20,status:"ready",ready:true,gap:0});
-    expect(coverage.people).toMatchObject({count:21,status:"ready",ready:true,gap:0});
-    expect(coverage.nature).toMatchObject({count:20,status:"ready",ready:true,gap:0});
+    expect(coverage.all.count).toBe(EXTRA_WORDS.senior.length);
+    expect(coverage.all.count).toBeGreaterThanOrEqual(411);
+    for (const [topic,minimum] of Object.entries({food:21,transport:21,school:25,people:21,nature:22})) {
+      expect(coverage[topic].count).toBeGreaterThanOrEqual(minimum);
+      expect(coverage[topic]).toMatchObject({status:"ready",ready:true,gap:0});
+    }
     expect(Object.values(coverage).every(topic=>topic.ready)).toBe(true);
   });
 

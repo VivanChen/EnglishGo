@@ -1,0 +1,147 @@
+{
+  "project": "jbspxqebcrkilfcddluo",
+  "receipts": [
+    {
+      "batch": 1,
+      "expected": 200,
+      "updated": 200
+    },
+    {
+      "batch": 2,
+      "expected": 200,
+      "updated": 200
+    },
+    {
+      "batch": 3,
+      "expected": 200,
+      "updated": 200
+    },
+    {
+      "batch": 4,
+      "expected": 200,
+      "updated": 200
+    },
+    {
+      "batch": 5,
+      "expected": 200,
+      "updated": 200
+    },
+    {
+      "batch": 6,
+      "expected": 200,
+      "updated": 200
+    },
+    {
+      "batch": 7,
+      "expected": 200,
+      "updated": 200
+    },
+    {
+      "batch": 8,
+      "expected": 200,
+      "updated": 200
+    },
+    {
+      "batch": 9,
+      "expected": 200,
+      "updated": 200
+    },
+    {
+      "batch": 10,
+      "expected": 200,
+      "updated": 200
+    },
+    {
+      "batch": 11,
+      "expected": 200,
+      "updated": 200
+    },
+    {
+      "batch": 12,
+      "expected": 200,
+      "updated": 200
+    },
+    {
+      "batch": 13,
+      "expected": 200,
+      "updated": 200
+    },
+    {
+      "batch": 14,
+      "expected": 200,
+      "updated": 200
+    },
+    {
+      "batch": 15,
+      "expected": 200,
+      "updated": 200
+    },
+    {
+      "batch": 16,
+      "expected": 200,
+      "updated": 200
+    },
+    {
+      "batch": 17,
+      "expected": 200,
+      "updated": 200
+    },
+    {
+      "batch": 18,
+      "expected": 200,
+      "updated": 200
+    },
+    {
+      "batch": 19,
+      "expected": 200,
+      "updated": 200
+    },
+    {
+      "batch": 20,
+      "expected": 200,
+      "updated": 200
+    },
+    {
+      "batch": 21,
+      "expected": 200,
+      "updated": 200
+    },
+    {
+      "batch": 22,
+      "expected": 200,
+      "updated": 200
+    },
+    {
+      "batch": 23,
+      "expected": 200,
+      "updated": 200
+    },
+    {
+      "batch": 24,
+      "expected": 200,
+      "updated": 200
+    },
+    {
+      "batch": 25,
+      "expected": 200,
+      "updated": 200
+    },
+    {
+      "batch": 26,
+      "expected": 200,
+      "updated": 200
+    },
+    {
+      "batch": 27,
+      "expected": 188,
+      "updated": 188
+    },
+    {
+      "batch": 28,
+      "expected": 8,
+      "updated": 8
+    }
+  ],
+  "updatedRows": 5396,
+  "note": "updatedRows counts writes; the last supplemental batch revisits 8 existing rows."
+}

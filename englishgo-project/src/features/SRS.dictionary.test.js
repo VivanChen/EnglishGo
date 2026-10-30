@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 import { normalizeKidDictionary, validateKidDictionary } from "./SRS.jsx";
 
 describe("SRS kid dictionary validation", () => {
+  it.each([["adv.","副詞"],["adverb","副詞"],["pron.","代名詞"],["pronoun","代名詞"],["n./v.","名詞／動詞"]])("translates %s without confusing a contained noun or verb abbreviation", (pos, expected) => {
+    expect(normalizeKidDictionary({},"word","意思",pos).partOfSpeechZh).toBe(expected);
+  });
   it("rejects a response that leaks a non-Chinese explanation", () => {
     const result=normalizeKidDictionary({
       word:"accomplish",

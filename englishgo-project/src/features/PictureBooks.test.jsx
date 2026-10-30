@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
-import PictureBooks from './PictureBooks.jsx';
+import PictureBooks, { BOOK_READING_GUIDES } from './PictureBooks.jsx';
 import { PIP_PAGES, PIP_VOCAB } from '../data/pipBook.js';
 import { NOVEL_AUDIO_CATALOG } from '../../netlify/functions/novel-audio-catalog.js';
 import { makeNovelAudioAssetId } from '../data/novelAudio.js';
@@ -93,5 +93,56 @@ describe('Dori upper-elementary storybook',()=>{
   });
   const words=new Set(DORI_PAGES.flatMap(p=>p.x.toLowerCase().match(/[a-z]+/g)));
   Object.keys(DORI_VOCAB).forEach(word=>expect(words.has(word),word).toBe(true));
+ });
+});
+
+describe('storybook reading-guide participation',()=>{
+ const selectCorrect=questions=>questions.forEach(question=>fireEvent.click(screen.getByRole('button',{name:question.options[question.answer],hidden:true})));
+ it('requires both grounded Pip answers, saves before the event, and never awards on a passive visit',()=>{
+  const key='eg_pictureBookGuide:pip-and-the-lost-star:v1';
+  const onLearningEvent=vi.fn(()=>expect(JSON.parse(localStorage.getItem(key)).completed).toBe(true));
+  const props={onBack:vi.fn(),stopSpeech:vi.fn(),onLearningEvent,onXp:vi.fn()};
+  const view=render(<PictureBooks {...props}/>);
+  const questions=BOOK_READING_GUIDES['pip-and-the-lost-star'].questions;
+  expect(PIP_PAGES[1].x).toContain('garden');expect(PIP_PAGES[6].x).toContain('At the top');
+  expect(onLearningEvent).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button',{name:questions[0].options[2],hidden:true}));
+  fireEvent.click(screen.getByRole('button',{name:questions[1].options[questions[1].answer],hidden:true}));
+  expect(onLearningEvent).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button',{name:questions[0].options[questions[0].answer],hidden:true}));
+  expect(onLearningEvent).toHaveBeenCalledTimes(1);
+  expect(onLearningEvent.mock.calls[0][0]).toMatchObject({id:'pictureBooks:pip-and-the-lost-star:guide:v1',source:'pictureBooks',level:'elementary',contentId:'pip-and-the-lost-star',kind:'complete',outcome:'participated',activity:'reading-guide',questionCount:2});
+  selectCorrect(questions);expect(onLearningEvent).toHaveBeenCalledTimes(1);
+  view.unmount();render(<PictureBooks {...props}/>);selectCorrect(questions);
+  expect(onLearningEvent).toHaveBeenCalledTimes(1);expect(props.onXp).not.toHaveBeenCalled();
+ });
+ it('keeps each book’s answers and completion separate, including Dori’s four questions',()=>{
+  const onLearningEvent=vi.fn();const view=render(<PictureBooks onBack={vi.fn()} stopSpeech={vi.fn()} onLearningEvent={onLearningEvent}/>);
+  const pip=BOOK_READING_GUIDES['pip-and-the-lost-star'].questions,milo=BOOK_READING_GUIDES['milo-and-the-little-storm'].questions;
+  selectCorrect(pip);fireEvent.click(screen.getByRole('button',{name:'👑 米洛王子的小風暴'}));
+  expect(MILO_PAGES[1].x).toContain('caught a block');expect(MILO_PAGES[4].x).toContain('breathed in slowly');
+  fireEvent.click(screen.getByRole('button',{name:milo[0].options[milo[0].answer],hidden:true}));
+  expect(onLearningEvent).toHaveBeenCalledTimes(1);
+  view.unmount();render(<PictureBooks onBack={vi.fn()} stopSpeech={vi.fn()} onLearningEvent={onLearningEvent}/>);
+  fireEvent.click(screen.getByRole('button',{name:'👑 米洛王子的小風暴'}));
+  expect(screen.getByRole('button',{name:milo[0].options[milo[0].answer],hidden:true})).toHaveAttribute('aria-pressed','true');
+  fireEvent.click(screen.getByRole('button',{name:milo[1].options[milo[1].answer],hidden:true}));
+  expect(onLearningEvent).toHaveBeenCalledTimes(2);
+  fireEvent.click(screen.getByRole('button',{name:'🦕 小恐龍朵里尋找媽媽'}));
+  selectCorrect(DORI_QUESTIONS.slice(0,3));expect(onLearningEvent).toHaveBeenCalledTimes(2);
+  selectCorrect(DORI_QUESTIONS.slice(3));expect(onLearningEvent).toHaveBeenCalledTimes(3);
+  expect(onLearningEvent.mock.calls[2][0]).toMatchObject({contentId:'dori-and-the-echo-in-the-mist',questionCount:4,outcome:'participated'});
+ });
+ it('retains the iframe origin and source checks and ignores claimed completion messages',()=>{
+  const onLearningEvent=vi.fn();render(<PictureBooks onBack={vi.fn()} stopSpeech={vi.fn()} onLearningEvent={onLearningEvent}/>);
+  const frame=screen.getByTitle('Pip and the Lost Star 互動立體童書');
+  fireEvent(window,new MessageEvent('message',{origin:'https://example.com',source:frame.contentWindow,data:{type:'pip:height',height:999}}));
+  expect(frame.style.height).toBe('700px');
+  fireEvent(window,new MessageEvent('message',{origin:window.location.origin,source:window,data:{type:'pip:height',height:999}}));
+  expect(frame.style.height).toBe('700px');
+  fireEvent(window,new MessageEvent('message',{origin:window.location.origin,source:frame.contentWindow,data:{type:'pip:height',height:999}}));
+  expect(frame.style.height).toBe('999px');
+  fireEvent(window,new MessageEvent('message',{origin:window.location.origin,source:frame.contentWindow,data:{type:'pip:guide-complete',completed:true}}));
+  expect(onLearningEvent).not.toHaveBeenCalled();
  });
 });

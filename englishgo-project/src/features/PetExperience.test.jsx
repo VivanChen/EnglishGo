@@ -38,15 +38,15 @@ describe('pet experience safeguards',()=>{
     const saved=JSON.parse(screen.getByTestId('play-saved').textContent);expect(saved).toMatchObject({coins:8,pets:[{exp:18,bond:8,journey:{marks:1},playRecords:{'picnic:1':3}}]});
     fireEvent.click(screen.getByRole('button',{name:'回遊樂園'}));expect(screen.getByRole('button',{name:/默契練習/})).not.toBeDisabled();
   });
-  it('keeps the chosen game while moving between one-screen setup steps',()=>{
+  it('starts with sensible defaults and keeps optional game settings when collapsed',()=>{
     render(<PlayHarness compact/>);
-    expect(screen.queryByRole('button',{name:'帶夥伴出發 →'})).not.toBeInTheDocument();
-    for(let n=0;n<2;n++)fireEvent.click(screen.getByRole('button',{name:'內容下一頁'}));
+    expect(screen.getByRole('button',{name:'帶夥伴出發 →'})).toBeEnabled();
+    expect(screen.queryByRole('button',{name:'內容下一頁'})).not.toBeInTheDocument();
+    const options=screen.getByText('換遊戲、夥伴或難度').closest('details');
+    fireEvent.click(screen.getByText('換遊戲、夥伴或難度'));
     fireEvent.click(screen.getByRole('button',{name:/記憶尋寶/}));
-    fireEvent.click(screen.getByRole('button',{name:'內容上一頁'}));
-    fireEvent.click(screen.getByRole('button',{name:'內容下一頁'}));
-    expect(screen.getByRole('button',{name:/記憶尋寶/})).toHaveAttribute('aria-pressed','true');
-    for(let n=0;n<2;n++)fireEvent.click(screen.getByRole('button',{name:'內容下一頁'}));
+    fireEvent.click(screen.getByText('換遊戲、夥伴或難度'));
+    expect(options).not.toHaveAttribute('open');
     fireEvent.click(screen.getByRole('button',{name:'帶夥伴出發 →'}));
     expect(screen.getByRole('button',{name:'我記住了，開始尋寶'})).toBeEnabled();
     expect(screen.getByTestId('play-saved')).toHaveTextContent('"coins":0');

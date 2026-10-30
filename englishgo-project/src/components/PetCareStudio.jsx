@@ -4,7 +4,7 @@ import './pet-showcase.css';
 import './pet-care-studio.css';
 
 // The interaction layer remains usable when WebGL is unavailable.
-export default function PetCareStudio({petId, action, food, words=[], prompt, speak, stopSpeech, onReady, motion='full'}) {
+export default function PetCareStudio({petId, stage='baby', action, food, words=[], prompt, speak, stopSpeech, onReady, motion='full'}) {
   const washArea=useRef(null),washPointer=useRef(null),focusNextWash=useRef(false),foodControl=useRef(null),suppressClick=useRef(false),restControl=useRef(null),target=useRef(null), reaction=useRef(-5000),playTimer=useRef(null),playBusy=useRef(false), cleaned=useRef(new Set()),count=useRef(0), drag=useRef(null);
   const [sceneStatus,setSceneStatus]=useState('loading'),[playing,setPlaying]=useState(false),[progress,setProgress]=useState(0),[washed,setWashed]=useState([]),[holding,setHolding]=useState(false),[cursor,setCursor]=useState(null),[missed,setMissed]=useState(false);
   const restSteps=['調暗小夜燈','蓋好小被被','輕聲說晚安'];
@@ -44,7 +44,7 @@ export default function PetCareStudio({petId, action, food, words=[], prompt, sp
   return <section className={`pc-studio ${action==='sleep'?'pc-rest':action==='study'?'pc-study':''}`} data-rest-stage={action==='sleep'?progress:undefined} aria-label="立體寵物照顧">
     <div className="pc-stage">
       <span className="pc-label">{action==='study'?'OUR LITTLE BOOK':action==='sleep'?'A LITTLE GOOD NIGHT':action==='play'?'FETCH & FRIENDS':action==='clean'?'BUBBLE BATH':'SNACK TIME'} · 陪伴小時光</span>
-      <div className="pc-canvas"><PetCharacterScene petId={petId} motion={motion} reaction={reaction} activity={action} washed={washed} foodId={food?.id} bites={action==='feed'?progress:0} restStage={action==='sleep'?progress:0} targetRef={target} onStatus={setSceneStatus}/></div>
+      <div className="pc-canvas"><PetCharacterScene petId={petId} stage={stage} motion={motion} reaction={reaction} activity={action} washed={washed} foodId={food?.id} bites={action==='feed'?progress:0} restStage={action==='sleep'?progress:0} targetRef={target} onStatus={setSceneStatus}/></div>
       {action==='sleep'?<span className="pc-rest-moon" aria-hidden="true">{progress>=2?'☾ z z':'☾'}</span>:(action==='play'||action==='study')?null:action==='clean'?<div ref={washArea} className="pc-spots" aria-label="清潔四處泡泡" onPointerDown={e=>{if(e.button!==0||washPointer.current!==null)return;washPointer.current=e.pointerId;e.currentTarget.setPointerCapture(e.pointerId);wipeAt(e)}} onPointerMove={e=>{if(washPointer.current===e.pointerId)wipeAt(e)}} onPointerUp={stopWiping} onPointerCancel={stopWiping} onLostPointerCapture={stopWiping}>{[0,1,2,3].map(n=><button key={n} data-wash={n+1} className={washed.includes(n)?'is-clean':''} disabled={washed.includes(n)} aria-label={`擦洗第 ${n+1} 處髒污`} onClick={e=>wash(n,e.detail===0)}><span aria-hidden="true">{washed.includes(n)?'✓':'🫧'}</span><small>{washed.includes(n)?'洗好了':`第 ${n+1} 處`}</small></button>)}</div>:<button ref={target} className="pc-mouth" aria-label="餵一口" disabled={done||!holding} onClick={eat}>{done?'好好吃！':'餵到這裡'}</button>}
       {progress>0&&action!=='sleep'&&<span key={progress} className="pc-feedback-burst" aria-hidden="true">{action==='clean'?'✧':'♡'}</span>}
       {cursor&&<span className="pc-drag" style={{left:cursor.x,top:cursor.y}}>{food?.emoji||'🍎'}</span>}
