@@ -1289,7 +1289,7 @@ describe('EnglishGo app smoke flow', () => {
     await openElementaryMenu(); clickMenuStat('寵物'); await screen.findByTestId('pet-town', {}, { timeout: 5000 });
     fireEvent.click(screen.getByRole('button', { name: '和' + TOWN_PETS[0].name + '一起回家' }));
     fireEvent.click(screen.getByRole('button', { name: '餵食', exact: true }));
-    for (const label of ['準備好點心', '餵第一口', '餵最後一口']) fireEvent.click(screen.getByRole('button', { name: label }));
+    for (const [label, hits] of [['準備好點心', 2], ['餵第一口', 3], ['餵最後一口', 2]]) for (let i = 0; i < hits; i++) fireEvent.click(screen.getByRole('button', { name: label, exact: true }));
     const pet = readTownSnapshot(null).worldState.ownedPets[0];
     expect(pet.speciesId).toBe('harbor-cat'); expect(pet.hunger).toBeCloseTo(100, 1); expect(pet.bond).toBe(2);
     expect(JSON.parse(localStorage.getItem('eg_coins'))).toBe(77);

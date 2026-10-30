@@ -7,6 +7,7 @@ vi.mock('./TownScene.jsx', () => ({
 }));
 vi.mock('./cloudAccount.js', () => ({ hashPin: vi.fn(), legacyPinHash: vi.fn(), requestPetAccount: vi.fn() }));
 import PetTown from './PetTown.jsx';
+import { CARE } from './CareInteraction.jsx';
 import { CHAPTERS, FURNITURE, PETS } from './worldData.js';
 import { hashPin, legacyPinHash, requestPetAccount } from './cloudAccount.js';
 import { resetProgressOnce } from '../../data/progressReset.js';
@@ -19,6 +20,7 @@ function Harness() {
   return <><output data-testid="ui-coins">{coins}</output><PetTown {...{ coins, setCoins, petAccount, setPetAccount }} onBack={back} onNavigate={navigate}
     onXp={xp}/></>;
 }
+const finishStage = label => { const stage = CARE.flatMap(c => c.stages).find(s => s.label === label); for (let i = 0; i < stage.hits; i++) click(label); };
 const click = name => fireEvent.click(screen.getByRole('button', { name, exact: true }));
 const tab = label => fireEvent.click(within(screen.getByRole('navigation', { name: '海風小鎮導覽' })).getByRole('button', { name: label }));
 const adopt = (index = 0) => {
@@ -69,11 +71,33 @@ describe('Seabreeze town complete UI flows', () => {
     render(<Harness/>); adopt();
     click('餵食'); click('準備好點心'); click('稍後再做');
     expect(readTownSnapshot(null).worldState.ownedPets[0]).toMatchObject({ hunger: 90, bond: 0 });
-    click('餵食'); click('準備好點心'); click('餵第一口');
+    click('餵食'); finishStage('準備好點心'); finishStage('餵第一口');
     expect(readTownSnapshot(null).worldState.ownedPets[0].hunger).toBe(90);
-    click('餵最後一口');
+    finishStage('餵最後一口');
     expect(readTownSnapshot(null).worldState.ownedPets[0]).toMatchObject({ hunger: 100, bond: 2 });
     expect(xp).not.toHaveBeenCalled(); expect(screen.getByTestId('ui-coins')).toHaveTextContent('300');
+  });
+
+  it('completes all bath stages through the scene and settles only once', () => {
+    render(<Harness/>); adopt(); click('洗澡');
+    const bath = CARE.find(c => c.id === 'wash');
+    for (const stage of bath.stages) {
+      expect(readTownSnapshot(null).worldState.ownedPets[0].bond).toBe(0);
+      const surface = screen.getByRole('button', { name: `凪凪的${stage.label}互動區` });
+      for (let i = 0; i < stage.hits; i++) fireEvent.click(surface, { detail: 0 });
+    }
+    expect(readTownSnapshot(null).worldState.ownedPets[0]).toMatchObject({ clean: 100, bond: 2 });
+    expect(screen.queryByRole('progressbar', { name: '照顧進度' })).not.toBeInTheDocument();
+    click('洗澡');
+    for (const stage of bath.stages) finishStage(stage.label);
+    expect(readTownSnapshot(null).worldState.ownedPets[0].bond).toBe(2);
+  });
+
+  it('cancels scene care on navigation without awarding progress', () => {
+    render(<Harness/>); adopt(); click('洗澡'); finishStage('打出泡泡');
+    tab('出遊'); tab('家園');
+    expect(screen.queryByRole('progressbar', { name: '照顧進度' })).not.toBeInTheDocument();
+    expect(readTownSnapshot(null).worldState.ownedPets[0]).toMatchObject({ clean: 90, bond: 0 });
   });
 
   it('completes and replays a chapter while awarding global XP and story gifts once', () => {

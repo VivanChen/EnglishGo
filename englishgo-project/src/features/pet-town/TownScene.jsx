@@ -329,7 +329,7 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
       const target = new T.Vector3(), raycaster = new T.Raycaster(), pointer = new T.Vector2();
       const floorPlane = new T.Plane(new T.Vector3(0, 1, 0), -.08);
       let active = activePetId, sceneVisible = true, previousTime = 0, frame = 0, elapsed = 0;
-      let focusWanted = initialFocus, effectDeadline = 0, lastActivityKey = '';
+      let focusWanted = initialFocus, effectDeadline = 0, lastActivityKey = '', effectActor = null, effectStart = 0;
       const loadedMaterials = new Set(), loadedGeometry = new Set();
       const releaseModel = model => {
         const geometries = new Set(), materials = new Set();
@@ -338,8 +338,9 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
         materials.forEach(m => { m.dispose(); loadedMaterials.delete(m); });
       };
       const releaseActor = actor => { actor.mixer.stopAllAction(); actor.mixer.uncacheRoot(actor.model); actorsGroup.remove(actor.root); releaseModel(actor.model); };
-      const play = (actor, name) => {
-        if (actor.clip === name || !actor.actions[name]) return;
+      const play = (actor, name, restart = false) => {
+        if ((!restart && actor.clip === name) || !actor.actions[name]) return;
+        if (actor.clip === name) { actor.actions[name].reset().play(); return; }
         actor.actions[actor.clip]?.fadeOut(.24);
         actor.actions[name].reset().fadeIn(.24).play(); actor.clip = name;
       };
@@ -364,6 +365,7 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
             const currentPet = latest.current.pets.find(p => p.id === pet.id && p.speciesId === pet.speciesId) || pet;
             applyGrowthAppearance(model, currentPet.exp || 0);
             const mixer = new T.AnimationMixer(model), actions = Object.fromEntries(gltf.animations.map(clip => [clip.name, mixer.clipAction(clip)]));
+            for (const name of ['shake', 'pounce', 'settle', 'wake']) if (actions[name]) { actions[name].setLoop(T.LoopOnce, 1); actions[name].clampWhenFinished = true; }
             const actor = { root: actorRoot, model, mixer, actions, clip: '', target: null, path: [], speciesId: pet.speciesId, idleUntil: elapsed + 8 + index * 4 };
             actors.set(pet.id, actor); play(actor, 'idle');
             if (!pending.size) setStatus('ready');
@@ -376,19 +378,24 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
         });
       };
       const perform = value => {
-        if (!value) { effectDeadline = 0; lastActivityKey = ''; clearVisuals(effectGroup); actors.forEach(actor => { if (!actor.target) play(actor, 'idle'); }); return; }
+        if (!value) { controls.enabled = true; effectActor = null; effectDeadline = 0; lastActivityKey = ''; clearVisuals(effectGroup); actors.forEach(actor => { if (!actor.target) play(actor, 'idle'); }); return; }
         const key = `${value.nonce || value.id || ''}:${value.type}:${value.petId || active}`;
         if (key === lastActivityKey) return;
         const actor = actors.get(value.petId || active) || actors.values().next().value;
         if (!actor) return;
         lastActivityKey = key;
         if (['feed', 'wash', 'clean', 'play', 'sleep', 'pet', 'wake'].includes(value.type)) { focusWanted = true; setFocus(true); }
-        actor.target = null; actor.path = [];
+        controls.enabled = !value.sustained;
+        actor.target = null; actor.path = []; effectActor = actor; effectStart = elapsed;
+        if (value.sustained) actor.root.rotation.y = .55;
         const map = { feed: 'eat', wash: 'wash', clean: 'wash', play: 'play', sleep: 'sleep', pet: 'pet', wake: 'wake', happy: 'happy', curious: 'curious' };
-        play(actor, map[value.type] || 'happy');
-        effectDeadline = elapsed + (value.type === 'sleep' ? 12 : 4);
+        const clip = value.phase || map[value.type] || 'happy';
+        // Continuous strokes should not rewind the animation before it can react.
+        play(actor, clip, !value.sustained || !actor.actions[clip]?.isRunning());
+        effectDeadline = value.sustained ? Infinity : elapsed + (value.type === 'sleep' ? 12 : 3);
+        if (!latest.current.motion || matchMedia('(prefers-reduced-motion: reduce)').matches) actor.mixer.update(.45);
         clearVisuals(effectGroup);
-        if (value.type === 'feed') {
+        if (value.type === 'feed' && value.phase !== 'happy') {
           const bowl = furniture({ id: 'care-bowl', itemId: 'harbor-bowl', x: 0, z: 0, rotation: 0 }); bowl.position.copy(actor.root.position).add(new T.Vector3(0, 0, .7).applyAxisAngle(new T.Vector3(0, 1, 0), actor.root.rotation.y)); effectGroup.add(bowl);
         } else if (value.type === 'wash') {
           const tub = group(effectGroup, [actor.root.position.x, .10, actor.root.position.z]);
@@ -396,9 +403,17 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
           const bath = add(tub, new T.LatheGeometry(profile, 48), '#f2e6d0'); bath.scale.z = 1.35;
           const water = cylinder(tub, '#afd1d2', [0, .15, 0], .54, .54, .02, 40, { transparent: true, opacity: .64, roughness: .17 }); water.scale.z = 1.35;
           const towel = box(tub, '#b4c5af', [.52, .25, .2], [.14, .09, .42]); towel.rotation.z = -.2;
-          for (let i = 0; i < 14; i++) { const bubble = add(effectGroup, new T.SphereGeometry(.04 + i % 3 * .025, 12, 8), material('#e8f4ec', { transparent: true, opacity: .55, roughness: .16 }), [actor.root.position.x + Math.sin(i * 2.4) * .6, .5 + i * .075, actor.root.position.z + Math.cos(i * 2.4) * .5]); bubble.userData.float = i; }
+          const foamCount = value.phase === 'dry' || value.phase === 'shake' ? 0 : value.phase === 'rinse' ? Math.round(14 * (1 - (value.progress || 0))) : 6 + Math.round(8 * (value.progress || 0));
+          for (let i = 0; i < foamCount; i++) { const bubble = add(effectGroup, new T.SphereGeometry(.04 + i % 3 * .025, 12, 8), material('#e8f4ec', { transparent: true, opacity: .55, roughness: .16 }), [actor.root.position.x + Math.sin(i * 2.4) * .6, .5 + i * .075, actor.root.position.z + Math.cos(i * 2.4) * .5]); bubble.userData.float = i; }
+          if (value.phase === 'rinse' || value.phase === 'shake') {
+            for (let i = 0; i < 22; i++) {
+              const drop = ball(effectGroup, '#86c7e0', [actor.root.position.x + Math.sin(i * 2.4) * .55, .6 + (i % 7) * .16, actor.root.position.z + Math.cos(i * 2.4) * .5], [.025, .07, .025]);
+              drop.userData.water = i; drop.userData.baseY = drop.position.y;
+            }
+          }
+          if (value.phase === 'dry') { const cloth = box(effectGroup, '#e7c39a', [actor.root.position.x, .85, actor.root.position.z], [.55,.06,.42]); cloth.userData.cloth = true; cloth.userData.baseX = cloth.position.x; }
         } else if (value.type === 'play') {
-          const ballToy = ball(effectGroup, actor.speciesId === 'garden-rabbit' ? '#d9a474' : '#bdd3b3', [actor.root.position.x + .5, .22, actor.root.position.z + .7], [.14, .14, .14]); ballToy.userData.toy = true;
+          const ballToy = ball(effectGroup, actor.speciesId === 'garden-rabbit' ? '#d9a474' : '#bdd3b3', [actor.root.position.x + .5, .22, actor.root.position.z + .7], [.14, .14, .14]); ballToy.userData.toy = true; ballToy.userData.baseX = ballToy.position.x; ballToy.userData.baseZ = ballToy.position.z; ballToy.userData.direction = (value.point?.x ?? .75) > .5 ? 1 : -1;
           if (actor.speciesId === 'harbor-cat') { const wand = cylinder(effectGroup, '#bb9d78', [actor.root.position.x + .7, .65, actor.root.position.z + .6], .018, .018, .85, 8); wand.rotation.z = -.5; }
         } else if (value.type === 'sleep') {
           const cushion = furniture({ id: 'care-bed', itemId: 'harbor-cushion', x: actor.root.position.x, z: actor.root.position.z, rotation: 0 }); cushion.scale.set(1.45, .55, 1.9); effectGroup.add(cushion);
@@ -410,12 +425,13 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
       const pointerDown = e => { down = { x: e.clientX, y: e.clientY }; };
       const pointerCancel = () => { down = null; };
       const pointerUp = e => {
+        if (latest.current.activity?.sustained) { down = null; return; }
         if (!down || Math.hypot(e.clientX - down.x, e.clientY - down.y) > 7) { down = null; return; }
         down = null;
         const rect = renderer.domElement.getBoundingClientRect(); pointer.set((e.clientX - rect.left) / rect.width * 2 - 1, -(e.clientY - rect.top) / rect.height * 2 + 1);
         raycaster.setFromCamera(pointer, camera);
         const hits = raycaster.intersectObjects([...actorsGroup.children, ...decorGroup.children], true);
-        if (hits[0]?.object.userData.petId) { latest.current.onPet?.(hits[0].object.userData.petId); perform({ type: 'pet', petId: hits[0].object.userData.petId, nonce: performance.now() }); return; }
+        if (hits[0]?.object.userData.petId) { latest.current.onPet?.(hits[0].object.userData.petId); return; }
         if (hits[0]?.object.userData.placementId) { latest.current.onPlacementSelect?.(hits[0].object.userData.placementId); return; }
         if (raycaster.ray.intersectPlane(floorPlane, target) && Math.abs(target.x) < 4.5 && target.z > -1.3 && target.z < 3.6) {
           const actor = actors.get(active) || actors.values().next().value;
@@ -455,7 +471,7 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
             direction.subVectors(actor.target, actor.root.position); direction.y = 0;
             if (direction.length() < .08) { actor.target = actor.path.shift() || null; if (!actor.target) { play(actor, 'idle'); actor.idleUntil = elapsed + 10; } }
             else { const angle = Math.atan2(direction.x, direction.z); actor.root.rotation.y = angle; actor.root.position.addScaledVector(direction.normalize(), dt * (actor.speciesId === 'garden-rabbit' ? .8 : .9)); actor.root.position.y += (groundHeight(actor.root.position.x, actor.root.position.z) - actor.root.position.y) * .3; if (moving) play(actor, 'walk'); }
-          } else if (effectDeadline && elapsed > effectDeadline) { play(actor, 'idle'); }
+          } else if (effectDeadline && elapsed > effectDeadline && actor === effectActor) { play(actor, 'idle'); }
           else if (!effectDeadline && moving && elapsed > actor.idleUntil) {
             actor.idleUntil = elapsed + 12 + (id.length % 4);
             if (id !== active && !id.startsWith('preview') && latest.current.pets.length > 1) {
@@ -470,10 +486,16 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
             }
           }
         }
-        if (effectDeadline && elapsed > effectDeadline) { effectDeadline = 0; clearVisuals(effectGroup); }
+        if (effectDeadline && elapsed > effectDeadline) { effectDeadline = 0; effectActor = null; controls.enabled = true; clearVisuals(effectGroup); }
         if (moving) {
           waveRings.forEach((r, i) => { const scale = 1 + Math.sin(elapsed * .55 - i) * .018; r.scale.set(scale, .8 * scale, 1); });
-          effectGroup.children.forEach(n => { if (n.userData.float !== undefined) n.position.y += dt * .12; if (n.userData.toy) n.position.y = .22 + Math.abs(Math.sin(elapsed * 4)) * .1; });
+          effectGroup.children.forEach(n => {
+            const age = elapsed - effectStart;
+            if (n.userData.float !== undefined) n.position.y += dt * .06;
+            if (n.userData.water !== undefined) n.position.y = .3 + ((n.userData.baseY - age * 1.8) % 1.2 + 1.2) % 1.2;
+            if (n.userData.cloth) n.position.x = n.userData.baseX + Math.sin(age * 8) * .22;
+            if (n.userData.toy) { n.position.y = .22 + Math.abs(Math.sin(Math.min(age, 1.2) / 1.2 * Math.PI)) * .9; n.position.x = n.userData.baseX + Math.sin(Math.min(age, 1.2) / 1.2 * Math.PI) * n.userData.direction * .8; n.rotation.x += dt * 4; }
+          });
           storyTransition = Math.min(1, storyTransition + dt * 1.8); storyGroup.scale.setScalar(.8 + storyTransition * .2);
           storyGroup.children.forEach(n => { if (n.userData.storyFloat) n.rotation.z = Math.sin(elapsed * 1.8) * .09; });
         }

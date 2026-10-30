@@ -79,7 +79,7 @@ try {
       await page.waitForTimeout(1200);
       await inspect('companion-close');
       await page.getByRole('button',{name:'洗澡',exact:true}).click();
-      for (const action of ['打出泡泡','輕輕搓洗','沖掉泡泡']) await page.getByRole('button',{name:action,exact:true}).click();
+      for (const [action, hits] of [['打出泡泡',5],['輕輕搓洗',6],['沖掉泡泡',5],['擦乾毛毛',4]]) for(let n=0;n<hits;n++) await page.getByRole('button',{name:action,exact:true}).click();
       assert.equal((await saved()).worldState.ownedPets[0].clean,100);
       await page.getByRole('navigation',{name:'海風小鎮導覽'}).getByRole('button',{name:'出遊',exact:true}).click();
       await inspect('map');

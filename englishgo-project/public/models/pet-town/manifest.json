@@ -1,5 +1,5 @@
 {
-  "revision": 1,
+  "revision": 2,
   "license": "Original EnglishGo assets; no third-party model or texture",
   "animationNames": [
     "idle",
@@ -12,26 +12,33 @@
     "wash",
     "play",
     "sleep",
-    "wake"
+    "wake",
+    "sniff",
+    "scrub",
+    "rinse",
+    "dry",
+    "shake",
+    "pounce",
+    "settle"
   ],
   "models": [
     {
       "speciesId": "harbor-cat",
       "file": "harbor-cat.glb",
-      "bytes": 1154364,
-      "animations": 11
+      "bytes": 1171288,
+      "animations": 18
     },
     {
       "speciesId": "sunny-dog",
       "file": "sunny-dog.glb",
-      "bytes": 962508,
-      "animations": 11
+      "bytes": 979488,
+      "animations": 18
     },
     {
       "speciesId": "garden-rabbit",
       "file": "garden-rabbit.glb",
-      "bytes": 998708,
-      "animations": 11
+      "bytes": 1015576,
+      "animations": 18
     }
   ]
 }

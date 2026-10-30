@@ -24,3 +24,14 @@
 .town-scene-label b{font-weight:500}
 .town-listen-story{align-self:flex-start;margin-top:-8px}
 @media(max-width:760px){.town-scene-label{max-width:135px;gap:7px;padding:9px 10px}.town-scene-caption{display:none}.town-scene-label>b{white-space:nowrap;font-size:9px}.town-scene-bottom{font-size:8px}.town-tabs{position:sticky;top:64px;z-index:5;background:#fcfcf7}}
+.town-care-overlay{position:absolute;inset:64px 0 0;z-index:3;display:flex;flex-direction:column;pointer-events:none;background:linear-gradient(#f7fbef16,transparent 70%,#edf4e9eb)}
+.town-care-caption{display:grid;gap:5px;justify-items:center;text-align:center;color:#244e51;padding:8px 16px;text-shadow:0 1px 8px #fff}
+.town-care-caption small{font-size:10px;letter-spacing:2px}.town-care-caption strong{font-size:20px}.town-care-caption span{font-size:12px}
+.town-care-surface{position:relative;flex:1;width:100%;min-height:120px;border:0;background:transparent!important;pointer-events:auto;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none;color:#a86c73}
+.town-care-surface:active{cursor:grabbing}.town-care-surface:focus-visible{outline:3px solid #407c80;outline-offset:-6px;border-radius:18px}
+.town-care-tool{position:absolute;transform:translate(-50%,-50%);font-size:40px;filter:drop-shadow(0 5px 8px #42696640);pointer-events:none}
+.town-care-spark{position:absolute;font-size:34px;pointer-events:none;animation:town-care-feedback .65s ease-out forwards}
+@keyframes town-care-feedback{from{transform:translate(-50%,-50%) scale(.5);opacity:1}to{transform:translate(-50%,-140%) scale(1.3);opacity:0}}
+.town-care-hud{padding:8px 20px 12px;text-align:center;color:#345d5d}.town-care-hud p{font-size:10px;line-height:1.6;margin:0 0 7px}.town-care-hud [role=progressbar]{height:7px;background:#d3e1d4;border-radius:10px;overflow:hidden}.town-care-hud i{display:block;height:100%;background:linear-gradient(90deg,#6dafa7,#cfb677);transition:width .2s}.town-care-hud button{pointer-events:auto;min-height:36px;border:0;background:none;color:#426966;font-size:11px;text-decoration:underline}
+.town-scene-wrap:has(.town-care-overlay) .town-scene-bottom{display:none}.town-care-session .town-primary{justify-content:space-between}.town-care-overlay.is-still .town-care-spark{animation:none;opacity:.7}.town-care-overlay.is-still i{transition:none}
+@media(prefers-reduced-motion:reduce){.town-care-spark{animation:none;opacity:.7}.town-care-hud i{transition:none}}

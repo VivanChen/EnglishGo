@@ -3,8 +3,8 @@ import * as T from 'three';
 // Original, reproducible model sources. The body and limbs use continuous lofted
 // surfaces; articulation is baked into the exported GLB node hierarchy.
 export const TOWN_SPECIES = ['harbor-cat', 'sunny-dog', 'garden-rabbit'];
-export const TOWN_ANIMATIONS = ['idle', 'walk', 'run', 'happy', 'curious', 'pet', 'eat', 'wash', 'play', 'sleep', 'wake'];
-export const MODEL_REVISION = 1;
+export const TOWN_ANIMATIONS = ['idle', 'walk', 'run', 'happy', 'curious', 'pet', 'eat', 'wash', 'play', 'sleep', 'wake', 'sniff', 'scrub', 'rinse', 'dry', 'shake', 'pounce', 'settle'];
+export const MODEL_REVISION = 2;
 
 const palettes = {
   'harbor-cat': { fur: '#e9b57f', cream: '#fff1db', dark: '#c78b5a', pink: '#d3a1a0', ribbon: '#789e9b' },
@@ -189,6 +189,19 @@ function buildAnimations(kind, neutral) {
   for (const eye of ['EyeL', 'EyeR']) sleepTracks.push(new T.VectorKeyframeTrack(`${eye}.scale`, [0, 4], [1, .12, 1, 1, .12, 1]));
   make('sleep', 4, sleepTracks);
   make('wake', 2.5, [qTrack('Neck', [0, .8, 1.7, 2.5], [[.2, 0, 0], [-.28, 0, 0], [-.1, -.15, 0], [0, 0, 0]]), pTrack('Body', [0, .8, 1.7, 2.5], [[0, -.12, 0], [0, .04, 0], [0, .02, 0], [0, 0, 0]])]);
+  // Dedicated care beats: anticipation, relaxed scrubbing, rinsing, towel rub,
+  // species-specific shake and pounce, then a gradual lie-down.
+  const t = [0, .3, .6, .9, 1.2];
+  const wag = kind === 'dog' ? .65 : kind === 'cat' ? .25 : .12;
+  make('sniff', 1.2, [qTrack('Neck', t, [[0,0,0],[-.12,0,0],[.12,0,0],[-.08,0,0],[0,0,0]]), qTrack('Head', t, [[0,0,0],[0,.15,-.1],[0,-.15,.1],[0,.1,0],[0,0,0]]), qTrack('Tail', t, [[0,-wag,0],[0,wag,0],[0,-wag,0],[0,wag,0],[0,-wag,0]])]);
+  const eyes = (duration, squint) => ['EyeL','EyeR'].map(eye => new T.VectorKeyframeTrack(`${eye}.scale`, [0,duration/2,duration], [1,.9,1,1,squint,1,1,.9,1]));
+  make('scrub', 1.2, [qTrack('Body', t, [[0,0,0],[0,0,.06],[0,0,0],[0,0,-.06],[0,0,0]]), qTrack('Head', t, [[-.1,0,0],[-.15,.1,-.12],[-.1,0,0],[-.15,-.1,.12],[-.1,0,0]]), ...eyes(1.2,.2)]);
+  make('rinse', 1.2, [qTrack('Neck', t, [[-.12,0,0],[-.2,0,0],[-.12,0,0],[-.2,0,0],[-.12,0,0]]), qTrack('EarL', t, [[0,0,0],[.3,0,-.2],[.1,0,0],[.3,0,-.2],[0,0,0]]), qTrack('EarR', t, [[0,0,0],[.3,0,.2],[.1,0,0],[.3,0,.2],[0,0,0]]), ...eyes(1.2,.12)]);
+  make('dry', 1.2, [qTrack('Head', t, [[0,0,0],[0,0,-.2],[-.1,0,0],[0,0,.2],[0,0,0]]), qTrack('Body', t, [[0,0,0],[0,0,.04],[0,0,0],[0,0,-.04],[0,0,0]]), ...eyes(1.2,.25)]);
+  const shakeT = [0,.15,.3,.45,.6,.75,.9,1.2];
+  make('shake', 1.2, [qTrack('Body', shakeT, [0,1,-1,1,-1,.7,-.4,0].map(v=>[0,v*.16,v*(kind==='rabbit'?.06:.12)])), qTrack('Head', shakeT, [0,-1,1,-1,1,-.7,.4,0].map(v=>[0,v*.32,0])), qTrack('EarL', shakeT, [0,1,-1,1,-1,.7,-.4,0].map(v=>[v*.25,0,v*.3])), qTrack('EarR', shakeT, [0,-1,1,-1,1,-.7,.4,0].map(v=>[v*.25,0,v*.3]))]);
+  make('pounce', 1.2, [pTrack('Body', t, [[0,0,0],[0,-.12,-.12],[0,kind==='rabbit'?.35:.22,.22],[0,.04,.12],[0,0,0]]), qTrack('FrontL',t,[[0,0,0],[.3,0,0],[-.7,0,-.1],[-.2,0,0],[0,0,0]]), qTrack('FrontR',t,[[0,0,0],[.3,0,0],[-.7,0,.1],[-.2,0,0],[0,0,0]]), qTrack('Tail',t,[[0,-wag,0],[0,wag,0],[0,-wag,0],[0,wag,0],[0,-wag,0]])]);
+  make('settle', 2, [pTrack('Body',[0,1,2],[[0,0,0],[0,-.08,0],[0,-.16,0]]), qTrack('Neck',[0,1,2],[[0,0,0],[.12,0,0],[.25,-.12,0]]), ...['FrontL','FrontR','BackL','BackR'].map(leg=>qTrack(leg,[0,1,2],[[0,0,0],[-.35,0,0],[-.7,0,0]]))]);
   return clips;
 }
 

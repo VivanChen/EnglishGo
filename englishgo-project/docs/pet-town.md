@@ -59,3 +59,12 @@ SQL 可以先在隔離的 PGlite 中驗證，避免對正式帳號進行試驗�
 自動測試涵蓋成長、照顧、三階段領養、章節與重玩結算、家具限制、學習事件去重、一次性重置、同步重試、衝突重播、端點與 SQL 權限。真實瀏覽器巡檢涵蓋 1440／390／360px、九章全流程、三隻領養、購買佈置、重載、溢出與 JavaScript 錯誤。
 
 3D 額外檢查模型切換與反覆建立場景的資源釋放、照顧取消、日夜切換及 WebGL context loss。桌面 headless 瀏覽器測量不代表實體手機幀率；手機硬體效能仍需上線前以目標裝置確認。
+
+
+## Direct care interactions (2026-10-30)
+
+Care now uses a captured pointer surface over the live 3D scene. Mouse/touch strokes wash and pet companions; taps feed, play, and settle them to sleep. Every phase has visible progress and an equivalent keyboard/button action. Small pointer jitter and post-pointer synthetic clicks do not count twice. Cancellation, navigation, or changing companions never settles unfinished care; existing once-per-day bond receipts remain authoritative.
+
+Bathing has four phases (lather, scrub, rinse, towel dry), followed by a shake. Foam reduces while rinsing, water drops fall, and the towel moves. Feeding anticipates with sniffing; toys follow a bouncing arc with pouncing. All three GLBs now contain 18 animation clips, with seven new care clips. One-shot pounce/shake/settle/wake clips hold their end pose instead of snapping into a loop. Care props stay present until cancellation/completion; camera orbit and ground-walk cannot interrupt care. Reduced-motion mode retains interactive progress and static pose feedback. No progress reset or database change is part of this update.
+
+Validation: `npx vitest run src/features/pet-town`, `npm run build`, and `node scripts/qa-pet-care.mjs` (desktop plus narrow touch viewport).
