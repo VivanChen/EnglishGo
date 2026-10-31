@@ -1,11 +1,30 @@
 import {render,screen,fireEvent,within} from '@testing-library/react';
 import {describe,it,expect,vi} from 'vitest';
-vi.mock('./TownScene.jsx',()=>({default:({activity,onEnvironment,onStatus,onPlacementSelect})=><div><button onClick={()=>onStatus('ready')}>模型完成</button><button onClick={()=>onStatus('fallback')}>輕量場景</button><button onClick={()=>onPlacementSelect('explore-shell')}>點貝殼</button><button onClick={()=>onEnvironment({placementId:activity?.placementId,phase:'arrived'})}>抵達</button><button onClick={()=>onEnvironment({placementId:activity?.placementId,phase:'blocked'})}>路被擋住</button><button onClick={()=>onEnvironment({placementId:'explore-shell',phase:'arrived'})}>過期抵達</button></div>}));
+vi.mock('./TownScene.jsx',()=>({default:({activity,onEnvironment,onStatus,onPlacementSelect})=><div data-testid="scene" data-activity={JSON.stringify(activity)}><button onClick={()=>onEnvironment({placementId:activity?.placementId,nonce:activity?.nonce,phase:"finished"})}>遊戲結束</button><button onClick={()=>onStatus('ready')}>模型完成</button><button onClick={()=>onStatus('fallback')}>輕量場景</button><button onClick={()=>onPlacementSelect('explore-shell')}>點貝殼</button><button onClick={()=>onEnvironment({placementId:activity?.placementId,nonce:activity?.nonce,text:'夥伴正在玩耍',phase:'arrived'})}>抵達</button><button onClick={()=>onEnvironment({placementId:activity?.placementId,nonce:activity?.nonce,text:'夥伴正在玩耍',phase:'blocked'})}>路被擋住</button><button onClick={()=>onEnvironment({placementId:'explore-shell',phase:'arrived'})}>過期抵達</button></div>}));
+import { OUTING_GAMES } from './outingGames.js';
 import WorldExplorer from './WorldExplorer.jsx';
 import {EXPLORATION_PLACES,explorationReceipt} from './explorationData.js';
 const setup=(props={})=>{const dispatch=vi.fn();render(<WorldExplorer pet={{id:'pet-harbor-cat',speciesId:'harbor-cat'}} receipts={[]} dispatch={dispatch} {...props}/>);return dispatch;};
 const click=name=>fireEvent.click(screen.getByRole('button',{name,exact:true}));
 describe('world map encounters',()=>{
+  it.each(EXPLORATION_PLACES)('plays $name without unlocking its English discovery',place=>{
+    const dispatch=setup();click(`前往${place.name}`);click('模型完成');click('一起玩');
+    const activity=JSON.parse(screen.getByTestId('scene').dataset.activity);
+    expect(activity).toMatchObject({type:'environment',gameId:place.id,placementId:`explore-${OUTING_GAMES[place.id].task}`});
+    click('抵達');expect(screen.getByText('看看夥伴接下來的小動作！')).toBeInTheDocument();
+    expect(document.querySelector('.town-discovery-clue')).toBeNull();click('遊戲結束');click('再玩一次');
+    expect(JSON.parse(screen.getByTestId('scene').dataset.activity).nonce).toBeGreaterThan(activity.nonce);
+    click('結束遊戲');click('過期抵達');expect(screen.queryByText('看看夥伴接下來的小動作！')).not.toBeInTheDocument();
+    expect(dispatch).not.toHaveBeenCalled();
+  });
+  it('keeps games usable in fallback and interrupts them for companion gestures',()=>{
+    const dispatch=setup();click('前往花語草地');click('輕量場景');click('一起玩');expect(screen.getByRole('button',{name:'再玩一次'})).toBeInTheDocument();
+    for(const [label,type] of [['轉個圈','spin'],['鞠個躬','bow'],['整理毛毛','groom'],['叫夥伴過來','come']]){
+      click(label);expect(JSON.parse(screen.getByTestId('scene').dataset.activity).type).toBe(type);
+    }
+    expect(dispatch).not.toHaveBeenCalled();
+  });
+
   it('searches locations and collected vocabulary without revealing undiscovered words',()=>{
     setup({receipts:['explore:tidepool:shell']});fireEvent.click(screen.getByText('翻開旅行手帳 · 1 個發現'));
     const search=screen.getByRole('searchbox',{name:'找找旅行回憶'});

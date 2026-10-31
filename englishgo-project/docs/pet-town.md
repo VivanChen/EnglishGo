@@ -145,3 +145,7 @@ Care props are reused within a phase: washing adjusts foam visibility and playin
 Run `node scripts/benchmark-pet-town.mjs` against `QA_URL` (default port 5202), optionally setting `BENCH_LABEL`. Local headless Edge measurements at 1440px/390px improved from approximately 30 to 60 FPS, with p95 frame intervals of 33.6 → 16.8 ms and draw calls per rendered frame of 682/681 → 218/218. Click-to-planter arrival fell from 2705/2825 ms to 1503/1635 ms. These are same-machine browser measurements, not a guarantee of physical phone frame rates. Geometry bounds, excluded-object ownership and frame-rate-independent smoothing have unit coverage; care and environment browser audits cover desktop and touch layouts.
 
 Immersion benchmark (same local headless Edge setup): approximately 59.95 FPS at 1440px and 390px, p95 frame interval 16.9 ms, and 219 draw calls/frame versus the previous 218. The default garden adds one particle draw; physical-device performance still depends on hardware.
+
+### 地圖自由玩耍
+
+六個地點各提供可重玩的物件互動：貝殼躲貓貓、花香小舞步、水波猜猜看、點心聞香師、野餐午睡曲、星光許願舞。寵物走到既有物件旁，依序演出三段動作與回應；可中止、重玩或切換探索。遊戲不發放金幣、照顧或學習獎勵。輕量模式提供文字回應。旅途陪伴增加轉圈、鞠躬、整理毛毛及呼喚，模型 revision 4 新增 spin/bow 動畫，載入網址帶 revision 避免舊模型快取。

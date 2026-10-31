@@ -3,8 +3,8 @@ import * as T from 'three';
 // Original, reproducible model sources. The body and limbs use continuous lofted
 // surfaces; articulation is baked into the exported GLB node hierarchy.
 export const TOWN_SPECIES = ['harbor-cat', 'sunny-dog', 'garden-rabbit'];
-export const TOWN_ANIMATIONS = ['idle', 'walk', 'run', 'happy', 'curious', 'pet', 'eat', 'wash', 'play', 'sleep', 'wake', 'sniff', 'scrub', 'rinse', 'dry', 'shake', 'pounce', 'settle', 'stretch', 'greet', 'groom', 'hop', 'listen', 'yawn'];
-export const MODEL_REVISION = 3;
+export const TOWN_ANIMATIONS = ['idle', 'walk', 'run', 'happy', 'curious', 'pet', 'eat', 'wash', 'play', 'sleep', 'wake', 'sniff', 'scrub', 'rinse', 'dry', 'shake', 'pounce', 'settle', 'stretch', 'greet', 'groom', 'hop', 'listen', 'yawn', 'spin', 'bow'];
+export const MODEL_REVISION = 4;
 
 const palettes = {
   'harbor-cat': { fur: '#e9b57f', cream: '#fff1db', dark: '#c78b5a', pink: '#d3a1a0', ribbon: '#789e9b' },
@@ -209,6 +209,8 @@ function buildAnimations(kind, neutral) {
   make('hop', 1.2, [pTrack('Body',t,[[0,0,0],[0,-.08,0],[0,kind==='rabbit'?.42:.25,0],[0,.04,0],[0,0,0]]), ...['FrontL','FrontR','BackL','BackR'].map(leg=>qTrack(leg,t,[[0,0,0],[.2,0,0],[-.45,0,0],[.1,0,0],[0,0,0]])), qTrack('EarL',t,[[0,0,0],[.12,0,0],[-.2,0,-.15],[.1,0,0],[0,0,0]])]);
   make('listen', 2.4, [qTrack('Head',beat,[[0,0,0],[-.12,-.2,-.2],[-.1,.2,.2],[-.1,0,-.1],[0,0,0]]), qTrack('EarL',beat,[[0,0,0],[-.18,0,-.15],[.1,0,0],[-.15,0,0],[0,0,0]]), qTrack('EarR',beat,[[0,0,0],[.1,0,0],[-.18,0,.15],[0,0,0],[0,0,0]])]);
   make('yawn', 2.4, [qTrack('Neck',beat,[[0,0,0],[-.15,0,0],[-.3,0,0],[-.1,0,0],[0,0,0]]), ...eyes(2.4,.08), qTrack('EarL',beat,[[0,0,0],[.1,0,0],[.25,0,-.1],[.1,0,0],[0,0,0]])]);
+  make('spin', 2.4, [qTrack('Body', beat, [0,Math.PI/2,Math.PI,Math.PI*1.5,Math.PI*2].map(y=>[0,y,0])), pTrack('Body',beat,[[0,0,0],[0,.04,0],[0,0,0],[0,.04,0],[0,0,0]])]);
+  make('bow', 2.4, [qTrack('Body',beat,[[0,0,0],[.18,0,0],[.28,0,0],[.18,0,0],[0,0,0]]), pTrack('Body',beat,[[0,0,0],[0,-.06,0],[0,-.1,0],[0,-.06,0],[0,0,0]]), qTrack('Neck',beat,[[0,0,0],[.25,0,0],[.4,0,0],[.25,0,0],[0,0,0]]), ...['FrontL','FrontR'].map(leg=>qTrack(leg,beat,[[0,0,0],[-.4,0,0],[-.6,0,0],[-.4,0,0],[0,0,0]]))]);
   return clips;
 }
 

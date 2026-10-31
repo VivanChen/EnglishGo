@@ -17,12 +17,30 @@ try{
     await page.getByRole('navigation',{name:'海風小鎮導覽'}).getByRole('button',{name:'出遊',exact:true}).click();
     await page.getByRole('button',{name:'繼續探索：潮汐灣',exact:true}).click();
     await page.locator('[data-renderer="ready"]').waitFor({timeout:60000});
-    for(const [label,clip] of [['打招呼','greet'],['伸懶腰','stretch'],['開心跳','hop']]){
+    await page.locator('.town-outing-actions').screenshot({path:`${out}/${width}-actions.png`});
+    await page.locator('.town-outing-game').screenshot({path:`${out}/${width}-game-card.png`});
+    for(const [label,clip] of [['打招呼','greet'],['伸懶腰','stretch'],['開心跳','hop'],['轉個圈','spin'],['鞠個躬','bow'],['整理毛毛','groom']]){
       await page.getByRole('button',{name:label,exact:true}).click();
       await page.waitForFunction(clip=>document.querySelector('.town-scene canvas')?.dataset.petAction===clip,clip);
       await page.locator('.town-outing-caption').waitFor();
     }
     await page.locator('.town-scene-wrap').screenshot({path:`${out}/${width}-companion.png`});
+    for(const [id,name,first,second,last] of [['tidepool','潮汐灣','sniff','pounce','greet'],['meadow','花語草地','sniff','spin','bow'],['pond','映月池','listen','curious','shake'],['market','海風市集','sniff','greet','bow'],['camp','林間營地','stretch','yawn','settle'],['observatory','山頂觀星台','listen','spin','hop']]){
+      await page.getByRole('button',{name:`前往${name}`,exact:true}).click();
+      await page.locator(`[data-scene="${id}"][data-renderer="ready"]`).waitFor({timeout:60000});
+      await page.getByRole('button',{name:'一起玩',exact:true}).click();
+      for(const clip of [first,second,last]) await page.waitForFunction(clip=>document.querySelector('.town-scene canvas')?.dataset.petAction===clip,clip,{timeout:25000});
+      await page.locator('.town-scene-wrap').screenshot({path:`${out}/${width}-${id}-game.png`});
+      await page.getByRole('button',{name:'再玩一次',exact:true}).waitFor({timeout:15000});
+      assert.equal(await page.locator('.town-discovery-clue').count(),0);
+      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+    }
+    assert.deepEqual((await saved()).worldState.receipts,before.worldState.receipts);
+    await page.getByRole('button',{name:'前往潮汐灣',exact:true}).click();
+    await page.locator('[data-scene="tidepool"][data-renderer="ready"]').waitFor({timeout:60000});
+    await page.getByRole('button',{name:'一起玩',exact:true}).click();
+    await page.getByRole('button',{name:'停止前往物件',exact:true}).click();
+    assert.equal(await page.getByRole('button',{name:'結束遊戲',exact:true}).count(),0);
     await page.locator('.town-discovery-actions button').nth(1).click();
     await page.getByRole('button',{name:'停止前往物件',exact:true}).click();
     await page.locator('.town-scene-wrap').scrollIntoViewIfNeeded();
@@ -79,6 +97,6 @@ try{
     await page.reload({waitUntil:'domcontentloaded'});
     await page.getByRole('navigation',{name:'海風小鎮導覽'}).getByRole('button',{name:'出遊',exact:true}).click();
     await page.getByRole('button',{name:'繼續探索：花語草地',exact:true}).waitFor();await page.getByLabel('旅行印記 2 / 12').waitFor();
-    assert.deepEqual(errors,[]);console.log(`${width}: chained exploration, clue focus, journal, revisit and reload passed`);await page.close();
+    assert.deepEqual(errors,[]);console.log(`${width}: six map games, companion animations, cancellation, exploration and journal passed`);await page.close();
   }
 }finally{await browser.close();}

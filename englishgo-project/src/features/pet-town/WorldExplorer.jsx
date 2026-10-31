@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { OUTING_GAMES } from './outingGames.js';
 import TownScene from './TownScene.jsx';
 import { EXPLORATION_PLACES, explorationPlacements, explorationReceipt } from './explorationData.js';
 import { petVoice } from './townSounds.js';
@@ -6,6 +7,8 @@ import './world-explorer.css';
 
 export default function WorldExplorer({ pet, receipts, dispatch, level='elementary', motion=true, quality='auto', onSound, speak, stopSpeech }) {
   const [reaction,setReaction]=useState('');
+  const [gamePhase,setGamePhase]=useState(null);
+  const activeGame=useRef(null);
   const [journalSearch,setJournalSearch]=useState('');
   const [journalFilter,setJournalFilter]=useState('all'),[pendingVisit,setPendingVisit]=useState(null);
   const [placeId,setPlaceId]=useState(null),[taskId,setTaskId]=useState(null),[activity,setActivity]=useState(null);
@@ -23,10 +26,16 @@ export default function WorldExplorer({ pet, receipts, dispatch, level='elementa
   useEffect(()=>()=>stopSpeech?.(),[stopSpeech]);
   useEffect(()=>{if(!reaction)return;const timer=setTimeout(()=>setReaction(''),6000);return()=>clearTimeout(timer);},[reaction]);
   useEffect(()=>{if(renderer==='fallback'&&phase==='walking')setPhase('ready');},[renderer,phase]);
-  const visit=id=>{if(id===placeId){detail.current?.scrollIntoView({block:'start',behavior:'instant'});return;}stopSpeech?.();setPendingVisit(null);setReaction('');currentTask.current=null;setPlaceId(id);setTaskId(null);setActivity(null);setPhase('idle');setFeedback(null);setTranslation(false);setRenderer('loading');};
+  useEffect(()=>{
+    if(renderer==='fallback'&&(gamePhase==='walking'||gamePhase==='playing')){
+      setGamePhase('finished');setActivity(null);activeGame.current=null;
+      setReaction(OUTING_GAMES[placeId].steps.map(step=>step[1]).join(' '));
+    }
+  },[renderer,gamePhase,placeId]);
+  const visit=id=>{if(id===placeId){detail.current?.scrollIntoView({block:'start',behavior:'instant'});return;}stopSpeech?.();activeGame.current=null;setGamePhase(null);setPendingVisit(null);setReaction('');currentTask.current=null;setPlaceId(id);setTaskId(null);setActivity(null);setPhase('idle');setFeedback(null);setTranslation(false);setRenderer('loading');};
   const interact=id=>{
     const next=place.tasks.find(t=>`explore-${t.id}`===id);if(!next)return;
-    stopSpeech?.();setReaction('');currentTask.current=id;setTaskId(next.id);setFeedback(null);setTranslation(false);
+    stopSpeech?.();activeGame.current=null;setGamePhase(null);setReaction('');currentTask.current=id;setTaskId(next.id);setFeedback(null);setTranslation(false);
     setPhase(renderer==='fallback'?'ready':'walking');
     setActivity({type:'environment',placementId:id,petId:pet.id,nonce:++nonce.current});
     requestAnimationFrame(()=>detail.current?.querySelector('.town-scene-wrap')?.scrollIntoView({block:'center',behavior:'instant'}));
@@ -39,17 +48,32 @@ export default function WorldExplorer({ pet, receipts, dispatch, level='elementa
   const searchTerm=journalSearch.trim().toLocaleLowerCase();
   const journalEntries=EXPLORATION_PLACES.flatMap(p=>p.tasks.map(t=>({p,t,collected:found(p,t)}))).filter(entry=>(journalFilter==='all'||(journalFilter==='collected'?entry.collected:!entry.collected))&&(!searchTerm||[entry.p.name,entry.p.en,entry.t.title,...(entry.collected?[entry.t.word,entry.t.zh]:[])].join(' ').toLocaleLowerCase().includes(searchTerm)));
   const stopEncounter=()=>{
-    currentTask.current=null;setActivity(null);stopSpeech?.();
+    activeGame.current=null;setGamePhase(null);currentTask.current=null;setActivity(null);stopSpeech?.();
     if(phase==='walking'||phase==='blocked'){setPhase('idle');setTaskId(null);setFeedback(null);}
     setReaction('先停下腳步，想繼續時再選一個活動就好。');
   };
   const companion=type=>{
     stopEncounter();setActivity({type,petId:pet.id,nonce:++nonce.current});
-    setReaction(`${pet.name||'小夥伴'}${{greet:'抬起小爪，和你打招呼！',stretch:'舒服地伸個懶腰，享受一起散步的時光。',hop:'開心地跳了一下，還想陪你去更多地方！'}[type]}`);
+    setReaction(`${pet.name||'小夥伴'}${{greet:'抬起小爪，和你打招呼！',stretch:'舒服地伸個懶腰，享受一起散步的時光。',hop:'開心地跳了一下，還想陪你去更多地方！',groom:'仔細整理小爪和毛毛，準備繼續出發。',spin:'開心地轉了一圈，回頭看看你！',bow:'伸出前腳，向你鞠了一個可愛的躬。',come:'聽見你的呼喚，朝你跑過來。'}[type]}`);
     if(type==='greet')onSound?.(petVoice(pet.speciesId),.4);
     requestAnimationFrame(()=>detail.current?.querySelector('.town-scene-wrap')?.scrollIntoView({block:'center',behavior:'instant'}));
   };
+  const playOuting=()=>{
+    stopEncounter();const game=OUTING_GAMES[placeId];
+    activeGame.current={placementId:`explore-${game.task}`,nonce:++nonce.current};
+    setGamePhase(renderer==='fallback'?'finished':'walking');
+    setReaction(renderer==='fallback'?game.steps.map(step=>step[1]).join(' '):`一起去玩「${game.label}」！`);
+    setActivity({type:'environment',placementId:activeGame.current.placementId,gameId:placeId,petId:pet.id,nonce:activeGame.current.nonce});
+    requestAnimationFrame(()=>detail.current?.querySelector('.town-scene-wrap')?.scrollIntoView({block:'center',behavior:'instant'}));
+  };
   const encounter=event=>{
+    if(activeGame.current&&event.placementId===activeGame.current.placementId&&event.nonce===activeGame.current.nonce){
+      if(event.phase==='arrived'||event.phase==='responding'){setGamePhase('playing');setReaction(event.text);}
+      if(event.phase==='blocked'){setGamePhase('blocked');setReaction('這條路走不過去，換個位置再試一次。');setActivity(null);}
+      if(event.phase==='finished'){setGamePhase('finished');setReaction('玩得好開心！可以再玩一次，或繼續找英文線索。');setActivity(null);}
+      return;
+    }
+
     if(event.placementId!==currentTask.current)return;
     if(event.phase==='arrived'){setPhase('ready');onSound?.('chime',.18);}
     if(event.phase==='blocked'){setPhase('blocked');setActivity(null);}
@@ -58,7 +82,7 @@ export default function WorldExplorer({ pet, receipts, dispatch, level='elementa
   const answer=index=>{
     if(phase!=='ready'||!task||feedback?.correct)return;
     const correct=index===task.answer;setFeedback({correct,index});
-    if(correct){dispatch({type:'EXPLORE_DISCOVERY',placeId,taskId,answer:index});setActivity({type:'hop',petId:pet.id,nonce:++nonce.current});onSound?.('success',.25);}
+    if(correct){activeGame.current=null;setGamePhase(null);dispatch({type:'EXPLORE_DISCOVERY',placeId,taskId,answer:index});setActivity({type:'hop',petId:pet.id,nonce:++nonce.current});onSound?.('success',.25);}
   };
   const back=()=>{visit(null);requestAnimationFrame(()=>map.current?.querySelector(`[data-place="${placeId}"]`)?.focus());};
   return <section className="town-world-explorer" aria-label="小島世界地圖">
@@ -77,10 +101,11 @@ export default function WorldExplorer({ pet, receipts, dispatch, level='elementa
     </details>
     {place&&<section className="town-destination" ref={detail} aria-label={place.name}>
       <header><div><small>{place.en}</small><h3>{place.name}</h3><p>{place.description}</p></div><button className="town-secondary" onClick={back}>返回地圖</button></header>
-      <div className="town-outing-actions" aria-label="旅途陪伴"><span>也可以先陪夥伴玩一下</span>{[['greet','打招呼'],['stretch','伸懶腰'],['hop','開心跳']].map(([type,label])=><button key={type} className="town-secondary" disabled={renderer==='loading'} onClick={()=>companion(type)}>{label}</button>)}</div>
+      <div className="town-outing-actions" aria-label="旅途陪伴"><span>也可以先陪夥伴玩一下</span>{[['greet','打招呼'],['stretch','伸懶腰'],['hop','開心跳'],['spin','轉個圈'],['bow','鞠個躬'],['groom','整理毛毛'],['come','叫夥伴過來']].map(([type,label])=><button key={type} className="town-secondary" disabled={renderer==='loading'} onClick={()=>companion(type)}>{label}</button>)}</div>
       <div className="town-destination-layout">
-        <div className="town-scene-wrap"><TownScene key={place.id} pets={pets} activePetId={pet.id} placements={placements} activity={activity} scene={place.id} environmentEnabled motion={motion} quality={quality} onStatus={setRenderer} onEnvironment={encounter} onPlacementSelect={interact} onSound={onSound} onPet={()=>companion('greet')} onMove={()=>{setReaction('');setActivity(null);if(phase==='walking'){currentTask.current=null;setPhase('idle');setTaskId(null);}}}/><div className="town-scene-label"><b>{place.name}</b></div>{reaction&&<div className="town-outing-caption" aria-hidden="true">{reaction}</div>}{phase==='walking'&&<button className="town-open-clue" aria-label="停止前往物件" onClick={stopEncounter}>停下腳步</button>}{phase==='ready'&&<button className="town-open-clue" onClick={()=>{const panel=detail.current?.querySelector('.town-discovery-panel');panel?.focus({preventScroll:true});panel?.scrollIntoView({block:'start',behavior:'instant'});}}>查看英文線索 ↓</button>}<div className="town-scene-bottom"><span>{phase==='walking'?'夥伴正走向新發現…':phase==='ready'?'發現線索了！在活動區讀一讀。':'點物件互動 · 點地面散步'}</span></div></div>
+        <div className="town-scene-wrap"><TownScene key={place.id} pets={pets} activePetId={pet.id} placements={placements} activity={activity} scene={place.id} environmentEnabled motion={motion} quality={quality} onStatus={setRenderer} onEnvironment={encounter} onPlacementSelect={interact} onSound={onSound} onPet={()=>companion('greet')} onMove={()=>{activeGame.current=null;setGamePhase(null);setReaction('');setActivity(null);if(phase==='walking'){currentTask.current=null;setPhase('idle');setTaskId(null);}}}/><div className="town-scene-label"><b>{place.name}</b></div>{reaction&&<div className="town-outing-caption" aria-hidden="true">{reaction}</div>}{(phase==='walking'||gamePhase==='walking'||gamePhase==='playing')&&<button className="town-open-clue" aria-label="停止前往物件" onClick={stopEncounter}>停下腳步</button>}{phase==='ready'&&gamePhase!=='walking'&&gamePhase!=='playing'&&<button className="town-open-clue" onClick={()=>{const panel=detail.current?.querySelector('.town-discovery-panel');panel?.focus({preventScroll:true});panel?.scrollIntoView({block:'start',behavior:'instant'});}}>查看英文線索 ↓</button>}<div className="town-scene-bottom"><span>{phase==='walking'?'夥伴正走向新發現…':phase==='ready'?'發現線索了！在活動區讀一讀。':'點物件互動 · 點地面散步'}</span></div></div>
         <div className="town-discovery-panel" tabIndex={-1}>
+          <section className="town-outing-game" aria-label="本站小遊戲"><span className="town-eyebrow">PLAY TOGETHER</span><h4>{OUTING_GAMES[placeId].label}</h4><p>{OUTING_GAMES[placeId].hint}</p><button className="town-primary" disabled={renderer==='loading'} onClick={playOuting}>{gamePhase==='finished'?'再玩一次':gamePhase==='blocked'?'重新試試':'一起玩'}</button>{(gamePhase==='walking'||gamePhase==='playing')&&<button className="town-secondary" onClick={stopEncounter}>結束遊戲</button>}<small>{gamePhase==='walking'?'夥伴正靠近物件…':gamePhase==='playing'?'看看夥伴接下來的小動作！':'自由玩耍，不需要答題。'}</small></section>
           {reaction&&<p className="town-outing-reaction" role="status">{reaction}</p>}<h4>和夥伴一起找線索</h4><p>點下方活動，或直接點場景裡的物件。</p>
           <div className="town-discovery-actions">{place.tasks.map(t=><button key={t.id} className="town-secondary" aria-pressed={taskId===t.id} disabled={renderer==='loading'} onClick={()=>interact(`explore-${t.id}`)}><span>{t.title}</span><small>{receipts.includes(explorationReceipt(place.id,t.id))?'✓ 已收藏':'探索 →'}</small></button>)}</div>
           {phase==='walking'&&<div className="town-walking-status"><p role="status">{pet.name||'夥伴'}正前往「{task?.title}」…</p><button className="town-secondary" onClick={stopEncounter}>先停下來</button></div>}
