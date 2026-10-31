@@ -1,0 +1,470 @@
+[
+  {
+    "w": "ant",
+    "m": "螞蟻",
+    "p": "n.",
+    "ex": "An ant walks on a leaf.",
+    "ez": "一隻螞蟻在葉子上走。",
+    "img": "/images/vocabulary/hooray/ant.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "apple",
+    "m": "蘋果",
+    "p": "n.",
+    "ex": "I put an apple in my bag.",
+    "ez": "我把一顆蘋果放進袋子。",
+    "img": "/images/vocabulary/hooray/apple.webp",
+    "imageCredit": "EnglishGo"
+  },
+  {
+    "w": "bear",
+    "m": "熊",
+    "p": "n.",
+    "ex": "The bear sleeps under a tree.",
+    "ez": "熊在樹下睡覺。",
+    "img": "/images/vocabulary/hooray/bear.webp",
+    "imageCredit": "EnglishGo"
+  },
+  {
+    "w": "banana",
+    "m": "香蕉",
+    "p": "n.",
+    "ex": "I peel a banana for my snack.",
+    "ez": "我剝一根香蕉當點心。",
+    "img": "/images/vocabulary/hooray/banana.webp",
+    "imageCredit": "EnglishGo"
+  },
+  {
+    "w": "cat",
+    "m": "貓",
+    "p": "n.",
+    "ex": "The cat sits by the window.",
+    "ez": "貓坐在窗邊。",
+    "img": "/images/vocabulary/hooray/cat.webp",
+    "imageCredit": "EnglishGo"
+  },
+  {
+    "w": "cake",
+    "m": "蛋糕",
+    "p": "n.",
+    "ex": "We share a cake at the party.",
+    "ez": "我們在派對上分享蛋糕。",
+    "img": "/images/vocabulary/hooray/cake.webp",
+    "imageCredit": "EnglishGo"
+  },
+  {
+    "w": "duck",
+    "m": "鴨子",
+    "p": "n.",
+    "ex": "The duck swims in the pond.",
+    "ez": "鴨子在池塘裡游泳。",
+    "img": "/images/vocabulary/hooray/duck.webp",
+    "imageCredit": "EnglishGo"
+  },
+  {
+    "w": "dog",
+    "m": "狗",
+    "p": "n.",
+    "ex": "My dog runs in the park.",
+    "ez": "我的狗在公園跑步。",
+    "img": "/images/vocabulary/hooray/dog.webp",
+    "imageCredit": "EnglishGo"
+  },
+  {
+    "w": "egg",
+    "m": "蛋",
+    "p": "n.",
+    "ex": "Dad cooks an egg for breakfast.",
+    "ez": "爸爸煮一顆蛋當早餐。",
+    "img": "/images/vocabulary/hooray/egg.webp",
+    "imageCredit": "EnglishGo"
+  },
+  {
+    "w": "elephant",
+    "m": "大象",
+    "p": "n.",
+    "ex": "The elephant has a long trunk.",
+    "ez": "大象有長長的鼻子。",
+    "img": "/images/vocabulary/hooray/elephant.webp",
+    "imageCredit": "EnglishGo"
+  },
+  {
+    "w": "fish",
+    "m": "魚",
+    "p": "n.",
+    "ex": "A fish swims past a rock.",
+    "ez": "一條魚游過石頭旁。",
+    "img": "/images/vocabulary/hooray/fish.webp",
+    "imageCredit": "EnglishGo"
+  },
+  {
+    "w": "fan",
+    "m": "風扇",
+    "p": "n.",
+    "ex": "The fan keeps my room cool.",
+    "ez": "風扇讓我的房間保持涼爽。",
+    "img": "/images/vocabulary/hooray/fan.webp",
+    "imageCredit": "EnglishGo"
+  },
+  {
+    "w": "goat",
+    "m": "山羊",
+    "p": "n.",
+    "ex": "The goat eats grass on the hill.",
+    "ez": "山羊在山坡上吃草。",
+    "img": "/images/vocabulary/hooray/goat.webp",
+    "imageCredit": "EnglishGo"
+  },
+  {
+    "w": "girl",
+    "m": "女孩",
+    "p": "n.",
+    "ex": "The girl waves to her friend.",
+    "ez": "女孩向她的朋友揮手。",
+    "img": "/images/vocabulary/hooray/girl.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "hen",
+    "m": "母雞",
+    "p": "n.",
+    "ex": "The hen walks with her chicks.",
+    "ez": "母雞和小雞一起走。",
+    "img": "/images/vocabulary/hooray/hen.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "hat",
+    "m": "帽子",
+    "p": "n.",
+    "ex": "I wear a hat in the sun.",
+    "ez": "我在太陽下戴帽子。",
+    "img": "/images/vocabulary/hooray/hat.webp",
+    "imageCredit": "EnglishGo"
+  },
+  {
+    "w": "insect",
+    "m": "昆蟲",
+    "p": "n.",
+    "ex": "A ladybug is a small insect.",
+    "ez": "瓢蟲是一種小昆蟲。",
+    "img": "/images/vocabulary/hooray/insect.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "ink",
+    "m": "墨水",
+    "p": "n.",
+    "ex": "My pen has black ink.",
+    "ez": "我的筆裡有黑色墨水。",
+    "img": "/images/vocabulary/hooray/ink.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "jam",
+    "m": "果醬",
+    "p": "n.",
+    "ex": "I spread jam on my toast.",
+    "ez": "我在吐司上塗果醬。",
+    "img": "/images/vocabulary/hooray/jam.webp",
+    "imageCredit": "EnglishGo"
+  },
+  {
+    "w": "jet",
+    "m": "噴射機",
+    "p": "n.",
+    "ex": "The jet flies high in the sky.",
+    "ez": "噴射機在高空飛行。",
+    "img": "/images/vocabulary/hooray/jet.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "key",
+    "m": "鑰匙",
+    "p": "n.",
+    "ex": "This key opens our front door.",
+    "ez": "這把鑰匙可以打開我們的大門。",
+    "img": "/images/vocabulary/hooray/key.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "kite",
+    "m": "風箏",
+    "p": "n.",
+    "ex": "My kite flies in the wind.",
+    "ez": "我的風箏在風中飛翔。",
+    "img": "/images/vocabulary/hooray/kite.webp",
+    "imageCredit": "EnglishGo"
+  },
+  {
+    "w": "lion",
+    "m": "獅子",
+    "p": "n.",
+    "ex": "The lion rests in the shade.",
+    "ez": "獅子在陰涼處休息。",
+    "img": "/images/vocabulary/hooray/lion.webp",
+    "imageCredit": "EnglishGo"
+  },
+  {
+    "w": "leg",
+    "m": "腿",
+    "p": "n.",
+    "ex": "I stand on one leg.",
+    "ez": "我用一條腿站立。",
+    "img": "/images/vocabulary/hooray/leg.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "monkey",
+    "m": "猴子",
+    "p": "n.",
+    "ex": "The monkey climbs a tall tree.",
+    "ez": "猴子爬上一棵高樹。",
+    "img": "/images/vocabulary/hooray/monkey.webp",
+    "imageCredit": "EnglishGo"
+  },
+  {
+    "w": "milk",
+    "m": "牛奶",
+    "p": "n.",
+    "ex": "I drink a glass of milk at breakfast.",
+    "ez": "我早餐喝一杯牛奶。",
+    "img": "/images/vocabulary/hooray/milk.webp",
+    "imageCredit": "EnglishGo"
+  },
+  {
+    "w": "nose",
+    "m": "鼻子",
+    "p": "n.",
+    "ex": "I can smell flowers with my nose.",
+    "ez": "我可以用鼻子聞花香。",
+    "img": "/images/vocabulary/hooray/nose.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "neck",
+    "m": "脖子",
+    "p": "n.",
+    "ex": "I wear a scarf around my neck.",
+    "ez": "我在脖子上圍圍巾。",
+    "img": "/images/vocabulary/hooray/neck.webp",
+    "imageCredit": "EnglishGo"
+  },
+  {
+    "w": "octopus",
+    "m": "章魚",
+    "p": "n.",
+    "ex": "The octopus has eight arms.",
+    "ez": "章魚有八隻腕足。",
+    "img": "/images/vocabulary/hooray/octopus.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "ox",
+    "m": "公牛",
+    "p": "n.",
+    "ex": "The ox walks across the farm.",
+    "ez": "公牛走過農場。",
+    "img": "/images/vocabulary/hooray/ox.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "pig",
+    "m": "豬",
+    "p": "n.",
+    "ex": "The pig rolls in the mud.",
+    "ez": "豬在泥巴裡打滾。",
+    "img": "/images/vocabulary/hooray/pig.webp",
+    "imageCredit": "EnglishGo"
+  },
+  {
+    "w": "pen",
+    "m": "筆",
+    "p": "n.",
+    "ex": "I write my name with a pen.",
+    "ez": "我用筆寫下名字。",
+    "img": "/images/vocabulary/hooray/pen.webp",
+    "imageCredit": "EnglishGo"
+  },
+  {
+    "w": "queen",
+    "m": "女王",
+    "p": "n.",
+    "ex": "The queen wears a crown.",
+    "ez": "女王戴著皇冠。",
+    "img": "/images/vocabulary/hooray/queen.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "quiet",
+    "m": "安靜的",
+    "p": "adj.",
+    "ex": "Please be quiet in the library.",
+    "ez": "在圖書館裡請保持安靜。",
+    "img": "/images/vocabulary/hooray/quiet.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "rabbit",
+    "m": "兔子",
+    "p": "n.",
+    "ex": "The rabbit hops across the grass.",
+    "ez": "兔子跳過草地。",
+    "img": "/images/vocabulary/hooray/rabbit.webp",
+    "imageCredit": "EnglishGo"
+  },
+  {
+    "w": "red",
+    "m": "紅色的",
+    "p": "adj.",
+    "ex": "My new schoolbag is red.",
+    "ez": "我的新書包是紅色的。",
+    "img": "/images/vocabulary/hooray/red.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "sea",
+    "m": "海",
+    "p": "n.",
+    "ex": "We watch the waves by the sea.",
+    "ez": "我們在海邊看海浪。",
+    "img": "/images/vocabulary/hooray/sea.webp",
+    "imageCredit": "EnglishGo"
+  },
+  {
+    "w": "sun",
+    "m": "太陽",
+    "p": "n.",
+    "ex": "The sun shines in the sky.",
+    "ez": "太陽在天空中照耀。",
+    "img": "/images/vocabulary/hooray/sun.webp",
+    "imageCredit": "EnglishGo"
+  },
+  {
+    "w": "turtle",
+    "m": "烏龜",
+    "p": "n.",
+    "ex": "The turtle walks slowly on the sand.",
+    "ez": "烏龜在沙地上慢慢走。",
+    "img": "/images/vocabulary/hooray/turtle.webp",
+    "imageCredit": "EnglishGo"
+  },
+  {
+    "w": "toy",
+    "m": "玩具",
+    "p": "n.",
+    "ex": "I put my toy back in the box.",
+    "ez": "我把玩具放回盒子裡。",
+    "img": "/images/vocabulary/hooray/toy.webp",
+    "imageCredit": "EnglishGo"
+  },
+  {
+    "w": "umbrella",
+    "m": "雨傘",
+    "p": "n.",
+    "ex": "I open my umbrella in the rain.",
+    "ez": "我在雨中撐開雨傘。",
+    "img": "/images/vocabulary/hooray/umbrella.webp",
+    "imageCredit": "EnglishGo"
+  },
+  {
+    "w": "up",
+    "m": "向上",
+    "p": "adv.",
+    "ex": "The arrow points up.",
+    "ez": "箭頭指向上方。",
+    "img": "/images/vocabulary/hooray/up.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "vest",
+    "m": "背心",
+    "p": "n.",
+    "ex": "I wear a vest over my shirt.",
+    "ez": "我在襯衫外穿一件背心。",
+    "img": "/images/vocabulary/hooray/vest.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "van",
+    "m": "廂型車",
+    "p": "n.",
+    "ex": "The van carries our bags.",
+    "ez": "廂型車載著我們的行李。",
+    "img": "/images/vocabulary/hooray/van.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "watch",
+    "m": "手錶",
+    "p": "n.",
+    "ex": "My watch tells me the time.",
+    "ez": "我的手錶告訴我時間。",
+    "img": "/images/vocabulary/hooray/watch.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "water",
+    "m": "水",
+    "p": "n.",
+    "ex": "I drink water after playing.",
+    "ez": "玩耍後我喝水。",
+    "img": "/images/vocabulary/hooray/water.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "box",
+    "m": "盒子",
+    "p": "n.",
+    "ex": "My crayons are in the box.",
+    "ez": "我的蠟筆在盒子裡。",
+    "img": "/images/vocabulary/hooray/box.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "fox",
+    "m": "狐狸",
+    "p": "n.",
+    "ex": "The fox has a fluffy tail.",
+    "ez": "狐狸有蓬鬆的尾巴。",
+    "img": "/images/vocabulary/hooray/fox.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "yo-yo",
+    "m": "溜溜球",
+    "p": "n.",
+    "ex": "My yo-yo goes up and down.",
+    "ez": "我的溜溜球上下移動。",
+    "img": "/images/vocabulary/hooray/yo-yo.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "yellow",
+    "m": "黃色的",
+    "p": "adj.",
+    "ex": "The yellow balloon floats in the air.",
+    "ez": "黃色氣球飄在空中。",
+    "img": "/images/vocabulary/hooray/yellow.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "zoo",
+    "m": "動物園",
+    "p": "n.",
+    "ex": "We see many animals at the zoo.",
+    "ez": "我們在動物園看到許多動物。",
+    "img": "/images/vocabulary/hooray/zoo.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "zebra",
+    "m": "斑馬",
+    "p": "n.",
+    "ex": "The zebra has black and white stripes.",
+    "ez": "斑馬身上有黑白條紋。",
+    "img": "/images/vocabulary/hooray/zebra.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  }
+]

@@ -30,6 +30,44 @@ async function revealAndRate(rating) {
 afterEach(() => vi.useRealTimers());
 
 describe('SRS participation events', () => {
+  it('resumes a completed Here We Go round and starts another round in the same book', async () => {
+    const props = setup({ customCards: undefined });
+    const view = render(<SRS {...props}/>);
+    fireEvent.click(await screen.findByRole('button', { name: '開始翰林 Here We Go! 第 8 冊，29 個單字' }));
+    await waitFor(() => expect(props.onSessionChange.mock.calls.at(-1)[0].cards).toHaveLength(20));
+    const saved = structuredClone(props.onSessionChange.mock.calls.at(-1)[0]);
+    expect(saved.selectedTopic).toBe('hanlin-here-we-go-8');
+    expect(saved.cards.every(card => card.schoolBook === 'Here We Go! 8')).toBe(true);
+    saved.deck = { ...saved.deck, queue: [], rm: saved.cards.map((_, index) => index), stats: { again: 0, hard: 0, good: 20, easy: 0 } };
+    view.unmount();
+    render(<SRS {...props} resumeSession={saved}/>);
+    fireEvent.click(await screen.findByRole('button', { name: /新一輪/ }));
+    await screen.findByRole('button', { name: '點卡片看答案' });
+    const next = props.onSessionChange.mock.calls.at(-1)[0];
+    expect(next.selectedTopic).toBe(saved.selectedTopic);
+    expect(next.cards).toHaveLength(20);
+    expect(next.cards.every(card => card.schoolBook === 'Here We Go! 8')).toBe(true);
+    expect(next.cards.some(card => !saved.cards.some(old => old.w === card.w))).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: '換分類' }));
+    expect(await screen.findByRole('button', { name: '開始翰林 Hooray ABC 全部複習，52 個單字' })).toBeEnabled();
+  });
+
+  it('opens the Hooray deck offline, shows its picture and example, and returns to the picker', async () => {
+    const props = setup({ customCards: undefined });
+    render(<SRS {...props}/>);
+    fireEvent.click(await screen.findByRole('button', { name: '開始翰林 Hooray A–M 字母單字，26 個單字' }));
+    await screen.findByRole('button', { name: '點卡片看答案' });
+    await waitFor(() => expect(props.onSessionChange.mock.calls.at(-1)[0].cards).toHaveLength(20));
+    const saved = props.onSessionChange.mock.calls.at(-1)[0];
+    expect(saved.selectedTopic).toBe('hanlin-hooray-am');
+    expect(saved.cards.every(card => card.publisherKey === 'hanlin' && card.illustration)).toBe(true);
+    expect(screen.getByTestId('srs-front-media').querySelector('img').getAttribute('src')).toMatch(/^\/images\/vocabulary\/hooray\//);
+    fireEvent.click(screen.getByRole('button', { name: '點卡片看答案' }));
+    expect(document.querySelector('.srs-example-en')).toHaveTextContent(saved.cards[saved.deck.queue[0]].ex);
+    fireEvent.click(screen.getByRole('button', { name: '換分類' }));
+    expect(await screen.findByRole('button', { name: '開始翰林 Hooray ABC 全部複習，52 個單字' })).toBeEnabled();
+  });
+
   it.each(['again', 'hard', 'good', 'easy'])('records one real %s rating without treating self-assessment as mastery', async rating => {
     vi.useFakeTimers({ toFake: ['Date'] }); vi.setSystemTime(new Date('2026-10-30T05:00:00Z'));
     const props = setup(); render(<StrictMode><SRS {...props}/></StrictMode>);

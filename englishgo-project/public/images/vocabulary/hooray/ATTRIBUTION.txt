@@ -1,0 +1,4 @@
+OpenMoji graphics © OpenMoji contributors, https://openmoji.org/
+License: CC BY-SA 4.0, https://creativecommons.org/licenses/by-sa/4.0/
+Unmodified SVG assets from OpenMoji 17.0.0. Other WebP illustrations: existing EnglishGo vocabulary artwork.
+zoo.svg: adapted from OpenMoji elephant by EnglishGo (added zoo entrance); adaptation under CC BY-SA 4.0.

@@ -1,0 +1,3 @@
+OpenMoji graphics © OpenMoji contributors, https://openmoji.org/
+License: CC BY-SA 4.0, https://creativecommons.org/licenses/by-sa/4.0/
+Unmodified SVG icons from OpenMoji 17.0.0. Number, calendar, color and comparison diagrams: EnglishGo. Other WebP images are existing EnglishGo artwork.
