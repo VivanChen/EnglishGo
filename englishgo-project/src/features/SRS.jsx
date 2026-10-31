@@ -1,4 +1,5 @@
-import { HERE_WE_GO_DECKS, getHereWeGoCards } from '../data/hanlinHereWeGoWords.js';
+import { HERE_WE_GO_DECKS, getHereWeGoCards, getHereWeGoDeck } from '../data/hanlinHereWeGoWords.js';
+import HereWeGoBrowser from '../components/HereWeGoBrowser.jsx';
 import { HOORAY_DECKS, HOORAY_SOURCE, getHoorayCards } from '../data/hanlinHoorayWords.js';
 import { readSrsSession } from '../data/cardSpeaking.js';
 import { normalizeCardExample } from '../data/vocabularyCardText.js';
@@ -19,6 +20,7 @@ import {
 import { KANG_HSUAN_ELEMENTARY_GRADES, getKangHsuanCardsForGrade } from "../data/kangHsuanElementaryWords.js";
 
 const HANLIN_DECKS = [...HOORAY_DECKS.map(deck=>({...deck,series:'Hooray'})), ...HERE_WE_GO_DECKS];
+const getHanlinDeck = id => getHereWeGoDeck(id) || HANLIN_DECKS.find(item=>item.id===id);
 const getHanlinCards = id => id.startsWith('hanlin-here-we-go-') ? getHereWeGoCards(id) : getHoorayCards(id);
 const _kidDictCache = new Map();
 const KID_DICT_CACHE_VERSION = 2;
@@ -240,7 +242,7 @@ function VocabularyTopicPicker({lv,levelPools,poolSources,weakWords,onBack,onSta
       <div className="srs-kanghsuan-grid">{HERE_WE_GO_DECKS.map(meta=>{const words=getHereWeGoCards(meta.id);const weak=countWeakVocabularyCards(words,weakWords);return <button type="button" key={meta.id} className={`srs-kanghsuan-card${weak?" has-weak":""}`} onClick={()=>onStartHanlin(meta.id)} aria-label={`開始翰林 Here We Go! ${meta.label}，${words.length} 個單字`}>
         <span className="srs-kanghsuan-icon">{meta.icon}</span><span className="srs-kanghsuan-copy"><b>Here We Go! · {meta.label}</b><small title={meta.description}>{meta.description}</small></span><span className="srs-kanghsuan-count"><strong>{words.length}</strong><small>字／片語</small></span><span className="srs-kanghsuan-status">{weak?`🎯 ${weak} 個待加強`:"開始練習 →"}</span>
       </button>})}</div>
-      <p className="srs-kanghsuan-note">依跨年度公開詞表與學校課程計畫整理，已補充發音例字、認識字、數字及部分節慶文化字詞，例句沿用 EnglishGo 詞庫或自編。不是 115 學年度逐頁核定完整版；各校使用版本及進度可能不同。</p>
+      <HereWeGoBrowser onStart={onStartHanlin}/><p className="srs-kanghsuan-note">依跨年度公開詞表與學校課程計畫整理，已補充發音例字、認識字、數字及部分節慶文化字詞，例句沿用 EnglishGo 詞庫或自編。不是 115 學年度逐頁核定完整版；各校使用版本及進度可能不同。</p>
       <details className="srs-kanghsuan-note"><summary>查看收錄範圍與來源</summary>{HERE_WE_GO_DECKS.map(meta=><div key={meta.id}><p><a href={meta.source} target="_blank" rel="noreferrer">{meta.label} · {meta.scope}</a><br/>{meta.categories.join('、')}</p>{meta.supplementalSources.map(source=><p key={source.id}><a href={source.url} target="_blank" rel="noreferrer">{source.label}</a></p>)}</div>)}<p>第 1–4 冊補齊公開中譯表列出的應用、認識與音韻字彙（含人名）；第 5–8 冊依計畫中明列的字詞補充，節慶文化與課文延伸字仍可能有未列出的內容。人名圖片為通用人物圖示。</p><p>部分圖片使用 <a href="https://openmoji.org/" target="_blank" rel="noreferrer">OpenMoji</a>（<a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noreferrer">CC BY-SA 4.0</a>）；數字、星期、比較圖及部分物件圖示為 EnglishGo 製作。</p></details>
     </section>}
     <div className="srs-topic-legend"><span><i className="ready"/>20 字以上：充足</span><span><i className="limited"/>5–19 字：可練習，建議補充</span><span><i className="missing"/>少於 5 字：暫不開放</span></div>
@@ -312,7 +314,7 @@ export default function SRS({lv,onBack,onXp,onDone,onLearningEvent,trackWeak,gif
   }else{let base=pools[lv]||built;const target=await findAnyWord(lv,sharedWord);if(!active)return;if(target){const key=String(target.w).toLowerCase();base=[target,...base.filter(w=>String(w.w).toLowerCase()!==key)]}const ordered=sortCardsForStudy(base.slice(0,20),weakWords,sharedWord);setCards(ordered);setDeck(createDeck(ordered));setSelectedTopic("direct");setSrc("built-in ("+ordered.length+"字)")}setLoading(false)})();return()=>{active=false}},[lv,sharedWord,customCards,customSource,resumeSession]);
   const topicCatalog=getVocabularyTopicCatalog(levelPools[lv]||[]);
   const selectedKangHsuanGrade=KANG_HSUAN_ELEMENTARY_GRADES.find(grade=>grade.id===selectedTopic);
-  const selectedHanlinDeck=HANLIN_DECKS.find(item=>item.id===selectedTopic);
+  const selectedHanlinDeck=getHanlinDeck(selectedTopic);
   const selectedTopicMeta=VOCABULARY_TOPICS.find(topic=>topic.id===selectedTopic)||(selectedHanlinDeck?{...selectedHanlinDeck,label:`翰林 ${selectedHanlinDeck.series} · ${selectedHanlinDeck.label}`} : null)||(selectedKangHsuanGrade?{id:selectedKangHsuanGrade.id,icon:"📚",label:`康軒 · ${selectedKangHsuanGrade.label}`} : null);
   const studyActive=selectedTopic!==null;
   useEffect(()=>{
@@ -322,7 +324,7 @@ export default function SRS({lv,onBack,onXp,onDone,onLearningEvent,trackWeak,gif
   useEffect(()=>{if(typeof document==="undefined")return undefined;const reset=()=>{document.documentElement.scrollTop=0;document.body.scrollTop=0;if(typeof window!=="undefined"&&!/jsdom/i.test(window.navigator?.userAgent||""))window.scrollTo({top:0,left:0,behavior:"auto"})};reset();const frame=typeof requestAnimationFrame==="function"?requestAnimationFrame(reset):null;return()=>{if(frame!==null&&typeof cancelAnimationFrame==="function")cancelAnimationFrame(frame)}},[studyActive,lv,loading]);
   const startTopic=topicId=>{const option=topicCatalog.find(topic=>topic.id===topicId);if(!option?.ready)return;const matches=filterCardsByTopic(levelPools[lv]||[],topicId);const picked=selectVocabularyTopicRound(matches,{weakWords});const ordered=sortCardsForStudy(picked,weakWords,sharedWord);completedRef.current=false;setCards(ordered);setDeck(createDeck(ordered));setSelectedTopic(topicId);setSrc(`${LV[lv].l} · ${option.label} (${matches.length}字中抽 ${ordered.length}字)`);setFlip(false);setFlipAnim(false);setInfo(false);setCombo(0);setMaxCombo(0);setShowConfetti(false)};
   const startKangHsuanGrade=grade=>{const meta=KANG_HSUAN_ELEMENTARY_GRADES.find(item=>item.grade===Number(grade));if(!meta||lv!=="elementary")return;const matches=getKangHsuanCardsForGrade(levelPools.elementary||[],meta.grade);if(!matches.length)return;const picked=selectVocabularyTopicRound(matches,{weakWords});const ordered=sortCardsForStudy(picked,weakWords,sharedWord);completedRef.current=false;setCards(ordered);setDeck(createDeck(ordered));setSelectedTopic(meta.id);setSrc(`康軒 · ${meta.label}（${matches.length} 字中抽 ${ordered.length} 張）`);setFlip(false);setFlipAnim(false);setInfo(false);setCombo(0);setMaxCombo(0);setShowConfetti(false)};
-  const startHanlin=(id,previousWords=[])=>{if(lv!=="elementary")return;const meta=HANLIN_DECKS.find(item=>item.id===id);if(!meta)return;const matches=getHanlinCards(id).map(card=>enrichVocabularyCard(card,lv));const next=sortCardsForStudy(selectVocabularyTopicRound(matches,{weakWords,previousWords}),weakWords,sharedWord);completedRef.current=false;setCards(next);setDeck(createDeck(next));setSelectedTopic(id);setSrc(`翰林 ${meta.series} · ${meta.label}（${matches.length} 字中抽 ${next.length} 張）`);setFlip(false);setFlipAnim(false);setInfo(false);setCombo(0);setMaxCombo(0);setShowConfetti(false)};
+  const startHanlin=(id,previousWords=[])=>{if(lv!=="elementary")return;const meta=getHanlinDeck(id);if(!meta)return;const matches=getHanlinCards(id).map(card=>enrichVocabularyCard(card,lv));if(!matches.length)return;const next=sortCardsForStudy(selectVocabularyTopicRound(matches,{weakWords,previousWords}),weakWords,sharedWord);completedRef.current=false;setCards(next);setDeck(createDeck(next));setSelectedTopic(id);setSrc(`翰林 ${meta.series} · ${meta.label}（${matches.length} 字中抽 ${next.length} 張）`);setFlip(false);setFlipAnim(false);setInfo(false);setCombo(0);setMaxCombo(0);setShowConfetti(false)};
   const leaveStudy=()=>{if(selectedTopicMeta||selectedKangHsuanGrade){setSelectedTopic(null);setCards([]);setDeck(createDeck([]));setFlip(false);setFlipAnim(false);setShowConfetti(false);completedRef.current=false;return}onBack()};
   const cur=deck.queue[0]!==undefined?cards[deck.queue[0]]:null;const left=deck.queue.length;const done=left===0;
   const exampleKey=JSON.stringify([lv,cur?.w,cur?.m,cur?.p,cur?.ex,cur?.ez]);

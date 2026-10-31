@@ -2,9 +2,27 @@ import { describe, expect, it } from 'vitest';
 import { existsSync } from 'node:fs';
 import courses from './hanlinHereWeGoCourses.json';
 import coverage from './hanlinHereWeGoCoverage.json';
-import { HERE_WE_GO_DECKS, getHereWeGoCards } from './hanlinHereWeGoWords.js';
+import { HERE_WE_GO_DECKS, getHereWeGoCards, getHereWeGoDeck, hereWeGoSelectionId } from './hanlinHereWeGoWords.js';
 
 describe('Here We Go public-source vocabulary', () => {
+  it('keeps filtered scope stable in saved IDs and normalizes bilingual searches', () => {
+    const base = 'hanlin-here-we-go-1';
+    const phonics = getHereWeGoCards(hereWeGoSelectionId(base, 'phonics'));
+    expect(phonics.length).toBeGreaterThan(20);
+    expect(phonics.every(card => !card.m.includes('人名') && card.curriculumReferences.some(ref => ref.category === '發音例字'))).toBe(true);
+    const names = getHereWeGoCards(hereWeGoSelectionId(base, 'names'));
+    const words = getHereWeGoCards(hereWeGoSelectionId(base, 'words'));
+    expect(names.length + words.length).toBe(getHereWeGoCards(base).length);
+    expect(getHereWeGoCards(hereWeGoSelectionId(base, 'culture', '吸血鬼')).map(card => card.w)).toEqual(['vampire']);
+    expect(getHereWeGoCards(hereWeGoSelectionId(base, 'all', ' ＡＰＰＬＥ ')).map(card => card.w)).toEqual(['apple']);
+    const id = hereWeGoSelectionId('hanlin-here-we-go-7', 'culture', 'New Year’s Eve');
+    expect(getHereWeGoDeck(id).label).toContain('節慶與文化');
+    expect(getHereWeGoCards(id).map(card => card.w)).toEqual(["New Year's Eve"]);
+    for (const invalid of [null, 'hanlin-here-we-go-9', base + '::bad::', base + '::all::%broken', base + '::all::::extra']) {
+      expect(getHereWeGoDeck(invalid)).toBeNull();
+      expect(getHereWeGoCards(invalid)).toEqual([]);
+    }
+  });
   it('covers all eight reviewed book lists with pictures and bilingual examples', () => {
     expect(HERE_WE_GO_DECKS.map(deck => deck.book)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
     const all = HERE_WE_GO_DECKS.flatMap(deck => {

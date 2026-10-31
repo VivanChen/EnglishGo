@@ -20,8 +20,31 @@ export const HERE_WE_GO_DECKS = courses.map(course => ({
   categories: [...new Set(coverage.groups.filter(group => group.book === course.book).map(group => group.category))],
 }));
 
+export const HERE_WE_GO_FILTERS = [
+  { id: 'all', label: '全部字詞' },
+  { id: 'words', label: '字詞（不含人名）' },
+  { id: 'phonics', label: '發音例字（不含人名）' },
+  { id: 'culture', label: '節慶與文化' },
+  { id: 'names', label: '人名' },
+];
+const normalizeSearch = value => String(value || '').normalize('NFKC').replace(/[’‘]/g, "'").trim().toLowerCase();
+export function hereWeGoSelectionId(bookId, filter = 'all', query = '') {
+  const cleanQuery = normalizeSearch(query).slice(0, 80);
+  return filter === 'all' && !cleanQuery ? bookId : `${bookId}::${filter}::${encodeURIComponent(cleanQuery)}`;
+}
+export function getHereWeGoDeck(id) {
+  if (typeof id !== 'string') return null;
+  const [bookId, filter = 'all', encodedQuery = '', ...extra] = id.split('::');
+  const base = HERE_WE_GO_DECKS.find(item => item.id === bookId);
+  const option = HERE_WE_GO_FILTERS.find(item => item.id === filter);
+  if (!base || !option || extra.length) return null;
+  let query;
+  try { query = normalizeSearch(decodeURIComponent(encodedQuery)); } catch { return null; }
+  if (query.length > 80) return null;
+  return { ...base, id, bookId, filter, query, label: `${base.label}${filter === 'all' ? '' : ` · ${option.label}`}${query ? ` · 搜尋「${query}」` : ''}` };
+}
 export function getHereWeGoCards(id) {
-  const deck = HERE_WE_GO_DECKS.find(item => item.id === id);
+  const deck = getHereWeGoDeck(id);
   if (!deck) return [];
   const course = courses.find(item => item.book === deck.book);
   return course.words.map(word => {
@@ -46,5 +69,14 @@ export function getHereWeGoCards(id) {
         example: card.ex, example_zh: card.ez, sort_order: 1,
       },
     };
+  }).filter(card => {
+    const isName = card.m.includes('人名');
+    const refs = card.curriculumReferences;
+    const inCategory = deck.filter === 'all'
+      || (deck.filter === 'words' && !isName)
+      || (deck.filter === 'names' && isName)
+      || (deck.filter === 'phonics' && !isName && refs.some(ref => ref.category === '發音例字'))
+      || (deck.filter === 'culture' && refs.some(ref => ref.category === '節慶／文化' || /festival|easter|christmas/i.test(ref.unit)));
+    return inCategory && (!deck.query || [card.w, card.m].some(text => normalizeSearch(text).includes(deck.query)));
   });
 }

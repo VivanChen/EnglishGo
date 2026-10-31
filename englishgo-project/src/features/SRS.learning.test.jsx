@@ -30,6 +30,24 @@ async function revealAndRate(rating) {
 afterEach(() => vi.useRealTimers());
 
 describe('SRS participation events', () => {
+  it('keeps a searched culture scope through resume and the next round', async () => {
+    const props = setup({ customCards: undefined });
+    const view = render(<SRS {...props}/>);
+    fireEvent.click(await screen.findByText('依範圍挑字練習／預覽單字'));
+    fireEvent.change(screen.getByLabelText('Here We Go 練習範圍'), { target: { value: 'culture' } });
+    fireEvent.change(screen.getByLabelText('搜尋 Here We Go 單字'), { target: { value: '吸血鬼' } });
+    fireEvent.click(screen.getByRole('button', { name: '練習目前範圍' }));
+    await waitFor(() => expect(props.onSessionChange.mock.calls.at(-1)[0].cards.map(card => card.w)).toEqual(['vampire']));
+    const saved = structuredClone(props.onSessionChange.mock.calls.at(-1)[0]);
+    expect(saved.selectedTopic).toContain('::culture::');
+    saved.deck = { ...saved.deck, queue: [], rm: [0], stats: { again: 0, hard: 0, good: 1, easy: 0 } };
+    view.unmount();
+    render(<SRS {...props} resumeSession={saved}/>);
+    fireEvent.click(await screen.findByRole('button', { name: /新一輪/ }));
+    await screen.findByRole('button', { name: '點卡片看答案' });
+    expect(props.onSessionChange.mock.calls.at(-1)[0].cards.map(card => card.w)).toEqual(['vampire']);
+    expect(props.onSessionChange.mock.calls.at(-1)[0].selectedTopic).toBe(saved.selectedTopic);
+  });
   it('resumes a completed Here We Go round and starts another round in the same book', async () => {
     const props = setup({ customCards: undefined });
     const view = render(<SRS {...props}/>);
