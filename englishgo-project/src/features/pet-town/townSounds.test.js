@@ -21,6 +21,12 @@ function audioHarness(withMusic=false) {
 }
 afterEach(() => vi.unstubAllGlobals());
 describe('town sound lifecycle', () => {
+  it('reports failed loading and retries on the next start',async()=>{
+    const {contexts}=audioHarness(), good=fetch.getMockImplementation();fetch.mockResolvedValue({ok:false});
+    const audio=createTownSounds();await audio.start();await expect(audio.ready()).rejects.toThrow('Audio');audio.pause();
+    fetch.mockImplementation(good);await audio.start();await audio.ready();expect(audio.play('water')).toBe(true);
+    expect(contexts).toHaveLength(1);audio.dispose();
+  });
   it('loops cached music independently of care cancellation and resumes without downloads', async()=>{
     const {sources,contexts}=audioHarness(true), audio=createTownSounds();
     expect(fetch).not.toHaveBeenCalled();await audio.start();await vi.waitFor(()=>expect(sources.filter(s=>s.loop)).toHaveLength(1));

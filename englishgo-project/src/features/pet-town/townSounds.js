@@ -1,12 +1,13 @@
 import { createTownMusic } from './townMusic.js';
 const names = ['step', 'bubbles', 'water', 'towel', 'toy', 'chime', 'success', 'cat', 'dog', 'rustle'];
 const safeFile = file => typeof file === 'string' && /^[a-z]+(?:-[a-f0-9]{12})?\.(mp3|wav)$/.test(file);
+export const petVoice = speciesId => ({'harbor-cat':'cat','sunny-dog':'dog','garden-rabbit':'rustle'}[speciesId]);
 export function careSound(type, phase) {
   if (type === 'wash') return ['rinse', 'shake'].includes(phase) ? 'water' : phase === 'dry' ? 'towel' : 'bubbles';
   return { feed: 'rustle', play: 'toy', pet: 'rustle', sleep: 'towel', wake: 'rustle', happy: 'success', groom: 'rustle', stretch: 'rustle', hop: 'toy' }[type];
 }
 export function createTownSounds() {
-  let context, music, enabled = false, disposed = false, generation = 0;
+  let context, music, loading, enabled = false, disposed = false, generation = 0;
   const buffers = new Map(), active = new Set(), last = new Map(), controller = new AbortController();
   const stop = () => { for (const source of active) { source.stop(); source.disconnect(); } active.clear(); };
   return {
@@ -18,27 +19,31 @@ export function createTownSounds() {
       if (!context) {
         context = new AudioContext();
         music = createTownMusic(context);
+      }
+      if (!loading) {
         const loadAudio = file => fetch(`${import.meta.env.BASE_URL}audio/pet-town/${file}`, { signal: controller.signal })
           .then(r => { if (!r.ok) throw new Error('Audio unavailable'); return r.arrayBuffer(); })
           .then(bytes => context.decodeAudioData(bytes));
-        void fetch(`${import.meta.env.BASE_URL}audio/pet-town/manifest.json`, { signal: controller.signal })
+        loading = fetch(`${import.meta.env.BASE_URL}audio/pet-town/manifest.json`, { signal: controller.signal })
           .then(r => { if (!r.ok) throw new Error('Audio unavailable'); return r.json(); })
           .then(manifest => {
-          if (safeFile(manifest.music?.file)) void loadAudio(manifest.music.file).then(buffer => {
+          const musicLoad = safeFile(manifest.music?.file) ? loadAudio(manifest.music.file).then(buffer => {
             if (disposed) return;
             music.load(buffer, manifest.music.volume); if (enabled && !document.hidden) music.start();
-          }).catch(() => {});
-          return Promise.all(names.map(name => {
+          }).catch(() => {}) : Promise.resolve();
+          return Promise.all([musicLoad, ...names.map(name => {
           const file = manifest.files?.[name];
           if (!safeFile(file)) return;
           return loadAudio(file)
             .then(buffer => { if (!disposed) buffers.set(name, buffer); }).catch(() => {});
-        })); }).catch(() => {});
+        })]); }).then(() => { if (!buffers.size) throw new Error('Audio files could not be loaded'); });
+        void loading.catch(() => { loading = null; });
       }
       await context.resume();
       if (disposed || request !== generation) return false;
       enabled = context.state === 'running'; if (enabled && !document.hidden) music.start(); return enabled;
     },
+    async ready() { if (!loading) throw new Error('Audio files could not be loaded'); await loading; },
     play(name, volume = .35, pan = 0) {
       if (!enabled || disposed || document.hidden || context?.state !== 'running' || !buffers.has(name)) return false;
       const now = context.currentTime, gap = name === 'step' ? .22 : .16;

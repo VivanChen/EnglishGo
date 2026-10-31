@@ -5,7 +5,7 @@ import { getPetStage } from './worldState.js';
 import { hashPin, legacyPinHash, requestPetAccount } from './cloudAccount.js';
 import useTownWorld from './useTownWorld.js';
 import { createTownAmbience } from './townAmbience.js';
-import { createTownSounds, careSound } from './townSounds.js';
+import { createTownSounds, careSound, petVoice } from './townSounds.js';
 import './pet-town.css';
 import FurnishingArt from './FurnishingArt.jsx';
 import { getEnvironmentInteraction } from './environmentInteractions.js';
@@ -48,15 +48,16 @@ function Dialog({ title, children, onClose }) {
 function Meter({ label, value, icon }) {
   return <div className="town-meter"><span><TownIcon name={icon} size={16}/>{label}</span><div role="progressbar" aria-label={label} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(value ?? 80)}><i style={{ width: `${Math.max(0, Math.min(100, value ?? 80))}%` }}/></div><small>{Math.round(value ?? 80)}</small></div>;
 }
-export default function PetTown({ lv = 'elementary', onBack, onNavigate, coins = 0, setCoins, petAccount, setPetAccount, speak, stopSpeech, onXp, quiet = false, calm = false }) {
+export default function PetTown({ lv = 'elementary', onBack, onNavigate, coins = 0, setCoins, petAccount, setPetAccount, speak, stopSpeech, onXp, quiet = false, calm = false, onEnableSound }) {
   const { world, dispatch, status, notice, setNotice, connect, logout, retrySync } = useTownWorld({ coins, setCoins, account: petAccount, setAccount: setPetAccount, onChapterComplete: () => onXp?.(15) });
   const [tab, setTab] = useState('home'), [preview, setPreview] = useState(PETS[0].id), [care, setCare] = useState(null), [activity, setActivity] = useState(null);
   const [chapterId, setChapterId] = useState(null), [level, setLevel] = useState(lv), [feedback, setFeedback] = useState(null), [showTranslation, setShowTranslation] = useState(false);
   const [modal, setModal] = useState(null), [decorFilter, setDecorFilter] = useState('all'), [draft, setDraft] = useState(null), [renderer, setRenderer] = useState('loading');
   const [authMode, setAuthMode] = useState('login'), [username, setUsername] = useState(''), [pin, setPin] = useState(''), [authBusy, setAuthBusy] = useState(false), [authError, setAuthError] = useState(''), [authConflict, setAuthConflict] = useState(null);
   const authRequest = useRef(0), careLock = useRef(false), ambience = useRef(null);
-  const [soundPlaying,setSoundPlaying] = useState(false);
+  const [soundPlaying,setSoundPlaying] = useState(false), [audioBusy,setAudioBusy] = useState(false);
   const sounds = useRef(null), soundRequest = useRef(0), soundStarting = useRef(false);
+  const pauseAudio = () => { soundRequest.current++; soundStarting.current=false; setAudioBusy(false); ambience.current?.pause(); sounds.current?.pause(); setSoundPlaying(false); };
   const playSound = (name, volume, pan) => { if (!quiet && soundPlaying) sounds.current?.play(name, volume, pan); };
   const pets = world.ownedPets || [], selected = pets.find(p => p.id === world.activePetId) || pets[0];
   const def = PETS.find(p => p.id === (selected?.speciesId || preview)) || PETS[0];
@@ -73,23 +74,32 @@ export default function PetTown({ lv = 'elementary', onBack, onNavigate, coins =
   useEffect(() => { setLevel(lv); }, [lv]);
   useEffect(() => () => { authRequest.current++; stopSpeech?.(); }, []);
   useEffect(() => () => { soundRequest.current++; ambience.current?.dispose(); sounds.current?.dispose(); }, []);
-  useEffect(() => { if (quiet) { soundRequest.current++; ambience.current?.pause(); sounds.current?.pause(); setSoundPlaying(false); } }, [quiet]);
-  useEffect(() => { const hide = () => { if(document.hidden) { soundRequest.current++; ambience.current?.pause(); sounds.current?.pause(); setSoundPlaying(false); } }; document.addEventListener('visibilitychange',hide); return () => document.removeEventListener('visibilitychange',hide); }, []);
+  useEffect(() => { if (quiet) pauseAudio(); }, [quiet]);
+  useEffect(() => { const hide = () => { if(document.hidden) pauseAudio(); }; document.addEventListener('visibilitychange',hide); return () => document.removeEventListener('visibilitychange',hide); }, []);
   useEffect(() => {
     if (!activity) { sounds.current?.stop(); return; }
-    const name = ['come', 'greet'].includes(activity.type) ? ({ 'harbor-cat': 'cat', 'sunny-dog': 'dog', 'garden-rabbit': 'rustle' }[selected?.speciesId]) : careSound(activity.type, activity.phase);
+    const name = ['come', 'greet'].includes(activity.type) ? petVoice(selected?.speciesId) : careSound(activity.type, activity.phase);
     if (name) playSound(name);
   }, [activity]);
   const toggleSound = async () => {
     if (soundStarting.current) return;
     const request = ++soundRequest.current;
-    if(soundPlaying) { ambience.current?.pause(); sounds.current?.pause(); setSoundPlaying(false); dispatch({type:'SETTINGS',patch:{sound:false}}); return; }
-    if(quiet) { setNotice('先開啟頁首的遊戲音效，再聽聽小島的海浪。'); return; }
+    if(soundPlaying) { pauseAudio(); dispatch({type:'SETTINGS',patch:{sound:false}}); return; }
+    if(quiet && !onEnableSound) { setNotice('先開啟頁首的遊戲音效，再開啟小鎮音效。'); return false; }
+    if (quiet) onEnableSound();
     ambience.current ||= createTownAmbience();
     sounds.current ||= createTownSounds();
-    soundStarting.current = true;
-    try { const [ambient, effects] = await Promise.all([ambience.current.start(), sounds.current.start()]); if (request !== soundRequest.current) { ambience.current.pause(); sounds.current.pause(); return; } const playing = ambient || effects; setSoundPlaying(playing); dispatch({type:'SETTINGS',patch:{sound:playing}}); if(!playing)setNotice('這個瀏覽器暫時無法播放音效。'); } catch { ambience.current?.pause(); sounds.current?.pause(); setSoundPlaying(false); setNotice('音效暫時無法播放，其他功能仍可使用。'); } finally { soundStarting.current = false; }
+    soundStarting.current = true; setAudioBusy(true);
+    try {
+      const [, effects] = await Promise.all([ambience.current.start(), sounds.current.start()]);
+      await sounds.current.ready();
+      if (request !== soundRequest.current) return false;
+      if (!effects) throw new Error('Audio unavailable');
+      setSoundPlaying(true); dispatch({type:'SETTINGS',patch:{sound:true}}); return true;
+    } catch { if(request===soundRequest.current) { ambience.current?.pause(); sounds.current?.pause(); setSoundPlaying(false); setNotice('音檔未能載入，請確認網路後再按一次開啟音效。'); } return false; }
+    finally { if(request===soundRequest.current) { soundStarting.current = false; setAudioBusy(false); } }
   };
+  const previewVoice = async () => { if (soundStarting.current) return; if (soundPlaying || await toggleSound()) sounds.current?.play(petVoice(def.id), .5); };
   useEffect(() => { if (!notice) return; const timer = setTimeout(() => setNotice(''), 6500); return () => clearTimeout(timer); }, [notice, setNotice]);
 
   const careRef = useRef(null), careNonce = useRef(0), careAim = useRef({ x: .5, y: .55 });
@@ -192,10 +202,15 @@ export default function PetTown({ lv = 'elementary', onBack, onNavigate, coins =
   const chapterReady = item => item.order <= 1 || completed.includes(CHAPTERS.find(c => c.order === item.order - 1)?.id);
 
   return <section className="pet-town" data-testid="pet-town" data-town-tab={tab}>
-    <header className="town-header"><button className="town-back" onClick={onBack}><TownIcon name="back" size={17}/><span>學習首頁</span></button><div className="town-wordmark"><span className="town-wordmark-icon"><TownIcon name="paw" size={22}/></span><span>SEABREEZE<small>海 風 小 鎮</small></span></div><div className="town-header-tools"><span className="town-wallet" aria-label={`${coins} 金幣`}><TownIcon name="coin" size={17}/>{coins.toLocaleString()}</span><button className="town-icon-button" aria-label={soundPlaying ? "關閉小鎮音效" : "開啟小鎮音效"} aria-pressed={soundPlaying} onClick={toggleSound}><TownIcon name="sound"/></button><button className="town-icon-button" aria-label="小鎮設定" onClick={() => setModal('settings')}><TownIcon name="settings"/></button></div></header>
+    <header className="town-header"><button className="town-back" onClick={onBack}><TownIcon name="back" size={17}/><span>學習首頁</span></button><div className="town-wordmark"><span className="town-wordmark-icon"><TownIcon name="paw" size={22}/></span><span>SEABREEZE<small>海 風 小 鎮</small></span></div><div className="town-header-tools"><span className="town-wallet" aria-label={`${coins} 金幣`}><TownIcon name="coin" size={17}/>{coins.toLocaleString()}</span><button className="town-icon-button" aria-label="小鎮設定" onClick={() => setModal('settings')}><TownIcon name="settings"/></button></div></header>
     <div className="town-intro"><div><span className="town-eyebrow">A LITTLE ISLAND. A BIG FRIENDSHIP.</span><h1>{chapter ? chapter.title : tab === 'explore' ? '故事，從下一個轉角開始。' : tab === 'decorate' ? '把喜歡的日子，布置成家。' : tab === 'companions' ? '三種個性，一樣喜歡你。' : pets.length ? '海風剛好，今天也有你。' : '你的小島，正等著第一位朋友。'}</h1><p>{chapter ? chapter.enTitle : '陪牠慢慢長大，和牠一起發現英文裡的小世界。'}</p></div><button className={`town-save-state ${status === 'error' ? 'is-error' : ''}`} onClick={() => status === 'error' ? retrySync() : setModal('account')}><span/>{STATUS[status]}</button></div>
     {notice && <div className="town-toast" role="status"><TownIcon name="check" size={18}/><span>{notice}</span><button aria-label="關閉通知" onClick={() => setNotice('')}><TownIcon name="close" size={16}/></button></div>}
     <nav className="town-tabs" aria-label="海風小鎮導覽">{[['home','home','家園'],['explore','compass','出遊'],['decorate','decor','布置'],['companions','paw','夥伴']].map(([id,icon,label]) => <button key={id} aria-current={tab === id ? 'page' : undefined} disabled={!pets.length && id !== 'home'} onClick={() => changeTab(id)}><TownIcon name={icon}/><span>{label}</span>{id === 'companions' && canAdopt && <i/>}</button>)}</nav>
+    <div className="town-audio-bar">
+      <div aria-live="polite"><strong>{audioBusy ? '正在載入聲音…' : soundPlaying ? '小鎮音效已開啟' : '小鎮目前靜音'}</strong><small>{def.name} · {def.species === 'cat' ? '喵喵聲' : def.species === 'dog' ? '汪汪聲' : '輕微嗅聞與沙沙聲'}{!soundPlaying && ' · 點一下就能開啟音樂與互動音效'}</small></div>
+      <button className="town-secondary" disabled={audioBusy} aria-label={soundPlaying ? '關閉小鎮音效' : '開啟小鎮音效'} aria-pressed={soundPlaying} onClick={toggleSound}><TownIcon name="sound" size={17}/>{audioBusy ? '載入中…' : soundPlaying ? '關閉音效' : '開啟音效'}</button>
+      <button className="town-secondary" disabled={audioBusy} onClick={previewVoice} aria-label={`試聽${def.name}的聲音`}>試聽夥伴聲音</button>
+    </div>
     {(tab === 'home' || tab === 'decorate' || chapter) && <div className={`town-live-layout ${chapter ? 'is-story' : ''}`}>
       <div className="town-scene-wrap"><TownScene pets={displayPets} activePetId={selected?.id || 'preview'} placements={placements} activity={activity} careAim={careAim} onSound={playSound} environmentEnabled={tab === 'home' && !!selected} onEnvironment={environmentEvent} onMove={() => { setEnvironment(null); setMoment(null); setActivity(null); }} motion={!calm && world.settings.motion} quality={world.settings.quality} scene={chapter?.regionId || 'home'} storyMoment={chapter ? { chapterId, step, complete: step >= 2 } : null} onPet={id => { if (careRef.current || tab !== 'home') return; if(id && id !== selected?.id) { dispatch({type: 'SELECT_PET',petId:id}); cancelCare(); return; } sleeping ? companionAction('wake') : startCare('pet'); }} onStatus={setRenderer} onPlacementSelect={id => tab === 'decorate' ? setDraft(world.placements.find(p => p.id === id)) : visitEnvironment(id)}/>{care && <CareInteraction care={care} name={def.name} onInteract={advanceCare} onAim={point => { careAim.current = point; }} onCancel={cancelCare} motion={!calm && world.settings.motion}/>}{!care && tab === 'home' && (sleeping || moment) && <div className={`town-companion-bubble ${sleeping ? 'is-sleeping' : ''}`} role="status"><TownIcon name={sleeping ? 'moon' : 'heart'} size={20}/><span>{sleeping ? `${def.name}睡著了，陪牠安靜待一會兒。` : moment.text}</span>{sleeping && <button className="town-text-button" onClick={() => companionAction('wake')}>輕輕叫醒</button>}</div>}<div className="town-scene-label"><span className="town-live-dot"/><b>{chapterRegion?.name || '海邊小屋'}</b><span className="town-scene-caption">{chapter ? '故事進行中' : 'HOME SWEET HOME'}</span></div><div className="town-scene-bottom"><span><TownIcon name="sun" size={16}/>{chapter ? `第 ${chapter.order} 章 · ${LEVELS[level]}` : '慢慢來，這裡沒有倒數計時。'}</span><small>{renderer === 'fallback' ? '輕量模式・所有操作仍可使用' : '點地面散步 · 點家具互動 · 拖曳轉動'}</small></div></div>
       <aside className="town-side-panel">
@@ -223,7 +238,7 @@ export default function PetTown({ lv = 'elementary', onBack, onNavigate, coins =
 
     <footer className="town-footer"><span>SEABREEZE · ENGLISHGO</span><p>小小的陪伴，大大的世界。</p><span>{pets.length} / 3 位夥伴 · {completed.length} 段回憶</span></footer>
 
-    {modal === 'settings' && <Dialog title="讓小島更舒服" onClose={closeModal}><label className="town-setting">畫面品質<select value={world.settings.quality} onChange={e => dispatch({ type: 'SETTINGS', patch: { quality: e.target.value } })}><option value="auto">自動平衡</option><option value="high">細緻光影</option><option value="low">流暢優先</option></select></label><label className="town-setting">夥伴與環境動畫<input type="checkbox" checked={world.settings.motion} onChange={e => dispatch({ type: 'SETTINGS', patch: { motion: e.target.checked } })}/></label><label className="town-setting">小鎮音效與海浪<input type="checkbox" checked={soundPlaying} onChange={toggleSound}/></label><p className="town-muted">系統的減少動態效果也會生效。英文朗讀隨時可以手動播放。</p><button className="town-secondary" onClick={() => setModal('account')}>{petAccount ? `${petAccount.username} · 帳號與同步` : '登入或建立小鎮帳號'}</button><button className="town-primary" onClick={closeModal}>設定好了</button></Dialog>}
+    {modal === 'settings' && <Dialog title="讓小島更舒服" onClose={closeModal}><label className="town-setting">畫面品質<select value={world.settings.quality} onChange={e => dispatch({ type: 'SETTINGS', patch: { quality: e.target.value } })}><option value="auto">自動平衡</option><option value="high">細緻光影</option><option value="low">流暢優先</option></select></label><label className="town-setting">夥伴與環境動畫<input type="checkbox" checked={world.settings.motion} onChange={e => dispatch({ type: 'SETTINGS', patch: { motion: e.target.checked } })}/></label><label className="town-setting">背景音樂、寵物與環境音效<input type="checkbox" checked={soundPlaying} onChange={toggleSound}/></label><p className="town-muted">系統的減少動態效果也會生效。英文朗讀隨時可以手動播放。</p><button className="town-secondary" onClick={() => setModal('account')}>{petAccount ? `${petAccount.username} · 帳號與同步` : '登入或建立小鎮帳號'}</button><button className="town-primary" onClick={closeModal}>設定好了</button></Dialog>}
     {modal === 'account' && <Dialog title={petAccount ? '你的小鎮帳號' : '把小島帶到另一台裝置'} onClose={closeModal}>{petAccount ? <><p>目前登入：<strong>{petAccount.username}</strong></p><p className="town-muted">{STATUS[status]}。離線時會先保存到這台裝置，回到網路後繼續同步。</p><button className="town-primary" onClick={retrySync}>重新同步</button><button className="town-secondary" onClick={() => { logout(); closeModal(); }}>登出並回到本機小島</button></> : authConflict ? <><p>雲端和這台裝置都有新小島，選擇這次要繼續的進度。本機小島會另行保留。</p><button className="town-primary" onClick={() => { connect(authConflict.credentials, authConflict.response); closeModal(); }}>繼續雲端小島</button><button className="town-secondary" onClick={() => { connect(authConflict.credentials, authConflict.response, true); closeModal(); }}>使用本機家園配置與進度</button><p className="town-muted">登入後使用帳號的金幣餘額，不合併兩邊錢包。</p></> : <><div className="town-filter-pills">{[['login','登入'],['signup','建立帳號']].map(([id,label]) => <button key={id} disabled={authBusy} aria-pressed={authMode === id} onClick={() => { setAuthMode(id); setAuthError(''); }}>{label}</button>)}</div><label className="town-field">暱稱<input disabled={authBusy} value={username} autoComplete="username" maxLength={20} onChange={e => setUsername(e.target.value)} placeholder="2–20 個字"/></label><label className="town-field">PIN<input disabled={authBusy} value={pin} type="password" inputMode="numeric" autoComplete="off" maxLength={6} onChange={e => setPin(e.target.value.replace(/\D/g,''))} placeholder="4–6 位數字"/></label>{authError && <p className="town-form-error" role="alert">{authError}</p>}<button className="town-primary" disabled={authBusy} onClick={login}>{authBusy ? '正在連線…' : authMode === 'login' ? '回到我的小島' : '建立小鎮帳號'}</button><p className="town-footnote">請記住暱稱與 PIN，目前沒有電子郵件找回功能。不登入也可以在這台裝置完整遊玩。</p></>}</Dialog>}
     {modal === 'adopt' && <Dialog title="有位朋友，想搬來和你一起住。" onClose={closeModal}><div className="town-adopt-options">{availableFriends.map(p => <button key={p.id} onClick={() => { dispatch({ type: 'ADOPT_FRIEND', speciesId: p.id }); closeModal(); }}><PetPortrait speciesId={p.id} size={120}/><strong>{p.name}</strong><span>{p.trait}</span><small>邀請牠回家 →</small></button>)}</div></Dialog>}
   </section>;

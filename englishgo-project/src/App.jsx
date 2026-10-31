@@ -2701,7 +2701,7 @@ export default function App(){
          mod==="weak"?<WeakPage onBack={back} weakWords={levelWeakWords} allWeakWords={weakWords} setWeakWords={setWeakWords} c={c} lv={lv} onCards={cards=>navigateEnglishGo({lv,mod:"srs",menuGroup:"learn",sharedWord:null,customDeck:{cards,source:"單字再練一次"}})} onSearch={()=>openModule("wordsearch","learn")}/>:
          mod==="dashboard"?<Dashboard onBack={back} onOpen={openModule} onQuickStart={startMiniMission} c={c} xp={xp} streak={learningStreak(streak,daily)} stats={stats} daily={daily} weakWords={levelWeakWords} history={history} achUnlocked={achUnlocked} lv={lv}/>:
          mod==="settings"?<SettingsPage onBack={back} c={c} gemKey={gemKey} setGemKey={setGemKey} gifKey={gifKey} setGifKey={setGifKey}/>:
-         mod==="pets"?<Suspense fallback={<PetFeatureFallback/>}><PetTown lv={lv} onBack={back} onNavigate={navigatePet} coins={coins} setCoins={setCoins} petAccount={petAccount} setPetAccount={setPetAccount} speak={speak} stopSpeech={stopSpeech} onXp={n=>addXp(n,{awardCoins:false})} quiet={quiet} calm={calm}/></Suspense>:
+         mod==="pets"?<Suspense fallback={<PetFeatureFallback/>}><PetTown lv={lv} onBack={back} onNavigate={navigatePet} coins={coins} setCoins={setCoins} petAccount={petAccount} setPetAccount={setPetAccount} speak={speak} stopSpeech={stopSpeech} onXp={n=>addXp(n,{awardCoins:false})} quiet={quiet} calm={calm} onEnableSound={()=>setQuiet(false)}/></Suspense>:
          null}
       </SpeechSpeedContext.Provider>
       </main>

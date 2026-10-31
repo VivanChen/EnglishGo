@@ -6,6 +6,9 @@ vi.mock('./TownScene.jsx', () => ({
   PetPortrait: ({ speciesId }) => <span aria-hidden="true" data-species={speciesId}/>,
 }));
 vi.mock('./cloudAccount.js', () => ({ hashPin: vi.fn(), legacyPinHash: vi.fn(), requestPetAccount: vi.fn() }));
+const audio = vi.hoisted(()=>({start:vi.fn(async()=>true),ready:vi.fn(async()=>{}),play:vi.fn(()=>true),pause:vi.fn(),stop:vi.fn(),dispose:vi.fn()}));
+vi.mock('./townSounds.js',async importOriginal=>({...await importOriginal(),createTownSounds:()=>audio}));
+vi.mock('./townAmbience.js',()=>({createTownAmbience:()=>({start:async()=>true,pause:vi.fn(),dispose:vi.fn()})}));
 import PetTown from './PetTown.jsx';
 import { CARE } from './CareInteraction.jsx';
 import { CHAPTERS, FURNITURE, PETS } from './worldData.js';
@@ -54,6 +57,38 @@ beforeEach(() => {
 afterEach(() => vi.useRealTimers());
 
 describe('Seabreeze town complete UI flows', () => {
+  it('can restart after backgrounding during a pending browser resume; the stale request cannot stop new audio',async()=>{
+    let finish;audio.start.mockImplementationOnce(()=>new Promise(resolve=>{finish=resolve;}));
+    render(<Harness/>);click('開啟小鎮音效');await waitFor(()=>expect(finish).toBeTypeOf('function'));
+    const hidden=vi.spyOn(document,'hidden','get').mockReturnValue(true);
+    act(()=>document.dispatchEvent(new Event('visibilitychange')));hidden.mockRestore();
+    expect(screen.getByRole('button',{name:'開啟小鎮音效'})).toBeEnabled();
+    click('試聽凪凪的聲音');await waitFor(()=>expect(audio.play).toHaveBeenCalledWith('cat',.5));
+    const pauses=audio.pause.mock.calls.length;await act(async()=>finish(true));
+    expect(audio.pause).toHaveBeenCalledTimes(pauses);expect(screen.getByRole('button',{name:'關閉小鎮音效'})).toBeEnabled();
+  });
+  it.each([[0,'cat'],[1,'dog'],[2,'rustle']])('previews the selected companion sound from mute with one click (%i)',async(index,voice)=>{
+    function MutedTown(){const[quiet,setQuiet]=useState(true);return <PetTown quiet={quiet} onEnableSound={()=>setQuiet(false)}/>;}
+    render(<MutedTown/>);
+    const pet=PETS[index];click(new RegExp(`${pet.name}.*${pet.trait}`));
+    expect(audio.play).not.toHaveBeenCalled();click(`試聽${pet.name}的聲音`);
+    await waitFor(()=>expect(audio.play).toHaveBeenCalledWith(voice,.5));
+    expect(screen.getByRole('button',{name:'關閉小鎮音效'})).toHaveAttribute('aria-pressed','true');
+    expect(screen.getByText('小鎮音效已開啟')).toBeInTheDocument();
+  });
+  it('reports unavailable audio and allows a retry instead of displaying a false playing state',async()=>{
+    audio.ready.mockRejectedValueOnce(new Error('offline'));render(<Harness/>);click('開啟小鎮音效');
+    await screen.findByText('音檔未能載入，請確認網路後再按一次開啟音效。');
+    expect(screen.queryByRole('button',{name:'關閉小鎮音效'})).not.toBeInTheDocument();
+    click('開啟小鎮音效');await screen.findByRole('button',{name:'關閉小鎮音效'});
+  });
+  it('does not play a pending preview after global mute',async()=>{
+    let finish;audio.ready.mockImplementationOnce(()=>new Promise(resolve=>{finish=resolve;}));
+    function MutedTown(){const[quiet,setQuiet]=useState(false);return <><button onClick={()=>setQuiet(true)}>全域靜音</button><PetTown quiet={quiet} onEnableSound={()=>setQuiet(false)}/></>;}
+    render(<MutedTown/>);click('試聽凪凪的聲音');await waitFor(()=>expect(finish).toBeTypeOf('function'));
+    click('全域靜音');await act(async()=>finish());expect(audio.play).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button',{name:'關閉小鎮音效'})).not.toBeInTheDocument();
+  });
   it('offers exactly three distinct free starters and retires old pet entities', () => {
     localStorage.setItem('eg_pets', JSON.stringify([{ petId: 'bunny', level: 99 }]));
     resetProgressOnce(localStorage);
