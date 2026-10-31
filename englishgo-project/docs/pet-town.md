@@ -100,9 +100,9 @@ Footsteps and object sounds use screen-relative stereo panning, with mono fallba
 
 All three companions now ship 24 clips, including greeting, stretching, grooming, hopping, attentive listening and a sleepy yawn. Four home buttons trigger expressive animations without rewards; idle habits and selected furniture use the new clips too. The camera focuses on these actions and brings the scene into view on phones. Existing reduced-motion handling still applies.
 
-The header sound switch explicitly enables both shoreline ambience and interaction sounds. Ten small, original procedural WAV assets provide footsteps, bubbles, rinse water, towel rubs, toy bounces, chimes, success notes, stylized greetings and rustling. They are synthesized Foley, not API-generated animal recordings. Clips load/decode once after opt-in, with a four-voice cap and per-sound cooldowns. Global mute, backgrounding and unmount stop playback; re-enabling requires a gesture. These optional sounds do not change English pronunciation providers.
+The header sound switch explicitly enables shoreline ambience, background music and interaction sounds. The active pack, generated on 2026-10-31 with ElevenLabs, contains ten MP3 effects (footsteps, bubbles, rinse water, towel rubs, toy bounces, chimes, success notes, kitten meow, puppy woof and rustling) plus a 48-second instrumental seaside-garden track. These are AI-generated sounds. Clips load/decode once after opt-in, with a four-voice cap and per-sound cooldowns. Global mute, backgrounding and unmount stop playback; re-enabling requires a gesture. These optional sounds do not change English pronunciation providers.
 
-`node scripts/generatePetFoley.mjs` reproduces the offline pack. The committed pack still uses original procedural Foley; API-generated replacements require a working ElevenLabs credential.
+The original procedural WAVs remain available as legacy assets but are no longer selected by the manifest. `node scripts/generatePetFoley.mjs` reproduces that legacy pack and overwrites the manifest; it is not part of normal builds or the generated-pack workflow.
 
 ### Generate and store the audio pack once
 

@@ -1,0 +1,8 @@
+{
+  "file": "success-5ed5a4977ea8.mp3",
+  "requestHash": "5ed5a4977ea8a7e2c60ab2b93a1c9118ffff77bbbc0a59ae51ba14f05c92bd65",
+  "sha256": "5563263e2533c994115c7dc03180a1cd195abf32ae7082e7af2101a5260c3acf",
+  "bytes": 24702,
+  "model": "eleven_text_to_sound_v2",
+  "generatedAt": "2026-10-31T00:57:20.691Z"
+}

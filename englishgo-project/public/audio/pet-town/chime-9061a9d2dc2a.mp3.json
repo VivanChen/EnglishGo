@@ -1,0 +1,8 @@
+{
+  "file": "chime-9061a9d2dc2a.mp3",
+  "requestHash": "9061a9d2dc2ad4f178069b26e8cc953376fd7a7b280e88436127eb1595b53e48",
+  "sha256": "ba2fdc32b75de3de17a12a361858fa3295aedcf1fcf78a43e3a6fdd96df0b15c",
+  "bytes": 33061,
+  "model": "eleven_text_to_sound_v2",
+  "generatedAt": "2026-10-31T00:57:19.109Z"
+}

@@ -11,7 +11,7 @@ export const sounds = {
   chime: [2, 'Two delicate wooden and glass garden wind chime notes, airy and relaxing.'],
   success: [1.5, 'A very gentle three note ascending marimba reward sparkle for a cozy children game, soft rounded notes.'],
   cat: [1, 'One gentle happy kitten meow, friendly quiet and close.'],
-  dog: [0.8, 'One tiny friendly puppy woof, soft and playful, not alarming.'],
+  dog: [1.2, 'Natural close-up recording of a real small adult dog giving one short mid-low pitched bark. Clearly recognizable throaty canine woof with a rough breathy attack and a quiet tail. Friendly and gentle, dry indoor acoustics. No yelps, squeals, human vocal imitation or cartoon voices.'],
   rustle: [1, 'A tiny rabbit quietly sniffing and rustling soft garden leaves, delicate close up foley.'],
 };
 

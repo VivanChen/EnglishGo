@@ -1,28 +1,110 @@
 {
-  "provider": "Original procedural Foley",
-  "license": "Original EnglishGo assets",
+  "provider": "ElevenLabs",
+  "generatedAt": "2026-10-31T01:00:46.230Z",
   "files": {
-    "step": "step.wav",
-    "bubbles": "bubbles.wav",
-    "water": "water.wav",
-    "towel": "towel.wav",
-    "toy": "toy.wav",
-    "chime": "chime.wav",
-    "success": "success.wav",
-    "cat": "cat.wav",
-    "dog": "dog.wav",
-    "rustle": "rustle.wav"
+    "step": "step-15f069c4b3dd.mp3",
+    "bubbles": "bubbles-c44e0d2b2386.mp3",
+    "water": "water-df9e6e941de7.mp3",
+    "towel": "towel-9bb51b218e5a.mp3",
+    "toy": "toy-f2e21bd35126.mp3",
+    "chime": "chime-9061a9d2dc2a.mp3",
+    "success": "success-5ed5a4977ea8.mp3",
+    "cat": "cat-913b3f68e9db.mp3",
+    "dog": "dog-10efde1967e8.mp3",
+    "rustle": "rustle-f8bc53db5579.mp3"
   },
-  "durations": {
-    "step": 0.2,
-    "bubbles": 0.7,
-    "water": 1.2,
-    "towel": 0.6,
-    "toy": 0.4,
-    "chime": 1.6,
-    "success": 1.2,
-    "cat": 0.6,
-    "dog": 0.35,
-    "rustle": 0.5
+  "music": {
+    "file": "bgm-64feb93a8b64.mp3",
+    "volume": 0.12
+  },
+  "assets": {
+    "step": {
+      "file": "step-15f069c4b3dd.mp3",
+      "requestHash": "15f069c4b3dd8784ab3de476efa0d7d055e9a4d7e0191a5b945f23d5c362e617",
+      "sha256": "5eb89f81f4745d5750d0c0989d1d6f5f3dc1ead9bbfed6d11e475d949fde65a7",
+      "bytes": 8820,
+      "model": "eleven_text_to_sound_v2",
+      "generatedAt": "2026-10-31T00:57:10.593Z"
+    },
+    "bubbles": {
+      "file": "bubbles-c44e0d2b2386.mp3",
+      "requestHash": "c44e0d2b2386d9a4eb3a0360dc178e51960ce9368384788a5337d2eed56c4388",
+      "sha256": "2912b6ffb27cb6ddedf1ea099e249fb0c727c162ce6b687f5ea94c19bc3174d8",
+      "bytes": 17179,
+      "model": "eleven_text_to_sound_v2",
+      "generatedAt": "2026-10-31T00:57:12.366Z"
+    },
+    "water": {
+      "file": "water-df9e6e941de7.mp3",
+      "requestHash": "df9e6e941de762900ac09d4bb5c4133e10b9004f231bf01009c73f6e6cb0ae30",
+      "sha256": "3b2830ef1819e60928d1db6b8e37f060ee67b700e1551737161ccf0633127ed9",
+      "bytes": 24702,
+      "model": "eleven_text_to_sound_v2",
+      "generatedAt": "2026-10-31T00:57:13.962Z"
+    },
+    "towel": {
+      "file": "towel-9bb51b218e5a.mp3",
+      "requestHash": "9bb51b218e5a17e6dd7700042440b47366dcade64078a7cd4ffe02bf30e07343",
+      "sha256": "ab05646147a94204c7a4c84bc281222aedda9633c6e4022787c6539712fc4b34",
+      "bytes": 17179,
+      "model": "eleven_text_to_sound_v2",
+      "generatedAt": "2026-10-31T00:57:15.692Z"
+    },
+    "toy": {
+      "file": "toy-f2e21bd35126.mp3",
+      "requestHash": "f2e21bd351265136cf61685d78039b38d620ace76a144c9961f71f3b0d6a5804",
+      "sha256": "2f24c0a63154b1a3cb2eb787241932af794075e18a290655434eab6425946ed2",
+      "bytes": 12163,
+      "model": "eleven_text_to_sound_v2",
+      "generatedAt": "2026-10-31T00:57:17.288Z"
+    },
+    "chime": {
+      "file": "chime-9061a9d2dc2a.mp3",
+      "requestHash": "9061a9d2dc2ad4f178069b26e8cc953376fd7a7b280e88436127eb1595b53e48",
+      "sha256": "ba2fdc32b75de3de17a12a361858fa3295aedcf1fcf78a43e3a6fdd96df0b15c",
+      "bytes": 33061,
+      "model": "eleven_text_to_sound_v2",
+      "generatedAt": "2026-10-31T00:57:19.109Z"
+    },
+    "success": {
+      "file": "success-5ed5a4977ea8.mp3",
+      "requestHash": "5ed5a4977ea8a7e2c60ab2b93a1c9118ffff77bbbc0a59ae51ba14f05c92bd65",
+      "sha256": "5563263e2533c994115c7dc03180a1cd195abf32ae7082e7af2101a5260c3acf",
+      "bytes": 24702,
+      "model": "eleven_text_to_sound_v2",
+      "generatedAt": "2026-10-31T00:57:20.691Z"
+    },
+    "cat": {
+      "file": "cat-913b3f68e9db.mp3",
+      "requestHash": "913b3f68e9dbf6f361d4a1bf032f88ef6bd576735559576b88b05d0abad06b0d",
+      "sha256": "69b8572985409a6e3de14fa94e3b6375761e7fda81d4860466f787fe43ba34c6",
+      "bytes": 17179,
+      "model": "eleven_text_to_sound_v2",
+      "generatedAt": "2026-10-31T00:57:22.296Z"
+    },
+    "dog": {
+      "file": "dog-10efde1967e8.mp3",
+      "requestHash": "10efde1967e8763c5035275c3fc8a5cbcf43ea2a439d9bec771b3beaf4c320dd",
+      "sha256": "ae410c0cf70ddd41eb01397e203a16f752db5a7db47bde77340855df552c51a7",
+      "bytes": 20105,
+      "model": "eleven_text_to_sound_v2",
+      "generatedAt": "2026-10-31T01:00:46.179Z"
+    },
+    "rustle": {
+      "file": "rustle-f8bc53db5579.mp3",
+      "requestHash": "f8bc53db557920a1e11e0d26915776b573bf194aabdca70c5f2e4ba589a19ac8",
+      "sha256": "b2f6a5400b9d08b15738b4b0359cae38b12bd3bcda93012eef4bf76929afaa45",
+      "bytes": 17179,
+      "model": "eleven_text_to_sound_v2",
+      "generatedAt": "2026-10-31T00:57:25.741Z"
+    },
+    "bgm": {
+      "file": "bgm-64feb93a8b64.mp3",
+      "requestHash": "64feb93a8b6417b311347de5448ea55f6814b5112497b702a4b38d54a55b0d80",
+      "sha256": "44b90b524ab7432e4afe4db268eea090274858e4e8bec32d3dd60e76ebf0ddda",
+      "bytes": 768670,
+      "model": "music_v2_5",
+      "generatedAt": "2026-10-31T00:57:32.978Z"
+    }
   }
 }

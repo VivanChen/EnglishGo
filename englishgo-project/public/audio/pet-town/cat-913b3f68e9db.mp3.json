@@ -1,0 +1,8 @@
+{
+  "file": "cat-913b3f68e9db.mp3",
+  "requestHash": "913b3f68e9dbf6f361d4a1bf032f88ef6bd576735559576b88b05d0abad06b0d",
+  "sha256": "69b8572985409a6e3de14fa94e3b6375761e7fda81d4860466f787fe43ba34c6",
+  "bytes": 17179,
+  "model": "eleven_text_to_sound_v2",
+  "generatedAt": "2026-10-31T00:57:22.296Z"
+}

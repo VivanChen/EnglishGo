@@ -1,0 +1,8 @@
+{
+  "file": "toy-f2e21bd35126.mp3",
+  "requestHash": "f2e21bd351265136cf61685d78039b38d620ace76a144c9961f71f3b0d6a5804",
+  "sha256": "2f24c0a63154b1a3cb2eb787241932af794075e18a290655434eab6425946ed2",
+  "bytes": 12163,
+  "model": "eleven_text_to_sound_v2",
+  "generatedAt": "2026-10-31T00:57:17.288Z"
+}

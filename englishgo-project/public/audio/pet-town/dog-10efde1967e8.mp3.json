@@ -1,0 +1,8 @@
+{
+  "file": "dog-10efde1967e8.mp3",
+  "requestHash": "10efde1967e8763c5035275c3fc8a5cbcf43ea2a439d9bec771b3beaf4c320dd",
+  "sha256": "ae410c0cf70ddd41eb01397e203a16f752db5a7db47bde77340855df552c51a7",
+  "bytes": 20105,
+  "model": "eleven_text_to_sound_v2",
+  "generatedAt": "2026-10-31T01:00:46.179Z"
+}
