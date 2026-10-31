@@ -17,6 +17,18 @@ try{
     await page.getByRole('navigation',{name:'海風小鎮導覽'}).getByRole('button',{name:'出遊',exact:true}).click();
     await page.getByRole('button',{name:'繼續探索：潮汐灣',exact:true}).click();
     await page.locator('[data-renderer="ready"]').waitFor({timeout:60000});
+    for(const [label,clip] of [['打招呼','greet'],['伸懶腰','stretch'],['開心跳','hop']]){
+      await page.getByRole('button',{name:label,exact:true}).click();
+      await page.waitForFunction(clip=>document.querySelector('.town-scene canvas')?.dataset.petAction===clip,clip);
+      await page.locator('.town-outing-caption').waitFor();
+    }
+    await page.locator('.town-scene-wrap').screenshot({path:`${out}/${width}-companion.png`});
+    await page.locator('.town-discovery-actions button').nth(1).click();
+    await page.getByRole('button',{name:'停止前往物件',exact:true}).click();
+    await page.locator('.town-scene-wrap').scrollIntoViewIfNeeded();
+    await page.waitForFunction(()=>document.querySelector('.town-scene canvas')?.dataset.petMoving==='false');
+    await page.waitForTimeout(1800);assert.equal(await page.locator('.town-discovery-clue').count(),0);
+    assert.deepEqual((await saved()).worldState.receipts,before.worldState.receipts);
     await page.locator('.town-discovery-actions button').first().click();
     await page.getByRole('button',{name:'查看英文線索 ↓',exact:true}).waitFor({timeout:25000});
     const clue=page.getByRole('button',{name:'查看英文線索 ↓',exact:true});await clue.scrollIntoViewIfNeeded();const start=await clue.boundingBox();
