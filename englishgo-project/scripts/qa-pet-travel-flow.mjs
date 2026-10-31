@@ -52,7 +52,7 @@ try{
     await page.mouse.move(pinStart.x+pinStart.width/2,pinStart.y+pinStart.height/2);await page.mouse.down();await page.waitForTimeout(250);const pinPressed=await pin.boundingBox();
     assert.ok(Math.abs(pinStart.x+pinStart.width/2-pinPressed.x-pinPressed.width/2)<2&&Math.abs(pinStart.y+pinStart.height/2-pinPressed.y-pinPressed.height/2)<2,'Map pins must stay under the pointer while held');await page.mouse.move(0,0);await page.mouse.up();
     assert.equal(await page.locator('[data-place="tidepool"]').getAttribute('class'),'town-map-stop is-complete');
-    await page.locator('.town-travel-journal summary').click();
+    await page.locator('.town-travel-journal > summary').click();
     assert.equal(await page.locator('.town-stamp-grid .is-collected').count(),2);
     await page.locator('.town-travel-journal').screenshot({path:`${out}/${width}-journal.png`});
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
@@ -60,6 +60,13 @@ try{
     await page.getByRole('button',{name:'朗讀單字 shell',exact:true}).waitFor();
     if(width<760)await page.waitForFunction(()=>document.querySelector('.town-travel-journal').getBoundingClientRect().top>=document.querySelector('.town-tabs').getBoundingClientRect().bottom);
     await page.locator('.town-travel-journal').screenshot({path:`${out}/${width}-collected.png`});
+    const search=page.getByRole('searchbox',{name:'找找旅行回憶'});await search.fill(' SHELL ');assert.equal(await page.locator('.town-stamp-grid article').count(),1);
+    await page.locator('.town-stamp-memory > summary').click();await page.locator('.town-stamp-memory p[lang=en]').waitFor();
+    await page.getByRole('button',{name:'朗讀例句 shell',exact:true}).waitFor();
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+    await page.locator('.town-stamp-grid').screenshot({path:`${out}/${width}-memory.png`});
+    await search.fill('no-such-memory');await page.getByText('沒有符合的活動，試試地點名稱，或清除搜尋再看看。',{exact:true}).waitFor();
+    await page.getByRole('button',{name:'清除搜尋',exact:true}).click();assert.equal(await page.locator('.town-stamp-grid article').count(),2);
     await page.getByRole('button',{name:'待發現 · 10',exact:true}).click();assert.equal(await page.locator('.town-stamp-grid article').count(),10);assert.equal(await page.locator('.town-stamp-listen').count(),0);
     await page.getByRole('button',{name:'探索花語草地：照顧幼苗',exact:true}).click();
     await page.getByText('What do the plants need now?',{exact:true}).waitFor({timeout:60000});

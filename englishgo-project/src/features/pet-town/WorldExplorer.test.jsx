@@ -6,10 +6,26 @@ import {EXPLORATION_PLACES,explorationReceipt} from './explorationData.js';
 const setup=(props={})=>{const dispatch=vi.fn();render(<WorldExplorer pet={{id:'pet-harbor-cat',speciesId:'harbor-cat'}} receipts={[]} dispatch={dispatch} {...props}/>);return dispatch;};
 const click=name=>fireEvent.click(screen.getByRole('button',{name,exact:true}));
 describe('world map encounters',()=>{
+  it('searches locations and collected vocabulary without revealing undiscovered words',()=>{
+    setup({receipts:['explore:tidepool:shell']});fireEvent.click(screen.getByText('翻開旅行手帳 · 1 個發現'));
+    const search=screen.getByRole('searchbox',{name:'找找旅行回憶'});
+    fireEvent.change(search,{target:{value:'  SHELL  '}});expect(document.querySelectorAll('.town-stamp-grid article')).toHaveLength(1);
+    fireEvent.change(search,{target:{value:'潮汐灣'}});expect(document.querySelectorAll('.town-stamp-grid article')).toHaveLength(2);
+    fireEvent.change(search,{target:{value:'lantern'}});expect(document.querySelectorAll('.town-stamp-grid article')).toHaveLength(0);
+    expect(screen.getByText('沒有符合的活動，試試地點名稱，或清除搜尋再看看。')).toBeInTheDocument();
+    click('清除搜尋');expect(document.querySelectorAll('.town-stamp-grid article')).toHaveLength(12);
+  });
+  it('reviews and reads the original bilingual clue without travelling or rewarding',()=>{
+    const speak=vi.fn(),dispatch=setup({receipts:['explore:tidepool:shell'],speak});fireEvent.click(screen.getByText('翻開旅行手帳 · 1 個發現'));
+    const clue=EXPLORATION_PLACES[0].tasks[0];expect(screen.getByText(clue.en)).not.toBeVisible();
+    fireEvent.click(screen.getByText('回想這段英文'));expect(screen.getByText(clue.en)).toBeVisible();expect(screen.getByText(clue.translation)).toBeVisible();
+    click('朗讀例句 shell');expect(speak).toHaveBeenCalledWith(clue.en);expect(dispatch).not.toHaveBeenCalled();
+    expect(screen.queryByRole('region',{name:'潮汐灣'})).not.toBeInTheDocument();
+  });
   it('filters the journal and reads a collected word without starting a trip',()=>{
     const speak=vi.fn(),stopSpeech=vi.fn();const dispatch=setup({receipts:['explore:tidepool:shell'],speak,stopSpeech});
     fireEvent.click(screen.getByText('翻開旅行手帳 · 1 個發現'));click('已收藏 · 1');
-    expect(within(document.querySelector('.town-stamp-grid')).getAllByRole('button')).toHaveLength(2);
+    expect(document.querySelectorAll('.town-stamp-grid article')).toHaveLength(1);
     click('朗讀單字 shell');expect(speak).toHaveBeenCalledWith('shell');expect(stopSpeech).toHaveBeenCalled();expect(dispatch).not.toHaveBeenCalled();
     expect(screen.queryByRole('region',{name:'潮汐灣'})).not.toBeInTheDocument();click('待發現 · 11');
     expect(within(document.querySelector('.town-stamp-grid')).getAllByRole('button')).toHaveLength(11);
@@ -75,8 +91,8 @@ describe('world map encounters',()=>{
   it('reveals bilingual help on request for older learners and shows saved stamps',()=>{
     setup({level:'senior',receipts:['explore:tidepool:shell']});
     expect(screen.getByLabelText('旅行印記 1 / 12')).toBeInTheDocument();click('前往潮汐灣');click('輕量場景');click('尋找貝殼 ✓ 已收藏');
-    expect(screen.queryByText('把貝殼留在海邊，裡面住著一隻小螃蟹。')).not.toBeInTheDocument();
-    click('看中文提示');expect(screen.getByText('把貝殼留在海邊，裡面住著一隻小螃蟹。')).toBeInTheDocument();
+    expect(within(document.querySelector('.town-discovery-clue')).queryByText('把貝殼留在海邊，裡面住著一隻小螃蟹。')).not.toBeInTheDocument();
+    click('看中文提示');expect(within(document.querySelector('.town-discovery-clue')).getByText('把貝殼留在海邊，裡面住著一隻小螃蟹。')).toBeInTheDocument();
     click('返回地圖');expect(screen.queryByRole('region',{name:'潮汐灣'})).not.toBeInTheDocument();
   });
 });

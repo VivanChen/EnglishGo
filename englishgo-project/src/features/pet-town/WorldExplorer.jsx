@@ -6,6 +6,7 @@ import './world-explorer.css';
 
 export default function WorldExplorer({ pet, receipts, dispatch, level='elementary', motion=true, quality='auto', onSound, speak, stopSpeech }) {
   const [reaction,setReaction]=useState('');
+  const [journalSearch,setJournalSearch]=useState('');
   const [journalFilter,setJournalFilter]=useState('all'),[pendingVisit,setPendingVisit]=useState(null);
   const [placeId,setPlaceId]=useState(null),[taskId,setTaskId]=useState(null),[activity,setActivity]=useState(null);
   const [phase,setPhase]=useState('idle'),[feedback,setFeedback]=useState(null),[translation,setTranslation]=useState(false),[renderer,setRenderer]=useState('loading');
@@ -35,7 +36,8 @@ export default function WorldExplorer({ pet, receipts, dispatch, level='elementa
     if(!pendingVisit||pendingVisit.placeId!==placeId||renderer==='loading')return;
     setPendingVisit(null);interact(`explore-${pendingVisit.taskId}`);
   },[pendingVisit,placeId,renderer]);
-  const journalEntries=EXPLORATION_PLACES.flatMap(p=>p.tasks.map(t=>({p,t,collected:found(p,t)}))).filter(entry=>journalFilter==='all'||(journalFilter==='collected'?entry.collected:!entry.collected));
+  const searchTerm=journalSearch.trim().toLocaleLowerCase();
+  const journalEntries=EXPLORATION_PLACES.flatMap(p=>p.tasks.map(t=>({p,t,collected:found(p,t)}))).filter(entry=>(journalFilter==='all'||(journalFilter==='collected'?entry.collected:!entry.collected))&&(!searchTerm||[entry.p.name,entry.p.en,entry.t.title,...(entry.collected?[entry.t.word,entry.t.zh]:[])].join(' ').toLocaleLowerCase().includes(searchTerm)));
   const stopEncounter=()=>{
     currentTask.current=null;setActivity(null);stopSpeech?.();
     if(phase==='walking'||phase==='blocked'){setPhase('idle');setTaskId(null);setFeedback(null);}
@@ -69,8 +71,9 @@ export default function WorldExplorer({ pet, receipts, dispatch, level='elementa
     </div>
     <details className="town-travel-journal" ref={journal}><summary>翻開旅行手帳 · {collected} 個發現</summary><p>聽聽收藏的英文，或點卡片帶夥伴直接走向那個活動。</p>
       <div className="town-journal-filters" role="group" aria-label="手帳篩選">{[['all','全部',12],['collected','已收藏',collected],['remaining','待發現',12-collected]].map(([id,label,count])=><button key={id} aria-pressed={journalFilter===id} onClick={()=>{setJournalFilter(id);requestAnimationFrame(()=>journal.current?.scrollIntoView({block:'start',behavior:'instant'}));}}>{label} · {count}</button>)}</div>
-      <div className="town-stamp-grid">{journalEntries.map(({p,t,collected:hasStamp})=><article key={`${p.id}-${t.id}`} className={hasStamp?'is-collected':''}><button className="town-stamp-visit" onClick={()=>openJournalActivity(p,t)} aria-label={`${hasStamp?'重遊':'探索'}${p.name}：${t.title}`}><small>{p.name} · {hasStamp?'已收藏':'待發現'}</small><strong>{hasStamp?t.word:'？'}</strong><span>{hasStamp?t.zh:t.title}</span></button>{hasStamp&&speak&&<button className="town-stamp-listen" aria-label={`朗讀單字 ${t.word}`} onClick={()=>{stopSpeech?.();speak(t.word);}}>聽單字 ♪</button>}</article>)}</div>
-      {!journalEntries.length&&<p className="town-journal-empty" role="status">{journalFilter==='collected'?'還沒有收藏，選一個待發現的活動，和夥伴出發吧。':'全部都找到了！切換到已收藏，聽聽一路學到的單字。'}</p>}
+      <div className="town-journal-search"><label htmlFor="town-journal-search">找找旅行回憶</label><div><input id="town-journal-search" type="search" value={journalSearch} onChange={e=>setJournalSearch(e.target.value)} placeholder="搜尋地點、活動或收藏單字" autoComplete="off"/>{journalSearch&&<button className="town-secondary" onClick={()=>setJournalSearch('')}>清除搜尋</button>}</div><small aria-live="polite">顯示 {journalEntries.length} 個活動</small></div>
+      <div className="town-stamp-grid">{journalEntries.map(({p,t,collected:hasStamp})=><article key={`${p.id}-${t.id}`} className={hasStamp?'is-collected':''}><button className="town-stamp-visit" onClick={()=>openJournalActivity(p,t)} aria-label={`${hasStamp?'重遊':'探索'}${p.name}：${t.title}`}><small>{p.name} · {hasStamp?'已收藏':'待發現'}</small><strong>{hasStamp?t.word:'？'}</strong><span>{hasStamp?t.zh:t.title}</span></button>{hasStamp&&speak&&<button className="town-stamp-listen" aria-label={`朗讀單字 ${t.word}`} onClick={()=>{stopSpeech?.();speak(t.word);}}>聽單字 ♪</button>}{hasStamp&&<details className="town-stamp-memory"><summary>回想這段英文</summary><p lang="en">{t.en}</p><p>{t.translation}</p>{speak&&<button className="town-stamp-listen" aria-label={`朗讀例句 ${t.word}`} onClick={()=>{stopSpeech?.();speak(t.en);}}>聽這句英文 ♪</button>}</details>}</article>)}</div>
+      {!journalEntries.length&&<p className="town-journal-empty" role="status">{searchTerm?'沒有符合的活動，試試地點名稱，或清除搜尋再看看。':journalFilter==='collected'?'還沒有收藏，選一個待發現的活動，和夥伴出發吧。':'全部都找到了！切換到已收藏，聽聽一路學到的單字。'}</p>}
     </details>
     {place&&<section className="town-destination" ref={detail} aria-label={place.name}>
       <header><div><small>{place.en}</small><h3>{place.name}</h3><p>{place.description}</p></div><button className="town-secondary" onClick={back}>返回地圖</button></header>
