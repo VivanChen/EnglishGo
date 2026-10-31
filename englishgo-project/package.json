@@ -8,6 +8,7 @@
   },
   "scripts": {
     "dev": "vite",
+    "generate:pet-audio": "node scripts/generatePetSounds.mjs",
     "generate:novel-audio": "node scripts/generateNovelAudioCatalog.mjs",
     "prewarm:novel-audio": "node scripts/prewarmNovelAudio.mjs",
     "prewarm:picture-book-audio": "node scripts/prewarmNovelAudio.mjs --novel picture-book-",
