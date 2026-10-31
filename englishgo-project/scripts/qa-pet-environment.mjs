@@ -45,7 +45,10 @@ try {
       const p = new Vector3(...point).project(camera), x = box.x+(p.x+1)*box.width/2, y = box.y+(1-p.y)*box.height/2;
       if (width < 900) await page.touchscreen.tap(x,y); else await page.mouse.click(x,y);
     };
-    await sceneClick([-2.5,.275,1.4],true);
+    // Phones now start close to their companion; explicitly use the overview for coordinate picking.
+    const startsFocused=width<=760;
+    if(startsFocused){await page.getByRole('button',{name:'看小鎮',exact:true}).click();await page.waitForTimeout(500);}
+    await sceneClick([-2.5,.275,1.4],!startsFocused);
     await arrive('placement-harbor-bowl','eat'); await shot('scene-bowl');
     await page.getByRole('button',{name:'停止這次互動',exact:true}).click();
     for (const [name,id,clip] of [['海鹽軟墊','placement-harbor-cushion','sleep'],['窗邊綠盆栽','placement-harbor-planter','sniff']]) {

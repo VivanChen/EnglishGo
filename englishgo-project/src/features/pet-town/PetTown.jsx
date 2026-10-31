@@ -148,7 +148,7 @@ export default function PetTown({ lv = 'elementary', onBack, onNavigate, coins =
     const next = { type, step: 0, count: 0, petId: selected.id };
     careRef.current = next; setCare(next);
     setActivity({ ...next, phase: careStage(next).animation, sustained: true, nonce: ++careNonce.current });
-    requestAnimationFrame(() => document.querySelector('.town-care-surface')?.scrollIntoView?.({ block: 'center', behavior: calm ? 'instant' : 'smooth' }));
+    requestAnimationFrame(() => document.querySelector('.town-scene-wrap')?.scrollIntoView?.({ block: 'center', behavior: calm ? 'instant' : 'smooth' }));
   };
   const advanceCare = point => {
     const current = careRef.current;

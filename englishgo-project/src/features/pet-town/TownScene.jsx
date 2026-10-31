@@ -38,14 +38,14 @@ export function PetPortrait({ speciesId = 'harbor-cat', size = 96, className, st
 function FlatTown({ pets }) {
   return <div aria-label="海風小鎮的平面備援場景" style={{ position: 'absolute', inset: 0, background: 'linear-gradient(#d9eef1 0%,#e7f1e5 60%,#a4c9a9 60%)', display: 'grid', placeItems: 'center', overflow: 'hidden' }}>
     <svg viewBox="0 0 800 500" style={{ position: 'absolute', width: '100%', height: '100%' }} aria-hidden="true"><circle cx="660" cy="80" r="37" fill="#fff1c3"/><path d="M0 230Q200 170 450 240T800 220V500H0Z" fill="#7cb5c2"/><ellipse cx="400" cy="385" rx="325" ry="84" fill="#e7d8b5"/><ellipse cx="400" cy="367" rx="300" ry="78" fill="#a9c496"/><path d="M220 305V160L380 106L532 166V310Z" fill="#f7e9cf"/><path d="M192 172L376 79L558 172L535 185L376 116L218 187Z" fill="#6a9296"/><path d="M335 309V229Q375 193 416 229V309Z" fill="#b98d70"/><path d="M248 211H304V263H248Z M445 211H500V263H445Z" fill="#b9d8d8"/><path d="M276 211V263M473 211V263" stroke="#fff3dc" strokeWidth="6"/><path d="M348 315L426 315L485 436H289Z" fill="#dfd9c3"/><path d="M123 347V260M650 347V255" stroke="#a68263" strokeWidth="18"/><ellipse cx="123" cy="247" rx="67" ry="67" fill="#82aa86"/><ellipse cx="650" cy="247" rx="67" ry="67" fill="#82aa86"/></svg>
-    <div style={{ position: 'absolute', bottom: '12%', display: 'flex', gap: 16 }}>{(pets.length ? pets : [{ speciesId: 'harbor-cat' }]).map((p, i) => <PetPortrait key={p.id || i} speciesId={p.speciesId} size={100}/>)}</div>
+    <div className="town-flat-pets" style={{ position: 'absolute', bottom: '12%', display: 'flex', gap: 16 }}>{(pets.length ? pets : [{ speciesId: 'harbor-cat' }]).map((p, i) => <PetPortrait key={p.id || i} speciesId={p.speciesId} size={100}/>)}</div>
   </div>;
 }
 
 export default function TownScene({ pets = [], activePetId, placements = [], activity, careAim, onSound, environmentEnabled = false, onEnvironment, storyMoment, motion = true, quality = 'auto', scene = 'home', onPet, onStatus, onMove, onPlacementSelect }) {
   const host = useRef(null), runtime = useRef(null), latest = useRef({}), previousScene = useRef(scene);
   latest.current = { pets, activePetId, placements, activity, careAim, onSound, environmentEnabled, onEnvironment, storyMoment, motion, onPet, onStatus, onMove, onPlacementSelect };
-  const [status, setStatus] = useState('loading'), [night, setNight] = useState(false), [focus, setFocus] = useState(false);
+  const [status, setStatus] = useState('loading'), [night, setNight] = useState(false), [focus, setFocus] = useState(() => scene === 'home' && window.matchMedia?.('(max-width: 760px)').matches);
   useEffect(() => { onStatus?.(status); }, [status, onStatus]);
   useEffect(() => { runtime.current?.setPets(pets, activePetId); }, [pets, activePetId]);
   useEffect(() => { runtime.current?.setPlacements(placements); }, [placements]);
@@ -57,8 +57,8 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
     let disposed = false, failed = false, destroy = () => {};
     const changedScene = previousScene.current !== scene;
     previousScene.current = scene;
-    const initialFocus = changedScene ? false : focus;
-    if (changedScene) setFocus(false);
+    const initialFocus = changedScene ? scene === 'home' && window.matchMedia?.('(max-width: 760px)').matches : focus;
+    if (changedScene) setFocus(initialFocus);
     setStatus('loading');
     if (/jsdom/i.test(navigator.userAgent)) { setStatus('fallback'); return; }
     Promise.all([import('three'), import('three/addons/controls/OrbitControls.js'), import('three/addons/loaders/GLTFLoader.js'), import('./townModels.js'), import('./townPerformance.js'), import('./environmentMotion.js')]).then(async ([T, { OrbitControls }, { GLTFLoader }, { applyGrowthAppearance }, { batchTownScenery, smoothFactor }, { bindEnvironmentMotion, environmentFollowup }]) => {

@@ -120,6 +120,8 @@ Validation adds sound lifecycle tests and `node scripts/qa-pet-sounds.mjs` for d
 
 ## Rendering and movement performance details
 
+On screens up to 760px wide, the home scene spans the viewport and uses 66svh of height (440–620px, at least 480px during care). Compact navigation and audio controls bring the scene higher on the page. Home starts focused on the companion; “看小鎮” restores the overview, while story scenes and desktop keep their overview default. Care scrolls the whole scene into view with clearance for sticky navigation. `QA_URL=http://127.0.0.1:5202/ node scripts/qa-pet-mobile-stage.mjs` checks 360×640, 390×844, 430×932 and desktop layouts, camera toggling and visible care controls. Set environment variables using the syntax for your shell.
+
 The scene now renders at the browser's animation cadence instead of imposing a 31 ms frame gate. Static scenery sharing materials and shadow settings is merged once; pets, clickable furniture, story effects and animated water remain independent. Hidden subtrees and mesh parents are retained. The automatic quality setting caps pixel ratio at 1.25 (high remains 1.5). Off-screen/hidden scenes still skip rendering.
 
 Care props are reused within a phase: washing adjusts foam visibility and playing adjusts the toy without rebuilding the whole effect on each gesture. Walking speed is 1.65 world units/second and calling uses 2.7; gait playback and shorter crossfades match the quicker response. Movement clamps to the destination, while turning and camera following use elapsed-time smoothing. Scene diagnostic attributes only update when their values change.
