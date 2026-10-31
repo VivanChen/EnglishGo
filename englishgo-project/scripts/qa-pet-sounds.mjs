@@ -25,10 +25,12 @@ try {
       window.petSoundStarts=0;window.petDecoded=0;window.petSoundActive=0;
       window.petMusicActive=0;window.petMusicStarts=0;
       window.petMusicContexts=[];const musicSources=new WeakSet(),soundSources=new WeakSet();
+      const connections=new WeakMap(),connect=AudioNode.prototype.connect;
+      AudioNode.prototype.connect=function(destination,...args){const result=connect.call(this,destination,...args);connections.set(this,destination);return result;};
       const start=AudioBufferSourceNode.prototype.start, stop=AudioBufferSourceNode.prototype.stop, decode=AudioContext.prototype.decodeAudioData;
       const finishMusic=source=>{if(musicSources.delete(source))window.petMusicActive--;};
       const finishSound=source=>{if(soundSources.delete(source))window.petSoundActive--;};
-      AudioBufferSourceNode.prototype.start=function(...args){if(!this.loop){soundSources.add(this);window.petSoundStarts++;window.petSoundActive++;this.addEventListener('ended',()=>finishSound(this));}else if(this.buffer?.duration!==4){musicSources.add(this);window.petMusicContexts.push(this.context);window.petMusicStarts++;window.petMusicActive++;this.addEventListener('ended',()=>finishMusic(this));}return start.apply(this,args);};
+      AudioBufferSourceNode.prototype.start=function(...args){if(!this.loop){soundSources.add(this);window.petSoundStarts++;window.petSoundActive++;this.addEventListener('ended',()=>finishSound(this));}else if(this.buffer?.duration!==4){window.petMusicGain=connections.get(this)?.gain;musicSources.add(this);window.petMusicContexts.push(this.context);window.petMusicStarts++;window.petMusicActive++;this.addEventListener('ended',()=>finishMusic(this));}return start.apply(this,args);};
       // A suspended context can defer `ended`; also observe successful explicit stops.
       AudioBufferSourceNode.prototype.stop=function(...args){const result=stop.apply(this,args);finishMusic(this);finishSound(this);return result;};
       AudioContext.prototype.decodeAudioData=async function(...args){const buffer=await decode.apply(this,args);window.petDecoded++;return buffer;};
@@ -51,6 +53,22 @@ try {
     await page.getByRole('button',{name:'開啟小鎮音效',exact:true}).click();
     await page.waitForFunction(count=>window.petDecoded===count,hasMusic?11:10);
     if(hasMusic) await page.waitForFunction(()=>window.petMusicActive===1);
+    await page.getByRole('button',{name:'小鎮設定',exact:true}).click();
+    await page.getByRole('slider',{name:'背景音樂音量',exact:true}).press('Home');
+    if(hasMusic) await page.waitForFunction(()=>Math.abs(window.petMusicGain.value)<.001);
+    await page.getByRole('slider',{name:'背景音樂音量',exact:true}).press('End');
+    if(hasMusic) await page.waitForFunction(()=>Math.abs(window.petMusicGain.value-.2)<.002);
+    await page.getByRole('slider',{name:'寵物與環境音量',exact:true}).press('Home');
+    await page.getByRole('button',{name:'設定好了',exact:true}).click();
+    const silent=await page.evaluate(()=>window.petSoundStarts);
+    await page.getByRole('button',{name:'試聽凪凪的聲音',exact:true}).click();
+    assert.equal(await page.evaluate(()=>window.petSoundStarts),silent);
+    const effects=page.getByRole('slider',{name:'寵物與環境音量',exact:true});
+    await effects.press('End');for(let i=0;i<4;i++)await effects.press('ArrowLeft');
+    await page.getByRole('dialog').screenshot({path:`.superpowers/qa/pet-sounds/${width}-mix.png`});
+    await page.getByRole('button',{name:'設定好了',exact:true}).click();
+    await page.getByRole('button',{name:'試聽凪凪的聲音',exact:true}).click();
+    if(hasMusic){await page.waitForFunction(()=>window.petMusicGain.value<.1);await page.waitForFunction(()=>window.petMusicGain.value>.199);}
     const petBefore=await page.evaluate(()=>JSON.parse(localStorage.getItem('eg_pet_world_v2:guest')).worldState.ownedPets);
     for(const [label,clip] of [['打招呼','greet'],['伸懶腰','stretch'],['整理毛毛','groom'],['開心蹦跳','hop']]) {
       const before=await page.evaluate(()=>window.petSoundStarts);
@@ -94,6 +112,9 @@ try {
     const clipped=await page.getByRole('button',{name:'開啟小鎮音效',exact:true}).evaluate(el=>{const r=el.getBoundingClientRect(),p=el.closest('.pet-town').getBoundingClientRect();return r.left<p.left||r.right>p.right;});
     assert.equal(clipped,false); assert.deepEqual(errors,[]); assert.deepEqual(failed,[]);
     await page.screenshot({path:`.superpowers/qa/pet-sounds/${width}-header.png`});
-    console.log(`${width}: three species previews from mute, four animations, decoded audio, ${hasMusic?'cached music loop/resume, ':''}playback, local/global mute, visibility pause, unchanged rewards, layout passed${musicFixture?' (music uses test fixture)':''}`); await page.close();
+    await page.reload({waitUntil:'domcontentloaded'});await page.getByRole('button',{name:'小鎮設定',exact:true}).click();
+    assert.equal(await page.getByRole('slider',{name:'背景音樂音量',exact:true}).inputValue(),'100');
+    assert.equal(await page.getByRole('slider',{name:'寵物與環境音量',exact:true}).inputValue(),'80');
+    console.log(`${width}: saved volume controls, foreground duck/recovery, three species previews from mute, four animations, decoded audio, ${hasMusic?'cached music loop/resume, ':''}playback, local/global mute, visibility pause, unchanged rewards, layout passed${musicFixture?' (music uses test fixture)':''}`); await page.close();
   }
 }finally{await browser.close();}

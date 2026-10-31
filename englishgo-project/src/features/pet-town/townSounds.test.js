@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { careSound, createTownSounds } from './townSounds.js';
 
 function audioHarness(withMusic=false) {
-  const sources = [], contexts = [], panners = [];
+  const sources = [], contexts = [], panners = [], gains = [];
   class AudioContext {
     state = 'suspended'; currentTime = 1; destination = {};
     constructor() { contexts.push(this); }
@@ -12,15 +12,22 @@ function audioHarness(withMusic=false) {
     createBuffer(channels,length,sampleRate) { const data=Array.from({length:channels},()=>new Float32Array(length));return {length,sampleRate,numberOfChannels:channels,duration:length/sampleRate,getChannelData:i=>data[i]}; }
     decodeAudioData = vi.fn(async () => this.createBuffer(1,100,100));
     createBufferSource() { const source = { connect:vi.fn(), disconnect:vi.fn(), start:vi.fn(), stop:vi.fn() }; sources.push(source); return source; }
-    createGain() { return { gain:{value:0,setValueAtTime:vi.fn(),linearRampToValueAtTime:vi.fn()}, connect:vi.fn(), disconnect:vi.fn() }; }
+    createGain() { const gain={ gain:{value:0,setValueAtTime:vi.fn(),linearRampToValueAtTime:vi.fn(),cancelScheduledValues:vi.fn()}, connect:vi.fn(), disconnect:vi.fn() };gains.push(gain);return gain; }
     createStereoPanner() { const panner={pan:{value:0},connect:vi.fn(),disconnect:vi.fn()};panners.push(panner);return panner; }
   }
   vi.stubGlobal('AudioContext', AudioContext);
   vi.stubGlobal('fetch', vi.fn(async () => ({ ok:true, json:async()=>({files:{step:'step.wav',water:'water.wav',toy:'toy.wav',towel:'towel.wav',chime:'chime.wav'},...(withMusic?{music:{file:'bgm-abcdef123456.mp3',volume:.12}}:{})}), arrayBuffer:async()=>new ArrayBuffer(8) })));
-  return { sources, contexts, panners };
+  return { sources, contexts, panners, gains };
 }
 afterEach(() => vi.unstubAllGlobals());
 describe('town sound lifecycle', () => {
+  it('mutes effects through their shared output without stopping music and restores cached playback',async()=>{
+    const {gains,sources}=audioHarness(true), audio=createTownSounds();await audio.start();await audio.ready();
+    audio.play('water');const music=sources.find(s=>s.loop),bus=gains[0];
+    audio.setLevels({effects:0});expect(bus.gain.value).toBe(0);expect(audio.play('toy')).toBe(false);expect(music.stop).not.toHaveBeenCalled();
+    audio.setLevels({effects:40,music:0});expect(bus.gain.value).toBe(.5);expect(audio.play('toy')).toBe(true);
+    expect(fetch).toHaveBeenCalledTimes(7);audio.dispose();
+  });
   it('reports failed loading and retries on the next start',async()=>{
     const {contexts}=audioHarness(), good=fetch.getMockImplementation();fetch.mockResolvedValue({ok:false});
     const audio=createTownSounds();await audio.start();await expect(audio.ready()).rejects.toThrow('Audio');audio.pause();

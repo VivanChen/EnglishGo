@@ -65,7 +65,7 @@ describe('new island saves and deterministic adoptions', () => {
     expect(loaded.ownedPets[0].exp).toBe(130);
     expect(loaded.ownedDecorations).not.toContain('unknown');
     expect(loaded.placements).toHaveLength(3);
-    expect(loaded.settings).toEqual({ quality: 'auto', motion: false, sound: true });
+    expect(loaded.settings).toEqual({ quality: 'auto', motion: false, sound: true, musicVolume:60, effectsVolume:80 });
     expect(loaded.receipts).toEqual(world.receipts);
     expect(loaded.syncReceipts).toEqual(['wallet-op-1', 'save-op-2']);
     expect(migrateLegacyWorld(loaded, { now })).toEqual(loaded);
@@ -263,13 +263,18 @@ describe('furniture purchases and safe placement', () => {
 });
 
 describe('state boundaries', () => {
+  it('clamps saved audio levels and defaults invalid values without affecting companions',()=>{
+    const world=fresh(), changed=act(world,{type:'SETTINGS',patch:{musicVolume:500,effectsVolume:-5}}).world;
+    expect(changed.settings).toMatchObject({musicVolume:100,effectsVolume:0});expect(changed.ownedPets).toBe(world.ownedPets);
+    expect(act(changed,{type:'SETTINGS',patch:{musicVolume:NaN,effectsVolume:Infinity}}).world.settings).toMatchObject({musicVolume:60,effectsVolume:80});
+  });
   it('keeps every action pure and settings independent of other state', () => {
     const world = deepFreeze(fresh()), before = JSON.stringify(world);
     const result = act(world, { type: 'CARE', careType: 'feed' });
     expect(JSON.stringify(world)).toBe(before);
     expect(result.world).not.toBe(world);
     const configured = act(world, { type: 'SETTINGS', patch: { quality: 'low', motion: false, sound: true } }).world;
-    expect(configured.settings).toEqual({ quality: 'low', motion: false, sound: true });
+    expect(configured.settings).toEqual({ quality: 'low', motion: false, sound: true, musicVolume:60, effectsVolume:80 });
     expect(configured.ownedPets).toBe(world.ownedPets);
     expect(act(world, { type: 'UNKNOWN' }).world).toBe(world);
   });

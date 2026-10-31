@@ -6,9 +6,9 @@ vi.mock('./TownScene.jsx', () => ({
   PetPortrait: ({ speciesId }) => <span aria-hidden="true" data-species={speciesId}/>,
 }));
 vi.mock('./cloudAccount.js', () => ({ hashPin: vi.fn(), legacyPinHash: vi.fn(), requestPetAccount: vi.fn() }));
-const audio = vi.hoisted(()=>({start:vi.fn(async()=>true),ready:vi.fn(async()=>{}),play:vi.fn(()=>true),pause:vi.fn(),stop:vi.fn(),dispose:vi.fn()}));
+const audio = vi.hoisted(()=>({start:vi.fn(async()=>true),ready:vi.fn(async()=>{}),setLevels:vi.fn(),play:vi.fn(()=>true),pause:vi.fn(),stop:vi.fn(),dispose:vi.fn()}));
 vi.mock('./townSounds.js',async importOriginal=>({...await importOriginal(),createTownSounds:()=>audio}));
-vi.mock('./townAmbience.js',()=>({createTownAmbience:()=>({start:async()=>true,pause:vi.fn(),dispose:vi.fn()})}));
+vi.mock('./townAmbience.js',()=>({createTownAmbience:()=>({start:async()=>true,setVolume:vi.fn(),pause:vi.fn(),dispose:vi.fn()})}));
 import PetTown from './PetTown.jsx';
 import { CARE } from './CareInteraction.jsx';
 import { CHAPTERS, FURNITURE, PETS } from './worldData.js';
@@ -57,6 +57,15 @@ beforeEach(() => {
 afterEach(() => vi.useRealTimers());
 
 describe('Seabreeze town complete UI flows', () => {
+  it('previews volume edits immediately but saves only the completed adjustment and restores it later',()=>{
+    const view=render(<Harness/>);click('小鎮設定');
+    const slider=screen.getByRole('slider',{name:'背景音樂音量'});
+    fireEvent.change(slider,{target:{value:'25'}});expect(readTownSnapshot(null).worldState.settings.musicVolume).toBe(60);
+    fireEvent.pointerUp(slider);expect(readTownSnapshot(null).worldState.settings.musicVolume).toBe(25);
+    view.unmount();render(<Harness/>);click('小鎮設定');expect(screen.getByRole('slider',{name:'背景音樂音量'})).toHaveValue('25');
+    const effects=screen.getByRole('slider',{name:'寵物與環境音量'});fireEvent.change(effects,{target:{value:'0'}});fireEvent.blur(effects);click('設定好了');
+    click('試聽凪凪的聲音');expect(audio.play).not.toHaveBeenCalled();expect(screen.getByRole('slider',{name:'寵物與環境音量'})).toHaveValue('0');
+  });
   it('can restart after backgrounding during a pending browser resume; the stale request cannot stop new audio',async()=>{
     let finish;audio.start.mockImplementationOnce(()=>new Promise(resolve=>{finish=resolve;}));
     render(<Harness/>);click('開啟小鎮音效');await waitFor(()=>expect(finish).toBeTypeOf('function'));

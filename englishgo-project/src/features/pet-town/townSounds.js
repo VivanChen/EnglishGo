@@ -7,10 +7,15 @@ export function careSound(type, phase) {
   return { feed: 'rustle', play: 'toy', pet: 'rustle', sleep: 'towel', wake: 'rustle', happy: 'success', groom: 'rustle', stretch: 'rustle', hop: 'toy' }[type];
 }
 export function createTownSounds() {
-  let context, music, loading, enabled = false, disposed = false, generation = 0;
+  let context, music, effectsGain, loading, enabled = false, disposed = false, generation = 0;
+  let levels={music:60,effects:80};
   const buffers = new Map(), active = new Set(), last = new Map(), controller = new AbortController();
-  const stop = () => { for (const source of active) { source.stop(); source.disconnect(); } active.clear(); };
+  const stop = () => { for (const source of active) { source.stop(); source.disconnect(); } active.clear(); music?.releaseDuck(); };
   return {
+    setLevels(next) {
+      for(const name of ['music','effects'])if(Number.isFinite(next?.[name]))levels[name]=Math.max(0,Math.min(100,next[name]));
+      music?.setVolume(levels.music/60);if(effectsGain)effectsGain.gain.value=levels.effects/80;
+    },
     async start() {
       if (disposed) return false;
       const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -19,6 +24,8 @@ export function createTownSounds() {
       if (!context) {
         context = new AudioContext();
         music = createTownMusic(context);
+        music.setVolume(levels.music/60);
+        effectsGain=context.createGain();effectsGain.gain.value=levels.effects/80;effectsGain.connect(context.destination);
       }
       if (!loading) {
         const loadAudio = file => fetch(`${import.meta.env.BASE_URL}audio/pet-town/${file}`, { signal: controller.signal })
@@ -45,7 +52,7 @@ export function createTownSounds() {
     },
     async ready() { if (!loading) throw new Error('Audio files could not be loaded'); await loading; },
     play(name, volume = .35, pan = 0) {
-      if (!enabled || disposed || document.hidden || context?.state !== 'running' || !buffers.has(name)) return false;
+      if (!enabled || disposed || !levels.effects || document.hidden || context?.state !== 'running' || !buffers.has(name)) return false;
       const now = context.currentTime, gap = name === 'step' ? .22 : .16;
       if (now - (last.get(name) ?? -Infinity) < gap || active.size >= 4) return false;
       last.set(name, now);
@@ -53,14 +60,15 @@ export function createTownSounds() {
       source.buffer = buffers.get(name); gain.gain.value = Math.max(0, Math.min(.65, volume));
       const panner = context.createStereoPanner?.();
       source.connect(gain);
-      if (panner) { panner.pan.value = Math.max(-1, Math.min(1, pan)); gain.connect(panner); panner.connect(context.destination); }
-      else gain.connect(context.destination);
+      if (panner) { panner.pan.value = Math.max(-1, Math.min(1, pan)); gain.connect(panner); panner.connect(effectsGain); }
+      else gain.connect(effectsGain);
       active.add(source);
       source.onended = () => { active.delete(source); source.disconnect(); gain.disconnect(); panner?.disconnect(); };
+      if(!['step','chime'].includes(name) && volume>0)music.duck(source.buffer.duration);
       source.start(); return true;
     },
     stop,
     pause() { enabled = false; generation++; stop(); music?.pause(); if (context?.state === 'running') void context.suspend().catch(() => {}); },
-    dispose() { disposed = true; enabled = false; generation++; controller.abort(); stop(); music?.dispose(); buffers.clear(); if (context && context.state !== 'closed') void context.close().catch(() => {}); },
+    dispose() { disposed = true; enabled = false; generation++; controller.abort(); stop(); music?.dispose(); effectsGain?.disconnect(); buffers.clear(); if (context && context.state !== 'closed') void context.close().catch(() => {}); },
   };
 }

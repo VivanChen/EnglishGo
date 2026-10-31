@@ -1,7 +1,8 @@
 // Quiet local shoreline synthesis. start() is called only from the sound switch.
 export function createTownAmbience() {
-  let context, gain, noise, tide, tideDepth;
+  let context, gain, noise, tide, tideDepth, volume=1;
   return {
+    setVolume(value) { volume=Number.isFinite(value)?Math.max(0,Math.min(1.25,value)):1;if(gain)gain.gain.value=.07*volume;if(tideDepth)tideDepth.gain.value=.035*volume; },
     async start() {
       const AudioContext = window.AudioContext || window.webkitAudioContext;
       if (!AudioContext) return false;
@@ -12,9 +13,9 @@ export function createTownAmbience() {
         for (let i=0;i<samples.length;i++) { last = (last + (Math.random()*2-1)*.025)/1.025; samples[i]=last*3; }
         noise=context.createBufferSource(); noise.buffer=buffer; noise.loop=true;
         const lowpass=context.createBiquadFilter(); lowpass.type='lowpass'; lowpass.frequency.value=900;
-        gain=context.createGain(); gain.gain.value=.07;
+        gain=context.createGain(); gain.gain.value=.07*volume;
         tide=context.createOscillator(); tide.frequency.value=.14;
-        tideDepth=context.createGain(); tideDepth.gain.value=.035;
+        tideDepth=context.createGain(); tideDepth.gain.value=.035*volume;
         tide.connect(tideDepth); tideDepth.connect(gain.gain);
         noise.connect(lowpass); lowpass.connect(gain); gain.connect(context.destination); noise.start(); tide.start();
       }

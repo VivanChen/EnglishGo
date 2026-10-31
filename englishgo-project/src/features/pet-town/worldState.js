@@ -33,7 +33,7 @@ export function createWorld({ now } = {}) {
       { id: 'placement-harbor-planter', itemId: 'harbor-planter', x: 2.6, z: 0, rotation: 0 },
     ],
     completedChapters: [], chapterProgress: {}, receipts: [], syncReceipts: [], journal: [],
-    settings: { quality: 'auto', motion: true, sound: false },
+    settings: { quality: 'auto', motion: true, sound: false, musicVolume:60, effectsVolume:80 },
     learningDays: {},
   };
 }
@@ -132,7 +132,7 @@ function refreshPet(pet, now) {
 }
 
 function validSettings(raw = {}) {
-  return { quality: ['auto', 'high', 'low'].includes(raw?.quality) ? raw.quality : 'auto', motion: raw?.motion !== false, sound: raw?.sound === true };
+  return { quality: ['auto', 'high', 'low'].includes(raw?.quality) ? raw.quality : 'auto', motion: raw?.motion !== false, sound: raw?.sound === true, musicVolume:clamp(number(raw?.musicVolume,60),0,100), effectsVolume:clamp(number(raw?.effectsVolume,80),0,100) };
 }
 
 // A v1/legacy save deliberately contributes no pets, eggs, food or unlocked
