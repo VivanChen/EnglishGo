@@ -1,0 +1,1121 @@
+{
+  "reviewedAt": "2026-10-31",
+  "editionNote": "依網路公開詞表與課程計畫補充，跨年度來源；不是 115 學年度逐頁核定完整版。",
+  "sources": {
+    "tacps-111": {
+      "label": "花蓮學校公開中譯表（檔名標示 111）第 1–4 冊",
+      "url": "https://www.tacps.hlc.edu.tw/modules/tad_web/files.php?WebID=34&files_sn=5873&fn=%E7%BF%B0%E6%9E%97Here+we+go+B1~4.zip&op=tufdl"
+    },
+    "tpups-114": {
+      "label": "東埔國小 114 學年度英語教學計畫（第 5–6 冊）",
+      "url": "https://tpups.ntct.edu.tw/var/file/143/1143/img/837626503.pdf"
+    },
+    "zbp-113": {
+      "label": "鎮北國小 113 五下英語課程計畫（第 6 冊）",
+      "url": "https://www.zbp.kh.edu.tw/upload/107/101_21619_media/ok113五下英語.pdf"
+    },
+    "cp-113": {
+      "label": "屏東學校公開 113 六年級英語課程計畫（第 7–8 冊）",
+      "url": "https://www.cp.ptc.edu.tw/storage/134635/134635_113_B-03_6A.pdf?1740154818="
+    }
+  },
+  "groups": [
+    {
+      "book": 1,
+      "unit": "Starter",
+      "category": "應用字彙",
+      "sourceId": "tacps-111",
+      "words": [
+        "one",
+        "two",
+        "three",
+        "four",
+        "five"
+      ]
+    },
+    {
+      "book": 1,
+      "unit": "Starter",
+      "category": "發音例字",
+      "sourceId": "tacps-111",
+      "words": [
+        "ant",
+        "apple",
+        "bag",
+        "boy",
+        "cat",
+        "cup",
+        "dog",
+        "duck",
+        "egg",
+        "elephant"
+      ]
+    },
+    {
+      "book": 1,
+      "unit": "Unit 1",
+      "category": "應用字彙",
+      "sourceId": "tacps-111",
+      "words": [
+        "I",
+        "am",
+        "is",
+        "my",
+        "name",
+        "what",
+        "your"
+      ]
+    },
+    {
+      "book": 1,
+      "unit": "Unit 1",
+      "category": "認識字彙",
+      "sourceId": "tacps-111",
+      "words": [
+        "Abu",
+        "Amber",
+        "Edison",
+        "Mia",
+        "Rocky",
+        "Teddy"
+      ]
+    },
+    {
+      "book": 1,
+      "unit": "Unit 1",
+      "category": "發音例字",
+      "sourceId": "tacps-111",
+      "words": [
+        "fish",
+        "fan",
+        "goat",
+        "girl",
+        "hand",
+        "hat",
+        "ink",
+        "insect",
+        "jet",
+        "jam"
+      ]
+    },
+    {
+      "book": 1,
+      "unit": "Unit 2",
+      "category": "應用字彙",
+      "sourceId": "tacps-111",
+      "words": [
+        "six",
+        "seven",
+        "eight",
+        "nine",
+        "ten",
+        "how old",
+        "are",
+        "you",
+        "year"
+      ]
+    },
+    {
+      "book": 1,
+      "unit": "Unit 2",
+      "category": "發音例字",
+      "sourceId": "tacps-111",
+      "words": [
+        "key",
+        "kite",
+        "lion",
+        "leg",
+        "monkey",
+        "milk",
+        "nose",
+        "neck",
+        "ox",
+        "otter"
+      ]
+    },
+    {
+      "book": 1,
+      "unit": "Unit 3",
+      "category": "應用字彙",
+      "sourceId": "tacps-111",
+      "words": [
+        "book",
+        "pen",
+        "pencil",
+        "eraser",
+        "this",
+        "that",
+        "it",
+        "a",
+        "an"
+      ]
+    },
+    {
+      "book": 1,
+      "unit": "Unit 3",
+      "category": "認識字彙",
+      "sourceId": "tacps-111",
+      "words": [
+        "ruler",
+        "marker"
+      ]
+    },
+    {
+      "book": 1,
+      "unit": "Unit 3",
+      "category": "發音例字",
+      "sourceId": "tacps-111",
+      "words": [
+        "pig",
+        "pink",
+        "queen",
+        "quiz",
+        "red",
+        "rabbit",
+        "snake",
+        "sun",
+        "turtle",
+        "tiger"
+      ]
+    },
+    {
+      "book": 1,
+      "unit": "Unit 4",
+      "category": "應用字彙",
+      "sourceId": "tacps-111",
+      "words": [
+        "blue",
+        "green",
+        "red",
+        "yellow",
+        "color"
+      ]
+    },
+    {
+      "book": 1,
+      "unit": "Unit 4",
+      "category": "認識字彙",
+      "sourceId": "tacps-111",
+      "words": [
+        "black",
+        "white"
+      ]
+    },
+    {
+      "book": 1,
+      "unit": "Unit 4",
+      "category": "發音例字",
+      "sourceId": "tacps-111",
+      "words": [
+        "up",
+        "umbrella",
+        "van",
+        "vest",
+        "watch",
+        "window",
+        "fox",
+        "box",
+        "yo-yo",
+        "yogurt",
+        "zoo",
+        "zebra"
+      ]
+    },
+    {
+      "book": 1,
+      "unit": "Festivals: Halloween",
+      "category": "認識字彙",
+      "sourceId": "tacps-111",
+      "words": [
+        "bat",
+        "ghost",
+        "pumpkin",
+        "spider",
+        "witch",
+        "vampire"
+      ]
+    },
+    {
+      "book": 2,
+      "unit": "Starter",
+      "category": "應用字彙",
+      "sourceId": "tacps-111",
+      "words": [
+        "eleven",
+        "twelve",
+        "thirteen",
+        "fourteen",
+        "fifteen"
+      ]
+    },
+    {
+      "book": 2,
+      "unit": "Starter",
+      "category": "發音例字",
+      "sourceId": "tacps-111",
+      "words": [
+        "dad",
+        "mad",
+        "sad",
+        "cat",
+        "fat",
+        "mat"
+      ]
+    },
+    {
+      "book": 2,
+      "unit": "Unit 1",
+      "category": "應用字彙",
+      "sourceId": "tacps-111",
+      "words": [
+        "small",
+        "big",
+        "dog",
+        "cat",
+        "bird",
+        "fish",
+        "no",
+        "not",
+        "yes"
+      ]
+    },
+    {
+      "book": 2,
+      "unit": "Unit 1",
+      "category": "發音例字",
+      "sourceId": "tacps-111",
+      "words": [
+        "bed",
+        "red",
+        "Ted",
+        "get",
+        "pet",
+        "wet"
+      ]
+    },
+    {
+      "book": 2,
+      "unit": "Unit 2",
+      "category": "應用字彙",
+      "sourceId": "tacps-111",
+      "words": [
+        "dance",
+        "draw",
+        "jump",
+        "read",
+        "sing",
+        "swim",
+        "write",
+        "can",
+        "do"
+      ]
+    },
+    {
+      "book": 2,
+      "unit": "Unit 2",
+      "category": "發音例字",
+      "sourceId": "tacps-111",
+      "words": [
+        "big",
+        "dig",
+        "pig",
+        "kick",
+        "Nick",
+        "sick"
+      ]
+    },
+    {
+      "book": 2,
+      "unit": "Unit 3",
+      "category": "應用字彙",
+      "sourceId": "tacps-111",
+      "words": [
+        "grandpa",
+        "grandfather",
+        "grandma",
+        "grandmother",
+        "dad",
+        "father",
+        "mom",
+        "mother",
+        "brother",
+        "sister",
+        "tall",
+        "short",
+        "who",
+        "he",
+        "she"
+      ]
+    },
+    {
+      "book": 2,
+      "unit": "Unit 3",
+      "category": "發音例字",
+      "sourceId": "tacps-111",
+      "words": [
+        "hop",
+        "mop",
+        "top",
+        "dot",
+        "hot",
+        "pot"
+      ]
+    },
+    {
+      "book": 2,
+      "unit": "Unit 4",
+      "category": "應用字彙",
+      "sourceId": "tacps-111",
+      "words": [
+        "student",
+        "teacher",
+        "doctor",
+        "nurse",
+        "cook",
+        "driver"
+      ]
+    },
+    {
+      "book": 2,
+      "unit": "Unit 4",
+      "category": "發音例字",
+      "sourceId": "tacps-111",
+      "words": [
+        "cub",
+        "sub",
+        "tub",
+        "cut",
+        "hut",
+        "nut"
+      ]
+    },
+    {
+      "book": 2,
+      "unit": "Festival: Mother’s Day",
+      "category": "認識字彙",
+      "sourceId": "tacps-111",
+      "words": [
+        "card",
+        "flower",
+        "gift",
+        "heart",
+        "love"
+      ]
+    },
+    {
+      "book": 3,
+      "unit": "Starter",
+      "category": "應用字彙",
+      "sourceId": "tacps-111",
+      "words": [
+        "sixteen",
+        "seventeen",
+        "eighteen",
+        "nineteen",
+        "twenty"
+      ]
+    },
+    {
+      "book": 3,
+      "unit": "Starter",
+      "category": "發音例字",
+      "sourceId": "tacps-111",
+      "words": [
+        "big",
+        "Ben",
+        "box",
+        "pig",
+        "pen",
+        "pat"
+      ]
+    },
+    {
+      "book": 3,
+      "unit": "Unit 1",
+      "category": "應用字彙",
+      "sourceId": "tacps-111",
+      "words": [
+        "sunny",
+        "rainy",
+        "cloudy",
+        "windy",
+        "hot",
+        "warm",
+        "cool",
+        "cold",
+        "weather"
+      ]
+    },
+    {
+      "book": 3,
+      "unit": "Unit 1",
+      "category": "發音例字",
+      "sourceId": "tacps-111",
+      "words": [
+        "dot",
+        "duck",
+        "dig",
+        "tot",
+        "tuck",
+        "ten"
+      ]
+    },
+    {
+      "book": 3,
+      "unit": "Unit 2",
+      "category": "應用字彙",
+      "sourceId": "tacps-111",
+      "words": [
+        "angry",
+        "happy",
+        "sad",
+        "tired",
+        "hungry",
+        "thirsty"
+      ]
+    },
+    {
+      "book": 3,
+      "unit": "Unit 2",
+      "category": "認識字彙",
+      "sourceId": "tacps-111",
+      "words": [
+        "full"
+      ]
+    },
+    {
+      "book": 3,
+      "unit": "Unit 2",
+      "category": "發音例字",
+      "sourceId": "tacps-111",
+      "words": [
+        "gap",
+        "gut",
+        "gum",
+        "cap",
+        "cut",
+        "cop"
+      ]
+    },
+    {
+      "book": 3,
+      "unit": "Unit 3",
+      "category": "應用字彙",
+      "sourceId": "tacps-111",
+      "words": [
+        "apples",
+        "bananas",
+        "oranges",
+        "hot dogs",
+        "like",
+        "these",
+        "those"
+      ]
+    },
+    {
+      "book": 3,
+      "unit": "Unit 3",
+      "category": "認識字彙",
+      "sourceId": "tacps-111",
+      "words": [
+        "watermelons",
+        "hamburgers",
+        "sandwiches"
+      ]
+    },
+    {
+      "book": 3,
+      "unit": "Unit 3",
+      "category": "發音例字",
+      "sourceId": "tacps-111",
+      "words": [
+        "van",
+        "vat",
+        "vet",
+        "fan",
+        "fat",
+        "fun"
+      ]
+    },
+    {
+      "book": 3,
+      "unit": "Unit 4",
+      "category": "應用字彙",
+      "sourceId": "tacps-111",
+      "words": [
+        "juice",
+        "milk",
+        "water",
+        "cake",
+        "pizza",
+        "rice",
+        "want",
+        "some"
+      ]
+    },
+    {
+      "book": 3,
+      "unit": "Unit 4",
+      "category": "認識字彙",
+      "sourceId": "tacps-111",
+      "words": [
+        "tea",
+        "ice cream"
+      ]
+    },
+    {
+      "book": 3,
+      "unit": "Unit 4",
+      "category": "發音例字",
+      "sourceId": "tacps-111",
+      "words": [
+        "zip",
+        "Zack",
+        "zit",
+        "sip",
+        "sack",
+        "sock"
+      ]
+    },
+    {
+      "book": 3,
+      "unit": "Festival: Moon Festival",
+      "category": "認識字彙",
+      "sourceId": "tacps-111",
+      "words": [
+        "eat",
+        "moon cake",
+        "pomelo",
+        "Chang-O",
+        "Jade Rabbit"
+      ]
+    },
+    {
+      "book": 4,
+      "unit": "Starter",
+      "category": "發音例字",
+      "sourceId": "tacps-111",
+      "words": [
+        "cap",
+        "Sam",
+        "cape",
+        "same",
+        "bake",
+        "cake"
+      ]
+    },
+    {
+      "book": 4,
+      "unit": "Unit 1",
+      "category": "應用字彙",
+      "sourceId": "tacps-111",
+      "words": [
+        "twenty",
+        "thirty",
+        "forty",
+        "fifty",
+        "twenty-five",
+        "time"
+      ]
+    },
+    {
+      "book": 4,
+      "unit": "Unit 1",
+      "category": "認識字彙",
+      "sourceId": "tacps-111",
+      "words": [
+        "thirty-five",
+        "forty-five",
+        "fifty-five"
+      ]
+    },
+    {
+      "book": 4,
+      "unit": "Unit 1",
+      "category": "發音例字",
+      "sourceId": "tacps-111",
+      "words": [
+        "pet",
+        "web",
+        "Pete",
+        "Chinese",
+        "Eve",
+        "these"
+      ]
+    },
+    {
+      "book": 4,
+      "unit": "Unit 2",
+      "category": "應用字彙",
+      "sourceId": "tacps-111",
+      "words": [
+        "drinking",
+        "eating",
+        "reading",
+        "sleeping",
+        "writing",
+        "running",
+        "swimming",
+        "doing"
+      ]
+    },
+    {
+      "book": 4,
+      "unit": "Unit 2",
+      "category": "發音例字",
+      "sourceId": "tacps-111",
+      "words": [
+        "kit",
+        "Tim",
+        "kite",
+        "time",
+        "bike",
+        "ride"
+      ]
+    },
+    {
+      "book": 4,
+      "unit": "Unit 3",
+      "category": "應用字彙",
+      "sourceId": "tacps-111",
+      "words": [
+        "bathroom",
+        "bedroom",
+        "dining room",
+        "living room",
+        "kitchen",
+        "yard",
+        "where"
+      ]
+    },
+    {
+      "book": 4,
+      "unit": "Unit 3",
+      "category": "發音例字",
+      "sourceId": "tacps-111",
+      "words": [
+        "hop",
+        "not",
+        "hope",
+        "note",
+        "nose",
+        "rose"
+      ]
+    },
+    {
+      "book": 4,
+      "unit": "Unit 4",
+      "category": "應用字彙",
+      "sourceId": "tacps-111",
+      "words": [
+        "bag",
+        "box",
+        "chair",
+        "computer",
+        "desk",
+        "table"
+      ]
+    },
+    {
+      "book": 4,
+      "unit": "Unit 4",
+      "category": "發音例字",
+      "sourceId": "tacps-111",
+      "words": [
+        "cut",
+        "tub",
+        "cute",
+        "tube",
+        "mute",
+        "cube"
+      ]
+    },
+    {
+      "book": 4,
+      "unit": "Festival: Happy Easter",
+      "category": "認識字彙",
+      "sourceId": "tacps-111",
+      "words": [
+        "Easter bunny",
+        "basket",
+        "color the eggs",
+        "go egg hunting"
+      ]
+    },
+    {
+      "book": 5,
+      "unit": "Starter",
+      "category": "發音例字",
+      "words": [
+        "cake",
+        "lake",
+        "email",
+        "rain",
+        "May",
+        "today"
+      ],
+      "sourceId": "tpups-114"
+    },
+    {
+      "book": 5,
+      "unit": "Unit 1",
+      "category": "發音例字",
+      "words": [
+        "Pete",
+        "these",
+        "bee",
+        "tree",
+        "tea",
+        "sea"
+      ],
+      "sourceId": "tpups-114"
+    },
+    {
+      "book": 5,
+      "unit": "Unit 2",
+      "category": "發音例字",
+      "words": [
+        "kite",
+        "nine",
+        "tie",
+        "pie",
+        "fly",
+        "sky"
+      ],
+      "sourceId": "tpups-114"
+    },
+    {
+      "book": 5,
+      "unit": "Unit 3",
+      "category": "發音例字",
+      "words": [
+        "note",
+        "rose",
+        "boat",
+        "goat",
+        "low",
+        "row"
+      ],
+      "sourceId": "tpups-114"
+    },
+    {
+      "book": 5,
+      "unit": "Unit 4",
+      "category": "發音例字",
+      "words": [
+        "cute",
+        "tube",
+        "Luke",
+        "flute",
+        "blue",
+        "glue",
+        "juice",
+        "suit"
+      ],
+      "sourceId": "tpups-114"
+    },
+    {
+      "book": 5,
+      "unit": "Starter",
+      "category": "數字",
+      "words": [
+        "ten",
+        "twenty",
+        "thirty",
+        "forty",
+        "fifty",
+        "sixty",
+        "seventy",
+        "eighty",
+        "ninety",
+        "one hundred"
+      ],
+      "sourceId": "tpups-114"
+    },
+    {
+      "book": 5,
+      "unit": "Christmas",
+      "category": "節慶／文化",
+      "words": [
+        "Christmas",
+        "Christmas tree",
+        "turkey",
+        "Christmas pudding",
+        "vegetables"
+      ],
+      "sourceId": "tpups-114"
+    },
+    {
+      "book": 6,
+      "unit": "Starter",
+      "category": "發音例字",
+      "words": [
+        "king",
+        "ring",
+        "swing",
+        "bank",
+        "pink",
+        "wink"
+      ],
+      "sourceId": "zbp-113"
+    },
+    {
+      "book": 6,
+      "unit": "Starter",
+      "category": "數字",
+      "words": [
+        "one hundred",
+        "two hundred",
+        "three hundred",
+        "four hundred",
+        "five hundred",
+        "six hundred",
+        "seven hundred",
+        "eight hundred",
+        "nine hundred",
+        "one thousand"
+      ],
+      "sourceId": "zbp-113"
+    },
+    {
+      "book": 6,
+      "unit": "Unit 1",
+      "category": "發音例字",
+      "words": [
+        "whale",
+        "wheel",
+        "white",
+        "phone",
+        "photo",
+        "dolphin"
+      ],
+      "sourceId": "zbp-113"
+    },
+    {
+      "book": 6,
+      "unit": "Unit 2",
+      "category": "發音例字",
+      "words": [
+        "three",
+        "bathroom",
+        "teeth",
+        "this",
+        "that",
+        "those"
+      ],
+      "sourceId": "zbp-113"
+    },
+    {
+      "book": 6,
+      "unit": "Unit 3",
+      "category": "發音例字",
+      "words": [
+        "chicken",
+        "church",
+        "lunch",
+        "shop",
+        "short",
+        "fish"
+      ],
+      "sourceId": "zbp-113"
+    },
+    {
+      "book": 6,
+      "unit": "Dragon Boat Festival",
+      "category": "節慶／文化",
+      "words": [
+        "Dragon Boat Festival"
+      ],
+      "sourceId": "zbp-113"
+    },
+    {
+      "book": 7,
+      "unit": "Starter",
+      "category": "發音例字",
+      "words": [
+        "cheeseburger",
+        "river",
+        "summer",
+        "teacher",
+        "actor",
+        "doctor",
+        "sailor",
+        "tailor"
+      ],
+      "sourceId": "cp-113"
+    },
+    {
+      "book": 7,
+      "unit": "Unit 1",
+      "category": "發音例字",
+      "words": [
+        "bird",
+        "circle",
+        "dirty",
+        "shirt",
+        "curry",
+        "nurse",
+        "purple",
+        "Thursday"
+      ],
+      "sourceId": "cp-113"
+    },
+    {
+      "book": 7,
+      "unit": "Unit 2",
+      "category": "發音例字",
+      "words": [
+        "dark",
+        "farm",
+        "park",
+        "shark",
+        "corn",
+        "fork",
+        "horse",
+        "short"
+      ],
+      "sourceId": "cp-113"
+    },
+    {
+      "book": 7,
+      "unit": "Unit 3",
+      "category": "發音例字",
+      "words": [
+        "coin",
+        "oil",
+        "point",
+        "soil",
+        "boy",
+        "joy",
+        "soybeans",
+        "toy"
+      ],
+      "sourceId": "cp-113"
+    },
+    {
+      "book": 7,
+      "unit": "Unit 4",
+      "category": "發音例字",
+      "words": [
+        "bounce",
+        "cloud",
+        "house",
+        "shout",
+        "clown",
+        "crowd",
+        "owl",
+        "shower"
+      ],
+      "sourceId": "cp-113"
+    },
+    {
+      "book": 7,
+      "unit": "New Years Around the World",
+      "category": "節慶／文化",
+      "words": [
+        "New Year's Eve"
+      ],
+      "sourceId": "cp-113"
+    },
+    {
+      "book": 8,
+      "unit": "Starter",
+      "category": "發音例字",
+      "words": [
+        "planet",
+        "plum",
+        "black",
+        "blanket",
+        "clap",
+        "clock",
+        "glad",
+        "glass"
+      ],
+      "sourceId": "cp-113"
+    },
+    {
+      "book": 8,
+      "unit": "Unit 1",
+      "category": "發音例字",
+      "words": [
+        "crab",
+        "cream",
+        "grass",
+        "Greece",
+        "train",
+        "truck",
+        "drink",
+        "drum"
+      ],
+      "sourceId": "cp-113"
+    },
+    {
+      "book": 8,
+      "unit": "Unit 2",
+      "category": "發音例字",
+      "words": [
+        "swan",
+        "swim",
+        "spade",
+        "spoon",
+        "star",
+        "stone",
+        "skunk",
+        "sky"
+      ],
+      "sourceId": "cp-113"
+    },
+    {
+      "book": 8,
+      "unit": "Unit 3",
+      "category": "發音例字",
+      "words": [
+        "bag",
+        "cap",
+        "bed",
+        "shell",
+        "brick",
+        "stick",
+        "fox",
+        "rock",
+        "jump",
+        "run"
+      ],
+      "sourceId": "cp-113"
+    },
+    {
+      "book": 8,
+      "unit": "Unit 4",
+      "category": "發音例字",
+      "words": [
+        "lake",
+        "rain",
+        "May",
+        "these",
+        "see",
+        "peach",
+        "shine",
+        "pie",
+        "fly",
+        "rose",
+        "toast",
+        "blow",
+        "cute",
+        "flute",
+        "suit"
+      ],
+      "sourceId": "cp-113"
+    },
+    {
+      "book": 8,
+      "unit": "Sports Around the World",
+      "category": "節慶／文化",
+      "words": [
+        "sumo",
+        "American football",
+        "polo"
+      ],
+      "sourceId": "cp-113"
+    }
+  ]
+}

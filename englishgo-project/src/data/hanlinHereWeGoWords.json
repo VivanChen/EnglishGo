@@ -2122,5 +2122,2471 @@
     "ez": "下雪天我們在戶外玩。",
     "img": "/images/vocabulary/here-we-go/snowy.webp",
     "imageCredit": "EnglishGo"
+  },
+  {
+    "w": "ant",
+    "m": "螞蟻",
+    "p": "n.",
+    "ex": "An ant walks on a leaf.",
+    "ez": "一隻螞蟻在葉子上走。",
+    "img": "/images/vocabulary/hooray/ant.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "apple",
+    "m": "蘋果",
+    "p": "n.",
+    "ex": "I put an apple in my bag.",
+    "ez": "我把一顆蘋果放進袋子。",
+    "img": "/images/vocabulary/hooray/apple.webp",
+    "imageCredit": "EnglishGo"
+  },
+  {
+    "w": "boy",
+    "m": "男孩",
+    "p": "n.",
+    "ex": "The boy asks a question in English.",
+    "ez": "那個男孩用英文問問題。",
+    "img": "/images/vocabulary/here-we-go/boy.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "cup",
+    "m": "杯子",
+    "p": "n.",
+    "ex": "Pour the juice into a clean cup.",
+    "ez": "把果汁倒進乾淨的杯子。",
+    "img": "/images/vocabulary/here-we-go/cup.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "duck",
+    "m": "鴨子",
+    "p": "n.",
+    "ex": "The duck swims in the pond.",
+    "ez": "鴨子在池塘裡游泳。",
+    "img": "/images/vocabulary/hooray/duck.webp",
+    "imageCredit": "EnglishGo"
+  },
+  {
+    "w": "egg",
+    "m": "蛋",
+    "p": "n.",
+    "ex": "Dad cooks an egg for breakfast.",
+    "ez": "爸爸煮一顆蛋當早餐。",
+    "img": "/images/vocabulary/hooray/egg.webp",
+    "imageCredit": "EnglishGo"
+  },
+  {
+    "w": "I",
+    "m": "我",
+    "p": "pron.",
+    "ex": "I read a story every night.",
+    "ez": "我每天晚上都讀一篇故事。",
+    "img": "/images/vocabulary/here-we-go/i.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "am",
+    "m": "是（用於 I）",
+    "p": "v.",
+    "ex": "I am ready for our class trip.",
+    "ez": "我準備好去校外教學了。",
+    "img": "/images/vocabulary/here-we-go/am.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "is",
+    "m": "是",
+    "p": "aux.",
+    "ex": "Our classroom is next to the library.",
+    "ez": "我們的教室在圖書館旁邊。",
+    "img": "/images/vocabulary/here-we-go/is.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "my",
+    "m": "我的",
+    "p": "pron.",
+    "ex": "My bag is beside the chair.",
+    "ez": "我的書包在椅子旁邊。",
+    "img": "/images/vocabulary/here-we-go/my.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "name",
+    "m": "名字",
+    "p": "n.",
+    "ex": "I write my name on my notebook.",
+    "ez": "我在筆記本上寫下自己的名字。",
+    "img": "/images/vocabulary/here-we-go/name.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "what",
+    "m": "什麼",
+    "p": "pron.",
+    "ex": "What do you eat for breakfast?",
+    "ez": "你早餐吃什麼？",
+    "img": "/images/vocabulary/here-we-go/what.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "your",
+    "m": "你的；你們的",
+    "p": "pron.",
+    "ex": "Put your pencil on the desk.",
+    "ez": "把你的鉛筆放在書桌上。",
+    "img": "/images/vocabulary/here-we-go/your.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "Abu",
+    "m": "阿布（人名）",
+    "p": "n.",
+    "ex": "Abu reads a story with a friend.",
+    "ez": "阿布和朋友一起讀故事。",
+    "img": "/images/vocabulary/here-we-go/abu.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "Amber",
+    "m": "安柏（人名）",
+    "p": "n.",
+    "ex": "Amber reads a story with a friend.",
+    "ez": "安柏和朋友一起讀故事。",
+    "img": "/images/vocabulary/here-we-go/amber.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "Edison",
+    "m": "愛迪生（人名）",
+    "p": "n.",
+    "ex": "Edison reads a story with a friend.",
+    "ez": "愛迪生和朋友一起讀故事。",
+    "img": "/images/vocabulary/here-we-go/edison.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "Mia",
+    "m": "米雅（人名）",
+    "p": "n.",
+    "ex": "Mia reads a story with a friend.",
+    "ez": "米雅和朋友一起讀故事。",
+    "img": "/images/vocabulary/here-we-go/mia.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "Rocky",
+    "m": "洛基（人名）",
+    "p": "n.",
+    "ex": "Rocky reads a story with a friend.",
+    "ez": "洛基和朋友一起讀故事。",
+    "img": "/images/vocabulary/here-we-go/rocky.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "Teddy",
+    "m": "泰迪（人名）",
+    "p": "n.",
+    "ex": "Teddy reads a story with a friend.",
+    "ez": "泰迪和朋友一起讀故事。",
+    "img": "/images/vocabulary/here-we-go/teddy.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "fan",
+    "m": "風扇",
+    "p": "n.",
+    "ex": "The fan keeps my room cool.",
+    "ez": "風扇讓我的房間保持涼爽。",
+    "img": "/images/vocabulary/hooray/fan.webp",
+    "imageCredit": "EnglishGo"
+  },
+  {
+    "w": "goat",
+    "m": "山羊",
+    "p": "n.",
+    "ex": "The goat eats grass on the hill.",
+    "ez": "山羊在山坡上吃草。",
+    "img": "/images/vocabulary/hooray/goat.webp",
+    "imageCredit": "EnglishGo"
+  },
+  {
+    "w": "girl",
+    "m": "女孩",
+    "p": "n.",
+    "ex": "The girl waves to her friend.",
+    "ez": "女孩向她的朋友揮手。",
+    "img": "/images/vocabulary/hooray/girl.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "hand",
+    "m": "手",
+    "p": "n.",
+    "ex": "Raise your hand if you know the answer.",
+    "ez": "如果你知道答案就舉手。",
+    "img": "/images/vocabulary/here-we-go/hand.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "ink",
+    "m": "墨水",
+    "p": "n.",
+    "ex": "My pen has black ink.",
+    "ez": "我的筆裡有黑色墨水。",
+    "img": "/images/vocabulary/hooray/ink.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "insect",
+    "m": "昆蟲",
+    "p": "n.",
+    "ex": "A ladybug is a small insect.",
+    "ez": "瓢蟲是一種小昆蟲。",
+    "img": "/images/vocabulary/hooray/insect.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "jet",
+    "m": "噴射機",
+    "p": "n.",
+    "ex": "The jet flies high in the sky.",
+    "ez": "噴射機在高空飛行。",
+    "img": "/images/vocabulary/hooray/jet.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "jam",
+    "m": "果醬",
+    "p": "n.",
+    "ex": "I spread jam on my toast.",
+    "ez": "我在吐司上塗果醬。",
+    "img": "/images/vocabulary/hooray/jam.webp",
+    "imageCredit": "EnglishGo"
+  },
+  {
+    "w": "how old",
+    "m": "幾歲",
+    "p": "phr.",
+    "ex": "How old is your little brother?",
+    "ez": "你的弟弟幾歲？",
+    "img": "/images/vocabulary/here-we-go/how-old.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "are",
+    "m": "是（用於 you、we、they 等）",
+    "p": "v.",
+    "ex": "You are a good friend.",
+    "ez": "你是一位好朋友。",
+    "img": "/images/vocabulary/here-we-go/are.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "you",
+    "m": "你；你們",
+    "p": "pron.",
+    "ex": "You can read this sentence slowly.",
+    "ez": "你可以慢慢讀這個句子。",
+    "img": "/images/vocabulary/here-we-go/you.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "year",
+    "m": "年",
+    "p": "n.",
+    "ex": "I grow taller every year.",
+    "ez": "我每年都長高。",
+    "img": "/images/vocabulary/here-we-go/year.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "key",
+    "m": "鑰匙",
+    "p": "n.",
+    "ex": "This key opens our front door.",
+    "ez": "這把鑰匙可以打開我們的大門。",
+    "img": "/images/vocabulary/hooray/key.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "kite",
+    "m": "風箏",
+    "p": "n.",
+    "ex": "My kite flies in the wind.",
+    "ez": "我的風箏在風中飛翔。",
+    "img": "/images/vocabulary/hooray/kite.webp",
+    "imageCredit": "EnglishGo"
+  },
+  {
+    "w": "leg",
+    "m": "腿",
+    "p": "n.",
+    "ex": "I stand on one leg.",
+    "ez": "我用一條腿站立。",
+    "img": "/images/vocabulary/hooray/leg.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "neck",
+    "m": "脖子",
+    "p": "n.",
+    "ex": "I wear a scarf around my neck.",
+    "ez": "我在脖子上圍圍巾。",
+    "img": "/images/vocabulary/hooray/neck.webp",
+    "imageCredit": "EnglishGo"
+  },
+  {
+    "w": "ox",
+    "m": "公牛",
+    "p": "n.",
+    "ex": "The ox walks across the farm.",
+    "ez": "公牛走過農場。",
+    "img": "/images/vocabulary/hooray/ox.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "otter",
+    "m": "水獺",
+    "p": "n.",
+    "ex": "The otter floats on its back in the water.",
+    "ez": "水獺仰躺著漂在水面上。",
+    "img": "/images/vocabulary/here-we-go/otter.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "this",
+    "m": "這個",
+    "p": "pron.",
+    "ex": "This sentence is easy to read.",
+    "ez": "這個句子很容易讀。",
+    "img": "/images/vocabulary/here-we-go/this.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "that",
+    "m": "那個",
+    "p": "pron.",
+    "ex": "That picture shows a yellow bus.",
+    "ez": "那張圖片顯示黃色公車。",
+    "img": "/images/vocabulary/here-we-go/that.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "it",
+    "m": "它",
+    "p": "pron.",
+    "ex": "It is a small brown dog.",
+    "ez": "牠是一隻小棕狗。",
+    "img": "/images/vocabulary/here-we-go/it.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "a",
+    "m": "一個（用於子音開頭的字前）",
+    "p": "art.",
+    "ex": "A bird sits on the fence.",
+    "ez": "一隻鳥停在圍籬上。",
+    "img": "/images/vocabulary/here-we-go/a.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "an",
+    "m": "一個（用於母音開頭的單字前）",
+    "p": "det.",
+    "ex": "I eat an apple after school.",
+    "ez": "我放學後吃一顆蘋果。",
+    "img": "/images/vocabulary/here-we-go/an.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "pig",
+    "m": "豬",
+    "p": "n.",
+    "ex": "The pig rolls in the mud.",
+    "ez": "豬在泥巴裡打滾。",
+    "img": "/images/vocabulary/hooray/pig.webp",
+    "imageCredit": "EnglishGo"
+  },
+  {
+    "w": "pink",
+    "m": "粉紅色；粉紅色的",
+    "p": "n./adj.",
+    "ex": "My sister wears a pink dress today.",
+    "ez": "我妹妹今天穿粉紅色洋裝。",
+    "img": "/images/vocabulary/here-we-go/pink.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "queen",
+    "m": "女王",
+    "p": "n.",
+    "ex": "The queen wears a crown.",
+    "ez": "女王戴著皇冠。",
+    "img": "/images/vocabulary/hooray/queen.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "quiz",
+    "m": "小測驗",
+    "p": "n.",
+    "ex": "We have a short spelling quiz on Friday.",
+    "ez": "星期五我們有一個簡短的拼字測驗。",
+    "img": "/images/vocabulary/here-we-go/quiz.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "rabbit",
+    "m": "兔子",
+    "p": "n.",
+    "ex": "The rabbit hops across the grass.",
+    "ez": "兔子跳過草地。",
+    "img": "/images/vocabulary/hooray/rabbit.webp",
+    "imageCredit": "EnglishGo"
+  },
+  {
+    "w": "snake",
+    "m": "蛇",
+    "p": "n.",
+    "ex": "The snake hides under a rock.",
+    "ez": "蛇躲在岩石下面。",
+    "img": "/images/vocabulary/here-we-go/snake.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "sun",
+    "m": "太陽",
+    "p": "n.",
+    "ex": "The sun shines in the sky.",
+    "ez": "太陽在天空中照耀。",
+    "img": "/images/vocabulary/hooray/sun.webp",
+    "imageCredit": "EnglishGo"
+  },
+  {
+    "w": "color",
+    "m": "顏色",
+    "p": "n.",
+    "ex": "What color is your new backpack?",
+    "ez": "你的新背包是什麼顏色？",
+    "img": "/images/vocabulary/here-we-go/color.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "up",
+    "m": "向上",
+    "p": "adv.",
+    "ex": "The arrow points up.",
+    "ez": "箭頭指向上方。",
+    "img": "/images/vocabulary/hooray/up.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "van",
+    "m": "廂型車",
+    "p": "n.",
+    "ex": "The van carries our bags.",
+    "ez": "廂型車載著我們的行李。",
+    "img": "/images/vocabulary/hooray/van.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "vest",
+    "m": "背心",
+    "p": "n.",
+    "ex": "I wear a vest over my shirt.",
+    "ez": "我在襯衫外穿一件背心。",
+    "img": "/images/vocabulary/hooray/vest.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "watch",
+    "m": "手錶",
+    "p": "n.",
+    "ex": "My watch tells me the time.",
+    "ez": "我的手錶告訴我時間。",
+    "img": "/images/vocabulary/hooray/watch.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "window",
+    "m": "窗戶",
+    "p": "n.",
+    "ex": "Open the window to let in fresh air.",
+    "ez": "打開窗戶讓新鮮空氣進來。",
+    "img": "/images/vocabulary/here-we-go/window.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "fox",
+    "m": "狐狸",
+    "p": "n.",
+    "ex": "The fox has a fluffy tail.",
+    "ez": "狐狸有蓬鬆的尾巴。",
+    "img": "/images/vocabulary/hooray/fox.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "yo-yo",
+    "m": "溜溜球",
+    "p": "n.",
+    "ex": "My yo-yo goes up and down.",
+    "ez": "我的溜溜球上下移動。",
+    "img": "/images/vocabulary/hooray/yo-yo.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "yogurt",
+    "m": "優格",
+    "p": "n.",
+    "ex": "I add some strawberries to my yogurt.",
+    "ez": "我在優格裡加了一些草莓。",
+    "img": "/images/vocabulary/here-we-go/yogurt-diagram.svg",
+    "imageCredit": "EnglishGo original vector illustration"
+  },
+  {
+    "w": "zoo",
+    "m": "動物園",
+    "p": "n.",
+    "ex": "We see many animals at the zoo.",
+    "ez": "我們在動物園看到許多動物。",
+    "img": "/images/vocabulary/hooray/zoo.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "bat",
+    "m": "蝙蝠",
+    "p": "n.",
+    "ex": "A bat sleeps in the dark cave.",
+    "ez": "蝙蝠睡在黑暗的洞穴裡。",
+    "img": "/images/vocabulary/here-we-go/bat.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "ghost",
+    "m": "鬼",
+    "p": "n.",
+    "ex": "The paper ghost hangs on the classroom door.",
+    "ez": "紙做的鬼掛在教室門上。",
+    "img": "/images/vocabulary/here-we-go/ghost.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "pumpkin",
+    "m": "南瓜",
+    "p": "n.",
+    "ex": "The pumpkin is orange and heavy.",
+    "ez": "南瓜是橘色而且很重。",
+    "img": "/images/vocabulary/here-we-go/pumpkin.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "spider",
+    "m": "蜘蛛",
+    "p": "n.",
+    "ex": "A spider makes a web near the window.",
+    "ez": "一隻蜘蛛在窗戶附近結網。",
+    "img": "/images/vocabulary/here-we-go/spider.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "witch",
+    "m": "女巫",
+    "p": "n.",
+    "ex": "The witch in the story rides a broom.",
+    "ez": "故事中的女巫騎著掃把。",
+    "img": "/images/vocabulary/here-we-go/witch.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "vampire",
+    "m": "吸血鬼",
+    "p": "n.",
+    "ex": "My brother wears a vampire costume for Halloween.",
+    "ez": "我的哥哥在萬聖節穿吸血鬼服裝。",
+    "img": "/images/vocabulary/here-we-go/vampire.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "dad",
+    "m": "爸爸",
+    "p": "n.",
+    "ex": "Dad plays basketball with me on Sunday.",
+    "ez": "爸爸星期日和我打籃球。",
+    "img": "/images/vocabulary/here-we-go/dad.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "mad",
+    "m": "生氣的",
+    "p": "adj.",
+    "ex": "I feel mad when someone breaks my toy.",
+    "ez": "有人弄壞我的玩具時，我會生氣。",
+    "img": "/images/vocabulary/here-we-go/mad.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "fat",
+    "m": "胖的",
+    "p": "adj.",
+    "ex": "The fat cat sleeps on a soft mat.",
+    "ez": "那隻胖貓睡在柔軟的墊子上。",
+    "img": "/images/vocabulary/here-we-go/fat.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "mat",
+    "m": "墊子",
+    "p": "n.",
+    "ex": "Please wipe your shoes on the mat.",
+    "ez": "請在墊子上擦一擦鞋子。",
+    "img": "/images/vocabulary/here-we-go/mat-diagram.svg",
+    "imageCredit": "EnglishGo original vector illustration"
+  },
+  {
+    "w": "no",
+    "m": "不；沒有",
+    "p": "adv.",
+    "ex": "No, the answer is not seven.",
+    "ez": "不，答案不是七。",
+    "img": "/images/vocabulary/here-we-go/no.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "not",
+    "m": "不；沒有",
+    "p": "adv.",
+    "ex": "I do not run in the classroom.",
+    "ez": "我不在教室裡奔跑。",
+    "img": "/images/vocabulary/here-we-go/not.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "yes",
+    "m": "是；好的",
+    "p": "adv.",
+    "ex": "Yes, I can read this sentence.",
+    "ez": "是的，我會讀這個句子。",
+    "img": "/images/vocabulary/here-we-go/yes.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "bed",
+    "m": "床",
+    "p": "n.",
+    "ex": "I put my doll on the bed.",
+    "ez": "我把娃娃放在床上。",
+    "img": "/images/vocabulary/here-we-go/bed.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "Ted",
+    "m": "泰德（人名）",
+    "p": "n.",
+    "ex": "Ted reads a story with a friend.",
+    "ez": "泰德和朋友一起讀故事。",
+    "img": "/images/vocabulary/here-we-go/ted.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "get",
+    "m": "得到；拿到",
+    "p": "v.",
+    "ex": "I get a new book from the library.",
+    "ez": "我從圖書館拿到一本新書。",
+    "img": "/images/vocabulary/here-we-go/get.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "pet",
+    "m": "寵物",
+    "p": "n.",
+    "ex": "I draw a picture of a pet in art class.",
+    "ez": "我在美術課畫了一張寵物的圖。",
+    "img": "/images/vocabulary/here-we-go/pet.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "write",
+    "m": "書寫",
+    "p": "v.",
+    "ex": "Write your name at the top of the page.",
+    "ez": "把你的名字寫在頁面上方。",
+    "img": "/images/vocabulary/here-we-go/write.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "can",
+    "m": "能；會",
+    "p": "v.",
+    "ex": "I can swim across this small pool.",
+    "ez": "我能游到這座小泳池的另一邊。",
+    "img": "/images/vocabulary/here-we-go/can.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "do",
+    "m": "做",
+    "p": "v.",
+    "ex": "I do my homework before dinner.",
+    "ez": "我在晚餐前做功課。",
+    "img": "/images/vocabulary/here-we-go/do.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "dig",
+    "m": "挖掘",
+    "p": "v.",
+    "ex": "The dog digs a small hole in the garden.",
+    "ez": "狗在花園挖了一個小洞。",
+    "img": "/images/vocabulary/here-we-go/dig.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "kick",
+    "m": "踢",
+    "p": "v.",
+    "ex": "Kick the ball gently to your partner.",
+    "ez": "輕輕地把球踢給你的夥伴。",
+    "img": "/images/vocabulary/here-we-go/kick.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "Nick",
+    "m": "尼克（人名）",
+    "p": "n.",
+    "ex": "Nick reads a story with a friend.",
+    "ez": "尼克和朋友一起讀故事。",
+    "img": "/images/vocabulary/here-we-go/nick.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "sick",
+    "m": "生病的",
+    "p": "adj.",
+    "ex": "My brother is sick and stays at home.",
+    "ez": "我哥哥生病了，待在家裡。",
+    "img": "/images/vocabulary/here-we-go/sick.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "grandfather",
+    "m": "爺爺；外公",
+    "p": "n.",
+    "ex": "My grandfather teaches me how to plant peanuts.",
+    "ez": "我的爺爺教我怎麼種花生。",
+    "img": "/images/vocabulary/here-we-go/grandfather.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "grandmother",
+    "m": "奶奶；外婆",
+    "p": "n.",
+    "ex": "My grandmother tells stories about Penghu.",
+    "ez": "我的奶奶說澎湖的故事。",
+    "img": "/images/vocabulary/here-we-go/grandmother.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "mom",
+    "m": "媽媽",
+    "p": "n.",
+    "ex": "Mom makes breakfast before I go to school.",
+    "ez": "媽媽在我上學前做早餐。",
+    "img": "/images/vocabulary/here-we-go/mom.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "who",
+    "m": "誰",
+    "p": "pron.",
+    "ex": "Who is reading the story aloud?",
+    "ez": "誰正在大聲讀故事？",
+    "img": "/images/vocabulary/here-we-go/who.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "he",
+    "m": "他",
+    "p": "pron.",
+    "ex": "He answers the question clearly.",
+    "ez": "他清楚地回答問題。",
+    "img": "/images/vocabulary/here-we-go/he.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "she",
+    "m": "她",
+    "p": "pron.",
+    "ex": "She reads a story after dinner.",
+    "ez": "她晚餐後讀故事。",
+    "img": "/images/vocabulary/here-we-go/she.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "hop",
+    "m": "單腳跳；跳躍",
+    "p": "v.",
+    "ex": "Can you hop on one foot five times?",
+    "ez": "你能單腳跳五次嗎？",
+    "img": "/images/vocabulary/here-we-go/hop.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "mop",
+    "m": "拖；擦",
+    "p": "v.",
+    "ex": "I mop the kitchen floor after lunch.",
+    "ez": "午餐後我拖廚房地板。",
+    "img": "/images/vocabulary/here-we-go/mop-diagram.svg",
+    "imageCredit": "EnglishGo original vector illustration"
+  },
+  {
+    "w": "top",
+    "m": "陀螺",
+    "p": "n.",
+    "ex": "My wooden top spins on the floor.",
+    "ez": "我的木陀螺在地板上旋轉。",
+    "img": "/images/vocabulary/here-we-go/top-diagram.svg",
+    "imageCredit": "EnglishGo original vector illustration"
+  },
+  {
+    "w": "dot",
+    "m": "圓點",
+    "p": "n.",
+    "ex": "Put a red dot beside your name.",
+    "ez": "在你的名字旁邊點一個紅點。",
+    "img": "/images/vocabulary/here-we-go/dot.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "pot",
+    "m": "鍋子",
+    "p": "n.",
+    "ex": "Dad cooks soup in a big pot.",
+    "ez": "爸爸用大鍋子煮湯。",
+    "img": "/images/vocabulary/here-we-go/pot.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "cub",
+    "m": "幼獸",
+    "p": "n.",
+    "ex": "The bear cub stays close to its mother.",
+    "ez": "小熊緊跟著媽媽。",
+    "img": "/images/vocabulary/here-we-go/cub.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "sub",
+    "m": "潛水艇（submarine 的簡稱）",
+    "p": "n.",
+    "ex": "The toy sub moves under the water.",
+    "ez": "玩具潛水艇在水下移動。",
+    "img": "/images/vocabulary/here-we-go/sub-diagram.svg",
+    "imageCredit": "EnglishGo original vector illustration"
+  },
+  {
+    "w": "tub",
+    "m": "浴缸",
+    "p": "n.",
+    "ex": "A yellow rubber duck floats in the tub.",
+    "ez": "一隻黃色橡皮鴨漂在浴缸裡。",
+    "img": "/images/vocabulary/here-we-go/tub.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "cut",
+    "m": "切；剪",
+    "p": "v.",
+    "ex": "I cut the paper into a star.",
+    "ez": "我把紙剪成星星形狀。",
+    "img": "/images/vocabulary/here-we-go/cut.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "hut",
+    "m": "小屋",
+    "p": "n.",
+    "ex": "We rest in a small hut beside the trail.",
+    "ez": "我們在步道旁的小屋休息。",
+    "img": "/images/vocabulary/here-we-go/hut.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "nut",
+    "m": "堅果",
+    "p": "n.",
+    "ex": "The squirrel holds a nut in its paws.",
+    "ez": "松鼠用爪子抱著一顆堅果。",
+    "img": "/images/vocabulary/here-we-go/nut.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "card",
+    "m": "卡片",
+    "p": "n.",
+    "ex": "I make a thank-you card for my teacher.",
+    "ez": "我做一張感謝卡給老師。",
+    "img": "/images/vocabulary/here-we-go/card.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "flower",
+    "m": "花",
+    "p": "n.",
+    "ex": "The flower opens in the warm sun.",
+    "ez": "花在溫暖的陽光下綻放。",
+    "img": "/images/vocabulary/here-we-go/flower.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "gift",
+    "m": "禮物",
+    "p": "n.",
+    "ex": "The handmade card is a gift for Dad.",
+    "ez": "手做卡片是送給爸爸的禮物。",
+    "img": "/images/vocabulary/here-we-go/gift.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "heart",
+    "m": "心；心形",
+    "p": "n.",
+    "ex": "I draw a red heart on the card.",
+    "ez": "我在卡片上畫一顆紅色愛心。",
+    "img": "/images/vocabulary/here-we-go/heart.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "love",
+    "m": "愛；喜愛",
+    "p": "v.",
+    "ex": "I love reading with my family.",
+    "ez": "我喜歡和家人一起閱讀。",
+    "img": "/images/vocabulary/here-we-go/love.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "Ben",
+    "m": "班（人名）",
+    "p": "n.",
+    "ex": "Ben reads a story with a friend.",
+    "ez": "班和朋友一起讀故事。",
+    "img": "/images/vocabulary/here-we-go/ben.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "pat",
+    "m": "輕拍",
+    "p": "v.",
+    "ex": "I gently pat the puppy on its back.",
+    "ez": "我輕輕拍拍小狗的背。",
+    "img": "/images/vocabulary/here-we-go/pat.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "weather",
+    "m": "天氣",
+    "p": "n.",
+    "ex": "Check the weather before the class trip.",
+    "ez": "班級旅行前先查天氣。",
+    "img": "/images/vocabulary/here-we-go/weather.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "tot",
+    "m": "幼兒",
+    "p": "n.",
+    "ex": "The little tot holds her father's hand.",
+    "ez": "那個小幼兒牽著爸爸的手。",
+    "img": "/images/vocabulary/here-we-go/tot.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "tuck",
+    "m": "把……塞好",
+    "p": "v.",
+    "ex": "I tuck my shirt into my pants.",
+    "ez": "我把襯衫紮進褲子裡。",
+    "img": "/images/vocabulary/here-we-go/tuck.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "gap",
+    "m": "縫隙",
+    "p": "n.",
+    "ex": "There is a small gap between the two desks.",
+    "ez": "兩張書桌之間有一道小縫隙。",
+    "img": "/images/vocabulary/here-we-go/gap-diagram.svg",
+    "imageCredit": "EnglishGo original vector illustration"
+  },
+  {
+    "w": "gut",
+    "m": "腸；腸道",
+    "p": "n.",
+    "ex": "Food moves through the gut after we eat.",
+    "ez": "吃東西後，食物會通過腸道。",
+    "img": "/images/vocabulary/here-we-go/gut-diagram.svg",
+    "imageCredit": "EnglishGo original vector illustration"
+  },
+  {
+    "w": "gum",
+    "m": "口香糖",
+    "p": "n.",
+    "ex": "Put your used gum in the trash.",
+    "ez": "把嚼過的口香糖丟進垃圾桶。",
+    "img": "/images/vocabulary/here-we-go/gum-diagram.svg",
+    "imageCredit": "EnglishGo original vector illustration"
+  },
+  {
+    "w": "cop",
+    "m": "警察（口語）",
+    "p": "n.",
+    "ex": "A cop helps us cross the busy street.",
+    "ez": "一位警察幫助我們穿越繁忙的街道。",
+    "img": "/images/vocabulary/here-we-go/cop.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "like",
+    "m": "喜歡",
+    "p": "v.",
+    "ex": "I like stories about animals.",
+    "ez": "我喜歡關於動物的故事。",
+    "img": "/images/vocabulary/here-we-go/like.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "these",
+    "m": "這些",
+    "p": "pron.",
+    "ex": "These words are in today's lesson.",
+    "ez": "這些單字在今天的課裡。",
+    "img": "/images/vocabulary/here-we-go/these.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "those",
+    "m": "那些",
+    "p": "pron.",
+    "ex": "Those flowers are beside the river.",
+    "ez": "那些花在河邊。",
+    "img": "/images/vocabulary/here-we-go/those.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "vat",
+    "m": "大桶",
+    "p": "n.",
+    "ex": "The workers mix juice in a large vat.",
+    "ez": "工人在大桶裡混合果汁。",
+    "img": "/images/vocabulary/here-we-go/vat-diagram.svg",
+    "imageCredit": "EnglishGo original vector illustration"
+  },
+  {
+    "w": "vet",
+    "m": "獸醫",
+    "p": "n.",
+    "ex": "The vet checks my cat's ears.",
+    "ez": "獸醫檢查我的貓的耳朵。",
+    "img": "/images/vocabulary/here-we-go/vet.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "fun",
+    "m": "樂趣",
+    "p": "n.",
+    "ex": "Playing this board game is fun.",
+    "ez": "玩這個桌上遊戲很有趣。",
+    "img": "/images/vocabulary/here-we-go/fun.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "want",
+    "m": "想要",
+    "p": "v.",
+    "ex": "I want a new pencil for class.",
+    "ez": "我想要一支上課用的新鉛筆。",
+    "img": "/images/vocabulary/here-we-go/want.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "some",
+    "m": "一些",
+    "p": "adj.",
+    "ex": "There are some pencils in the box.",
+    "ez": "盒子裡有一些鉛筆。",
+    "img": "/images/vocabulary/here-we-go/some.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "zip",
+    "m": "拉上拉鍊",
+    "p": "v.",
+    "ex": "Please zip your jacket before going outside.",
+    "ez": "出門前請把外套拉鍊拉好。",
+    "img": "/images/vocabulary/here-we-go/zip-diagram.svg",
+    "imageCredit": "EnglishGo original vector illustration"
+  },
+  {
+    "w": "Zack",
+    "m": "札克（人名）",
+    "p": "n.",
+    "ex": "Zack reads a story with a friend.",
+    "ez": "札克和朋友一起讀故事。",
+    "img": "/images/vocabulary/here-we-go/zack.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "zit",
+    "m": "痘痘（口語）",
+    "p": "n.",
+    "ex": "There is a small zit on my nose.",
+    "ez": "我的鼻子上有一顆小痘痘。",
+    "img": "/images/vocabulary/here-we-go/zit.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "sip",
+    "m": "啜飲；小口喝",
+    "p": "v.",
+    "ex": "I sip the warm milk slowly.",
+    "ez": "我慢慢地小口喝溫牛奶。",
+    "img": "/images/vocabulary/here-we-go/sip.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "sack",
+    "m": "大袋子",
+    "p": "n.",
+    "ex": "The farmer puts potatoes in a sack.",
+    "ez": "農夫把馬鈴薯放進大袋子裡。",
+    "img": "/images/vocabulary/here-we-go/sack-diagram.svg",
+    "imageCredit": "EnglishGo original vector illustration"
+  },
+  {
+    "w": "sock",
+    "m": "襪子",
+    "p": "n.",
+    "ex": "I find a blue sock under my bed.",
+    "ez": "我在床底下找到一隻藍襪子。",
+    "img": "/images/vocabulary/here-we-go/sock.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "eat",
+    "m": "吃",
+    "p": "v.",
+    "ex": "We eat breakfast together every morning.",
+    "ez": "我們每天早上一起吃早餐。",
+    "img": "/images/vocabulary/here-we-go/eat.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "moon cake",
+    "m": "月餅",
+    "p": "n.",
+    "ex": "We share a moon cake with our neighbors.",
+    "ez": "我們和鄰居分享月餅。",
+    "img": "/images/vocabulary/here-we-go/moon-cake.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "pomelo",
+    "m": "柚子",
+    "p": "n.",
+    "ex": "We share a pomelo after dinner.",
+    "ez": "晚餐後我們一起吃柚子。",
+    "img": "/images/vocabulary/here-we-go/pomelo-diagram.svg",
+    "imageCredit": "EnglishGo original vector illustration"
+  },
+  {
+    "w": "Chang-O",
+    "m": "嫦娥",
+    "p": "n.",
+    "ex": "Grandma tells us a story about Chang-O and the moon.",
+    "ez": "奶奶告訴我們嫦娥與月亮的故事。",
+    "img": "/images/vocabulary/here-we-go/chang-o.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "Jade Rabbit",
+    "m": "玉兔",
+    "p": "n.",
+    "ex": "I draw the Jade Rabbit beside a full moon.",
+    "ez": "我在滿月旁畫上玉兔。",
+    "img": "/images/vocabulary/here-we-go/jade-rabbit.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "Sam",
+    "m": "山姆（人名）",
+    "p": "n.",
+    "ex": "Sam reads a story with a friend.",
+    "ez": "山姆和朋友一起讀故事。",
+    "img": "/images/vocabulary/here-we-go/sam.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "cape",
+    "m": "披風",
+    "p": "n.",
+    "ex": "My superhero costume has a red cape.",
+    "ez": "我的超級英雄服裝有一件紅披風。",
+    "img": "/images/vocabulary/here-we-go/cape.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "same",
+    "m": "相同的",
+    "p": "adj.",
+    "ex": "We read the same story in class.",
+    "ez": "我們在課堂上讀同一個故事。",
+    "img": "/images/vocabulary/here-we-go/same-diagram.svg",
+    "imageCredit": "EnglishGo original vector illustration"
+  },
+  {
+    "w": "bake",
+    "m": "烘烤",
+    "p": "v.",
+    "ex": "We bake bread for breakfast.",
+    "ez": "我們烤麵包當早餐。",
+    "img": "/images/vocabulary/here-we-go/bake.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "time",
+    "m": "時間",
+    "p": "n.",
+    "ex": "It is time to listen and repeat.",
+    "ez": "該聽並跟讀了。",
+    "img": "/images/vocabulary/here-we-go/time.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "web",
+    "m": "蜘蛛網",
+    "p": "n.",
+    "ex": "Drops of water shine on the spider's web.",
+    "ez": "水珠在蜘蛛網上閃閃發亮。",
+    "img": "/images/vocabulary/here-we-go/web.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "Pete",
+    "m": "彼特（人名）",
+    "p": "n.",
+    "ex": "Pete reads a story with a friend.",
+    "ez": "彼特和朋友一起讀故事。",
+    "img": "/images/vocabulary/here-we-go/pete.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "Eve",
+    "m": "伊芙（人名）",
+    "p": "n.",
+    "ex": "Eve reads a story with a friend.",
+    "ez": "伊芙和朋友一起讀故事。",
+    "img": "/images/vocabulary/here-we-go/eve.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "doing",
+    "m": "正在做",
+    "p": "v.",
+    "ex": "What are you doing after school?",
+    "ez": "你放學後要做什麼？",
+    "img": "/images/vocabulary/here-we-go/doing.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "kit",
+    "m": "工具組；用品箱",
+    "p": "n.",
+    "ex": "We take a first-aid kit on our trip.",
+    "ez": "我們旅行時帶著急救箱。",
+    "img": "/images/vocabulary/here-we-go/kit-diagram.svg",
+    "imageCredit": "EnglishGo original vector illustration"
+  },
+  {
+    "w": "Tim",
+    "m": "提姆（人名）",
+    "p": "n.",
+    "ex": "Tim reads a story with a friend.",
+    "ez": "提姆和朋友一起讀故事。",
+    "img": "/images/vocabulary/here-we-go/tim.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "bike",
+    "m": "腳踏車",
+    "p": "n.",
+    "ex": "I ride my bike to the library.",
+    "ez": "我騎腳踏車去圖書館。",
+    "img": "/images/vocabulary/here-we-go/bike.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "ride",
+    "m": "騎；搭乘",
+    "p": "v.",
+    "ex": "She rides a bike to the playground.",
+    "ez": "她騎腳踏車去操場。",
+    "img": "/images/vocabulary/here-we-go/ride.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "where",
+    "m": "哪裡",
+    "p": "adv.",
+    "ex": "Where is your English notebook?",
+    "ez": "你的英文筆記本在哪裡？",
+    "img": "/images/vocabulary/here-we-go/where.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "hope",
+    "m": "希望",
+    "p": "v.",
+    "ex": "I hope we can visit the museum again.",
+    "ez": "我希望我們能再去博物館。",
+    "img": "/images/vocabulary/here-we-go/hope.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "note",
+    "m": "便條；筆記",
+    "p": "n.",
+    "ex": "Mom leaves a note on the fridge.",
+    "ez": "媽媽在冰箱上留了一張便條。",
+    "img": "/images/vocabulary/here-we-go/note.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "rose",
+    "m": "玫瑰花",
+    "p": "n.",
+    "ex": "A red rose grows near the garden gate.",
+    "ez": "一朵紅玫瑰長在花園門旁。",
+    "img": "/images/vocabulary/here-we-go/rose.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "cute",
+    "m": "可愛的",
+    "p": "adj.",
+    "ex": "The cute puppy follows the girl home.",
+    "ez": "那隻可愛的小狗跟著女孩回家。",
+    "img": "/images/vocabulary/here-we-go/cute.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "tube",
+    "m": "管子；試管",
+    "p": "n.",
+    "ex": "We pour blue water into a clear tube.",
+    "ez": "我們把藍色的水倒進透明試管裡。",
+    "img": "/images/vocabulary/here-we-go/tube.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "mute",
+    "m": "使靜音",
+    "p": "v.",
+    "ex": "Please mute the tablet during the lesson.",
+    "ez": "上課時請將平板設為靜音。",
+    "img": "/images/vocabulary/here-we-go/mute.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "cube",
+    "m": "立方體",
+    "p": "n.",
+    "ex": "Each face of this cube is a square.",
+    "ez": "這個立方體的每一面都是正方形。",
+    "img": "/images/vocabulary/here-we-go/cube.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "Easter bunny",
+    "m": "復活節兔子",
+    "p": "n.",
+    "ex": "We draw an Easter bunny on the card.",
+    "ez": "我們在卡片上畫一隻復活節兔子。",
+    "img": "/images/vocabulary/here-we-go/easter-bunny.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "basket",
+    "m": "籃子",
+    "p": "n.",
+    "ex": "She carries the apples in a basket.",
+    "ez": "她用籃子裝著蘋果。",
+    "img": "/images/vocabulary/here-we-go/basket.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "color the eggs",
+    "m": "為蛋著色",
+    "p": "phr.",
+    "ex": "We color the eggs blue and yellow.",
+    "ez": "我們把蛋塗成藍色和黃色。",
+    "img": "/images/vocabulary/here-we-go/color-the-eggs-diagram.svg",
+    "imageCredit": "EnglishGo original vector illustration"
+  },
+  {
+    "w": "go egg hunting",
+    "m": "找彩蛋",
+    "p": "phr.",
+    "ex": "The children go egg hunting in the garden.",
+    "ez": "孩子們在花園裡找彩蛋。",
+    "img": "/images/vocabulary/here-we-go/go-egg-hunting.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "lake",
+    "m": "湖",
+    "p": "n.",
+    "ex": "The quiet lake reflects the moon.",
+    "ez": "安靜的湖映出月亮。",
+    "img": "/images/vocabulary/here-we-go/lake.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "email",
+    "m": "電子郵件",
+    "p": "n.",
+    "ex": "I send an email to my English teacher.",
+    "ez": "我寄電子郵件給英文老師。",
+    "img": "/images/vocabulary/here-we-go/email.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "rain",
+    "m": "雨；下雨",
+    "p": "n./v.",
+    "ex": "Rain falls softly on the window.",
+    "ez": "雨輕輕落在窗戶上。",
+    "img": "/images/vocabulary/here-we-go/rain.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "May",
+    "m": "五月",
+    "p": "n.",
+    "ex": "In May, we sing for our mothers.",
+    "ez": "五月時，我們唱歌給媽媽聽。",
+    "img": "/images/vocabulary/here-we-go/May-diagram.svg",
+    "imageCredit": "EnglishGo original vector illustration"
+  },
+  {
+    "w": "today",
+    "m": "今天",
+    "p": "n./adv.",
+    "ex": "Today we learn a song about animals.",
+    "ez": "今天我們學一首關於動物的歌。",
+    "img": "/images/vocabulary/here-we-go/today.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "bee",
+    "m": "蜜蜂",
+    "p": "n.",
+    "ex": "A bee flies around the yellow flower.",
+    "ez": "蜜蜂繞著黃色花朵飛。",
+    "img": "/images/vocabulary/here-we-go/bee.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "tree",
+    "m": "樹",
+    "p": "n.",
+    "ex": "A big tree stands beside the river.",
+    "ez": "一棵大樹立在河邊。",
+    "img": "/images/vocabulary/here-we-go/tree.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "sea",
+    "m": "海",
+    "p": "n.",
+    "ex": "We watch the waves by the sea.",
+    "ez": "我們在海邊看海浪。",
+    "img": "/images/vocabulary/hooray/sea.webp",
+    "imageCredit": "EnglishGo"
+  },
+  {
+    "w": "tie",
+    "m": "領帶",
+    "p": "n.",
+    "ex": "Dad wears a blue tie with his white shirt.",
+    "ez": "爸爸穿白襯衫，搭配藍色領帶。",
+    "img": "/images/vocabulary/here-we-go/tie.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "pie",
+    "m": "派",
+    "p": "n.",
+    "ex": "Mom cuts the apple pie into six pieces.",
+    "ez": "媽媽把蘋果派切成六塊。",
+    "img": "/images/vocabulary/here-we-go/pie.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "fly",
+    "m": "飛",
+    "p": "v.",
+    "ex": "Birds fly high in the blue sky.",
+    "ez": "鳥兒在藍天中高飛。",
+    "img": "/images/vocabulary/here-we-go/fly.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "sky",
+    "m": "天空",
+    "p": "n.",
+    "ex": "The sky is blue after the rain.",
+    "ez": "雨後天空是藍色的。",
+    "img": "/images/vocabulary/here-we-go/sky.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "boat",
+    "m": "小船",
+    "p": "n.",
+    "ex": "A small boat crosses the river.",
+    "ez": "一艘小船渡過河流。",
+    "img": "/images/vocabulary/here-we-go/boat.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "low",
+    "m": "低的",
+    "p": "adj.",
+    "ex": "The kite flies low above the grass.",
+    "ez": "風箏在草地上方低低地飛。",
+    "img": "/images/vocabulary/here-we-go/low.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "row",
+    "m": "划船",
+    "p": "v.",
+    "ex": "We row a small boat on the lake.",
+    "ez": "我們在湖上划一艘小船。",
+    "img": "/images/vocabulary/here-we-go/row.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "Luke",
+    "m": "路克（人名）",
+    "p": "n.",
+    "ex": "Luke reads a story with a friend.",
+    "ez": "路克和朋友一起讀故事。",
+    "img": "/images/vocabulary/here-we-go/luke.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "flute",
+    "m": "長笛",
+    "p": "n.",
+    "ex": "My sister plays the flute in the school band.",
+    "ez": "我的姐姐在學校樂團吹長笛。",
+    "img": "/images/vocabulary/here-we-go/flute.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "glue",
+    "m": "膠水",
+    "p": "n.",
+    "ex": "Use a little glue to stick the paper together.",
+    "ez": "用一點膠水把紙黏在一起。",
+    "img": "/images/vocabulary/here-we-go/glue-diagram.svg",
+    "imageCredit": "EnglishGo original vector illustration"
+  },
+  {
+    "w": "suit",
+    "m": "西裝",
+    "p": "n.",
+    "ex": "My uncle wears a dark suit to the wedding.",
+    "ez": "我的叔叔穿深色西裝參加婚禮。",
+    "img": "/images/vocabulary/here-we-go/suit-diagram.svg",
+    "imageCredit": "EnglishGo original vector illustration"
+  },
+  {
+    "w": "sixty",
+    "m": "六十",
+    "p": "n.",
+    "ex": "There are sixty seconds in a minute.",
+    "ez": "一分鐘有六十秒。",
+    "img": "/images/vocabulary/here-we-go/sixty.svg",
+    "imageCredit": "EnglishGo"
+  },
+  {
+    "w": "seventy",
+    "m": "七十",
+    "p": "n.",
+    "ex": "The puzzle has seventy pieces.",
+    "ez": "這個拼圖有七十片。",
+    "img": "/images/vocabulary/here-we-go/seventy.svg",
+    "imageCredit": "EnglishGo"
+  },
+  {
+    "w": "eighty",
+    "m": "八十",
+    "p": "n.",
+    "ex": "There are eighty students at the school fair.",
+    "ez": "學校園遊會有八十位學生。",
+    "img": "/images/vocabulary/here-we-go/eighty.svg",
+    "imageCredit": "EnglishGo"
+  },
+  {
+    "w": "ninety",
+    "m": "九十",
+    "p": "n.",
+    "ex": "Grandma is ninety years old.",
+    "ez": "奶奶九十歲。",
+    "img": "/images/vocabulary/here-we-go/ninety.svg",
+    "imageCredit": "EnglishGo"
+  },
+  {
+    "w": "one hundred",
+    "m": "一百",
+    "p": "num.",
+    "ex": "This puzzle has one hundred pieces.",
+    "ez": "這個拼圖有一百片。",
+    "img": "/images/vocabulary/here-we-go/one-hundred.svg",
+    "imageCredit": "EnglishGo"
+  },
+  {
+    "w": "Christmas",
+    "m": "聖誕節",
+    "p": "n.",
+    "ex": "We sing songs together at Christmas.",
+    "ez": "我們在聖誕節一起唱歌。",
+    "img": "/images/vocabulary/here-we-go/christmas.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "Christmas tree",
+    "m": "聖誕樹",
+    "p": "n. phr.",
+    "ex": "We decorate the Christmas tree together.",
+    "ez": "我們一起裝飾聖誕樹。",
+    "img": "/images/vocabulary/here-we-go/christmas-tree.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "turkey",
+    "m": "火雞",
+    "p": "n.",
+    "ex": "The turkey walks across the farm.",
+    "ez": "火雞走過農場。",
+    "img": "/images/vocabulary/here-we-go/turkey.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "Christmas pudding",
+    "m": "聖誕布丁",
+    "p": "n.",
+    "ex": "Our family shares a Christmas pudding after dinner.",
+    "ez": "我們一家人在晚餐後分享聖誕布丁。",
+    "img": "/images/vocabulary/here-we-go/christmas-pudding.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "vegetables",
+    "m": "蔬菜（複數）",
+    "p": "n.",
+    "ex": "We grow vegetables in the school garden.",
+    "ez": "我們在學校花園裡種蔬菜。",
+    "img": "/images/vocabulary/here-we-go/vegetables.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "king",
+    "m": "國王",
+    "p": "n.",
+    "ex": "The king in the story wears a golden crown.",
+    "ez": "故事裡的國王戴著金色王冠。",
+    "img": "/images/vocabulary/here-we-go/king.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "ring",
+    "m": "戒指",
+    "p": "n.",
+    "ex": "Grandma keeps her ring in a little box.",
+    "ez": "奶奶把戒指放在小盒子裡。",
+    "img": "/images/vocabulary/here-we-go/ring.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "swing",
+    "m": "鞦韆",
+    "p": "n.",
+    "ex": "I sit on the swing and move back and forth.",
+    "ez": "我坐在鞦韆上前後擺動。",
+    "img": "/images/vocabulary/here-we-go/swing-diagram.svg",
+    "imageCredit": "EnglishGo original vector illustration"
+  },
+  {
+    "w": "wink",
+    "m": "眨一隻眼",
+    "p": "v.",
+    "ex": "I wink at my brother during our funny game.",
+    "ez": "玩有趣的遊戲時，我對弟弟眨一隻眼。",
+    "img": "/images/vocabulary/here-we-go/wink.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "two hundred",
+    "m": "兩百",
+    "p": "num.",
+    "ex": "This puzzle has two hundred pieces.",
+    "ez": "這個拼圖有兩百片。",
+    "img": "/images/vocabulary/here-we-go/two-hundred.svg",
+    "imageCredit": "EnglishGo"
+  },
+  {
+    "w": "three hundred",
+    "m": "三百",
+    "p": "num.",
+    "ex": "This puzzle has three hundred pieces.",
+    "ez": "這個拼圖有三百片。",
+    "img": "/images/vocabulary/here-we-go/three-hundred.svg",
+    "imageCredit": "EnglishGo"
+  },
+  {
+    "w": "four hundred",
+    "m": "四百",
+    "p": "num.",
+    "ex": "This puzzle has four hundred pieces.",
+    "ez": "這個拼圖有四百片。",
+    "img": "/images/vocabulary/here-we-go/four-hundred.svg",
+    "imageCredit": "EnglishGo"
+  },
+  {
+    "w": "five hundred",
+    "m": "五百",
+    "p": "num.",
+    "ex": "This puzzle has five hundred pieces.",
+    "ez": "這個拼圖有五百片。",
+    "img": "/images/vocabulary/here-we-go/five-hundred.svg",
+    "imageCredit": "EnglishGo"
+  },
+  {
+    "w": "six hundred",
+    "m": "六百",
+    "p": "num.",
+    "ex": "This puzzle has six hundred pieces.",
+    "ez": "這個拼圖有六百片。",
+    "img": "/images/vocabulary/here-we-go/six-hundred.svg",
+    "imageCredit": "EnglishGo"
+  },
+  {
+    "w": "seven hundred",
+    "m": "七百",
+    "p": "num.",
+    "ex": "This puzzle has seven hundred pieces.",
+    "ez": "這個拼圖有七百片。",
+    "img": "/images/vocabulary/here-we-go/seven-hundred.svg",
+    "imageCredit": "EnglishGo"
+  },
+  {
+    "w": "eight hundred",
+    "m": "八百",
+    "p": "num.",
+    "ex": "This puzzle has eight hundred pieces.",
+    "ez": "這個拼圖有八百片。",
+    "img": "/images/vocabulary/here-we-go/eight-hundred.svg",
+    "imageCredit": "EnglishGo"
+  },
+  {
+    "w": "nine hundred",
+    "m": "九百",
+    "p": "num.",
+    "ex": "This puzzle has nine hundred pieces.",
+    "ez": "這個拼圖有九百片。",
+    "img": "/images/vocabulary/here-we-go/nine-hundred.svg",
+    "imageCredit": "EnglishGo"
+  },
+  {
+    "w": "one thousand",
+    "m": "一千",
+    "p": "num.",
+    "ex": "This puzzle has one thousand pieces.",
+    "ez": "這個拼圖有一千片。",
+    "img": "/images/vocabulary/here-we-go/one-thousand.svg",
+    "imageCredit": "EnglishGo"
+  },
+  {
+    "w": "whale",
+    "m": "鯨魚",
+    "p": "n.",
+    "ex": "A whale lifts its tail above the water.",
+    "ez": "一隻鯨魚把尾巴抬出水面。",
+    "img": "/images/vocabulary/here-we-go/whale.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "wheel",
+    "m": "輪子",
+    "p": "n.",
+    "ex": "The front wheel of my bike needs air.",
+    "ez": "我的腳踏車前輪需要打氣。",
+    "img": "/images/vocabulary/here-we-go/wheel.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "phone",
+    "m": "電話",
+    "p": "n.",
+    "ex": "Mom calls me on the phone after class.",
+    "ez": "媽媽下課後打電話給我。",
+    "img": "/images/vocabulary/here-we-go/phone.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "photo",
+    "m": "照片",
+    "p": "n.",
+    "ex": "This photo shows our class at the zoo.",
+    "ez": "這張照片是我們班在動物園的合照。",
+    "img": "/images/vocabulary/here-we-go/photo.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "dolphin",
+    "m": "海豚",
+    "p": "n.",
+    "ex": "A dolphin jumps out of the sea.",
+    "ez": "一隻海豚跳出海面。",
+    "img": "/images/vocabulary/here-we-go/dolphin.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "teeth",
+    "m": "牙齒（複數）",
+    "p": "n.",
+    "ex": "I brush my teeth before going to bed.",
+    "ez": "我睡前會刷牙。",
+    "img": "/images/vocabulary/here-we-go/teeth.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "church",
+    "m": "教堂",
+    "p": "n.",
+    "ex": "The old church is near the river.",
+    "ez": "老教堂在河邊。",
+    "img": "/images/vocabulary/here-we-go/church.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "shop",
+    "m": "購物；商店",
+    "p": "v./n.",
+    "ex": "We shop for apples at the market.",
+    "ez": "我們在市場買蘋果。",
+    "img": "/images/vocabulary/here-we-go/shop.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "Dragon Boat Festival",
+    "m": "端午節",
+    "p": "n. phr.",
+    "ex": "Our family watches races on the Dragon Boat Festival.",
+    "ez": "端午節時我們全家一起看龍舟賽。",
+    "img": "/images/vocabulary/here-we-go/dragon-boat-festival.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "cheeseburger",
+    "m": "起司漢堡",
+    "p": "n.",
+    "ex": "I share a cheeseburger with my brother.",
+    "ez": "我和弟弟分享一個起司漢堡。",
+    "img": "/images/vocabulary/here-we-go/cheeseburger.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "river",
+    "m": "河流",
+    "p": "n.",
+    "ex": "A small bridge crosses the river.",
+    "ez": "一座小橋橫跨河流。",
+    "img": "/images/vocabulary/here-we-go/river.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "actor",
+    "m": "演員",
+    "p": "n.",
+    "ex": "The actor plays a farmer in the show.",
+    "ez": "那位演員在表演中扮演農夫。",
+    "img": "/images/vocabulary/here-we-go/actor.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "sailor",
+    "m": "水手",
+    "p": "n.",
+    "ex": "The sailor checks the ropes on the boat.",
+    "ez": "水手檢查船上的繩索。",
+    "img": "/images/vocabulary/here-we-go/sailor.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "tailor",
+    "m": "裁縫師",
+    "p": "n.",
+    "ex": "The tailor makes a new jacket for Dad.",
+    "ez": "裁縫師幫爸爸做一件新外套。",
+    "img": "/images/vocabulary/here-we-go/tailor.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "circle",
+    "m": "圓圈",
+    "p": "n.",
+    "ex": "Draw a circle around the correct answer.",
+    "ez": "在正確答案周圍畫一個圈。",
+    "img": "/images/vocabulary/here-we-go/circle.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "dirty",
+    "m": "髒的",
+    "p": "adj.",
+    "ex": "My shoes are dirty after playing soccer.",
+    "ez": "我踢完足球後鞋子很髒。",
+    "img": "/images/vocabulary/here-we-go/dirty.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "shirt",
+    "m": "襯衫",
+    "p": "n.",
+    "ex": "He wears a white shirt to school.",
+    "ez": "他穿白襯衫去上學。",
+    "img": "/images/vocabulary/here-we-go/shirt.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "curry",
+    "m": "咖哩",
+    "p": "n.",
+    "ex": "We eat vegetable curry with rice.",
+    "ez": "我們吃蔬菜咖哩配飯。",
+    "img": "/images/vocabulary/here-we-go/curry.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "purple",
+    "m": "紫色的",
+    "p": "adj.",
+    "ex": "The purple flower grows near the gate.",
+    "ez": "紫色的花長在大門旁。",
+    "img": "/images/vocabulary/here-we-go/purple.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "dark",
+    "m": "昏暗的；黑暗的",
+    "p": "adj.",
+    "ex": "The room is dark, so I turn on the light.",
+    "ez": "房間很暗，所以我把燈打開。",
+    "img": "/images/vocabulary/here-we-go/dark.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "farm",
+    "m": "農場",
+    "p": "n.",
+    "ex": "The farm has cows, pigs, and ducks.",
+    "ez": "農場裡有牛、豬和鴨子。",
+    "img": "/images/vocabulary/here-we-go/farm.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "shark",
+    "m": "鯊魚",
+    "p": "n.",
+    "ex": "We watch a shark swim behind the aquarium glass.",
+    "ez": "我們隔著水族箱玻璃看鯊魚游泳。",
+    "img": "/images/vocabulary/here-we-go/shark.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "corn",
+    "m": "玉米",
+    "p": "n.",
+    "ex": "We put corn in the soup.",
+    "ez": "我們把玉米放進湯裡。",
+    "img": "/images/vocabulary/here-we-go/corn.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "fork",
+    "m": "叉子",
+    "p": "n.",
+    "ex": "Use a fork to eat the salad.",
+    "ez": "用叉子吃沙拉。",
+    "img": "/images/vocabulary/here-we-go/fork.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "coin",
+    "m": "硬幣",
+    "p": "n.",
+    "ex": "I put a coin in my piggy bank.",
+    "ez": "我把一枚硬幣放進小豬撲滿。",
+    "img": "/images/vocabulary/here-we-go/coin.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "oil",
+    "m": "油",
+    "p": "n.",
+    "ex": "The cook uses little oil for the vegetables.",
+    "ez": "廚師煮蔬菜時只用一點油。",
+    "img": "/images/vocabulary/here-we-go/oil.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "point",
+    "m": "指；點",
+    "p": "v./n.",
+    "ex": "Point to the word you can read.",
+    "ez": "指出你會讀的單字。",
+    "img": "/images/vocabulary/here-we-go/point.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "soil",
+    "m": "土壤",
+    "p": "n.",
+    "ex": "We plant seeds in the soft soil.",
+    "ez": "我們把種子種在鬆軟的土壤裡。",
+    "img": "/images/vocabulary/here-we-go/soil.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "joy",
+    "m": "喜悅",
+    "p": "n.",
+    "ex": "Our puppy brings joy to the whole family.",
+    "ez": "我們的小狗為全家帶來喜悅。",
+    "img": "/images/vocabulary/here-we-go/joy.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "soybeans",
+    "m": "黃豆（複數）",
+    "p": "n.",
+    "ex": "These soybeans can be used to make tofu.",
+    "ez": "這些黃豆可以用來做豆腐。",
+    "img": "/images/vocabulary/here-we-go/soybeans-diagram.svg",
+    "imageCredit": "EnglishGo original vector illustration"
+  },
+  {
+    "w": "toy",
+    "m": "玩具",
+    "p": "n.",
+    "ex": "I put my toy back in the box.",
+    "ez": "我把玩具放回盒子裡。",
+    "img": "/images/vocabulary/hooray/toy.webp",
+    "imageCredit": "EnglishGo"
+  },
+  {
+    "w": "bounce",
+    "m": "彈跳；拍球",
+    "p": "v.",
+    "ex": "I bounce the ball three times before passing it.",
+    "ez": "我拍球三次後再把球傳出去。",
+    "img": "/images/vocabulary/here-we-go/bounce.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "cloud",
+    "m": "雲",
+    "p": "n.",
+    "ex": "A white cloud moves across the sky.",
+    "ez": "一朵白雲飄過天空。",
+    "img": "/images/vocabulary/here-we-go/cloud.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "house",
+    "m": "房子",
+    "p": "n.",
+    "ex": "There is a tree beside my house.",
+    "ez": "我家旁邊有一棵樹。",
+    "img": "/images/vocabulary/here-we-go/house.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "shout",
+    "m": "大叫",
+    "p": "v.",
+    "ex": "Do not shout in the classroom.",
+    "ez": "不要在教室裡大叫。",
+    "img": "/images/vocabulary/here-we-go/shout.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "clown",
+    "m": "小丑",
+    "p": "n.",
+    "ex": "The clown makes a balloon dog for the children.",
+    "ez": "小丑做了一隻氣球狗給孩子們。",
+    "img": "/images/vocabulary/here-we-go/clown.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "crowd",
+    "m": "人群",
+    "p": "n.",
+    "ex": "A crowd waits outside the theater.",
+    "ez": "一群人在劇院外等候。",
+    "img": "/images/vocabulary/here-we-go/crowd.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "owl",
+    "m": "貓頭鷹",
+    "p": "n.",
+    "ex": "An owl sits in the tree at night.",
+    "ez": "晚上有一隻貓頭鷹停在樹上。",
+    "img": "/images/vocabulary/here-we-go/owl.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "shower",
+    "m": "淋浴",
+    "p": "n.",
+    "ex": "I take a shower after playing basketball.",
+    "ez": "打完籃球後，我會淋浴。",
+    "img": "/images/vocabulary/here-we-go/shower.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "New Year's Eve",
+    "m": "跨年夜；除夕",
+    "p": "n.",
+    "ex": "We watch fireworks on New Year's Eve.",
+    "ez": "我們在跨年夜看煙火。",
+    "img": "/images/vocabulary/here-we-go/new-year-s-eve.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "planet",
+    "m": "行星",
+    "p": "n.",
+    "ex": "Earth is the planet we live on.",
+    "ez": "地球是我們居住的行星。",
+    "img": "/images/vocabulary/here-we-go/planet.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "plum",
+    "m": "李子",
+    "p": "n.",
+    "ex": "I put a purple plum in my lunchbox.",
+    "ez": "我把一顆紫色李子放進餐盒。",
+    "img": "/images/vocabulary/here-we-go/plum-diagram.svg",
+    "imageCredit": "EnglishGo original vector illustration"
+  },
+  {
+    "w": "blanket",
+    "m": "毯子",
+    "p": "n.",
+    "ex": "I cover my legs with a warm blanket.",
+    "ez": "我用溫暖的毯子蓋住雙腿。",
+    "img": "/images/vocabulary/here-we-go/blanket-diagram.svg",
+    "imageCredit": "EnglishGo original vector illustration"
+  },
+  {
+    "w": "clap",
+    "m": "拍手",
+    "p": "v.",
+    "ex": "We clap after our classmates finish the song.",
+    "ez": "同學唱完歌後，我們拍手。",
+    "img": "/images/vocabulary/here-we-go/clap.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "clock",
+    "m": "時鐘",
+    "p": "n.",
+    "ex": "The clock above the blackboard is five minutes fast.",
+    "ez": "黑板上方的時鐘快了五分鐘。",
+    "img": "/images/vocabulary/here-we-go/clock.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "glad",
+    "m": "高興的",
+    "p": "adj.",
+    "ex": "I am glad you joined our team.",
+    "ez": "我很高興你加入我們隊伍。",
+    "img": "/images/vocabulary/here-we-go/glad.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "glass",
+    "m": "玻璃杯",
+    "p": "n.",
+    "ex": "Put the glass away from the table edge.",
+    "ez": "把玻璃杯放離桌邊遠一點。",
+    "img": "/images/vocabulary/here-we-go/glass.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "crab",
+    "m": "螃蟹",
+    "p": "n.",
+    "ex": "A small crab walks sideways on the sand.",
+    "ez": "一隻小螃蟹在沙地上橫著走。",
+    "img": "/images/vocabulary/here-we-go/crab.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "cream",
+    "m": "鮮奶油",
+    "p": "n.",
+    "ex": "I put a little cream on the cake.",
+    "ez": "我在蛋糕上放一點鮮奶油。",
+    "img": "/images/vocabulary/here-we-go/cream-diagram.svg",
+    "imageCredit": "EnglishGo original vector illustration"
+  },
+  {
+    "w": "grass",
+    "m": "草",
+    "p": "n.",
+    "ex": "The rabbit hops across the grass.",
+    "ez": "兔子跳過草地。",
+    "img": "/images/vocabulary/here-we-go/grass.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "Greece",
+    "m": "希臘",
+    "p": "n.",
+    "ex": "We find Greece on the world map.",
+    "ez": "我們在世界地圖上找到希臘。",
+    "img": "/images/vocabulary/here-we-go/greece.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "train",
+    "m": "火車",
+    "p": "n.",
+    "ex": "The red train travels along the tracks.",
+    "ez": "這列紅色火車沿著鐵軌行駛。",
+    "img": "/images/vocabulary/here-we-go/train.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "truck",
+    "m": "卡車",
+    "p": "n.",
+    "ex": "The truck brings books to the school.",
+    "ez": "卡車把書送到學校。",
+    "img": "/images/vocabulary/here-we-go/truck.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "drink",
+    "m": "喝",
+    "p": "v.",
+    "ex": "I drink water after I play soccer.",
+    "ez": "我踢足球後喝水。",
+    "img": "/images/vocabulary/here-we-go/drink.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "drum",
+    "m": "鼓",
+    "p": "n.",
+    "ex": "The drum sounds loud during the parade.",
+    "ez": "遊行時鼓聲很響亮。",
+    "img": "/images/vocabulary/here-we-go/drum.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "swan",
+    "m": "天鵝",
+    "p": "n.",
+    "ex": "A white swan swims across the lake.",
+    "ez": "一隻白天鵝游過湖面。",
+    "img": "/images/vocabulary/here-we-go/swan.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "spade",
+    "m": "鏟子",
+    "p": "n.",
+    "ex": "Dad uses a spade to dig a hole for the tree.",
+    "ez": "爸爸用鏟子挖洞種樹。",
+    "img": "/images/vocabulary/here-we-go/spade.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "spoon",
+    "m": "湯匙",
+    "p": "n.",
+    "ex": "I use a spoon to eat my soup.",
+    "ez": "我用湯匙喝湯。",
+    "img": "/images/vocabulary/here-we-go/spoon.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "star",
+    "m": "星星",
+    "p": "n.",
+    "ex": "A bright star appears in the night sky.",
+    "ez": "一顆明亮的星星出現在夜空。",
+    "img": "/images/vocabulary/here-we-go/star.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "stone",
+    "m": "石頭",
+    "p": "n.",
+    "ex": "A smooth stone lies beside the path.",
+    "ez": "一顆光滑的石頭躺在小路旁。",
+    "img": "/images/vocabulary/here-we-go/stone.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "skunk",
+    "m": "臭鼬",
+    "p": "n.",
+    "ex": "We watch the skunk from far away.",
+    "ez": "我們從遠處觀察臭鼬。",
+    "img": "/images/vocabulary/here-we-go/skunk.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "shell",
+    "m": "貝殼",
+    "p": "n.",
+    "ex": "I find an empty shell on the beach.",
+    "ez": "我在海灘上找到一個空貝殼。",
+    "img": "/images/vocabulary/here-we-go/shell.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "brick",
+    "m": "磚塊",
+    "p": "n.",
+    "ex": "The worker adds a brick to the wall.",
+    "ez": "工人在牆上加了一塊磚。",
+    "img": "/images/vocabulary/here-we-go/brick.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "stick",
+    "m": "棍子；樹枝",
+    "p": "n.",
+    "ex": "The dog carries a stick in its mouth.",
+    "ez": "狗嘴裡叼著一根樹枝。",
+    "img": "/images/vocabulary/here-we-go/stick.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "rock",
+    "m": "岩石",
+    "p": "n.",
+    "ex": "The frog sits on a warm rock.",
+    "ez": "青蛙坐在溫暖的岩石上。",
+    "img": "/images/vocabulary/here-we-go/rock.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "run",
+    "m": "跑",
+    "p": "v.",
+    "ex": "We run around the playground before class.",
+    "ez": "我們上課前繞著操場跑步。",
+    "img": "/images/vocabulary/here-we-go/run.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "see",
+    "m": "看見",
+    "p": "v.",
+    "ex": "I see a rainbow after the rain.",
+    "ez": "雨後我看見一道彩虹。",
+    "img": "/images/vocabulary/here-we-go/see.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "peach",
+    "m": "水蜜桃",
+    "p": "n.",
+    "ex": "The peach is soft, so carry it carefully.",
+    "ez": "水蜜桃很軟，所以要小心拿。",
+    "img": "/images/vocabulary/here-we-go/peach.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "shine",
+    "m": "發光；照耀",
+    "p": "v.",
+    "ex": "The stars shine brightly tonight.",
+    "ez": "今晚星星閃閃發亮。",
+    "img": "/images/vocabulary/here-we-go/shine.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "toast",
+    "m": "烤吐司",
+    "p": "n.",
+    "ex": "I spread jam on my toast.",
+    "ez": "我在烤吐司上抹果醬。",
+    "img": "/images/vocabulary/here-we-go/toast.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "blow",
+    "m": "刮風",
+    "p": "v.",
+    "ex": "The wind can blow leaves across the yard.",
+    "ez": "風會把葉子吹過院子。",
+    "img": "/images/vocabulary/here-we-go/blow.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "sumo",
+    "m": "相撲",
+    "p": "n.",
+    "ex": "We watch a sumo match on TV.",
+    "ez": "我們在電視上看相撲比賽。",
+    "img": "/images/vocabulary/here-we-go/sumo.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "American football",
+    "m": "美式足球",
+    "p": "n.",
+    "ex": "My cousin plays American football at school.",
+    "ez": "我的表哥在學校打美式足球。",
+    "img": "/images/vocabulary/here-we-go/american-football.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+  },
+  {
+    "w": "polo",
+    "m": "馬球",
+    "p": "n.",
+    "ex": "The players ride horses in a game of polo.",
+    "ez": "選手在馬球比賽中騎著馬。",
+    "img": "/images/vocabulary/here-we-go/polo.svg",
+    "imageCredit": "OpenMoji · CC BY-SA 4.0"
   }
 ]

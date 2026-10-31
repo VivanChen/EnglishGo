@@ -33,7 +33,7 @@ describe('SRS participation events', () => {
   it('resumes a completed Here We Go round and starts another round in the same book', async () => {
     const props = setup({ customCards: undefined });
     const view = render(<SRS {...props}/>);
-    fireEvent.click(await screen.findByRole('button', { name: '開始翰林 Here We Go! 第 8 冊，29 個單字' }));
+    fireEvent.click(await screen.findByRole('button', { name: '開始翰林 Here We Go! 第 8 冊，81 個單字' }));
     await waitFor(() => expect(props.onSessionChange.mock.calls.at(-1)[0].cards).toHaveLength(20));
     const saved = structuredClone(props.onSessionChange.mock.calls.at(-1)[0]);
     expect(saved.selectedTopic).toBe('hanlin-here-we-go-8');
