@@ -898,8 +898,8 @@ describe('EnglishGo app smoke flow', () => {
     expect(screen.getByTestId('srs-learning-details')).toBeInTheDocument();
     expect(screen.getByTestId('srs-rating-bar')).toBeInTheDocument();
     expect(screen.getByTestId('srs-support-actions')).toBeInTheDocument();
-    expect(screen.getByTestId('srs-study-guidance')).toHaveTextContent('下一步');
-    expect(screen.getByText('查字典或練聽說')).toBeInTheDocument();
+    expect(screen.queryByTestId('srs-study-guidance')).not.toBeInTheDocument();
+    expect(screen.queryByText('查字典或練聽說')).not.toBeInTheDocument();
     expect(screen.getByTestId('srs-dictionary-action')).toHaveTextContent('小朋友字典');
 
     fireEvent.click(screen.getByText('🔎 查字典'));

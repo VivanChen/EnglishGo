@@ -34,7 +34,7 @@ export default function WordIllustrations({ level, word, fetchIllustrations, spe
   return <WordIllustrationGallery key={`${level}:${word}`} word={word} items={items} speak={speak}/>;
 }
 
-export function WordIllustrationGallery({ word, items, speak, onPracticeExample }) {
+export function WordIllustrationGallery({ word, items, speak, onPracticeExample, onActiveChange }) {
   const [active, setActive] = useState(0);
   const track = useRef(null);
   const itemKeys = items.map(item => `${item.id}:${item.image_url}`).join('|');
@@ -42,6 +42,7 @@ export function WordIllustrationGallery({ word, items, speak, onPracticeExample 
     setActive(0);
     track.current?.scrollTo({ left: 0, behavior: 'auto' });
   }, [word, itemKeys]);
+  useEffect(() => { onActiveChange?.(items[active] || items[0] || null); }, [active, items, onActiveChange]);
   if (!items.length) return null;
   const select = index => {
     const next = Math.max(0, Math.min(items.length - 1, index));

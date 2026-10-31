@@ -329,14 +329,19 @@ export default function SRS({lv,onBack,onXp,onDone,onLearningEvent,trackWeak,gif
   const cur=deck.queue[0]!==undefined?cards[deck.queue[0]]:null;const left=deck.queue.length;const done=left===0;
   const exampleKey=JSON.stringify([lv,cur?.w,cur?.m,cur?.p,cur?.ex,cur?.ez]);
   const aiExample=aiExampleResult?.key===exampleKey?aiExampleResult:null;
-  const spokenExample=cur?(aiExample?.en||(!isPlaceholderExample(cur.ex,cur.w)?cur.ex:"")):"";
-  const spokenExampleZh=spokenExample?(aiExample?.zh||cur?.ez||""):"";
   useEffect(()=>{if(!loading&&studyActive&&cur&&typeof window!=="undefined"&&!/jsdom/i.test(window.navigator?.userAgent||""))window.scrollTo({top:0,left:0,behavior:"auto"})},[exampleKey,loading,studyActive]);
   useEffect(()=>{setDictOpen(false);setDictData(null);setDictError("")},[cur?.w]);
   const closeDictionary=()=>{setDictOpen(false);dictionaryActionRef.current?.focus()};
   useEffect(()=>{if(dictOpen&&flip)dictionaryPanelRef.current?.focus()},[dictOpen,flip]);
   const wordIllustrations=useWordIllustrations(lv,studyActive?cur?.w:null,deps.fetchWordIllustrations);
   const illustrations=cur?.illustration?[cur.illustration]:wordIllustrations;
+  const [selectedIllustration,setSelectedIllustration]=useState(null);
+  const selectIllustration=useCallback(item=>setSelectedIllustration(item?`${item.id}:${item.image_url}`:null),[]);
+  const pictureExample=illustrations.find(item=>`${item.id}:${item.image_url}`===selectedIllustration&&item.example?.trim())||illustrations.find(item=>item.example?.trim());
+  const spokenExample=pictureExample?.example||(cur?(aiExample?.en||(!isPlaceholderExample(cur.ex,cur.w)?cur.ex:"")):"");
+  const spokenExampleZh=pictureExample?pictureExample.example_zh||"":spokenExample?(aiExample?.zh||cur?.ez||""):"";
+  const spokenExampleRef=useRef(spokenExample);
+  spokenExampleRef.current=spokenExample;
   useEffect(()=>{setMediaError("");setFailedIllustrations([])},[lv,cur?.w]);
   useEffect(()=>{let active=true;if(!studyActive||!dictOpen||!cur){setDictLoading(false);return()=>{active=false}}if(!apiKey?.trim()){setDictLoading(false);setDictData(null);setDictError("");return()=>{active=false}}setDictLoading(true);setDictError("");generateKidDictionary(cur.w,cur.m,cur.p,lv,apiKey).then(data=>{if(!active)return;setDictData(data);setDictLoading(false)}).catch(error=>{if(!active)return;setDictData(null);setDictError(serviceErrorMessage(error,"AI 字典目前產生失敗，請稍後再試，或使用 Yahoo 查詢。"));setDictLoading(false)});return()=>{active=false}},[studyActive,dictOpen,cur?.w,apiKey,lv,dictRetry]);
   // When Giphy is enabled, search every word — including abstract vocabulary.
@@ -359,7 +364,7 @@ export default function SRS({lv,onBack,onXp,onDone,onLearningEvent,trackWeak,gif
     setAiExample(null);
     setExampleError("");
     setExampleLoading(false);
-    if(!isPlaceholderExample(cur.ex,cur.w)){return}// Original example is good, use it
+    if(pictureExample||!isPlaceholderExample(cur.ex,cur.w)){return}// Prefer the visible illustration's example.
     // Check if we have a cached AI example
     const k=cur.w.toLowerCase();
     const memory=normalizeCardExample(_exampleCache[k],cur.w);
@@ -375,7 +380,7 @@ export default function SRS({lv,onBack,onXp,onDone,onLearningEvent,trackWeak,gif
       }).catch(error=>{if(active)setExampleError(serviceErrorMessage(error)+" 仍可繼續練習單字。");}).finally(()=>{if(active)setExampleLoading(false)});
     }
     return()=>{active=false};
-  },[studyActive,exampleKey,apiKey,exampleRetry]);
+  },[studyActive,exampleKey,apiKey,exampleRetry,pictureExample?.example]);
   useEffect(()=>{
     if(!studyActive||!cur||loading)return;
     const upcoming=deck.queue.slice(0,5).map(i=>cards[i]?.w).filter(Boolean);
@@ -416,8 +421,8 @@ export default function SRS({lv,onBack,onXp,onDone,onLearningEvent,trackWeak,gif
     }else{setMascotMood("think");playSound("flip")}
     scheduleReaction("mascot",()=>setMascotMood("idle"),1500);
   },[onXp,onLearningEvent,lv,deck,cur,trackWeak,flip,combo,dictOpen]);
-  useEffect(()=>{const h=e=>{if(dictOpen){if(e.key==="Escape"){e.preventDefault();closeDictionary()}return}if(!studyActive||done||e.repeat||e.altKey||e.ctrlKey||e.metaKey||e.target?.closest?.("input,textarea,select,button,a,summary,[contenteditable=true],[role=dialog]"))return;if(e.code==="Space"){e.preventDefault();if(!flip){setFlip(true);setFlipAnim(true);playSound("flip");if(spokenExample)speechTimer(()=>speak(spokenExample),350)}else{setFlip(false);setFlipAnim(false)}}if(flip){if(e.key==="1")rate("again");if(e.key==="2")rate("hard");if(e.key==="3")rate("good");if(e.key==="4")rate("easy")}if(e.key==="Enter"){e.preventDefault();if(cur)speak(flip?(spokenExample||cur.w):cur.w)}};window.addEventListener("keydown",h);return()=>window.removeEventListener("keydown",h)},[studyActive,flip,done,cur,rate,spokenExample,dictOpen]);
-  const handleCardTap=()=>{if(!flip){setFlip(true);setFlipAnim(true);playSound("flip");if(spokenExample)speechTimer(()=>speak(spokenExample),350)}};
+  useEffect(()=>{const h=e=>{if(dictOpen){if(e.key==="Escape"){e.preventDefault();closeDictionary()}return}if(!studyActive||done||e.repeat||e.altKey||e.ctrlKey||e.metaKey||e.target?.closest?.("input,textarea,select,button,a,summary,[contenteditable=true],[role=dialog]"))return;if(e.code==="Space"){e.preventDefault();if(!flip){setFlip(true);setFlipAnim(true);playSound("flip");if(spokenExample)speechTimer(()=>{if(spokenExampleRef.current)speak(spokenExampleRef.current)},350)}else{setFlip(false);setFlipAnim(false)}}if(flip){if(e.key==="1")rate("again");if(e.key==="2")rate("hard");if(e.key==="3")rate("good");if(e.key==="4")rate("easy")}if(e.key==="Enter"){e.preventDefault();if(cur)speak(flip?(spokenExample||cur.w):cur.w)}};window.addEventListener("keydown",h);return()=>window.removeEventListener("keydown",h)},[studyActive,flip,done,cur,rate,spokenExample,dictOpen]);
+  const handleCardTap=()=>{if(!flip){setFlip(true);setFlipAnim(true);playSound("flip");if(spokenExample)speechTimer(()=>{if(spokenExampleRef.current)speak(spokenExampleRef.current)},350)}};
   const handleCSV=e=>{const input=e.target,f=input.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{const p=parseCSV(ev.target.result);input.value="";if(!p.length){setActionNotice("沒有找到可匯入的單字，請確認 CSV 包含單字和中文意思。");return}completedRef.current=false;rateGuardRef.current=0;setCards(p);setDeck(createDeck(p));setSelectedTopic("imported");setSrc(`CSV 匯入（${p.length} 字）`);setFlip(false);setFlipAnim(false);setCombo(0);setMaxCombo(0);setDictOpen(false);setActionNotice(`已匯入 ${p.length} 個單字。`)};r.onerror=()=>{input.value="";setActionNotice("檔案讀取失敗，請重新選擇 CSV 檔案。")};r.readAsText(f,"utf-8")};
   const shareText=()=>{const url=`https://englishgo-vevan.netlify.app/?word=${encodeURIComponent(cur.w)}&lv=${lv}`;return{url,text:`📘 ${cur.w}${cur.ph?` ${cur.ph}`:""} — ${cur.m}${spokenExample?`\n📖 ${spokenExample}`:""}${spokenExampleZh?`\n   ${spokenExampleZh}`:""}\n${url}`}};
   const copyCard=async()=>{try{if(!navigator.clipboard?.writeText)throw Error("clipboard unavailable");await navigator.clipboard.writeText(shareText().text);setActionNotice("✅ 已複製單字與例句！")}catch{setActionNotice("目前無法複製，請允許剪貼簿權限後重試。")}};
@@ -484,8 +489,6 @@ export default function SRS({lv,onBack,onXp,onDone,onLearningEvent,trackWeak,gif
       .srs-front-ph{position:relative;z-index:1;font-size:14px;color:var(--srs-faint);margin-top:5px}
       .srs-flow-hint{position:relative;z-index:1;margin-top:14px;display:inline-flex;align-items:center;gap:8px;padding:9px 18px;border-radius:999px;background:linear-gradient(135deg,var(--srs-accent),var(--srs-accent-2));color:#fff;font-size:13px;font-weight:900;box-shadow:0 10px 22px color-mix(in srgb,var(--srs-accent) 24%,transparent)}
       .srs-flow-hint span{font-size:11px;font-weight:750;opacity:.86}
-      .srs-flow-hint.is-back{justify-content:center;margin:0;background:color-mix(in srgb,var(--srs-accent) 10%,var(--srs-card));border:1px solid color-mix(in srgb,var(--srs-accent) 22%,var(--srs-border));color:var(--srs-accent);box-shadow:none;padding:8px 12px}
-      .srs-flow-hint.is-back span{color:var(--srs-muted);opacity:1}
       .srs-front-sub{position:relative;z-index:1;font-size:11px;color:var(--srs-faint);margin-top:6px}
       .srs-back-top{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:start;margin-bottom:12px}
       .srs-back-main{min-width:0}
@@ -541,14 +544,18 @@ export default function SRS({lv,onBack,onXp,onDone,onLearningEvent,trackWeak,gif
         .srs-front-word{font-size:35px}
         .srs-flow-hint{margin-top:12px;padding:8px 14px;font-size:12px}
         .srs-flow-hint span{display:none}
-        .srs-flow-hint.is-back{display:flex;padding:8px 10px;margin:0;grid-column:1/-1}
-        .srs-flow-hint.is-back span{display:inline;font-size:10px}
         .srs-back-top{grid-template-columns:1fr}
         .srs-back-thumb{display:flex;justify-self:center;width:min(100%,190px);height:auto;aspect-ratio:4/3;margin:6px 0}
         .srs-back-word{font-size:29px;justify-content:center;text-align:center}
         .srs-back-meaning{font-size:21px;justify-content:center;text-align:center}
         .srs-back-ph{text-align:center}
-        .srs-card-actions{justify-content:center;gap:6px;margin:8px 0 9px}
+        .srs-card-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:14px 0 4px}
+        .srs-card-actions .srs-pill-btn{justify-content:center;min-width:0;min-height:44px;padding:9px 6px;border-radius:12px;font-size:12px}
+        .srs-card-actions .srs-pill-btn:only-child{grid-column:1/-1}
+        .srs-card-actions .srs-dict-cta small{display:none}
+        .srs-card-actions .srs-pill-btn:last-child:nth-child(3){grid-column:1/-1}
+        .srs-sound-btn{min-width:44px;min-height:44px}
+        .srs-regenerate-btn{font-size:11px;min-width:44px}
         .srs-example-card{padding:11px 13px}
         .srs-example-en{font-size:16px}
         .srs-learning-details{margin-top:8px}
@@ -557,7 +564,8 @@ export default function SRS({lv,onBack,onXp,onDone,onLearningEvent,trackWeak,gif
         .srs-support-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
         .srs-support-actions button{padding:9px 8px!important;font-size:12px!important}
         .srs-rating-bar{position:fixed;left:10px;right:10px;bottom:calc(8px + env(safe-area-inset-bottom,0px));grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;padding:8px;border-radius:18px}
-        .srs-rate-btn{min-height:62px;padding:10px 4px;font-size:12px;border-radius:14px}
+        .srs-rate-btn{min-height:54px;padding:7px 4px;font-size:12px;border-radius:12px}
+        .srs-rate-btn small{display:none}
         .srs-rate-btn span:first-child{font-size:22px}
         .srs-page.has-dict .srs-rating-bar{display:none}
         .srs-dict-backdrop{display:block;position:fixed;inset:0;background:rgba(15,23,42,.22);z-index:68;border:0}
@@ -603,17 +611,16 @@ export default function SRS({lv,onBack,onXp,onDone,onLearningEvent,trackWeak,gif
               <div className="srs-back-meaning">{cur.m}<button className="srs-sound-btn" onClick={e=>{e.stopPropagation();speak(cur.m,"zh-TW",0.9)}} aria-label={`播放中文 ${cur.m}`}>🔈</button></div>
               <div className="srs-card-actions">
                 <button ref={dictionaryActionRef} data-testid="srs-dictionary-action" className="srs-pill-btn srs-dict-cta" onClick={e=>{e.stopPropagation();setDictOpen(true)}}><span>🔎 查字典</span><small>小朋友字典</small></button>
-                {spokenExample&&<button className="srs-pill-btn" onClick={e=>{e.stopPropagation();speak(spokenExample)}}>🔊 朗讀例句</button>}
+                {!pictureExample&&spokenExample&&<button className="srs-pill-btn" onClick={e=>{e.stopPropagation();speak(spokenExample)}}>🔊 朗讀例句</button>}
                 {onPracticeSpeaking&&<button type="button" className="srs-pill-btn" onClick={event=>{event.stopPropagation();onPracticeSpeaking({word:cur.w,meaning:cur.m||'',en:cur.w,zh:cur.m||'',type:'word'});}}>🎤 練單字發音</button>}
-                <div className="srs-flow-hint is-back" data-testid="srs-study-guidance"><b>下一步</b><span><strong>查字典或練聽說</strong>，再評分進下一題</span></div>
               </div>
             </div>
             {!illustrations.length&&!dictOpen&&<div className={`srs-back-thumb ${!showGif&&(showEmoji||!showImg)?"is-emoji":""}`} data-testid="srs-back-media">
               {showGif?<img src={gifUrl} alt={cur.w} onError={()=>{forgetGif(cur.w,gifKey);setMediaError("gif");setGifUrl(null);setGifNotice("動圖檔案無法載入，已使用替代圖片或圖示，不影響練習。")}}/>:showEmoji?imgUrl.value:showImg?<img src={imgUrl.value} alt={cur.w} onError={()=>setMediaError("image")}/>:fallbackVisual.emoji}
             </div>}
           </div>
-          <WordIllustrationGallery key={`${lv}:${cur.w}`} word={cur.w} items={illustrations} speak={speak} onPracticeExample={onPracticeSpeaking?(en,zh)=>onPracticeSpeaking({word:cur.w,meaning:cur.m||'',en,zh:zh||'',type:'sentence'}):undefined}/>
-          {(()=>{
+          <WordIllustrationGallery key={`${lv}:${cur.w}`} word={cur.w} items={illustrations} speak={speak} onActiveChange={selectIllustration} onPracticeExample={onPracticeSpeaking?(en,zh)=>onPracticeSpeaking({word:cur.w,meaning:cur.m||'',en,zh:zh||'',type:'sentence'}):undefined}/>
+          {!pictureExample&&(()=>{
           // Decide which example to show
           const useAi=aiExample&&isPlaceholderExample(cur.ex,cur.w);
           const exEn=useAi?aiExample.en:cur.ex;

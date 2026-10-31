@@ -3,7 +3,8 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import SRS from './SRS.jsx';
 
-vi.mock('../components/WordIllustrations.jsx', () => ({ useWordIllustrations: () => [], WordIllustrationGallery: () => null }));
+const art = vi.hoisted(() => ({ items: [] }));
+vi.mock('../components/WordIllustrations.jsx', async importOriginal => ({ ...await importOriginal(), useWordIllustrations: () => art.items }));
 const cards = [{ w: 'apple', m: '蘋果', p: 'n.', ex: 'The apple is in my bag.', ez: '蘋果在我的袋子裡。' }];
 const buildDeck = items => ({ queue: items.map((_, i) => i), rm: [], stats: { again: 0, hard: 0, good: 0, easy: 0 }, total: items.length, lapses: {} });
 const rateDeck = (deck, rating) => {
@@ -27,7 +28,7 @@ async function revealAndRate(rating) {
   act(() => vi.setSystemTime(new Date(Date.now() + 250)));
   fireEvent.click(screen.getByRole('button', { name: labels[rating] }));
 }
-afterEach(() => vi.useRealTimers());
+afterEach(() => { vi.useRealTimers(); art.items = []; });
 
 describe('SRS participation events', () => {
   it('keeps a searched culture scope through resume and the next round', async () => {
@@ -81,7 +82,8 @@ describe('SRS participation events', () => {
     expect(saved.cards.every(card => card.publisherKey === 'hanlin' && card.illustration)).toBe(true);
     expect(screen.getByTestId('srs-front-media').querySelector('img').getAttribute('src')).toMatch(/^\/images\/vocabulary\/hooray\//);
     fireEvent.click(screen.getByRole('button', { name: '點卡片看答案' }));
-    expect(document.querySelector('.srs-example-en')).toHaveTextContent(saved.cards[saved.deck.queue[0]].ex);
+    expect(screen.getByTestId('srs-back-illustrations')).toHaveTextContent(saved.cards[saved.deck.queue[0]].illustration.example);
+    expect(document.querySelector('.srs-example-card')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: '換分類' }));
     expect(await screen.findByRole('button', { name: '開始翰林 Hooray ABC 全部複習，52 個單字' })).toBeEnabled();
   });
@@ -149,5 +151,40 @@ describe('SRS participation events', () => {
     const events = props.onLearningEvent.mock.calls.map(([event]) => event);
     expect(events[1].id).toBe(`srs:${events[0].sessionId}:2`);
     expect(props.onXp).not.toHaveBeenCalled();
+  });
+});
+
+describe('illustration example priority', () => {
+  it('uses the picture sentence for reveal, Enter and practice instead of the original', async () => {
+    const illustration = { id: 'apple-picture', image_url: '/apple.webp', example: 'An apple falls from the tree.', example_zh: '一顆蘋果從樹上掉下來。' };
+    const props = setup({ customCards: [{ ...cards[0], illustration }], onPracticeSpeaking: vi.fn() });
+    props.deps.speechTimer = callback => callback();
+    render(<SRS {...props}/>);
+    fireEvent.click(await screen.findByRole('button', { name: '點卡片看答案' }));
+    expect(props.deps.speak).toHaveBeenLastCalledWith(illustration.example);
+    expect(document.querySelector('.srs-example-card')).toBeNull();
+    expect(screen.queryByText('下一步')).not.toBeInTheDocument();
+    fireEvent.keyDown(window, { key: 'Enter' });
+    expect(props.deps.speak).toHaveBeenLastCalledWith(illustration.example);
+    fireEvent.click(screen.getByRole('button', { name: '練插畫例句聽說：' + illustration.example }));
+    expect(props.onPracticeSpeaking).toHaveBeenCalledWith(expect.objectContaining({ en: illustration.example, zh: illustration.example_zh, type: 'sentence' }));
+  });
+  it('updates keyboard speech when another picture is selected', async () => {
+    art.items = [
+      { id: 'one', image_url: '/one.webp', example: 'An apple is red.', example_zh: '蘋果是紅色的。' },
+      { id: 'two', image_url: '/two.webp', example: 'I eat an apple.', example_zh: '我吃一顆蘋果。' },
+    ];
+    const props = setup();
+    render(<SRS {...props}/>);
+    fireEvent.click(await screen.findByRole('button', { name: '點卡片看答案' }));
+    fireEvent.click(screen.getByRole('button', { name: '下一張插畫' }));
+    fireEvent.keyDown(window, { key: 'Enter' });
+    expect(props.deps.speak).toHaveBeenLastCalledWith('I eat an apple.');
+  });
+  it('retains the main example when a picture has no caption', async () => {
+    const props = setup({ customCards: [{ ...cards[0], illustration: { id: 'empty', image_url: '/empty.webp' } }] });
+    render(<SRS {...props}/>);
+    fireEvent.click(await screen.findByRole('button', { name: '點卡片看答案' }));
+    expect(document.querySelector('.srs-example-en')).toHaveTextContent(cards[0].ex);
   });
 });

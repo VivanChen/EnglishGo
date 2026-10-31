@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import App from './App.jsx';
+import { getLocalWordIllustrations } from './data/wordIllustrations.js';
 
 const lantern={w:'lantern',m:'燈籠',p:'n.',ex:'Example: lantern.',ez:''};
 const apple={w:'apple',m:'蘋果',p:'n.',ex:'I eat an apple after lunch.',ez:'午餐後我吃一顆蘋果。'};
@@ -52,7 +53,7 @@ describe('vocabulary card audit regressions',()=>{
     expect(screen.queryByRole('complementary',{name:'Dictionary results'})).not.toBeInTheDocument();
     expect(trigger).toHaveFocus();
     fireEvent.click(screen.getByRole('button',{name:/記住了/}));reveal();
-    expect(screen.getByTestId('srs-card')).toHaveTextContent(apple.ex);
+    expect(screen.getByTestId('srs-card')).toHaveTextContent(getLocalWordIllustrations('elementary','apple')[0].example);
     expect(screen.getByTestId('srs-card')).not.toHaveTextContent(cached.en);
   });
 
