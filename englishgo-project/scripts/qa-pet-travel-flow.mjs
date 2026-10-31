@@ -56,7 +56,17 @@ try{
     assert.equal(await page.locator('.town-stamp-grid .is-collected').count(),2);
     await page.locator('.town-travel-journal').screenshot({path:`${out}/${width}-journal.png`});
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+    await page.getByRole('button',{name:'已收藏 · 2',exact:true}).click();assert.equal(await page.locator('.town-stamp-grid article').count(),2);
+    await page.getByRole('button',{name:'朗讀單字 shell',exact:true}).waitFor();
+    if(width<760)await page.waitForFunction(()=>document.querySelector('.town-travel-journal').getBoundingClientRect().top>=document.querySelector('.town-tabs').getBoundingClientRect().bottom);
+    await page.locator('.town-travel-journal').screenshot({path:`${out}/${width}-collected.png`});
+    await page.getByRole('button',{name:'待發現 · 10',exact:true}).click();assert.equal(await page.locator('.town-stamp-grid article').count(),10);assert.equal(await page.locator('.town-stamp-listen').count(),0);
+    await page.getByRole('button',{name:'探索花語草地：照顧幼苗',exact:true}).click();
+    await page.getByText('What do the plants need now?',{exact:true}).waitFor({timeout:60000});
+    assert.equal((await saved()).worldState.receipts.filter(id=>id.startsWith('explore:')).length,2);
+    await page.getByRole('button',{name:'已收藏 · 2',exact:true}).click();
     await page.getByRole('button',{name:'重遊潮汐灣：尋找貝殼',exact:true}).click();
+    await page.getByText('What should we do with this shell?',{exact:true}).waitFor({timeout:60000});
     await page.locator('[data-scene="tidepool"][data-renderer="ready"]').waitFor({timeout:60000});
     const after=await saved();assert.equal(after.coins,before.coins);assert.deepEqual(after.worldState.ownedPets,before.worldState.ownedPets);
     await page.reload({waitUntil:'domcontentloaded'});

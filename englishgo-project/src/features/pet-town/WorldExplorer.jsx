@@ -6,9 +6,10 @@ import './world-explorer.css';
 
 export default function WorldExplorer({ pet, receipts, dispatch, level='elementary', motion=true, quality='auto', onSound, speak, stopSpeech }) {
   const [reaction,setReaction]=useState('');
+  const [journalFilter,setJournalFilter]=useState('all'),[pendingVisit,setPendingVisit]=useState(null);
   const [placeId,setPlaceId]=useState(null),[taskId,setTaskId]=useState(null),[activity,setActivity]=useState(null);
   const [phase,setPhase]=useState('idle'),[feedback,setFeedback]=useState(null),[translation,setTranslation]=useState(false),[renderer,setRenderer]=useState('loading');
-  const map=useRef(null),detail=useRef(null),nonce=useRef(0),currentTask=useRef(null);
+  const map=useRef(null),journal=useRef(null),detail=useRef(null),nonce=useRef(0),currentTask=useRef(null);
   const place=EXPLORATION_PLACES.find(p=>p.id===placeId),task=place?.tasks.find(t=>t.id===taskId);
   const placements=useMemo(()=>place?explorationPlacements(place):[],[place]);
   const pets=useMemo(()=>[pet],[pet]);
@@ -21,7 +22,7 @@ export default function WorldExplorer({ pet, receipts, dispatch, level='elementa
   useEffect(()=>()=>stopSpeech?.(),[stopSpeech]);
   useEffect(()=>{if(!reaction)return;const timer=setTimeout(()=>setReaction(''),6000);return()=>clearTimeout(timer);},[reaction]);
   useEffect(()=>{if(renderer==='fallback'&&phase==='walking')setPhase('ready');},[renderer,phase]);
-  const visit=id=>{if(id===placeId){detail.current?.scrollIntoView({block:'start',behavior:'instant'});return;}stopSpeech?.();setReaction('');currentTask.current=null;setPlaceId(id);setTaskId(null);setActivity(null);setPhase('idle');setFeedback(null);setTranslation(false);setRenderer('loading');};
+  const visit=id=>{if(id===placeId){detail.current?.scrollIntoView({block:'start',behavior:'instant'});return;}stopSpeech?.();setPendingVisit(null);setReaction('');currentTask.current=null;setPlaceId(id);setTaskId(null);setActivity(null);setPhase('idle');setFeedback(null);setTranslation(false);setRenderer('loading');};
   const interact=id=>{
     const next=place.tasks.find(t=>`explore-${t.id}`===id);if(!next)return;
     stopSpeech?.();setReaction('');currentTask.current=id;setTaskId(next.id);setFeedback(null);setTranslation(false);
@@ -29,6 +30,12 @@ export default function WorldExplorer({ pet, receipts, dispatch, level='elementa
     setActivity({type:'environment',placementId:id,petId:pet.id,nonce:++nonce.current});
     requestAnimationFrame(()=>detail.current?.querySelector('.town-scene-wrap')?.scrollIntoView({block:'center',behavior:'instant'}));
   };
+  const openJournalActivity=(p,t)=>{visit(p.id);setPendingVisit({placeId:p.id,taskId:t.id});};
+  useEffect(()=>{
+    if(!pendingVisit||pendingVisit.placeId!==placeId||renderer==='loading')return;
+    setPendingVisit(null);interact(`explore-${pendingVisit.taskId}`);
+  },[pendingVisit,placeId,renderer]);
+  const journalEntries=EXPLORATION_PLACES.flatMap(p=>p.tasks.map(t=>({p,t,collected:found(p,t)}))).filter(entry=>journalFilter==='all'||(journalFilter==='collected'?entry.collected:!entry.collected));
   const stopEncounter=()=>{
     currentTask.current=null;setActivity(null);stopSpeech?.();
     if(phase==='walking'||phase==='blocked'){setPhase('idle');setTaskId(null);setFeedback(null);}
@@ -60,7 +67,11 @@ export default function WorldExplorer({ pet, receipts, dispatch, level='elementa
       {EXPLORATION_PLACES.map(p=><button key={p.id} data-place={p.id} className={`town-map-stop ${p.tasks.every(t=>found(p,t))?'is-complete':''}`} style={{left:`${p.x}%`,top:`${p.y}%`,'--place-color':p.color}} aria-pressed={placeId===p.id} aria-label={`前往${p.name}`} aria-describedby={`map-progress-${p.id}`} onClick={()=>visit(p.id)}><span aria-hidden="true">{p.icon}</span><strong>{p.name}</strong><small id={`map-progress-${p.id}`}>{p.tasks.every(t=>found(p,t))?'✓ 本站已完成':`${p.tasks.filter(t=>found(p,t)).length} / 2 發現`}</small></button>)}
       <span className="town-map-note">SEABREEZE ISLAND · 自由散步</span>
     </div>
-    <details className="town-travel-journal"><summary>翻開旅行手帳 · {collected} 個發現</summary><p>收藏一路學到的英文，也可以點卡片回去重遊。</p><div className="town-stamp-grid">{EXPLORATION_PLACES.flatMap(p=>p.tasks.map(t=><button key={`${p.id}-${t.id}`} className={found(p,t)?'is-collected':''} onClick={()=>visit(p.id)} aria-label={`${found(p,t)?'重遊':'探索'}${p.name}：${t.title}`}><small>{p.name} · {found(p,t)?'已收藏':'待發現'}</small><strong>{found(p,t)?t.word:'？'}</strong><span>{found(p,t)?t.zh:t.title}</span></button>))}</div></details>
+    <details className="town-travel-journal" ref={journal}><summary>翻開旅行手帳 · {collected} 個發現</summary><p>聽聽收藏的英文，或點卡片帶夥伴直接走向那個活動。</p>
+      <div className="town-journal-filters" role="group" aria-label="手帳篩選">{[['all','全部',12],['collected','已收藏',collected],['remaining','待發現',12-collected]].map(([id,label,count])=><button key={id} aria-pressed={journalFilter===id} onClick={()=>{setJournalFilter(id);requestAnimationFrame(()=>journal.current?.scrollIntoView({block:'start',behavior:'instant'}));}}>{label} · {count}</button>)}</div>
+      <div className="town-stamp-grid">{journalEntries.map(({p,t,collected:hasStamp})=><article key={`${p.id}-${t.id}`} className={hasStamp?'is-collected':''}><button className="town-stamp-visit" onClick={()=>openJournalActivity(p,t)} aria-label={`${hasStamp?'重遊':'探索'}${p.name}：${t.title}`}><small>{p.name} · {hasStamp?'已收藏':'待發現'}</small><strong>{hasStamp?t.word:'？'}</strong><span>{hasStamp?t.zh:t.title}</span></button>{hasStamp&&speak&&<button className="town-stamp-listen" aria-label={`朗讀單字 ${t.word}`} onClick={()=>{stopSpeech?.();speak(t.word);}}>聽單字 ♪</button>}</article>)}</div>
+      {!journalEntries.length&&<p className="town-journal-empty" role="status">{journalFilter==='collected'?'還沒有收藏，選一個待發現的活動，和夥伴出發吧。':'全部都找到了！切換到已收藏，聽聽一路學到的單字。'}</p>}
+    </details>
     {place&&<section className="town-destination" ref={detail} aria-label={place.name}>
       <header><div><small>{place.en}</small><h3>{place.name}</h3><p>{place.description}</p></div><button className="town-secondary" onClick={back}>返回地圖</button></header>
       <div className="town-outing-actions" aria-label="旅途陪伴"><span>也可以先陪夥伴玩一下</span>{[['greet','打招呼'],['stretch','伸懶腰'],['hop','開心跳']].map(([type,label])=><button key={type} className="town-secondary" disabled={renderer==='loading'} onClick={()=>companion(type)}>{label}</button>)}</div>

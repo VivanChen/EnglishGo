@@ -6,6 +6,28 @@ import {EXPLORATION_PLACES,explorationReceipt} from './explorationData.js';
 const setup=(props={})=>{const dispatch=vi.fn();render(<WorldExplorer pet={{id:'pet-harbor-cat',speciesId:'harbor-cat'}} receipts={[]} dispatch={dispatch} {...props}/>);return dispatch;};
 const click=name=>fireEvent.click(screen.getByRole('button',{name,exact:true}));
 describe('world map encounters',()=>{
+  it('filters the journal and reads a collected word without starting a trip',()=>{
+    const speak=vi.fn(),stopSpeech=vi.fn();const dispatch=setup({receipts:['explore:tidepool:shell'],speak,stopSpeech});
+    fireEvent.click(screen.getByText('翻開旅行手帳 · 1 個發現'));click('已收藏 · 1');
+    expect(within(document.querySelector('.town-stamp-grid')).getAllByRole('button')).toHaveLength(2);
+    click('朗讀單字 shell');expect(speak).toHaveBeenCalledWith('shell');expect(stopSpeech).toHaveBeenCalled();expect(dispatch).not.toHaveBeenCalled();
+    expect(screen.queryByRole('region',{name:'潮汐灣'})).not.toBeInTheDocument();click('待發現 · 11');
+    expect(within(document.querySelector('.town-stamp-grid')).getAllByRole('button')).toHaveLength(11);
+    expect(screen.queryByRole('button',{name:'朗讀單字 shell'})).not.toBeInTheDocument();
+  });
+  it('starts the exact journal activity after loading and drops an abandoned destination',()=>{
+    setup();fireEvent.click(screen.getByText('翻開旅行手帳 · 0 個發現'));click('探索潮汐灣：海邊歇腳');
+    expect(screen.queryByRole('button',{name:'停止前往物件'})).not.toBeInTheDocument();click('模型完成');click('抵達');
+    expect(screen.getByText('Where can we sit without getting wet?')).toBeInTheDocument();
+    click('探索花語草地：照顧幼苗');click('前往映月池');click('模型完成');click('抵達');
+    expect(screen.queryByText('What do the plants need now?')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button',{name:'停止前往物件'})).not.toBeInTheDocument();
+  });
+  it('explains empty journal filters',()=>{
+    setup();fireEvent.click(screen.getByText('翻開旅行手帳 · 0 個發現'));click('已收藏 · 0');
+    expect(screen.getByText('還沒有收藏，選一個待發現的活動，和夥伴出發吧。')).toBeInTheDocument();
+    click('待發現 · 12');expect(within(document.querySelector('.town-stamp-grid')).getAllByRole('button')).toHaveLength(12);
+  });
   it('can cancel a walk and ignore its late arrival without granting a discovery',()=>{
     const dispatch=setup();click('前往潮汐灣');click('模型完成');click('尋找貝殼 探索 →');click('先停下來');click('過期抵達');
     expect(screen.queryByText('What should we do with this shell?')).not.toBeInTheDocument();expect(dispatch).not.toHaveBeenCalled();
