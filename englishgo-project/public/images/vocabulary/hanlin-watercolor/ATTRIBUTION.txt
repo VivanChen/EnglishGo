@@ -1,0 +1,4 @@
+EnglishGo original watercolor and colored-pencil vocabulary illustrations.
+New images created with built-in image_gen, matched to the existing EnglishGo elementary watercolor artwork.
+Reused artwork and full generation prompts are recorded in docs/hanlin-watercolor-art.json.
+Personal names depict original EnglishGo learning scenarios, not official textbook character designs.

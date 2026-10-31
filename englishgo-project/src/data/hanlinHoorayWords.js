@@ -12,7 +12,7 @@ export const HOORAY_WORDS = words.map(card => ({
   ...card, publisher: '翰林', publisherKey: 'hanlin', schoolBook: 'Hooray 1–2 · ABC Review', curriculumSource: HOORAY_SOURCE,
   illustration: {
     id: `hooray-${card.w}`, level: 'elementary', word: card.w,
-    image_url: card.img, local_path: card.img, alt_zh: `${card.m}的學習圖片`,
+    image_url: card.img, local_path: card.img, alt_zh: card.imageAlt || `${card.m}的學習圖片`, style: card.imageStyle,
     example: card.ex, example_zh: card.ez, sort_order: 1,
   },
 }));

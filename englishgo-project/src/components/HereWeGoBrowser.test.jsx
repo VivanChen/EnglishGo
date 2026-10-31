@@ -12,7 +12,7 @@ describe('Here We Go vocabulary browser', () => {
     expect(screen.getByRole('status')).toHaveTextContent('找到 1 個字詞，本輪練 1 張');
     expect(screen.getByText('apple')).toBeVisible();
     fireEvent.click(screen.getByText('例句與來源'));
-    expect(screen.getByText('I put an apple in my bag.')).toBeVisible();
+    expect(screen.getByText('This is a red apple.')).toBeVisible();
     expect(screen.getByRole('link', { name: '查看公開來源 ↗' })).toHaveAttribute('href', expect.stringContaining('https://'));
     fireEvent.click(screen.getByRole('button', { name: '練習目前範圍' }));
     expect(getHereWeGoCards(onStart.mock.calls[0][0]).map(card => card.w)).toEqual(['apple']);

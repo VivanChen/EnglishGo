@@ -1,6 +1,7 @@
 import courses from './hanlinHereWeGoCourses.json';
 import words from './hanlinHereWeGoWords.json';
 import coverage from './hanlinHereWeGoCoverage.json';
+import coldIllness from './hanlinColdIllness.json';
 
 // Public, cross-edition vocabulary references, with original bilingual examples.
 // Coverage is source-specific; this is not a verified complete 115 edition.
@@ -55,9 +56,7 @@ export function getHereWeGoCards(id) {
     // Book 3 teaches weather; Book 6 teaches illness. Keep the sense and picture
     // together rather than reusing the weather card for "have a cold".
     const card = course.book === 6 && word === 'cold' ? {
-      ...base, m: '感冒', p: 'n.',
-      ex: 'I have a cold, so I stay home and rest.', ez: '我感冒了，所以待在家裡休息。',
-      img: '/images/vocabulary/here-we-go/cold-illness.svg', imageCredit: 'OpenMoji · CC BY-SA 4.0',
+      ...base, ...coldIllness,
     } : { ...base };
     return {
       ...card, w: word, publisher: '翰林', publisherKey: 'hanlin',
@@ -65,7 +64,7 @@ export function getHereWeGoCards(id) {
       curriculumReferences: references, curriculumEditionNote: coverage.editionNote,
       illustration: {
         id: `here-we-go-${course.book}-${word}`, level: 'elementary', word,
-        image_url: card.img, local_path: card.img, alt_zh: `${card.m}的學習圖片`,
+        image_url: card.img, local_path: card.img, alt_zh: card.imageAlt || `${card.m}的學習圖片`, style: card.imageStyle,
         example: card.ex, example_zh: card.ez, sort_order: 1,
       },
     };

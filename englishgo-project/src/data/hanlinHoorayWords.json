@@ -3,172 +3,210 @@
     "w": "ant",
     "m": "螞蟻",
     "p": "n.",
-    "ex": "An ant walks on a leaf.",
-    "ez": "一隻螞蟻在葉子上走。",
-    "img": "/images/vocabulary/hooray/ant.svg",
-    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+    "ex": "An ant walks across the leaf.",
+    "ez": "一隻螞蟻爬過葉子。",
+    "img": "/images/vocabulary/hanlin-watercolor/ant.webp",
+    "imageCredit": "EnglishGo 原創水彩情境插畫",
+    "imageAlt": "「ant」：螞蟻。情境：一隻螞蟻爬過葉子。",
+    "imageStyle": "watercolor-pencil-v1"
   },
   {
     "w": "apple",
     "m": "蘋果",
     "p": "n.",
-    "ex": "I put an apple in my bag.",
-    "ez": "我把一顆蘋果放進袋子。",
-    "img": "/images/vocabulary/hooray/apple.webp",
-    "imageCredit": "EnglishGo"
+    "ex": "This is a red apple.",
+    "ez": "這是一顆紅蘋果。",
+    "img": "/images/vocabulary/hanlin-watercolor/apple.webp",
+    "imageCredit": "EnglishGo 原創水彩情境插畫",
+    "imageAlt": "一顆帶有綠葉的紅蘋果。",
+    "imageStyle": "watercolor-pencil-v1"
   },
   {
     "w": "bear",
     "m": "熊",
     "p": "n.",
-    "ex": "The bear sleeps under a tree.",
-    "ez": "熊在樹下睡覺。",
-    "img": "/images/vocabulary/hooray/bear.webp",
-    "imageCredit": "EnglishGo"
+    "ex": "The bear has brown fur.",
+    "ez": "這隻熊有棕色的毛。",
+    "img": "/images/vocabulary/hanlin-watercolor/bear.webp",
+    "imageCredit": "EnglishGo 原創水彩情境插畫",
+    "imageAlt": "一隻棕熊用四隻腳站在地上。",
+    "imageStyle": "watercolor-pencil-v1"
   },
   {
     "w": "banana",
     "m": "香蕉",
     "p": "n.",
-    "ex": "I peel a banana for my snack.",
-    "ez": "我剝一根香蕉當點心。",
-    "img": "/images/vocabulary/hooray/banana.webp",
-    "imageCredit": "EnglishGo"
+    "ex": "This banana is yellow.",
+    "ez": "這根香蕉是黃色的。",
+    "img": "/images/vocabulary/hanlin-watercolor/banana.webp",
+    "imageCredit": "EnglishGo 原創水彩情境插畫",
+    "imageAlt": "一根帶有褐色小斑點的黃色香蕉。",
+    "imageStyle": "watercolor-pencil-v1"
   },
   {
     "w": "cat",
     "m": "貓",
     "p": "n.",
-    "ex": "The cat sits by the window.",
-    "ez": "貓坐在窗邊。",
-    "img": "/images/vocabulary/hooray/cat.webp",
-    "imageCredit": "EnglishGo"
+    "ex": "The cat is sitting.",
+    "ez": "貓正坐著。",
+    "img": "/images/vocabulary/hanlin-watercolor/cat.webp",
+    "imageCredit": "EnglishGo 原創水彩情境插畫",
+    "imageAlt": "一隻橘白色的貓安靜地坐著。",
+    "imageStyle": "watercolor-pencil-v1"
   },
   {
     "w": "cake",
     "m": "蛋糕",
     "p": "n.",
-    "ex": "We share a cake at the party.",
-    "ez": "我們在派對上分享蛋糕。",
-    "img": "/images/vocabulary/hooray/cake.webp",
-    "imageCredit": "EnglishGo"
+    "ex": "There are strawberries on the cake.",
+    "ez": "蛋糕上有草莓。",
+    "img": "/images/vocabulary/hanlin-watercolor/cake.webp",
+    "imageCredit": "EnglishGo 原創水彩情境插畫",
+    "imageAlt": "一個有白色鮮奶油和草莓的蛋糕，旁邊放著切下的一片。",
+    "imageStyle": "watercolor-pencil-v1"
   },
   {
     "w": "duck",
     "m": "鴨子",
     "p": "n.",
-    "ex": "The duck swims in the pond.",
-    "ez": "鴨子在池塘裡游泳。",
-    "img": "/images/vocabulary/hooray/duck.webp",
-    "imageCredit": "EnglishGo"
+    "ex": "The duck walks on its webbed feet.",
+    "ez": "鴨子用有蹼的腳走路。",
+    "img": "/images/vocabulary/hanlin-watercolor/duck.webp",
+    "imageCredit": "EnglishGo 原創水彩情境插畫",
+    "imageAlt": "一隻白色鴨子，有橘黃色扁嘴和兩隻橘色蹼腳。",
+    "imageStyle": "watercolor-pencil-v1"
   },
   {
     "w": "dog",
     "m": "狗",
     "p": "n.",
-    "ex": "My dog runs in the park.",
-    "ez": "我的狗在公園跑步。",
-    "img": "/images/vocabulary/hooray/dog.webp",
-    "imageCredit": "EnglishGo"
+    "ex": "The dog looks happy.",
+    "ez": "這隻狗看起來很開心。",
+    "img": "/images/vocabulary/hanlin-watercolor/dog.webp",
+    "imageCredit": "EnglishGo 原創水彩情境插畫",
+    "imageAlt": "一隻垂耳的金棕色小狗坐著，張著嘴。",
+    "imageStyle": "watercolor-pencil-v1"
   },
   {
     "w": "egg",
     "m": "蛋",
     "p": "n.",
-    "ex": "Dad cooks an egg for breakfast.",
-    "ez": "爸爸煮一顆蛋當早餐。",
-    "img": "/images/vocabulary/hooray/egg.webp",
-    "imageCredit": "EnglishGo"
+    "ex": "This is an egg.",
+    "ez": "這是一顆蛋。",
+    "img": "/images/vocabulary/hanlin-watercolor/egg.webp",
+    "imageCredit": "EnglishGo 原創水彩情境插畫",
+    "imageAlt": "一顆完整的淺褐色雞蛋。",
+    "imageStyle": "watercolor-pencil-v1"
   },
   {
     "w": "elephant",
     "m": "大象",
     "p": "n.",
     "ex": "The elephant has a long trunk.",
-    "ez": "大象有長長的鼻子。",
-    "img": "/images/vocabulary/hooray/elephant.webp",
-    "imageCredit": "EnglishGo"
+    "ez": "這隻大象有長長的鼻子。",
+    "img": "/images/vocabulary/hanlin-watercolor/elephant.webp",
+    "imageCredit": "EnglishGo 原創水彩情境插畫",
+    "imageAlt": "一隻灰色大象有大耳朵和微微捲起的長鼻子。",
+    "imageStyle": "watercolor-pencil-v1"
   },
   {
     "w": "fish",
     "m": "魚",
     "p": "n.",
-    "ex": "A fish swims past a rock.",
-    "ez": "一條魚游過石頭旁。",
-    "img": "/images/vocabulary/hooray/fish.webp",
-    "imageCredit": "EnglishGo"
+    "ex": "The fish is swimming.",
+    "ez": "魚正在游泳。",
+    "img": "/images/vocabulary/hanlin-watercolor/fish.webp",
+    "imageCredit": "EnglishGo 原創水彩情境插畫",
+    "imageAlt": "一條橘色金魚在水中游泳。",
+    "imageStyle": "watercolor-pencil-v1"
   },
   {
     "w": "fan",
     "m": "風扇",
     "p": "n.",
-    "ex": "The fan keeps my room cool.",
-    "ez": "風扇讓我的房間保持涼爽。",
-    "img": "/images/vocabulary/hooray/fan.webp",
-    "imageCredit": "EnglishGo"
+    "ex": "The blue fan blows cool air.",
+    "ez": "這台藍色電風扇吹出涼風。",
+    "img": "/images/vocabulary/hanlin-watercolor/fan.webp",
+    "imageCredit": "EnglishGo 原創水彩情境插畫",
+    "imageAlt": "一台藍色電風扇有圓形護網、三片扇葉和穩固底座。",
+    "imageStyle": "watercolor-pencil-v1"
   },
   {
     "w": "goat",
     "m": "山羊",
     "p": "n.",
-    "ex": "The goat eats grass on the hill.",
-    "ez": "山羊在山坡上吃草。",
-    "img": "/images/vocabulary/hooray/goat.webp",
-    "imageCredit": "EnglishGo"
+    "ex": "The goat has short horns and a little beard.",
+    "ez": "這隻山羊有短角和小鬍鬚。",
+    "img": "/images/vocabulary/hanlin-watercolor/goat.webp",
+    "imageCredit": "EnglishGo 原創水彩情境插畫",
+    "imageAlt": "一隻白色山羊站著，有短角、小鬍鬚和四隻蹄子。",
+    "imageStyle": "watercolor-pencil-v1"
   },
   {
     "w": "girl",
     "m": "女孩",
     "p": "n.",
-    "ex": "The girl waves to her friend.",
-    "ez": "女孩向她的朋友揮手。",
-    "img": "/images/vocabulary/hooray/girl.svg",
-    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+    "ex": "The girl is singing.",
+    "ez": "那個女孩正在唱歌。",
+    "img": "/images/vocabulary/hanlin-watercolor/girl.webp",
+    "imageCredit": "EnglishGo 原創水彩情境插畫",
+    "imageAlt": "一位女孩站在教室前開心地唱歌，同學微笑聆聽。",
+    "imageStyle": "watercolor-pencil-v1"
   },
   {
     "w": "hen",
     "m": "母雞",
     "p": "n.",
-    "ex": "The hen walks with her chicks.",
-    "ez": "母雞和小雞一起走。",
-    "img": "/images/vocabulary/hooray/hen.svg",
-    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+    "ex": "The hen sits near the eggs on the farm.",
+    "ez": "母雞坐在農場的蛋旁邊。",
+    "img": "/images/vocabulary/hanlin-watercolor/hen.webp",
+    "imageCredit": "EnglishGo 原創水彩情境插畫",
+    "imageAlt": "「hen」：母雞。情境：母雞坐在農場的蛋旁邊。",
+    "imageStyle": "watercolor-pencil-v1"
   },
   {
     "w": "hat",
     "m": "帽子",
     "p": "n.",
-    "ex": "I wear a hat in the sun.",
-    "ez": "我在太陽下戴帽子。",
-    "img": "/images/vocabulary/hooray/hat.webp",
-    "imageCredit": "EnglishGo"
+    "ex": "My hat has a ribbon.",
+    "ez": "我的帽子上有一條緞帶。",
+    "img": "/images/vocabulary/hanlin-watercolor/hat.webp",
+    "imageCredit": "EnglishGo 原創水彩情境插畫",
+    "imageAlt": "一頂繫著藍綠色緞帶的寬邊草帽。",
+    "imageStyle": "watercolor-pencil-v1"
   },
   {
     "w": "insect",
     "m": "昆蟲",
     "p": "n.",
-    "ex": "A ladybug is a small insect.",
-    "ez": "瓢蟲是一種小昆蟲。",
-    "img": "/images/vocabulary/hooray/insect.svg",
-    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+    "ex": "A butterfly is a colorful insect.",
+    "ez": "蝴蝶是一種色彩繽紛的昆蟲。",
+    "img": "/images/vocabulary/hanlin-watercolor/insect.webp",
+    "imageCredit": "EnglishGo 原創水彩情境插畫",
+    "imageAlt": "「insect」：昆蟲。情境：蝴蝶是一種色彩繽紛的昆蟲。",
+    "imageStyle": "watercolor-pencil-v1"
   },
   {
     "w": "ink",
     "m": "墨水",
     "p": "n.",
-    "ex": "My pen has black ink.",
-    "ez": "我的筆裡有黑色墨水。",
-    "img": "/images/vocabulary/hooray/ink.svg",
-    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+    "ex": "The blue ink is on my paper.",
+    "ez": "我的紙上有藍色墨水。",
+    "img": "/images/vocabulary/hanlin-watercolor/ink.webp",
+    "imageCredit": "EnglishGo 原創水彩情境插畫",
+    "imageAlt": "「ink」：墨水。情境：我的紙上有藍色墨水。",
+    "imageStyle": "watercolor-pencil-v1"
   },
   {
     "w": "jam",
     "m": "果醬",
     "p": "n.",
-    "ex": "I spread jam on my toast.",
-    "ez": "我在吐司上塗果醬。",
-    "img": "/images/vocabulary/hooray/jam.webp",
-    "imageCredit": "EnglishGo"
+    "ex": "I put strawberry jam on my toast.",
+    "ez": "我在吐司上塗草莓果醬。",
+    "img": "/images/vocabulary/hanlin-watercolor/jam.webp",
+    "imageCredit": "EnglishGo 原創水彩情境插畫",
+    "imageAlt": "「jam」：果醬。情境：我在吐司上塗草莓果醬。",
+    "imageStyle": "watercolor-pencil-v1"
   },
   {
     "w": "jet",
@@ -176,80 +214,98 @@
     "p": "n.",
     "ex": "The jet flies high in the sky.",
     "ez": "噴射機在高空飛行。",
-    "img": "/images/vocabulary/hooray/jet.svg",
-    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+    "img": "/images/vocabulary/hanlin-watercolor/jet.webp",
+    "imageCredit": "EnglishGo 原創水彩情境插畫",
+    "imageAlt": "噴射機在高空飛行。",
+    "imageStyle": "watercolor-pencil-v1"
   },
   {
     "w": "key",
     "m": "鑰匙",
     "p": "n.",
-    "ex": "This key opens our front door.",
-    "ez": "這把鑰匙可以打開我們的大門。",
-    "img": "/images/vocabulary/hooray/key.svg",
-    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+    "ex": "I use a key to open the door.",
+    "ez": "我用鑰匙開門。",
+    "img": "/images/vocabulary/hanlin-watercolor/key.webp",
+    "imageCredit": "EnglishGo 原創水彩情境插畫",
+    "imageAlt": "孩子拿著鑰匙打開家裡的前門。",
+    "imageStyle": "watercolor-pencil-v1"
   },
   {
     "w": "kite",
     "m": "風箏",
     "p": "n.",
-    "ex": "My kite flies in the wind.",
-    "ez": "我的風箏在風中飛翔。",
-    "img": "/images/vocabulary/hooray/kite.webp",
-    "imageCredit": "EnglishGo"
+    "ex": "My colorful kite has a long tail.",
+    "ez": "我的彩色風箏有一條長尾巴。",
+    "img": "/images/vocabulary/hanlin-watercolor/kite.webp",
+    "imageCredit": "EnglishGo 原創水彩情境插畫",
+    "imageAlt": "一個紅黃藍綠相間的菱形風箏，有繫著蝴蝶結的長尾巴。",
+    "imageStyle": "watercolor-pencil-v1"
   },
   {
     "w": "lion",
     "m": "獅子",
     "p": "n.",
-    "ex": "The lion rests in the shade.",
-    "ez": "獅子在陰涼處休息。",
-    "img": "/images/vocabulary/hooray/lion.webp",
-    "imageCredit": "EnglishGo"
+    "ex": "The lion has a thick brown mane.",
+    "ez": "這隻獅子有濃密的棕色鬃毛。",
+    "img": "/images/vocabulary/hanlin-watercolor/lion.webp",
+    "imageCredit": "EnglishGo 原創水彩情境插畫",
+    "imageAlt": "一隻公獅子坐著，頭部周圍有濃密的棕色鬃毛。",
+    "imageStyle": "watercolor-pencil-v1"
   },
   {
     "w": "leg",
     "m": "腿",
     "p": "n.",
-    "ex": "I stand on one leg.",
-    "ez": "我用一條腿站立。",
-    "img": "/images/vocabulary/hooray/leg.svg",
-    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+    "ex": "My leg hurts after running fast.",
+    "ez": "我跑很快後腿會痛。",
+    "img": "/images/vocabulary/hanlin-watercolor/leg.webp",
+    "imageCredit": "EnglishGo 原創水彩情境插畫",
+    "imageAlt": "孩子跑步後坐在草地休息，輕輕揉揉有點痠的腿。",
+    "imageStyle": "watercolor-pencil-v1"
   },
   {
     "w": "monkey",
     "m": "猴子",
     "p": "n.",
-    "ex": "The monkey climbs a tall tree.",
-    "ez": "猴子爬上一棵高樹。",
-    "img": "/images/vocabulary/hooray/monkey.webp",
-    "imageCredit": "EnglishGo"
+    "ex": "The monkey holds a banana on the branch.",
+    "ez": "猴子坐在樹枝上拿著一根香蕉。",
+    "img": "/images/vocabulary/hanlin-watercolor/monkey.webp",
+    "imageCredit": "EnglishGo 原創水彩情境插畫",
+    "imageAlt": "一隻棕色猴子坐在低矮樹枝上，手裡拿著一根香蕉，身後有長尾巴。",
+    "imageStyle": "watercolor-pencil-v1"
   },
   {
     "w": "milk",
     "m": "牛奶",
     "p": "n.",
-    "ex": "I drink a glass of milk at breakfast.",
-    "ez": "我早餐喝一杯牛奶。",
-    "img": "/images/vocabulary/hooray/milk.webp",
-    "imageCredit": "EnglishGo"
+    "ex": "There is milk in the glass.",
+    "ez": "玻璃杯裡有牛奶。",
+    "img": "/images/vocabulary/hanlin-watercolor/milk.webp",
+    "imageCredit": "EnglishGo 原創水彩情境插畫",
+    "imageAlt": "透明玻璃杯與玻璃奶瓶裡裝著白色牛奶。",
+    "imageStyle": "watercolor-pencil-v1"
   },
   {
     "w": "nose",
     "m": "鼻子",
     "p": "n.",
-    "ex": "I can smell flowers with my nose.",
-    "ez": "我可以用鼻子聞花香。",
-    "img": "/images/vocabulary/hooray/nose.svg",
-    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+    "ex": "My nose feels cold in winter.",
+    "ez": "冬天我的鼻子覺得冷。",
+    "img": "/images/vocabulary/hanlin-watercolor/nose.webp",
+    "imageCredit": "EnglishGo 原創水彩情境插畫",
+    "imageAlt": "冬天外出時，孩子的鼻子被冷風吹得紅紅的。",
+    "imageStyle": "watercolor-pencil-v1"
   },
   {
     "w": "neck",
     "m": "脖子",
     "p": "n.",
-    "ex": "I wear a scarf around my neck.",
-    "ez": "我在脖子上圍圍巾。",
-    "img": "/images/vocabulary/hooray/neck.webp",
-    "imageCredit": "EnglishGo"
+    "ex": "The boy points to his neck.",
+    "ez": "男孩指著他的脖子。",
+    "img": "/images/vocabulary/hanlin-watercolor/neck.webp",
+    "imageCredit": "EnglishGo 原創水彩情境插畫",
+    "imageAlt": "孩子微笑著用手指輕輕指向下巴與衣領之間的脖子。",
+    "imageStyle": "watercolor-pencil-v1"
   },
   {
     "w": "octopus",
@@ -257,62 +313,76 @@
     "p": "n.",
     "ex": "The octopus has eight arms.",
     "ez": "章魚有八隻腕足。",
-    "img": "/images/vocabulary/hooray/octopus.svg",
-    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+    "img": "/images/vocabulary/hanlin-watercolor/octopus.webp",
+    "imageCredit": "EnglishGo 原創水彩情境插畫",
+    "imageAlt": "「octopus」：章魚。情境：章魚有八隻腕足。",
+    "imageStyle": "watercolor-pencil-v1"
   },
   {
     "w": "ox",
     "m": "公牛",
     "p": "n.",
-    "ex": "The ox walks across the farm.",
-    "ez": "公牛走過農場。",
-    "img": "/images/vocabulary/hooray/ox.svg",
-    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+    "ex": "The ox walks slowly on the farm.",
+    "ez": "公牛在農場慢慢走。",
+    "img": "/images/vocabulary/hanlin-watercolor/ox.webp",
+    "imageCredit": "EnglishGo 原創水彩情境插畫",
+    "imageAlt": "「ox」：公牛。情境：公牛在農場慢慢走。",
+    "imageStyle": "watercolor-pencil-v1"
   },
   {
     "w": "pig",
     "m": "豬",
     "p": "n.",
-    "ex": "The pig rolls in the mud.",
-    "ez": "豬在泥巴裡打滾。",
-    "img": "/images/vocabulary/hooray/pig.webp",
-    "imageCredit": "EnglishGo"
+    "ex": "The pink pig has a curly tail.",
+    "ez": "這隻粉紅色的豬有捲捲的尾巴。",
+    "img": "/images/vocabulary/hanlin-watercolor/pig.webp",
+    "imageCredit": "EnglishGo 原創水彩情境插畫",
+    "imageAlt": "一隻粉紅色小豬，有圓鼻子、四隻短腿和捲尾巴。",
+    "imageStyle": "watercolor-pencil-v1"
   },
   {
     "w": "pen",
     "m": "筆",
     "p": "n.",
-    "ex": "I write my name with a pen.",
-    "ez": "我用筆寫下名字。",
-    "img": "/images/vocabulary/hooray/pen.webp",
-    "imageCredit": "EnglishGo"
+    "ex": "I take the cap off my pen to write.",
+    "ez": "我拿下原子筆的筆蓋來寫字。",
+    "img": "/images/vocabulary/hanlin-watercolor/pen.webp",
+    "imageCredit": "EnglishGo 原創水彩情境插畫",
+    "imageAlt": "一枝藍色原子筆，筆蓋放在旁邊，露出金屬筆尖。",
+    "imageStyle": "watercolor-pencil-v1"
   },
   {
     "w": "queen",
     "m": "女王",
     "p": "n.",
-    "ex": "The queen wears a crown.",
-    "ez": "女王戴著皇冠。",
-    "img": "/images/vocabulary/hooray/queen.svg",
-    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+    "ex": "The queen waves to the children.",
+    "ez": "女王向孩子們揮手。",
+    "img": "/images/vocabulary/hanlin-watercolor/queen.webp",
+    "imageCredit": "EnglishGo 原創水彩情境插畫",
+    "imageAlt": "「queen」：女王。情境：女王向孩子們揮手。",
+    "imageStyle": "watercolor-pencil-v1"
   },
   {
     "w": "quiet",
     "m": "安靜的",
     "p": "adj.",
-    "ex": "Please be quiet in the library.",
-    "ez": "在圖書館裡請保持安靜。",
-    "img": "/images/vocabulary/hooray/quiet.svg",
-    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+    "ex": "The library was quiet, so I could hear the pages turning.",
+    "ez": "圖書館很安靜，所以我聽得到翻頁的聲音。",
+    "img": "/images/vocabulary/hanlin-watercolor/quiet.webp",
+    "imageCredit": "EnglishGo 原創水彩情境插畫",
+    "imageAlt": "圖書館很安靜，孩子仔細聽著翻頁聲。",
+    "imageStyle": "watercolor-pencil-v1"
   },
   {
     "w": "rabbit",
     "m": "兔子",
     "p": "n.",
-    "ex": "The rabbit hops across the grass.",
-    "ez": "兔子跳過草地。",
-    "img": "/images/vocabulary/hooray/rabbit.webp",
-    "imageCredit": "EnglishGo"
+    "ex": "The rabbit has long ears.",
+    "ez": "這隻兔子有長長的耳朵。",
+    "img": "/images/vocabulary/hanlin-watercolor/rabbit.webp",
+    "imageCredit": "EnglishGo 原創水彩情境插畫",
+    "imageAlt": "一隻有長耳朵與短尾巴的白兔坐在地上。",
+    "imageStyle": "watercolor-pencil-v1"
   },
   {
     "w": "red",
@@ -320,80 +390,98 @@
     "p": "adj.",
     "ex": "My new schoolbag is red.",
     "ez": "我的新書包是紅色的。",
-    "img": "/images/vocabulary/hooray/red.svg",
-    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+    "img": "/images/vocabulary/hanlin-watercolor/red.webp",
+    "imageCredit": "EnglishGo 原創水彩情境插畫",
+    "imageAlt": "我的新書包是紅色的。",
+    "imageStyle": "watercolor-pencil-v1"
   },
   {
     "w": "sea",
     "m": "海",
     "p": "n.",
-    "ex": "We watch the waves by the sea.",
-    "ez": "我們在海邊看海浪。",
-    "img": "/images/vocabulary/hooray/sea.webp",
-    "imageCredit": "EnglishGo"
+    "ex": "Blue waves roll across the sea.",
+    "ez": "藍色波浪在海面上翻滾。",
+    "img": "/images/vocabulary/hanlin-watercolor/sea.webp",
+    "imageCredit": "EnglishGo 原創水彩情境插畫",
+    "imageAlt": "寬廣的藍色海面有層層波浪，遠處連著天空。",
+    "imageStyle": "watercolor-pencil-v1"
   },
   {
     "w": "sun",
     "m": "太陽",
     "p": "n.",
     "ex": "The sun shines in the sky.",
-    "ez": "太陽在天空中照耀。",
-    "img": "/images/vocabulary/hooray/sun.webp",
-    "imageCredit": "EnglishGo"
+    "ez": "太陽在天空中發光。",
+    "img": "/images/vocabulary/hanlin-watercolor/sun.webp",
+    "imageCredit": "EnglishGo 原創水彩情境插畫",
+    "imageAlt": "金黃色的太陽散發光芒，下方有少許淡藍色雲朵。",
+    "imageStyle": "watercolor-pencil-v1"
   },
   {
     "w": "turtle",
     "m": "烏龜",
     "p": "n.",
-    "ex": "The turtle walks slowly on the sand.",
-    "ez": "烏龜在沙地上慢慢走。",
-    "img": "/images/vocabulary/hooray/turtle.webp",
-    "imageCredit": "EnglishGo"
+    "ex": "The turtle has a hard shell.",
+    "ez": "這隻烏龜有堅硬的殼。",
+    "img": "/images/vocabulary/hanlin-watercolor/turtle.webp",
+    "imageCredit": "EnglishGo 原創水彩情境插畫",
+    "imageAlt": "一隻背著綠褐色龜殼的烏龜站在地上。",
+    "imageStyle": "watercolor-pencil-v1"
   },
   {
     "w": "toy",
     "m": "玩具",
     "p": "n.",
-    "ex": "I put my toy back in the box.",
-    "ez": "我把玩具放回盒子裡。",
-    "img": "/images/vocabulary/hooray/toy.webp",
-    "imageCredit": "EnglishGo"
+    "ex": "This wooden train is my favorite toy.",
+    "ez": "這台木製火車是我最喜歡的玩具。",
+    "img": "/images/vocabulary/hanlin-watercolor/toy.webp",
+    "imageCredit": "EnglishGo 原創水彩情境插畫",
+    "imageAlt": "一個木製玩具火車頭，有紅色車身、黃色車頂和藍色輪子。",
+    "imageStyle": "watercolor-pencil-v1"
   },
   {
     "w": "umbrella",
     "m": "雨傘",
     "p": "n.",
-    "ex": "I open my umbrella in the rain.",
-    "ez": "我在雨中撐開雨傘。",
-    "img": "/images/vocabulary/hooray/umbrella.webp",
-    "imageCredit": "EnglishGo"
+    "ex": "An umbrella keeps the rain off.",
+    "ez": "雨傘可以遮雨。",
+    "img": "/images/vocabulary/hanlin-watercolor/umbrella.webp",
+    "imageCredit": "EnglishGo 原創水彩情境插畫",
+    "imageAlt": "張開的黃色雨傘擋住雨滴。",
+    "imageStyle": "watercolor-pencil-v1"
   },
   {
     "w": "up",
     "m": "向上",
     "p": "adv.",
-    "ex": "The arrow points up.",
-    "ez": "箭頭指向上方。",
-    "img": "/images/vocabulary/hooray/up.svg",
-    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+    "ex": "Look up at the bright moon.",
+    "ez": "抬頭看明亮的月亮。",
+    "img": "/images/vocabulary/hanlin-watercolor/up.webp",
+    "imageCredit": "EnglishGo 原創水彩情境插畫",
+    "imageAlt": "孩子抬頭仰望夜空中明亮的月亮。",
+    "imageStyle": "watercolor-pencil-v1"
   },
   {
     "w": "vest",
     "m": "背心",
     "p": "n.",
-    "ex": "I wear a vest over my shirt.",
-    "ez": "我在襯衫外穿一件背心。",
-    "img": "/images/vocabulary/hooray/vest.svg",
-    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+    "ex": "I wear a vest on a cool day.",
+    "ez": "天氣涼時我會穿背心。",
+    "img": "/images/vocabulary/hanlin-watercolor/vest.webp",
+    "imageCredit": "EnglishGo 原創水彩情境插畫",
+    "imageAlt": "「vest」：背心。情境：天氣涼時我會穿背心。",
+    "imageStyle": "watercolor-pencil-v1"
   },
   {
     "w": "van",
     "m": "廂型車",
     "p": "n.",
-    "ex": "The van carries our bags.",
-    "ez": "廂型車載著我們的行李。",
-    "img": "/images/vocabulary/hooray/van.svg",
-    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+    "ex": "The white van stops by the school.",
+    "ez": "白色廂型車停在學校旁。",
+    "img": "/images/vocabulary/hanlin-watercolor/van.webp",
+    "imageCredit": "EnglishGo 原創水彩情境插畫",
+    "imageAlt": "「van」：廂型車。情境：白色廂型車停在學校旁。",
+    "imageStyle": "watercolor-pencil-v1"
   },
   {
     "w": "watch",
@@ -401,8 +489,10 @@
     "p": "n.",
     "ex": "My watch tells me the time.",
     "ez": "我的手錶告訴我時間。",
-    "img": "/images/vocabulary/hooray/watch.svg",
-    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+    "img": "/images/vocabulary/hanlin-watercolor/watch.webp",
+    "imageCredit": "EnglishGo 原創水彩情境插畫",
+    "imageAlt": "我的手錶告訴我時間。",
+    "imageStyle": "watercolor-pencil-v1"
   },
   {
     "w": "water",
@@ -410,35 +500,43 @@
     "p": "n.",
     "ex": "I drink water after playing.",
     "ez": "玩耍後我喝水。",
-    "img": "/images/vocabulary/hooray/water.svg",
-    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+    "img": "/images/vocabulary/hanlin-watercolor/water.webp",
+    "imageCredit": "EnglishGo 原創水彩情境插畫",
+    "imageAlt": "玩耍後我喝水。",
+    "imageStyle": "watercolor-pencil-v1"
   },
   {
     "w": "box",
     "m": "盒子",
     "p": "n.",
-    "ex": "My crayons are in the box.",
-    "ez": "我的蠟筆在盒子裡。",
-    "img": "/images/vocabulary/hooray/box.svg",
-    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+    "ex": "I keep my crayons in a box.",
+    "ez": "我把蠟筆放在箱子裡。",
+    "img": "/images/vocabulary/hanlin-watercolor/box.webp",
+    "imageCredit": "EnglishGo 原創水彩情境插畫",
+    "imageAlt": "孩子把彩色蠟筆放進桌上的紙箱裡。",
+    "imageStyle": "watercolor-pencil-v1"
   },
   {
     "w": "fox",
     "m": "狐狸",
     "p": "n.",
-    "ex": "The fox has a fluffy tail.",
-    "ez": "狐狸有蓬鬆的尾巴。",
-    "img": "/images/vocabulary/hooray/fox.svg",
-    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+    "ex": "The fox has a big, fluffy tail.",
+    "ez": "狐狸有一條又大又蓬鬆的尾巴。",
+    "img": "/images/vocabulary/hanlin-watercolor/fox.webp",
+    "imageCredit": "EnglishGo 原創水彩情境插畫",
+    "imageAlt": "「fox」：狐狸。情境：狐狸有一條又大又蓬鬆的尾巴。",
+    "imageStyle": "watercolor-pencil-v1"
   },
   {
     "w": "yo-yo",
     "m": "溜溜球",
     "p": "n.",
-    "ex": "My yo-yo goes up and down.",
-    "ez": "我的溜溜球上下移動。",
-    "img": "/images/vocabulary/hooray/yo-yo.svg",
-    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+    "ex": "I can play with my yo-yo.",
+    "ez": "我會玩溜溜球。",
+    "img": "/images/vocabulary/hanlin-watercolor/yo-yo.webp",
+    "imageCredit": "EnglishGo 原創水彩情境插畫",
+    "imageAlt": "「yo-yo」：溜溜球。情境：我會玩溜溜球。",
+    "imageStyle": "watercolor-pencil-v1"
   },
   {
     "w": "yellow",
@@ -446,17 +544,21 @@
     "p": "adj.",
     "ex": "The yellow balloon floats in the air.",
     "ez": "黃色氣球飄在空中。",
-    "img": "/images/vocabulary/hooray/yellow.svg",
-    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+    "img": "/images/vocabulary/hanlin-watercolor/yellow.webp",
+    "imageCredit": "EnglishGo 原創水彩情境插畫",
+    "imageAlt": "黃色氣球飄在空中。",
+    "imageStyle": "watercolor-pencil-v1"
   },
   {
     "w": "zoo",
     "m": "動物園",
     "p": "n.",
-    "ex": "We see many animals at the zoo.",
-    "ez": "我們在動物園看到許多動物。",
-    "img": "/images/vocabulary/hooray/zoo.svg",
-    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+    "ex": "At the zoo, we see lions and elephants.",
+    "ez": "在動物園，我們看見獅子和大象。",
+    "img": "/images/vocabulary/hanlin-watercolor/zoo.webp",
+    "imageCredit": "EnglishGo 原創水彩情境插畫",
+    "imageAlt": "孩子和家人到動物園觀看獅子與大象。",
+    "imageStyle": "watercolor-pencil-v1"
   },
   {
     "w": "zebra",
@@ -464,7 +566,9 @@
     "p": "n.",
     "ex": "The zebra has black and white stripes.",
     "ez": "斑馬身上有黑白條紋。",
-    "img": "/images/vocabulary/hooray/zebra.svg",
-    "imageCredit": "OpenMoji · CC BY-SA 4.0"
+    "img": "/images/vocabulary/hanlin-watercolor/zebra.webp",
+    "imageCredit": "EnglishGo 原創水彩情境插畫",
+    "imageAlt": "「zebra」：斑馬。情境：斑馬身上有黑白條紋。",
+    "imageStyle": "watercolor-pencil-v1"
   }
 ]
