@@ -118,11 +118,19 @@ The player optionally loads `manifest.music.file` after sound opt-in. It decodes
 
 Validation adds sound lifecycle tests and `node scripts/qa-pet-sounds.mjs` for desktop/390px/360px playback, all four action clips, immediate mute, media loading, unchanged rewards and layout. Existing care and environment audits cover regression behavior.
 
+## World map and free exploration
+
+The travel tab now includes six freely accessible destinations: Tidepool Bay, Whispering Meadow, Moon Mirror Pond, Seabreeze Market, Woodland Camp and Summit Observatory. Each has a distinct 3D landmark and two clickable props with companion approach/contact animations. The existing nine story chapters and their unlock requirements remain separate. Camps and the observatory initially use night lighting; the day/night control remains available.
+
+Each prop reveals an original bilingual English clue after the companion arrives. Elementary learners see Chinese support immediately; older learners can reveal it on request. Incorrect answers can be retried. Correct answers save one of twelve discovery stamps through the existing replayable world-state action and cloud/local storage, without changing coins, experience, pet needs or story progress. Replays are idempotent. Low-graphics fallback supports the same activities through buttons. Sound effects reuse the stored audio pack; listening to the English clue uses the existing pronunciation callback.
+
+`node scripts/qa-pet-world-map.mjs` checks all twelve encounters at desktop, 390px and 360px widths, wrong-answer retry, saved stamps after reload, unchanged rewards, media failures and returning to the original story. Screenshots are written to the ignored `.superpowers/qa/pet-world-map/` directory.
+
 ## Rendering and movement performance details
 
 On screens up to 760px wide, the home scene spans the viewport and uses 66svh of height (440–620px, at least 480px during care). Compact navigation and audio controls bring the scene higher on the page. Home starts focused on the companion; “看小鎮” restores the overview, while story scenes and desktop keep their overview default. Care scrolls the whole scene into view with clearance for sticky navigation. `QA_URL=http://127.0.0.1:5202/ node scripts/qa-pet-mobile-stage.mjs` checks 360×640, 390×844, 430×932 and desktop layouts, camera toggling and visible care controls. Set environment variables using the syntax for your shell.
 
-The scene now renders at the browser's animation cadence instead of imposing a 31 ms frame gate. Static scenery sharing materials and shadow settings is merged once; pets, clickable furniture, story effects and animated water remain independent. Hidden subtrees and mesh parents are retained. The automatic quality setting caps pixel ratio at 1.25 (high remains 1.5). Off-screen/hidden scenes still skip rendering.
+The scene now renders at the browser's animation cadence instead of imposing a 31 ms frame gate. Static scenery sharing materials and shadow settings is merged once; pets, clickable furniture, story effects and animated water remain independent. Hidden subtrees and mesh parents are retained. The automatic quality setting caps pixel ratio at 1.25 (high remains 1.5). Off-screen/hidden scenes still skip rendering. A started environment visit continues its short movement/contact simulation while off-screen so exploration does not stall when users scroll to the activity panel; hidden browser tabs still pause it.
 
 Care props are reused within a phase: washing adjusts foam visibility and playing adjusts the toy without rebuilding the whole effect on each gesture. Walking speed is 1.65 world units/second and calling uses 2.7; gait playback and shorter crossfades match the quicker response. Movement clamps to the destination, while turning and camera following use elapsed-time smoothing. Scene diagnostic attributes only update when their values change.
 

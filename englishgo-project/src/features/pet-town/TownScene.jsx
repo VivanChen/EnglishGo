@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { buildExplorationScenery } from './explorationScenery.js';
 import { FURNITURE } from './worldData.js';
 import { findTownPath } from './townNavigation.js';
 import { findEnvironmentApproach, nearbyEnvironment } from './environmentInteractions.js';
@@ -45,7 +46,7 @@ function FlatTown({ pets }) {
 export default function TownScene({ pets = [], activePetId, placements = [], activity, careAim, onSound, environmentEnabled = false, onEnvironment, storyMoment, motion = true, quality = 'auto', scene = 'home', onPet, onStatus, onMove, onPlacementSelect }) {
   const host = useRef(null), runtime = useRef(null), latest = useRef({}), previousScene = useRef(scene);
   latest.current = { pets, activePetId, placements, activity, careAim, onSound, environmentEnabled, onEnvironment, storyMoment, motion, onPet, onStatus, onMove, onPlacementSelect };
-  const [status, setStatus] = useState('loading'), [night, setNight] = useState(false), [focus, setFocus] = useState(() => scene === 'home' && window.matchMedia?.('(max-width: 760px)').matches);
+  const [status, setStatus] = useState('loading'), [night, setNight] = useState(() => ['camp','observatory'].includes(scene)), [focus, setFocus] = useState(() => scene === 'home' && window.matchMedia?.('(max-width: 760px)').matches);
   useEffect(() => { onStatus?.(status); }, [status, onStatus]);
   useEffect(() => { runtime.current?.setPets(pets, activePetId); }, [pets, activePetId]);
   useEffect(() => { runtime.current?.setPlacements(placements); }, [placements]);
@@ -210,6 +211,7 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
         const lightHouse = group(world, [4.9, .05, -1.8]); cylinder(lightHouse, '#efe6d1', [0, 1.4, 0], .42, .7, 2.8, 32); cylinder(lightHouse, '#9eb6b4', [0, 2.1, 0], .49, .52, .4, 32); cylinder(lightHouse, '#f2d79c', [0, 3, 0], .43, .43, .58, 16, { emissive: '#e0ac5a', emissiveIntensity: .6 }); cylinder(lightHouse, '#6f8d9b', [0, 3.43, 0], 0, .66, .40, 32); cylinder(lightHouse, '#d8cfb6', [0, 2.72, 0], .67, .67, .13, 32);
       }
 
+      if (buildExplorationScenery(scene, world, { group, box, ball, cylinder, roof, tree })) cottage.visible = false;
       let storySignature = '', storyTransition = 1;
       const setStoryMoment = moment => {
         const signature = JSON.stringify(moment);
@@ -546,7 +548,9 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
       function draw(time) {
         if (disposed || failed) return;
         frame = requestAnimationFrame(draw);
-        if (document.hidden || !sceneVisible) { previousTime = 0; return; }
+        // A started visit must settle even when its activity buttons scroll the canvas off screen.
+        // Keep the short simulation alive, while still skipping off-screen GPU rendering.
+        if (document.hidden || (!sceneVisible && !environmentVisit)) { previousTime = 0; return; }
         const dt = previousTime ? Math.min(.12, (time - previousTime) / 1000) : 1 / 60; previousTime = time; elapsed += dt;
         const moving = latest.current.motion && !reduced.matches;
         for (const [id, actor] of actors) {
@@ -618,7 +622,7 @@ export default function TownScene({ pets = [], activePetId, placements = [], act
         if (diagnostics.petMoving !== traveling) diagnostics.petMoving = traveling;
         const phase = environmentVisit ? environmentVisit.arrivedAt == null ? 'approaching' : environmentVisit.responded ? 'response' : 'contact' : '';
         if (diagnostics.environmentPhase !== phase) diagnostics.environmentPhase = phase;
-        controls.update(); renderer.render(stage, camera);
+        controls.update(); if (sceneVisible) renderer.render(stage, camera);
       }
       frame = requestAnimationFrame(draw);
       let cleaned = false;

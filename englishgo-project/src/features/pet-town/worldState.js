@@ -1,5 +1,6 @@
 import { CHAPTERS, FURNITURE, LEVELS, REGIONS, getChapter, getFurniture, getPetDefinition } from './worldData.js';
 import { PROGRESS_VERSION } from '../../data/progressReset.js';
+import { explorationTask, explorationReceipt } from './explorationData.js';
 
 export const WORLD_SCHEMA = 2;
 export const TOWN_BOUNDS = { minX: -4, maxX: 4, minZ: -2, maxZ: 4, pathHalfWidth: .6 };
@@ -186,6 +187,14 @@ export function applyWorldAction(input, action, { coins = 0, now } = {}) {
   if (!action || typeof action.type !== 'string') return unchanged('');
   const finish = (next, notice, extra = {}) => ({ world: { ...next, updatedAt: date }, coinDelta: 0, notice, ...extra });
   const receipt = id => world.receipts.includes(id);
+
+  if (action.type === 'EXPLORE_DISCOVERY') {
+    const task = explorationTask(action.placeId, action.taskId);
+    if (!world.ownedPets.length || !task || action.answer !== task.answer) return unchanged('');
+    const id = explorationReceipt(action.placeId, action.taskId);
+    if (receipt(id)) return unchanged('');
+    return finish({ ...world, receipts: [...world.receipts, id], journal: addJournal(world, id, `一起完成「${task.title}」：${task.word} — ${task.zh}`, date, 'exploration') }, '');
+  }
 
   if (action.type === 'ADOPT_STARTER' || action.type === 'ADOPT_FRIEND') {
     const starter = action.type === 'ADOPT_STARTER';
