@@ -1,6 +1,6 @@
 {
   "provider": "ElevenLabs",
-  "generatedAt": "2026-10-31T01:00:46.230Z",
+  "generatedAt": "2026-11-01T11:41:23.097Z",
   "files": {
     "step": "step-15f069c4b3dd.mp3",
     "bubbles": "bubbles-c44e0d2b2386.mp3",
@@ -11,7 +11,16 @@
     "success": "success-5ed5a4977ea8.mp3",
     "cat": "cat-913b3f68e9db.mp3",
     "dog": "dog-10efde1967e8.mp3",
-    "rustle": "rustle-f8bc53db5579.mp3"
+    "rustle": "rustle-f8bc53db5579.mp3",
+    "cathappya": "cathappya-d230ca1a3c1e.mp3",
+    "cathappyb": "cathappyb-4b26d83afc3e.mp3",
+    "catcuddle": "catcuddle-6e31eb10a666.mp3",
+    "doghappya": "doghappya-e3aa738ff5ad.mp3",
+    "doghappyb": "doghappyb-278d124e7d75.mp3",
+    "dogcuddle": "dogcuddle-da46081834c9.mp3",
+    "rabbithappya": "rabbithappya-903a5a475d6f.mp3",
+    "rabbithappyb": "rabbithappyb-80c54ae6d308.mp3",
+    "rabbitcuddle": "rabbitcuddle-046645366bc4.mp3"
   },
   "music": {
     "file": "bgm-64feb93a8b64.mp3",
@@ -98,6 +107,78 @@
       "model": "eleven_text_to_sound_v2",
       "generatedAt": "2026-10-31T00:57:25.741Z"
     },
+    "cathappya": {
+      "file": "cathappya-d230ca1a3c1e.mp3",
+      "requestHash": "d230ca1a3c1eae1d844ec134a41f8d7fb5edd55e1ab18f81ab876c97aab7297b",
+      "sha256": "26b82d892f383a8c9b6642bb590bfa87a2b60e1b9f24913fd0c91e09364a1ea8",
+      "bytes": 20105,
+      "model": "eleven_text_to_sound_v2",
+      "generatedAt": "2026-11-01T11:40:50.862Z"
+    },
+    "cathappyb": {
+      "file": "cathappyb-4b26d83afc3e.mp3",
+      "requestHash": "4b26d83afc3e541f78c6dd51ff6ccdee204b87f58cc45ac0376bbf09eef5b16f",
+      "sha256": "6900eae1846b3b1f166937eb1410c6f453d7d70da13b4fd3e5a96e5ec42eabfd",
+      "bytes": 23030,
+      "model": "eleven_text_to_sound_v2",
+      "generatedAt": "2026-11-01T11:40:52.636Z"
+    },
+    "catcuddle": {
+      "file": "catcuddle-6e31eb10a666.mp3",
+      "requestHash": "6e31eb10a6664a0d86a6dd30c117d574db3f44590b48f7c659fd7116d20fcf42",
+      "sha256": "c3075e8c6dd02cde1796e7c98619a6db6e2c5b2fe3f31d8ca596b8178bb51dec",
+      "bytes": 33061,
+      "model": "eleven_text_to_sound_v2",
+      "generatedAt": "2026-11-01T11:40:54.269Z"
+    },
+    "doghappya": {
+      "file": "doghappya-e3aa738ff5ad.mp3",
+      "requestHash": "e3aa738ff5ada8017947c81bf22583e9cf17699450e4347265aa55c5e4007204",
+      "sha256": "6d2463ddc11dc3a21561d79278e66768e8e6e2df668826be8477e0d830e00b16",
+      "bytes": 20105,
+      "model": "eleven_text_to_sound_v2",
+      "generatedAt": "2026-11-01T11:40:55.822Z"
+    },
+    "doghappyb": {
+      "file": "doghappyb-278d124e7d75.mp3",
+      "requestHash": "278d124e7d75aefd1039c94df1cd22bd1bd029c79cb97403a3ecd8ca564f5233",
+      "sha256": "9c1649357661bb0d99612b576ac86fe5c8b4a6884fb97cd51102396e45c5596c",
+      "bytes": 23030,
+      "model": "eleven_text_to_sound_v2",
+      "generatedAt": "2026-11-01T11:40:57.526Z"
+    },
+    "dogcuddle": {
+      "file": "dogcuddle-da46081834c9.mp3",
+      "requestHash": "da46081834c95ecaa7bb3df5dc7ce90dea5b3bc0455442561c1b962609454064",
+      "sha256": "82d58a667d60fc8bbe1974d4989a51dd7f21f05626a5a6ba975b09f0eacbede0",
+      "bytes": 33061,
+      "model": "eleven_text_to_sound_v2",
+      "generatedAt": "2026-11-01T11:40:59.128Z"
+    },
+    "rabbithappya": {
+      "file": "rabbithappya-903a5a475d6f.mp3",
+      "requestHash": "903a5a475d6ff21d4e1d33aea3a29c7b7c5b1b52d96108a01412c20fc9db61c5",
+      "sha256": "bc3beee5ce2c558fd3469278ab613251929d5da806069a32d7d08c87a702d79d",
+      "bytes": 21358,
+      "model": "eleven_text_to_sound_v2",
+      "generatedAt": "2026-11-01T11:41:19.043Z"
+    },
+    "rabbithappyb": {
+      "file": "rabbithappyb-80c54ae6d308.mp3",
+      "requestHash": "80c54ae6d308a73adafd9dcce4c0285500e14477d921cb7956d8e9a9c66fb3b1",
+      "sha256": "701ed1e08e6ff7c6b757c8470b19ddffebfa07b9cd0dcfb86359bf86108973ff",
+      "bytes": 24702,
+      "model": "eleven_text_to_sound_v2",
+      "generatedAt": "2026-11-01T11:41:20.735Z"
+    },
+    "rabbitcuddle": {
+      "file": "rabbitcuddle-046645366bc4.mp3",
+      "requestHash": "046645366bc49cb8dbed2091a01c1271b35d0c3661fc22b3cd508b98463d8ccc",
+      "sha256": "7e0fee8b87623769b3928712728c55d022a04607693b9159776741ad4e6bde9b",
+      "bytes": 33061,
+      "model": "eleven_text_to_sound_v2",
+      "generatedAt": "2026-11-01T11:41:22.926Z"
+    },
     "bgm": {
       "file": "bgm-64feb93a8b64.mp3",
       "requestHash": "64feb93a8b6417b311347de5448ea55f6814b5112497b702a4b38d54a55b0d80",
@@ -105,6 +186,84 @@
       "bytes": 768670,
       "model": "music_v2_5",
       "generatedAt": "2026-10-31T00:57:32.978Z"
+    },
+    "bgmtidepool": {
+      "file": "bgmtidepool-1c33e0663adc.mp3",
+      "requestHash": "1c33e0663adcaecd2bd276c9ba4ec2a7a986ba230d86f31ee5b2e6af60618d81",
+      "sha256": "28d3ac319aaddaec618d83df2d7ddb36305fa3f554c74cf72db626443da4cf85",
+      "bytes": 640775,
+      "model": "music_v2",
+      "generatedAt": "2026-11-01T11:41:29.081Z"
+    },
+    "bgmmeadow": {
+      "file": "bgmmeadow-723ab76ddb8f.mp3",
+      "requestHash": "723ab76ddb8f7e3e7b3dffad8c089ace0fbcfe1a9ea338d6c1507fb770ae2e5c",
+      "sha256": "40a9a199bacdcc7d5382fb5a24e3a4a7ce545b2352a095c0a65ce08e725e34af",
+      "bytes": 640775,
+      "model": "music_v2",
+      "generatedAt": "2026-11-01T11:41:56.771Z"
+    },
+    "bgmpond": {
+      "file": "bgmpond-2d124c30c196.mp3",
+      "requestHash": "2d124c30c196339d9fa2d9c998b31a5256df0b209830f4ecab850d38ddd3358d",
+      "sha256": "44e00bc7270ec8d8f1ef0b531913c7d22745e0a48f941a1581ce6492a07efe6f",
+      "bytes": 640775,
+      "model": "music_v2",
+      "generatedAt": "2026-11-01T11:42:03.101Z"
+    },
+    "bgmmarket": {
+      "file": "bgmmarket-9f763cfb2aee.mp3",
+      "requestHash": "9f763cfb2aee9d8e9b0e5044c7cea2fc1823ddbc2c75ea5966c31dd92d4e799a",
+      "sha256": "639befdfefa564aa505f568b90745e8c87773527816e6682fbde20c8c74eb699",
+      "bytes": 640775,
+      "model": "music_v2",
+      "generatedAt": "2026-11-01T11:42:09.234Z"
+    },
+    "bgmcamp": {
+      "file": "bgmcamp-6f6654f92019.mp3",
+      "requestHash": "6f6654f92019bbd61c7ad2f576b399e405f2d4ea1defbb5cf9e06b15c4ac9a42",
+      "sha256": "576d7ae590c65e0a67a5fcf89bf0aaa7740fab43b9d156b18cfcb6bea1b652cd",
+      "bytes": 640775,
+      "model": "music_v2",
+      "generatedAt": "2026-11-01T11:42:14.810Z"
+    },
+    "bgmobservatory": {
+      "file": "bgmobservatory-e5987b4b699f.mp3",
+      "requestHash": "e5987b4b699f9b12ad849fd3f37cdbaf52f97f3315fdc6e26c6c086bca997fac",
+      "sha256": "349c42744358dba7d50921cef522e933c334d4fe2ff387649ab3180a51751c56",
+      "bytes": 640775,
+      "model": "music_v2",
+      "generatedAt": "2026-11-01T11:42:24.727Z"
+    }
+  },
+  "scenes": {
+    "home": {
+      "file": "bgm-64feb93a8b64.mp3",
+      "volume": 0.12
+    },
+    "tidepool": {
+      "file": "bgmtidepool-1c33e0663adc.mp3",
+      "volume": 0.12
+    },
+    "meadow": {
+      "file": "bgmmeadow-723ab76ddb8f.mp3",
+      "volume": 0.12
+    },
+    "pond": {
+      "file": "bgmpond-2d124c30c196.mp3",
+      "volume": 0.12
+    },
+    "market": {
+      "file": "bgmmarket-9f763cfb2aee.mp3",
+      "volume": 0.12
+    },
+    "camp": {
+      "file": "bgmcamp-6f6654f92019.mp3",
+      "volume": 0.12
+    },
+    "observatory": {
+      "file": "bgmobservatory-e5987b4b699f.mp3",
+      "volume": 0.12
     }
   }
 }

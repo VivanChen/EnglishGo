@@ -1,0 +1,8 @@
+{
+  "file": "dogcuddle-da46081834c9.mp3",
+  "requestHash": "da46081834c95ecaa7bb3df5dc7ce90dea5b3bc0455442561c1b962609454064",
+  "sha256": "82d58a667d60fc8bbe1974d4989a51dd7f21f05626a5a6ba975b09f0eacbede0",
+  "bytes": 33061,
+  "model": "eleven_text_to_sound_v2",
+  "generatedAt": "2026-11-01T11:40:59.128Z"
+}

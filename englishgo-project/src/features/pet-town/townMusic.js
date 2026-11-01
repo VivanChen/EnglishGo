@@ -13,6 +13,8 @@ export function prepareMusicLoop(context, input) {
 
 export function createTownMusic(context) {
   let buffer, source, gain, offset=0, startedAt=0, volume=.12, level=1, duckUntil=0;
+  const retiring=new Set();
+  const clearRetiring=()=>{for(const old of retiring){old.source.stop();old.source.disconnect();old.gain.disconnect();}retiring.clear();};
   const mix = () => {
     if (!gain) return;
     const now=context.currentTime, target=volume*level, ducked=duckUntil>now;
@@ -23,19 +25,28 @@ export function createTownMusic(context) {
     if(ducked) { param.setValueAtTime(target*.25,duckUntil);param.linearRampToValueAtTime(target,duckUntil+.5); }
   };
   const pause = () => {
+    clearRetiring();
     if (!source) return;
     offset=(offset+Math.max(0,context.currentTime-startedAt))%buffer.duration;
     source.stop();source.disconnect();gain.disconnect();source=null;gain=null;duckUntil=0;
   };
   return {
-    load(input, level=.12) { pause();buffer=prepareMusicLoop(context,input);offset=0;volume=Number.isFinite(level)?Math.max(0,Math.min(.25,level)):.12; },
+    load(input, level=.12, crossfade=false) {
+      if(crossfade&&source){
+        clearRetiring();const old={source,gain};retiring.add(old);
+        const param=gain.gain,now=context.currentTime;
+        if(param.cancelAndHoldAtTime)param.cancelAndHoldAtTime(now);else{param.cancelScheduledValues(now);param.setValueAtTime(param.value,now);}
+        param.linearRampToValueAtTime(0,now+.6);source.stop(now+.6);
+        source.onended=()=>{old.source.disconnect();old.gain.disconnect();retiring.delete(old);};
+        source=null;gain=null;duckUntil=0;
+      }else pause();buffer=prepareMusicLoop(context,input);offset=0;volume=Number.isFinite(level)?Math.max(0,Math.min(.25,level)):.12; },
     start() {
       if (!buffer || source || context.state!=='running') return false;
       source=context.createBufferSource();gain=context.createGain();source.buffer=buffer;source.loop=true;
       gain.gain.setValueAtTime(0,context.currentTime);gain.gain.linearRampToValueAtTime(volume*level,context.currentTime+.5);
       source.connect(gain);gain.connect(context.destination);startedAt=context.currentTime;source.start(0,offset);return true;
     },
-    setVolume(value) { level=Number.isFinite(value)?Math.max(0,Math.min(100/60,value)):1;mix(); },
+    setVolume(value) { if(value===0)clearRetiring();level=Number.isFinite(value)?Math.max(0,Math.min(100/60,value)):1;mix(); },
     duck(duration) { if(!source)return;duckUntil=Math.max(duckUntil,context.currentTime+Math.max(.2,Math.min(5,duration||1)));mix(); },
     releaseDuck() { duckUntil=0;mix(); },
     pause,

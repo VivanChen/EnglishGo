@@ -2,10 +2,10 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { OUTING_GAMES } from './outingGames.js';
 import TownScene from './TownScene.jsx';
 import { EXPLORATION_PLACES, explorationPlacements, explorationReceipt } from './explorationData.js';
-import { petVoice } from './townSounds.js';
+import { petVoice, voiceMood } from './townSounds.js';
 import './world-explorer.css';
 
-export default function WorldExplorer({ pet, receipts, dispatch, level='elementary', motion=true, quality='auto', onSound, speak, stopSpeech }) {
+export default function WorldExplorer({ pet, receipts, dispatch, level='elementary', motion=true, quality='auto', onSound, speak, stopSpeech, onSceneChange }) {
   const [reaction,setReaction]=useState('');
   const [gamePhase,setGamePhase]=useState(null);
   const activeGame=useRef(null);
@@ -22,6 +22,7 @@ export default function WorldExplorer({ pet, receipts, dispatch, level='elementa
   const nextTask=place?.tasks.find(t=>t.id!==taskId&&!found(place,t));
   const nextPlace=place&&[...EXPLORATION_PLACES.slice(EXPLORATION_PLACES.indexOf(place)+1),...EXPLORATION_PLACES.slice(0,EXPLORATION_PLACES.indexOf(place))].find(p=>p.tasks.some(t=>!found(p,t)));
   const collected=EXPLORATION_PLACES.reduce((sum,p)=>sum+p.tasks.filter(t=>receipts.includes(explorationReceipt(p.id,t.id))).length,0);
+  useEffect(()=>{onSceneChange?.(placeId||'home');return()=>onSceneChange?.('home');},[placeId,onSceneChange]);
   useEffect(()=>{if(placeId)detail.current?.scrollIntoView({block:'start',behavior:'instant'});},[placeId]);
   useEffect(()=>()=>stopSpeech?.(),[stopSpeech]);
   useEffect(()=>{if(!reaction)return;const timer=setTimeout(()=>setReaction(''),6000);return()=>clearTimeout(timer);},[reaction]);
@@ -55,7 +56,7 @@ export default function WorldExplorer({ pet, receipts, dispatch, level='elementa
   const companion=type=>{
     stopEncounter();setActivity({type,petId:pet.id,nonce:++nonce.current});
     setReaction(`${pet.name||'小夥伴'}${{greet:'抬起小爪，和你打招呼！',stretch:'舒服地伸個懶腰，享受一起散步的時光。',hop:'開心地跳了一下，還想陪你去更多地方！',groom:'仔細整理小爪和毛毛，準備繼續出發。',spin:'開心地轉了一圈，回頭看看你！',bow:'伸出前腳，向你鞠了一個可愛的躬。',come:'聽見你的呼喚，朝你跑過來。'}[type]}`);
-    if(type==='greet')onSound?.(petVoice(pet.speciesId),.4);
+    const mood=voiceMood(type);if(mood)onSound?.(petVoice(pet.speciesId,mood),.4);
     requestAnimationFrame(()=>detail.current?.querySelector('.town-scene-wrap')?.scrollIntoView({block:'center',behavior:'instant'}));
   };
   const playOuting=()=>{
@@ -70,7 +71,7 @@ export default function WorldExplorer({ pet, receipts, dispatch, level='elementa
     if(activeGame.current&&event.placementId===activeGame.current.placementId&&event.nonce===activeGame.current.nonce){
       if(event.phase==='arrived'||event.phase==='responding'){setGamePhase('playing');setReaction(event.text);}
       if(event.phase==='blocked'){setGamePhase('blocked');setReaction('這條路走不過去，換個位置再試一次。');setActivity(null);}
-      if(event.phase==='finished'){setGamePhase('finished');setReaction('玩得好開心！可以再玩一次，或繼續找英文線索。');setActivity(null);}
+      if(event.phase==='finished'){onSound?.(petVoice(pet.speciesId,placeId==='camp'?'cuddle':'happy'),.35);setGamePhase('finished');setReaction('玩得好開心！可以再玩一次，或繼續找英文線索。');setActivity(null);}
       return;
     }
 
@@ -82,7 +83,7 @@ export default function WorldExplorer({ pet, receipts, dispatch, level='elementa
   const answer=index=>{
     if(phase!=='ready'||!task||feedback?.correct)return;
     const correct=index===task.answer;setFeedback({correct,index});
-    if(correct){activeGame.current=null;setGamePhase(null);dispatch({type:'EXPLORE_DISCOVERY',placeId,taskId,answer:index});setActivity({type:'hop',petId:pet.id,nonce:++nonce.current});onSound?.('success',.25);}
+    if(correct){activeGame.current=null;setGamePhase(null);dispatch({type:'EXPLORE_DISCOVERY',placeId,taskId,answer:index});setActivity({type:'hop',petId:pet.id,nonce:++nonce.current});onSound?.('success',.25);onSound?.(petVoice(pet.speciesId,'happy'),.35);}
   };
   const back=()=>{visit(null);requestAnimationFrame(()=>map.current?.querySelector(`[data-place="${placeId}"]`)?.focus());};
   return <section className="town-world-explorer" aria-label="小島世界地圖">

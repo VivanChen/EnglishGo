@@ -1,0 +1,8 @@
+{
+  "file": "cathappyb-4b26d83afc3e.mp3",
+  "requestHash": "4b26d83afc3e541f78c6dd51ff6ccdee204b87f58cc45ac0376bbf09eef5b16f",
+  "sha256": "6900eae1846b3b1f166937eb1410c6f453d7d70da13b4fd3e5a96e5ec42eabfd",
+  "bytes": 23030,
+  "model": "eleven_text_to_sound_v2",
+  "generatedAt": "2026-11-01T11:40:52.636Z"
+}

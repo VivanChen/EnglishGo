@@ -7,6 +7,14 @@ import {EXPLORATION_PLACES,explorationReceipt} from './explorationData.js';
 const setup=(props={})=>{const dispatch=vi.fn();render(<WorldExplorer pet={{id:'pet-harbor-cat',speciesId:'harbor-cat'}} receipts={[]} dispatch={dispatch} {...props}/>);return dispatch;};
 const click=name=>fireEvent.click(screen.getByRole('button',{name,exact:true}));
 describe('world map encounters',()=>{
+  it('announces destination changes and plays happy versus affectionate pet voices',()=>{
+    const onSceneChange=vi.fn(),onSound=vi.fn();setup({onSceneChange,onSound});
+    click('前往潮汐灣');expect(onSceneChange).toHaveBeenLastCalledWith('tidepool');click('模型完成');
+    click('開心跳');expect(onSound).toHaveBeenLastCalledWith('catHappy',.4);
+    click('整理毛毛');expect(onSound).toHaveBeenLastCalledWith('catCuddle',.4);
+    click('返回地圖');expect(onSceneChange).toHaveBeenLastCalledWith('home');
+  });
+
   it.each(EXPLORATION_PLACES)('plays $name without unlocking its English discovery',place=>{
     const dispatch=setup();click(`前往${place.name}`);click('模型完成');click('一起玩');
     const activity=JSON.parse(screen.getByTestId('scene').dataset.activity);

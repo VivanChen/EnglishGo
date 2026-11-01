@@ -1,0 +1,8 @@
+{
+  "file": "rabbitcuddle-046645366bc4.mp3",
+  "requestHash": "046645366bc49cb8dbed2091a01c1271b35d0c3661fc22b3cd508b98463d8ccc",
+  "sha256": "7e0fee8b87623769b3928712728c55d022a04607693b9159776741ad4e6bde9b",
+  "bytes": 33061,
+  "model": "eleven_text_to_sound_v2",
+  "generatedAt": "2026-11-01T11:41:22.926Z"
+}

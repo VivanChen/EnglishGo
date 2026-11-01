@@ -6,7 +6,7 @@ vi.mock('./TownScene.jsx', () => ({
   PetPortrait: ({ speciesId }) => <span aria-hidden="true" data-species={speciesId}/>,
 }));
 vi.mock('./cloudAccount.js', () => ({ hashPin: vi.fn(), legacyPinHash: vi.fn(), requestPetAccount: vi.fn() }));
-const audio = vi.hoisted(()=>({start:vi.fn(async()=>true),ready:vi.fn(async()=>{}),setLevels:vi.fn(),play:vi.fn(()=>true),pause:vi.fn(),stop:vi.fn(),dispose:vi.fn()}));
+const audio = vi.hoisted(()=>({start:vi.fn(async()=>true),ready:vi.fn(async()=>{}),setScene:vi.fn(),setLevels:vi.fn(),play:vi.fn(()=>true),pause:vi.fn(),stop:vi.fn(),dispose:vi.fn()}));
 vi.mock('./townSounds.js',async importOriginal=>({...await importOriginal(),createTownSounds:()=>audio}));
 vi.mock('./townAmbience.js',()=>({createTownAmbience:()=>({start:async()=>true,setVolume:vi.fn(),pause:vi.fn(),dispose:vi.fn()})}));
 import PetTown from './PetTown.jsx';

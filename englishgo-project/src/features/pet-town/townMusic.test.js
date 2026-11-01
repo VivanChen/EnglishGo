@@ -15,3 +15,10 @@ it('reduces the loop seam without changing the original decoded audio',()=>{
   expect(Math.abs(output[0]-output.at(-1))).toBeLessThan(.02);expect(data).toEqual(original);
   expect(output.every(Number.isFinite)).toBe(true);
 });
+
+it('crossfades a new track and immediately silences both tracks on pause',()=>{
+  const sources=[],context={state:'running',currentTime:4,destination:{},createBufferSource:()=>{const s={connect:vi.fn(),disconnect:vi.fn(),start:vi.fn(),stop:vi.fn()};sources.push(s);return s;},createGain:()=>({gain:{value:.12,setValueAtTime:vi.fn(),linearRampToValueAtTime:vi.fn(),cancelAndHoldAtTime:vi.fn()},connect:vi.fn(),disconnect:vi.fn()})};
+  const music=createTownMusic(context),buffer={sampleRate:100,length:0,duration:40};music.load(buffer);music.start();music.load(buffer,.12,true);music.start();
+  expect(sources[0].stop).toHaveBeenCalledWith(4.6);expect(sources[1].start).toHaveBeenCalledWith(0,0);
+  music.pause();expect(sources[0].disconnect).toHaveBeenCalled();expect(sources[1].disconnect).toHaveBeenCalled();
+});

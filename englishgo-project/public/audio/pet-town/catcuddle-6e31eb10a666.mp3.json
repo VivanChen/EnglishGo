@@ -1,0 +1,8 @@
+{
+  "file": "catcuddle-6e31eb10a666.mp3",
+  "requestHash": "6e31eb10a6664a0d86a6dd30c117d574db3f44590b48f7c659fd7116d20fcf42",
+  "sha256": "c3075e8c6dd02cde1796e7c98619a6db6e2c5b2fe3f31d8ca596b8178bb51dec",
+  "bytes": 33061,
+  "model": "eleven_text_to_sound_v2",
+  "generatedAt": "2026-11-01T11:40:54.269Z"
+}

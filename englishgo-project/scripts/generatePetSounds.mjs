@@ -19,11 +19,30 @@ export const music = {
   prompt: 'Original cozy seaside garden game background music. Soft marimba, delicate acoustic guitar plucks and warm felt piano. Relaxed 80 BPM, simple C major harmony, sparse gentle melody. No vocals, no speech, no percussion hits, no dramatic buildup. Consistent quiet dynamics, suitable beneath English learning activities. A repeating 16-bar theme with a smooth return to the opening harmony; no intro or final flourish.',
   music_length_ms: 48000, model_id: 'music_v2_5', force_instrumental: true,
 };
+export const sceneMusic = {
+  tidepool: 'A peaceful seaside stroll: fingerpicked nylon guitar, airy wooden flute, soft ocean-like brushed textures. Gentle swaying 6/8 rhythm, warm D major, 72 BPM.',
+  meadow: 'A sunny flower meadow: bright pizzicato strings, light celesta and playful acoustic ukulele. Fresh lilting melody, G major, 92 BPM.',
+  pond: 'A still reflective pond: spacious felt piano, delicate glass chimes, sustained soft harp. Slow floating melody, A major, 60 BPM.',
+  market: 'A friendly village bakery market: mellow accordion, plucked upright bass and soft clarinet. Bouncy but quiet acoustic waltz, F major, 98 BPM.',
+  camp: 'A restful woodland campsite at dusk: warm low acoustic guitar, mellow cello and sparse wooden kalimba. Gentle lullaby, C major, 68 BPM.',
+  observatory: 'A magical mountaintop observatory at night: shimmering celesta, airy soft synthesizer pads and delicate harp arpeggios. Dreamy weightless starlight, E major, 64 BPM.',
+};
+export const voiceSounds = {
+  cathappya:[1.2,'A real kitten making two bright happy chirrup meows while playing. Soft friendly cat vocalization, not a human imitation.'],
+  cathappyb:[1.4,'A real playful young cat making one short rising trill then a gentle mew. Delighted and curious, natural dry close-up recording.'],
+  catcuddle:[2,'A real relaxed cat softly purring with a tiny affectionate closed-mouth trill. Quiet warm close-up recording.'],
+  doghappya:[1.2,'A real small adult dog making two happy low-mid pitched woofs. Friendly playful and throaty, soft volume, not shrill or aggressive.'],
+  doghappyb:[1.4,'A real small dog making a short playful gruff woof followed by a contented breathy huff. Warm, natural and clearly canine.'],
+  dogcuddle:[2,'A relaxed real small dog giving a quiet contented snuffle and soft pleased sigh while being gently petted. No whining or distress.'],
+  rabbithappya:[1.3,'A real contented rabbit making very quiet soft breathy honking while exploring, with a tiny nose sniff. Delicate close microphone recording, no squeal.'],
+  rabbithappyb:[1.5,'A real curious rabbit making two gentle nose sniffs and a tiny soft happy grunt. Very quiet natural close-up, never a cat or dog voice.'],
+  rabbitcuddle:[2,'A contented real rabbit very quietly tooth-purring: fine soft rhythmic teeth clicks and calm breathing. Close-up, no distress or loud grinding.'],
+};
 const hash = value => createHash('sha256').update(value).digest('hex');
 const validMp3 = bytes => bytes.length > 100 && (bytes.subarray(0,3).toString() === 'ID3' || (bytes[0] === 255 && (bytes[1] & 224) === 224));
 async function atomicWrite(file, bytes) { const temp = new URL(`${file.href}.tmp`); await writeFile(temp, bytes); await rename(temp, file); }
 
-export async function generatePetSounds(key, { output = new URL('../public/audio/pet-town/', import.meta.url), fetchImpl = fetch, log = console.log } = {}) {
+export async function generatePetSounds(key, { output = new URL('../public/audio/pet-town/', import.meta.url), fetchImpl = fetch, log = console.log, includeScenes = true } = {}) {
   if (!key) throw new Error('ELEVENLABS_API_KEY is required; never put it in the client bundle.');
   await mkdir(output, { recursive: true });
   const lockFile = new URL('.generation.lock', output), lock = await open(lockFile, 'wx').catch(() => { throw new Error('Another generation is running, or a previous interrupted run left .generation.lock.'); });
@@ -55,11 +74,18 @@ export async function generatePetSounds(key, { output = new URL('../public/audio
   };
   try {
     const assets = {};
-    for (const [name, [duration_seconds, prompt]] of Object.entries(sounds)) {
+    for (const [name, [duration_seconds, prompt]] of Object.entries(includeScenes ? {...sounds,...voiceSounds} : sounds)) {
       assets[name] = await asset(name, 'sound-generation', { text: `${prompt} Isolated sound effect. No speech, no music, no background hum.`, duration_seconds, prompt_influence: .5, model_id: 'eleven_text_to_sound_v2' });
     }
     const background = await asset('bgm', 'music', music);
     const manifest = { provider: 'ElevenLabs', generatedAt: new Date().toISOString(), files: Object.fromEntries(Object.entries(assets).map(([name,data])=>[name,data.file])), music: { file: background.file, volume: .12 }, assets: { ...assets, bgm: background } };
+    if (includeScenes) {
+      manifest.scenes = { home: manifest.music };
+      for (const [scene, prompt] of Object.entries(sceneMusic)) {
+        const track = await asset(`bgm${scene}`, 'music', {prompt:`Original instrumental cozy pet game music. ${prompt} No vocals or speech. Quiet consistent dynamics under English learning. Repeating gentle theme, smooth return to the opening harmony, no big intro or final flourish.`, music_length_ms:40000, model_id:'music_v2', force_instrumental:true});
+        manifest.scenes[scene]={file:track.file,volume:.12};manifest.assets[`bgm${scene}`]=track;
+      }
+    }
     await atomicWrite(new URL('manifest.json', output), JSON.stringify(manifest, null, 2)+'\n');
     return manifest;
   } finally {

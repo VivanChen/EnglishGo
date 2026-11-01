@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { careSound, createTownSounds } from './townSounds.js';
+import { careSound, createTownSounds, petVoice, voiceMood } from './townSounds.js';
 
 function audioHarness(withMusic=false) {
   const sources = [], contexts = [], panners = [], gains = [];
@@ -82,4 +82,24 @@ describe('town sound lifecycle', () => {
     audioHarness(); fetch.mockResolvedValue({ok:false}); const audio=createTownSounds();
     await audio.start(); await Promise.resolve(); expect(audio.play('step')).toBe(false); audio.dispose();
   });
+});
+
+it('switches scene music, reuses decoded clips and ignores a late previous destination',async()=>{
+  const {sources}=audioHarness(true),original=fetch.getMockImplementation();let finish;
+  fetch.mockImplementation(async url=>url.endsWith('manifest.json')?{ok:true,json:async()=>({files:{cat:'cat.wav'},music:{file:'bgm.wav'},scenes:{home:{file:'bgm.wav'},pond:{file:'pond.wav'},camp:{file:'camp.wav'}}})}:url.endsWith('pond.wav')?{ok:true,arrayBuffer:()=>new Promise(resolve=>{finish=resolve;})}:original(url));
+  const audio=createTownSounds();await audio.start();await audio.ready();audio.setScene('pond');await vi.waitFor(()=>expect(finish).toBeTypeOf('function'));
+  audio.setScene('camp');await vi.waitFor(()=>expect(sources.filter(s=>s.loop)).toHaveLength(2));
+  finish(new ArrayBuffer(8));await new Promise(resolve=>setTimeout(resolve,0));expect(sources.filter(s=>s.loop)).toHaveLength(2);
+  audio.setScene('home');await vi.waitFor(()=>expect(sources.filter(s=>s.loop)).toHaveLength(3));
+  expect(fetch.mock.calls.filter(([url])=>url.endsWith('bgm.wav'))).toHaveLength(1);
+  audio.pause();audio.setScene('pond');await new Promise(resolve=>setTimeout(resolve,0));expect(sources.filter(s=>s.loop)).toHaveLength(3);audio.dispose();
+});
+it('rotates happy calls, uses affectionate calls and falls back when a variant is missing',async()=>{
+  const {sources,contexts}=audioHarness(),original=fetch.getMockImplementation();
+  fetch.mockImplementation(async url=>url.endsWith('manifest.json')?{ok:true,json:async()=>({files:{cat:'cat.wav',cathappya:'cathappya.wav',cathappyb:'cathappyb.wav',catcuddle:'catcuddle.wav'}})}:original(url));
+  const audio=createTownSounds();await audio.start();await audio.ready();
+  expect(petVoice('harbor-cat','happy')).toBe('catHappy');expect(voiceMood('hop')).toBe('happy');expect(voiceMood('pet')).toBe('cuddle');
+  for(let i=0;i<3;i++){expect(audio.play('catHappy')).toBe(true);contexts[0].currentTime+=2;}
+  expect(sources[0].buffer).not.toBe(sources[1].buffer);expect(sources[0].buffer).toBe(sources[2].buffer);
+  expect(audio.play('catCuddle')).toBe(true);expect(sources[3].buffer).not.toBe(sources[0].buffer);audio.dispose();
 });

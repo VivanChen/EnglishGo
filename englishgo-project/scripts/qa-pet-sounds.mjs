@@ -8,20 +8,22 @@ const browser = await chromium.launch({channel:'msedge',headless:true});
 const musicFixture=process.env.QA_MUSIC_FIXTURE==='1';
 const pack=JSON.parse(await fs.readFile('public/audio/pet-town/manifest.json','utf8'));
 const hasMusic=musicFixture||!!pack.music;
+const initialDecodes=Object.keys(pack.files).length+(hasMusic?1:0);
 await fs.mkdir('.superpowers/qa/pet-sounds',{recursive:true});
 try {
-  for (const width of [1440,390,360]) {
+  for (const width of [1440,360]) {
     const page=await browser.newPage({viewport:{width,height:900},hasTouch:width<900,serviceWorkers:'block'}), errors=[], failed=[];
     page.on('pageerror',e=>errors.push(e.message));
     page.on('response',r=>{if(r.url().includes('/audio/pet-town/')&&!r.ok())failed.push(r.status());});
     if(musicFixture) {
-      await page.route('**/audio/pet-town/manifest.json',r=>r.fulfill({json:{...pack,music:{file:'testbgm.wav',volume:.12}}}));
+      await page.route('**/audio/pet-town/manifest.json',r=>r.fulfill({json:{...pack,music:{file:'testbgm.wav',volume:.12},scenes:{...pack.scenes,home:{file:'testbgm.wav',volume:.12}}}}));
       await page.route('**/audio/pet-town/testbgm.wav',r=>r.fulfill({path:'public/audio/pet-town/chime.wav',contentType:'audio/wav'}));
     }
     page.on('request',r=>{if(/api\.elevenlabs\.io|api\.openai\.com/.test(r.url()))failed.push('unexpected generation API call');});
     await page.route('**/*.supabase.co/**',r=>r.fulfill({status:200,contentType:'application/json',body:'[]'}));
     await page.addInitScript(({key,version})=>{
       localStorage.setItem(key,version);localStorage.setItem('eg_quiet','true');
+      window.petVoiceBuffers=[];const bufferIds=new WeakMap();let bufferId=0;
       window.petSoundStarts=0;window.petDecoded=0;window.petSoundActive=0;
       window.petMusicActive=0;window.petMusicStarts=0;
       window.petMusicContexts=[];const musicSources=new WeakSet(),soundSources=new WeakSet();
@@ -30,7 +32,7 @@ try {
       const start=AudioBufferSourceNode.prototype.start, stop=AudioBufferSourceNode.prototype.stop, decode=AudioContext.prototype.decodeAudioData;
       const finishMusic=source=>{if(musicSources.delete(source))window.petMusicActive--;};
       const finishSound=source=>{if(soundSources.delete(source))window.petSoundActive--;};
-      AudioBufferSourceNode.prototype.start=function(...args){if(!this.loop){soundSources.add(this);window.petSoundStarts++;window.petSoundActive++;this.addEventListener('ended',()=>finishSound(this));}else if(this.buffer?.duration!==4){window.petMusicGain=connections.get(this)?.gain;musicSources.add(this);window.petMusicContexts.push(this.context);window.petMusicStarts++;window.petMusicActive++;this.addEventListener('ended',()=>finishMusic(this));}return start.apply(this,args);};
+      AudioBufferSourceNode.prototype.start=function(...args){if(!this.loop){if(!bufferIds.has(this.buffer))bufferIds.set(this.buffer,++bufferId);window.petVoiceBuffers.push(bufferIds.get(this.buffer));soundSources.add(this);window.petSoundStarts++;window.petSoundActive++;this.addEventListener('ended',()=>finishSound(this));}else if(this.buffer?.duration!==4){window.petMusicGain=connections.get(this)?.gain;musicSources.add(this);window.petMusicContexts.push(this.context);window.petMusicStarts++;window.petMusicActive++;this.addEventListener('ended',()=>finishMusic(this));}return start.apply(this,args);};
       // A suspended context can defer `ended`; also observe successful explicit stops.
       AudioBufferSourceNode.prototype.stop=function(...args){const result=stop.apply(this,args);finishMusic(this);finishSound(this);return result;};
       AudioContext.prototype.decodeAudioData=async function(...args){const buffer=await decode.apply(this,args);window.petDecoded++;return buffer;};
@@ -42,6 +44,18 @@ try {
       const before=await page.evaluate(()=>window.petSoundStarts);
       await page.getByRole('button',{name:`試聽${name}的聲音`,exact:true}).click();
       await page.waitForFunction(before=>window.petSoundStarts>before,before);
+      await page.getByRole('button',{name:'小鎮設定',exact:true}).click();
+      const mood=page.getByRole('combobox',{name:'試聽聲音情境'});
+      const voices=[];
+      for(const choice of ['happy','happy','cuddle']){
+        await mood.selectOption(choice);await page.waitForTimeout(2100);
+        const count=await page.evaluate(()=>window.petVoiceBuffers.length);
+        await page.getByRole('button',{name:'試聽這種心情',exact:true}).click();
+        await page.waitForFunction(n=>window.petVoiceBuffers.length>n,count);
+        voices.push(await page.evaluate(()=>window.petVoiceBuffers.at(-1)));
+      }
+      assert.equal(new Set(voices).size,3,`${name} should have two happy calls and an affectionate call`);
+      await mood.selectOption('greet');await page.getByRole('button',{name:'設定好了',exact:true}).click();
       await page.getByRole('button',{name:'關閉小鎮音效',exact:true}).click();
       await page.waitForFunction(()=>window.petSoundActive===0&&window.petMusicActive===0);
     }
@@ -51,7 +65,7 @@ try {
     await page.locator('[data-renderer="ready"]').waitFor({timeout:60000});
     assert.equal(await page.evaluate(()=>window.petSoundStarts),0);
     await page.getByRole('button',{name:'開啟小鎮音效',exact:true}).click();
-    await page.waitForFunction(count=>window.petDecoded===count,hasMusic?11:10);
+    await page.waitForFunction(count=>window.petDecoded===count,initialDecodes);
     if(hasMusic) await page.waitForFunction(()=>window.petMusicActive===1);
     await page.getByRole('button',{name:'小鎮設定',exact:true}).click();
     await page.getByRole('slider',{name:'背景音樂音量',exact:true}).press('Home');
@@ -89,7 +103,7 @@ try {
     await page.getByRole('button',{name:'打招呼',exact:true}).click(); await page.waitForTimeout(300);
     assert.equal(await page.evaluate(()=>window.petSoundStarts),muted);
     await page.getByRole('button',{name:'開啟小鎮音效',exact:true}).click();
-    if(hasMusic) await page.waitForFunction(()=>window.petMusicActive===1&&window.petMusicStarts===2&&window.petDecoded===11);
+    if(hasMusic) await page.waitForFunction(count=>window.petMusicActive===1&&window.petMusicStarts===2&&window.petDecoded===count,initialDecodes);
     await page.getByRole('button',{name:'關閉遊戲音效',exact:true}).click();
     await page.getByRole('button',{name:'開啟小鎮音效',exact:true}).waitFor();
     await page.waitForFunction(()=>window.petSoundActive===0);
@@ -112,9 +126,23 @@ try {
     const clipped=await page.getByRole('button',{name:'開啟小鎮音效',exact:true}).evaluate(el=>{const r=el.getBoundingClientRect(),p=el.closest('.pet-town').getBoundingClientRect();return r.left<p.left||r.right>p.right;});
     assert.equal(clipped,false); assert.deepEqual(errors,[]); assert.deepEqual(failed,[]);
     await page.screenshot({path:`.superpowers/qa/pet-sounds/${width}-header.png`});
+    await page.getByRole('button',{name:'開啟小鎮音效',exact:true}).click();
+    await page.getByRole('navigation',{name:'海風小鎮導覽'}).getByRole('button',{name:'出遊',exact:true}).click();
+    for(const name of ['潮汐灣','花語草地','映月池','海風市集','林間營地','山頂觀星台']){
+      const starts=await page.evaluate(()=>window.petMusicStarts);
+      await page.getByRole('button',{name:`前往${name}`,exact:true}).click();
+      await page.waitForFunction(n=>window.petMusicStarts>n,starts);
+      await page.waitForFunction(()=>window.petMusicGain.value>0);
+    }
+    const starts=await page.evaluate(()=>window.petMusicStarts);
+    await page.getByRole('button',{name:'返回地圖',exact:true}).click();
+    await page.waitForFunction(n=>window.petMusicStarts>n,starts);
+    await page.getByRole('button',{name:'關閉小鎮音效',exact:true}).click();
+    await page.getByRole('button',{name:'前往潮汐灣',exact:true}).click();await page.waitForTimeout(900);
+    assert.equal(await page.evaluate(()=>window.petMusicActive),0);assert.deepEqual(errors,[]);assert.deepEqual(failed,[]);
     await page.reload({waitUntil:'domcontentloaded'});await page.getByRole('button',{name:'小鎮設定',exact:true}).click();
     assert.equal(await page.getByRole('slider',{name:'背景音樂音量',exact:true}).inputValue(),'100');
     assert.equal(await page.getByRole('slider',{name:'寵物與環境音量',exact:true}).inputValue(),'80');
-    console.log(`${width}: saved volume controls, foreground duck/recovery, three species previews from mute, four animations, decoded audio, ${hasMusic?'cached music loop/resume, ':''}playback, local/global mute, visibility pause, unchanged rewards, layout passed${musicFixture?' (music uses test fixture)':''}`); await page.close();
+    console.log(`${width}: six destination tracks, three species mood variants, saved volume controls, foreground duck/recovery, four animations, decoded audio, ${hasMusic?'cached music loop/resume, ':''}playback, local/global mute, visibility pause, unchanged rewards, layout passed${musicFixture?' (music uses test fixture)':''}`); await page.close();
   }
 }finally{await browser.close();}

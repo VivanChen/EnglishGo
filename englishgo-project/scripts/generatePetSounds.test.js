@@ -11,7 +11,7 @@ async function harness() {
   const dir=await mkdtemp(join(tmpdir(),'englishgo-audio-'));directories.push(dir);
   const output=pathToFileURL(dir+'/'), bytes=Buffer.alloc(256);bytes.write('ID3');
   const fetchImpl=vi.fn(async()=>new Response(bytes,{headers:{'content-type':'audio/mpeg'}}));
-  return {output,fetchImpl,log:()=>{}};
+  return {output,fetchImpl,log:()=>{},includeScenes:false};
 }
 it('generates one stored instrumental track and ten effects; reruns make zero paid calls',async()=>{
   const options=await harness(), first=await generatePetSounds('test-only',options);
@@ -46,4 +46,12 @@ it('rejects invalid payloads and corrupted caches without publishing or automati
 it('rejects concurrent generation before spending any credits',async()=>{
   const options=await harness();await writeFile(new URL('.generation.lock',options.output),'busy');
   await expect(generatePetSounds('test-only',options)).rejects.toThrow('Another generation');expect(options.fetchImpl).not.toHaveBeenCalled();
+});
+
+it('stores distinct scene music and mood variants and reuses every generated file',async()=>{
+  const options={...await harness(),includeScenes:true}, manifest=await generatePetSounds('test-only',options);
+  expect(Object.keys(manifest.scenes)).toHaveLength(7);expect(new Set(Object.values(manifest.scenes).map(s=>s.file)).size).toBe(7);
+  expect(Object.keys(manifest.files)).toHaveLength(19);expect(manifest.files.cathappya).not.toBe(manifest.files.cathappyb);
+  expect(options.fetchImpl).toHaveBeenCalledTimes(26);options.fetchImpl.mockClear();
+  await generatePetSounds('test-only',options);expect(options.fetchImpl).not.toHaveBeenCalled();
 });
