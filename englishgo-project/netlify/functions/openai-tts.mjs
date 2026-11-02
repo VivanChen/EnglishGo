@@ -7,6 +7,7 @@ const MAX_AUDIO_BYTES = 4 * 1024 * 1024;
 const MAX_MEMORY_BYTES = 16 * 1024 * 1024;
 const MAX_MEMORY_ITEMS = 64;
 const MEMORY_TTL_MS = 60_000;
+const STORAGE_TIMEOUT_MS = 5000;
 const ALLOWED_VOICES = new Set(["marin", "cedar", "coral"]);
 const memoryCache = new Map();
 const pending = new Map();
@@ -132,7 +133,7 @@ async function storageOperation(operation) {
       timer = setTimeout(() => {
         controller.abort();
         reject(new Error("Storage timeout"));
-      }, 2000);
+      }, STORAGE_TIMEOUT_MS);
     });
     return await Promise.race([operation(controller.signal), timeout]);
   } catch {
@@ -307,7 +308,10 @@ export default async function handler(request) {
   if (text === "i") text = "I";
   if (!text || text.length > MAX_TEXT_LENGTH) return jsonResponse(400, "invalid_text", "Text must contain 1 to 350 characters.");
   const rawLang = payload.lang ?? "en-US";
-  if (typeof rawLang !== "string" || !/^(en|zh)(?:-[a-z0-9]{2,8})*$/i.test(rawLang)) return jsonResponse(400, "invalid_language", "English or Chinese is supported.");
+  // Accept locale IDs from already-open mobile clients as well as BCP 47 tags.
+  // Android may expose zh_TW_#Hant through its device speech voice.
+  const language = typeof rawLang === "string" ? rawLang.trim().replace(/_/g, "-").replace(/-#(?=[a-z]{4}(?:-|$))/ig, "-") : "";
+  if (!/^(en|zh)(?:-[a-z0-9]{2,8})*$/i.test(language)) return jsonResponse(400, "invalid_language", "English or Chinese is supported.");
   const voice = payload.voiceId ?? "marin";
   if (!ALLOWED_VOICES.has(voice)) return jsonResponse(400, "invalid_voice", "Select a supported voice.");
   const rawSpeed = payload.speed ?? 1;
@@ -316,7 +320,7 @@ export default async function handler(request) {
   if (payload.cacheOnly != null && typeof payload.cacheOnly !== "boolean") return jsonResponse(400, "invalid_cache_only", "Cache-only must be a boolean.");
   if (payload.cacheOnly === true && payload.forceRegenerate === true) return jsonResponse(400, "invalid_cache_request", "Cache-only cannot regenerate audio.");
   const input = {
-    text, voice, lang: /^zh/i.test(rawLang) ? "zh-TW" : "en-US",
+    text, voice, lang: /^zh/i.test(language) ? "zh-TW" : "en-US",
     speed: Math.max(0.7, Math.min(1.2, rawSpeed)), forceRegenerate: payload.forceRegenerate === true,
   };
 

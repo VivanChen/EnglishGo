@@ -178,6 +178,18 @@ describe("Speech provider adapter", () => {
     expect(nativeSpeak).not.toHaveBeenCalled();
   });
 
+  it.each(['zh_TW','zh_TW_#Hant','zh-TW-#Hant','zh-Hant-TW','zh-CN'])("shares Chinese preloaded audio with the Android voice locale %s",async lang=>{
+    const {nativeSpeak}=installPatchEnv();
+    globalThis.fetch=vi.fn(()=>Promise.resolve(new Response('wav',{headers:{'Content-Type':'audio/wav'}})));
+    const audio={play:vi.fn(()=>Promise.resolve()),pause:vi.fn()};globalThis.Audio=vi.fn(()=>audio);
+    loadPatch('openai');await window.EnglishGoTTS.preload('森林很安靜。',{lang:'zh-TW'});
+    const utterance=new SpeechSynthesisUtterance('森林很安靜。');utterance.lang=lang;utterance.__englishGoApiTts=true;
+    window.speechSynthesis.speak(utterance);
+    await vi.waitFor(()=>expect(audio.play).toHaveBeenCalledTimes(2));
+    expect(nativeSpeak).not.toHaveBeenCalled();expect(fetch).toHaveBeenCalledOnce();
+    expect(JSON.parse(fetch.mock.calls[0][1].body)).toMatchObject({lang:'zh-TW',voiceId:'marin'});
+  });
+
   it.each(["elevenlabs", "openai"])("only looks up saved %s audio while preloading and silently skips missing clips", async provider => {
     installPatchEnv();
     let paidRequests = 0;

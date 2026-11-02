@@ -107,6 +107,22 @@ describe("OpenAI pronunciation endpoint", () => {
     ]);
   });
 
+  it.each(['zh_TW','zh_TW_#Hant','zh-TW-#Hant','zh_Hant_TW','en_US'])("accepts the legacy mobile locale %s and sends a canonical language to OpenAI",async lang=>{
+    const response=await handler(request({text:'今天一起讀故事。',lang,voiceId:'marin'}));
+    expect(response.status).toBe(200);
+    expect(synthesizeSpeech).toHaveBeenCalledOnce();
+    expect(synthesizeSpeech.mock.calls[0][0].lang).toBe(lang.startsWith('zh')?'zh-TW':'en-US');
+  });
+
+  it('waits for a slow healthy cache lookup without falling back or paying for synthesis',async()=>{
+    vi.useFakeTimers();enableStorage();
+    fetch.mockImplementation(()=>new Promise(resolve=>setTimeout(()=>resolve(new Response(wav('slow-hit'))),2500)));
+    const pendingResponse=handler(request({text:'今天一起讀故事。',lang:'zh-TW'}));
+    await vi.advanceTimersByTimeAsync(2500);const response=await pendingResponse;
+    expect(response.status).toBe(200);expect(response.headers.get('X-TTS-Source')).toBe('supabase-cache');
+    expect(synthesizeSpeech).not.toHaveBeenCalled();expect(fetch).toHaveBeenCalledOnce();
+  });
+
   it("returns sanitized configuration failure only after checking persistent cache", async () => {
     vi.stubEnv("OPENAI_API_KEY", "");
     enableStorage();
@@ -365,7 +381,7 @@ describe("OpenAI pronunciation endpoint", () => {
       return new Response(new ReadableStream({ start() {} }), { headers: { "Content-Type": "audio/wav" } });
     });
     const responsePromise = handler(request());
-    await vi.advanceTimersByTimeAsync(2001);
+    await vi.advanceTimersByTimeAsync(5001);
     const response = await responsePromise;
     expect(response.status).toBe(503);
     expect((await response.json()).code).toBe("speech_cache_unavailable");

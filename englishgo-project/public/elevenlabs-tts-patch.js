@@ -259,9 +259,10 @@
     const fixedAudioUrl = String(options.audioUrl || "").trim();
     const cacheOnly = !fixedAudioUrl && options.cacheOnly === true;
     const baseSettings = getSettings();
-    // English cloud voices are selected by voiceId, not by the device's locale.
-    // Use the same key for preloads and playback on en-GB/en-AU devices.
-    const lang = /^en/i.test(options.lang || "en-US") ? "en-US" : options.lang;
+    // Device voices can report Android locale IDs such as zh_TW_#Hant.
+    // Cloud requests and preloads must share the app's canonical language.
+    const requestedLang = options.lang || "en-US";
+    const lang = isChineseLang(requestedLang) ? "zh-TW" : /^en/i.test(requestedLang) ? "en-US" : requestedLang;
     const useSelectedVoice = !isChineseLang(lang) || baseSettings.provider === "openai";
     const settings = {
       ...baseSettings,
