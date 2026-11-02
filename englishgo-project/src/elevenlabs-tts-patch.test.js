@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { makeNovelAudioItem } from "./data/novelAudio.js";
 
 const patchSource = readFileSync(path.join(process.cwd(), "public", "elevenlabs-tts-patch.js"), "utf8");
 let environmentCount = 0;
@@ -493,6 +494,25 @@ describe("Speech provider adapter", () => {
     }));
   });
 
+  it("routes English and Chinese novel items to OpenAI and keeps preloading cache-only", async () => {
+    installPatchEnv();
+    globalThis.fetch = vi.fn(() => Promise.resolve(new Response("mp3", { headers: { "Content-Type": "audio/mpeg" } })));
+    loadPatch('openai');
+    window.EnglishGoTTS.setSettings({ voiceId: 'cedar' });
+    const items=[['en-US','The forest is quiet.'],['zh-TW','森林很安靜。']].map(([lang,text])=>makeNovelAudioItem({novelId:'story',chapterNo:1,lang,text,provider:'openai'}));
+    expect(await window.EnglishGoTTS.preloadMany(items)).toBe(2);
+    for(const [url,options] of fetch.mock.calls){
+      expect(url).toBe('/.netlify/functions/openai-tts');
+      expect(options.method).toBe('POST');
+      expect(JSON.parse(options.body).cacheOnly).toBe(true);
+    }
+    expect(fetch.mock.calls.every(([,options])=>JSON.parse(options.body).voiceId==='cedar')).toBe(true);
+    expect(fetch.mock.calls.map(([,options])=>JSON.parse(options.body).lang)).toEqual(['en-US','zh-TW']);
+    fetch.mockClear();
+    for(const item of items)await window.EnglishGoTTS.getAudioUrl(item.text,item);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
   it("preloads object-based English and Chinese novel audio items", async () => {
     installPatchEnv();
     globalThis.fetch = vi.fn(() => Promise.resolve(new Response("mp3", { headers: { "Content-Type": "audio/mpeg" } })));
@@ -534,7 +554,7 @@ describe("Speech provider adapter", () => {
     expect(nativeSpeak).toHaveBeenCalledWith(utterance);
   });
 
-  it("routes novel-marked Chinese speech through the fixed API voice", () => {
+  it("routes novel-marked Chinese speech through the selected OpenAI voice and speed", () => {
     const { nativeSpeak } = installPatchEnv();
     globalThis.fetch = vi.fn(() => new Promise(() => {}));
     const audio = {
@@ -546,6 +566,7 @@ describe("Speech provider adapter", () => {
     };
     globalThis.Audio = vi.fn(() => audio);
     loadPatch();
+    window.EnglishGoTTS.setSettings({voiceId:'cedar',speed:0.85});
 
     const utterance = new SpeechSynthesisUtterance("\u9019\u662f\u5c0f\u8aaa\u7684\u4e2d\u6587\u65c1\u767d\u3002");
     utterance.lang = "zh-TW";
@@ -558,10 +579,18 @@ describe("Speech provider adapter", () => {
     expect(payload).toMatchObject({
       text: "\u9019\u662f\u5c0f\u8aaa\u7684\u4e2d\u6587\u65c1\u767d\u3002",
       lang: "zh-TW",
-      speed: 1,
+      speed: 0.85,
+      voiceId: 'cedar',
     });
-    expect(payload).not.toHaveProperty("voiceId");
     expect(audio.play).toHaveBeenCalledTimes(1);
+  });
+
+  it('retains the fixed Mandarin setup for ElevenLabs',async()=>{
+    installPatchEnv();globalThis.fetch=vi.fn(()=>Promise.resolve(new Response('mp3',{headers:{'Content-Type':'audio/mpeg'}})));
+    loadPatch('elevenlabs');window.EnglishGoTTS.setSettings({voiceId:'EXAVITQu4vr4xnSDxMaL',speed:0.8});
+    await window.EnglishGoTTS.getAudioUrl('今天一起讀故事。',{lang:'zh-TW'});
+    const [url,options]=fetch.mock.calls[0];expect(url).toBe('/.netlify/functions/elevenlabs-tts');
+    expect(JSON.parse(options.body)).toMatchObject({lang:'zh-TW',speed:1});expect(JSON.parse(options.body)).not.toHaveProperty('voiceId');
   });
 
   it("unlocks English audio during the click before the API response arrives", () => {

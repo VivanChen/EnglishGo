@@ -109,6 +109,25 @@ describe("OpenAI pronunciation synthesis", () => {
     await expect(result).resolves.toBeInstanceOf(Buffer);
   });
 
+  it.each([
+    ['en-US', 'Can we read these three books?', ['American English', 'word-final consonants', '140 to 160 words', 'question intonation'], ['third-tone sandhi']],
+    ['zh-TW', '你好！我們一起去銀行。', ['Taiwan Mandarin', 'polyphonic characters', 'third-tone sandhi', '一 and 不', 'neutral tones', 'embedded English', '3 to 4 Chinese syllables'], ['140 to 160 words']],
+  ])('uses language-specific pronunciation guidance while preserving exact %s readback', async (lang, text, included, excluded) => {
+    const result=synthesizeSpeech({...input,text,lang});const socket=connect();
+    const instructions=socket.sent[0].session.instructions;
+    for(const phrase of included)expect(instructions).toContain(phrase);
+    for(const phrase of excluded)expect(instructions).not.toContain(phrase);
+    expect(socket.sent[1].item.content[0].text).toBe(text);
+    audio(socket);complete(socket,text);await expect(result).resolves.toBeInstanceOf(Buffer);
+  });
+
+  it.each([['a','dictionary citation form /eɪ/'],['I','/aɪ/'],['apple','dictionary pronunciation']])('reads the isolated vocabulary entry %s without spelling or added examples',async(text,pronunciation)=>{
+    const result=synthesizeSpeech({...input,text});const socket=connect();
+    const instructions=socket.sent[0].session.instructions;
+    expect(instructions).toContain('isolated vocabulary word');expect(instructions).toContain(pronunciation);
+    audio(socket);complete(socket,text);await expect(result).resolves.toBeInstanceOf(Buffer);
+  });
+
   it.each(["Sure! Hello world!", "Hello, moon!", ""]) ("rejects unasked or missing words: %s", async (transcript) => {
     const result = synthesizeSpeech(input);
     const rejected = expect(result).rejects.toMatchObject({ code: "speech_mismatch", status: 502 });

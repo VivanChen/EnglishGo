@@ -16,13 +16,14 @@ function useLS(key, initial) {
 const Hdr = ({ t, onBack }) => <header><h1>{t}</h1><button onClick={onBack}>返回</button></header>;
 const click = name => fireEvent.click(screen.getByRole('button', { name, exact: true }));
 function mount(extra = {}) {
-  const deps = { Hdr, useLS, LV: { elementary: { cl: '#0f6e56', bg: '#eef5ee', ac: '#528973' } }, S: { card: {}, btn: {}, t1: '#243e33', t2: '#435a50', t3: '#647369', bg1: '#fff', bg2: '#eef2ee', bd: '#c7d5cc' }, readingWords: value => value.split(/\s+/), playSound: vi.fn(), stopSpeech: vi.fn(), speak: vi.fn(() => ({})), speakStory: vi.fn(() => ({ cancel: vi.fn(), pause: () => true, resume: () => true })), ...extra };
+  const deps = { Hdr, useLS, useTtsSettings: () => ({ provider: 'elevenlabs', speed: 1 }), ReadingSettings: () => <div>朗讀設定</div>, LV: { elementary: { cl: '#0f6e56', bg: '#eef5ee', ac: '#528973' } }, S: { card: {}, btn: {}, t1: '#243e33', t2: '#435a50', t3: '#647369', bg1: '#fff', bg2: '#eef2ee', bd: '#c7d5cc' }, readingWords: value => value.split(/\s+/), playSound: vi.fn(), stopSpeech: vi.fn(), speak: vi.fn(() => ({})), speakStory: vi.fn(() => ({ cancel: vi.fn(), pause: () => true, resume: () => true })), ...extra };
   const props = { lv: 'elementary', onBack: vi.fn(), onXp: vi.fn(), deps };
   return { ...render(<StrictMode><NovelM {...props} /></StrictMode>), props, deps };
 }
 async function open() { fireEvent.click(await screen.findByTestId('novel-chapter-card-1')); await screen.findByTestId('novel-reader-panel'); }
 function finishTurn() { const sheet = screen.queryByTestId('novel-page-turn'); if (sheet) fireEvent.animationEnd(sheet); }
 function openAudio(){click('展開閱讀工具');click('聽故事');}
+function chooseAudio(name){fireEvent.click(within(screen.getByRole('dialog',{name:'聽故事'})).getByRole('button',{name,exact:true}));}
 function openParagraph(index){click(`段落 ${index+1} 的閱讀工具`);}
 function jumpLast() {
   click('☷ 目錄與書籤');
@@ -32,6 +33,34 @@ function jumpLast() {
 afterEach(() => { vi.restoreAllMocks(); Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1024 }); Object.defineProperty(window, 'innerHeight', { configurable: true, value: 768 }); });
 
 describe('novel reading continuity', () => {
+  it.each(['openai', 'device'])('uses the selected %s service for bilingual pages, chapters and individual paragraphs', async provider => {
+    const view=mount({useTtsSettings:()=>({provider,speed:1})});await open();
+    for(const action of ['英中本頁朗讀','從這裡接著朗讀','整章朗讀','英文本頁','中文本頁','英文整章','中文整章']){
+      openAudio();chooseAudio(action);
+      const items=view.deps.speakStory.mock.calls.at(-1)[0];
+      expect(items.length).toBeGreaterThan(0);
+      expect(items.every(item=>!item.audioUrl)).toBe(true);
+      if(action==='英中本頁朗讀')expect(items.slice(0,2).map(item=>item.lang)).toEqual(['en-US','zh-TW']);
+      click('停止小說朗讀');
+    }
+    openParagraph(0);click('朗讀英文');
+    expect(view.deps.speak.mock.calls.at(-1)[3].audioUrl).toBeUndefined();
+    click('朗讀中文');
+    expect(view.deps.speak).toHaveBeenLastCalledWith(expect.any(String),'zh-TW',1,expect.objectContaining({apiTts:true,audioUrl:undefined}));
+  });
+  it('stops the old narrator when settings change and keeps the reading position when switching back', async()=>{
+    let provider='elevenlabs';const cancel=vi.fn();
+    const view=mount({useTtsSettings:()=>({provider,speed:1}),speakStory:vi.fn(()=>({cancel}))});await open();
+    click('下一頁');finishTurn();const text=screen.getAllByTestId('novel-reader-text')[0].textContent;
+    openAudio();expect(screen.getByText('朗讀設定')).toBeInTheDocument();chooseAudio('英中本頁朗讀');
+    expect(view.deps.speakStory.mock.calls.at(-1)[0].every(item=>item.audioUrl?.includes('elevenlabs-tts?novel='))).toBe(true);
+    provider='openai';view.rerender(<StrictMode><NovelM {...view.props}/></StrictMode>);
+    expect(cancel).toHaveBeenCalledOnce();expect(screen.queryByRole('button',{name:'停止小說朗讀'})).not.toBeInTheDocument();
+    expect(screen.getAllByTestId('novel-reader-text')[0]).toHaveTextContent(text);
+    openAudio();chooseAudio('英中本頁朗讀');expect(view.deps.speakStory.mock.calls.at(-1)[0].every(item=>!item.audioUrl)).toBe(true);
+    provider='elevenlabs';view.rerender(<StrictMode><NovelM {...view.props}/></StrictMode>);
+    openAudio();chooseAudio('英中本頁朗讀');expect(view.deps.speakStory.mock.calls.at(-1)[0].every(item=>item.audioUrl?.includes('elevenlabs-tts?novel='))).toBe(true);
+  });
   it('previews the selected type size, spacing and language before returning to the same paragraph', async () => {
     mount(); await open();
     const before=screen.getAllByTestId('novel-reader-text')[0].textContent;
@@ -56,7 +85,7 @@ describe('novel reading continuity', () => {
     const paragraph = document.activeElement;
     expect(within(paragraph).getByTestId('novel-reader-text')).toHaveTextContent('Not the cave.');
     expect(within(paragraph).getByTestId('novel-reader-translation')).toHaveTextContent('不是洞穴。');
-    openParagraph(29);click('朗讀中文（固定真人聲線）');click('關閉工具面板');
+    openParagraph(29);click('朗讀中文');click('關閉工具面板');
     expect(view.deps.speak).toHaveBeenLastCalledWith('不是洞穴。', 'zh-TW', 1, expect.objectContaining({ audioUrl: expect.stringContaining('-zh-block-29-') }));
     openAudio();click('從這裡接著朗讀');expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     const items = view.deps.speakStory.mock.calls.at(-1)[0];

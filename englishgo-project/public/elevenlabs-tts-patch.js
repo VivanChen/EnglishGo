@@ -262,12 +262,13 @@
     // English cloud voices are selected by voiceId, not by the device's locale.
     // Use the same key for preloads and playback on en-GB/en-AU devices.
     const lang = /^en/i.test(options.lang || "en-US") ? "en-US" : options.lang;
+    const useSelectedVoice = !isChineseLang(lang) || baseSettings.provider === "openai";
     const settings = {
       ...baseSettings,
       ...options,
       lang,
-      voiceId: options.voiceId ?? (isChineseLang(lang) ? undefined : baseSettings.voiceId),
-      speed: isChineseLang(lang) ? 1 : options.speed ?? baseSettings.speed,
+      voiceId: options.voiceId ?? (useSelectedVoice ? baseSettings.voiceId : undefined),
+      speed: useSelectedVoice ? options.speed ?? baseSettings.speed : 1,
     };
     // Provider choice is a learner setting, never an arbitrary URL in options.
     settings.provider = baseSettings.provider;

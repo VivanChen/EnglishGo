@@ -55,14 +55,15 @@ export function getNovelAudioUrl(input) {
   return `/.netlify/functions/elevenlabs-tts?novel=${encodeURIComponent(assetId)}`;
 }
 
-export function makeNovelAudioItem({ novelId, chapterNo, lang, kind = "block", blockIndex = 0, text }) {
+export function makeNovelAudioItem({ novelId, chapterNo, lang, kind = "block", blockIndex = 0, text, provider = "elevenlabs" }) {
   const isChinese = /^zh/i.test(String(lang || ""));
   return {
     text,
     lang: isChinese ? "zh-TW" : "en-US",
     rate: isChinese ? NOVEL_CHINESE_RATE : NOVEL_ENGLISH_RATE,
     apiTts: isChinese,
-    audioUrl: getNovelAudioUrl({ novelId, chapterNo, lang, kind, blockIndex, text }),
+    // Only ElevenLabs owns these recordings; other providers synthesize the text.
+    ...(provider === "elevenlabs" ? { audioUrl: getNovelAudioUrl({ novelId, chapterNo, lang, kind, blockIndex, text }) } : {}),
     ...(kind === "block" ? { blockIndex } : {}),
   };
 }

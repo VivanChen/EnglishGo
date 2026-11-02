@@ -65,7 +65,7 @@ describe('pronunciation settings', () => {
     expect(within(provider).getByRole('option', { name: 'ElevenLabs（原本的發音）' }).selected).toBe(true);
     expect(within(provider).getByRole('option', { name: 'OpenAI（自然發音）' })).toBeInTheDocument();
     expect(within(provider).getByRole('option', { name: '裝置語音（免 API）' })).toBeInTheDocument();
-    expect(screen.getByRole('combobox', { name: '英文朗讀聲音' })).toHaveDisplayValue('清晰美式（推薦） · US');
+    expect(screen.getByRole('combobox', { name: /^(?:中英文|英文)朗讀聲音$/ })).toHaveDisplayValue('清晰美式（推薦） · US');
     expect(screen.queryByText(openaiSetupNote)).not.toBeInTheDocument();
     expect(globalThis.fetch).not.toHaveBeenCalled();
   });
@@ -75,8 +75,9 @@ describe('pronunciation settings', () => {
     fireEvent.change(screen.getByRole('combobox', { name: '發音服務' }), { target: { value: 'openai' } });
 
     expect(screen.getByText(openaiSetupNote)).toBeInTheDocument();
-    expect(screen.getByRole('combobox', { name: '英文朗讀聲音' })).toHaveDisplayValue('清晰自然（推薦）');
-    fireEvent.change(screen.getByRole('combobox', { name: '英文朗讀聲音' }), { target: { value: 'cedar' } });
+    expect(screen.getByRole('combobox', { name: '中英文朗讀聲音' })).toHaveDisplayValue('清晰自然（推薦）');
+    expect(screen.getByText('OpenAI 中英文聲音')).toBeInTheDocument();
+    fireEvent.change(screen.getByRole('combobox', { name: /^(?:中英文|英文)朗讀聲音$/ }), { target: { value: 'cedar' } });
     fireEvent.change(screen.getByRole('slider', { name: '預設朗讀速度' }), { target: { value: '0.85' } });
     view.unmount();
 
@@ -85,7 +86,7 @@ describe('pronunciation settings', () => {
     render(<App />);
     await screen.findByRole('heading', { name: '設定' });
     expect(screen.getByRole('combobox', { name: '發音服務' })).toHaveValue('openai');
-    expect(screen.getByRole('combobox', { name: '英文朗讀聲音' })).toHaveDisplayValue('溫暖沉穩');
+    expect(screen.getByRole('combobox', { name: /^(?:中英文|英文)朗讀聲音$/ })).toHaveDisplayValue('溫暖沉穩');
     expect(screen.getByRole('slider', { name: '預設朗讀速度' })).toHaveValue('0.85');
     expect(screen.getByText(openaiSetupNote)).toBeInTheDocument();
     expect(globalThis.fetch).not.toHaveBeenCalled();
@@ -93,15 +94,15 @@ describe('pronunciation settings', () => {
 
   it('restores each cloud service’s own voice when switching between providers', async () => {
     await openSettingsFromLanding();
-    fireEvent.change(screen.getByRole('combobox', { name: '英文朗讀聲音' }), { target: { value: 'EXAVITQu4vr4xnSDxMaL' } });
+    fireEvent.change(screen.getByRole('combobox', { name: /^(?:中英文|英文)朗讀聲音$/ }), { target: { value: 'EXAVITQu4vr4xnSDxMaL' } });
     fireEvent.change(screen.getByRole('combobox', { name: '發音服務' }), { target: { value: 'openai' } });
-    fireEvent.change(screen.getByRole('combobox', { name: '英文朗讀聲音' }), { target: { value: 'coral' } });
+    fireEvent.change(screen.getByRole('combobox', { name: /^(?:中英文|英文)朗讀聲音$/ }), { target: { value: 'coral' } });
 
     fireEvent.change(screen.getByRole('combobox', { name: '發音服務' }), { target: { value: 'elevenlabs' } });
-    expect(screen.getByRole('combobox', { name: '英文朗讀聲音' })).toHaveDisplayValue('溫暖美式 · US');
+    expect(screen.getByRole('combobox', { name: /^(?:中英文|英文)朗讀聲音$/ })).toHaveDisplayValue('溫暖美式 · US');
     expect(screen.queryByText(openaiSetupNote)).not.toBeInTheDocument();
     fireEvent.change(screen.getByRole('combobox', { name: '發音服務' }), { target: { value: 'openai' } });
-    expect(screen.getByRole('combobox', { name: '英文朗讀聲音' })).toHaveDisplayValue('明亮親切');
+    expect(screen.getByRole('combobox', { name: /^(?:中英文|英文)朗讀聲音$/ })).toHaveDisplayValue('明亮親切');
     expect(globalThis.fetch).not.toHaveBeenCalled();
   });
 
@@ -113,7 +114,7 @@ describe('pronunciation settings', () => {
     fireEvent.change(screen.getByRole('combobox', { name: '發音服務' }), { target: { value: 'device' } });
     expect(screen.getByRole('button', { name: '重產最近發音' })).toBeDisabled();
     expect(screen.getByText('使用這台裝置的內建語音')).toBeInTheDocument();
-    expect(screen.queryByRole('combobox', { name: '英文朗讀聲音' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: /^(?:中英文|英文)朗讀聲音$/ })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '試聽目前設定' }));
     expect(nativeSpeak).toHaveBeenCalledWith(expect.objectContaining({ text: 'You can change the English reading speed here.' }));
     expect(globalThis.fetch).not.toHaveBeenCalled();

@@ -1091,7 +1091,7 @@ describe('EnglishGo app smoke flow', () => {
     const speech=installMockSpeechSynthesis();
     try{
       await openNovelForSmoke();novelClick('段落 1 的閱讀工具');speech.cancel.mockClear();speech.speak.mockClear();speech.events.splice(0);
-      novelClick('朗讀中文（固定真人聲線）');novelClick('關閉工具面板');
+      novelClick('朗讀中文');novelClick('關閉工具面板');
       expect(speech.speak).toHaveBeenCalledTimes(1);expect(speech.cancel).toHaveBeenCalledTimes(1);expect(speech.events).toEqual(['cancel','resume','speak']);
       expect(speech.speak.mock.calls[0][0].__englishGoAudioUrl).toMatch(/^\/\.netlify\/functions\/elevenlabs-tts\?novel=v2-secret-forest-adventure-c1-zh-block-0-/);
       novelClick('暫停小說朗讀');expect(speech.pause).toHaveBeenCalledTimes(1);novelClick('繼續小說朗讀');expect(speech.resume).toHaveBeenCalledTimes(2);

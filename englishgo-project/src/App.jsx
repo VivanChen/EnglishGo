@@ -1906,7 +1906,7 @@ function TtsQuickSpeed(){
     {TTS_SPEED_PRESETS.map(option=><option key={option.value} value={option.value}>{option.label} {option.value.toFixed(1)}×</option>)}
   </select></label>);
 }
-function ReadingSettings({c}){
+function ReadingSettings({c,compact=false}){
   const settings=useTtsSettings();
   const[voiceOptions,setVoiceOptions]=useState(()=>window.EnglishGoTTS?.getVoiceOptions?.()||[]);
   const[lastRegenerableText,setLastRegenerableText]=useState(()=>window.EnglishGoTTS?.getLastRegenerableText?.()||"");
@@ -1931,10 +1931,10 @@ function ReadingSettings({c}){
     window.setTimeout(()=>setPreviewStatus(""),1800);
   };
   const inputStyle={width:"100%",accentColor:c.cl};
-  return(<section style={{...S.card,padding:20,marginBottom:12}}>
+  return(<section style={{...S.card,padding:compact?14:20,marginBottom:12}}>
     <h3 style={{margin:"0 0 6px",fontSize:17}}>朗讀設定</h3>
-    <p style={{fontSize:13,color:S.t2,lineHeight:1.7,margin:"0 0 8px"}}>選擇單字與例句的發音服務、聲音與速度，下次播放時生效。雲端聲音由 AI 生成。</p>
-    <p style={{fontSize:12,color:S.t3,lineHeight:1.7,margin:"0 0 16px"}}>雲端無法使用時會切換為裝置語音。字典使用裝置發音；小說、童書與歌曲使用各自的音檔。</p>
+    {!compact&&<><p style={{fontSize:13,color:S.t2,lineHeight:1.7,margin:"0 0 8px"}}>選擇單字、例句與小說的發音服務、聲音與速度，下次播放時生效。雲端聲音由 AI 生成。</p>
+    <p style={{fontSize:12,color:S.t3,lineHeight:1.7,margin:"0 0 16px"}}>雲端無法使用時會切換為裝置語音。字典使用裝置發音；童書與歌曲使用各自的音檔。小說選 ElevenLabs 時使用原本音檔，選 OpenAI 或裝置語音時使用所選服務。</p></>}
     <label style={{display:"block",fontSize:13,fontWeight:800,color:S.t1,marginBottom:15}}>發音服務
       <select aria-label="發音服務" value={settings.provider} onChange={event=>saveTtsSettings({provider:event.target.value})} style={{display:"block",width:"100%",marginTop:6,padding:"10px 12px",borderRadius:10,border:`1px solid ${S.bd}`,background:S.bg1,color:S.t1,fontFamily:"inherit",fontSize:14}}>
         <option value="elevenlabs">ElevenLabs（原本的發音）</option>
@@ -1943,15 +1943,15 @@ function ReadingSettings({c}){
       </select>
     </label>
     {settings.provider==="openai"&&<p style={{fontSize:12,color:S.t2,lineHeight:1.7,margin:"-6px 0 15px"}}>使用 OpenAI 生成自然發音；雲端無法使用時會切換為裝置語音。</p>}
-    {voiceOptions.length>0?<label style={{display:"block",fontSize:13,fontWeight:800,color:S.t1,marginBottom:15}}>{settings.provider==="openai"?"OpenAI":"ElevenLabs"} 英文聲音
-      <select aria-label="英文朗讀聲音" value={settings.voiceId} onChange={event=>saveTtsSettings({voiceId:event.target.value})} style={{display:"block",width:"100%",marginTop:6,padding:"10px 12px",borderRadius:10,border:`1px solid ${S.bd}`,background:S.bg1,color:S.t1,fontFamily:"inherit",fontSize:14}}>
+    {voiceOptions.length>0?<label style={{display:"block",fontSize:13,fontWeight:800,color:S.t1,marginBottom:15}}>{settings.provider==="openai"?"OpenAI 中英文聲音":"ElevenLabs 英文聲音"}
+      <select aria-label={settings.provider==="openai"?"中英文朗讀聲音":"英文朗讀聲音"} value={settings.voiceId} onChange={event=>saveTtsSettings({voiceId:event.target.value})} style={{display:"block",width:"100%",marginTop:6,padding:"10px 12px",borderRadius:10,border:`1px solid ${S.bd}`,background:S.bg1,color:S.t1,fontFamily:"inherit",fontSize:14}}>
         {voiceOptions.map(voice=><option key={voice.id} value={voice.id}>{voice.label}{voice.accent?` · ${voice.accent}`:""}</option>)}
       </select>
     </label>:<div style={{display:"grid",gap:6,marginBottom:15,fontSize:13,color:S.t2}}>{settings.provider==="device"?"使用這台裝置的內建語音":"裝置語音備援"}<VoicePicker/></div>}
-    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,marginBottom:6}}><label htmlFor="eg-reading-speed" style={{fontSize:13,fontWeight:800,color:S.t1}}>預設語速</label><output htmlFor="eg-reading-speed" style={{fontSize:13,fontWeight:900,color:c.cl}}>{settings.speed.toFixed(2)}×</output></div>
+    {!compact&&<><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,marginBottom:6}}><label htmlFor="eg-reading-speed" style={{fontSize:13,fontWeight:800,color:S.t1}}>預設語速</label><output htmlFor="eg-reading-speed" style={{fontSize:13,fontWeight:900,color:c.cl}}>{settings.speed.toFixed(2)}×</output></div>
     <input id="eg-reading-speed" aria-label="預設朗讀速度" type="range" min="0.7" max="1.2" step="0.05" value={settings.speed} onChange={event=>saveTtsSettings({speed:Number(event.target.value)})} style={inputStyle}/>
     <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:S.t3,marginTop:2}}><span>慢 0.7×</span><span>原速 1.0×</span><span>快 1.2×</span></div>
-    <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap",marginTop:14}}><button type="button" onClick={preview} style={{...S.btn,background:c.cl,color:"#fff",padding:"9px 15px",fontSize:13}}>試聽目前設定</button><button type="button" disabled={!canRegenerate} onClick={()=>window.EnglishGoTTS?.regenerateLast?.()} title={settings.provider==="device"?"裝置語音不需要重產":lastRegenerableText?`重產：${lastRegenerableText}`:"尚無可重產的發音"} style={{...S.btn,background:S.bg1,color:canRegenerate?c.cl:S.t3,border:`1px solid ${S.bd}`,padding:"8px 12px",fontSize:12,opacity:canRegenerate?1:.6,cursor:canRegenerate?"pointer":"not-allowed"}}>重產最近發音</button><span role="status" aria-live="polite" style={{fontSize:12,color:c.cl}}>{previewStatus}</span></div>
+    <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap",marginTop:14}}><button type="button" onClick={preview} style={{...S.btn,background:c.cl,color:"#fff",padding:"9px 15px",fontSize:13}}>試聽目前設定</button><button type="button" disabled={!canRegenerate} onClick={()=>window.EnglishGoTTS?.regenerateLast?.()} title={settings.provider==="device"?"裝置語音不需要重產":lastRegenerableText?`重產：${lastRegenerableText}`:"尚無可重產的發音"} style={{...S.btn,background:S.bg1,color:canRegenerate?c.cl:S.t3,border:`1px solid ${S.bd}`,padding:"8px 12px",fontSize:12,opacity:canRegenerate?1:.6,cursor:canRegenerate?"pointer":"not-allowed"}}>重產最近發音</button><span role="status" aria-live="polite" style={{fontSize:12,color:c.cl}}>{previewStatus}</span></div></>}
   </section>);
 }
 function createDeck(c){return{queue:c.map((_,i)=>i),rm:[],stats:{again:0,hard:0,good:0,easy:0},total:c.length,lapses:{}}}
@@ -3560,7 +3560,7 @@ function ReadingM({lv,onBack,onXp}){
 const NOVEL_COUNT=8;
 const LazyNovelM=lazy(()=>import("./features/NovelM.jsx"));
 function NovelM(props){
-  const deps={LV,S,useLS,readingWords,playSound,stopSpeech,speak,speakStory,Hdr};
+  const deps={LV,S,useLS,readingWords,playSound,stopSpeech,speak,speakStory,Hdr,useTtsSettings,ReadingSettings};
   return <Suspense fallback={<div style={{textAlign:"center",padding:"48px",color:S.t3}}>Loading novels...</div>}><LazyNovelM {...props} deps={deps}/></Suspense>;
 }
 function scrollChildIntoPanel(panel,el,opts={}){
