@@ -115,7 +115,7 @@ describe("elevenlabs-tts function voice selection", () => {
     expect(String(url)).toContain("/text-to-speech/21m00Tcm4TlvDq8ikWAM?");
   });
 
-  it("defaults English learning audio to the higher-quality multilingual model", async () => {
+  it("defaults English learning audio to v4 with only supported voice settings", async () => {
     delete process.env.ELEVENLABS_VOICE_ID;
     delete process.env.ELEVENLABS_MODEL_ID;
 
@@ -125,8 +125,10 @@ describe("elevenlabs-tts function voice selection", () => {
     const [url, init] = globalThis.fetch.mock.calls[0];
     expect(String(url)).toContain("/text-to-speech/21m00Tcm4TlvDq8ikWAM?");
     const body = JSON.parse(init.body);
-    expect(body.model_id).toBe("eleven_multilingual_v2");
-    expect(body.voice_settings.speed).toBe(1);
+    expect(body.model_id).toBe("eleven_v4");
+    expect(body.language_code).toBe("en");
+    expect(body.voice_settings).toEqual({stability:0.65,similarity_boost:0.75});
+    expect(res.headers.get('X-TTS-Playback-Rate')).toBe('1');
   });
 
   it("preserves capitalization and punctuation sent to ElevenLabs", async () => {
@@ -151,8 +153,10 @@ describe("elevenlabs-tts function voice selection", () => {
     expect(String(url)).toContain("/text-to-speech/21m00Tcm4TlvDq8ikWAM?");
     expect(JSON.parse(init.body)).toMatchObject({
       text: asset.text,
-      voice_settings: expect.objectContaining({ speed: 0.9 }),
+      model_id: 'eleven_v4',
+      voice_settings: {stability:0.65,similarity_boost:0.75},
     });
+    expect(res.headers.get('X-TTS-Playback-Rate')).toBe('0.9');
   });
 
   it("always serves fixed Chinese novel narration with the selected Mandarin voice", async () => {
@@ -168,8 +172,9 @@ describe("elevenlabs-tts function voice selection", () => {
     expect(String(url)).not.toContain("old-mandarin-voice");
     expect(JSON.parse(init.body)).toMatchObject({
       text: asset.text,
-      model_id: "eleven_multilingual_v2",
-      voice_settings: expect.objectContaining({ speed: 1 }),
+      model_id: "eleven_v4",
+      language_code: 'zh',
+      voice_settings: {stability:0.65,similarity_boost:0.75},
     });
   });
 
@@ -184,6 +189,7 @@ describe("elevenlabs-tts function voice selection", () => {
     ["apple", "d6917b4f131d7d6b7698396bd2c6be48a1fc2790e0935d7bef73230411865567"],
     [" i ", "a6d177ebbb6878d85e36c36fd609efb51cabeb69a201b10bad0bfbcfd77f0e3d"],
   ])("reuses the exact legacy cache path for %j without a provider key", async (text, hash) => {
+    process.env.ELEVENLABS_MODEL_ID='eleven_multilingual_v2';
     enableStorage();
     vi.stubEnv("ELEVENLABS_API_KEY", "");
     fetch.mockResolvedValueOnce(audioResponse());
@@ -202,6 +208,8 @@ describe("elevenlabs-tts function voice selection", () => {
     ["v1-secret-forest-adventure-c1-en-title-e4c4bb0211ca3532", "21m00Tcm4TlvDq8ikWAM/93aad7e0458feb89145258d2fe7a4005ceed071ff0cf114e5fceb32bd9b2a591.mp3"],
     ["v2-secret-forest-adventure-c1-zh-title-c06b205aca295089", "fQj4gJSexpu8RDE2Ii5m/40f8ecad03d2c942b3903cd293cc36f61390ab8a385199a5d76adb63442d8a7f.mp3"],
   ])("serves existing novel asset %s with its legacy storage key and immutable URL", async (assetId, cacheKey) => {
+    process.env.ELEVENLABS_MODEL_ID='eleven_multilingual_v2';
+    process.env.ELEVENLABS_ZH_MODEL_ID='eleven_multilingual_v2';
     enableStorage();
     vi.stubEnv("ELEVENLABS_API_KEY", "");
     fetch.mockResolvedValueOnce(audioResponse());
@@ -328,6 +336,7 @@ describe("elevenlabs-tts function voice selection", () => {
   });
 
   it("bypasses cache reads only for explicit regeneration and replaces the same legacy object", async () => {
+    process.env.ELEVENLABS_MODEL_ID='eleven_multilingual_v2';
     enableStorage();
     fetch.mockResolvedValueOnce(audioResponse("fresh-mp3"))
       .mockResolvedValueOnce(new Response(null, { status: 200 }));
@@ -341,6 +350,38 @@ describe("elevenlabs-tts function voice selection", () => {
     expect(String(fetch.mock.calls[0][0])).toContain("api.elevenlabs.io/v1/text-to-speech/");
     expect(fetch.mock.calls[1][1].headers["x-upsert"]).toBe("true");
     expect(fetch.mock.calls[1][0]).toBe("https://storage.example/storage/v1/object/tts-cache/21m00Tcm4TlvDq8ikWAM/d6917b4f131d7d6b7698396bd2c6be48a1fc2790e0935d7bef73230411865567.mp3");
+  });
+
+  it('pins versioned novel URLs to v4 while still accepting the existing catalog IDs',async()=>{
+    process.env.ELEVENLABS_MODEL_ID='eleven_multilingual_v2';
+    const [assetId]=Object.entries(NOVEL_AUDIO_CATALOG).find(([,entry])=>entry.lang==='en-US');
+    const res=await handler(novelRequest(`v4-${assetId}`));
+    expect(res.status).toBe(200);expect(res.headers.get('X-TTS-Model-Id')).toBe('eleven_v4');
+    expect(JSON.parse(fetch.mock.calls[0][1].body).model_id).toBe('eleven_v4');
+  });
+
+  it.each(['en-US','zh-TW'])('uses the selected v4 model over the legacy environment default for %s',async lang=>{
+    process.env.ELEVENLABS_MODEL_ID='eleven_multilingual_v2';process.env.ELEVENLABS_ZH_MODEL_ID='eleven_multilingual_v2';process.env.ELEVENLABS_ZH_VOICE_ID='mandarin-voice';
+    const res=await handler(request({text:lang==='zh-TW'?'今天一起讀故事。':'Let us read a story.',lang,modelId:'eleven_v4',speed:0.8}));
+    expect(res.status).toBe(200);expect(res.headers.get('X-TTS-Model-Id')).toBe('eleven_v4');expect(res.headers.get('X-TTS-Playback-Rate')).toBe('0.8');
+    expect(JSON.parse(fetch.mock.calls[0][1].body)).toMatchObject({model_id:'eleven_v4',language_code:lang==='zh-TW'?'zh':'en',voice_settings:{stability:0.65,similarity_boost:0.75}});
+    expect(JSON.parse(fetch.mock.calls[0][1].body).voice_settings).not.toHaveProperty('speed');
+  });
+
+  it('rejects arbitrary model IDs before any cache or provider request',async()=>{
+    const res=await handler(request({text:'Hello!',modelId:'unsupported-model'}));expect(res.status).toBe(400);expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it('reuses v4 speech at different playback speeds without using the old v2 cache',async()=>{
+    enableStorage();fetch.mockImplementation(()=>Promise.resolve(audioResponse()));
+    process.env.ELEVENLABS_MODEL_ID='eleven_multilingual_v2';
+    await handler(request({text:'The forest is quiet.',speed:0.8}));
+    process.env.ELEVENLABS_MODEL_ID='eleven_v4';
+    const slow=await handler(request({text:'The forest is quiet.',speed:0.8}));
+    const fast=await handler(request({text:'The forest is quiet.',speed:1.2}));
+    expect(slow.headers.get('X-TTS-Playback-Rate')).toBe('0.8');expect(fast.headers.get('X-TTS-Playback-Rate')).toBe('1.2');
+    expect(fetch.mock.calls[1][0]).not.toBe(fetch.mock.calls[0][0]);expect(fetch.mock.calls[2][0]).toBe(fetch.mock.calls[1][0]);
+    expect(fetch.mock.calls.every(([,options])=>options.method==='GET')).toBe(true);
   });
 
   it("bounds the provider response body to twenty-five seconds", async () => {

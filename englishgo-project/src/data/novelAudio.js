@@ -52,7 +52,9 @@ export function makeNovelAudioAssetId({ novelId, chapterNo, lang, kind = "block"
 
 export function getNovelAudioUrl(input) {
   const assetId = typeof input === "string" ? input : makeNovelAudioAssetId(input);
-  return `/.netlify/functions/elevenlabs-tts?novel=${encodeURIComponent(assetId)}`;
+  // Existing book recordings retain their URLs; novel v4 clips use a fresh CDN key.
+  const versionedId = assetId.includes("-picture-book-") || assetId.startsWith("v4-") ? assetId : `v4-${assetId}`;
+  return `/.netlify/functions/elevenlabs-tts?novel=${encodeURIComponent(versionedId)}`;
 }
 
 export function makeNovelAudioItem({ novelId, chapterNo, lang, kind = "block", blockIndex = 0, text, provider = "elevenlabs" }) {

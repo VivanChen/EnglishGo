@@ -1934,16 +1934,16 @@ function ReadingSettings({c,compact=false}){
   return(<section style={{...S.card,padding:compact?14:20,marginBottom:12}}>
     <h3 style={{margin:"0 0 6px",fontSize:17}}>朗讀設定</h3>
     {!compact&&<><p style={{fontSize:13,color:S.t2,lineHeight:1.7,margin:"0 0 8px"}}>選擇單字、例句與小說的發音服務、聲音與速度，下次播放時生效。雲端聲音由 AI 生成。</p>
-    <p style={{fontSize:12,color:S.t3,lineHeight:1.7,margin:"0 0 16px"}}>雲端無法使用時會切換為裝置語音。字典使用裝置發音；童書與歌曲使用各自的音檔。小說選 ElevenLabs 時使用原本音檔，選 OpenAI 或裝置語音時使用所選服務。</p></>}
+    <p style={{fontSize:12,color:S.t3,lineHeight:1.7,margin:"0 0 16px"}}>雲端無法使用時會切換為裝置語音。字典使用裝置發音；童書與歌曲使用各自的音檔。小說選 ElevenLabs v4 時使用新版音檔，選 OpenAI 或裝置語音時使用所選服務。</p></>}
     <label style={{display:"block",fontSize:13,fontWeight:800,color:S.t1,marginBottom:15}}>發音服務
       <select aria-label="發音服務" value={settings.provider} onChange={event=>saveTtsSettings({provider:event.target.value})} style={{display:"block",width:"100%",marginTop:6,padding:"10px 12px",borderRadius:10,border:`1px solid ${S.bd}`,background:S.bg1,color:S.t1,fontFamily:"inherit",fontSize:14}}>
-        <option value="elevenlabs">ElevenLabs（原本的發音）</option>
+        <option value="elevenlabs">ElevenLabs v4（自然朗讀）</option>
         <option value="openai">OpenAI（自然發音）</option>
         <option value="device">裝置語音（免 API）</option>
       </select>
     </label>
     {settings.provider==="openai"&&<p style={{fontSize:12,color:S.t2,lineHeight:1.7,margin:"-6px 0 15px"}}>使用 OpenAI 生成自然發音；雲端無法使用時會切換為裝置語音。</p>}
-    {voiceOptions.length>0?<label style={{display:"block",fontSize:13,fontWeight:800,color:S.t1,marginBottom:15}}>{settings.provider==="openai"?"OpenAI 中英文聲音":"ElevenLabs 英文聲音"}
+    {voiceOptions.length>0?<label style={{display:"block",fontSize:13,fontWeight:800,color:S.t1,marginBottom:15}}>{settings.provider==="openai"?"OpenAI 中英文聲音":"ElevenLabs v4 英文聲音"}
       <select aria-label={settings.provider==="openai"?"中英文朗讀聲音":"英文朗讀聲音"} value={settings.voiceId} onChange={event=>saveTtsSettings({voiceId:event.target.value})} style={{display:"block",width:"100%",marginTop:6,padding:"10px 12px",borderRadius:10,border:`1px solid ${S.bd}`,background:S.bg1,color:S.t1,fontFamily:"inherit",fontSize:14}}>
         {voiceOptions.map(voice=><option key={voice.id} value={voice.id}>{voice.label}{voice.accent?` · ${voice.accent}`:""}</option>)}
       </select>

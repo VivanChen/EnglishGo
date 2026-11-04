@@ -24,7 +24,7 @@ describe("fixed novel audio catalog", () => {
           for (const block of novelBlockPairs(chapter.en, chapter.zh)) {
             for (const [lang, text] of [['en-US', block.en], ['zh-TW', block.zh]]) {
               const item = makeNovelAudioItem({ ...base, blockIndex: block.i, lang, text });
-              const assetId = new URL(item.audioUrl, 'https://englishgo.test').searchParams.get('novel');
+              const assetId = new URL(item.audioUrl, 'https://englishgo.test').searchParams.get('novel').replace(/^v4-/, '');
               expect(NOVEL_AUDIO_CATALOG[assetId]).toEqual({ lang, text });
               expected += 1;
             }
@@ -66,9 +66,16 @@ describe("fixed novel audio catalog", () => {
     expect(english).toMatchObject({ lang: "en-US", rate: 0.9, apiTts: false });
     expect(NOVEL_AUDIO_CONFIG.chineseVoiceId).toBe(NOVEL_CHINESE_VOICE_ID);
     expect(NOVEL_AUDIO_CONFIG.chineseAudioVersion).toBe(NOVEL_CHINESE_AUDIO_VERSION);
-    expect(chinese.audioUrl).toContain(`novel=${NOVEL_CHINESE_AUDIO_VERSION}-`);
-    expect(english.audioUrl).toContain("novel=v1-");
+    expect(chinese.audioUrl).toContain(`novel=v4-${NOVEL_CHINESE_AUDIO_VERSION}-`);
+    expect(english.audioUrl).toContain("novel=v4-v1-");
     expect(chinese.audioUrl).toContain("-zh-block-0-");
     expect(english.audioUrl).toContain("-en-block-0-");
+  });
+
+  it('keeps the existing storybook recording URLs while giving novels fresh v4 URLs',()=>{
+    const bookId=makeNovelAudioAssetId({novelId:'picture-book-pip-lost-star',chapterNo:1,lang:'en-US',text:'Pip was a little fox.'});
+    expect(new URL(getNovelAudioUrl(bookId),'https://englishgo.test').searchParams.get('novel')).toBe(bookId);
+    const novelId=makeNovelAudioAssetId({novelId:'secret-forest-adventure',chapterNo:1,lang:'en-US',text:'Lily was a curious girl.'});
+    expect(new URL(getNovelAudioUrl(novelId),'https://englishgo.test').searchParams.get('novel')).toBe(`v4-${novelId}`);
   });
 });

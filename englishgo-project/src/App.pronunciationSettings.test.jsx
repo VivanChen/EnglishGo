@@ -62,7 +62,7 @@ describe('pronunciation settings', () => {
 
     const provider = screen.getByRole('combobox', { name: '發音服務' });
     expect(provider).toHaveValue('elevenlabs');
-    expect(within(provider).getByRole('option', { name: 'ElevenLabs（原本的發音）' }).selected).toBe(true);
+    expect(within(provider).getByRole('option', { name: 'ElevenLabs v4（自然朗讀）' }).selected).toBe(true);
     expect(within(provider).getByRole('option', { name: 'OpenAI（自然發音）' })).toBeInTheDocument();
     expect(within(provider).getByRole('option', { name: '裝置語音（免 API）' })).toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: /^(?:中英文|英文)朗讀聲音$/ })).toHaveDisplayValue('清晰美式（推薦） · US');

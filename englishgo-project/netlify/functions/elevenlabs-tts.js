@@ -8,8 +8,8 @@ const ALLOWED_ENGLISH_VOICE_IDS = new Set([
   "ErXwobaYiN019PkySvjV",
 ]);
 const DEFAULT_BUCKET = "tts-cache";
-const DEFAULT_MODEL_ID = "eleven_multilingual_v2";
-const DEFAULT_ZH_MODEL_ID = "eleven_multilingual_v2";
+const DEFAULT_MODEL_ID = "eleven_v4";
+const DEFAULT_ZH_MODEL_ID = "eleven_v4";
 const DEFAULT_OUTPUT_FORMAT = "mp3_44100_128";
 const MAX_TEXT_LENGTH = 900;
 const NOVEL_ENGLISH_SPEED = NOVEL_AUDIO_CONFIG.englishRate;
@@ -172,7 +172,7 @@ function makeCacheKey({ normalizedText, lang, voiceId, modelId, outputFormat, vo
   return `${voiceId}/${hash}.mp3`;
 }
 
-async function convertTextToSpeech({ apiKey, voiceId, normalizedText, modelId, outputFormat, voiceSettings }) {
+async function convertTextToSpeech({ apiKey, voiceId, normalizedText, modelId, outputFormat, voiceSettings, lang }) {
   const url = new URL(`https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voiceId)}`);
   if (outputFormat) url.searchParams.set("output_format", outputFormat);
 
@@ -187,6 +187,7 @@ async function convertTextToSpeech({ apiKey, voiceId, normalizedText, modelId, o
       body: JSON.stringify({
         text: normalizedText,
         model_id: modelId,
+        ...(/^eleven_v4(?:_turbo)?$/.test(modelId) ? { language_code: isChineseLang(lang) ? "zh" : "en" } : {}),
         voice_settings: voiceSettings,
       }),
       signal,
@@ -281,7 +282,7 @@ export default async function handler(req, context = {}) {
     } catch {
       return jsonResponse(400, { error: "Invalid novel audio URL" });
     }
-    payload = NOVEL_AUDIO_CATALOG[novelAssetId];
+    payload = NOVEL_AUDIO_CATALOG[novelAssetId.replace(/^v4-/, "")];
     if (!payload) return jsonResponse(404, { error: "Unknown novel audio asset" });
   }
 
@@ -295,6 +296,7 @@ export default async function handler(req, context = {}) {
     if (!payload || typeof payload !== "object" || Array.isArray(payload)) return jsonResponse(400, { error: "Invalid JSON body" });
     if (Object.hasOwn(payload, "cacheOnly") && typeof payload.cacheOnly !== "boolean") return jsonResponse(400, { error: "cacheOnly must be a boolean" });
     if (payload.cacheOnly === true && payload.forceRegenerate === true) return jsonResponse(400, { error: "cacheOnly cannot be combined with forceRegenerate" });
+    if (Object.hasOwn(payload, "modelId") && payload.modelId !== "eleven_v4") return jsonResponse(400, { error: "Unsupported speech model" });
   }
 
   const originalText = String(payload.text || "").trim();
@@ -307,7 +309,7 @@ export default async function handler(req, context = {}) {
     : isFixedNovelAsset
       ? DEFAULT_VOICE_ID
       : getEnglishVoiceId(payload.voiceId);
-  const modelId = isChineseLang(lang)
+  const modelId = (isFixedNovelAsset && novelAssetId.startsWith("v4-")) || payload.modelId === "eleven_v4" ? "eleven_v4" : isChineseLang(lang)
     ? getEnv("ELEVENLABS_ZH_MODEL_ID") || DEFAULT_ZH_MODEL_ID
     : getEnv("ELEVENLABS_MODEL_ID") || DEFAULT_MODEL_ID;
   const outputFormat = getEnv("ELEVENLABS_OUTPUT_FORMAT") || DEFAULT_OUTPUT_FORMAT;
@@ -317,12 +319,15 @@ export default async function handler(req, context = {}) {
   const bucket = getEnv("SUPABASE_TTS_BUCKET") || DEFAULT_BUCKET;
   const hasSupabaseUrl = Boolean(getSupabaseUrl());
   const hasSupabaseKey = Boolean(getSupabaseKey());
+  const isV4 = /^eleven_v4(?:_turbo)?$/.test(modelId);
   const voiceSettings = {
     stability: clampNumber(getEnv("ELEVENLABS_STABILITY"), 0, 1, 0.65),
     similarity_boost: clampNumber(getEnv("ELEVENLABS_SIMILARITY_BOOST"), 0, 1, 0.75),
-    style: clampNumber(getEnv("ELEVENLABS_STYLE"), 0, 1, 0),
-    use_speaker_boost: getBooleanEnv("ELEVENLABS_USE_SPEAKER_BOOST", false),
-    speed: playbackSpeed,
+    ...(!isV4 ? {
+      style: clampNumber(getEnv("ELEVENLABS_STYLE"), 0, 1, 0),
+      use_speaker_boost: getBooleanEnv("ELEVENLABS_USE_SPEAKER_BOOST", false),
+      speed: playbackSpeed,
+    } : {}),
   };
 
   if (!normalizedText) {
@@ -338,8 +343,11 @@ export default async function handler(req, context = {}) {
   }
 
   const cacheKey = makeCacheKey({ normalizedText, lang, voiceId, modelId, outputFormat, voiceSettings });
-  const debugHeaders = getBooleanEnv("TTS_DEBUG_HEADERS", false)
-    ? {
+  const debugHeaders = {
+    "X-TTS-Model-Id": safeHeaderValue(modelId),
+    // v4 has no synthesis speed setting. Apply the learner's speed in playback.
+    "X-TTS-Playback-Rate": String(isV4 ? playbackSpeed : 1),
+    ...(getBooleanEnv("TTS_DEBUG_HEADERS", false) ? {
         "X-TTS-Bucket": safeHeaderValue(bucket),
         "X-TTS-Cache-Key": safeHeaderValue(cacheKey),
         "X-TTS-Normalized-Text": safeHeaderValue(normalizedText),
@@ -353,8 +361,8 @@ export default async function handler(req, context = {}) {
         "X-TTS-Has-Supabase-Key": String(hasSupabaseKey),
         "X-TTS-Force-Regenerate": String(forceRegenerate),
         ...(isFixedNovelAsset ? { "X-TTS-Novel-Asset": safeHeaderValue(novelAssetId) } : {}),
-      }
-    : {};
+      } : {}),
+  };
 
   const cached = forceRegenerate
     ? { ok: false, audioBuffer: null, reason: "forced_regeneration" }
@@ -381,6 +389,7 @@ export default async function handler(req, context = {}) {
       modelId,
       outputFormat,
       voiceSettings,
+      lang,
     });
 
     if (!audioBuffer.length) {

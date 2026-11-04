@@ -8,6 +8,7 @@
   const nativePause = typeof synth.pause === "function" ? synth.pause.bind(synth) : null;
   const nativeResume = typeof synth.resume === "function" ? synth.resume.bind(synth) : null;
   const audioCache = new Map();
+  const audioPlaybackRates = new Map();
   const inflight = new Map();
   const regenerations = new Map();
   const lookupMisses = new Map();
@@ -114,7 +115,7 @@
     // Let promise consumers attach the URL before deciding whether it is active.
     window.setTimeout(() => {
       if (activeAudio?.src === url) deferredRevocations.add(url);
-      else { try { URL.revokeObjectURL(url); } catch {} }
+      else { audioPlaybackRates.delete(url); try { URL.revokeObjectURL(url); } catch {} }
     }, 0);
   }
 
@@ -122,6 +123,7 @@
     for (const url of deferredRevocations) {
       if (activeAudio?.src === url) continue;
       deferredRevocations.delete(url);
+      audioPlaybackRates.delete(url);
       try { URL.revokeObjectURL(url); } catch {}
     }
   }
@@ -316,7 +318,7 @@
             "Content-Type": "application/json",
             ...(forceRegenerate ? { "Cache-Control": "no-cache" } : {}),
           },
-          body: JSON.stringify({ text: normalized, voiceId: settings.voiceId, lang: settings.lang, speed: settings.speed, forceRegenerate, cacheOnly }),
+          body: JSON.stringify({ text: normalized, voiceId: settings.voiceId, lang: settings.lang, speed: settings.speed, ...(settings.provider === "elevenlabs" ? { modelId: "eleven_v4" } : {}), forceRegenerate, cacheOnly }),
         };
 
     async function fetchAudio() {
@@ -371,6 +373,7 @@
           window.setTimeout(() => notice.remove(), 5000);
         }
         const url = URL.createObjectURL(blob);
+        audioPlaybackRates.set(url, clamp(res.headers.get("X-TTS-Playback-Rate"), 0.7, 1.2, 1));
         lookupMisses.delete(cacheKey);
         cacheAudio(cacheKey, url, blob.size);
         return url;
@@ -557,9 +560,10 @@
         const isFixedEnglishAsset = utterance.__englishGoAudioUrl && utterance.__englishGoUseGlobalSpeed && !isChineseLang(utterance.lang);
         const assetSpeed = isFixedEnglishAsset ? getSettings().speed : 1;
         const localPlaybackRate = clamp(utterance.__englishGoPlaybackRate, 0.7, 1.2, 1);
+        const sourcePlaybackRate = audioPlaybackRates.get(url) || 1;
         audio.playbackRate = isFixedEnglishAsset
-          ? clamp(localPlaybackRate * assetSpeed, 0.49, 1.44, 1)
-          : clamp(utterance.__englishGoPlaybackRate, 0.7, 1.2, 1);
+          ? clamp(localPlaybackRate * assetSpeed * sourcePlaybackRate, 0.49, 1.44, 1)
+          : clamp(localPlaybackRate * sourcePlaybackRate, 0.49, 1.44, 1);
         audio.volume = typeof utterance.volume === "number" ? utterance.volume : 1;
         audio.oncanplay = () => { if (activeAudio === audio) hideTtsLoading(loadingToken); };
         let started = false;

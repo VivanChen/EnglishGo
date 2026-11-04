@@ -67,6 +67,19 @@ function loadPatch(provider = "openai") {
 }
 
 describe("Speech provider adapter", () => {
+  it.each([false,true])('applies the v4 playback rate after preloading (fixed novel: %s)',async fixed=>{
+    const {nativeSpeak}=installPatchEnv();
+    const rate=fixed?'0.9':'0.8';
+    globalThis.fetch=vi.fn(()=>Promise.resolve(new Response('mp3',{headers:{'Content-Type':'audio/mpeg','X-TTS-Model-Id':'eleven_v4','X-TTS-Playback-Rate':rate}})));
+    const audio={play:vi.fn(()=>Promise.resolve()),pause:vi.fn()};globalThis.Audio=vi.fn(()=>audio);
+    loadPatch('elevenlabs');window.EnglishGoTTS.setSettings({speed:0.8});
+    const options=fixed?{audioUrl:'/.netlify/functions/elevenlabs-tts?novel=v4-story'}:{};
+    await window.EnglishGoTTS.preload('The forest is quiet.',options);
+    const u=new SpeechSynthesisUtterance('The forest is quiet.');u.__englishGoUseGlobalSpeed=true;if(fixed)u.__englishGoAudioUrl=options.audioUrl;
+    window.speechSynthesis.speak(u);await vi.waitFor(()=>expect(audio.play).toHaveBeenCalledTimes(2));
+    expect(audio.playbackRate).toBeCloseTo(fixed?0.72:0.8);expect(fetch).toHaveBeenCalledOnce();expect(nativeSpeak).not.toHaveBeenCalled();
+    if(!fixed)expect(JSON.parse(fetch.mock.calls[0][1].body).modelId).toBe('eleven_v4');
+  });
   it("retains ElevenLabs as the default without requiring a new key", async () => {
     installPatchEnv();
     globalThis.fetch = vi.fn(() => Promise.resolve(new Response("mp3", { headers: { "Content-Type": "audio/mpeg" } })));
