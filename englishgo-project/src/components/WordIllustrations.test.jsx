@@ -1,9 +1,46 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import WordIllustrations, { WordIllustrationGallery } from './WordIllustrations.jsx';
 import { getLocalWordIllustrations, loadWordIllustrations, normalizeWordIllustrations } from '../data/wordIllustrations.js';
 
 describe('vocabulary illustrations', () => {
+  it('plays three cycles after load, restores the poster, and does not autoplay again before refresh', () => {
+    vi.useFakeTimers();
+    const item = { ...getLocalWordIllustrations('elementary', 'apple')[0], animation_url: '/images/vocabulary/test/three-cycles.gif', animation_duration_ms: 100 };
+    let view = render(<WordIllustrationGallery word="apple" items={[item]}/>);
+    try {
+      act(() => vi.advanceTimersByTime(1000));
+      expect(screen.getByRole('img')).toHaveAttribute('data-media-kind', 'animation');
+      fireEvent.load(screen.getByRole('img'));
+      act(() => vi.advanceTimersByTime(299));
+      expect(screen.getByRole('img')).toHaveAttribute('data-media-kind', 'animation');
+      act(() => vi.advanceTimersByTime(1));
+      expect(screen.getByRole('img')).toHaveAttribute('src', item.image_url);
+      view.unmount();
+      view = render(<WordIllustrationGallery word="apple" items={[item]}/>);
+      expect(screen.getByRole('img')).toHaveAttribute('src', item.image_url);
+      fireEvent.click(screen.getByRole('button', { name: '播放 apple 動畫' }));
+      expect(screen.getByRole('img')).toHaveAttribute('data-media-kind', 'animation');
+      expect(screen.getByRole('img').getAttribute('src')).toContain('play=');
+      fireEvent.load(screen.getByRole('img'));
+      act(() => vi.advanceTimersByTime(300));
+      expect(screen.getByRole('img')).toHaveAttribute('src', item.image_url);
+    } finally { view.unmount(); vi.useRealTimers(); }
+  });
+  it('cancels the playback timer when paused or unmounted', () => {
+    vi.useFakeTimers();
+    const item = { ...getLocalWordIllustrations('elementary', 'apple')[0], animation_url: '/images/vocabulary/test/timer-cleanup.gif', animation_duration_ms: 100 };
+    const view = render(<WordIllustrationGallery word="apple" items={[item]}/>);
+    try {
+      fireEvent.load(screen.getByRole('img'));
+      fireEvent.click(screen.getByRole('button', { name: '暫停 apple 動畫' }));
+      expect(vi.getTimerCount()).toBe(0);
+      fireEvent.click(screen.getByRole('button', { name: '播放 apple 動畫' }));
+      fireEvent.load(screen.getByRole('img'));
+      view.unmount();
+      expect(vi.getTimerCount()).toBe(0);
+    } finally { view.unmount(); vi.useRealTimers(); }
+  });
   it('plays a local animation, pauses to its poster, and falls back if the GIF fails', () => {
     const item = { ...getLocalWordIllustrations('elementary', 'apple')[0], animation_url: '/images/vocabulary/test/apple.gif' };
     render(<WordIllustrationGallery word="apple" items={[item]}/>);
@@ -11,7 +48,7 @@ describe('vocabulary illustrations', () => {
     fireEvent.click(screen.getByRole('button', { name: '暫停 apple 動畫' }));
     expect(screen.getByRole('img')).toHaveAttribute('src', item.image_url);
     fireEvent.click(screen.getByRole('button', { name: '播放 apple 動畫' }));
-    expect(screen.getByRole('img')).toHaveAttribute('src', item.animation_url);
+    expect(screen.getByRole('img')).toHaveAttribute('src', expect.stringContaining(item.animation_url));
     fireEvent.error(screen.getByRole('img'));
     expect(screen.getByRole('img')).toHaveAttribute('src', item.image_url);
     expect(screen.getByRole('status')).toHaveTextContent('目前顯示原圖');
@@ -25,7 +62,7 @@ describe('vocabulary illustrations', () => {
       render(<WordIllustrationGallery word="apple" items={[item]}/>);
       expect(screen.getByRole('img')).toHaveAttribute('src', item.image_url);
       fireEvent.click(screen.getByRole('button', { name: '播放 apple 動畫' }));
-      expect(screen.getByRole('img')).toHaveAttribute('src', item.animation_url);
+      expect(screen.getByRole('img')).toHaveAttribute('src', expect.stringContaining(item.animation_url));
     } finally { vi.unstubAllGlobals(); }
   });
   it('does not retry a local image path that is absent from the bundled catalog', () => {

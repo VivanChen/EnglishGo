@@ -45,8 +45,10 @@ class AnimationEncodingTests(unittest.TestCase):
             metadata = generator.pack_sprite(sheet_path, asset, frame_size=192, duration_ms=160)
             self.assertEqual(metadata['frameCount'], 10)
             self.assertEqual(metadata['durationMs'], 1600)
+            self.assertEqual(metadata['playCount'], 3)
+            self.assertEqual(metadata['playbackDurationMs'], 4800)
             with Image.open(asset) as animation:
-                self.assertEqual(animation.info['loop'], 0)
+                self.assertEqual(animation.info['loop'], 2)
                 self.assertEqual(animation.size, (192, 192))
                 frames = []
                 for i in range(animation.n_frames):

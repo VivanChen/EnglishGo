@@ -27,6 +27,7 @@ DESTINATION = PUBLIC / 'images/vocabulary/here-we-go-book-1-gifs'
 CATALOG = ROOT / 'src/data/hanlinHereWeGoBook1Animations.json'
 MOTIONS = ROOT / 'scripts/data/hereWeGoBook1Motions.json'
 VERSION = 1
+PLAY_COUNT = 3
 COLS, ROWS = 3, 2
 SHEET_SIZE = (1536, 1024)
 
@@ -157,13 +158,15 @@ def pack_sprite(sheet_path, output_path, frame_size=320, duration_ms=160):
     frames = poses + poses[-2:0:-1]
     temporary = output_path.with_suffix('.gif.tmp')
     frames[0].save(temporary, format='GIF', save_all=True, append_images=frames[1:],
-                   duration=duration_ms, loop=0, disposal=1, optimize=False)
+                   duration=duration_ms, loop=PLAY_COUNT - 1, disposal=1, optimize=False)
     with Image.open(temporary) as animation:
         if animation.n_frames < 4:
             temporary.unlink()
             raise ValueError('The encoded asset is not a multi-frame GIF.')
         metadata = {'frameCount': animation.n_frames, 'width': animation.width, 'height': animation.height,
                     'frameDurationMs': duration_ms, 'durationMs': sum(animation.seek(i) or animation.info.get('duration', 0) for i in range(animation.n_frames))}
+        metadata.update({'playCount': PLAY_COUNT, 'loopCount': PLAY_COUNT - 1,
+                         'playbackDurationMs': metadata['durationMs'] * PLAY_COUNT})
     temporary.replace(output_path)
     return {**metadata, 'sha256': digest(output_path.read_bytes()), 'bytes': output_path.stat().st_size}
 
@@ -199,12 +202,14 @@ def verify_entry(card, entry):
         with Image.open(asset) as image:
             if image.format != 'GIF' or image.n_frames != entry['frameCount'] or image.n_frames < 4 or image.size != (entry['width'], entry['height']):
                 return False
+            if entry.get('playCount') != PLAY_COUNT or image.info.get('loop') != PLAY_COUNT - 1:
+                return False
             duration = 0
             for index in range(image.n_frames):
                 image.seek(index)
                 image.load()
                 duration += image.info.get('duration', 0)
-            return duration == entry['durationMs']
+            return duration == entry['durationMs'] and entry.get('playbackDurationMs') == duration * PLAY_COUNT
     except (OSError, KeyError):
         return False
 
@@ -265,7 +270,7 @@ def main(argv=None):
         prompt = prompt_for(card, motions[word])
         fingerprint = digest(json.dumps({'version': VERSION, 'source': digest(source.read_bytes()),
             'prompt': prompt, 'model': args.model, 'quality': args.quality,
-            'frameSize': args.frame_size, 'duration': args.frame_duration_ms}, sort_keys=True).encode())
+            'frameSize': args.frame_size, 'duration': args.frame_duration_ms, 'playCount': PLAY_COUNT}, sort_keys=True).encode())
         previous = catalog['animations'].get(word, {})
         if not args.force and previous.get('fingerprint') == fingerprint and verify_entry(card, previous):
             print(f'[{word}] cached', flush=True)

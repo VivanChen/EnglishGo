@@ -8,12 +8,13 @@ const output=path.resolve('tmp/here-we-go-book1/browser');
 await fs.mkdir(output,{recursive:true});
 const audio=await fs.readFile('public/audio/pet-town/water.wav');
 const courses=JSON.parse(await fs.readFile('src/data/hanlinHereWeGoCourses.json','utf8'));
+const catalog=JSON.parse(await fs.readFile('src/data/hanlinHereWeGoBook1Animations.json','utf8'));
 const results=[];
 const browser=await chromium.launch({headless:true,channel:'msedge'});
 const assert=(condition,message)=>{if(!condition)throw Error(message)};
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
 try{
-  for(const width of [1440,390,320]){
+  for(const width of (process.env.QA_WIDTHS||'1440,390,320').split(',').map(Number)){
     const context=await browser.newContext({viewport:{width,height:width>900?1000:844},serviceWorkers:'block',reducedMotion:'no-preference'});
     const page=await context.newPage();page.setDefaultTimeout(30000);
     const errors=[],failed=[],externalMedia=[];
@@ -52,12 +53,14 @@ try{
       await page.getByRole('button',{name:'練習目前範圍',exact:true}).click();
       await page.getByTestId('srs-front-media').waitFor();
     };
-    const gif='/images/vocabulary/here-we-go-book-1-gifs/dog.gif';
+    const dog=catalog.animations.dog;
+    const gifPath=dog.src;
+    const gif=`${gifPath}?v=${dog.sha256.slice(0,12)}`;
     const poster='/images/vocabulary/hanlin-watercolor/dog.webp';
     await enterBrowser();
     await page.getByLabel('搜尋 Here We Go 單字',{exact:true}).fill('dog');
     await inspect('book1-preview');
-    const gifRequests=[];page.on('request',request=>{if(request.url().endsWith(gif))gifRequests.push(request.url())});
+    const gifRequests=[];page.on('request',request=>{if(new URL(request.url()).pathname===gifPath)gifRequests.push(request.url())});
     await start('dog');
     const front=page.getByTestId('srs-front-media').locator('img');await front.evaluate(image=>image.decode());
     assert(await front.getAttribute('src')===poster,'Book 1 front did not retain its original image');
@@ -69,16 +72,29 @@ try{
     for(let i=0;i<4&&!moved;i++){await page.waitForTimeout(230);moved=hash(await art.screenshot())!==frame;}
     assert(moved,'The browser displayed a static frame instead of playing the animation');
     await inspect('back-animation');
+    await page.waitForFunction(()=>document.querySelector('[data-testid="srs-back-illustrations"] img')?.dataset.mediaKind==='image',null,{timeout:8000});
+    assert(await art.getAttribute('src')===poster,'Three plays did not restore the original image');
+    await inspect('three-plays-finished');
+    await page.getByRole('button',{name:/翻回/}).click();
+    await page.getByRole('button',{name:'點卡片看答案',exact:true}).click();
+    assert(await art.getAttribute('src')===poster,'Flipping the card restarted autoplay without refreshing');
+    await inspect('same-page-no-autoplay');
+    await page.reload();await page.getByTestId('srs-back-illustrations').waitFor();await art.evaluate(image=>image.decode());
+    assert(await art.getAttribute('src')===gif,'Refreshing did not start a new three-play session');
+    const refreshedFrame=hash(await art.screenshot());let restarted=false;
+    for(let i=0;i<4&&!restarted;i++){await page.waitForTimeout(230);restarted=hash(await art.screenshot())!==refreshedFrame;}
+    assert(restarted,'Refreshing reused a stopped GIF instead of restarting its animation');
+    await inspect('refresh-restarts');
     await page.getByRole('button',{name:'暫停 dog 動畫',exact:true}).click();
     assert(await art.getAttribute('src')===poster,'Pause did not restore the poster');await inspect('paused');
     await page.getByRole('button',{name:'播放 dog 動畫',exact:true}).click();
-    assert(await art.getAttribute('src')===gif,'Animation did not resume');
+    assert(new URL(await art.getAttribute('src'),base).pathname===gifPath,'Animation did not resume');
     await page.getByTestId('srs-dictionary-action').click();await page.getByTestId('srs-local-dictionary').waitFor();
     await inspect('dictionary');await page.getByRole('button',{name:'Close dictionary',exact:true}).click();
     await page.getByRole('button',{name:/翻回/}).click();
     assert(await front.getAttribute('src')===poster,'Flip-back did not restore the original image');
     await inspect('flip-back-image');
-    await context.route(`**${gif}`,route=>route.fulfill({status:200,contentType:'image/gif',body:'intentionally-invalid-image-for-fallback-qa'}));
+    await context.route(`**${gifPath}*`,route=>route.fulfill({status:200,contentType:'image/gif',body:'intentionally-invalid-image-for-fallback-qa'}));
     // A fresh document avoids reusing Chromium's already-decoded GIF in memory.
     await page.reload();await page.getByTestId('srs-front-media').waitFor();
     await page.getByRole('button',{name:'點卡片看答案',exact:true}).click();

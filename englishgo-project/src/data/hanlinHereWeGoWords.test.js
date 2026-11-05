@@ -14,7 +14,10 @@ describe('Here We Go public-source vocabulary', () => {
       expect(card.img).toMatch(/\.webp$/);
       if (animation) {
         expect(animation.poster).toBe(card.img);
-        expect(card.illustration.animation_url).toBe(animation.src);
+        expect(card.illustration.animation_url).toBe(`${animation.src}?v=${animation.sha256.slice(0, 12)}`);
+        expect(card.illustration.animation_duration_ms).toBe(animation.durationMs);
+        expect(animation.playCount).toBe(3);
+        expect(animation.playbackDurationMs).toBe(animation.durationMs * 3);
         expect(animation.frameCount).toBeGreaterThan(1);
         expect(existsSync(`public${animation.src}`)).toBe(true);
       } else expect(card.illustration.animation_url).toBeUndefined();

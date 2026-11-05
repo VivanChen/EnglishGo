@@ -2,19 +2,43 @@ import { useEffect, useRef, useState } from 'react';
 import { getLocalWordIllustrations, normalizeWordIllustrations } from '../data/wordIllustrations.js';
 import './word-illustrations.css';
 
+const ANIMATION_PLAY_COUNT = 3;
+const autoplayedAnimations = new Set();
+let manualPlaybackId = 0;
+
 function IllustrationImage({ item }) {
   const [source, setSource] = useState(item.image_url);
   const [failed, setFailed] = useState(false);
   const [animationFailed, setAnimationFailed] = useState(false);
-  const [playing, setPlaying] = useState(() => !globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
+  const [playing, setPlaying] = useState(() => !autoplayedAnimations.has(item.animation_url) && !globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
+  const [playbackId, setPlaybackId] = useState(0);
+  const [loadedPlaybackId, setLoadedPlaybackId] = useState(null);
   const hasAnimation = Boolean(item.animation_url && !animationFailed);
   const animated = hasAnimation && playing;
+  const cycleDuration = Number(item.animation_duration_ms) > 0 ? Number(item.animation_duration_ms) : 1600;
+  const animationSource = playbackId ? `${item.animation_url}${item.animation_url?.includes('?') ? '&' : '?'}play=${playbackId}` : item.animation_url;
+  useEffect(() => {
+    if (!animated || loadedPlaybackId !== playbackId) return undefined;
+    const timer = window.setTimeout(() => setPlaying(false), cycleDuration * ANIMATION_PLAY_COUNT);
+    return () => window.clearTimeout(timer);
+  }, [animated, loadedPlaybackId, playbackId, cycleDuration]);
+  const togglePlayback = event => {
+    event.stopPropagation();
+    if (playing) setPlaying(false);
+    else {
+      setPlaybackId(++manualPlaybackId);
+      setLoadedPlaybackId(null);
+      setPlaying(true);
+    }
+  };
   return failed ? <div className="word-art-unavailable" role="status">{item.alt_zh}<span>圖片暫時無法載入，可以先讀下面的例句。</span></div>
-    : <><img src={animated ? item.animation_url : source} alt={item.alt_zh} width="1024" height="1024" decoding="async" data-media-kind={animated ? 'animation' : 'image'} onError={() => {
+    : <><img src={animated ? animationSource : source} alt={item.alt_zh} width="1024" height="1024" decoding="async" data-media-kind={animated ? 'animation' : 'image'} onLoad={() => {
+      if (animated) { autoplayedAnimations.add(item.animation_url); setLoadedPlaybackId(playbackId); }
+    }} onError={() => {
       if (animated) { setAnimationFailed(true); setPlaying(false); return; }
       if (item.local_path && source !== item.local_path) setSource(item.local_path);
       else setFailed(true);
-    }} />{hasAnimation && <div className="word-art-motion-controls"><button type="button" onClick={event => { event.stopPropagation(); setPlaying(value => !value); }} aria-pressed={playing} aria-label={`${playing ? '暫停' : '播放'} ${item.word || ''} 動畫`}>{playing ? '⏸ 暫停動畫' : '▶ 播放動畫'}</button></div>}
+    }} />{hasAnimation && <div className="word-art-motion-controls"><button type="button" onClick={togglePlayback} aria-pressed={playing} aria-label={`${playing ? '暫停' : '播放'} ${item.word || ''} 動畫`}>{playing ? '⏸ 暫停動畫' : '▶ 播放動畫'}</button></div>}
     {animationFailed && <div className="word-art-motion-fallback" role="status">目前顯示原圖</div>}</>;
 }
 

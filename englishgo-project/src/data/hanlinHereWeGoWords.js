@@ -67,7 +67,10 @@ export function getHereWeGoCards(id) {
       illustration: {
         id: `here-we-go-${course.book}-${word}`, level: 'elementary', word,
         image_url: card.img, local_path: card.img, alt_zh: card.imageAlt || `${card.m}的學習圖片`, style: card.imageStyle,
-        ...(animation?.poster === card.img ? { animation_url: animation.src } : {}),
+        ...(animation?.poster === card.img ? {
+          animation_url: `${animation.src}?v=${animation.sha256.slice(0, 12)}`,
+          animation_duration_ms: animation.durationMs,
+        } : {}),
         example: card.ex, example_zh: card.ez, sort_order: 1,
       },
     };
