@@ -17,7 +17,7 @@ export function getLocalWordIllustrations(level, word) {
 }
 
 // Only image URLs belonging to an explicit illustration record are used on the back.
-// The front's Giphy/static-image search never supplies a back illustration.
+// Front-card built-in images never supply a back illustration.
 export function normalizeWordIllustrations(rows, level, word) {
   if (!Array.isArray(rows)) return [];
   const key = normalizeIllustrationWord(word);

@@ -1,0 +1,28 @@
+import { fireEvent, render, screen, within } from '@testing-library/react';
+import { expect, it } from 'vitest';
+import App from './App.jsx';
+
+it('keeps a Here We Go Book 1 card static until reveal and restores its poster on flip-back', async () => {
+  localStorage.setItem('eg_quiet', 'true');
+  localStorage.setItem('eg_loginBonus', JSON.stringify({ lastDate: new Date().toDateString(), streak: 1, claimed: true }));
+  render(<App/>);
+  fireEvent.click(screen.getByText('Elementary').closest('button'));
+  fireEvent.click(await screen.findByRole('button', { name: /約 5 分鐘 單字卡/ }));
+  fireEvent.click(await screen.findByText('依範圍挑字練習／預覽單字', {}, { timeout: 10000 }));
+  fireEvent.change(screen.getByLabelText('搜尋 Here We Go 單字'), { target: { value: 'dog' } });
+  fireEvent.click(screen.getByRole('button', { name: '練習目前範圍' }));
+  const front = await screen.findByTestId('srs-front-media', {}, { timeout: 10000 });
+  const poster = '/images/vocabulary/hanlin-watercolor/dog.webp';
+  expect(within(front).getByRole('img')).toHaveAttribute('src', poster);
+  expect(document.querySelector('img[src$=".gif"]')).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: '點卡片看答案' }));
+  const back = screen.getByTestId('srs-back-illustrations');
+  expect(within(back).getByRole('img')).toHaveAttribute('src', '/images/vocabulary/here-we-go-book-1-gifs/dog.gif');
+  fireEvent.click(screen.getByRole('button', { name: '暫停 dog 動畫' }));
+  expect(within(back).getByRole('img')).toHaveAttribute('src', poster);
+  fireEvent.keyDown(window, { code: 'Space', key: ' ' });
+  expect(within(screen.getByTestId('srs-front-media')).getByRole('img')).toHaveAttribute('src', poster);
+  expect(document.querySelector('img[src$=".gif"]')).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: '點卡片看答案' }));
+  expect(within(screen.getByTestId('srs-back-illustrations')).getByRole('img')).toHaveAttribute('data-media-kind', 'animation');
+}, 15000);

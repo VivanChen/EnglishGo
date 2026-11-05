@@ -2353,7 +2353,7 @@ export default function App(){
   useEffect(()=>{document.documentElement.dataset.egCalm=String(calm);document.documentElement.dataset.egQuiet=String(quiet);if(_battleAudioCtx&&_battleAudioCtx.state!=="closed"){if(quiet)_battleAudioCtx.suspend?.();else _battleAudioCtx.resume?.()}},[calm,quiet]);
   useEffect(()=>{if(lv)setLastLevel(lv)},[lv]);
   const[gemKey,setGemKey]=useLS("gemkey","");
-  const[gifKey,setGifKey]=useLS("gifkey","");
+  useEffect(()=>{try{localStorage.removeItem("eg_gifkey")}catch{}},[]);
   const[weakWords,setWeakWords]=useLS("weak",[]);
   const[history,setHistory]=useLS("hist",[]);
   const[showAch,setShowAch]=useState(null);
@@ -2605,7 +2605,7 @@ export default function App(){
   useEffect(()=>()=>stopSpeech(),[lv,mod]);
 
   const openKeySettings=()=>navigateEnglishGo({mod:"settings",menuGroup:"tools",sharedWord:null,customDeck:null});
-  if(!lv&&mod==="settings")return <div className="eg-app-shell"><nav className="eg-app-nav" aria-label="網站導覽"><Brand onClick={()=>backEnglishGo({lv:null,mod:null})}/><div className="eg-nav-spacer"/><ComfortControls {...comfort}/></nav><main className="eg-app-content is-module module-settings" style={{maxWidth:760,margin:"0 auto",padding:"12px"}}><SettingsPage onBack={()=>backEnglishGo({lv:null,mod:null})} c={LV.elementary} gemKey={gemKey} setGemKey={setGemKey} gifKey={gifKey} setGifKey={setGifKey}/></main></div>;
+  if(!lv&&mod==="settings")return <div className="eg-app-shell"><nav className="eg-app-nav" aria-label="網站導覽"><Brand onClick={()=>backEnglishGo({lv:null,mod:null})}/><div className="eg-nav-spacer"/><ComfortControls {...comfort}/></nav><main className="eg-app-content is-module module-settings" style={{maxWidth:760,margin:"0 auto",padding:"12px"}}><SettingsPage onBack={()=>backEnglishGo({lv:null,mod:null})} c={LV.elementary} gemKey={gemKey} setGemKey={setGemKey}/></main></div>;
   if(!lv)return<Landing onOpenSettings={openKeySettings} onSelect={nextLv=>navigateEnglishGo({lv:nextLv,mod:null,menuGroup:"learn",sharedWord:null,customDeck:null})} comfort={comfort} lastLevel={lastLevel}/>;
   const c=LV[lv],back=()=>backEnglishGo({lv,mod:null,menuGroup,sharedWord:null,customDeck:null});
   const townPets=readTownSnapshot(petAccount,coins).worldState.ownedPets;
@@ -2681,7 +2681,7 @@ export default function App(){
         {!mod?<MenuV2 lv={lv} onSelect={openModule} activeGroup={menuGroup} onGroupChange={changeMenuGroup} daily={daily} c={c} xp={xp} coins={coins} streak={learningStreak(streak,daily)} achUnlocked={achUnlocked} weakWords={levelWeakWords} pets={townPets} eggs={[]} onQuickStart={startMiniMission} lastActivity={lastActivity} loginGift={loginBonusModal} claimGift={claimLoginBonus}/>:
          mod==="wordsearch"?<WordSearchM lv={lv} onBack={back} onReviewCards={cards=>navigateEnglishGo({lv,mod:"srs",menuGroup:"learn",sharedWord:null,customDeck:{cards,source:"我的單字收藏"}})} onOpenCard={(word,level)=>navigateEnglishGo({lv:level||lv,mod:"srs",menuGroup:"learn",sharedWord:word,customDeck:null})}/>:
          mod==="exam"?<ExamReviewM lv={lv} onBack={back} c={c} apiKey={gemKey} onOpenSettings={()=>openModule("settings","tools")} onStart={deck=>navigateEnglishGo({lv,mod:"srs",menuGroup:"learn",sharedWord:null,customDeck:deck})}/>:
-         mod==="srs"?<SRS lv={lv} onBack={back} onLevelChange={nextLv=>navigateEnglishGo({lv:nextLv,sharedWord:null,customDeck:null},{replace:true})} onXp={n=>addXpWithTask(n,"srsToday")} onLearningEvent={onTownLearningEvent} onDone={()=>setStats(s=>({...s,srsRounds:s.srsRounds+1}))} trackWeak={trackWeak} gifKey={gifKey} sharedWord={sharedWord} apiKey={gemKey} weakWords={levelWeakWords} customCards={customDeck?.cards||null} customSource={customDeck?.source||""} resumeSession={srsSession} onSessionChange={rememberSrsSession} onPracticeSpeaking={practice=>navigateEnglishGo({lv,mod:"speak",menuGroup:"learn",sharedWord:null,customDeck:null,cardPractice:practice})} onOpenSettings={()=>openModule("settings","tools")}/>:
+         mod==="srs"?<SRS lv={lv} onBack={back} onLevelChange={nextLv=>navigateEnglishGo({lv:nextLv,sharedWord:null,customDeck:null},{replace:true})} onXp={n=>addXpWithTask(n,"srsToday")} onLearningEvent={onTownLearningEvent} onDone={()=>setStats(s=>({...s,srsRounds:s.srsRounds+1}))} trackWeak={trackWeak} sharedWord={sharedWord} apiKey={gemKey} weakWords={levelWeakWords} customCards={customDeck?.cards||null} customSource={customDeck?.source||""} resumeSession={srsSession} onSessionChange={rememberSrsSession} onPracticeSpeaking={practice=>navigateEnglishGo({lv,mod:"speak",menuGroup:"learn",sharedWord:null,customDeck:null,cardPractice:practice})} onOpenSettings={()=>openModule("settings","tools")}/>:
          mod==="quiz"?<QuizM lv={lv} onBack={back} onXp={n=>addXpWithTask(n,"quizToday")} onPerfect={()=>setStats(s=>({...s,perfectQuiz:s.perfectQuiz+1}))} trackWeak={trackWeak} onReviewWords={cards=>navigateEnglishGo({lv,mod:"srs",menuGroup:"learn",sharedWord:null,customDeck:{cards,source:"小任務複習"}})}/>:
          mod==="speak"?<SpeakM lv={lv} cardPractice={cardPractice} onBack={back} onXp={n=>addXpWithTask(n,"speakToday")} apiKey={gemKey} onOpenSettings={()=>openModule("settings","tools")}/>:
          mod==="colorIsland"?<ColorIslandM lv={lv} onBack={back} onXp={addXp}/>:mod==="wordDash"?<WordDashM lv={lv} onBack={back} onXp={addXp}/>:mod==="whack"?<WhackM lv={lv} onBack={back} onXp={addXp}/>:
@@ -2700,7 +2700,7 @@ export default function App(){
          mod==="achievements"?<AchPage onBack={back} onOpen={openModule} onQuickStart={startMiniMission} unlocked={achUnlocked} values={{...stats,xp,streak:learningStreak(streak,daily)}} c={c}/>:
          mod==="weak"?<WeakPage onBack={back} weakWords={levelWeakWords} allWeakWords={weakWords} setWeakWords={setWeakWords} c={c} lv={lv} onCards={cards=>navigateEnglishGo({lv,mod:"srs",menuGroup:"learn",sharedWord:null,customDeck:{cards,source:"單字再練一次"}})} onSearch={()=>openModule("wordsearch","learn")}/>:
          mod==="dashboard"?<Dashboard onBack={back} onOpen={openModule} onQuickStart={startMiniMission} c={c} xp={xp} streak={learningStreak(streak,daily)} stats={stats} daily={daily} weakWords={levelWeakWords} history={history} achUnlocked={achUnlocked} lv={lv}/>:
-         mod==="settings"?<SettingsPage onBack={back} c={c} gemKey={gemKey} setGemKey={setGemKey} gifKey={gifKey} setGifKey={setGifKey}/>:
+         mod==="settings"?<SettingsPage onBack={back} c={c} gemKey={gemKey} setGemKey={setGemKey}/>:
          mod==="pets"?<Suspense fallback={<PetFeatureFallback/>}><PetTown lv={lv} onBack={back} onNavigate={navigatePet} coins={coins} setCoins={setCoins} petAccount={petAccount} setPetAccount={setPetAccount} speak={speak} stopSpeech={stopSpeech} onXp={n=>addXp(n,{awardCoins:false})} quiet={quiet} calm={calm} onEnableSound={()=>setQuiet(false)}/></Suspense>:
          null}
       </SpeechSpeedContext.Provider>
@@ -2710,21 +2710,16 @@ export default function App(){
   );
 }
 
-function SettingsPage({onBack,c,gemKey,setGemKey,gifKey,setGifKey}){
+function SettingsPage({onBack,c,gemKey,setGemKey}){
   const[modelChoice,setModelChoice]=useState(getGeminiModelPreference);
   const[modelStatus,setModelStatus]=useState("");
   const[gemInp,setGemInp]=useState(gemKey||"");
-  const[gifInp,setGifInp]=useState(gifKey||"");
   const[showGem,setShowGem]=useState(false);
-  const[showGif,setShowGif]=useState(false);
   const[saved,setSaved]=useState("");
   useEffect(()=>setGemInp(gemKey||""),[gemKey]);
-  useEffect(()=>setGifInp(gifKey||""),[gifKey]);
   const flash=id=>{setSaved(id);window.setTimeout(()=>setSaved(""),1200)};
   const saveGem=()=>{setGemKey(gemInp.trim());flash("gem")};
-  const saveGif=()=>{setGifKey(gifInp.trim());flash("gif")};
   const clearGem=()=>{setGemInp("");setGemKey("");flash("gem-clear")};
-  const clearGif=()=>{setGifInp("");setGifKey("");flash("gif-clear")};
   const status=ok=>(
     <span style={{fontSize:11,fontWeight:900,color:ok?c.cl:S.t3,background:ok?c.bg:S.bg2,border:`1px solid ${ok?`${c.cl}33`:S.bd}`,borderRadius:999,padding:"4px 9px"}}>
       {ok?"已填入・未驗證":"未填入"}
@@ -2737,7 +2732,7 @@ function SettingsPage({onBack,c,gemKey,setGemKey,gifKey,setGifKey}){
     <ReadingSettings c={c}/>
     <div style={{...S.card,padding:"18px 20px",marginBottom:12,background:`linear-gradient(135deg,${c.bg},var(--color-background-primary,#fff))`}}>
       <div style={{fontSize:18,fontWeight:1000,color:S.t1,marginBottom:6}}>AI 與外部服務設定</div>
-      <div style={{fontSize:13,color:S.t2,lineHeight:1.7}}>Key 只會儲存在目前瀏覽器的 localStorage，用來呼叫 Gemini 與 Giphy；不會寫入雲端資料庫。</div>
+      <div style={{fontSize:13,color:S.t2,lineHeight:1.7}}>Key 只會儲存在目前瀏覽器的 localStorage，用來呼叫 Gemini；不會寫入雲端資料庫。</div>
     </div>
 
     <section style={{...S.card,padding:"18px 20px",marginBottom:12}}>
@@ -2785,28 +2780,6 @@ function SettingsPage({onBack,c,gemKey,setGemKey,gifKey,setGifKey}){
       </div>
     </section>
 
-    <section style={{...S.card,padding:"18px 20px",marginBottom:12}}>
-      <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:12,marginBottom:12}}>
-        <div>
-          <div style={{fontSize:16,fontWeight:1000,color:S.t1}}>Giphy API Key</div>
-          <div style={{fontSize:12,color:S.t3,marginTop:3}}>可選，為具體且有可靠圖片對應的 SRS 單字顯示相關 GIF</div>
-        </div>
-        {status(!!gifKey?.trim())}
-      </div>
-      <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:12}}>
-        {["SRS 單字動圖"].map(pill)}
-      </div>
-      <div style={{display:"grid",gridTemplateColumns:"minmax(0,1fr) auto",gap:8,alignItems:"center"}}>
-        <input aria-label="Giphy API Key" autoComplete="off" spellCheck={false} inputMode="text" value={gifInp} onChange={e=>setGifInp(e.target.value)} type={showGif?"text":"password"} placeholder="貼上 Giphy API Key，可留空關閉" style={inputStyle}/>
-        <button onClick={()=>setShowGif(v=>!v)} style={{...S.btn,background:S.bg2,color:S.t2,padding:"10px 12px",fontSize:12}}>{showGif?"隱藏":"顯示"}</button>
-      </div>
-      <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center",marginTop:10}}>
-        <button onClick={saveGif} style={{...S.btn,background:c.cl,color:"#fff",padding:"10px 16px",fontSize:13}}>儲存 Giphy Key</button>
-        <button onClick={clearGif} style={{...S.btn,background:S.bg2,color:S.t2,padding:"10px 14px",fontSize:13}}>清除</button>
-        <a href="/learn/gif-guide.html" target="_blank" rel="noopener noreferrer" style={{fontSize:12,color:c.cl,fontWeight:900,textDecoration:"underline"}}>動圖設定教學</a>
-        {(saved==="gif"||saved==="gif-clear")&&<span style={{fontSize:12,color:c.cl,fontWeight:900}}>已更新</span>}
-      </div>
-    </section>
   </div>);
 }
 
@@ -2865,7 +2838,7 @@ function MenuV2({lv,onSelect,activeGroup="learn",onGroupChange,daily,c,xp,coins,
     {id:"achievements",group:"tools",icon:"★",t:"成就牆",d:`${achUnlocked.length}/${ACH_DEFS.length} 個已解鎖`,tag:"學習成果"},
     {id:"weak",group:"tools",icon:"!",t:"弱點單字",d:weakWords.length?`${weakWords.length} 個需要複習`:"目前沒有弱點紀錄",tag:"補強清單"},
     {id:"dashboard",group:"tools",icon:"▤",t:"學習報告",d:"查看 XP、連續天數與紀錄",tag:"進度分析"},
-    {id:"settings",group:"tools",icon:"Key",t:"設定",d:"朗讀、Gemini 與 Giphy 設定",tag:"設定"},
+    {id:"settings",group:"tools",icon:"Key",t:"設定",d:"朗讀與 Gemini 設定",tag:"設定"},
   ];
   const groups=[
     {id:"learn",icon:"▣",t:"學習",d:"單字、文法、口說",color:gradeTheme.groups?.learn||c.cl},
@@ -2978,8 +2951,7 @@ function ExamReviewM(props){return <Suspense fallback={<ModuleLoading label="準
 
 function WordSearchM(props){return <Suspense fallback={<ModuleLoading label="準備單字探索室..."/>}><WordExplorer key={props.lv} {...props} deps={{Hdr,c:LV[props.lv],levels:LV,searchCloudWords,searchAnyWords,mergeWordResults,speakWebSpeech,stopSpeech}}/></Suspense>}
 
-// ═══ GIF SEARCH (Giphy API) ═══════════════════════════════════════
-const _gifCache={};
+// ═══ SRS FLASHCARDS ═══════════════════════════════════════════════
 const LazySRS=lazy(()=>import("./features/SRS.jsx"));
 function SRS(props){
   const deps={V,LV,S,fetchCloudVocab,fetchCloudVocabularyCatalog,fetchCloudWord,fetchWordIllustrations,findAnyWord,loadExtraWords,enrichVocabularyCard,shuffleCopy,sortCardsForStudy,createDeck,rateDeck,getWordImg,preloadImgs,isPlaceholderExample,exampleCache:_exampleCache,generateExample,preloadTts,speak,speakWebSpeech,regenerateSpeech,speechTimer,playSound,triggerRewardBurst,parseCSV,shareLine,Hdr,Confetti};

@@ -18,7 +18,7 @@ describe('Seabreeze fresh start', () => {
     expect([...Object.keys(localStorage)].some(key => key.includes('backup'))).toBe(false);
   });
   it('keeps credentials, API settings, accessibility preferences and unrelated site data', () => {
-    const keys = ['eg_petAcc','eg_gemkey','eg_gifkey','eg_tts_provider','eg_openai_tts_voice',
+    const keys = ['eg_petAcc','eg_gemkey','eg_tts_provider','eg_openai_tts_voice',
       'eg_gemini_model','eg_dark','eg_quiet','eg_calm','eg_novelReadingPrefs','other-site'];
     for (const key of keys) localStorage.setItem(key,'setting');
     resetProgressOnce(localStorage);

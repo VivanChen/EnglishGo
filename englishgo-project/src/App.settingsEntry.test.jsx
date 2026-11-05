@@ -8,10 +8,10 @@ it('opens and restores unified settings without selecting a grade', async()=>{
   expect(document.querySelector('.eg-key-entry')).toBeNull();
   fireEvent.click(section.querySelector('summary'));
   section.open=true;
-  fireEvent.click(screen.getByRole('button',{name:'設定（朗讀、Gemini／Giphy）'}));
+  fireEvent.click(screen.getByRole('button',{name:'設定（朗讀、Gemini）'}));
   expect(await screen.findByRole('heading',{name:'設定'})).toBeInTheDocument();
   expect(screen.getByLabelText('Gemini API Key')).toHaveAttribute('type','password');
-  expect(screen.getByLabelText('Giphy API Key')).toHaveAttribute('type','password');
+  expect(screen.queryByLabelText('Giphy API Key')).not.toBeInTheDocument();
   expect(window.history.state.englishGoNavigation.lv).toBeNull();
   view.unmount();render(<App/>);
   expect(await screen.findByRole('heading',{name:'設定'})).toBeInTheDocument();

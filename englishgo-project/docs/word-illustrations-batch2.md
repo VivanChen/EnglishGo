@@ -36,6 +36,6 @@ available on the production site after the next normal repository deployment.
   both cloud illustrations loaded successfully with no broken images observed.
 - Production build passed with the existing chunk-size warning.
 - Full test suite passed: 70 files, 692 tests, with two workers and a 15-second
-  per-test timeout. The front/back GIF and illustration integration test passed.
+  per-test timeout. The front/back illustration integration test passed.
 - The cat card was reopened and its corrected main example was verified in the UI.
 - `git diff --check` passed. This batch has not been committed or pushed to GitHub.

@@ -2,6 +2,8 @@ englishgo-project/node_modules/
 englishgo-project/dist/
 englishgo-project/vite-dev*.log
 englishgo-project/.novel-audio-prewarm.json
+englishgo-project/output/imagegen/here-we-go-book-1/
+englishgo-project/scripts/__pycache__/
 .worktrees/
 .superpowers/
 .env

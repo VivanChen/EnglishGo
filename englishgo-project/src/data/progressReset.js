@@ -4,7 +4,7 @@ export const PROGRESS_VERSION = 'seabreeze-20261030';
 export const PROGRESS_VERSION_KEY = 'eg_progress_version';
 const PREFERENCES = new Set([
   PROGRESS_VERSION_KEY, 'eg_petAcc', 'eg_dark', 'eg_calm', 'eg_quiet',
-  'eg_gemkey', 'eg_gifkey', 'eg_voice', 'eg_gemini_model', 'eg_lastLevel',
+  'eg_gemkey', 'eg_voice', 'eg_gemini_model', 'eg_lastLevel',
   'eg_installDismissed', 'eg_novelReadingPrefs', 'eg_readingLargeText',
 ]);
 const isProgress = key => key.startsWith('eg_') && !PREFERENCES.has(key)

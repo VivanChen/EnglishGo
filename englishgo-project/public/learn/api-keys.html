@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <title>Google Gemini 與 GIPHY API Key 圖解申請教學 — EnglishGo</title>
-  <meta name="description" content="使用逐步截圖申請 Google Gemini 與 GIPHY API Key，包含貼回 EnglishGo、Key 安全與常見錯誤排除。">
+  <title>Google Gemini API Key 圖解申請教學 — EnglishGo</title>
+  <meta name="description" content="使用逐步截圖申請 Google Gemini API Key，包含貼回 EnglishGo、Key 安全與常見錯誤排除。">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -23,7 +23,7 @@
     .eyebrow{font-size:13px;font-weight:900;letter-spacing:.08em;color:#c9ffec}
     h1{position:relative;z-index:1;margin:5px 0 10px;font-size:clamp(27px,6vw,44px);line-height:1.25}
     .hero p{position:relative;z-index:1;max-width:720px;margin:0;color:rgba(255,255,255,.9);font-size:15px}
-    .jump{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:16px 0}
+    .jump{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;margin:16px 0}
     .jump a{display:flex;align-items:center;gap:12px;min-height:68px;padding:13px 16px;border:1px solid var(--line);border-radius:16px;background:rgba(255,255,255,.94);box-shadow:0 8px 22px rgba(28,50,42,.05);text-decoration:none}
     .jump b{display:block;color:var(--ink)}.jump span{display:block;color:var(--muted);font-size:12px;font-weight:600}.jump i{font-style:normal;font-size:28px}
     .notice{margin:16px 0;padding:15px 17px;border:1px solid #a9dbc8;border-radius:15px;background:#eaf8f2;color:#245647;font-size:14px}
@@ -37,10 +37,8 @@
     .step-list{display:grid;gap:16px}
     .step{position:relative;display:grid;grid-template-columns:52px minmax(0,1fr);gap:15px;padding:20px;border:1px solid var(--line);border-radius:19px;background:rgba(255,255,255,.96);box-shadow:0 10px 28px rgba(29,54,45,.055)}
     .step-no{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:var(--green);color:#fff;font-size:18px;font-weight:900;box-shadow:0 7px 15px rgba(15,110,86,.2)}
-    .giphy .step-no{background:linear-gradient(135deg,#7756d8,#ff4c8b)}
     .step h3{margin:1px 0 5px;font-size:18px;line-height:1.5}.step p{margin:0 0 10px;color:var(--muted);font-size:14px}.step ul{margin:7px 0 6px;padding-left:22px;color:var(--muted);font-size:14px}.step li{margin:4px 0}
     .action{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:9px 16px;border-radius:12px;color:#fff;background:var(--green);text-decoration:none;font-size:14px}
-    .giphy .action{background:#7756d8}
     .shot{position:relative;margin:13px 0 2px;border:1px solid #cfdad5;border-radius:15px;overflow:hidden;background:#edf2f0;box-shadow:0 8px 22px rgba(23,42,35,.08)}
     .shot img{display:block;width:100%;height:auto;max-height:560px;object-fit:contain;background:#fff}
     .shot figcaption{padding:8px 12px;background:#f3f7f5;border-top:1px solid #dce6e1;color:#65736e;font-size:12px}
@@ -49,7 +47,7 @@
     .ui-shot{margin-top:13px;border:1px solid #cbd7d2;border-radius:15px;overflow:hidden;background:#f8faf9;box-shadow:0 8px 22px rgba(23,42,35,.08);font-family:Arial,"Noto Sans TC",sans-serif}
     .ui-bar{display:flex;align-items:center;gap:8px;padding:11px 14px;border-bottom:1px solid #dce5e1;background:#fff;font-size:13px;font-weight:700}.dots{display:flex;gap:5px}.dots i{display:block;width:9px;height:9px;border-radius:50%;background:#d8dedb}.dots i:first-child{background:#f06a62}.dots i:nth-child(2){background:#e9bd50}.dots i:nth-child(3){background:#58b774}
     .ui-body{display:grid;grid-template-columns:170px 1fr;min-height:260px}.ui-side{padding:16px 12px;border-right:1px solid #dce5e1;background:#f2f5f4;color:#60706a;font-size:12px}.ui-side div{padding:8px 10px;border-radius:8px}.ui-side .on{color:#155fc4;background:#e5efff;font-weight:800}
-    .ui-main{position:relative;padding:22px}.ui-title{font-size:19px;font-weight:800;margin-bottom:4px}.ui-sub{color:#6a7772;font-size:12px;margin-bottom:18px}.ui-button{display:inline-flex;min-height:38px;align-items:center;padding:7px 14px;border-radius:9px;background:#1a73e8;color:#fff;font-weight:800;font-size:12px}.giphy .ui-button{background:linear-gradient(90deg,#7357e7,#19d4d1)}
+    .ui-main{position:relative;padding:22px}.ui-title{font-size:19px;font-weight:800;margin-bottom:4px}.ui-sub{color:#6a7772;font-size:12px;margin-bottom:18px}.ui-button{display:inline-flex;min-height:38px;align-items:center;padding:7px 14px;border-radius:9px;background:#1a73e8;color:#fff;font-weight:800;font-size:12px}
     .ui-table{margin-top:14px;border:1px solid #dce5e1;border-radius:10px;background:#fff;overflow:hidden}.ui-row{display:grid;grid-template-columns:1.2fr 1fr .7fr;gap:8px;padding:11px 12px;border-top:1px solid #edf1ef;font-size:11px;color:#57655f}.ui-row:first-child{border-top:0;background:#f7f9f8;color:#78857f;font-weight:700}.fake-key{font-family:ui-monospace,monospace;letter-spacing:.08em}.copy{color:#155fc4;font-weight:800}
     .modal{width:min(440px,94%);margin:12px auto;padding:20px;border:1px solid #d8e0dd;border-radius:14px;background:#fff;box-shadow:0 16px 46px rgba(0,0,0,.12)}.modal h4{margin:0 0 4px;font-size:17px}.modal p{font-size:12px!important;margin-bottom:13px!important}.field{margin:8px 0;padding:11px 12px;border:1px solid #cbd6d1;border-radius:9px;background:#fff;color:#364741;font-size:12px}.field.selected{border-color:#1a73e8;box-shadow:0 0 0 2px rgba(26,115,232,.12)}
     .path{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:8px 0 12px}.path span{padding:5px 9px;border-radius:999px;background:#edf5f1;color:#315c4f;font-size:12px;font-weight:800}.path i{font-style:normal;color:#9aa6a1}
@@ -66,16 +64,15 @@
 
     <header class="hero">
       <div class="eyebrow">2026 年 9 月版 · 逐步截圖</div>
-      <h1>Google 與 GIPHY API Key<br>一步一步申請</h1>
+      <h1>Google Gemini API Key<br>一步一步申請</h1>
       <p>每一步都有畫面對照。登入後的頁面使用去除個人資料的介面示意圖，官方網站若微調位置，請以本教學標出的按鈕文字為準。</p>
     </header>
 
     <div class="jump">
       <a href="#google"><i>🤖</i><div><b>Google Gemini Key</b><span>AI 字典、例句、家教與故事</span></div></a>
-      <a href="#giphy"><i>🖼️</i><div><b>GIPHY Key（選用）</b><span>SRS 單字卡網路動圖</span></div></a>
     </div>
 
-    <aside class="notice"><b>🔒 Key 安全提醒：</b>EnglishGo 只把 Key 保存在目前裝置的瀏覽器，不會寫入 EnglishGo 或 Supabase 資料庫；使用功能時，瀏覽器仍會把 Key 傳給對應的 Google 或 GIPHY 官方 API。請勿把 Key 貼到聊天室、公開截圖或分享給其他人。</aside>
+    <aside class="notice"><b>🔒 Key 安全提醒：</b>EnglishGo 只把 Key 保存在目前裝置的瀏覽器，不會寫入 EnglishGo 或 Supabase 資料庫；使用功能時，瀏覽器仍會把 Key 傳給對應的 Google 官方 API。請勿把 Key 貼到聊天室、公開截圖或分享給其他人。</aside>
 
     <section class="service google" id="google">
       <div class="service-head"><div class="service-logo">🤖</div><div><h2>Google Gemini API Key</h2><p>新使用者通常會自動取得預設專案與 Key；沒有看到時再手動建立。</p></div></div>
@@ -125,43 +122,11 @@
       </div>
     </section>
 
-    <section class="service giphy" id="giphy">
-      <div class="service-head"><div class="service-logo">🖼️</div><div><h2>GIPHY API Key（選用）</h2><p>只有 SRS 網路動圖需要；不申請也能使用內建圖片、圖示與其他學習功能。</p></div></div>
-
-      <div class="step-list">
-        <article class="step">
-          <div class="step-no">1</div>
-          <div><h3>開啟 GIPHY Developers</h3><p>點 <b>Create Account</b>。已經有 GIPHY 帳號也從同一入口進入，再選 Log In。</p><a class="action" href="https://developers.giphy.com/" target="_blank" rel="noopener noreferrer">開啟 GIPHY Developers ↗</a>
-            <figure class="shot"><img src="/learn/images/api-guide/giphy-01-entry.png" width="1440" height="1000" loading="lazy" alt="GIPHY Developers 首頁與 Create Account 按鈕"><span class="pin" style="left:83%;top:9.5%">1</span><figcaption>實際畫面：右上角「Create Account」是開發者帳號入口。</figcaption></figure>
-          </div>
-        </article>
-
-        <article class="step">
-          <div class="step-no">2</div>
-          <div><h3>登入，或切換到「Sign Up」註冊</h3><p>已有帳號就輸入 Email 與密碼登入；沒有帳號請點上方 <b>Sign Up</b>，按照畫面建立帳號。這裡建立的是 GIPHY 帳號，不是 EnglishGo 帳號。</p>
-            <figure class="shot"><img src="/learn/images/api-guide/giphy-02-login.png" width="1440" height="1000" loading="lazy" alt="GIPHY 登入與 Sign Up 頁面"><span class="pin" style="left:31%;top:42%">2</span><figcaption>實際畫面：上方可切換 Log In／Sign Up。不要在教學頁或聊天室輸入帳密。</figcaption></figure>
-          </div>
-        </article>
-
-        <article class="step"><div class="step-no">3</div><div><h3>進入 Dashboard，按「Create an API Key」</h3><p>登入後若回到 GIPHY 一般首頁，請重新開啟 Developers 網站並點 <b>Dashboard</b>。點選頁面上方或 Your API Keys 區塊中的 <b>Create an API Key</b>。</p><figure class="shot"><a href="/learn/images/api-guide/giphy-03-dashboard.png" target="_blank" rel="noopener noreferrer"><img src="/learn/images/api-guide/giphy-03-dashboard.png" loading="lazy" alt="Dashboard 的 Create an API Key 按鈕"></a><figcaption>實際畫面：點選紫色 Create an API Key 按鈕。（點圖可開啟大圖）</figcaption></figure></div></article>
-
-        <article class="step"><div class="step-no">4</div><div><h3>第一頁：選擇 API，再按 Next Step</h3><p>在 <b>Create A New API Key 1/2</b> 視窗選擇右側 <b>API</b>。EnglishGo 使用 API 類型；即使左側 SDK 標示 Recommended，這裡仍請選 API。確認顯示 <b>API Selected</b> 後，點下方 <b>Next Step</b>。</p><figure class="shot"><a href="/learn/images/api-guide/giphy-04-api.png" target="_blank" rel="noopener noreferrer"><img src="/learn/images/api-guide/giphy-04-api.png" loading="lazy" alt="建立 Key 第一頁：右側 API Selected 與下方 Next Step"></a><figcaption>實際畫面：選右側 API，再點 Next Step。（點圖可開啟大圖）</figcaption></figure></div></article>
-
-        <article class="step"><div class="step-no">5</div><div><h3>第二頁：填寫資料，建立 API Key</h3><p>在 <b>Create A New API Key 2/2</b> 視窗依序填寫：</p><ul><li><b>Your App Name：</b>可填 EnglishGo Vocabulary（截圖中的 English 是名稱範例）。</li><li><b>Platform：</b>選 <b>Web</b>；使用手機瀏覽 EnglishGo 也選 Web。</li><li><b>App Description：</b>可填 <b>Show vocabulary GIFs for English learning.</b>，說明用於英文單字學習。</li></ul><p>閱讀 GIPHY API Terms，確認同意後勾選，再按 <b>Create API Key</b>。截圖中的說明欄尚未填寫，請填完再送出。</p><figure class="shot"><a href="/learn/images/api-guide/giphy-05-form.png" target="_blank" rel="noopener noreferrer"><img src="/learn/images/api-guide/giphy-05-form.png" loading="lazy" alt="建立 Key 第二頁：名稱、Web 平台、用途說明、條款與 Create API Key"></a><figcaption>實際畫面：完成三個欄位並確認條款後，點 Create API Key。（點圖可開啟大圖）</figcaption></figure></div></article>
-
-        <article class="step"><div class="step-no">6</div><div><h3>看到 App created.，複製 API Key</h3><p>回到 Dashboard 並看到 <b>App created.</b> 表示建立成功。在 <b>Your API Keys</b> 找到剛建立的項目，選取 <b>API Key</b> 欄位內的完整文字並複製，避免包含前後空白。若沒有 Copy 按鈕，可直接選取文字複製。</p><p>本教學截圖顯示 <b>Free Beta Key Access</b> 額度為每小時 100 次 API 呼叫；實際額度以 Dashboard 顯示為準。<b>Upgrade to Enterprise</b> 是升級入口，不是複製 Key 的按鈕。</p><div class="ui-shot"><div class="ui-bar">Dashboard · App created.</div><div class="ui-main"><div class="ui-title">Your API Keys</div><div class="ui-sub">EnglishGo Vocabulary · API</div><div>API Key</div><div class="field fake-key">你的 API Key（此處不顯示真實金鑰）</div><div class="ui-sub">Free Beta Key Access · 100 calls/hour</div></div></div><p>上圖為示意，避免公開真實 Key。請勿把 Key 貼到群組或公開截圖。</p></div></article>
-
-        <article class="step"><div class="step-no">7</div><div><h3>貼回 EnglishGo，儲存並測試</h3><p>回到首頁，點開 <b>給家長與老師｜學習資源與進階設定</b> → <b>設定（朗讀、Gemini／Giphy）</b>，找到 <b>Giphy API Key</b>，貼上後按 <b>儲存 Giphy Key</b>。也可以從選擇年級後的「工具 → 設定」進入。</p><p>儲存後開啟 SRS 單字卡查看動圖；若沒有合適的搜尋結果，仍會顯示內建圖片或圖示。Key 只儲存在目前瀏覽器，換裝置或瀏覽器時需重新設定。</p></div></article>
-
-      </div>
-    </section>
-
     <section class="service" id="troubleshooting">
       <div class="service-head"><div class="service-logo">🧰</div><div><h2>常見問題排除</h2><p>先看錯誤訊息中的狀態碼，再對照下面處理。</p></div></div>
       <details><summary>Google：沒有看到 Create API key</summary><div>先確認已進入 Dashboard → API Keys。若專案屬於學校或公司，可能沒有建立 Key 的 IAM 權限；請改選自己的個人專案，或請專案管理員授權。專案沒出現時，到 Projects → Import projects 匯入。</div></details>
       <details><summary>Google：顯示 403、PERMISSION_DENIED 或 Key 無效</summary><div>重新建立一組 Auth key 並更新 EnglishGo。Google 正在淘汰 Standard key；另外也請確認已同意服務條款、所在地支援 AI Studio，且專案沒有組織政策限制。</div></details>
-      <details><summary>Google／GIPHY：顯示 429 或暫時無法使用</summary><div>這通常是短時間呼叫過多。請先停止連續重試，稍後再試。GIPHY beta key 上限為每小時 100 次；Google 額度則依模型、專案與目前方案顯示為準。</div></details>
-      <details><summary>GIPHY：登入後找不到 Dashboard</summary><div>重新開啟 developers.giphy.com，再點頁面上方 Dashboard。一般 giphy.com 是搜尋 GIF 的網站，不是開發者 Key 管理頁。</div></details>
+      <details><summary>Google：顯示 429 或暫時無法使用</summary><div>這通常是短時間呼叫過多。請先停止連續重試，稍後再試。額度依模型、專案與目前方案顯示為準。</div></details>
       <details><summary>手機換一台後，為什麼 Key 不見了？</summary><div>Key 只保存在當下瀏覽器，因此換手機、換瀏覽器、使用無痕模式或清除網站資料後都要重新貼上。這是刻意的隱私設計。</div></details>
     </section>
 
@@ -169,11 +134,10 @@
 
     <section class="sources">
       <h2>官方資料與畫面來源</h2>
-      <ul><li><a href="https://ai.google.dev/gemini-api/docs/api-key" target="_blank" rel="noopener noreferrer">Google：Using Gemini API keys</a></li><li><a href="https://ai.google.dev/gemini-api/docs/get-started" target="_blank" rel="noopener noreferrer">Google：Gemini API Getting started</a></li><li><a href="https://developers.giphy.com/docs/api/quick-start-guide/" target="_blank" rel="noopener noreferrer">GIPHY：API Quickstart Guide</a></li><li><a href="https://developers.giphy.com/faq" target="_blank" rel="noopener noreferrer">GIPHY：Developer FAQ</a></li></ul>
     </section>
 
     <div style="text-align:center;margin-top:22px"><a class="action" href="/">回到 EnglishGo →</a></div>
-    <footer class="footer"><div>Google 教學核對：2026-09-04 · GIPHY 流程依實際截圖更新：2026-09-10 · 官方介面可能更新，請以按鈕文字為準</div><div>AI Tutor powered by <b>Gemini</b> · GIFs powered by <b>GIPHY</b></div><div>© 2026 EnglishGo · 專為台灣學生設計</div></footer>
+    <footer class="footer"><div>Google 教學核對：2026-09-04 · 官方介面可能更新，請以按鈕文字為準</div><div>AI Tutor powered by <b>Gemini</b></div><div>© 2026 EnglishGo · 專為台灣學生設計</div></footer>
   </main>
 </body>
 </html>

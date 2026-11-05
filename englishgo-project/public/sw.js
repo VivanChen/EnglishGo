@@ -1,5 +1,5 @@
 // EnglishGo Service Worker - offline-first PWA
-const CACHE_VERSION = 'englishgo-v1.2.11';
+const CACHE_VERSION = 'englishgo-v1.2.12';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 const DYNAMIC_CACHE_LIMIT = 160;
@@ -70,7 +70,6 @@ self.addEventListener('fetch', (event) => {
   const isAPI = url.hostname.includes('supabase.co') ||
                 url.hostname.includes('googleapis.com') ||
                 url.hostname.includes('generativelanguage') ||
-                url.hostname.includes('giphy.com') ||
                 url.hostname.includes('loremflickr.com') ||
                 url.pathname.startsWith('/api/');
   if (isAPI) return;

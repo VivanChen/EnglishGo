@@ -1,6 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { assertServiceResponse, responseError, serviceErrorMessage, serviceFetch } from './serviceErrors.js';
-import { fetchGif } from './giphy.js';
 import { generateStoryPayload } from '../features/storyGeneration.js';
 
 afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); });
@@ -20,8 +19,8 @@ it('distinguishes invalid keys from other bad requests', () => {
   expect(responseError({status:400},{error:{message:'invalid schema'}}).kind).toBe('request');
 });
 
-it('recognizes a Giphy metadata error even when the HTTP response is successful', () => {
-  expect(()=>assertServiceResponse({ok:true,status:200},{meta:{status:429}})).toThrow('limited');
+it('recognizes a provider error even when the HTTP response is successful', () => {
+  expect(()=>assertServiceResponse({ok:true,status:200},{error:{code:429}})).toThrow('limited');
 });
 
 it('bounds a stalled body and clears its timer', async () => {
@@ -41,16 +40,4 @@ it('stops a story quota error immediately instead of issuing six requests', asyn
   const fetchImpl=vi.fn().mockResolvedValue({ok:false,status:429,json:async()=>({})});
   await expect(generateStoryPayload({apiKey:'test',prompt:'test',pageCount:4,fetchImpl})).rejects.toMatchObject({kind:'limited'});
   expect(fetchImpl).toHaveBeenCalledTimes(1);
-});
-
-it('keeps a failed Giphy lookup retryable and distinguishes empty results', async () => {
-  const fetchMock=vi.fn().mockResolvedValueOnce({ok:false,status:429,json:async()=>({})})
-    .mockResolvedValueOnce({ok:true,json:async()=>({data:{}})})
-    .mockResolvedValueOnce({ok:true,json:async()=>({data:{images:{fixed_height_small:{url:'https://media.giphy.com/test.gif'}}}})});
-  vi.stubGlobal('fetch',fetchMock);
-  await expect(fetchGif('test-word','test-key')).rejects.toMatchObject({kind:'limited'});
-  await expect(fetchGif('test-word','test-key')).resolves.toBeNull();
-  await expect(fetchGif('test-word','test-key')).resolves.toContain('test.gif');
-  await expect(fetchGif('test-word','test-key')).resolves.toContain('test.gif');
-  expect(fetchMock).toHaveBeenCalledTimes(3);
 });

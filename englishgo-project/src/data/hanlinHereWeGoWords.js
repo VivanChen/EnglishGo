@@ -2,6 +2,7 @@ import courses from './hanlinHereWeGoCourses.json';
 import words from './hanlinHereWeGoWords.json';
 import coverage from './hanlinHereWeGoCoverage.json';
 import coldIllness from './hanlinColdIllness.json';
+import book1Animations from './hanlinHereWeGoBook1Animations.json';
 
 // Public, cross-edition vocabulary references, with original bilingual examples.
 // Coverage is source-specific; this is not a verified complete 115 edition.
@@ -58,6 +59,7 @@ export function getHereWeGoCards(id) {
     const card = course.book === 6 && word === 'cold' ? {
       ...base, ...coldIllness,
     } : { ...base };
+    const animation = course.book === 1 ? book1Animations.animations[word.toLowerCase()] : null;
     return {
       ...card, w: word, publisher: '翰林', publisherKey: 'hanlin',
       schoolBook: `Here We Go! ${course.book}`, curriculumSource: references[0]?.source || course.source,
@@ -65,6 +67,7 @@ export function getHereWeGoCards(id) {
       illustration: {
         id: `here-we-go-${course.book}-${word}`, level: 'elementary', word,
         image_url: card.img, local_path: card.img, alt_zh: card.imageAlt || `${card.m}的學習圖片`, style: card.imageStyle,
+        ...(animation?.poster === card.img ? { animation_url: animation.src } : {}),
         example: card.ex, example_zh: card.ez, sort_order: 1,
       },
     };

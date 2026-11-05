@@ -5,11 +5,17 @@ import './word-illustrations.css';
 function IllustrationImage({ item }) {
   const [source, setSource] = useState(item.image_url);
   const [failed, setFailed] = useState(false);
+  const [animationFailed, setAnimationFailed] = useState(false);
+  const [playing, setPlaying] = useState(() => !globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
+  const hasAnimation = Boolean(item.animation_url && !animationFailed);
+  const animated = hasAnimation && playing;
   return failed ? <div className="word-art-unavailable" role="status">{item.alt_zh}<span>圖片暫時無法載入，可以先讀下面的例句。</span></div>
-    : <img src={source} alt={item.alt_zh} width="1024" height="1024" decoding="async" onError={() => {
+    : <><img src={animated ? item.animation_url : source} alt={item.alt_zh} width="1024" height="1024" decoding="async" data-media-kind={animated ? 'animation' : 'image'} onError={() => {
+      if (animated) { setAnimationFailed(true); setPlaying(false); return; }
       if (item.local_path && source !== item.local_path) setSource(item.local_path);
       else setFailed(true);
-    }} />;
+    }} />{hasAnimation && <div className="word-art-motion-controls"><button type="button" onClick={event => { event.stopPropagation(); setPlaying(value => !value); }} aria-pressed={playing} aria-label={`${playing ? '暫停' : '播放'} ${item.word || ''} 動畫`}>{playing ? '⏸ 暫停動畫' : '▶ 播放動畫'}</button></div>}
+    {animationFailed && <div className="word-art-motion-fallback" role="status">目前顯示原圖</div>}</>;
 }
 
 export function useWordIllustrations(level, word, fetchIllustrations) {
@@ -37,7 +43,7 @@ export default function WordIllustrations({ level, word, fetchIllustrations, spe
 export function WordIllustrationGallery({ word, items, speak, onPracticeExample, onActiveChange }) {
   const [active, setActive] = useState(0);
   const track = useRef(null);
-  const itemKeys = items.map(item => `${item.id}:${item.image_url}`).join('|');
+  const itemKeys = items.map(item => `${item.id}:${item.image_url}:${item.animation_url || ''}`).join('|');
   useEffect(() => {
     setActive(0);
     track.current?.scrollTo({ left: 0, behavior: 'auto' });
@@ -59,7 +65,7 @@ export function WordIllustrationGallery({ word, items, speak, onPracticeExample,
       const width = container.children[1]?.offsetLeft - container.children[0]?.offsetLeft;
       if (width > 0) setActive(Math.min(items.length - 1, Math.round(container.scrollLeft / width)));
     }}>
-      {items.map(item => <figure className="word-art-scene" key={`${item.id}:${item.image_url}`}>
+      {items.map(item => <figure className={`word-art-scene${item.animation_url ? ' has-animation' : ''}`} key={`${item.id}:${item.image_url}:${item.animation_url || ''}`}>
         <IllustrationImage item={item} />
         <figcaption><div className="word-art-en"><span>{item.example}</span>{speak && <button type="button" className="srs-sound-btn" aria-label={`朗讀插畫例句：${item.example}`} onClick={() => speak(item.example)}>🔊</button>}</div><p>{item.example_zh}</p>{onPracticeExample && item.example && <button type="button" className="srs-speaking-link" onClick={event => { event.stopPropagation(); onPracticeExample(item.example, item.example_zh); }} aria-label={`練插畫例句聽說：${item.example}`}>🎧 練這句聽說 →</button>}</figcaption>
       </figure>)}

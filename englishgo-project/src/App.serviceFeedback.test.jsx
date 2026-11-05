@@ -13,21 +13,18 @@ async function openCards() {
   return screen.findByTestId('srs-card');
 }
 
-it('explains Giphy quota failures, preserves the card, and lets a user retry successfully', async()=>{
-  localStorage.setItem('eg_gifkey',JSON.stringify('feedback-test-key'));
-  let recover=false;
-  const fetchMock=vi.spyOn(globalThis,'fetch').mockImplementation(async()=>({ok:recover,status:recover?200:429,json:async()=>recover?{data:{images:{fixed_height_small:{url:'https://media.giphy.com/feedback.gif'}}}}:{}}));
+it('discards a retired media key without requesting external media or losing the card', async()=>{
+  localStorage.setItem('eg_gifkey',JSON.stringify('retired-media-key'));
+  const fetchMock=vi.spyOn(globalThis,'fetch');
   await openCards();
-  expect(await screen.findByText(/Giphy 目前達到使用限制/)).toBeInTheDocument();
-  expect(screen.getByTestId('srs-card')).toBeInTheDocument();
+  expect(localStorage.getItem('eg_gifkey')).toBeNull();
+  expect(fetchMock.mock.calls.filter(([url])=>/giphy|tenor/i.test(String(url)))).toHaveLength(0);
   expect(screen.getByTestId('srs-front-media').querySelector('img')).toHaveAttribute('src','https://jbspxqebcrkilfcddluo.supabase.co/storage/v1/object/public/word-illustrations/elementary/apple-01-v1.webp');
-  expect(fetchMock.mock.calls.filter(([url])=>url.includes('api.giphy.com'))).toHaveLength(1);
-  recover=true;fireEvent.click(screen.getByRole('button',{name:'重試動圖'}));
-  await waitFor(()=>expect(document.querySelector('img[src="https://media.giphy.com/feedback.gif"]')).toBeTruthy());
-  expect(screen.queryByText(/Giphy 目前達到使用限制/)).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button',{name:'開啟操作說明'}));
+  expect(screen.queryByText(/Giphy|動圖|GIF/)).not.toBeInTheDocument();
 });
 
-it('uses hand-drawn art without a GIF key and preserves a fallback when that image fails', async()=>{
+it('uses hand-drawn art and preserves a fallback when that image fails', async()=>{
   await openCards();
   const media=screen.getByTestId('srs-front-media');
   expect(media).toHaveTextContent('手繪插畫');
@@ -37,14 +34,11 @@ it('uses hand-drawn art without a GIF key and preserves a fallback when that ima
   expect(screen.getByRole('button',{name:'播放單字 apple'})).toBeInTheDocument();
 });
 
-it('uses hand-drawn art when the GIF file cannot load and keeps the back illustration gallery', async()=>{
-  localStorage.setItem('eg_gifkey',JSON.stringify('broken-image-test-key'));
-  vi.spyOn(globalThis,'fetch').mockResolvedValue({ok:true,json:async()=>({data:{images:{fixed_height_small:{url:'https://media.giphy.com/broken.gif'}}}})});
+it('keeps the back illustration gallery after a front illustration fails', async()=>{
   const card=await openCards();
   const media=screen.getByTestId('srs-front-media');
-  await waitFor(()=>expect(media.querySelector('img')).toHaveAttribute('src','https://media.giphy.com/broken.gif'));
   fireEvent.error(media.querySelector('img'));
-  expect(media.querySelector('img')).toHaveAttribute('src','https://jbspxqebcrkilfcddluo.supabase.co/storage/v1/object/public/word-illustrations/elementary/apple-01-v1.webp');
+  expect(screen.getByRole('button',{name:'播放單字 apple'})).toBeInTheDocument();
   fireEvent.click(card);
   expect(await screen.findByTestId('srs-back-illustrations')).toHaveTextContent('This is a red apple.');
 });

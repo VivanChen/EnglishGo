@@ -40,12 +40,9 @@ try{
     await page.goto(process.env.QA_URL||'http://127.0.0.1:5192/');await page.getByText('Elementary',{exact:true}).click();
     await open('tools','settings');
     // Password inputs are identified by their label, not the textbox role.
-    const gemInput=page.getByLabel('Gemini API Key',{exact:true});await gemInput.fill('  qa-stub-key  ');await click('儲存 Gemini Key');
-    await page.getByLabel('Giphy API Key',{exact:true}).fill(' qa-gif-key ');await click('儲存 Giphy Key');await page.reload();
-    assert(await gemInput.inputValue()==='qa-stub-key','Gemini key did not trim or persist');assert(await page.getByLabel('Giphy API Key',{exact:true}).inputValue()==='qa-gif-key','Giphy key did not persist');
+    const gemInput=page.getByLabel('Gemini API Key',{exact:true});await gemInput.fill('  qa-stub-key  ');await click('儲存 Gemini Key');await page.reload();
+    assert(await gemInput.inputValue()==='qa-stub-key','Gemini key did not trim or persist');
     assert(await gemInput.getAttribute('type')==='password','Stored key was revealed by default');await inspect('settings-restored');
-    const gifPanel=page.locator('section').filter({has:page.getByLabel('Giphy API Key',{exact:true})});await gifPanel.getByRole('button',{name:'清除',exact:true}).click();
-    assert(await page.evaluate(()=>JSON.parse(localStorage.getItem('eg_gifkey')||'null'))==='', 'Giphy key was not removed');
     for(const link of await page.locator('a[href^="/learn/"]').evaluateAll(links=>links.map(link=>link.getAttribute('href'))))assert((await page.request.get(new URL(link,page.url()).href)).ok(),`Missing settings guide: ${link}`);
     await open('read','story');mode='story-hold';await click('✨ 開始生成故事');await page.getByText('正在為你創作故事',{exact:true}).waitFor();
     for(let i=0;i<40&&!release;i++)await page.waitForTimeout(50);assert(release,'Story request did not start');await click('← 返回');

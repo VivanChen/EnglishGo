@@ -4,6 +4,30 @@ import WordIllustrations, { WordIllustrationGallery } from './WordIllustrations.
 import { getLocalWordIllustrations, loadWordIllustrations, normalizeWordIllustrations } from '../data/wordIllustrations.js';
 
 describe('vocabulary illustrations', () => {
+  it('plays a local animation, pauses to its poster, and falls back if the GIF fails', () => {
+    const item = { ...getLocalWordIllustrations('elementary', 'apple')[0], animation_url: '/images/vocabulary/test/apple.gif' };
+    render(<WordIllustrationGallery word="apple" items={[item]}/>);
+    expect(screen.getByRole('img')).toHaveAttribute('src', item.animation_url);
+    fireEvent.click(screen.getByRole('button', { name: '暫停 apple 動畫' }));
+    expect(screen.getByRole('img')).toHaveAttribute('src', item.image_url);
+    fireEvent.click(screen.getByRole('button', { name: '播放 apple 動畫' }));
+    expect(screen.getByRole('img')).toHaveAttribute('src', item.animation_url);
+    fireEvent.error(screen.getByRole('img'));
+    expect(screen.getByRole('img')).toHaveAttribute('src', item.image_url);
+    expect(screen.getByRole('status')).toHaveTextContent('目前顯示原圖');
+    expect(screen.queryByRole('button', { name: /動畫/ })).not.toBeInTheDocument();
+    expect(screen.getByText(item.example)).toBeInTheDocument();
+  });
+  it('starts with the original image when the device requests reduced motion', () => {
+    vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: true })));
+    try {
+      const item = { ...getLocalWordIllustrations('elementary', 'apple')[0], animation_url: '/images/vocabulary/test/apple.gif' };
+      render(<WordIllustrationGallery word="apple" items={[item]}/>);
+      expect(screen.getByRole('img')).toHaveAttribute('src', item.image_url);
+      fireEvent.click(screen.getByRole('button', { name: '播放 apple 動畫' }));
+      expect(screen.getByRole('img')).toHaveAttribute('src', item.animation_url);
+    } finally { vi.unstubAllGlobals(); }
+  });
   it('does not retry a local image path that is absent from the bundled catalog', () => {
     const apple=getLocalWordIllustrations('elementary','apple')[0];
     const [item]=normalizeWordIllustrations([{...apple,local_path:'/images/vocabulary/elementary/missing.webp'}],'elementary','apple');

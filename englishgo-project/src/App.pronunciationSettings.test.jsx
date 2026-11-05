@@ -37,7 +37,7 @@ async function openSettingsFromLanding() {
   const parentSettings = document.querySelector('.eg-grownup');
   fireEvent.click(parentSettings.querySelector('summary'));
   parentSettings.open = true;
-  fireEvent.click(screen.getByRole('button', { name: '設定（朗讀、Gemini／Giphy）' }));
+  fireEvent.click(screen.getByRole('button', { name: '設定（朗讀、Gemini）' }));
   await screen.findByRole('heading', { name: '設定' });
   return view;
 }

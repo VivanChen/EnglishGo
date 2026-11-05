@@ -52,10 +52,15 @@ any future batch. Never enable anonymous Storage writes for imports.
 
 ## Card behavior
 
-Elementary card fronts retain the existing GIF and fallback behavior. Revealed
-backs use the illustration catalog only, with no GIF or image-search fallback.
+Card fronts prefer the illustration catalog, with built-in images and icons as
+fallbacks. Revealed backs use the illustration catalog only.
 Words outside this first batch continue to show their meaning and example until
-an illustration is added. Junior and senior behavior is unchanged.
+an illustration is added. The same static visual behavior applies to all levels.
+
+Here We Go! Book 1 is the local-animation exception: fronts retain the original
+watercolor poster and revealed backs play the generated GIF. See
+[Book 1 animation generation](here-we-go-book1-animations.md) for the resumable
+script, source motions, validation, and pause/fallback behavior.
 
 The back requests cloud metadata; unavailable/empty cloud results retain bundled
 content. Broken remote images fall back to their bundled image, then to their
@@ -81,8 +86,8 @@ website deployment to appear on the production Netlify site.
 - Storage: 10 public WebP downloads matched local SHA-256 hashes; total 1,891,702 bytes.
 - Database: 10 records across 7 words; anonymous API reads returned HTTP 200.
   Anonymous INSERT and authenticated UPDATE privileges are absent.
-- Front/back integration test verifies GIF preservation on the front, two under
-  illustrations after reveal, no GIF on the back, and GIF restoration on flip-back.
+- Front/back integration test verifies the front illustration, two under
+  illustrations after reveal, and the original illustration on flip-back.
 - Component tests cover captions, speech, navigation, database outages, late responses,
   image fallback and grade isolation.
 - Full suite with two workers: 691/692 passed; one existing pet-game test exceeded

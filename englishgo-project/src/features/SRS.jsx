@@ -4,7 +4,6 @@ import HereWeGoBrowser from '../components/HereWeGoBrowser.jsx';
 import { HOORAY_DECKS, HOORAY_SOURCE, getHoorayCards } from '../data/hanlinHoorayWords.js';
 import { readSrsSession } from '../data/cardSpeaking.js';
 import { normalizeCardExample } from '../data/vocabularyCardText.js';
-import { fetchGif, forgetGif } from '../lib/giphy.js';
 import { useWordIllustrations, WordIllustrationGallery } from '../components/WordIllustrations.jsx';
 import { serviceFetch, assertServiceResponse, serviceErrorMessage } from '../lib/serviceErrors.js';
 import { getGeminiModels } from '../lib/geminiModels.js';
@@ -280,7 +279,7 @@ function withSrsLearningCursor(deck){
   return {...deck,learningSessionId,learningCursor:Math.max(attempts,Number.isInteger(deck.learningCursor)&&deck.learningCursor>=0?deck.learningCursor:0)};
 }
 
-export default function SRS({lv,onBack,onXp,onDone,onLearningEvent,trackWeak,gifKey,sharedWord,apiKey,weakWords=[],customCards=null,customSource="",resumeSession=null,onSessionChange,onPracticeSpeaking,onOpenSettings,deps}){
+export default function SRS({lv,onBack,onXp,onDone,onLearningEvent,trackWeak,sharedWord,apiKey,weakWords=[],customCards=null,customSource="",resumeSession=null,onSessionChange,onPracticeSpeaking,onOpenSettings,deps}){
   const {V,LV,S,fetchCloudVocab,fetchCloudVocabularyCatalog,fetchCloudWord,findAnyWord,loadExtraWords,enrichVocabularyCard=(card)=>card,shuffleCopy,sortCardsForStudy,createDeck:buildDeck,rateDeck,getWordImg,preloadImgs,isPlaceholderExample,exampleCache:_exampleCache,generateExample,preloadTts,speak,speakWebSpeech,regenerateSpeech,speechTimer,playSound,triggerRewardBurst,parseCSV,shareLine,Hdr,Confetti}=deps;
   const createDeck=items=>withSrsLearningCursor(buildDeck(items));
   const built=V[lv];const[cards,setCards]=useState([]);const[deck,setDeck]=useState(()=>createDeck([]));const[flip,setFlip]=useState(false);const[info,setInfo]=useState(false);const[loading,setLoading]=useState(true);const[src,setSrc]=useState("built-in");const c=LV[lv];const fr=useRef();const completedRef=useRef(false);
@@ -288,9 +287,7 @@ export default function SRS({lv,onBack,onXp,onDone,onLearningEvent,trackWeak,gif
   const[poolSources,setPoolSources]=useState(()=>Object.fromEntries(Object.keys(V).map(level=>[level,"local"])));
   const[selectedTopic,setSelectedTopic]=useState(null);
   const[combo,setCombo]=useState(0);const[maxCombo,setMaxCombo]=useState(0);const[comboAnim,setComboAnim]=useState(false);const[showConfetti,setShowConfetti]=useState(false);const[flipAnim,setFlipAnim]=useState(false);const[mascotMood,setMascotMood]=useState("idle");
-  const[gifNotice,setGifNotice]=useState("");const[gifRetry,setGifRetry]=useState(0);
   const[exampleError,setExampleError]=useState("");const[exampleRetry,setExampleRetry]=useState(0);const[dictRetry,setDictRetry]=useState(0);
-  const[gifUrl,setGifUrl]=useState(null);const[gifLoading,setGifLoading]=useState(false);
   const[imgUrl,setImgUrl]=useState(null);
   const[mediaError,setMediaError]=useState("");
   const[failedIllustrations,setFailedIllustrations]=useState([]);
@@ -345,17 +342,7 @@ export default function SRS({lv,onBack,onXp,onDone,onLearningEvent,trackWeak,gif
   spokenExampleRef.current=spokenExample;
   useEffect(()=>{setMediaError("");setFailedIllustrations([])},[lv,cur?.w]);
   useEffect(()=>{let active=true;if(!studyActive||!dictOpen||!cur){setDictLoading(false);return()=>{active=false}}if(!apiKey?.trim()){setDictLoading(false);setDictData(null);setDictError("");return()=>{active=false}}setDictLoading(true);setDictError("");generateKidDictionary(cur.w,cur.m,cur.p,lv,apiKey).then(data=>{if(!active)return;setDictData(data);setDictLoading(false)}).catch(error=>{if(!active)return;setDictData(null);setDictError(serviceErrorMessage(error,"AI 字典目前產生失敗，請稍後再試，或使用 Yahoo 查詢。"));setDictLoading(false)});return()=>{active=false}},[studyActive,dictOpen,cur?.w,apiKey,lv,dictRetry]);
-  // When Giphy is enabled, search every word — including abstract vocabulary.
-  useEffect(()=>{
-    let active=true;const controller=new AbortController();setGifUrl(null);setGifNotice("");setMediaError("");
-    if(!studyActive||!cur||!gifKey?.trim()){setGifLoading(false);return()=>{active=false;controller.abort()}};
-    setGifLoading(true);
-    fetchGif(cur.w,gifKey,controller.signal).then(url=>{if(!active)return;setGifUrl(url);if(!url)setGifNotice("找不到合適動圖，已使用替代圖片或圖示，不影響練習。");})
-      .catch(error=>{if(active&&error.name!=="AbortError")setGifNotice(serviceErrorMessage(error,"動圖暫時無法載入，請稍後重試。","Giphy")+" 已使用替代圖片或圖示，不影響練習。");})
-      .finally(()=>{if(active)setGifLoading(false)});
-    return()=>{active=false;controller.abort()};
-  },[studyActive,cur?.w,gifKey,gifRetry]);
-  // Static image — always available regardless of Giphy key
+  // Use the illustration catalog, built-in images, or a small fallback icon.
   useEffect(()=>{if(studyActive&&cur){setImgUrl(getWordImg(cur.w));const upcoming=deck.queue.slice(0,4).map(i=>cards[i]).filter(Boolean);preloadImgs(upcoming,0,upcoming.length)}else setImgUrl(null)},[studyActive,cur?.w,left,cards]);
   // Auto-detect bad examples and replace with AI-generated ones (when API key set)
   useEffect(()=>{
@@ -438,31 +425,13 @@ export default function SRS({lv,onBack,onXp,onDone,onLearningEvent,trackWeak,gif
   const speakTiny=(text,label="播放英文發音")=>{const clean=String(text||"").trim();return clean?<button type="button" onClick={()=>speakDict(clean)} title={label} aria-label={label} style={{border:`1px solid ${S.bd}`,background:S.bg1,color:c.cl,borderRadius:999,width:24,height:24,display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:12,cursor:"pointer",fontFamily:"inherit",verticalAlign:"middle",padding:0,flex:"0 0 auto"}}>🔊</button>:null};
   const practiceExample=(en,zh,label="練這句聽說 →")=>onPracticeSpeaking&&String(en||'').trim()?<button type="button" className="srs-speaking-link" onClick={event=>{event.stopPropagation();onPracticeSpeaking({word:cur.w,meaning:cur.m||'',en,zh:zh||'',type:'sentence'});}}>🎧 {label}</button>:null;
   const fallbackVisual=getWordEmoji(cur);
-  const showGif=Boolean(gifUrl&&mediaError!=="gif");
   const illustrationUrl=illustrations.flatMap(item=>[item.image_url,item.local_path]).find(url=>url&&!failedIllustrations.includes(url));
   const showImg=Boolean(imgUrl?.type!=="emoji"&&imgUrl?.value&&mediaError!=="image");
   const showEmoji=Boolean(imgUrl?.type==="emoji");
-  const mediaLabel=showGif?"GIF 動圖":illustrationUrl?"手繪插畫":showImg?"內建圖片":showEmoji?"內建圖示":"備用圖示";
+  const mediaLabel=illustrationUrl?"手繪插畫":showImg?"內建圖片":showEmoji?"內建圖示":"備用圖示";
   return(<div className={`srs-page ${dictOpen&&flip?"has-dict":""}`} style={{"--srs-accent":c.cl,"--srs-accent-2":c.ac,"--srs-soft":c.bg,"--srs-card":S.bg1,"--srs-surface":S.bg2,"--srs-border":S.bd,"--srs-text":S.t1,"--srs-muted":S.t2,"--srs-faint":S.t3}}><Hdr t="🃏 單字小花園" onBack={leaveStudy} cl={c.cl} extra={<div style={{display:"flex",gap:4}}><button type="button" onClick={()=>setInfo(!info)} aria-label={info?"關閉操作說明":"開啟操作說明"} title="操作說明" style={{background:"none",border:`1px solid ${S.bd}`,borderRadius:8,padding:"2px 6px",fontSize:12,cursor:"pointer",color:S.t2,minWidth:44,minHeight:44}}>ⓘ</button><label aria-label="匯入 CSV 單字卡" title="匯入 CSV 單字卡" style={{background:"none",border:`1px solid ${S.bd}`,borderRadius:8,padding:"2px 6px",fontSize:12,cursor:"pointer",color:S.t2,minWidth:44,minHeight:44,display:"inline-flex",alignItems:"center",justifyContent:"center"}}>📥<input ref={fr} aria-label="選擇 CSV 單字卡檔案" type="file" accept=".csv" onChange={handleCSV} style={{display:"none"}}/></label></div>}/>
     {selectedTopicMeta&&<div style={{marginBottom:10,padding:"9px 12px",border:`1px solid ${c.cl}33`,background:c.bg,borderRadius:12,color:S.t2,fontSize:12,display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,flexWrap:"wrap"}}><b style={{color:c.cl}}>{selectedTopicMeta.icon} {LV[lv].l} · {selectedTopicMeta.label}</b><button type="button" onClick={leaveStudy} style={{border:"none",background:"transparent",color:c.cl,font: "inherit",fontSize:12,fontWeight:900,cursor:"pointer",minHeight:32,padding:"4px 7px"}}>換分類</button></div>}
-    {info&&<div style={{...S.card,padding:"12px 16px",marginBottom:10,fontSize:13,color:S.t2,lineHeight:1.7}}>💻 <b>Space</b> 翻牌/翻回 · <b>Enter</b> 朗讀 · <b>1</b>Again <b>2</b>Hard <b>3</b>Good <b>4</b>Easy<br/>📱 <b>點擊</b>翻牌 · 點 <b>🔙翻回</b> · <b>按鈕</b>評分<br/>🔎 <b>查字典</b>：翻到背面後點 <b>查字典</b>，可在右側查看小朋友版解釋、例句與常見搭配<div style={{marginTop:4,fontSize:11,color:S.t3}}>來源：{src} {gifKey?"· 🖼️ GIF 已啟用":""}</div>
-      <div style={{borderTop:`1px solid ${S.bd}`,marginTop:8,paddingTop:8}}>
-        <div style={{fontWeight:700,fontSize:12,color:S.t1,marginBottom:4}}>🖼️ 單字動圖 (Giphy，可選)</div>
-        <div style={{fontSize:11,color:S.t3,marginBottom:6,lineHeight:1.7}}>貼上 Giphy API Key 後會搜尋單字相關動圖；沒有可用動圖時，優先顯示已有的手繪插畫，其次使用內建圖片或圖示。<a href="/learn/gif-guide.html" target="_blank" rel="noreferrer" style={{color:c.cl,fontWeight:700}}>看效果與申請教學</a></div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(2,minmax(0,1fr))",gap:6,marginBottom:7}}>
-          <div style={{background:S.bg2,border:`1px solid ${S.bd}`,borderRadius:8,padding:"7px 8px",fontSize:11,color:S.t2}}><b style={{color:S.t1}}>未啟用</b><br/>顯示內建圖片 / emoji</div>
-          <div style={{background:c.bg,border:`1px solid ${c.cl}33`,borderRadius:8,padding:"7px 8px",fontSize:11,color:S.t2}}><b style={{color:c.cl}}>啟用後</b><br/>依單字搜尋 GIF 動圖</div>
-        </div>
-        <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-          <button onClick={()=>onOpenSettings?.()} style={{...S.btn,background:c.cl,color:"#fff",padding:"7px 12px",fontSize:12}}>前往 Key 設定</button>
-          <a href="/learn/gif-guide.html" target="_blank" rel="noreferrer" style={{...S.btn,background:S.bg2,color:c.cl,padding:"7px 12px",fontSize:12,textDecoration:"none"}}>申請教學</a>
-        </div>
-      </div>
-    </div>}
-    {info&&!(gifKey||"").trim()&&<div style={{...S.card,padding:"10px 12px",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,flexWrap:"wrap",fontSize:12,lineHeight:1.5}}>
-      <div style={{color:S.t2,flex:"1 1 220px"}}><b style={{color:S.t1}}>🖼️ 單字動圖尚未啟用</b><br/>目前使用內建圖片；申請 Giphy Key 後可自動顯示單字相關 GIF。</div>
-      <div style={{display:"flex",gap:6,flexWrap:"wrap"}}><a href="/learn/gif-guide.html" target="_blank" rel="noreferrer" style={{...S.btn,background:S.bg2,color:c.cl,padding:"8px 12px",fontSize:12,textDecoration:"none"}}>看效果</a><button onClick={()=>onOpenSettings?.()} style={{...S.btn,background:c.cl,color:"#fff",padding:"8px 12px",fontSize:12}}>設定 Key</button></div>
-    </div>}
+    {info&&<div style={{...S.card,padding:"12px 16px",marginBottom:10,fontSize:13,color:S.t2,lineHeight:1.7}}>💻 <b>Space</b> 翻牌/翻回 · <b>Enter</b> 朗讀 · <b>1</b>Again <b>2</b>Hard <b>3</b>Good <b>4</b>Easy<br/>📱 <b>點擊</b>翻牌 · 點 <b>🔙翻回</b> · <b>按鈕</b>評分<br/>🔎 <b>查字典</b>：翻到背面後點 <b>查字典</b>，可在右側查看小朋友版解釋、例句與常見搭配<div style={{marginTop:4,fontSize:11,color:S.t3}}>來源：{src}</div></div>}
     {actionNotice&&<div role="status" aria-live="polite" style={{padding:"10px 12px",marginBottom:10,color:S.t2,fontSize:13}}>{actionNotice}</div>}
     {comboLabel&&<div style={{textAlign:"center",fontSize:combo>=7?16:13,fontWeight:700,color:"#EF9F27",marginBottom:4,animation:comboAnim?"comboFlash .5s ease-out":"none"}}>{comboLabel}</div>}
     {Array.isArray(customCards)&&customCards.length>0&&<div style={{marginBottom:10,padding:"8px 11px",border:`1px solid ${c.cl}33`,background:c.bg,borderRadius:12,color:S.t2,fontSize:12,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}><b style={{color:c.cl}}>{customSource==="每日小任務"?"🌱 每日小任務":"考試範圍模式"}</b><span>{customCards.length} 個單字</span><span style={{color:S.t3}}>{customSource==="每日小任務"?"聽一聽、想一想，再翻開答案。":"系統自動排序，輸入順序不會決定出題順序"}</span></div>}
@@ -583,21 +552,16 @@ export default function SRS({lv,onBack,onXp,onDone,onLearningEvent,trackWeak,gif
       <span style={{color:S.t3}}>完成 {deck.total-left}/{deck.total}</span>
       {[["#E24B4A",deck.stats.again],["#EF9F27",deck.stats.hard],["#1D9E75",deck.stats.good],["#185FA5",deck.stats.easy]].map(([cl,v],i)=><span className="srs-stat-dot" key={i} style={{color:cl}}>{v}</span>)}
     </div>
-    {(!flip||lv!=="elementary")&&gifNotice&&<div role="status" style={{padding:12,marginBottom:10,border:`1px solid ${S.bd}`,borderRadius:12,color:S.t2,fontSize:13,lineHeight:1.7}}>
-      <div>{gifNotice}</div><div style={{display:"flex",flexWrap:"wrap",gap:8,marginTop:8}}><button className="srs-pill-btn" disabled={gifLoading} onClick={()=>setGifRetry(n=>n+1)}>重試動圖</button><button className="srs-pill-btn" onClick={()=>onOpenSettings?.()}>API Key 設定</button></div>
-    </div>}
     <div className={`srs-study-grid ${dictOpen&&flip?"is-dict-open":""}`}>
       <section data-testid="srs-card" className={`srs-card-shell ${flip?"is-back":"is-front"} ${dictOpen?"is-dict-open":""}`} onClick={handleCardTap}>
         {!flip&&<CardSparkles color={c.cl}/>}
         <Mascot mood={mascotMood}/>
         {!flip?(<>
-          <div className={`srs-front-media ${!showGif&&illustrationUrl?"is-illustration":""}`} data-testid="srs-front-media">
+          <div className={`srs-front-media ${illustrationUrl?"is-illustration":""}`} data-testid="srs-front-media">
             <div className="srs-media-badge">{mediaLabel}</div>
-            {showGif?<img src={gifUrl} alt={cur.w} onError={()=>{forgetGif(cur.w,gifKey);setMediaError("gif");setGifUrl(null);setGifNotice("動圖檔案無法載入，已使用替代圖片或圖示，不影響練習。")}}/>
-            :illustrationUrl?<img key={illustrationUrl} src={illustrationUrl} alt={cur.w} style={{objectFit:"contain"}} onError={()=>setFailedIllustrations(urls=>[...urls,illustrationUrl])}/>
+            {illustrationUrl?<img key={illustrationUrl} src={illustrationUrl} alt={cur.w} style={{objectFit:"contain"}} onError={()=>setFailedIllustrations(urls=>[...urls,illustrationUrl])}/>
             :showEmoji?<div className="srs-front-emoji">{imgUrl.value}</div>
             :showImg?<img src={imgUrl.value} alt={cur.w} onError={()=>setMediaError("image")}/>
-            :gifLoading&&gifKey?<div style={{fontSize:13,color:S.t3,animation:"pulse 1s infinite"}}>載入圖片中...</div>
             :<div className="srs-media-fallback" data-testid="srs-media-fallback"><strong>{fallbackVisual.emoji}</strong><span>使用備用圖示</span></div>}
           </div>
           <div className="srs-front-word"><span className={`srs-headword ${cur.w.length>12?"is-long":""}`}>{cur.w}</span><button className="srs-sound-btn" onClick={e=>{e.stopPropagation();speak(cur.w)}} aria-label={`播放單字 ${cur.w}`}>🔊</button></div>
@@ -616,8 +580,8 @@ export default function SRS({lv,onBack,onXp,onDone,onLearningEvent,trackWeak,gif
                 {onPracticeSpeaking&&<button type="button" className="srs-pill-btn" onClick={event=>{event.stopPropagation();onPracticeSpeaking({word:cur.w,meaning:cur.m||'',en:cur.w,zh:cur.m||'',type:'word'});}}>🎤 練單字發音</button>}
               </div>
             </div>
-            {!illustrations.length&&!dictOpen&&<div className={`srs-back-thumb ${!showGif&&(showEmoji||!showImg)?"is-emoji":""}`} data-testid="srs-back-media">
-              {showGif?<img src={gifUrl} alt={cur.w} onError={()=>{forgetGif(cur.w,gifKey);setMediaError("gif");setGifUrl(null);setGifNotice("動圖檔案無法載入，已使用替代圖片或圖示，不影響練習。")}}/>:showEmoji?imgUrl.value:showImg?<img src={imgUrl.value} alt={cur.w} onError={()=>setMediaError("image")}/>:fallbackVisual.emoji}
+            {!illustrations.length&&!dictOpen&&<div className={`srs-back-thumb ${showEmoji||!showImg?"is-emoji":""}`} data-testid="srs-back-media">
+              {showEmoji?imgUrl.value:showImg?<img src={imgUrl.value} alt={cur.w} onError={()=>setMediaError("image")}/>:fallbackVisual.emoji}
             </div>}
           </div>
           <WordIllustrationGallery key={`${lv}:${cur.w}`} word={cur.w} items={illustrations} speak={speak} onActiveChange={selectIllustration} onPracticeExample={onPracticeSpeaking?(en,zh)=>onPracticeSpeaking({word:cur.w,meaning:cur.m||'',en,zh:zh||'',type:'sentence'}):undefined}/>

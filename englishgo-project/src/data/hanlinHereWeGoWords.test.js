@@ -1,10 +1,28 @@
 import { describe, expect, it } from 'vitest';
 import { existsSync } from 'node:fs';
+import book1Animations from './hanlinHereWeGoBook1Animations.json';
 import courses from './hanlinHereWeGoCourses.json';
 import coverage from './hanlinHereWeGoCoverage.json';
 import { HERE_WE_GO_DECKS, getHereWeGoCards, getHereWeGoDeck, hereWeGoSelectionId } from './hanlinHereWeGoWords.js';
 
 describe('Here We Go public-source vocabulary', () => {
+  it('attaches verified local animation paths only to Book 1 and keeps original posters', () => {
+    expect(Object.keys(book1Animations.animations).sort()).toEqual(courses[0].words.map(word => word.toLowerCase()).sort());
+    for (const card of getHereWeGoCards('hanlin-here-we-go-1')) {
+      const animation = book1Animations.animations[card.w.toLowerCase()];
+      expect(card.illustration.image_url).toBe(card.img);
+      expect(card.img).toMatch(/\.webp$/);
+      if (animation) {
+        expect(animation.poster).toBe(card.img);
+        expect(card.illustration.animation_url).toBe(animation.src);
+        expect(animation.frameCount).toBeGreaterThan(1);
+        expect(existsSync(`public${animation.src}`)).toBe(true);
+      } else expect(card.illustration.animation_url).toBeUndefined();
+    }
+    for (const deck of HERE_WE_GO_DECKS.filter(deck => deck.book !== 1)) {
+      expect(getHereWeGoCards(deck.id).every(card => !card.illustration.animation_url)).toBe(true);
+    }
+  });
   it('keeps filtered scope stable in saved IDs and normalizes bilingual searches', () => {
     const base = 'hanlin-here-we-go-1';
     const phonics = getHereWeGoCards(hereWeGoSelectionId(base, 'phonics'));

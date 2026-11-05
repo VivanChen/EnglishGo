@@ -257,8 +257,7 @@ describe('EnglishGo app smoke flow', () => {
     expect(screen.queryByText('AI 小朋友字典')).not.toBeInTheDocument();
     expect(screen.queryByText('支持 EnglishGo')).not.toBeInTheDocument();
     expect(document.querySelector('a[href="/learn/sponsor.html"]')).toBeNull();
-    expect(screen.getByText('GIPHY')).toBeInTheDocument();
-    expect(screen.getByText('GIPHY').closest('div')).toHaveTextContent('GIFs powered by GIPHY');
+    expect(screen.queryByText(/GIPHY|GIFs powered by/i)).not.toBeInTheDocument();
     expect(screen.queryByText('300字')).not.toBeInTheDocument();
     expect(screen.queryByText('1200字')).not.toBeInTheDocument();
     expect(screen.queryByText('4500+字')).not.toBeInTheDocument();
@@ -339,7 +338,7 @@ describe('EnglishGo app smoke flow', () => {
 
     expect(await screen.findByRole('heading', { name: '設定', exact: true })).toBeInTheDocument();
     expect(screen.getByText('Gemini API Key')).toBeInTheDocument();
-    expect(screen.getByText('Giphy API Key')).toBeInTheDocument();
+    expect(screen.queryByText('Giphy API Key')).not.toBeInTheDocument();
   });
 
   it('does not show sponsorship in the tools menu', async () => {
@@ -786,42 +785,19 @@ describe('EnglishGo app smoke flow', () => {
     }
   });
 
-  it('requests and shows a Giphy GIF for abstract SRS words when a GIF key is configured', async () => {
-    const gifUrl = 'https://media.giphy.com/media/englishgo-test.gif';
-    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        data: {
-          images: {
-            fixed_height_small: { url: gifUrl },
-          },
-        },
-      }),
-    });
-
-    localStorage.setItem('eg_gifkey', JSON.stringify('test-key'));
+  it('uses static visuals for abstract SRS words without contacting a media service', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch');
     const randomMock = vi.spyOn(Math, 'random').mockReturnValue(0.999999);
-
     try {
       await openJuniorMenu();
       clickFirstModuleCard();
       await startAllWordsSrsRound();
-
       expect(await screen.findByRole('heading', { name: /單字小花園/ })).toBeInTheDocument();
-
-      await waitFor(() => {
-        expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('api.giphy.com/v1/gifs/translate'), expect.any(Object));
-        expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('s=accomplish'), expect.any(Object));
-      });
-
-      await waitFor(() => {
-        expect(document.querySelector(`img[src="${gifUrl}"]`)).toBeTruthy();
-      });
-
+      const front = await screen.findByTestId('srs-front-media');
+      expect(front).not.toHaveTextContent(/GIF|動圖/);
       fireEvent.click(await screen.findByTestId('srs-card'));
-
-      const backMedia = await screen.findByTestId('srs-back-media');
-      expect(backMedia.querySelector(`img[src="${gifUrl}"]`)).toBeTruthy();
+      expect(await screen.findByTestId('srs-back-primary')).toBeInTheDocument();
+      expect(fetchMock.mock.calls.filter(([url]) => /giphy|tenor/i.test(String(url)))).toHaveLength(0);
     } finally {
       randomMock.mockRestore();
       fetchMock.mockRestore();
@@ -829,7 +805,6 @@ describe('EnglishGo app smoke flow', () => {
   });
 
   it('opens dictionary lookup results from the SRS card back', async () => {
-    localStorage.removeItem('eg_gifkey');
     localStorage.setItem('eg_gemkey', JSON.stringify('test-gemini-key'));
     localStorage.removeItem('kid_dict_v2_elementary%3Aapple');
     const randomMock = vi.spyOn(Math, 'random').mockReturnValue(0.999999);
@@ -883,7 +858,6 @@ describe('EnglishGo app smoke flow', () => {
   });
 
   it('uses the optimized SRS study layout after flipping a card', async () => {
-    localStorage.removeItem('eg_gifkey');
     localStorage.removeItem('eg_gemkey');
 
     await openElementaryMenu();
