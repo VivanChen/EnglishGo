@@ -3,7 +3,7 @@
   publish = "dist"
 
 [build.environment]
-  NODE_VERSION = "24.22.1"
+  NODE_VERSION = "24.22.3"
 
 # Missing build chunks must never fall through to the SPA HTML.
 [[redirects]]
