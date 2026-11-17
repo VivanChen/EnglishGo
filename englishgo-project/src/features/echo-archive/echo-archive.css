@@ -621,6 +621,110 @@ button.ea-grid-card:hover { transform: translateY(-4px); }
 @keyframes ea-sheen { 0%, 60% { background-position: 130% 0; } 100% { background-position: -30% 0; } }
 .ea-notice { --pop-x: -50%; }
 
+/* ═══════════ Archive expansion: mythic, foil, card back ═══════════ */
+.ea-rarity-mythic .ea-card-frame { box-shadow: inset 0 0 0 1.2cqw rgba(0, 0, 0, .35), inset 0 0 0 2cqw #ffd36b, 0 0 26px rgba(255, 140, 220, .45), 0 6px 16px rgba(0, 0, 0, .45); }
+.ea-rarity-mythic .ea-card-frame::before { border-color: rgba(255, 220, 140, .6); }
+.ea-rarity-mythic .ea-card-frame::after, .ea-card.is-foil .ea-card-frame::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none; mix-blend-mode: screen;
+  background: linear-gradient(115deg, transparent 28%, rgba(255, 120, 200, .24) 40%, rgba(255, 231, 166, .32) 50%, rgba(120, 220, 255, .24) 60%, transparent 72%);
+  background-size: 260% 100%; animation: ea-sheen 3.2s ease-in-out infinite;
+}
+.ea-card.is-foil .ea-card-frame { outline: .8cqw solid rgba(255, 255, 255, .35); outline-offset: -.8cqw; }
+.ea-card.is-foil .ea-card-art { background: radial-gradient(circle at 50% 45%, var(--glow), transparent 68%), conic-gradient(from 200deg, rgba(255, 120, 200, .25), rgba(255, 231, 166, .25), rgba(120, 220, 255, .25), rgba(178, 148, 255, .25), rgba(255, 120, 200, .25)); }
+.ea-card-bonus { position: absolute; left: 3cqw; bottom: 2.5cqw; padding: .4cqw 2.6cqw; border-radius: 3cqw; background: rgba(143, 240, 160, .2); color: #8ff0a0; font: 800 7.5cqw/1.3 var(--ea-serif); }
+.ea-card-back .ea-card-frame { display: grid; place-items: center; background: radial-gradient(circle at 50% 42%, rgba(178, 148, 255, .4), transparent 62%), repeating-linear-gradient(45deg, #1b1438 0 7cqw, #231942 7cqw 14cqw); }
+.ea-card-back-sigil { color: var(--ea-gold); opacity: .9; }
+.ea-card-back-sigil .ea-glyph { width: 46cqw; height: 46cqw; filter: drop-shadow(0 0 4cqw rgba(232, 196, 122, .6)); }
+.ea-card-back-label { position: absolute; bottom: 9cqw; font: 800 15cqw/1 var(--ea-serif); color: #fff3d6; text-shadow: 0 0 4cqw rgba(178, 148, 255, .9); }
+.ea-grid-card { position: relative; }
+
+/* ═══════════ Archive Gacha & Codex ═══════════ */
+.ea-gacha, .ea-codex { position: relative; min-height: min(var(--ea-h), 980px); padding: clamp(16px, 3vw, 36px); overflow: hidden; }
+.ea-gacha > .ea-backdrop { opacity: .75; }
+.ea-codex { background: radial-gradient(90% 60% at 50% 0%, rgba(178, 148, 255, .12), transparent 70%); }
+.ea-archive-head { position: relative; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 14px; }
+.ea-archive-head > div { flex: 1; text-align: center; }
+.ea-archive-head h1 { margin: 6px 0 0; font: 700 clamp(26px, 4vw, 40px)/1.1 var(--ea-serif); color: #fff3d6; }
+.ea-back-link.is-inline { position: static; }
+.ea-shards { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 20px; background: rgba(178, 148, 255, .16); border: 1px solid rgba(178, 148, 255, .45); color: #d9c8ff; font: 800 18px var(--ea-serif); white-space: nowrap; }
+.ea-welcome, .ea-earned { display: flex; align-items: center; flex-wrap: wrap; gap: 14px; padding: 14px 16px; border-radius: 16px; background: rgba(178, 148, 255, .14); border: 1px solid rgba(178, 148, 255, .45); color: #d9c8ff; text-align: left; }
+.ea-welcome { position: relative; z-index: 2; max-width: 560px; margin: 0 auto 10px; animation: ea-rise .4s ease both; }
+.ea-welcome span, .ea-earned span { display: flex; flex-direction: column; flex: 1; min-width: 190px; }
+.ea-welcome b, .ea-earned b { font: 800 19px var(--ea-serif); color: #fff3d6; }
+.ea-welcome small, .ea-earned small { color: var(--ea-muted); font-size: 12.5px; line-height: 1.5; }
+.ea-earned { margin: 0 0 16px; }
+.ea-gacha-stage { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; min-height: 340px; }
+.ea-gacha-lead { margin: 0; max-width: 440px; text-align: center; color: #d6cfbe; line-height: 1.7; }
+.ea-tome-machine { width: min(420px, 92%); overflow: visible; }
+.ea-tome-machine g, .ea-tome-machine circle { transform-box: view-box; }
+.ea-tome-ring { transform-origin: 160px 112px; animation: ea-spin 30s linear infinite; }
+.ea-tome-book { transform-origin: 160px 140px; animation: ea-float 4s ease-in-out infinite; }
+.ea-tome-page { transform-origin: 160px 136px; }
+.ea-tome-halo { transform-origin: 160px 112px; }
+.ea-tome-mote { animation: ea-twinkle 2s ease-in-out infinite; }
+.is-charging .ea-tome-book { animation: ea-tome-shake .1s linear infinite; }
+.is-charging .ea-tome-ring { animation-duration: 1.4s; }
+.is-charging .ea-tome-page { animation: ea-page-flip .3s ease-in-out infinite alternate; }
+.is-charging .ea-tome-halo { animation: ea-tome-flare 1.3s ease-in forwards; }
+.ea-gacha-results { display: grid; grid-template-columns: repeat(5, minmax(0, 150px)); justify-content: center; gap: 16px; width: 100%; padding-top: 10px; }
+.ea-gacha-results.count-1 { grid-template-columns: minmax(0, 210px); }
+.ea-gacha-slot { position: relative; isolation: isolate; perspective: 900px; animation: ea-rise .35s ease both; animation-delay: calc(var(--i) * 50ms); }
+.ea-gacha-slot::before { content: ''; position: absolute; inset: -8px; z-index: -1; border-radius: 18px; opacity: 0; transition: opacity .3s; }
+.ea-gacha-slot.glow-uncommon::before { opacity: .55; background: radial-gradient(circle, rgba(143, 195, 255, .8), transparent 70%); filter: blur(10px); }
+.ea-gacha-slot.glow-rare::before { opacity: .8; background: radial-gradient(circle, rgba(255, 220, 140, .95), transparent 70%); filter: blur(12px); }
+.ea-gacha-slot.glow-mythic::before { opacity: .85; inset: -12px; background: conic-gradient(from 0deg, #ff7ad9, #ffe7a6, #7ae0ff, #b294ff, #ff7ad9); filter: blur(14px); animation: ea-spin 3s linear infinite; }
+.ea-gacha-slot:not(.is-revealed) .ea-card { animation: ea-bob 1.6s ease-in-out infinite; }
+.ea-gacha-slot.is-revealed .ea-card { animation: ea-flip-in .45s cubic-bezier(.2, .8, .2, 1) both; }
+.ea-gacha-tag { position: absolute; z-index: 3; top: -10px; right: -8px; padding: 4px 10px; border-radius: 10px; background: #e85d8f; color: #fff; font: 800 12px/1 var(--ea-sans); box-shadow: 0 4px 10px rgba(0, 0, 0, .4); animation: ea-pop .3s .3s ease both; }
+.ea-gacha-tag.is-foil { background: linear-gradient(90deg, #ff7ad9, #ffd36b, #7ae0ff); color: #2a1906; }
+.ea-gacha-tag.is-refund { background: #6b4fb8; }
+.ea-gacha-controls { position: relative; z-index: 2; display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; margin: 20px 0 10px; }
+.ea-gacha-controls .ea-btn small { display: inline-flex; align-items: center; gap: 4px; }
+.ea-gacha-info { position: relative; z-index: 2; text-align: center; color: var(--ea-muted); font-size: 13.5px; line-height: 1.8; }
+.ea-gacha-info p { margin: 2px 0; }
+.ea-gacha-info b { color: var(--ea-gold); }
+.ea-gacha-earn { max-width: 580px; margin: 10px auto 0 !important; font-size: 12.5px; }
+.ea-odds { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+.ea-odds th, .ea-odds td { padding: 9px 10px; border-bottom: 1px solid rgba(255, 255, 255, .08); text-align: left; font-size: 14px; }
+.ea-odds th { color: var(--ea-muted); font-weight: 600; font-size: 12.5px; }
+.ea-odds td small { color: var(--ea-muted); margin-left: 4px; }
+.ea-odds .is-uncommon td:first-child { color: #8fc3ff; }
+.ea-odds .is-rare td:first-child { color: var(--ea-gold); }
+.ea-odds .is-mythic td:first-child { color: #ff9ad9; }
+.ea-odds-notes { margin: 0; padding-left: 18px; color: #d6cfbe; font-size: 13px; line-height: 1.75; }
+.ea-codex-progress { display: flex; flex-direction: column; align-items: flex-end; font: 700 26px/1 var(--ea-serif); color: var(--ea-gold); white-space: nowrap; }
+.ea-codex-progress small { font: 600 11.5px var(--ea-sans); color: var(--ea-muted); margin-top: 4px; }
+.ea-codex-tabs { position: relative; z-index: 2; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin: 0 0 14px; }
+.ea-codex-tabs button { padding: 7px 15px; border-radius: 18px; border: 1px solid rgba(255, 255, 255, .14); background: rgba(255, 255, 255, .04); color: var(--ea-muted); font-weight: 700; font-size: 13.5px; }
+.ea-codex-tabs button.is-active { background: var(--ea-gold); border-color: transparent; color: #2a1906; }
+.ea-codex-arch { text-align: center; margin: -4px 0 14px; color: var(--ea-muted); font-size: 13.5px; }
+.ea-codex-arch b { font: 700 15px var(--ea-serif); color: var(--ea-gold); margin-right: 6px; }
+.ea-codex-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+.ea-codex-count { position: absolute; z-index: 2; top: -6px; right: -6px; padding: 3px 8px; border-radius: 10px; background: #6b4fb8; color: #fff; font: 800 12px var(--ea-sans); }
+.ea-codex-detail { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; justify-content: center; }
+.ea-codex-detail .ea-keywords { max-width: 300px; }
+.ea-codex-locked .ea-card { width: 150px; margin: 0 auto 14px; }
+.ea-archive-links { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+.ea-archive-link { position: relative; display: flex; align-items: center; gap: 10px; padding: 10px 18px 10px 12px; border-radius: 14px; border: 1px solid rgba(178, 148, 255, .45); background: rgba(40, 28, 80, .6); color: #d9c8ff; text-align: left; transition: transform .15s, border-color .15s; }
+.ea-archive-link span { display: flex; flex-direction: column; }
+.ea-archive-link b { color: #fff3d6; font-size: 15px; }
+.ea-archive-link small { color: var(--ea-muted); font-size: 12px; }
+.ea-archive-link:hover { transform: translateY(-2px); border-color: var(--ea-violet); }
+.ea-dot { position: absolute; top: 7px; right: 7px; width: 9px; height: 9px; border-radius: 50%; background: #ff6b8a; box-shadow: 0 0 0 3px rgba(255, 107, 138, .25); animation: ea-pulse-text 1.4s ease-in-out infinite; }
+@keyframes ea-flip-in { from { transform: rotateY(90deg) scale(.92); filter: brightness(2); } to { transform: rotateY(0) scale(1); filter: none; } }
+@keyframes ea-tome-shake { 0%, 100% { transform: translate(0, 0); } 25% { transform: translate(-2px, 1px); } 75% { transform: translate(2px, -1px); } }
+@keyframes ea-tome-flare { 0% { transform: scale(1); opacity: .8; } 80% { transform: scale(2.2); opacity: 1; } 100% { transform: scale(3); opacity: 0; } }
+@keyframes ea-page-flip { from { transform: scaleX(1); } to { transform: scaleX(-1); } }
+@media (max-width: 720px) {
+  .ea-archive-head { flex-wrap: wrap; }
+  .ea-archive-head > div { order: -1; flex-basis: 100%; }
+  .ea-gacha-results { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 12px; }
+  .ea-gacha-results.count-1 { grid-template-columns: minmax(0, 180px); }
+  .ea-codex-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; }
+  .ea-codex-tabs { justify-content: flex-start; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .ea-codex-tabs button { flex: none; }
+}
+
 /* Older Safari (< 16.2) has no color-mix(): keep borders, glows and pulses. */
 @supports not (color: color-mix(in srgb, red 50%, blue)) {
   .ea-relic { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12), 0 0 12px rgba(232, 196, 122, .22); }

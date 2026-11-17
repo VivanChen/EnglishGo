@@ -1,14 +1,17 @@
-import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { ACTS } from './data/enemies.js';
 import { POTIONS } from './data/relics.js';
 import { SAVE_VERSION, living, runReducer } from './engine/engine.js';
 import { makeSeed } from './engine/rng.js';
 import { buildRunePool } from './chant.js';
+import { claimWelcome, normalizeCollection, pullArchive, shardsForRun, unlockedCards } from './archive.js';
 import { setSoundEnabled, sfx } from './sound.js';
 import Glyph from './components/Glyph.jsx';
+import { FoilContext } from './components/CardFace.jsx';
 import { PotionArt } from './components/Creatures.jsx';
 import CombatScreen from './screens/CombatScreen.jsx';
 import MapScreen from './screens/MapScreen.jsx';
+import { CodexScreen, GachaScreen } from './screens/ArchiveScreens.jsx';
 import TitleScreen, { RunSummary } from './screens/TitleScreen.jsx';
 import { BossRelicScreen, CardPicker, DeckViewer, EventScreen, Modal, RelicIcon, RestScreen, RewardScreen, ShopScreen, TreasureScreen } from './screens/RoomScreens.jsx';
 import './echo-archive.css';
@@ -27,7 +30,7 @@ function loadRun() {
 }
 function loadMeta() {
   const saved = readJSON(META_KEY) || {};
-  return { ...DEFAULT_META, ...saved, settings: { ...DEFAULT_META.settings, ...(saved.settings || {}) } };
+  return { ...DEFAULT_META, ...saved, settings: { ...DEFAULT_META.settings, ...(saved.settings || {}) }, collection: normalizeCollection(saved.collection) };
 }
 
 function TopBar({ run, potionAim, onPotion, onDeck, onMenu }) {
@@ -85,7 +88,9 @@ export default function EchoArchive({ lv = 'elementary', onBack, onXp, trackWeak
   const [potionAim, setPotionAim] = useState(null);
   const [confirmAbandon, setConfirmAbandon] = useState(false);
   const [tip, setTip] = useState(null);
+  const [earned, setEarned] = useState(null);
   const closeTip = useCallback(() => setTip(null), []);
+  const foils = useMemo(() => new Set(meta.collection.foils), [meta.collection.foils]);
   const resumedCombat = useRef(null);
   const awarded = useRef(null);
   const recorded = useRef(null);
@@ -127,7 +132,15 @@ export default function EchoArchive({ lv = 'elementary', onBack, onXp, trackWeak
   useEffect(() => {
     if (!run || !['victory', 'defeat'].includes(run.screen) || recorded.current === run.seed) return;
     recorded.current = run.seed;
-    setMeta(previous => ({ ...previous, wins: previous.wins + (run.screen === 'victory' ? 1 : 0), bestAct: Math.max(previous.bestAct, run.act), bestFloor: Math.max(previous.bestFloor, run.floor) }));
+    const shards = shardsForRun(run);
+    setEarned(shards);
+    setMeta(previous => ({
+      ...previous,
+      wins: previous.wins + (run.screen === 'victory' ? 1 : 0),
+      bestAct: Math.max(previous.bestAct, run.act),
+      bestFloor: Math.max(previous.bestFloor, run.floor),
+      collection: { ...previous.collection, shards: previous.collection.shards + shards.total },
+    }));
     if (run.screen === 'victory') onXp?.(30);
   }, [run, onXp]);
 
@@ -147,10 +160,17 @@ export default function EchoArchive({ lv = 'elementary', onBack, onXp, trackWeak
     resumedCombat.current = null;
     awarded.current = null;
     setMeta(previous => ({ ...previous, runs: previous.runs + 1, lastDifficulty: difficulty }));
-    dispatch({ type: 'NEW_RUN', seed: makeSeed(), difficulty, lv });
+    dispatch({ type: 'NEW_RUN', seed: makeSeed(), difficulty, lv, unlocked: unlockedCards(meta.collection) });
     setView('run');
     sfx.chantOk();
   };
+  const pullCards = count => {
+    const result = pullArchive(meta.collection, count);
+    if (!result) return null;
+    setMeta(previous => ({ ...previous, collection: result.collection }));
+    return result.results;
+  };
+  const claimGift = () => setMeta(previous => ({ ...previous, collection: claimWelcome(previous.collection) }));
   const continueRun = () => { resumedCombat.current = run?.combat?.id ?? null; setView('run'); };
   const toTitle = () => { setOverlay(null); setView('title'); stopSpeech(); };
   const setSetting = (key, value) => setMeta(previous => ({ ...previous, settings: { ...previous.settings, [key]: value } }));
@@ -170,17 +190,30 @@ export default function EchoArchive({ lv = 'elementary', onBack, onXp, trackWeak
     dispatch({ type: 'USE_POTION', slot, target: c ? living(c)[0]?.uid : undefined });
   };
 
+  const withFoils = node => <FoilContext.Provider value={foils}>{node}</FoilContext.Provider>;
+
+  if (view === 'gacha') {
+    return withFoils(<div ref={root} className="ea-root screen-gacha">
+      <GachaScreen collection={meta.collection} onPull={pullCards} onClaim={claimGift} onBack={() => setView('title')} onCodex={() => setView('codex')}/>
+    </div>);
+  }
+  if (view === 'codex') {
+    return withFoils(<div ref={root} className="ea-root screen-codex">
+      <CodexScreen collection={meta.collection} onBack={() => setView('title')} onGacha={() => setView('gacha')}/>
+    </div>);
+  }
+
   if (view === 'title' || !run) {
-    return <div ref={root} className="ea-root screen-title">
-      <TitleScreen saved={run && !['victory', 'defeat'].includes(run.screen) ? run : null} meta={meta} onContinue={continueRun} onNew={startRun} onBack={onBack}/>
-    </div>;
+    return withFoils(<div ref={root} className="ea-root screen-title">
+      <TitleScreen saved={run && !['victory', 'defeat'].includes(run.screen) ? run : null} meta={meta} onContinue={continueRun} onNew={startRun} onBack={onBack} onGacha={() => setView('gacha')} onCodex={() => setView('codex')}/>
+    </div>);
   }
 
   if (run.screen === 'victory' || run.screen === 'defeat') {
-    return <div ref={root} className={`ea-root screen-${run.screen}`} onClick={showTip}>
+    return withFoils(<div ref={root} className={`ea-root screen-${run.screen}`} onClick={showTip}>
       {tip && <TipPopover key={tip.key} tip={tip} onClose={closeTip}/>}
-      <RunSummary run={run} speak={sayAlways} onAgain={() => setView('title')} onTitle={() => { dispatch({ type: 'CLEAR' }); setView('title'); }}/>
-    </div>;
+      <RunSummary run={run} earned={earned} shards={meta.collection.shards} speak={sayAlways} onGacha={() => { dispatch({ type: 'CLEAR' }); setView('gacha'); }} onAgain={() => setView('title')} onTitle={() => { dispatch({ type: 'CLEAR' }); setView('title'); }}/>
+    </div>);
   }
 
   const c = run.combat;
@@ -199,7 +232,7 @@ export default function EchoArchive({ lv = 'elementary', onBack, onXp, trackWeak
     default: screen = null;
   }
 
-  return <div ref={root} className={`ea-root screen-${run.screen} act-${run.act}`} onClick={showTip}>
+  return withFoils(<div ref={root} className={`ea-root screen-${run.screen} act-${run.act}`} onClick={showTip}>
     <TopBar run={run} potionAim={potionAim} onPotion={slot => setOverlay({ kind: 'potion', slot })} onDeck={() => setOverlay({ kind: 'deck' })} onMenu={() => { setConfirmAbandon(false); setOverlay({ kind: 'menu' }); }}/>
     <div className="ea-main">{screen}</div>
 
@@ -238,5 +271,5 @@ export default function EchoArchive({ lv = 'elementary', onBack, onXp, trackWeak
           : <button type="button" className="ea-btn is-danger" onClick={() => { dispatch({ type: 'CLEAR' }); setOverlay(null); setView('title'); }}>確定放棄？進度將無法復原</button>}
       </div>
     </Modal>}
-  </div>;
+  </div>);
 }

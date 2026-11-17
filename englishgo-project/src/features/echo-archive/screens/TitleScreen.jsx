@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { ARCHIVE_CARDS } from '../data/cards.js';
 import { ACTS } from '../data/enemies.js';
 import { DIFFICULTIES } from '../engine/engine.js';
+import { PULL_COST } from '../archive.js';
 import Glyph from '../components/Glyph.jsx';
 import { Backdrop, EnemyArt, HeroArt } from '../components/Creatures.jsx';
 import { RelicIcon } from './RoomScreens.jsx';
@@ -14,7 +16,20 @@ const HOW_TO = [
   ['boss', '登上三層書庫，打倒每一層的首領，就能奪回寂靜偷走的話語。'],
 ];
 
-export default function TitleScreen({ saved, meta, onContinue, onNew, onBack }) {
+function ArchiveLinks({ collection, onGacha, onCodex }) {
+  const owned = ARCHIVE_CARDS.filter(id => collection.owned[id] > 0).length;
+  return <div className="ea-archive-links">
+    <button type="button" className="ea-archive-link is-gacha" onClick={onGacha}>
+      <Glyph name="gem" size={26}/><span><b>書頁扭蛋</b><small>{collection.welcomed ? `召喚新卡牌 · 擁有 ${collection.shards} 墨晶` : '初次見面禮：100 墨晶！'}</small></span>
+      {(!collection.welcomed || collection.shards >= PULL_COST) && <i className="ea-dot" aria-label="可以抽卡"/>}
+    </button>
+    <button type="button" className="ea-archive-link" onClick={onCodex}>
+      <Glyph name="book" size={26}/><span><b>卡牌圖鑑</b><small>扭蛋卡 {owned} / {ARCHIVE_CARDS.length}</small></span>
+    </button>
+  </div>;
+}
+
+export default function TitleScreen({ saved, meta, onContinue, onNew, onBack, onGacha, onCodex }) {
   const [picking, setPicking] = useState(false);
   const [difficulty, setDifficulty] = useState(meta.lastDifficulty || 'story');
   return <section className="ea-title" aria-labelledby="ea-title-heading">
@@ -39,6 +54,7 @@ export default function TitleScreen({ saved, meta, onContinue, onNew, onBack }) 
             <button type="button" className="ea-btn is-gold" onClick={() => onNew(difficulty)}>{saved ? '放棄目前進度，出發 →' : '出發 →'}</button>
           </div>
         </div>}
+        {!picking && meta.collection && <ArchiveLinks collection={meta.collection} onGacha={onGacha} onCodex={onCodex}/>}
         {meta.runs > 0 && <dl className="ea-records">
           <div><dt>遠征</dt><dd>{meta.runs}</dd></div>
           <div><dt>通關</dt><dd>{meta.wins}</dd></div>
@@ -58,7 +74,7 @@ export default function TitleScreen({ saved, meta, onContinue, onNew, onBack }) 
   </section>;
 }
 
-export function RunSummary({ run, onAgain, onTitle, speak }) {
+export function RunSummary({ run, earned, shards, onAgain, onTitle, onGacha, speak }) {
   const won = run.screen === 'victory';
   const s = run.stats;
   const words = [...s.words].reverse();
@@ -75,6 +91,11 @@ export function RunSummary({ run, onAgain, onTitle, speak }) {
       <h1 id="ea-summary-title">{won ? '話語回來了！' : '這次的遠征結束了'}</h1>
       <p className="ea-room-lead">{won ? '無言之主消散，書庫重新響起千萬個聲音。你是真正的詞術師。' : '寂靜暫時贏了。帶著這次的經驗，下一次會走得更遠。'}</p>
       <dl className="ea-summary-stats">{stats.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
+      {earned && <div className="ea-earned">
+        <Glyph name="gem" size={30}/>
+        <span><b>+{earned.total} 墨晶</b><small>{earned.parts.map(([label, amount]) => `${label} ${amount}`).join(' · ')}{earned.mult > 1 ? ` · 難度 ×${earned.mult}` : ''}</small></span>
+        <button type="button" className="ea-btn is-gold" onClick={onGacha}>去書頁扭蛋（{shards}）</button>
+      </div>}
       {run.hero.relics.length > 0 && <div className="ea-summary-relics">{run.hero.relics.map(id => <RelicIcon key={id} id={id} size={26}/>)}</div>}
       {words.length > 0 && <details className="ea-summary-words" open={words.length <= 12}>
         <summary>這趟旅程詠唱過的符文（{words.length}）</summary>

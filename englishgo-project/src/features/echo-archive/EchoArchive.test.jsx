@@ -109,6 +109,25 @@ describe('Echo Archive', () => {
     delete window.matchMedia;
   });
 
+  it('claims the welcome gift, pulls from the Archive Gacha and shows new cards in the codex', async () => {
+    render(<EchoArchive lv="elementary" onBack={vi.fn()} deps={deps()}/>);
+    fireEvent.click(screen.getByRole('button', { name: /書頁扭蛋/ }));
+    expect(screen.getByRole('button', { name: /單抽/ })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: '領取' }));
+    expect(screen.getByLabelText('墨晶 100')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /單抽/ }));
+    expect(await screen.findByText('NEW', {}, { timeout: 4000 })).toBeInTheDocument();
+    expect(screen.getByLabelText('墨晶 80')).toBeInTheDocument();
+    const meta = JSON.parse(localStorage.getItem('eg_echo_archive_meta'));
+    const owned = Object.keys(meta.collection.owned);
+    expect(owned).toHaveLength(1);
+
+    fireEvent.click(screen.getByRole('button', { name: '打開卡牌圖鑑' }));
+    expect(screen.getByRole('heading', { name: '卡牌圖鑑' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('tab', { name: '未解鎖' }));
+    expect(screen.getAllByRole('button', { name: /未解鎖的/ })).toHaveLength(27);
+  }, 15000);
+
   it('lets the player abandon a run from the menu', async () => {
     await startRun();
     fireEvent.click(screen.getByRole('button', { name: '選單與設定' }));

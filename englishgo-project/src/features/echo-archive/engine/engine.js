@@ -1,4 +1,4 @@
-import { CARDS, CHANT_CARDS, REWARD_POOL, STARTER_DECK, baseCost, cardFades, val } from '../data/cards.js';
+import { ARCHIVE_CARDS, CARDS, CHANT_CARDS, REWARD_POOL, STARTER_DECK, baseCost, cardFades, isUnlocked, val } from '../data/cards.js';
 import { ENCOUNTERS, ENEMIES } from '../data/enemies.js';
 import { EVENTS, KEEPER } from '../data/events.js';
 import { ENERGY_RELICS, POTIONS, RELICS } from '../data/relics.js';
@@ -28,10 +28,15 @@ function addCard(r, id, up = false) {
   return card;
 }
 
-export function createRun({ seed = makeSeed(), difficulty = 'standard', lv = 'elementary' } = {}) {
+// Cards the run may offer: the base collection plus Archive cards the player
+// has unlocked. Fixed at run start so a save resumes with the same pool.
+export const cardPool = r => REWARD_POOL.filter(id => isUnlocked(id, r.unlocked));
+
+export function createRun({ seed = makeSeed(), difficulty = 'standard', lv = 'elementary', unlocked = [] } = {}) {
   const diff = DIFFICULTIES[difficulty] || DIFFICULTIES.standard;
   const r = {
     version: SAVE_VERSION, seed, rng: seed >>> 0, difficulty: DIFFICULTIES[difficulty] ? difficulty : 'standard', lv,
+    unlocked: (unlocked || []).filter(id => ARCHIVE_CARDS.includes(id)),
     act: 1, floor: 0, uid: 0, attacks: 0, fights: 0, actFights: 0, removeCost: 75, potionChance: 40,
     hero: { hp: diff.heroHp, maxHp: diff.heroHp, gold: 99, deck: [], relics: ['inkwell'], potions: [null, null, null], flags: {} },
     map: null, pos: null, path: [], screen: 'event', actIntro: true,
@@ -133,11 +138,25 @@ function drawCards(r, count) {
   if (drawn) fx(r, { kind: 'draw', amount: drawn });
 }
 
+const isJunk = card => card.type === 'status' || card.type === 'curse';
+
 export function cardCost(r, inst) {
   const card = CARDS[inst.id];
+  if (isJunk(card) && r.combat?.player.pw.livingInk) return 0;
   const cost = baseCost(card, inst.up);
   if (typeof cost !== 'number') return cost;
+  if (inst.free) return 0;
   return card.chant && hasRelic(r, 'sageEye') ? Math.max(0, cost - 1) : cost;
+}
+
+const statusCount = c => [...c.hand, ...c.draw, ...c.discard].filter(uid => isJunk(CARDS[c.cards[uid].id])).length;
+
+// Numbers the card text needs to preview combo, chant and status scaling.
+export function cardContext(r) {
+  const c = r.combat;
+  if (!c) return {};
+  const st = c.player.st;
+  return { might: st.might, weak: st.weak, grace: st.grace, frail: st.frail, combo: c.played || 0, chants: c.chantsOk || 0, statuses: statusCount(c), livingInk: Boolean(c.player.pw.livingInk) };
 }
 
 export function canPlay(r, uid) {
@@ -187,6 +206,7 @@ function startCombat(r, kind, encounter) {
     player: { ward: 0, st: {}, pw: {} },
     enemies: encounter.map((id, index) => spawnEnemy(r, id, index)),
     echo: 0, mirror: hasRelic(r, 'mirrorShard'), phase: 'player', queue: [], fx: [], fxSeq: 0, reward: null,
+    played: 0, lastPlayed: null, chantsOk: 0,
   };
   r.screen = 'combat';
   if (hasRelic(r, 'whetstone')) add(c.player.st, 'might', 1);
@@ -203,8 +223,11 @@ function startPlayerTurn(r) {
   const c = r.combat;
   c.round += 1;
   c.phase = 'player';
-  c.player.ward = 0;
+  if (!c.player.pw.bastion) c.player.ward = 0;
   c.energy = c.maxEnergy;
+  c.played = 0;
+  c.lastPlayed = null;
+  if (c.player.st.charge) { c.energy += c.player.st.charge; fx(r, { kind: 'energy', amount: c.player.st.charge }); delete c.player.st.charge; }
   if (c.round === 1 && hasRelic(r, 'lantern')) c.energy += 1;
   if (c.round % 3 === 0 && hasRelic(r, 'hourglass')) c.energy += 1;
   if (c.player.st.burn) { hurtPlayer(r, c.player.st.burn, 'burn'); add(c.player.st, 'burn', -1); }
@@ -217,21 +240,41 @@ function startPlayerTurn(r) {
   settle(r);
 }
 
-const TARGETED = new Set(['damageWard', 'doubleBurn', 'stripWard', 'ifExposed']);
+function addTempToHand(r, id, up = false) {
+  const c = r.combat;
+  if (c.hand.length >= HAND_LIMIT) return;
+  const uid = makeTemp(r, id);
+  c.cards[uid].up = up;
+  c.cards[uid].free = true;
+  c.hand.push(uid);
+  fx(r, { kind: 'conjure', card: id });
+}
+
+function inscribe(r, uid, amount) {
+  const c = r.combat;
+  if (!uid || !c.cards[uid]) return;
+  c.cards[uid].bonus = (c.cards[uid].bonus || 0) + amount;
+  const deckCard = r.hero.deck.find(card => card.uid === uid);
+  if (deckCard) deckCard.bonus = (deckCard.bonus || 0) + amount;
+  fx(r, { kind: 'buff', to: 'player', st: 'inscribe' });
+}
+
+const TARGETED = new Set(['doubleBurn', 'stripWard', 'ifExposed', 'detonate', 'spreadBurn']);
 function resolve(r, effects, up, target, ctx) {
   const c = r.combat;
   for (const effect of effects) {
     const v = val(effect.v, up);
-    const single = TARGETED.has(effect.op) || (effect.op === 'damage' && !effect.all && !effect.random) || (effect.op === 'debuff' && !effect.all);
+    const single = TARGETED.has(effect.op) || (effect.op === 'damageWard' && !effect.all) || (effect.op === 'damage' && !effect.all && !effect.random) || (effect.op === 'debuff' && !effect.all);
     if (single && (!target || target.dead)) continue;
     switch (effect.op) {
       case 'damage': {
-        const hits = effect.hits === 'X' ? ctx.x : val(effect.hits || 1, up);
+        const base = v + (ctx.bonus || 0) + (effect.perCombo ? val(effect.perCombo, up) * (ctx.combo || 0) : 0) + (effect.perChant ? val(effect.perChant, up) * (c.chantsOk || 0) : 0);
+        const hits = effect.hits === 'X' ? ctx.x : effect.comboHits ? (ctx.combo || 0) + 1 : val(effect.hits || 1, up);
         for (let i = 0; i < hits; i++) {
           const pool = living(c);
           if (!pool.length) break;
           const targets = effect.all ? pool : effect.random ? [pick(r, pool)] : [target];
-          targets.forEach(enemy => attackEnemy(r, enemy, v, ctx.mult));
+          targets.forEach(enemy => attackEnemy(r, enemy, base, ctx.mult));
         }
         if (effect.onKill && target?.dead) {
           const gain = val(effect.onKill, up);
@@ -240,8 +283,29 @@ function resolve(r, effects, up, target, ctx) {
         }
         break;
       }
-      case 'damageWard': attackEnemy(r, target, c.player.ward, ctx.mult); break;
-      case 'ward': gainWard(r, v); break;
+      case 'damageWard': (effect.all ? living(c) : [target]).forEach(enemy => attackEnemy(r, enemy, c.player.ward, ctx.mult)); break;
+      case 'ward': gainWard(r, v + (ctx.bonus || 0)); break;
+      case 'detonate': { const burn = target.st.burn || 0; delete target.st.burn; if (burn) hurtEnemy(r, target, burn * v * (ctx.mult || 1)); break; }
+      case 'spreadBurn': { const burn = target.st.burn || 0; if (burn) living(c).filter(enemy => enemy !== target).forEach(enemy => { add(enemy.st, 'burn', burn); fx(r, { kind: 'status', to: enemy.uid, st: 'burn' }); }); break; }
+      case 'burnTickAll': living(c).forEach(enemy => { if (enemy.st.burn) hurtEnemy(r, enemy, enemy.st.burn, 'burn'); }); break;
+      // Mirror Image never copies another copy effect, or two of them would loop for free.
+      case 'copyLast': if (c.lastPlayed && !CARDS[c.lastPlayed.id].fx.some(item => item.op === 'copyLast')) addTempToHand(r, c.lastPlayed.id, c.lastPlayed.up); break;
+      case 'conjure': {
+        const pool = cardPool(r).filter(id => CARDS[id].type === effect.kind && CARDS[id].rarity !== 'mythic');
+        for (let i = 0; i < v; i++) addTempToHand(r, pick(r, pool));
+        break;
+      }
+      case 'absorb': {
+        const junk = c.hand.filter(uid => isJunk(CARDS[c.cards[uid].id]));
+        c.hand = c.hand.filter(uid => !junk.includes(uid));
+        c.faded.push(...junk);
+        if (junk.length) { c.energy += junk.length; fx(r, { kind: 'energy', amount: junk.length }); }
+        if (val(effect.draw, up)) drawCards(r, 1);
+        break;
+      }
+      case 'addStatus': for (let i = 0; i < v; i++) c.discard.push(makeTemp(r, effect.id)); break;
+      case 'wardPerStatus': gainWard(r, v + val(effect.per, up) * statusCount(c)); break;
+      case 'inscribe': inscribe(r, ctx.uid, v); break;
       case 'draw': drawCards(r, v); break;
       case 'energy': c.energy += v; fx(r, { kind: 'energy', amount: v }); break;
       case 'debuff': (effect.all ? living(c) : [target]).forEach(enemy => { add(enemy.st, effect.st, v); fx(r, { kind: 'status', to: enemy.uid, st: effect.st }); }); break;
@@ -253,7 +317,11 @@ function resolve(r, effects, up, target, ctx) {
       case 'doubleBurn': if (target.st.burn) { add(target.st, 'burn', target.st.burn); fx(r, { kind: 'status', to: target.uid, st: 'burn' }); } break;
       case 'stripWard': target.ward = 0; break;
       case 'echo': c.echo += v; break;
-      case 'power': add(c.player.pw, effect.id, v); fx(r, { kind: 'buff', to: 'player', st: effect.id }); break;
+      case 'power':
+        if (effect.set) c.player.pw[effect.id] = c.player.pw[effect.id] ? Math.min(c.player.pw[effect.id], v) : v;
+        else add(c.player.pw, effect.id, v);
+        fx(r, { kind: 'buff', to: 'player', st: effect.id });
+        break;
       case 'wardFromBurn': gainWard(r, living(c).reduce((sum, enemy) => sum + (enemy.st.burn || 0), 0), false); break;
       case 'ifExposed': if (target.st.exposed) resolve(r, effect.then, up, target, ctx); break;
       case 'recycle': c.draw = shuffle(r, [...c.draw, ...c.discard]); c.discard = []; fx(r, { kind: 'shuffle' }); break;
@@ -301,12 +369,22 @@ export function playCard(r, uid, targetUid, chant = null) {
   c.energy -= cost === 'X' ? c.energy : cost;
   c.hand.splice(c.hand.indexOf(uid), 1);
   r.stats.cards += 1;
+  if (isJunk(card)) {
+    // Living Ink: status and curse cards are burned for a fresh draw.
+    fx(r, { kind: 'play', card: inst.id, uid, up: false, empowered: false, target: null });
+    c.faded.push(uid);
+    drawCards(r, 1);
+    afterCardPlayed(r, inst);
+    settle(r);
+    return true;
+  }
   let empowered = false;
   if (card.chant && chant?.word) {
     r.stats.chants += 1;
     if (chant.ok) r.stats.chantsOk += 1;
     r.stats.words = [...r.stats.words.filter(item => item.w !== chant.word), { w: chant.word, m: chant.meaning, ok: Boolean(chant.ok) }].slice(-60);
     empowered = Boolean(chant.ok);
+    if (empowered) c.chantsOk += 1;
   }
   fx(r, { kind: 'play', card: inst.id, uid, up: inst.up, empowered, target: target?.uid || null });
   const effects = empowered ? [...card.fx, ...card.chant] : card.fx;
@@ -317,11 +395,13 @@ export function playCard(r, uid, targetUid, chant = null) {
     r.attacks += 1;
     if (hasRelic(r, 'ironNib') && r.attacks % 10 === 0) { mult = 2; fx(r, { kind: 'nib' }); }
   }
+  if (card.chant && c.player.pw.archmage) repeats += 1;
+  const combo = c.played || 0;
   for (let i = 0; i < repeats; i++) {
     if (!living(c).length) break;
     if (card.target === 'enemy' && (!target || target.dead)) target = pick(r, living(c));
     if (i > 0) fx(r, { kind: 'echo' });
-    resolve(r, effects, inst.up, target, { x, mult });
+    resolve(r, effects, inst.up, target, { x, mult, combo, uid, bonus: inst.bonus || 0 });
   }
   if (empowered) {
     if (hasRelic(r, 'goldenQuill')) drawCards(r, 1);
@@ -329,9 +409,19 @@ export function playCard(r, uid, targetUid, chant = null) {
     if (c.player.pw.scholar) { c.energy += c.player.pw.scholar; fx(r, { kind: 'energy', amount: c.player.pw.scholar }); }
   }
   if (card.type === 'skill' && c.player.pw.resonance && living(c).length) hurtEnemy(r, pick(r, living(c)), c.player.pw.resonance);
+  inst.free = false;
   if (card.type !== 'power') (cardFades(card, inst.up) ? c.faded : c.discard).push(uid);
+  afterCardPlayed(r, inst);
   settle(r);
   return true;
+}
+
+function afterCardPlayed(r, inst) {
+  const c = r.combat;
+  c.played = (c.played || 0) + 1;
+  c.lastPlayed = { id: inst.id, up: Boolean(inst.up) };
+  if (c.player.pw.thousandCuts) living(c).forEach(enemy => hurtEnemy(r, enemy, c.player.pw.thousandCuts));
+  if (c.player.pw.momentum && c.played % c.player.pw.momentum === 0) drawCards(r, 1);
 }
 
 export function usePotion(r, slot, targetUid) {
@@ -371,12 +461,15 @@ export function usePotion(r, slot, targetUid) {
 export function endTurn(r) {
   const c = r.combat;
   if (!c || c.phase !== 'player') return;
+  const kept = [];
   for (const uid of [...c.hand]) {
     const inst = c.cards[uid], card = CARDS[inst.id];
+    inst.free = false;
     if (card.endTurn) resolve(r, card.endTurn, inst.up, null, {});
-    (card.fleeting ? c.faded : c.discard).push(uid);
+    if (card.keep) kept.push(uid);
+    else (card.fleeting ? c.faded : c.discard).push(uid);
   }
-  c.hand = [];
+  c.hand = kept;
   if (c.player.pw.stoneheart) gainWard(r, c.player.pw.stoneheart, false);
   if (hasRelic(r, 'owlFeather') && c.player.ward === 0) gainWard(r, 6, false);
   decay(c.player.st);
@@ -439,18 +532,27 @@ export function finishEnemyPhase(r) {
 }
 
 // ───────────── Rewards ─────────────
-function rollRarity(r, kind) {
-  if (kind === 'boss') return 'rare';
-  return weighted(r, kind === 'elite' ? [['common', 45], ['uncommon', 40], ['rare', 15]] : [['common', 60], ['uncommon', 34], ['rare', 6]]);
+const RARITY_WEIGHTS = {
+  monster: [['common', 60], ['uncommon', 33], ['rare', 6], ['mythic', 1]],
+  elite: [['common', 44], ['uncommon', 38], ['rare', 14], ['mythic', 4]],
+  boss: [['rare', 85], ['mythic', 15]],
+};
+
+// Only rarities that still have unchosen, unlocked cards can be rolled.
+function rollRarity(r, kind, pool) {
+  const table = (RARITY_WEIGHTS[kind] || RARITY_WEIGHTS.monster).filter(([rarity]) => pool.some(id => CARDS[id].rarity === rarity));
+  return table.length ? weighted(r, table) : null;
 }
 
 export function cardOptions(r, kind, count, rarity) {
   const options = [];
   let guard = 0;
   while (options.length < count && guard++ < 200) {
-    const wanted = rarity || rollRarity(r, kind);
-    const pool = REWARD_POOL.filter(id => CARDS[id].rarity === wanted && !options.includes(id));
+    const open = cardPool(r).filter(id => !options.includes(id));
+    const wanted = rarity || rollRarity(r, kind, open);
+    const pool = open.filter(id => CARDS[id].rarity === wanted);
     if (pool.length) options.push(pick(r, pool));
+    else if (!wanted) break;
   }
   return options;
 }
@@ -544,12 +646,15 @@ function startEvent(r) {
 }
 
 function makeShop(r) {
-  const price = rarity => ({ common: randInt(r, 45, 55), uncommon: randInt(r, 68, 82), rare: randInt(r, 135, 160) })[rarity];
+  const price = rarity => ({ common: randInt(r, 45, 55), uncommon: randInt(r, 68, 82), rare: randInt(r, 135, 160), mythic: randInt(r, 190, 220) })[rarity];
   const chosen = [];
   const cards = ['attack', 'attack', 'skill', 'skill', 'power'].map(type => {
-    const rarity = type === 'power' ? weighted(r, [['uncommon', 75], ['rare', 25]]) : weighted(r, [['common', 55], ['uncommon', 35], ['rare', 10]]);
-    let pool = REWARD_POOL.filter(id => CARDS[id].type === type && CARDS[id].rarity === rarity && !chosen.includes(id));
-    if (!pool.length) pool = REWARD_POOL.filter(id => CARDS[id].type === type && !chosen.includes(id));
+    const open = cardPool(r).filter(id => CARDS[id].type === type && !chosen.includes(id));
+    const table = (type === 'power' ? [['uncommon', 70], ['rare', 22], ['mythic', 8]] : [['common', 53], ['uncommon', 34], ['rare', 10], ['mythic', 3]])
+      .filter(([rarity]) => open.some(id => CARDS[id].rarity === rarity));
+    const rarity = weighted(r, table);
+    let pool = open.filter(id => CARDS[id].rarity === rarity);
+    if (!pool.length) pool = open;
     const id = pick(r, pool);
     chosen.push(id);
     return { id, price: price(CARDS[id].rarity), sold: false };
@@ -613,8 +718,8 @@ function applyOutcome(r, effects = []) {
       case 'curse': addCard(r, effect.id); gains.push({ type: 'card', id: effect.id }); break;
       case 'relic': { const id = randomRelic(r, effect.tier); if (gainRelic(r, id)) gains.push({ type: 'relic', id }); else { r.hero.gold += 50; gains.push({ type: 'gold', amount: 50 }); } break; }
       case 'potion': { const id = pick(r, Object.keys(POTIONS)); if (gainPotion(r, id)) gains.push({ type: 'potion', id }); break; }
-      case 'chantCard': { const id = pick(r, CHANT_CARDS.filter(card => CARDS[card].rarity !== 'starter')); addCard(r, id); gains.push({ type: 'card', id }); break; }
-      case 'randomCard': { const id = pick(r, REWARD_POOL.filter(card => CARDS[card].rarity === effect.rarity && (!effect.type || CARDS[card].type === effect.type))); addCard(r, id); gains.push({ type: 'card', id }); break; }
+      case 'chantCard': { const id = pick(r, CHANT_CARDS.filter(card => CARDS[card].rarity !== 'starter' && isUnlocked(card, r.unlocked))); addCard(r, id); gains.push({ type: 'card', id }); break; }
+      case 'randomCard': { const id = pick(r, cardPool(r).filter(card => CARDS[card].rarity === effect.rarity && (!effect.type || CARDS[card].type === effect.type))); addCard(r, id); gains.push({ type: 'card', id }); break; }
       case 'upgrade': if (r.hero.deck.some(canUpgrade)) r.pending = { kind: 'upgrade', cancellable: false, source: 'event' }; break;
       case 'remove': r.pending = { kind: 'remove', cancellable: false, source: 'event' }; break;
       case 'upgradeRandom': shuffle(r, r.hero.deck.filter(canUpgrade)).slice(0, effect.v).forEach(card => { card.up = true; gains.push({ type: 'upgrade', id: card.id }); }); break;

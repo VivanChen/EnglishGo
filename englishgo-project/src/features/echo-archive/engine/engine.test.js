@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { CARDS, describeCard } from '../data/cards.js';
+import { ARCHIVE_CARDS, CARDS, describeCard } from '../data/cards.js';
 import { ENEMIES } from '../data/enemies.js';
-import { canUpgrade, createRun, canPlay, eventChoices, finishEnemyPhase, living, runReducer } from './engine.js';
+import { claimWelcome, emptyCollection, pullArchive, shardsForRun } from '../archive.js';
+import { canUpgrade, cardOptions, createRun, canPlay, eventChoices, finishEnemyPhase, living, runReducer } from './engine.js';
 import { MAP_ROWS, TREASURE_ROW, availableNodes, generateMap } from './map.js';
 
 const act = (run, action) => runReducer(run, action);
@@ -205,7 +206,145 @@ function botStep(run, seedOffset) {
   }
 }
 
+describe('echo archive expansion cards', () => {
+  function give(run, id, up = false) {
+    const c = run.combat;
+    const uid = `g${Object.keys(c.cards).length}`;
+    c.cards[uid] = { uid, id, up };
+    c.hand.push(uid);
+    return uid;
+  }
+  const fresh = (seed = 21) => {
+    const run = intoCombat(seed, ['bookworm']);
+    run.combat.enemies[0].hp = 200; run.combat.enemies[0].maxHp = 200;
+    run.combat.energy = 10;
+    return run;
+  };
+
+  it('grows Combo damage with every card played this turn', () => {
+    let run = fresh();
+    const first = give(run, 'jab');
+    run = act(run, { type: 'PLAY_CARD', uid: first, target: 'e0' });
+    expect(200 - run.combat.enemies[0].hp).toBe(3);
+    run = act(run, { type: 'PLAY_CARD', uid: give(run, 'insight'), target: 'e0' });
+    const before = run.combat.enemies[0].hp;
+    run = act(run, { type: 'PLAY_CARD', uid: give(run, 'jab'), target: 'e0' });
+    expect(before - run.combat.enemies[0].hp).toBe(3 + 2 * 2);
+  });
+
+  it('detonates and spreads Burn', () => {
+    let run = fresh();
+    run.combat.enemies[0].st.burn = 5;
+    run = act(run, { type: 'PLAY_CARD', uid: give(run, 'detonate'), target: 'e0' });
+    expect(200 - run.combat.enemies[0].hp).toBe(10);
+    expect(run.combat.enemies[0].st.burn).toBeUndefined();
+  });
+
+  it('keeps Brace in hand, carries Charge and holds Ward with Iron Will', () => {
+    let run = fresh();
+    run = act(run, { type: 'PLAY_CARD', uid: give(run, 'ironWill') });
+    run = act(run, { type: 'PLAY_CARD', uid: give(run, 'chargeUp') });
+    run = act(run, { type: 'PLAY_CARD', uid: give(run, 'guard') });
+    const brace = give(run, 'brace');
+    run.combat.enemies[0].move = 'burrow';
+    run = act(run, { type: 'END_TURN' });
+    finishEnemyPhase(run);
+    expect(run.combat.hand).toContain(brace);
+    expect(run.combat.player.ward).toBe(5);
+    expect(run.combat.energy).toBe(3 + 2);
+  });
+
+  it('inscribes a Chant card permanently for the rest of the run', () => {
+    let run = fresh();
+    const blade = give(run, 'runeBlade');
+    run.hero.deck.push({ uid: blade, id: 'runeBlade', up: false });
+    run = act(run, { type: 'PLAY_CARD', uid: blade, target: 'e0', chant: { word: 'star', meaning: '星星', ok: true } });
+    expect(run.hero.deck.find(card => card.uid === blade).bonus).toBe(2);
+    expect(run.combat.cards[blade].bonus).toBe(2);
+    run.combat.discard = run.combat.discard.filter(uid => uid !== blade);
+    run.combat.hand.push(blade);
+    const before = run.combat.enemies[0].hp;
+    run = act(run, { type: 'PLAY_CARD', uid: blade, target: 'e0' });
+    expect(before - run.combat.enemies[0].hp).toBe(8);
+  });
+
+  it('turns status cards into fuel with Absorb and Living Ink', () => {
+    let run = fresh();
+    run.combat.energy = 0;
+    give(run, 'smudge'); give(run, 'dust');
+    run = act(run, { type: 'PLAY_CARD', uid: give(run, 'absorb') });
+    expect(run.combat.energy).toBe(2);
+    run = act(run, { type: 'PLAY_CARD', uid: give(run, 'livingInk') });
+    const smudge = give(run, 'smudge');
+    expect(canPlay(run, smudge)).toBe(true);
+    const handBefore = run.combat.hand.length;
+    run = act(run, { type: 'PLAY_CARD', uid: smudge });
+    expect(run.combat.faded).toContain(smudge);
+    expect(run.combat.hand.length).toBe(handBefore);
+  });
+
+  it('only offers Archive cards that are unlocked', () => {
+    const locked = createRun({ seed: 9 });
+    const open = createRun({ seed: 9, unlocked: ARCHIVE_CARDS });
+    const lockedSeen = new Set(), openSeen = new Set();
+    for (let i = 0; i < 80; i++) {
+      cardOptions(locked, 'elite', 3).forEach(id => lockedSeen.add(id));
+      cardOptions(open, 'elite', 3).forEach(id => openSeen.add(id));
+    }
+    expect([...lockedSeen].some(id => CARDS[id].pack)).toBe(false);
+    expect([...openSeen].some(id => CARDS[id].pack)).toBe(true);
+  });
+});
+
+describe('archive gacha', () => {
+  it('charges shards, guarantees a Rare every ten pulls and converts duplicates', () => {
+    let collection = { ...emptyCollection(), shards: 10000 };
+    for (let round = 0; round < 6; round++) {
+      const { collection: next, results } = pullArchive(collection, 10, () => 0.01);
+      expect(next.shards).toBeLessThanOrEqual(collection.shards - 180 + 10 * 25);
+      expect(results.some(item => ['rare', 'mythic'].includes(item.rarity))).toBe(true);
+      collection = next;
+    }
+    const outcomes = new Set();
+    for (let i = 0; i < 40; i++) {
+      const result = pullArchive(collection, 1, () => 0.01);
+      result.results.forEach(item => outcomes.add(item.outcome));
+      collection = result.collection;
+    }
+    expect(outcomes.has('foil') || outcomes.has('refund')).toBe(true);
+    expect(pullArchive({ ...emptyCollection(), shards: 5 }, 1)).toBeNull();
+  });
+
+  it('guarantees a Mythic within forty pulls and rewards every run', () => {
+    let collection = { ...emptyCollection(), shards: 100000 };
+    let mythics = 0;
+    for (let i = 0; i < 40; i++) {
+      const result = pullArchive(collection, 1, () => 0.01);
+      if (result.results[0].rarity === 'mythic') mythics += 1;
+      collection = result.collection;
+    }
+    expect(mythics).toBeGreaterThan(0);
+    const run = createRun({ seed: 3, difficulty: 'heroic' });
+    run.stats = { ...run.stats, floors: 10, kills: 12, elites: 1, bosses: 1, chantsOk: 4 };
+    run.screen = 'defeat';
+    expect(shardsForRun(run).total).toBe(Math.round((20 + 12 + 8 + 25 + 8) * 1.5));
+    expect(claimWelcome(emptyCollection()).shards).toBe(100);
+  });
+});
+
 describe('echo archive full runs', () => {
+  it.each([[7, 'story'], [8, 'standard'], [9, 'heroic']])('seed %i on %s with every Archive card unlocked finishes', (seed, difficulty) => {
+    let run = createRun({ seed: seed * 7919, difficulty, unlocked: ARCHIVE_CARDS });
+    let steps = 0;
+    while (!['victory', 'defeat'].includes(run.screen) && steps < 8000) {
+      const next = botStep(run, seed + steps);
+      expect(next).not.toBe(run);
+      run = next;
+      steps++;
+    }
+    expect(['victory', 'defeat']).toContain(run.screen);
+  });
+
   it.each([[1, 'story'], [2, 'standard'], [3, 'heroic'], [4, 'story'], [5, 'standard'], [6, 'story']])('seed %i on %s finishes without getting stuck', (seed, difficulty) => {
     let run = createRun({ seed: seed * 7919, difficulty });
     let steps = 0;

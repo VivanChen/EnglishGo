@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { CARDS, KEYWORDS, POWER_TEXT } from '../data/cards.js';
 import { ENEMIES } from '../data/enemies.js';
 import { POTIONS } from '../data/relics.js';
-import { canPlay, cardCost, intentOf, living } from '../engine/engine.js';
+import { canPlay, cardContext, cardCost, intentOf, living } from '../engine/engine.js';
 import CardFace, { KeywordList } from '../components/CardFace.jsx';
 import Glyph from '../components/Glyph.jsx';
 import { Backdrop, EnemyArt, HeroArt } from '../components/Creatures.jsx';
@@ -211,6 +211,7 @@ export default function CombatScreen({ run, dispatch, settings, pool, speak, pot
         case 'buff': spawn.push({ to: f.to, text: KEYWORDS[f.st]?.en || POWER_TEXT[f.st]?.en || f.st, kind: 'buff' }); sfx.buff(); break;
         case 'cards': spawn.push({ to: 'player', text: `+${f.amount} ${CARDS[f.card].en}`, kind: 'debuff' }); break;
         case 'echo': spawn.push({ to: 'player', text: 'Echo!', kind: 'buff' }); break;
+        case 'conjure': spawn.push({ to: 'player', text: `+ ${CARDS[f.card].en}`, kind: 'buff' }); break;
         case 'act': nextMarks[f.from] = 'act'; break;
         case 'play': {
           setGhost({ key: `${c.id}-${f.id}`, inst: { id: f.card, up: f.up }, empowered: f.empowered }); sfx.card();
@@ -378,7 +379,7 @@ export default function CombatScreen({ run, dispatch, settings, pool, speak, pot
   const overlap = n > 1 ? Math.min(cardW * 0.62, Math.max(0, (n * cardW - (handWidth - 16)) / (n - 1))) : 0;
   const focus = drag?.uid || selected || hovered;
   const aimedEnemy = c.enemies.find(enemy => enemy.uid === (drag?.over || null));
-  const ctx = { might: c.player.st.might, weak: c.player.st.weak, grace: c.player.st.grace, frail: c.player.st.frail };
+  const ctx = cardContext(run);
   const targeting = (selected && CARDS[c.cards[selected]?.id]?.target === 'enemy') || potionAim !== null || (drag && CARDS[c.cards[drag.uid]?.id]?.target === 'enemy');
 
   const coachAt = coach && coach !== 'wait' && !chant ? COACH[coach].at : null;

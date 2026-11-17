@@ -107,6 +107,24 @@ const GLYPHS = {
   ritual: <path d={star4(32, 32, 24)} {...F}/>,
 };
 
+Object.assign(GLYPHS, {
+  // Archive expansion
+  fireball: <><circle cx="40" cy="24" r="14" {...F}/><path d="M30 34L8 56M34 40L18 58M26 30L6 46" strokeWidth="4" opacity=".6"/><circle cx="44" cy="20" r="5" fill="#fff" fillOpacity=".6" stroke="none"/></>,
+  burst: <><path d="M32 4L37 22L54 12L44 28L62 34L44 38L52 56L36 44L32 62L28 44L12 56L20 38L2 34L20 28L10 12L27 22Z" {...F}/><circle cx="32" cy="33" r="7" fill="#fff" fillOpacity=".55" stroke="none"/></>,
+  sun: <><circle cx="32" cy="32" r="13" {...F}/><path d="M32 4V12M32 52V60M4 32H12M52 32H60M12 12L18 18M46 46L52 52M52 12L46 18M12 52L18 46" strokeWidth="4"/></>,
+  flameShield: <><path d={SHIELD} {...soft}/><path d="M32 20C37 27 41 31 40 38C39 44 35 46 32 46C28 46 24 43 24 38C24 33 28 31 29 26C31 29 32 31 32 33C34 30 33 25 32 20Z" {...F}/></>,
+  shieldBash: <><path d={SHIELD} {...soft}/><path d="M32 7L52 15V30C52 44 43 52 32 57" strokeWidth="4"/><path d="M4 24L14 30M2 36L14 38M6 48L16 44" strokeWidth="3.5"/></>,
+  helm: <><path d="M12 40C12 20 20 8 32 8S52 20 52 40V54H40V42H24V54H12Z" {...soft}/><path d="M12 40C12 20 20 8 32 8S52 20 52 40V54H40V42H24V54H12ZM32 8V30M20 30H44"/></>,
+  aegis: <><path d={SHIELD} {...F}/><path d="M32 16L36 28H48L38 35L42 47L32 40L22 47L26 35L16 28H28Z" fill="#fff" fillOpacity=".7" stroke="none"/></>,
+  fist: <><path d="M16 26C16 20 22 18 26 22C26 16 34 16 34 22C36 16 44 18 42 24C48 22 52 28 48 34L44 48H22L16 38Z" {...soft}/><path d="M16 26C16 20 22 18 26 22C26 16 34 16 34 22C36 16 44 18 42 24C48 22 52 28 48 34L44 48H22L16 38ZM22 48V58H44V48"/><path d="M52 10L58 4M56 20L62 18M46 6L46 0" opacity=".6"/></>,
+  pages: <><path d="M10 14L30 10L34 34L14 38Z" {...soft}/><path d="M10 14L30 10L34 34L14 38Z"/><path d="M34 20L54 22L50 46L30 44Z" {...F} fillOpacity=".55"/><path d="M20 44L38 50L32 62L14 56Z" {...soft}/><path d="M16 20L26 18M18 26L28 24" opacity=".7"/></>,
+  cuts: <><path d="M8 50L44 14M18 56L54 20M28 60L60 28" strokeWidth="4"/><path d="M40 10L48 6L46 16Z" {...F}/></>,
+  hat: <><path d="M32 4L46 44H18Z" {...F}/><path d="M6 46C6 40 58 40 58 46C58 54 6 54 6 46Z" {...F}/><path d={star4(30, 26, 6)} fill="#fff" fillOpacity=".7" stroke="none"/></>,
+  livingInk: <><path d="M30 10C38 8 40 18 46 16C54 14 56 26 50 30C58 34 54 46 46 44C46 54 34 56 32 48C26 56 14 52 18 44C8 44 8 32 16 30C10 22 20 14 26 20C24 14 26 11 30 10Z" {...F}/><circle cx="26" cy="32" r="4" fill="#fff" stroke="none"/><circle cx="40" cy="32" r="4" fill="#fff" stroke="none"/><path d="M26 42Q33 46 40 42" stroke="#fff" strokeWidth="2.5"/></>,
+});
+// Status and power icons share the card art.
+Object.assign(GLYPHS, { charge: GLYPHS.surge, bastion: GLYPHS.helm, momentum: GLYPHS.dash, thousandCuts: GLYPHS.cuts, archmage: GLYPHS.hat, inscribe: GLYPHS.rune, shard: GLYPHS.shard });
+
 GLYPHS.stoneheart = GLYPHS.stone;
 GLYPHS.clarity = GLYPHS.moon;
 GLYPHS.resonance = GLYPHS.wave;
