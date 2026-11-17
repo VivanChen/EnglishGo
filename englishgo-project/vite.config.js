@@ -27,5 +27,8 @@ export default defineConfig({
   server: {
     port: 5173,
     host: true,
+    // Generated media and native encoders are not app source. Windows locks
+    // running executables, so watching this cache can also terminate Vite.
+    watch: { ignored: ['**/output/**', '**/tmp/**'] },
   },
 });

@@ -3,6 +3,7 @@ englishgo-project/dist/
 englishgo-project/vite-dev*.log
 englishgo-project/.novel-audio-prewarm.json
 englishgo-project/output/imagegen/here-we-go-book-1/
+englishgo-project/output/imagegen/here-we-go-book-1-v2/
 englishgo-project/scripts/__pycache__/
 .worktrees/
 .superpowers/

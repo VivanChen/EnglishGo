@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Animate Here We Go! Book 1 with the installed ImageGen CLI, then encode GIFs.
 
-The source artwork and API key never enter the browser bundle. Each API edit
-produces six poses of the existing illustration, not a pan/zoom of one picture.
+The AI pose sheets and API key never enter the browser bundle. Each API edit
+produces sixteen cyclic poses. Local motion compensation renders 64 smooth frames.
 """
 from __future__ import annotations
 
@@ -10,26 +10,32 @@ import argparse
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import contextmanager
 import hashlib
+import inspect
 import json
 import os
 from pathlib import Path
 import re
+import shutil
 import subprocess
 import sys
 import threading
+import time
 
 from PIL import Image, ImageOps
 
 ROOT = Path(__file__).resolve().parents[1]
 PUBLIC = ROOT / 'public'
-CACHE = ROOT / 'output/imagegen/here-we-go-book-1'
+CACHE = ROOT / 'output/imagegen/here-we-go-book-1-v2'
 DESTINATION = PUBLIC / 'images/vocabulary/here-we-go-book-1-gifs'
 CATALOG = ROOT / 'src/data/hanlinHereWeGoBook1Animations.json'
 MOTIONS = ROOT / 'scripts/data/hereWeGoBook1Motions.json'
-VERSION = 1
+VERSION = 2
 PLAY_COUNT = 3
-COLS, ROWS = 3, 2
-SHEET_SIZE = (1536, 1024)
+COLS, ROWS = 4, 4
+SHEET_SIZE = (2048, 2048)
+INBETWEEN_STEPS = 4
+DEFAULT_RIFE = Path(os.environ.get('RIFE_CLI', CACHE / 'tools/rife-ncnn-vulkan-20221029-windows/rife-ncnn-vulkan.exe'))
+DEFAULT_GIFSICLE = Path(os.environ.get('GIFSICLE_CLI', CACHE / 'tools/gifsicle.exe'))
 
 
 def read_json(path):
@@ -89,24 +95,29 @@ def slug(word):
 
 def prompt_for(card, motion):
     return f'''Use case: illustration-story. Animation sprite sheet for an English vocabulary card.
-Edit target: the supplied image is a 3-column by 2-row template containing SIX copies
-of ONE original watercolor-pencil illustration. Keep this exact six-cell layout.
+Edit target: a precise 4-column by 4-row template containing SIXTEEN copies
+of ONE original watercolor-pencil illustration. Keep this exact sixteen-cell layout.
 Vocabulary: {card['w']}; intended meaning: {card['m']}.
 Original scene: {card['imageAlt']}
 Example to preserve: {card['ex']} / {card['ez']}
 Animate only this action: {motion}
-Produce SIX consecutive keyframes, in reading order: top-left, top-middle,
-top-right, bottom-left, bottom-middle, bottom-right. Move from a resting pose
-through small, clearly different, natural action poses. These frames will also
-play in reverse to form a gentle seamless loop. The subject must visibly move
-or change pose; do not substitute camera panning, zooming, or global rotation.
+Produce SIXTEEN closely spaced sequential poses of ONE complete 2.56-second
+animation cycle, reading left-to-right across each row, then top-to-bottom.
+Design the motion like an animator: a gentle anticipation, smooth acceleration,
+small expressive action, soft follow-through and a natural settling back to rest.
+The last pose must continue smoothly into the first, with the same direction
+and speed. This plays FORWARD ONLY, never in reverse. Do not draw unrelated poses.
+Neighboring poses must differ only a LITTLE so motion interpolation is natural.
+Keep the motion restrained and local to the intended body part or object.
+The subject must visibly move; do not substitute camera panning, zooming or rotation.
 Every cell must show the SAME complete scene, at the SAME scale, with the SAME
 fixed camera, background, lighting, watercolor paper texture, colors and characters.
 Preserve the original subject identity, facial features, clothing, object count,
 anatomy, intended vocabulary meaning, and child-friendly hand-painted style.
 No new characters, animals or props. Keep existing text/clock markings unchanged;
 add no letters, words, numbers, labels, frame numbers, logos or watermarks.
-Exact canvas: 1536 by 1024 pixels. Each cell is exactly 512 by 512 pixels.
+Do not redraw the paper texture, stationary objects, or background between poses.
+Exact canvas: 2048 by 2048 pixels. Each cell is exactly 512 by 512 pixels.
 No gutters, margins, grid lines, frame borders, collage effects or inset pictures.
 Keep every subject fully inside its own cell. No object may cross a cell boundary.
 The output is a production animation sheet, not a poster or storyboard.'''
@@ -141,33 +152,60 @@ def make_template(source, target):
     sheet.save(target)
 
 
-def pack_sprite(sheet_path, output_path, frame_size=320, duration_ms=160):
+def install_asset(temporary, target):
+    # A preview player can keep the old GIF open on Windows. Identical bytes do
+    # not need replacing; brief antivirus/file-reader locks are safe to retry.
+    if target.is_file() and digest(temporary.read_bytes()) == digest(target.read_bytes()):
+        temporary.unlink()
+        return
+    for attempt in range(10):
+        try:
+            temporary.replace(target)
+            return
+        except PermissionError:
+            if attempt == 9:
+                raise RuntimeError(f'Close the preview using {target.name}, then rerun to resume.') from None
+            time.sleep(0.2)
+
+
+def pack_sprite(sheet_path, output_path, frame_size=384, duration_ms=40, rife_cli=DEFAULT_RIFE, gifsicle_cli=DEFAULT_GIFSICLE):
+    from hereWeGoAnimationEncoding import render_cycle, frame_metrics
     with Image.open(sheet_path) as sheet:
         if sheet.size != SHEET_SIZE:
             raise ValueError(f'Expected a {SHEET_SIZE[0]}x{SHEET_SIZE[1]} sheet, received {sheet.size}.')
         rgb = sheet.convert('RGB')
-        palette = rgb.resize((384, 256), Image.Resampling.LANCZOS).quantize(colors=128)
         poses = []
         for index in range(COLS * ROWS):
             x, y = (index % COLS) * 512, (index // COLS) * 512
             # Trim the cell edge so a model's faint cell separator is not visible.
             tile = rgb.crop((x + 3, y + 3, x + 509, y + 509)).resize((frame_size, frame_size), Image.Resampling.LANCZOS)
-            poses.append(tile.quantize(palette=palette, dither=Image.Dither.NONE))
-    if len({digest(frame.tobytes()) for frame in poses}) < 4:
-        raise ValueError('The generated sheet contains fewer than four different poses.')
-    frames = poses + poses[-2:0:-1]
+            poses.append(tile)
+    if len({digest(frame.tobytes()) for frame in poses}) < 12:
+        raise ValueError('The generated sheet contains fewer than twelve different poses.')
+    frames = render_cycle(poses, INBETWEEN_STEPS, rife_cli, sheet_path.parent)
+    metrics = frame_metrics(frames)
+    if metrics['meanFrameDifference'] < 0.02:
+        raise ValueError('The generated cycle has no meaningful motion.')
     temporary = output_path.with_suffix('.gif.tmp')
     frames[0].save(temporary, format='GIF', save_all=True, append_images=frames[1:],
-                   duration=duration_ms, loop=PLAY_COUNT - 1, disposal=1, optimize=False)
+                   duration=duration_ms, loop=PLAY_COUNT - 1, disposal=1, optimize=True)
+    optimized = output_path.with_suffix('.optimized.gif.tmp')
+    result = subprocess.run([str(gifsicle_cli), '-O3', '--lossy=30', str(temporary), '-o', str(optimized)],
+                            capture_output=True, timeout=120)
+    if result.returncode or not optimized.is_file():
+        raise RuntimeError('GIF optimization failed; no GIF was published.')
+    optimized.replace(temporary)
     with Image.open(temporary) as animation:
-        if animation.n_frames < 4:
+        if animation.n_frames < COLS * ROWS * INBETWEEN_STEPS:
             temporary.unlink()
-            raise ValueError('The encoded asset is not a multi-frame GIF.')
+            raise ValueError('The encoded cycle has duplicated/static frames; review its motion.')
         metadata = {'frameCount': animation.n_frames, 'width': animation.width, 'height': animation.height,
                     'frameDurationMs': duration_ms, 'durationMs': sum(animation.seek(i) or animation.info.get('duration', 0) for i in range(animation.n_frames))}
-        metadata.update({'playCount': PLAY_COUNT, 'loopCount': PLAY_COUNT - 1,
+        metadata.update({'keyframeCount': COLS * ROWS, 'fps': 1000 / duration_ms,
+                         'encodingVersion': VERSION, 'interpolation': 'rife-v4.6-temporal-ensemble',
+                         'qualityMetrics': metrics, 'playCount': PLAY_COUNT, 'loopCount': PLAY_COUNT - 1,
                          'playbackDurationMs': metadata['durationMs'] * PLAY_COUNT})
-    temporary.replace(output_path)
+    install_asset(temporary, output_path)
     return {**metadata, 'sha256': digest(output_path.read_bytes()), 'bytes': output_path.stat().st_size}
 
 
@@ -189,18 +227,22 @@ def failure_reason(output):
     return 'Image edit failed; no generated asset was published'
 
 
-def verify_entry(card, entry):
+def verify_entry(card, entry, assets_dir=None):
     if entry.get('poster') != card['img']:
         return False
     source = PUBLIC / card['img'].lstrip('/')
     asset = PUBLIC / entry.get('src', '').lstrip('/')
+    if assets_dir is not None:
+        asset = assets_dir / asset.name
     if not source.is_file() or not asset.is_file() or entry.get('sourceSha256') != digest(source.read_bytes()):
         return False
     if entry.get('sha256') != digest(asset.read_bytes()):
         return False
     try:
         with Image.open(asset) as image:
-            if image.format != 'GIF' or image.n_frames != entry['frameCount'] or image.n_frames < 4 or image.size != (entry['width'], entry['height']):
+            if image.format != 'GIF' or image.n_frames != entry['frameCount'] or image.n_frames < 64 or image.size != (entry['width'], entry['height']):
+                return False
+            if entry.get('encodingVersion') != VERSION or entry.get('keyframeCount') != 16:
                 return False
             if entry.get('playCount') != PLAY_COUNT or image.info.get('loop') != PLAY_COUNT - 1:
                 return False
@@ -220,17 +262,21 @@ def main(argv=None):
     parser.add_argument('--limit', type=int)
     parser.add_argument('--concurrency', type=int, default=2)
     parser.add_argument('--model', default='gpt-image-2')
-    parser.add_argument('--quality', choices=['low', 'medium', 'high'], default='medium')
-    parser.add_argument('--frame-size', type=int, default=320)
-    parser.add_argument('--frame-duration-ms', type=int, default=160)
+    parser.add_argument('--quality', choices=['low', 'medium', 'high'], default='high')
+    parser.add_argument('--frame-size', type=int, default=384)
+    parser.add_argument('--frame-duration-ms', type=int, default=40)
     parser.add_argument('--image-cli', type=Path, default=Path(os.environ.get('CODEX_HOME', Path.home() / '.codex')) / 'skills/.system/imagegen/scripts/image_gen.py')
+    parser.add_argument('--rife-cli', type=Path, default=DEFAULT_RIFE, help='rife-ncnn-vulkan binary, with rife-v4.6 beside it.')
+    parser.add_argument('--gifsicle-cli', type=Path, default=DEFAULT_GIFSICLE, help='Gifsicle binary with lossy GIF support.')
     parser.add_argument('--dry-run', action='store_true', help='List work without loading credentials, writing files or calling the API.')
     parser.add_argument('--verify', action='store_true', help='Validate every selected GIF without making API calls.')
     parser.add_argument('--pack-only', action='store_true', help='Rebuild GIFs from cached AI sprite sheets without making API calls.')
     parser.add_argument('--force', action='store_true', help='Regenerate selected AI sheets, including already completed words.')
+    parser.add_argument('--preview', action='store_true', help='Write candidate GIFs/catalog into the ignored cache, leaving website assets untouched.')
+    parser.add_argument('--publish-preview', action='store_true', help='Verify and copy selected preview GIFs into the website without API calls or re-encoding.')
     args = parser.parse_args(argv)
-    if not 1 <= args.concurrency <= 4 or not 128 <= args.frame_size <= 512 or not 20 <= args.frame_duration_ms <= 2000 or args.frame_duration_ms % 10:
-        parser.error('Use concurrency 1–4, frame size 128–512, and a frame duration of 20–2000 ms divisible by 10.')
+    if not 1 <= args.concurrency <= 6 or not 128 <= args.frame_size <= 512 or not 20 <= args.frame_duration_ms <= 2000 or args.frame_duration_ms % 10:
+        parser.error('Use concurrency 1–6, frame size 128–512, and a frame duration of 20–2000 ms divisible by 10.')
     if args.limit is not None and args.limit < 1:
         parser.error('--limit must be positive')
     cards = book_cards()
@@ -242,21 +288,50 @@ def main(argv=None):
         cards = [card for card in cards if card['w'].lower() in requested]
     if args.limit:
         cards = cards[:args.limit]
+    encoder_sha256 = digest(inspect.getsource(pack_sprite).encode() + Path(__file__).with_name('hereWeGoAnimationEncoding.py').read_bytes())
     motions = read_json(MOTIONS)
-    catalog = read_json(CATALOG) if CATALOG.exists() else {'version': VERSION, 'book': 1, 'animations': {}}
+    catalog_path = CACHE / 'preview-catalog.json' if args.preview else CATALOG
+    destination = CACHE / 'previews' if args.preview else DESTINATION
+    catalog = read_json(catalog_path) if catalog_path.exists() else {'version': VERSION, 'book': 1, 'animations': {}}
     if args.verify:
-        invalid = [card['w'] for card in cards if not verify_entry(card, catalog['animations'].get(card['w'].lower(), {}))]
+        invalid = [card['w'] for card in cards if not verify_entry(card, catalog['animations'].get(card['w'].lower(), {}), destination)]
         print(json.dumps({'checked': len(cards), 'valid': len(cards) - len(invalid), 'missingOrInvalid': invalid}))
         return int(bool(invalid))
     if args.dry_run:
         print(json.dumps({'book': 1, 'words': len(cards), 'model': args.model, 'apiEditsAtMost': len(cards),
-                          'output': str(DESTINATION), 'selected': [card['w'] for card in cards]}, indent=2))
+                          'output': str(destination), 'keyframes': 16, 'frames': 64, 'fps': 1000 / args.frame_duration_ms,
+                          'selected': [card['w'] for card in cards]}, indent=2))
+        return 0
+    if args.publish_preview:
+        CACHE.mkdir(parents=True, exist_ok=True)
+        with generation_lock(CACHE / '.generation.lock'):
+            preview = read_json(CACHE / 'preview-catalog.json')
+            invalid = [card['w'] for card in cards if not verify_entry(card, preview['animations'].get(card['w'].lower(), {}), CACHE / 'previews')]
+            if invalid:
+                raise RuntimeError('Preview GIFs missing or invalid: ' + ', '.join(invalid))
+            published = read_json(CATALOG) if CATALOG.exists() else {'book': 1, 'animations': {}}
+            DESTINATION.mkdir(parents=True, exist_ok=True)
+            for card in cards:
+                word = card['w'].lower()
+                entry = preview['animations'][word]
+                source = CACHE / 'previews' / Path(entry['src']).name
+                target = DESTINATION / source.name
+                temporary = target.with_suffix('.gif.tmp')
+                shutil.copyfile(source, temporary)
+                install_asset(temporary, target)
+                published['animations'][word] = entry
+            published['version'] = VERSION
+            published['animations'] = dict(sorted(published['animations'].items()))
+            write_json(CATALOG, published)
+        print(json.dumps({'published': len(cards), 'apiCalls': 0}))
         return 0
     key = None if args.pack_only else load_key()
+    if not args.rife_cli.is_file() or not (args.rife_cli.parent / 'rife-v4.6/flownet.bin').is_file() or not args.gifsicle_cli.is_file():
+        raise RuntimeError('RIFE/gifsicle tools are missing. Set --rife-cli and --gifsicle-cli; see docs/here-we-go-book1-animations.md.')
     if not args.pack_only and not args.image_cli.is_file():
         raise RuntimeError('Installed ImageGen CLI not found; provide --image-cli with its path.')
     CACHE.mkdir(parents=True, exist_ok=True)
-    DESTINATION.mkdir(parents=True, exist_ok=True)
+    destination.mkdir(parents=True, exist_ok=True)
     cancelled = threading.Event()
     environment = {**os.environ, 'PYTHONIOENCODING': 'utf-8'}
     if key:
@@ -270,9 +345,10 @@ def main(argv=None):
         prompt = prompt_for(card, motions[word])
         fingerprint = digest(json.dumps({'version': VERSION, 'source': digest(source.read_bytes()),
             'prompt': prompt, 'model': args.model, 'quality': args.quality,
-            'frameSize': args.frame_size, 'duration': args.frame_duration_ms, 'playCount': PLAY_COUNT}, sort_keys=True).encode())
+            'frameSize': args.frame_size, 'duration': args.frame_duration_ms, 'playCount': PLAY_COUNT,
+            'encoderSha256': encoder_sha256}, sort_keys=True).encode())
         previous = catalog['animations'].get(word, {})
-        if not args.force and previous.get('fingerprint') == fingerprint and verify_entry(card, previous):
+        if not args.force and not args.pack_only and previous.get('fingerprint') == fingerprint and verify_entry(card, previous, destination):
             print(f'[{word}] cached', flush=True)
             return word, previous
         sheet = CACHE / f'{name}-frames.png'
@@ -287,9 +363,9 @@ def main(argv=None):
             prompt_path = CACHE / f'{name}-prompt.txt'
             make_template(source, template)
             prompt_path.write_text(prompt, encoding='utf-8')
-            print(f'[{word}] generating six motion poses', flush=True)
+            print(f'[{word}] generating sixteen cyclic motion poses', flush=True)
             command = [sys.executable, str(args.image_cli), 'edit', '--image', str(template),
-                       '--model', args.model, '--quality', args.quality, '--size', '1536x1024',
+                       '--model', args.model, '--quality', args.quality, '--size', '2048x2048',
                        '--output-format', 'png', '--prompt-file', str(prompt_path),
                        '--out', str(sheet), '--no-augment', '--force']
             result = subprocess.run(command, env=environment, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=900)
@@ -297,17 +373,18 @@ def main(argv=None):
                 cancelled.set()
                 raise RuntimeError(f'[{word}] {failure_reason(result.stderr + result.stdout)}')
             write_json(metadata, {'fingerprint': sheet_fingerprint, 'model': args.model, 'source': card['img'], 'prompt': prompt})
-        output = DESTINATION / f'{name}.gif'
-        info = pack_sprite(sheet, output, args.frame_size, args.frame_duration_ms)
-        entry = {**info, 'src': '/' + output.relative_to(PUBLIC).as_posix(), 'poster': card['img'],
+        output = destination / f'{name}.gif'
+        info = pack_sprite(sheet, output, args.frame_size, args.frame_duration_ms, args.rife_cli, args.gifsicle_cli)
+        entry = {**info, 'src': '/' + (DESTINATION / output.name).relative_to(PUBLIC).as_posix(), 'poster': card['img'],
                  'sourceSha256': digest(source.read_bytes()), 'fingerprint': fingerprint,
-                 'model': args.model, 'motion': motions[word]}
+                 'model': args.model, 'motion': motions[word], 'encoderSha256': encoder_sha256}
         print(f'[{word}] ready: {info["frameCount"]} frames, {info["bytes"]:,} bytes', flush=True)
         return word, entry
 
     failures = []
     with generation_lock(CACHE / '.generation.lock'), ThreadPoolExecutor(max_workers=args.concurrency) as executor:
-        catalog = read_json(CATALOG) if CATALOG.exists() else {'version': VERSION, 'book': 1, 'animations': {}}
+        catalog = read_json(catalog_path) if catalog_path.exists() else {'version': VERSION, 'book': 1, 'animations': {}}
+        catalog['version'] = VERSION
         futures = {executor.submit(generate, card): card['w'] for card in cards}
         for future in as_completed(futures):
             try:
@@ -317,7 +394,7 @@ def main(argv=None):
                     if catalog['animations'].get(word) != entry:
                         catalog['animations'][word] = entry
                         catalog['animations'] = dict(sorted(catalog['animations'].items()))
-                        write_json(CATALOG, catalog)
+                        write_json(catalog_path, catalog)
             except Exception as error:
                 cancelled.set()
                 message = str(error)

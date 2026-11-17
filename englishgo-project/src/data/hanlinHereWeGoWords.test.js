@@ -18,7 +18,11 @@ describe('Here We Go public-source vocabulary', () => {
         expect(card.illustration.animation_duration_ms).toBe(animation.durationMs);
         expect(animation.playCount).toBe(3);
         expect(animation.playbackDurationMs).toBe(animation.durationMs * 3);
-        expect(animation.frameCount).toBeGreaterThan(1);
+        expect(animation.encodingVersion).toBe(2);
+        expect(animation.keyframeCount).toBe(16);
+        expect(animation.frameCount).toBe(64);
+        expect(animation.frameDurationMs).toBe(40);
+        expect(animation.fps).toBe(25);
         expect(existsSync(`public${animation.src}`)).toBe(true);
       } else expect(card.illustration.animation_url).toBeUndefined();
     }

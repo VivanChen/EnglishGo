@@ -72,7 +72,7 @@ try{
     for(let i=0;i<4&&!moved;i++){await page.waitForTimeout(230);moved=hash(await art.screenshot())!==frame;}
     assert(moved,'The browser displayed a static frame instead of playing the animation');
     await inspect('back-animation');
-    await page.waitForFunction(()=>document.querySelector('[data-testid="srs-back-illustrations"] img')?.dataset.mediaKind==='image',null,{timeout:8000});
+    await page.waitForFunction(()=>document.querySelector('[data-testid="srs-back-illustrations"] img')?.dataset.mediaKind==='image',null,{timeout:dog.playbackDurationMs+4000});
     assert(await art.getAttribute('src')===poster,'Three plays did not restore the original image');
     await inspect('three-plays-finished');
     await page.getByRole('button',{name:/翻回/}).click();
