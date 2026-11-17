@@ -50,7 +50,7 @@ export default function TitleScreen({ saved, meta, onContinue, onNew, onBack }) 
         <HeroArt/>
       </div>
     </div>
-    <details className="ea-howto">
+    <details className="ea-howto" open={meta.runs === 0}>
       <summary>怎麼玩？</summary>
       <ol>{HOW_TO.map(([icon, text]) => <li key={text}><Glyph name={icon === 'energy' ? 'surge' : icon} size={22}/><span>{text}</span></li>)}</ol>
       <p>鍵盤：數字鍵選牌、再按一次打出；<kbd>E</kbd> 結束回合；<kbd>Esc</kbd> 取消。也可以直接把牌拖到敵人身上。</p>
@@ -78,6 +78,7 @@ export function RunSummary({ run, onAgain, onTitle, speak }) {
       {run.hero.relics.length > 0 && <div className="ea-summary-relics">{run.hero.relics.map(id => <RelicIcon key={id} id={id} size={26}/>)}</div>}
       {words.length > 0 && <details className="ea-summary-words" open={words.length <= 12}>
         <summary>這趟旅程詠唱過的符文（{words.length}）</summary>
+        {words.some(word => !word.ok) && <p className="ea-summary-note">標 ↻ 的單字已加入「弱點單字」，可以在單字卡再複習一次。</p>}
         <div>{words.map(word => <button type="button" key={word.w} className={word.ok ? 'is-ok' : 'is-miss'} onClick={() => speak(word.w)}><b lang="en">{word.w}</b><small>{word.m}</small><i aria-label={word.ok ? '答對' : '再複習'}>{word.ok ? '✓' : '↻'}</i></button>)}</div>
       </details>}
       <div className="ea-summary-actions">

@@ -135,10 +135,35 @@ function EnemySheet({ run, enemy, onClose }) {
   </div>;
 }
 
+// First-battle coach: a few short steps that point at the real UI.
+const COACH = {
+  energy: { at: 'energy', title: '能量 Energy', text: '每回合有 3 點能量。卡牌左上角的數字是費用，能量用完就不能再出牌了。', button: '下一步' },
+  intent: { at: 'intent', title: '看懂敵人的意圖', text: '敵人頭上的圖示是牠下一步要做的事：紅色的劍是攻擊，旁邊的數字是傷害；藍色的盾是防禦。', button: '下一步' },
+  play: { at: 'hand', title: '出牌攻擊', text: multi => (multi ? '點一下 Slash 選取它，再點一個敵人就能攻擊。也可以直接把牌拖到敵人身上。' : '點一下 Slash 選取它，再點一次就能攻擊。也可以把牌往上拖曳。') },
+  ward: { at: 'hand', title: '用 Ward 擋傷害', text: '打得好！Guard 會給你 Ward（護盾），敵人攻擊時會先扣掉 Ward。試著打出一張 Guard。', button: '知道了' },
+  end: { at: 'end', title: '結束回合', text: '能量用完，或不想再出牌時，按右下角的 End Turn，換敵人行動。' },
+  after: { at: 'center', title: '你學會了！', text: 'Ward 會先擋下傷害，剩下的才扣生命。之後每回合都是：看意圖 → 出牌 → 結束回合。打倒所有敵人就能拿戰利品！', button: '開始戰鬥' },
+};
+const COACH_NEXT = { energy: 'intent', intent: 'play', ward: 'end' };
+
+function Coach({ step, multi, onNext, onSkip }) {
+  const info = COACH[step];
+  return <div className={`ea-coach is-${info.at}`} role="dialog" aria-live="polite" aria-label={info.title}>
+    <b>{info.title}</b>
+    <p>{typeof info.text === 'function' ? info.text(multi) : info.text}</p>
+    <div className="ea-coach-actions">
+      {step !== 'after' && <button type="button" className="ea-coach-skip" onClick={onSkip}>跳過教學</button>}
+      {info.button && <button type="button" className="ea-coach-next" onClick={onNext}>{info.button}</button>}
+    </div>
+  </div>;
+}
+
 let floaterSeq = 0;
 
-export default function CombatScreen({ run, dispatch, settings, pool, speak, potionAim, setPotionAim, onShowPile, resumed = false }) {
+export default function CombatScreen({ run, dispatch, settings, pool, speak, potionAim, setPotionAim, onShowPile, resumed = false, tutorial = false, onTutorialDone, onWord }) {
   const c = run.combat;
+  const [coach, setCoach] = useState(tutorial ? 'energy' : null);
+  const finishCoach = useCallback(() => { setCoach(null); onTutorialDone?.(); }, [onTutorialDone]);
   const [selected, setSelected] = useState(null);
   const [hovered, setHovered] = useState(null);
   const [chant, setChant] = useState(null);
@@ -187,7 +212,12 @@ export default function CombatScreen({ run, dispatch, settings, pool, speak, pot
         case 'cards': spawn.push({ to: 'player', text: `+${f.amount} ${CARDS[f.card].en}`, kind: 'debuff' }); break;
         case 'echo': spawn.push({ to: 'player', text: 'Echo!', kind: 'buff' }); break;
         case 'act': nextMarks[f.from] = 'act'; break;
-        case 'play': setGhost({ key: `${c.id}-${f.id}`, inst: { id: f.card, up: f.up }, empowered: f.empowered }); sfx.card(); break;
+        case 'play': {
+          setGhost({ key: `${c.id}-${f.id}`, inst: { id: f.card, up: f.up }, empowered: f.empowered }); sfx.card();
+          const guardLeft = c.hand.some(uid => c.cards[uid].id === 'guard');
+          setCoach(step => (step === 'play' ? (guardLeft && f.card !== 'guard' ? 'ward' : 'end') : step === 'ward' && CARDS[f.card].type === 'skill' ? 'end' : step));
+          break;
+        }
         case 'turn': setBanner({ key: `t${c.id}-${f.id}`, en: 'Your Turn', zh: `第 ${f.round} 回合 · 你的行動` }); sfx.turn(); break;
         case 'shuffle': setNotice({ key: f.id, text: '棄牌堆洗回抽牌堆' }); break;
         case 'potion': setNotice({ key: f.id, text: `${POTIONS[f.potion].en} · ${POTIONS[f.potion].zh}` }); break;
@@ -223,6 +253,13 @@ export default function CombatScreen({ run, dispatch, settings, pool, speak, pot
     const t = window.setTimeout(() => setShowEnd(true), 750);
     return () => window.clearTimeout(t);
   }, [c.phase]);
+
+  useEffect(() => {
+    if (!coach) return;
+    if (c.phase === 'won' || c.phase === 'lost') finishCoach();
+    else if (c.phase === 'enemy' && coach !== 'wait' && coach !== 'after') setCoach('wait');
+    else if (c.phase === 'player' && coach === 'wait') setCoach('after');
+  }, [c.phase, coach, finishCoach]);
 
   useEffect(() => {
     const el = handRef.current;
@@ -263,10 +300,13 @@ export default function CombatScreen({ run, dispatch, settings, pool, speak, pot
 
   const finishChant = useCallback(ok => {
     setChant(current => {
-      if (current) dispatch({ type: 'PLAY_CARD', uid: current.uid, target: current.target, chant: ok === null ? null : { word: current.q.word, meaning: current.q.meaning, ok } });
+      if (current) {
+        dispatch({ type: 'PLAY_CARD', uid: current.uid, target: current.target, chant: ok === null ? null : { word: current.q.word, meaning: current.q.meaning, ok } });
+        if (ok !== null) onWord?.(current.q.word, ok);
+      }
       return null;
     });
-  }, [dispatch]);
+  }, [dispatch, onWord]);
 
   const selectCard = useCallback(uid => {
     if (c.phase !== 'player' || chant) return;
@@ -341,7 +381,8 @@ export default function CombatScreen({ run, dispatch, settings, pool, speak, pot
   const ctx = { might: c.player.st.might, weak: c.player.st.weak, grace: c.player.st.grace, frail: c.player.st.frail };
   const targeting = (selected && CARDS[c.cards[selected]?.id]?.target === 'enemy') || potionAim !== null || (drag && CARDS[c.cards[drag.uid]?.id]?.target === 'enemy');
 
-  return <section className={`ea-combat act-${run.act} ${targeting ? 'is-targeting' : ''}`} aria-label="戰鬥">
+  const coachAt = coach && coach !== 'wait' && !chant ? COACH[coach].at : null;
+  return <section className={`ea-combat act-${run.act} ${targeting ? 'is-targeting' : ''} ${coachAt ? `coach-${coachAt}` : ''}`} aria-label="戰鬥">
     <div className="ea-field">
       <Backdrop act={run.act}/>
       <div className="ea-stage">
@@ -362,6 +403,7 @@ export default function CombatScreen({ run, dispatch, settings, pool, speak, pot
       {ghost && <div key={ghost.key} className={`ea-ghost ${ghost.empowered ? 'is-empowered' : ''}`} aria-hidden="true"><CardFace inst={ghost.inst}/></div>}
       {notice && <div key={notice.key} className="ea-notice" role="status">{notice.text}</div>}
       {!chant && focus && c.cards[focus] && <aside className="ea-keyword-panel" aria-live="polite"><KeywordList inst={c.cards[focus]}/>{selected === focus && <p className="ea-play-hint">{CARDS[c.cards[focus].id].target === 'enemy' && living(c).length > 1 ? '點選敵人，或把牌拖到敵人身上' : '再點一次打出，或向上拖曳'}</p>}</aside>}
+      {coach && coach !== 'wait' && !chant && c.phase === 'player' && <Coach step={coach} multi={living(c).length > 1} onSkip={finishCoach} onNext={() => (coach === 'after' ? finishCoach() : setCoach(COACH_NEXT[coach] || coach))}/>}
       {potionAim !== null && <div className="ea-aim-hint" role="status">選擇藥劑的目標<button type="button" onClick={() => setPotionAim(null)}>取消</button></div>}
       {inspect && c.enemies.find(enemy => enemy.uid === inspect && !enemy.dead) && <EnemySheet run={run} enemy={c.enemies.find(enemy => enemy.uid === inspect)} onClose={() => setInspect(null)}/>}
     </div>

@@ -58,6 +58,57 @@ describe('Echo Archive', () => {
     expect(screen.getByRole('button', { name: '踏入書庫 →' })).toBeInTheDocument();
   });
 
+  it('coaches a new player through the first battle and remembers when it is skipped', async () => {
+    await startRun();
+    fireEvent.click(screen.getByRole('button', { name: /Take the coin purse/ }));
+    fireEvent.click(screen.getByRole('button', { name: '踏入書庫 →' }));
+    fireEvent.click(screen.getByRole('button', { name: '展開地圖 →' }));
+    fireEvent.click(screen.getAllByRole('button', { name: /可以前往/ })[0]);
+    expect(await screen.findByRole('dialog', { name: '能量 Energy' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '下一步' }));
+    expect(screen.getByRole('dialog', { name: '看懂敵人的意圖' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '下一步' }));
+    expect(screen.getByRole('dialog', { name: '出牌攻擊' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '跳過教學' }));
+    expect(screen.queryByRole('dialog', { name: '出牌攻擊' })).toBeNull();
+    expect(JSON.parse(localStorage.getItem('eg_echo_archive_meta')).tutorialDone).toBe(true);
+  });
+
+  it('sends rune words to the weak-word list and shows relic notes on tap', async () => {
+    const random = vi.spyOn(Math, 'random').mockReturnValue(0);
+    const trackWeak = vi.fn();
+    localStorage.setItem('eg_echo_archive_meta', JSON.stringify({ runs: 3, tutorialDone: true }));
+    const { createRun, runReducer } = await import('./engine/engine.js');
+    const { availableNodes } = await import('./engine/map.js');
+    let run = createRun({ seed: 5, difficulty: 'story' });
+    run = runReducer(run, { type: 'EVENT_CHOOSE', index: 3 });
+    run = runReducer(run, { type: 'EVENT_CONTINUE' });
+    run = runReducer(run, { type: 'ACK_ACT' });
+    run = runReducer(run, { type: 'MAP_SELECT', id: availableNodes(run)[0] });
+    const c = run.combat;
+    c.enemies = [c.enemies[0]];
+    const thunder = Object.keys(c.cards).find(uid => c.cards[uid].id === 'thunder');
+    c.draw = c.draw.filter(uid => uid !== thunder);
+    c.discard = c.discard.filter(uid => uid !== thunder);
+    if (!c.hand.includes(thunder)) c.hand = [thunder, ...c.hand.slice(0, 4)];
+    localStorage.setItem('eg_echo_archive_run', JSON.stringify(run));
+    window.matchMedia = vi.fn(query => ({ matches: query === '(hover: none)', media: query, addEventListener() {}, removeEventListener() {} }));
+
+    render(<EchoArchive lv="elementary" onBack={vi.fn()} trackWeak={trackWeak} deps={deps()}/>);
+    fireEvent.click(screen.getByRole('button', { name: /繼續遠征/ }));
+    fireEvent.click(screen.getByLabelText(/Endless Inkwell/));
+    expect(screen.getByRole('tooltip')).toHaveTextContent('戰鬥勝利後回復 6 生命');
+
+    const card = screen.getByRole('button', { name: /Thunder 雷鳴/ });
+    fireEvent.click(card);
+    fireEvent.click(card);
+    const option = await screen.findByRole('button', { name: /蘋果/ });
+    fireEvent.click(option);
+    await waitFor(() => expect(trackWeak).toHaveBeenCalledWith('apple', -1), { timeout: 3000 });
+    random.mockRestore();
+    delete window.matchMedia;
+  });
+
   it('lets the player abandon a run from the menu', async () => {
     await startRun();
     fireEvent.click(screen.getByRole('button', { name: '選單與設定' }));

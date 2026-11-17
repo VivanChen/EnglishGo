@@ -48,11 +48,34 @@ function TopBar({ run, potionAim, onPotion, onDeck, onMenu }) {
   </header>;
 }
 
+// Touch screens have no hover, so tapping a relic or status shows its
+// description in a small floating card instead.
+function TipPopover({ tip, onClose }) {
+  useEffect(() => {
+    const close = () => onClose();
+    const timer = window.setTimeout(close, 4500);
+    window.addEventListener('scroll', close, true);
+    window.addEventListener('resize', close);
+    return () => { window.clearTimeout(timer); window.removeEventListener('scroll', close, true); window.removeEventListener('resize', close); };
+  }, [tip, onClose]);
+  const width = Math.min(260, window.innerWidth - 24);
+  const left = Math.max(12, Math.min(tip.x - width / 2, window.innerWidth - width - 12));
+  const below = tip.top < window.innerHeight * 0.55;
+  const style = below ? { left, width, top: tip.bottom + 10 } : { left, width, bottom: window.innerHeight - tip.top + 10 };
+  return <div className={`ea-tip-pop ${below ? 'is-below' : 'is-above'}`} style={style} role="tooltip" onClick={onClose}>{tip.text}</div>;
+}
+
+function isTouchTap(event) {
+  const type = event.nativeEvent?.pointerType;
+  if (type) return type !== 'mouse';
+  return typeof window.matchMedia === 'function' && window.matchMedia('(hover: none)').matches;
+}
+
 function Toggle({ label, hint, checked, onChange }) {
   return <label className="ea-toggle"><span><b>{label}</b><small>{hint}</small></span><input type="checkbox" checked={checked} onChange={event => onChange(event.target.checked)}/><i aria-hidden="true"/></label>;
 }
 
-export default function EchoArchive({ lv = 'elementary', onBack, onXp, deps = {} }) {
+export default function EchoArchive({ lv = 'elementary', onBack, onXp, trackWeak, deps = {} }) {
   const { V, speak = () => {}, stopSpeech = () => {}, loadExtraWords, fetchCloudVocab } = deps;
   const [run, dispatch] = useReducer(runReducer, null, loadRun);
   const [view, setView] = useState('title');
@@ -61,6 +84,8 @@ export default function EchoArchive({ lv = 'elementary', onBack, onXp, deps = {}
   const [overlay, setOverlay] = useState(null);
   const [potionAim, setPotionAim] = useState(null);
   const [confirmAbandon, setConfirmAbandon] = useState(false);
+  const [tip, setTip] = useState(null);
+  const closeTip = useCallback(() => setTip(null), []);
   const resumedCombat = useRef(null);
   const awarded = useRef(null);
   const recorded = useRef(null);
@@ -84,6 +109,9 @@ export default function EchoArchive({ lv = 'elementary', onBack, onXp, deps = {}
   }, [lv, V, loadExtraWords, fetchCloudVocab, stopSpeech]);
 
   const say = useCallback(text => { if (settings.voice && text) speak(text); }, [settings.voice, speak]);
+  // Missed rune words flow into the app's weak-word review; recalled ones ease off.
+  const recordWord = useCallback((word, ok) => { trackWeak?.(word, ok ? -1 : 1); }, [trackWeak]);
+  const finishTutorial = useCallback(() => setMeta(previous => (previous.tutorialDone ? previous : { ...previous, tutorialDone: true })), []);
   const sayAlways = useCallback(text => { if (text) speak(text); }, [speak]);
 
   // Learning XP for the main app: small amounts for each victory.
@@ -126,6 +154,12 @@ export default function EchoArchive({ lv = 'elementary', onBack, onXp, deps = {}
   const continueRun = () => { resumedCombat.current = run?.combat?.id ?? null; setView('run'); };
   const toTitle = () => { setOverlay(null); setView('title'); stopSpeech(); };
   const setSetting = (key, value) => setMeta(previous => ({ ...previous, settings: { ...previous.settings, [key]: value } }));
+  const showTip = event => {
+    const el = event.target.closest?.('[data-tip]');
+    if (!el || el.closest('button, .ea-enemy, .ea-hand') || !isTouchTap(event)) { if (tip) setTip(null); return; }
+    const rect = el.getBoundingClientRect();
+    setTip({ text: el.dataset.tip, x: rect.left + rect.width / 2, top: rect.top, bottom: rect.bottom, key: Date.now() });
+  };
 
   const drinkPotion = slot => {
     const id = run.hero.potions[slot];
@@ -143,7 +177,8 @@ export default function EchoArchive({ lv = 'elementary', onBack, onXp, deps = {}
   }
 
   if (run.screen === 'victory' || run.screen === 'defeat') {
-    return <div ref={root} className={`ea-root screen-${run.screen}`}>
+    return <div ref={root} className={`ea-root screen-${run.screen}`} onClick={showTip}>
+      {tip && <TipPopover key={tip.key} tip={tip} onClose={closeTip}/>}
       <RunSummary run={run} speak={sayAlways} onAgain={() => setView('title')} onTitle={() => { dispatch({ type: 'CLEAR' }); setView('title'); }}/>
     </div>;
   }
@@ -154,7 +189,7 @@ export default function EchoArchive({ lv = 'elementary', onBack, onXp, deps = {}
   let screen = null;
   switch (run.screen) {
     case 'map': screen = <MapScreen run={run} dispatch={dispatch}/>; break;
-    case 'combat': screen = <CombatScreen key={c.id} run={run} dispatch={dispatch} settings={settings} pool={pool} speak={say} potionAim={potionAim} setPotionAim={setPotionAim} resumed={resumedCombat.current === c.id} onShowPile={kind => setOverlay({ kind })}/>; break;
+    case 'combat': screen = <CombatScreen key={c.id} run={run} dispatch={dispatch} settings={settings} pool={pool} speak={say} potionAim={potionAim} setPotionAim={setPotionAim} resumed={resumedCombat.current === c.id} tutorial={!meta.tutorialDone && meta.runs <= 1 && c.id === 1} onTutorialDone={finishTutorial} onWord={recordWord} onShowPile={kind => setOverlay({ kind })}/>; break;
     case 'event': screen = <EventScreen key={run.event?.id} run={run} dispatch={dispatch} speak={sayAlways}/>; break;
     case 'reward': screen = <RewardScreen run={run} dispatch={dispatch}/>; break;
     case 'rest': screen = <RestScreen run={run} dispatch={dispatch}/>; break;
@@ -164,10 +199,11 @@ export default function EchoArchive({ lv = 'elementary', onBack, onXp, deps = {}
     default: screen = null;
   }
 
-  return <div ref={root} className={`ea-root screen-${run.screen} act-${run.act}`}>
+  return <div ref={root} className={`ea-root screen-${run.screen} act-${run.act}`} onClick={showTip}>
     <TopBar run={run} potionAim={potionAim} onPotion={slot => setOverlay({ kind: 'potion', slot })} onDeck={() => setOverlay({ kind: 'deck' })} onMenu={() => { setConfirmAbandon(false); setOverlay({ kind: 'menu' }); }}/>
     <div className="ea-main">{screen}</div>
 
+    {tip && <TipPopover key={tip.key} tip={tip} onClose={closeTip}/>}
     {run.pending && <CardPicker key={`${run.pending.kind}-${run.pending.source}`} run={run} dispatch={dispatch}/>}
 
     {run.screen === 'map' && run.actIntro && <div className="ea-act-intro" role="dialog" aria-modal="true" aria-labelledby="ea-act-title">
