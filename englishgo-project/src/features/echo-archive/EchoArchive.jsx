@@ -156,6 +156,17 @@ export default function EchoArchive({ lv = 'elementary', onBack, onXp, trackWeak
 
   useEffect(() => { if (run?.screen !== 'combat') setPotionAim(null); }, [run?.screen]);
 
+  // On phones a run fills the whole screen above the app's sticky bars, so
+  // the hand and End Turn never sit under the browser edge or the nav.
+  const immersive = view === 'run' && Boolean(run) && !['victory', 'defeat'].includes(run.screen);
+  useEffect(() => {
+    if (!immersive || typeof window.matchMedia !== 'function' || !window.matchMedia('(max-width: 720px)').matches) return undefined;
+    const html = document.documentElement;
+    const previous = html.style.overflow;
+    html.style.overflow = 'hidden';
+    return () => { html.style.overflow = previous; };
+  }, [immersive]);
+
   const startRun = difficulty => {
     resumedCombat.current = null;
     awarded.current = null;
@@ -232,7 +243,7 @@ export default function EchoArchive({ lv = 'elementary', onBack, onXp, trackWeak
     default: screen = null;
   }
 
-  return withFoils(<div ref={root} className={`ea-root screen-${run.screen} act-${run.act}`} onClick={showTip}>
+  return withFoils(<div ref={root} className={`ea-root is-immersive screen-${run.screen} act-${run.act}`} onClick={showTip}>
     <TopBar run={run} potionAim={potionAim} onPotion={slot => setOverlay({ kind: 'potion', slot })} onDeck={() => setOverlay({ kind: 'deck' })} onMenu={() => { setConfirmAbandon(false); setOverlay({ kind: 'menu' }); }}/>
     <div className="ea-main">{screen}</div>
 

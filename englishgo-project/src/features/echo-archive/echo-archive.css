@@ -1,5 +1,7 @@
 /* ═══════════ Echo Archive · 回聲書庫 ═══════════ */
 .eg-app-content.module-echoArchive { max-width: 1320px !important; }
+/* A transformed ancestor would trap the phone full-screen layer inside it. */
+.eg-app-content.module-echoArchive { animation: none; transform: none; }
 
 .ea-root {
   --ea-ink: #0b0e20;
@@ -718,6 +720,12 @@ button.ea-grid-card:hover { transform: translateY(-4px); }
 @media (max-width: 720px) {
   .ea-archive-head { flex-wrap: wrap; }
   .ea-archive-head > div { order: -1; flex-basis: 100%; }
+  .ea-gacha-stage { min-height: 0; }
+  .ea-tome-machine { width: min(260px, 78%); }
+  .ea-gacha-lead { font-size: 14px; }
+  .ea-gacha-controls { flex-wrap: nowrap; gap: 10px; margin-top: 14px; }
+  .ea-gacha-controls .ea-btn.is-big { flex: 1 1 0; min-width: 0; padding: 12px 8px; font-size: 16px; }
+  .ea-welcome { padding: 10px 12px; gap: 10px; }
   .ea-gacha-results { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 12px; }
   .ea-gacha-results.count-1 { grid-template-columns: minmax(0, 180px); }
   .ea-codex-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; }
@@ -740,7 +748,8 @@ button.ea-grid-card:hover { transform: translateY(-4px); }
   .ea-shop-cards { grid-template-columns: repeat(3, minmax(0, 168px)); }
   .ea-shop-row { grid-template-columns: 1fr; }
   .ea-title-inner { grid-template-columns: 1fr; }
-  .ea-title-art { position: absolute; right: -40px; bottom: -20px; width: 46%; min-height: 0; opacity: .5; z-index: 1; }
+  .ea-title-art { position: absolute; right: -40px; bottom: -20px; width: 46%; min-height: 0; opacity: .5; z-index: 0; pointer-events: none; }
+  .ea-title-copy { position: relative; z-index: 2; }
   .ea-title-tower { display: none; }
 }
 @media (max-width: 720px) {
@@ -754,10 +763,9 @@ button.ea-grid-card:hover { transform: translateY(-4px); }
   .ea-floor small { display: none; }
   .ea-icon-btn { height: 34px; padding: 0 8px; }
   .ea-topbar-actions { gap: 4px; }
+  .ea-topbar::after { content: ''; order: 7; flex-basis: 100%; height: 0; }
+  .ea-floor { order: 8; flex-direction: row; align-items: center; gap: 6px; padding-left: 0; border-left: 0; }
   .ea-relics { order: 9; flex: 1 1 0; min-width: 0; flex-wrap: nowrap; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
-  .ea-topbar-actions { order: 10; }
-  .ea-floor { margin-right: auto; }
-  .ea-topbar::after { content: ''; order: 8; flex-basis: 100%; }
   .ea-relic { width: 28px; height: 28px; flex: none; }
   .ea-combat { height: auto; min-height: calc(var(--ea-h) - 92px); max-height: none; }
   .ea-field { flex: none; height: clamp(280px, 45svh, 420px); }
@@ -808,6 +816,18 @@ button.ea-grid-card:hover { transform: translateY(-4px); }
   .ea-title-art { width: 58%; right: -60px; opacity: .3; }
   .ea-choice-card { width: calc(50% - 8px); }
   .ea-choice-card .ea-keywords { display: none; }
+
+  /* A run fills the phone screen above the app's sticky nav and install bar. */
+  .ea-root.is-immersive { position: fixed; inset: 0; z-index: 120; margin: 0; border-radius: 0; box-shadow: none; min-height: 0; height: 100vh; height: 100dvh; display: flex; flex-direction: column; padding-top: env(safe-area-inset-top, 0px); }
+  .ea-root.is-immersive > .ea-topbar { flex: none; }
+  .ea-root.is-immersive > .ea-main { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+  .ea-root.is-immersive.screen-combat > .ea-main, .ea-root.is-immersive.screen-map > .ea-main { display: flex; flex-direction: column; overflow: hidden; }
+  .ea-root.is-immersive .ea-combat { flex: 1 1 auto; height: auto; min-height: 0; }
+  .ea-root.is-immersive .ea-field { flex: 1 1 auto; height: auto; min-height: 200px; }
+  .ea-root.is-immersive .ea-tray { padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
+  .ea-root.is-immersive .ea-map { flex: 1 1 auto; min-height: 0; padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
+  .ea-root.is-immersive .ea-map-scroll { flex: 1 1 auto; max-height: none; min-height: 0; }
+  .ea-root.is-immersive .ea-room { min-height: 100%; padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px)); }
 }
 
 @media (prefers-reduced-motion: reduce) {
