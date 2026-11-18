@@ -1851,7 +1851,7 @@ function VoicePicker(){
   </select>);
 }
 const TTS_SPEED_PRESETS=[{value:0.8,label:"慢速"},{value:1,label:"正常"},{value:1.2,label:"快速"}];
-const TTS_SPEED_MODULES=new Set(["srs","speak","pictureBooks","novels","translate","reading","dictation","story","grammar","quiz","exam","ai"]);
+const TTS_SPEED_MODULES=new Set(["srs","speak","novels","translate","reading","dictation","story","grammar","quiz","exam","ai"]);
 const SpeechSpeedContext=createContext(false);
 const TTS_PROVIDER_VOICES={elevenlabs:["21m00Tcm4TlvDq8ikWAM","EXAVITQu4vr4xnSDxMaL","ErXwobaYiN019PkySvjV"],openai:["marin","cedar","coral"],device:[]};
 function readTtsSettings(){
@@ -2689,7 +2689,7 @@ export default function App(){
          mod==="bomb"?<BombM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="grammar"?<GrammarM lv={lv} onBack={back} onXp={addXp} apiKey={gemKey} onOpenSettings={()=>openModule("settings","tools")}/>:
          mod==="reading"?<ReadingM lv={lv} onBack={back} onXp={addXp}/>:
-         mod==="pictureBooks"?<Suspense fallback={<ModuleLoading label="載入互動童書..."/>}><PictureBooks onBack={back} onLearningEvent={onTownLearningEvent} onXp={addXp} trackWeak={trackWeak} speak={speak} stopSpeech={stopSpeech} TtsQuickSpeed={TtsQuickSpeed}/></Suspense>:
+         mod==="pictureBooks"?<Suspense fallback={<ModuleLoading label="載入互動童書..."/>}><PictureBooks onBack={back} onLearningEvent={onTownLearningEvent} onXp={addXp} trackWeak={trackWeak} speak={speak} stopSpeech={stopSpeech}/></Suspense>:
          mod==="novels"?<NovelM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="songs"?<SongsM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="dictation"?<DictM lv={lv} onBack={back} onXp={addXp} onDone={()=>setStats(s=>({...s,dictDone:s.dictDone+1}))}/>:

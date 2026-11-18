@@ -48,7 +48,7 @@ function shelfStatus(entry){
   return '新故事';
 }
 
-export default function PictureBooks({ onBack, stopSpeech, TtsQuickSpeed, onLearningEvent, onXp, trackWeak }) {
+export default function PictureBooks({ onBack, stopSpeech, onLearningEvent, onXp, trackWeak }) {
   const frame = useRef(null), guideBox = useRef(null);
   const [bookIndex, setBookIndex] = useState(0);
   const book = BOOKS[bookIndex];
@@ -151,7 +151,7 @@ export default function PictureBooks({ onBack, stopSpeech, TtsQuickSpeed, onLear
     onLearningEvent?.({id:`pictureBooks:${book.id}:guide:v1`,source:'pictureBooks',level:'elementary',contentId:book.id,kind:'complete',outcome:'participated',activity:'reading-guide',questionCount,occurredAt:new Date().toISOString()});
   }
   return <section className={`pip-book-host${immersive ? ' is-immersive' : ''}`} aria-label="互動童書">
-    <header><button className="pip-back" onClick={onBack}>← 返回學習</button><div><h1>{book.title}</h1><p>{book.zh} · {book.pageCount} 頁互動立體童書{book.level ? ` · ${book.level}` : ''}</p></div>{TtsQuickSpeed&&<TtsQuickSpeed/>}</header>
+    <header><button className="pip-back" onClick={onBack}>← 返回學習</button><div><h1>{book.title}</h1><p>{book.zh} · {book.pageCount} 頁互動立體童書{book.level ? ` · ${book.level}` : ''}</p></div></header>
     <nav className="storybook-shelf" aria-label="選擇童書">{BOOKS.map((item,i)=>{
       const entry=progress[item.id],status=shelfStatus(entry),percent=entry.completed?100:Math.round(entry.seen.length/item.pageCount*100);
       return <button key={item.id} type="button" aria-pressed={bookIndex===i} aria-label={`${item.zh}，${status}，星星 ${entry.stars.length} / ${item.pageCount}`} onClick={()=>selectBook(i)}>

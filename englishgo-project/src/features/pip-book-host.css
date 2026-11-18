@@ -30,11 +30,29 @@
 
 .book-reading-guide{margin:20px 0;padding:20px;border:1px solid #c7d1bd;border-radius:16px;background:#f7f8ef;color:#344d3b;line-height:1.7}.book-reading-guide summary{font-weight:700;cursor:pointer}.book-reading-guide fieldset{min-width:0;margin:24px 0;padding:16px;border:1px solid #c7d1bd;border-radius:12px}.book-reading-guide legend{padding:0 8px;font-weight:600;max-width:100%;overflow-wrap:anywhere}.book-reading-guide small{display:block;font-weight:400;font-size:14px}.book-answer-options{display:grid;gap:10px}.book-answer-options button{padding:12px;text-align:left;border:1px solid #aebca7;border-radius:10px;background:white;color:#344d3b;white-space:normal;line-height:1.5}.book-answer-options button[aria-pressed=true]{background:#e1ecd6;border-color:#4e7053}.book-answer-options button:focus-visible{outline:3px solid #b88828;outline-offset:2px}.book-answer-feedback{padding:12px;background:#e8eddf;border-radius:10px}.book-reading-guide blockquote{margin:16px 0;padding:4px 16px;border-left:3px solid #8da681}.book-reading-guide h2{font-size:21px}
 
+/* Dark mode keeps the paper warmth but moves every surface onto the app's deep green. */
+html[data-eg-theme=dark] .pip-back{background:#2a4038;border-color:#426052;color:#e8eee2}
+html[data-eg-theme=dark] .storybook-shelf button{background:#21352f;border-color:#426052;color:#e8eee2}
+html[data-eg-theme=dark] .storybook-shelf button:hover{box-shadow:0 8px 18px rgba(0,0,0,.28)}
+html[data-eg-theme=dark] .storybook-shelf button[aria-pressed="true"]{background:#2a4038;border-color:#afd2a0;box-shadow:0 0 0 2px #afd2a0,0 10px 22px rgba(0,0,0,.3)}
+html[data-eg-theme=dark] .shelf-text strong{color:#f1f5ec}
+html[data-eg-theme=dark] .shelf-text small,html[data-eg-theme=dark] .shelf-meta{color:#b0c5b9}
+html[data-eg-theme=dark] .shelf-stars{color:#f2c75c}
+html[data-eg-theme=dark] .shelf-done{color:#a6dca0}
+html[data-eg-theme=dark] .shelf-bar{background:#355046}
+html[data-eg-theme=dark] .pip-vocabulary{background:#21352f;border-color:#426052;color:#e8eee2}
+html[data-eg-theme=dark] .pip-vocabulary button{background:#2a4038;border-color:#426052;color:#e8eee2}
+html[data-eg-theme=dark] .book-reading-guide{background:#21352f;border-color:#426052;color:#e8eee2}
+html[data-eg-theme=dark] .book-reading-guide fieldset{border-color:#426052}
+html[data-eg-theme=dark] .book-answer-options button{background:#2a4038;border-color:#4e6a5c;color:#e8eee2}
+html[data-eg-theme=dark] .book-answer-options button[aria-pressed=true]{background:#3d5a47;border-color:#afd2a0}
+html[data-eg-theme=dark] .book-answer-feedback{background:#2f4a3e}
+html[data-eg-theme=dark] .book-reading-guide blockquote{border-left-color:#8db07f}
+
 @media(max-width:600px){
  .pip-book-host{padding:6px 2px}
- .pip-book-host>header{flex-wrap:wrap;gap:8px 10px;margin-bottom:10px}
- .pip-book-host>header>div{order:3;flex-basis:100%}
- .pip-back{padding:8px 13px;font-size:14px}
+ .pip-book-host>header{align-items:flex-start;gap:10px;margin-bottom:10px}
+ .pip-back{padding:8px 12px;font-size:14px;white-space:nowrap}
  .pip-book-host h1{font-size:21px;margin-bottom:4px}
  .storybook-shelf{display:flex;gap:10px;margin:0 -2px 12px;padding:2px 2px 6px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}
  .storybook-shelf::-webkit-scrollbar{display:none}

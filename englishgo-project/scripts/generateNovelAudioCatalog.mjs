@@ -5,8 +5,6 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { NOVELS } from "../src/data/novels.js";
 import { PIP_PAGES } from "../src/data/pipBook.js";
-import { PICTURE_BOOKS } from "../src/data/pictureBooks.js";
-import { pictureBookAudioInput } from "../src/data/pictureBookAudio.js";
 import {
   NOVEL_CHINESE_AUDIO_VERSION,
   NOVEL_CHINESE_RATE,
@@ -46,9 +44,6 @@ for (const novels of Object.values(NOVELS)) {
   }
 }
 
-for (const book of PICTURE_BOOKS) {
-  book.pages.forEach((_, index) => addEntry(pictureBookAudioInput(book, index)));
-}
 
 PIP_PAGES.forEach((page,index) => addEntry({ novelId: 'picture-book-pip-lost-star', chapterNo: index+1, lang: 'en-US', text: page.x }));
 

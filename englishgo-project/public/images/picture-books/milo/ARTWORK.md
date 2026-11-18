@@ -15,3 +15,5 @@ Built-in image_gen; all three saved as original transparent RGBA PNGs, alpha ver
 - `castle.png`: Isolated handcrafted maple/beech toy-block castle, two towers and arched doorway, blue roof cones and sage blocks, warm visible woodgrain, watercolor/colored pencil, ivory paper-cut edge. No floor, scenery, text or plastic 3D; transparent background.
 - `fallen-blocks.png`: Reference castle.png; same toy set scattered into a low fallen pile, recognizable arches/cylinders/blue cones/sage cubes, same medium and transparency.
 - `bridge.png`: Reference castle.png; same blocks rebuilt into a wide bridge with sturdy piers, spanning arch and a pink ribbon bow on top; same medium and transparency.
+
+The `.png` files named above are kept in git history (commit b2876f2); the book loads the matching `.webp` exports in this folder. See `../ARTWORK.md`, "Web delivery".

@@ -11,6 +11,9 @@
 #audioStatus.ready{color:#dff0cf}
 #audioStatus:disabled{cursor:progress;opacity:.8}
 
+/* ---------- reading speed: 🐢 slow · 1× normal · 🐇 fast ---------- */
+#btnSlow.speed-normal{font:800 16px/1 var(--h);color:#5a3f1e}
+
 /* ---------- stars: dim until found, the current page sits larger ---------- */
 .stars i.now:not(.on){opacity:.85}
 

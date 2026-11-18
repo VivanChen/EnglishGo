@@ -10,3 +10,5 @@ Built-in image_gen, 2026-09-09. Six original book-specific assets copied into th
 - `footprints.png`: Isolated damp mud patch with three narrow pointed three-toed impressions, not raised feet; watercolor/pencil, moss edge and genuine transparency.
 
 Shared rock/cloud paper props are reused as scenery; all dinosaur characters and the valley are new. This is an original fictional story, not a reconstruction of dinosaur behavior.
+
+The `.png` files named above are kept in git history (commit b2876f2); the book loads the matching `.webp` exports in this folder. See `../ARTWORK.md`, "Web delivery".

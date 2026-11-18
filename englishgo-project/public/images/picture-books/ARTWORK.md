@@ -57,7 +57,10 @@ Built-in image_gen tool; original transparent RGBA PNGs, alpha checked, no raste
 
 ## Web delivery (2026-11-18)
 
-The storybooks load `.webp` copies derived from the PNG masters in this folder
-(longest side 720px, the Dori valley backdrop 1400px, WebP quality 82). The
-PNG masters stay as the editable source; regenerate the WebP files after
-changing a master.
+The storybooks ship web-sized `.webp` files only (longest side 720px, the Dori
+valley backdrop 1400px, WebP quality 82). The full-resolution PNG masters, and
+the unused woodland, forest-floor, bear and rabbit artwork described above, are
+no longer in the working tree. To edit an illustration, recover its master from
+git history at commit b2876f2 (for example
+`git show b2876f2:englishgo-project/public/images/picture-books/fox-paper.png > fox-paper.png`),
+then export a new WebP with the same settings.

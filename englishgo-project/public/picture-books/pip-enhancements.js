@@ -43,9 +43,10 @@
   const oldButtons = setPlayBtn;
   setPlayBtn = function() { oldButtons(); if (loading) { $('playIcon').textContent='■'; $('playTxt').textContent='Cancel loading'; } };
   stopRead = function() { run++; clearTimeout(watchdog); S?.cancel(); loading=false; playing=false; paused=false; clearHl(); setPlayBtn(); };
+  // Book recordings follow EnglishGo's one site-wide reading speed.
   function utterance(text) {
-    const u=new SpeechSynthesisUtterance(text); u.lang='en-US'; u.rate=slow?.7:.9;
-    u.__englishGoApiTts=true; u.__englishGoRequireApi=true; u.__englishGoTrackWords=true; u.__englishGoPlaybackRate=slow?.8:1;
+    const u=new SpeechSynthesisUtterance(text); u.lang='en-US'; u.rate=.9;
+    u.__englishGoApiTts=true; u.__englishGoRequireApi=true; u.__englishGoTrackWords=true; u.__englishGoUseGlobalSpeed=true; u.__englishGoPlaybackRate=1;
     return u;
   }
   say = function(text, cb) {
@@ -130,8 +131,14 @@
     const rect=app.getBoundingClientRect(), scale=rect.width/app.offsetWidth;
     const target=anchor||document.querySelector('.w[data-w="'+key+'"]')||$('card');
     const point=target.getBoundingClientRect();
-    const left=Math.max(12,Math.min(app.offsetWidth-width-12,(point.left-rect.left)/scale));
-    const top=Math.max(isReading()?100:70,Math.min(app.scrollHeight-height-12,(point.top-rect.top)/scale-height-12));
+    let left=Math.max(12,Math.min(app.offsetWidth-width-12,(point.left-rect.left)/scale));
+    let top=Math.max(isReading()?100:70,Math.min(app.scrollHeight-height-12,(point.top-rect.top)/scale-height-12));
+    if(innerWidth>600&&!anchor&&isReading()){
+      // On the wide canvas a story word's card opens beside the text card, never over the sentence.
+      const card=$('card').getBoundingClientRect();
+      left=Math.min(app.offsetWidth-width-12,(card.right-rect.left)/scale+16);
+      top=Math.max(90,Math.min(app.offsetHeight-height-12,(point.top-rect.top)/scale-120));
+    }
     vocabBox.style.left=left+'px';vocabBox.style.top=top+'px';vocabBox.classList.add('show');
     if(innerWidth<=600&&isReading())requestAnimationFrame(()=>vocabBox.scrollIntoView({block:'nearest',behavior:'smooth'}));
   };
@@ -270,7 +277,26 @@
   };
   document.querySelector('#text').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){const w=e.target.closest('.w');if(w){e.preventDefault();e.stopPropagation();showVocab(w.dataset.w,null,w.textContent);}}});
   // Block book shortcuts while an overlay or native button owns the keystroke.
-  $('btnSlow').onclick=()=>{const resume=playing||loading;stopRead();slow=!slow;$('btnSlow').classList.toggle('off',!slow);toast(slow?'API 語音慢速播放 🐢':'正常速度');if(resume)startRead();};
+  // One speed control, shared with the rest of EnglishGo: slow, normal, fast.
+  const SPEEDS=[{value:.8,icon:'🐢',label:'慢速'},{value:1,icon:'1×',label:'正常'},{value:1.2,icon:'🐇',label:'快速'}];
+  function currentSpeed(){
+    const speed=Number(window.EnglishGoTTS?.getSettings?.().speed)||1;
+    return SPEEDS.reduce((best,option)=>Math.abs(option.value-speed)<Math.abs(best.value-speed)?option:best);
+  }
+  function showSpeed(){
+    const speed=currentSpeed(),button=$('btnSlow');
+    button.textContent=speed.icon;button.classList.remove('off');button.classList.toggle('speed-normal',speed.value===1);
+    button.title=`朗讀速度：${speed.label} ${speed.value}×`;button.setAttribute('aria-label',`朗讀速度：${speed.label} ${speed.value}×，點一下切換`);
+  }
+  $('btnSlow').onclick=()=>{
+    const resume=playing||loading;stopRead();
+    const next=SPEEDS[(SPEEDS.indexOf(currentSpeed())+1)%SPEEDS.length];
+    window.EnglishGoTTS?.setSettings?.({speed:next.value});showSpeed();toast(`朗讀速度：${next.label} ${next.value}×`);
+    if(resume)startRead();
+  };
+  addEventListener('englishgo:tts-settings-changed',showSpeed);addEventListener('englishgo:tts-installed',showSpeed);
+  // "Read to me" names the big button; the mode switch says what each mode does.
+  $('mRead').textContent='🎧 自動朗讀';$('mSelf').textContent='📖 自己讀';
 
   // Swipe across the scene or the story card to turn the page on touch screens.
   let touch=null;
@@ -409,7 +435,7 @@
   }
   status.onclick=e=>{e.stopPropagation();preload();};
 
-  coverArt();render(1);$('card').classList.add('hide');updateCover();fit();prepareArt(0).catch(()=>{});
+  coverArt();render(1);$('card').classList.add('hide');updateCover();showSpeed();fit();prepareArt(0).catch(()=>{});
   warmAudio(0,{words:false});refreshAudioStatus();
   post('pip:ready');
 })();
