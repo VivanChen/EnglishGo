@@ -1,6 +1,6 @@
 # Prerecorded storybook audio
 
-All three books ship complete MP3 packs: 24 page narrations and 348 unique clickable English words (including vocabulary cards and scene labels). Shared words reuse one file. Total audio size is about 9.74 MiB.
+All five books ship complete MP3 packs: 40 page narrations and 543 unique clickable English words (including vocabulary cards and scene labels). Shared words reuse one file. Total audio size is about 17 MiB.
 
 Run `node scripts/prepareStorybookAudio.mjs` when story text or words change, then `npm run build`. Generation uses the existing ElevenLabs endpoint, English voice `21m00Tcm4TlvDq8ikWAM`, speed 0.9. Existing valid files are skipped. The build rejects missing MP3 assets. Commit generated audio and manifests with content changes.
 

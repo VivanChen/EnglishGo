@@ -1,7 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { PIP_PAGES, PIP_VOCAB } from '../data/pipBook.js';
 import { MILO_PAGES, MILO_VOCAB } from '../data/miloBook.js';
 import { DORI_PAGES, DORI_VOCAB, DORI_QUESTIONS, DORI_PATTERNS } from '../data/doriBook.js';
+import { OTTO_PAGES, OTTO_VOCAB, OTTO_QUESTIONS, OTTO_PATTERNS } from '../data/ottoBook.js';
+import { NOVA_PAGES, NOVA_VOCAB, NOVA_QUESTIONS, NOVA_PATTERNS } from '../data/novaBook.js';
 import { bookWords } from '../data/storybookAudio.js';
 import { STORYBOOK_QUESTS } from '../data/storybookQuests.js';
 import BookReadingGuide from './BookReadingGuide.jsx';
@@ -23,11 +25,19 @@ export const BOOK_READING_GUIDES = {
   patterns: [['I need some space.','I need ...：我需要……。可以清楚說明自己目前的需要。'],['Next time, I can stop, breathe, and use my words.','Next time, I can ...：下次，我可以……。把練過的方法變成下一次的選擇。']],
  },
 };
+// Listed from the gentlest read to the longest; `stage` matches the app's learning stages.
 const BOOKS = [
- {id:'pip-and-the-lost-star',title:'Pip and the Lost Star',zh:'皮皮與迷路的小星星',pages:PIP_PAGES,vocab:PIP_VOCAB,icon:'🦊',...BOOK_READING_GUIDES['pip-and-the-lost-star']},
- {id:'milo-and-the-little-storm',title:'Prince Milo and the Little Storm',zh:'米洛王子的小風暴',pages:MILO_PAGES,vocab:MILO_VOCAB,icon:'👑',...BOOK_READING_GUIDES['milo-and-the-little-storm']},
- {id:'dori-and-the-echo-in-the-mist',title:'Dori and the Echo in the Mist',zh:'小恐龍朵里尋找媽媽',pages:DORI_PAGES,vocab:DORI_VOCAB,icon:'🦕',level:'國小五～六年級',questions:DORI_QUESTIONS,patterns:DORI_PATTERNS}
+ {id:'pip-and-the-lost-star',title:'Pip and the Lost Star',zh:'皮皮與迷路的小星星',pages:PIP_PAGES,vocab:PIP_VOCAB,icon:'🦊',level:'國小低年級',stage:'elementary',...BOOK_READING_GUIDES['pip-and-the-lost-star']},
+ {id:'otto-and-the-lantern-boat',title:'Otto and the Lantern Boat',zh:'小水獺奧圖的燈籠船',pages:OTTO_PAGES,vocab:OTTO_VOCAB,icon:'🦦',level:'國小低年級',stage:'elementary',questions:OTTO_QUESTIONS,patterns:OTTO_PATTERNS},
+ {id:'milo-and-the-little-storm',title:'Prince Milo and the Little Storm',zh:'米洛王子的小風暴',pages:MILO_PAGES,vocab:MILO_VOCAB,icon:'👑',level:'國小中年級',stage:'elementary',...BOOK_READING_GUIDES['milo-and-the-little-storm']},
+ {id:'dori-and-the-echo-in-the-mist',title:'Dori and the Echo in the Mist',zh:'小恐龍朵里尋找媽媽',pages:DORI_PAGES,vocab:DORI_VOCAB,icon:'🦕',level:'國小五～六年級',stage:'elementary',questions:DORI_QUESTIONS,patterns:DORI_PATTERNS},
+ {id:'nova-and-the-silent-lighthouse',title:'Nova and the Silent Lighthouse',zh:'諾娃與沉默的燈塔',pages:NOVA_PAGES,vocab:NOVA_VOCAB,icon:'🔦',level:'國中',stage:'junior',questions:NOVA_QUESTIONS,patterns:NOVA_PATTERNS}
 ].map(book=>({...book,pageCount:book.pages.length,quests:STORYBOOK_QUESTS[book.id],words:new Set(bookWords(book))}));
+// Junior and senior learners see the longer book first; younger readers keep the gentle order.
+export function shelfForStage(lv){
+  if(lv!=='junior'&&lv!=='senior')return BOOKS;
+  return [...BOOKS.filter(book=>book.stage!=='elementary'),...BOOKS.filter(book=>book.stage==='elementary').reverse()];
+}
 
 // Phones (and short landscape phones) read the book full screen once it is opened.
 const PHONE_QUERY='(max-width: 600px), (max-height: 520px) and (pointer: coarse)';
@@ -48,10 +58,11 @@ function shelfStatus(entry){
   return '新故事';
 }
 
-export default function PictureBooks({ onBack, stopSpeech, onLearningEvent, onXp, trackWeak }) {
+export default function PictureBooks({ lv, onBack, stopSpeech, onLearningEvent, onXp, trackWeak }) {
   const frame = useRef(null), guideBox = useRef(null);
+  const shelf = useMemo(() => shelfForStage(lv), [lv]);
   const [bookIndex, setBookIndex] = useState(0);
-  const book = BOOKS[bookIndex];
+  const book = shelf[bookIndex] || shelf[0];
   const [height, setHeight] = useState(700);
   const [progress, setProgress] = useState(() => readPictureBookProgress(BOOKS));
   const live = useRef(progress);
@@ -106,13 +117,13 @@ export default function PictureBooks({ onBack, stopSpeech, onLearningEvent, onXp
         const xp = result.first ? BOOK_FINISH_XP : 0;
         if (result.first) {
           onXp?.(xp);
-          onLearningEvent?.({id:`pictureBooks:${id}:read:v1`,source:'pictureBooks',level:'elementary',contentId:id,kind:'complete',outcome:'participated',activity:'storybook',pageCount:book.pageCount,starCount:live.current[id].stars.length,occurredAt:new Date().toISOString()});
+          onLearningEvent?.({id:`pictureBooks:${id}:read:v1`,source:'pictureBooks',level:book.stage,contentId:id,kind:'complete',outcome:'participated',activity:'storybook',pageCount:book.pageCount,starCount:live.current[id].stars.length,occurredAt:new Date().toISOString()});
         }
         send({ type: 'pip:reward', xp, first: result.first, missing: result.missing });
         break;
       }
       case 'pip:guide': setGuideRequest(n => n + 1); break;
-      case 'pip:next-book': selectBook((bookIndex + 1) % BOOKS.length, { openNext: true }); break;
+      case 'pip:next-book': selectBook((bookIndex + 1) % shelf.length, { openNext: true }); break;
       default: break;
     }
   };
@@ -148,17 +159,17 @@ export default function PictureBooks({ onBack, stopSpeech, onLearningEvent, onXp
 
   function word(key) { send({ type: 'pip:word', word: key }); }
   function completeGuide({questionCount}) {
-    onLearningEvent?.({id:`pictureBooks:${book.id}:guide:v1`,source:'pictureBooks',level:'elementary',contentId:book.id,kind:'complete',outcome:'participated',activity:'reading-guide',questionCount,occurredAt:new Date().toISOString()});
+    onLearningEvent?.({id:`pictureBooks:${book.id}:guide:v1`,source:'pictureBooks',level:book.stage,contentId:book.id,kind:'complete',outcome:'participated',activity:'reading-guide',questionCount,occurredAt:new Date().toISOString()});
   }
   return <section className={`pip-book-host${immersive ? ' is-immersive' : ''}`} aria-label="互動童書">
     <header><button className="pip-back" onClick={onBack}>← 返回學習</button><div><h1>{book.title}</h1><p>{book.zh} · {book.pageCount} 頁互動立體童書{book.level ? ` · ${book.level}` : ''}</p></div></header>
-    <nav className="storybook-shelf" aria-label="選擇童書">{BOOKS.map((item,i)=>{
+    <nav className="storybook-shelf" aria-label="選擇童書">{shelf.map((item,i)=>{
       const entry=progress[item.id],status=shelfStatus(entry),percent=entry.completed?100:Math.round(entry.seen.length/item.pageCount*100);
-      return <button key={item.id} type="button" aria-pressed={bookIndex===i} aria-label={`${item.zh}，${status}，星星 ${entry.stars.length} / ${item.pageCount}`} onClick={()=>selectBook(i)}>
+      return <button key={item.id} type="button" aria-pressed={bookIndex===i} aria-label={`${item.zh}，${item.level}，${status}，星星 ${entry.stars.length} / ${item.pageCount}`} onClick={()=>selectBook(i)}>
         <span className="shelf-icon" aria-hidden="true">{item.icon}</span>
         <span className="shelf-text">
           <strong>{item.zh}</strong><small lang="en">{item.title}</small>
-          <span className="shelf-meta"><span className="shelf-stars">★ {entry.stars.length}/{item.pageCount}</span><span className={entry.completed?'shelf-done':''}>{entry.completed?'✓ ':''}{status}</span></span>
+          <span className="shelf-meta"><span className="shelf-stars">★ {entry.stars.length}/{item.pageCount}</span><span className={`shelf-level stage-${item.stage}`}>{item.level}</span><span className={entry.completed?'shelf-done':''}>{entry.completed?'✓ ':''}{status}</span></span>
           <span className="shelf-bar" aria-hidden="true"><i style={{width:`${percent}%`}}/></span>
         </span>
       </button>;})}</nav>

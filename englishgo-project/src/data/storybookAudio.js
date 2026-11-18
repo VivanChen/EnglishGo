@@ -1,19 +1,23 @@
 import { PIP_PAGES, PIP_VOCAB } from './pipBook.js';
 import { MILO_PAGES, MILO_VOCAB } from './miloBook.js';
 import { DORI_PAGES, DORI_VOCAB } from './doriBook.js';
+import { OTTO_PAGES, OTTO_VOCAB } from './ottoBook.js';
+import { NOVA_PAGES, NOVA_VOCAB } from './novaBook.js';
 import { makeNovelAudioItem, makeNovelAudioAssetId } from './novelAudio.js';
 
 export const STORYBOOKS_AUDIO = [
  {key:'pip',id:'picture-book-pip-lost-star',pages:PIP_PAGES,vocab:PIP_VOCAB},
  {key:'milo',id:'picture-book-milo-little-storm',pages:MILO_PAGES,vocab:MILO_VOCAB},
- {key:'dori',id:'picture-book-dori-echo-mist',pages:DORI_PAGES,vocab:DORI_VOCAB}
+ {key:'dori',id:'picture-book-dori-echo-mist',pages:DORI_PAGES,vocab:DORI_VOCAB},
+ {key:'otto',id:'picture-book-otto-lantern-boat',pages:OTTO_PAGES,vocab:OTTO_VOCAB},
+ {key:'nova',id:'picture-book-nova-silent-lighthouse',pages:NOVA_PAGES,vocab:NOVA_VOCAB}
 ];
 const sceneWords=['tree','bush','rock','garden','sky'];
 export function bookWords(book){
  return [...new Set([...book.pages.flatMap(p=>(p.x.match(/[A-Za-z']+/g)||[]).map(w=>w.toLowerCase().replace(/^'|'$/g,''))),...Object.keys(book.vocab),...sceneWords])].filter(Boolean).sort();
 }
 export function wordAudioItem(word){
- const text=({i:'I',pip:'Pip',milo:'Milo',ruby:'Ruby',dori:'Dori'})[word]||word;
+ const text=({i:'I',pip:'Pip',milo:'Milo',ruby:'Ruby',dori:'Dori',otto:'Otto',nova:'Nova',leo:'Leo'})[word]||word;
  const id=makeNovelAudioAssetId({novelId:'picture-book-vocabulary',chapterNo:1,lang:'en-US',text});
  return {text,lang:'en-US',audioUrl:`/audio/picture-books/words/${id}.mp3`};
 }

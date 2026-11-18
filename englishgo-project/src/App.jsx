@@ -2689,7 +2689,7 @@ export default function App(){
          mod==="bomb"?<BombM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="grammar"?<GrammarM lv={lv} onBack={back} onXp={addXp} apiKey={gemKey} onOpenSettings={()=>openModule("settings","tools")}/>:
          mod==="reading"?<ReadingM lv={lv} onBack={back} onXp={addXp}/>:
-         mod==="pictureBooks"?<Suspense fallback={<ModuleLoading label="載入互動童書..."/>}><PictureBooks onBack={back} onLearningEvent={onTownLearningEvent} onXp={addXp} trackWeak={trackWeak} speak={speak} stopSpeech={stopSpeech}/></Suspense>:
+         mod==="pictureBooks"?<Suspense fallback={<ModuleLoading label="載入互動童書..."/>}><PictureBooks lv={lv} onBack={back} onLearningEvent={onTownLearningEvent} onXp={addXp} trackWeak={trackWeak} speak={speak} stopSpeech={stopSpeech}/></Suspense>:
          mod==="novels"?<NovelM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="songs"?<SongsM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="dictation"?<DictM lv={lv} onBack={back} onXp={addXp} onDone={()=>setStats(s=>({...s,dictDone:s.dictDone+1}))}/>:

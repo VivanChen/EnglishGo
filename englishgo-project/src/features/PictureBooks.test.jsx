@@ -1,5 +1,7 @@
 import { DORI_PAGES, DORI_VOCAB, DORI_QUESTIONS } from '../data/doriBook.js';
 import { MILO_PAGES, MILO_VOCAB } from '../data/miloBook.js';
+import { OTTO_PAGES, OTTO_VOCAB, OTTO_QUESTIONS } from '../data/ottoBook.js';
+import { NOVA_PAGES, NOVA_VOCAB, NOVA_QUESTIONS } from '../data/novaBook.js';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
@@ -73,7 +75,7 @@ describe('Dori upper-elementary storybook',()=>{
   render(<PictureBooks onBack={vi.fn()} stopSpeech={vi.fn()}/>);
   fireEvent.click(screen.getByRole('button',{name:/^小恐龍朵里尋找媽媽/}));
   expect(screen.getByTitle('Dori and the Echo in the Mist 互動立體童書')).toHaveAttribute('src','/picture-books/dori-and-the-echo-in-the-mist.html');
-  expect(screen.getByText(/國小五～六年級/)).toBeVisible();
+  expect(screen.getByText(/國小五～六年級/,{selector:'header p'})).toBeVisible();
   fireEvent.click(screen.getByText('讀後探索 · 4 題推理練習與 3 個句型'));
   fireEvent.click(screen.getByRole('button',{name:DORI_QUESTIONS[0].options[1],hidden:true}));
   expect(screen.getByRole('status',{hidden:true})).toHaveTextContent('再看看故事中的線索');
@@ -167,8 +169,8 @@ describe('storybook progress, stars and rewards',()=>{
  it('shows saved progress on the shelf and resumes the book where the reader stopped',()=>{
   localStorage.setItem(KEY,JSON.stringify({'pip-and-the-lost-star':{page:3,seen:[0,1,2,3],stars:[0,2],completed:false}}));
   const {book,send}=open();
-  expect(screen.getByRole('button',{name:'皮皮與迷路的小星星，讀到第 4 頁，星星 2 / 8'})).toHaveAttribute('aria-pressed','true');
-  expect(screen.getByRole('button',{name:'米洛王子的小風暴，新故事，星星 0 / 8'})).toHaveAttribute('aria-pressed','false');
+  expect(screen.getByRole('button',{name:'皮皮與迷路的小星星，國小低年級，讀到第 4 頁，星星 2 / 8'})).toHaveAttribute('aria-pressed','true');
+  expect(screen.getByRole('button',{name:'米洛王子的小風暴，國小中年級，新故事，星星 0 / 8'})).toHaveAttribute('aria-pressed','false');
   book({type:'pip:ready'});
   expect(send).toHaveBeenCalledWith({type:'pip:immersive',active:false},origin);
   expect(send).toHaveBeenCalledWith({type:'pip:init',page:3,stars:[0,2],completed:false,autoOpen:false},origin);
@@ -190,7 +192,7 @@ describe('storybook progress, stars and rewards',()=>{
   book({type:'pip:star',page:1,word:'garden',firstTry:true});
   expect(trackWeak).toHaveBeenLastCalledWith('garden',-1);
   expect(saved()).toMatchObject({page:1,seen:[0,1],stars:[0,1]});
-  expect(screen.getByRole('button',{name:'皮皮與迷路的小星星，讀到第 2 頁，星星 2 / 8'})).toBeInTheDocument();
+  expect(screen.getByRole('button',{name:'皮皮與迷路的小星星，國小低年級，讀到第 2 頁，星星 2 / 8'})).toBeInTheDocument();
   book({type:'pip:review',word:'owl'});book({type:'pip:review',word:'dinosaur'});
   expect(trackWeak).toHaveBeenCalledTimes(3);expect(trackWeak).toHaveBeenLastCalledWith('owl',1);
  });
@@ -209,7 +211,7 @@ describe('storybook progress, stars and rewards',()=>{
   expect(send).toHaveBeenLastCalledWith({type:'pip:reward',xp:20,first:true,missing:0},origin);
   book({type:'pip:finish'});
   expect(onXp).toHaveBeenCalledTimes(1);expect(onLearningEvent).toHaveBeenCalledTimes(1);
-  expect(screen.getByRole('button',{name:'皮皮與迷路的小星星，已讀完，星星 0 / 8'})).toBeInTheDocument();
+  expect(screen.getByRole('button',{name:'皮皮與迷路的小星星，國小低年級，已讀完，星星 0 / 8'})).toBeInTheDocument();
  });
 
  it('ignores progress and rewards claimed by other windows',()=>{
@@ -236,14 +238,59 @@ describe('storybook progress, stars and rewards',()=>{
   expect(document.documentElement.style.overflow).toBe('hidden');
   expect(send).toHaveBeenLastCalledWith({type:'pip:immersive',active:true},origin);
   book({type:'pip:next-book'});
-  const milo=screen.getByTitle('Prince Milo and the Little Storm 互動立體童書');
+  const next=screen.getByTitle('Otto and the Lantern Boat 互動立體童書');
   expect(host).toHaveClass('is-immersive');
-  const miloSend=vi.spyOn(milo.contentWindow,'postMessage');
-  fromFrame(milo,{type:'pip:ready'});
-  expect(miloSend).toHaveBeenCalledWith({type:'pip:immersive',active:true},origin);
-  expect(miloSend).toHaveBeenCalledWith(expect.objectContaining({type:'pip:init',autoOpen:true}),origin);
-  fromFrame(milo,{type:'pip:reading',open:false});
+  const nextSend=vi.spyOn(next.contentWindow,'postMessage');
+  fromFrame(next,{type:'pip:ready'});
+  expect(nextSend).toHaveBeenCalledWith({type:'pip:immersive',active:true},origin);
+  expect(nextSend).toHaveBeenCalledWith(expect.objectContaining({type:'pip:init',autoOpen:true}),origin);
+  fromFrame(next,{type:'pip:reading',open:false});
   expect(host).not.toHaveClass('is-immersive');
   expect(document.documentElement.style.overflow).toBe('');
  }));
+});
+
+describe('new storybooks for younger and older readers',()=>{
+ const builtData=id=>{
+  const built=readFileSync(path.join(process.cwd(),`public/picture-books/${id}.html`),'utf8');
+  return vm.runInNewContext(built.slice(built.indexOf('const VOCAB ='),built.indexOf('/* ================= SVG ART'))+';({pages:PAGES,vocab:VOCAB})');
+ };
+ const books=[
+  {id:'otto-and-the-lantern-boat',novelId:'picture-book-otto-lantern-boat',pages:OTTO_PAGES,vocab:OTTO_VOCAB,questions:OTTO_QUESTIONS,maxWords:25},
+  {id:'nova-and-the-silent-lighthouse',novelId:'picture-book-nova-silent-lighthouse',pages:NOVA_PAGES,vocab:NOVA_VOCAB,questions:NOVA_QUESTIONS,minWords:55}
+ ];
+ it('keeps generated bilingual pages, vocabulary, recordings and reading level aligned',()=>{
+  books.forEach(({id,novelId,pages,vocab,questions,maxWords,minWords})=>{
+   expect(builtData(id)).toEqual({pages,vocab});
+   expect(pages).toHaveLength(8);expect(new Set(pages.map(p=>p.s)).size).toBe(8);
+   const words=new Set(pages.flatMap(p=>p.x.toLowerCase().match(/[a-z']+/g)));
+   Object.keys(vocab).forEach(word=>expect(words.has(word),`${id}: ${word}`).toBe(true));
+   pages.forEach((page,index)=>{
+    const count=page.x.split(/\s+/).length;
+    if(maxWords)expect(count,`${id} page ${index+1}`).toBeLessThanOrEqual(maxWords);
+    if(minWords)expect(count,`${id} page ${index+1}`).toBeGreaterThanOrEqual(minWords);
+    expect(page.z).toMatch(/[一-鿿]/);
+    expect(NOVEL_AUDIO_CATALOG[makeNovelAudioAssetId({novelId,chapterNo:index+1,lang:'en-US',text:page.x})]).toEqual({text:page.x,lang:'en-US'});
+   });
+   questions.forEach(question=>expect(question.options[question.answer]).toBeTruthy());
+  });
+ });
+ it('puts the gentle books first for elementary learners and the junior-high book first for older learners',()=>{
+  const {unmount}=render(<PictureBooks lv="elementary" onBack={vi.fn()} stopSpeech={vi.fn()}/>);
+  const names=()=>screen.getAllByRole('button',{name:/，星星 \d+ \/ 8$/}).map(button=>button.getAttribute('aria-label').split('，')[0]);
+  expect(names()).toEqual(['皮皮與迷路的小星星','小水獺奧圖的燈籠船','米洛王子的小風暴','小恐龍朵里尋找媽媽','諾娃與沉默的燈塔']);
+  unmount();
+  render(<PictureBooks lv="junior" onBack={vi.fn()} stopSpeech={vi.fn()}/>);
+  expect(names()[0]).toBe('諾娃與沉默的燈塔');
+  expect(screen.getByTitle('Nova and the Silent Lighthouse 互動立體童書')).toHaveAttribute('src','/picture-books/nova-and-the-silent-lighthouse.html');
+  expect(screen.getByText(/國中/,{selector:'header p'})).toBeVisible();
+  expect(screen.getByText('讀後探索 · 4 題推理練習與 3 個句型')).toBeInTheDocument();
+ });
+ it('records the junior-high reading guide at the junior stage',()=>{
+  const onLearningEvent=vi.fn();
+  render(<PictureBooks lv="junior" onBack={vi.fn()} stopSpeech={vi.fn()} onLearningEvent={onLearningEvent}/>);
+  NOVA_QUESTIONS.forEach(question=>fireEvent.click(screen.getByRole('button',{name:question.options[question.answer],hidden:true})));
+  expect(onLearningEvent).toHaveBeenCalledTimes(1);
+  expect(onLearningEvent.mock.calls[0][0]).toMatchObject({id:'pictureBooks:nova-and-the-silent-lighthouse:guide:v1',level:'junior',questionCount:4});
+ });
 });

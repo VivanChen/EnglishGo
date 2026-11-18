@@ -26,3 +26,17 @@
 .dori-book .cover .ct{font-size:36px}
 .dori-book .cover .ct small{font-size:17px;line-height:1.5;margin-top:12px}
 .dori-book .cover .zh{color:#e2ead7}
+
+/* Nova is a longer junior-high story: give its text card the same room as Dori's. */
+@media(min-width:601px){
+ .nova-book #card{width:330px;top:110px;max-height:485px}
+ .nova-book #text{font-size:18px;line-height:1.5}
+ .nova-book #title{font-size:24px}
+ .nova-book #stage{left:350px;width:680px}
+}
+.nova-book .cover{background:linear-gradient(155deg,#33506a,#152538 70%)}
+.nova-book .cover .ct{font-size:34px}
+.nova-book .cover .ct small{font-size:17px;line-height:1.5;margin-top:12px}
+.nova-book .cover .zh{color:#d5e2f0}
+.otto-book .cover{background:linear-gradient(160deg,#3c5d78,#1d3048 62%,#142238)}
+.otto-book .cover .zh{color:#d8e6f2}

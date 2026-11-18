@@ -1,5 +1,7 @@
 import { DORI_PAGES } from '../src/data/doriBook.js';
 import { MILO_PAGES } from '../src/data/miloBook.js';
+import { OTTO_PAGES } from '../src/data/ottoBook.js';
+import { NOVA_PAGES } from '../src/data/novaBook.js';
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -50,6 +52,10 @@ PIP_PAGES.forEach((page,index) => addEntry({ novelId: 'picture-book-pip-lost-sta
 MILO_PAGES.forEach((page,index) => addEntry({ novelId: 'picture-book-milo-little-storm', chapterNo: index+1, lang: 'en-US', text: page.x }));
 
 DORI_PAGES.forEach((page,index) => addEntry({ novelId: 'picture-book-dori-echo-mist', chapterNo: index+1, lang: 'en-US', text: page.x }));
+
+OTTO_PAGES.forEach((page,index) => addEntry({ novelId: 'picture-book-otto-lantern-boat', chapterNo: index+1, lang: 'en-US', text: page.x }));
+
+NOVA_PAGES.forEach((page,index) => addEntry({ novelId: 'picture-book-nova-silent-lighthouse', chapterNo: index+1, lang: 'en-US', text: page.x }));
 
 const config = {
   chineseAudioVersion: NOVEL_CHINESE_AUDIO_VERSION,

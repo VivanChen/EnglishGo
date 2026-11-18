@@ -3,6 +3,8 @@ import {DORI_PAGES,DORI_VOCAB} from '../src/data/doriBook.js';
 import {readFile,writeFile,mkdir} from 'node:fs/promises';
 import {PIP_PAGES,PIP_VOCAB} from '../src/data/pipBook.js';
 import {MILO_PAGES,MILO_VOCAB} from '../src/data/miloBook.js';
+import {OTTO_PAGES,OTTO_VOCAB} from '../src/data/ottoBook.js';
+import {NOVA_PAGES,NOVA_VOCAB} from '../src/data/novaBook.js';
 import {makeNovelAudioItem} from '../src/data/novelAudio.js';
 import {STORYBOOK_QUESTS} from '../src/data/storybookQuests.js';
 // Each book receives its page-by-page "find it" targets next to its scenes.
@@ -55,6 +57,28 @@ const doriItems=DORI_PAGES.map((p,i)=>makeNovelAudioItem({novelId:'picture-book-
 await writeFile(new URL('public/picture-books/dori-and-the-echo-in-the-mist.html',root),dori);
 await writeFile(new URL('public/picture-books/dori-audio-items.js',root),'window.PIP_AUDIO_ITEMS = '+JSON.stringify(doriItems,null,2)+';\n');
 console.log(`Original Dori: ${DORI_PAGES.length} pages, ${Object.keys(DORI_VOCAB).length} vocabulary cards.`);
+
+// Later books share the same engine; scene code is inserted through a callback so `$` in templates stays literal.
+async function deriveBook({id,key,novelId,bodyClass,title,coverTitle,subtitle,zh,endEmoji,endLine,vocab,pages,scenes}){
+ const sceneCode=await readFile(new URL(`src/content/${scenes}`,root),'utf8');
+ let book=html.replace('<body class="storybook-layout">',()=>`<body class="storybook-layout ${bodyClass}">`)
+  .replace(/Pip and the Lost Star/g,()=>title).replace('Pip and the<br>Lost Star',()=>coverTitle);
+ if(subtitle)book=book.replace('一本互動立體童書',()=>subtitle);
+ book=book.replace('皮皮與迷路的小星星',()=>zh).replace('🦊⭐',()=>endEmoji).replace('Pip counted the stars. One star winked back.',()=>endLine)
+  .replace(/const VOCAB = [\s\S]*?(?=\/\* ================= SVG ART)/,()=>'const VOCAB = '+JSON.stringify(vocab)+';\nconst PAGES = '+JSON.stringify(pages)+';\n')
+  .replace('/picture-books/pip-audio-items.js',()=>`/picture-books/${key}-audio-items.js`)
+  .replace('/* ================= STATE ================= */',()=>sceneCode+'\n'+quests(id)+'/* ================= STATE ================= */');
+ await writeFile(new URL(`public/picture-books/${id}.html`,root),book);
+ const bookItems=pages.map((p,i)=>makeNovelAudioItem({novelId,chapterNo:i+1,lang:'en-US',text:p.x}));
+ await writeFile(new URL(`public/picture-books/${key}-audio-items.js`,root),'window.PIP_AUDIO_ITEMS = '+JSON.stringify(bookItems,null,2)+';\n');
+ console.log(`Original ${title}: ${pages.length} pages, ${Object.keys(vocab).length} vocabulary cards.`);
+}
+await deriveBook({id:'otto-and-the-lantern-boat',key:'otto',novelId:'picture-book-otto-lantern-boat',bodyClass:'otto-book',
+ title:'Otto and the Lantern Boat',coverTitle:'Otto and the<br>Lantern Boat',zh:'小水獺奧圖的燈籠船',endEmoji:'🦦🏮',
+ endLine:'Otto rowed home. His lantern glowed all night.',vocab:OTTO_VOCAB,pages:OTTO_PAGES,scenes:'otto-scenes.js'});
+await deriveBook({id:'nova-and-the-silent-lighthouse',key:'nova',novelId:'picture-book-nova-silent-lighthouse',bodyClass:'nova-book',
+ title:'Nova and the Silent Lighthouse',coverTitle:'Nova and the<br>Silent Lighthouse',subtitle:'國中閱讀',zh:'諾娃與沉默的燈塔',endEmoji:'🔦🌊',
+ endLine:'Check the wires first. Ask for help. Never stop paying attention.',vocab:NOVA_VOCAB,pages:NOVA_PAGES,scenes:'nova-scenes.js'});
 
 for(const book of STORYBOOKS_AUDIO){
  const {pages,words}=storybookAudioBundle(book);

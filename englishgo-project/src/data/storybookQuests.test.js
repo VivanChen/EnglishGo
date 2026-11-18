@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { STORYBOOK_QUESTS } from './storybookQuests.js';
 import { STORYBOOKS_AUDIO, bookWords } from './storybookAudio.js';
 
-const BOOK_KEYS = { 'pip-and-the-lost-star': 'pip', 'milo-and-the-little-storm': 'milo', 'dori-and-the-echo-in-the-mist': 'dori' };
+const BOOK_KEYS = { 'pip-and-the-lost-star': 'pip', 'milo-and-the-little-storm': 'milo', 'dori-and-the-echo-in-the-mist': 'dori', 'otto-and-the-lantern-boat': 'otto', 'nova-and-the-silent-lighthouse': 'nova' };
 const built = id => readFileSync(path.join(process.cwd(), `public/picture-books/${id}.html`), 'utf8');
 function bookScenes(id) {
   const html = built(id);
@@ -36,7 +36,9 @@ describe('storybook "find it" challenges', () => {
     });
     const art = ['fox-paper', 'tree-paper', 'basket-paper', 'owl-paper', 'house-paper', 'bush-paper', 'rock-paper', 'star-paper', 'cloud-paper',
       'milo/bridge', 'milo/castle', 'milo/fallen-blocks', 'milo/milo-angry', 'milo/milo-breathe', 'milo/milo-welcome', 'milo/ruby-ribbon',
-      'dori/dori-alert', 'dori/dori-listening', 'dori/fern', 'dori/footprints', 'dori/mother', 'dori/valley'];
+      'dori/dori-alert', 'dori/dori-listening', 'dori/fern', 'dori/footprints', 'dori/mother', 'dori/valley',
+      'otto/pond', 'otto/otto', 'otto/boat', 'otto/lantern', 'otto/duckling', 'otto/mother-duck', 'otto/frog', 'otto/fish', 'otto/reeds',
+      'nova/coast', 'nova/nova', 'nova/grandpa', 'nova/lighthouse', 'nova/boat', 'nova/radio', 'nova/toolbox', 'nova/battery', 'nova/notebook'];
     art.forEach(name => {
       const file = path.join(process.cwd(), `public/images/picture-books/${name}.webp`);
       expect(existsSync(file), name).toBe(true);

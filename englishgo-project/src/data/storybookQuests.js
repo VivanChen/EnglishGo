@@ -4,4 +4,6 @@ export const STORYBOOK_QUESTS = {
   'pip-and-the-lost-star': ['house', 'garden', 'star', 'basket', 'owl', 'wind', 'sky', 'home'],
   'milo-and-the-little-storm': ['castle', 'ruby', 'blocks', 'tree', 'breathe', 'ruby', 'bridge', 'prince'],
   'dori-and-the-echo-in-the-mist': ['mother', 'stone', 'footprints', 'echo', 'fern', 'signal', 'mother', 'triceratops'],
+  'otto-and-the-lantern-boat': ['boat', 'lantern', 'duck', 'frog', 'fish', 'moon', 'mother', 'home'],
+  'nova-and-the-silent-lighthouse': ['notebook', 'radio', 'lighthouse', 'toolbox', 'battery', 'beam', 'boat', 'grandpa'],
 };

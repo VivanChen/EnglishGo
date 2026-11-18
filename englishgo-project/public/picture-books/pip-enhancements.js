@@ -251,6 +251,7 @@
     document.querySelectorAll('.pop').forEach((pop,i)=>{
       const entry=POPS[PAGES[page].s][i];
       if(Number.isFinite(entry.tagTop)&&pop.querySelector('.tag'))pop.querySelector('.tag').style.top=entry.tagTop+'px';
+      if(entry.float)pop.querySelector('.shadow')?.remove(); // light and sky pieces cast no floor shadow
       pop.tabIndex=0;pop.setAttribute('role','button');pop.setAttribute('aria-label',entry.tag||'故事插畫');
       function respond(){
         const key=entry.tag||'';

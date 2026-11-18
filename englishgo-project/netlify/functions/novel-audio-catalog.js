@@ -27909,5 +27909,69 @@ export const NOVEL_AUDIO_CATALOG = Object.freeze({
   "v1-picture-book-dori-echo-mist-c8-en-block-0-5e57c7f3446b81c4": {
     "text": "Mother appeared through the mist and gently touched Dori with her nose. Relief warmed Dori from head to tail. \"I was afraid,\" she admitted. \"And you still made careful choices,\" Mother replied. Together, they returned along the path. Dori had learned to pause, check the clues, and ask for help.",
     "lang": "en-US"
+  },
+  "v1-picture-book-otto-lantern-boat-c1-en-block-0-5b4ab9cc10f0b119": {
+    "text": "Otto is a little otter. He lives by a quiet pond. He has a small red boat.",
+    "lang": "en-US"
+  },
+  "v1-picture-book-otto-lantern-boat-c2-en-block-0-d8cd67e8cd24b531": {
+    "text": "The sun goes down, and the pond gets dark. Otto lights his paper lantern. Glow, little light!",
+    "lang": "en-US"
+  },
+  "v1-picture-book-otto-lantern-boat-c3-en-block-0-c1c3484b8609dc84": {
+    "text": "Otto hears a sad sound. A little duck is crying. \"I can't find my mom!\"",
+    "lang": "en-US"
+  },
+  "v1-picture-book-otto-lantern-boat-c4-en-block-0-e2a36a735c33f413": {
+    "text": "\"Hop in my boat,\" says Otto. They float past a big green frog. \"Ribbit! Where are you going?\" asks the frog.",
+    "lang": "en-US"
+  },
+  "v1-picture-book-otto-lantern-boat-c5-en-block-0-555048fe3557246e": {
+    "text": "\"We are looking for Mother Duck,\" says Otto. \"Follow the fish!\" says the frog. Three silver fish swim ahead.",
+    "lang": "en-US"
+  },
+  "v1-picture-book-otto-lantern-boat-c6-en-block-0-b49aeb44a25ec5ab": {
+    "text": "The fish swim past the tall reeds. The moon comes out. The water shines like silver.",
+    "lang": "en-US"
+  },
+  "v1-picture-book-otto-lantern-boat-c7-en-block-0-050639668a4529a2": {
+    "text": "\"Quack! Quack!\" Mother Duck is calling. The little duck jumps out of the boat. \"Mom!\"",
+    "lang": "en-US"
+  },
+  "v1-picture-book-otto-lantern-boat-c8-en-block-0-47bf417eadaf64d8": {
+    "text": "The duck hugs his mom. \"Thank you, Otto!\" Otto rows home with a big smile. His lantern glows all night.",
+    "lang": "en-US"
+  },
+  "v1-picture-book-nova-silent-lighthouse-c1-en-block-0-a4077faf450d4505": {
+    "text": "Nova spent every summer on her grandfather's small island. For forty years, Grandpa had kept the lighthouse at the edge of the cliffs. Now the light worked automatically, but he still climbed the tower every evening to check it. \"Machines are helpful,\" he said, \"but someone still has to pay attention.\" That night, he handed Nova an old blue notebook full of drawings, numbers, and careful notes.",
+    "lang": "en-US"
+  },
+  "v1-picture-book-nova-silent-lighthouse-c2-en-block-0-7eb5da291508bf63": {
+    "text": "The next afternoon, the radio gave a warning: a strong storm was moving toward the island, and all boats should return to the harbor. By sunset, the wind was howling and huge waves were crashing against the rocks. Grandpa stared at the dark sea. \"Captain Leo's fishing boat isn't back yet,\" he said quietly. Nova could hear the worry in his voice.",
+    "lang": "en-US"
+  },
+  "v1-picture-book-nova-silent-lighthouse-c3-en-block-0-970f17fdbd72280c": {
+    "text": "Suddenly, lightning flashed across the sky, and every window on the island went black. Nova looked up at the lighthouse. The great light was gone. \"The power line must be down,\" Grandpa said. \"Without the beam, Captain Leo can't see the rocks near the harbor.\" Nova's heart was racing, but she remembered his words: someone has to pay attention.",
+    "lang": "en-US"
+  },
+  "v1-picture-book-nova-silent-lighthouse-c4-en-block-0-4a11b9caa1b94be6": {
+    "text": "They hurried to the lighthouse with a flashlight. The metal stairs were narrow and wet, and Grandpa's knee began to hurt halfway up. \"Take the toolbox and go ahead,\" he said. \"I'll follow you slowly.\" At the top, Nova opened the blue notebook. One page said: \"If the main power fails, switch to the backup battery.\" She found the switch and turned it on.",
+    "lang": "en-US"
+  },
+  "v1-picture-book-nova-silent-lighthouse-c5-en-block-0-7ff8bd0957383f9d": {
+    "text": "Nothing happened. Nova didn't give up. She compared the battery with the drawing in the notebook and noticed a difference: one red wire was hanging loose. When Grandpa finally reached the top, she showed him. \"Good eyes,\" he said. He switched off the battery first, and then he guided her hands while she fastened the wire tightly. Safety came before speed.",
+    "lang": "en-US"
+  },
+  "v1-picture-book-nova-silent-lighthouse-c6-en-block-0-90fa763964f02413": {
+    "text": "Grandpa switched the battery on again. For a moment, the lamp only flickered. Then, with a soft hum, the great lens began to turn, and a bright beam swept across the stormy sea. Nova grabbed the radio. \"Captain Leo, this is the lighthouse. Follow the light and stay to the left of the rocks!\" At first, there was only noise. Then a voice answered.",
+    "lang": "en-US"
+  },
+  "v1-picture-book-nova-silent-lighthouse-c7-en-block-0-aaa23ad50786e080": {
+    "text": "\"I see it! I can see the light!\" A small fishing boat appeared between the waves. Slowly, it turned away from the rocks and followed the beam toward the harbor. Nova held her breath until the boat was safely tied to the dock. On the radio, Captain Leo's tired voice said, \"Thank you, lighthouse. You saved my crew tonight.\"",
+    "lang": "en-US"
+  },
+  "v1-picture-book-nova-silent-lighthouse-c8-en-block-0-46c42151c9addd45": {
+    "text": "By morning, the storm had passed, and the sea was calm and silver. Grandpa smiled at Nova. \"You were scared, but you stayed calm and followed the steps. That is what a real keeper does.\" Nova opened the blue notebook and wrote a new page in her own handwriting: \"Check the wires first. Ask for help. Never stop paying attention.\"",
+    "lang": "en-US"
   }
 });

@@ -19,6 +19,8 @@
 .shelf-text small{overflow:hidden;color:#8a7c60;font:12px Georgia,serif;white-space:nowrap;text-overflow:ellipsis}
 .shelf-meta{display:flex;justify-content:space-between;gap:8px;margin-top:4px;color:#6c6250;font-size:12px}
 .shelf-stars{color:#b07f12;font-weight:700}
+.shelf-level{flex:none;padding:1px 8px;border-radius:999px;background:#eef3e6;border:1px solid #cddbbf;color:#4b6a46;font-size:11px;line-height:1.5}
+.shelf-level.stage-junior{background:#e8eef8;border-color:#c5d3ea;color:#3b5683}
 .shelf-done{color:#3d7a3f;font-weight:700}
 .shelf-bar{height:5px;margin-top:5px;overflow:hidden;border-radius:3px;background:#ece2cb}
 .shelf-bar i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#e8b84a,#d79a2b);transition:width .4s}
@@ -39,6 +41,8 @@ html[data-eg-theme=dark] .shelf-text strong{color:#f1f5ec}
 html[data-eg-theme=dark] .shelf-text small,html[data-eg-theme=dark] .shelf-meta{color:#b0c5b9}
 html[data-eg-theme=dark] .shelf-stars{color:#f2c75c}
 html[data-eg-theme=dark] .shelf-done{color:#a6dca0}
+html[data-eg-theme=dark] .shelf-level{background:#2f4a3e;border-color:#4e6a5c;color:#cfe3c4}
+html[data-eg-theme=dark] .shelf-level.stage-junior{background:#2c3b55;border-color:#4a5d80;color:#cbd9f2}
 html[data-eg-theme=dark] .shelf-bar{background:#355046}
 html[data-eg-theme=dark] .pip-vocabulary{background:#21352f;border-color:#426052;color:#e8eee2}
 html[data-eg-theme=dark] .pip-vocabulary button{background:#2a4038;border-color:#426052;color:#e8eee2}
