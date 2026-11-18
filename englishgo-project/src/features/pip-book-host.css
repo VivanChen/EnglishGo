@@ -1,5 +1,50 @@
-.pip-book-host{max-width:1140px;margin:0 auto;padding:16px;color:#504431}.pip-book-host>header{display:flex;align-items:center;gap:22px;margin-bottom:18px}.pip-book-host>header button{border:1px solid #d7c6a4;background:#fff7e8;border-radius:20px;padding:10px 16px;color:inherit;cursor:pointer}.pip-book-host h1{font:26px Georgia,serif;margin:0 0 6px}.pip-book-host header p{margin:0;color:#827458;font-size:13px}.pip-book-host iframe{display:block;width:100%;border:0;border-radius:20px;background:#2a1a0c}.pip-book-note{font-size:13px;line-height:1.8;color:#756b5a}.pip-vocabulary{border:1px solid #ddcfb4;border-radius:16px;background:#fcf7ed;padding:18px}.pip-vocabulary summary{cursor:pointer;font-weight:600}.pip-vocabulary>div{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;margin-top:18px}.pip-vocabulary button{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px;border:1px solid #dfd0b1;border-radius:12px;background:#fffaf0;color:#5e4e35;cursor:pointer}.pip-vocabulary strong{font:21px Georgia,serif}.pip-vocabulary button>span:first-child{font-size:26px}@media(max-width:600px){.pip-book-host{padding:8px}.pip-book-host>header{flex-wrap:wrap;gap:12px}.pip-book-host h1{font-size:23px}.pip-book-host iframe{border-radius:16px}.pip-vocabulary{padding:14px}}
+/* A transformed ancestor would trap the phone full-screen book inside it. */
+.eg-app-content.module-pictureBooks{animation:none;transform:none}
+.pip-book-host{max-width:1140px;margin:0 auto;padding:16px;color:var(--color-text-primary,#504431)}
+.pip-book-host>header{display:flex;align-items:center;gap:18px;margin-bottom:14px}
+.pip-book-host>header>div{flex:1 1 auto;min-width:0}
+.pip-back{flex:none;border:1px solid #d7c6a4;background:#fff7e8;border-radius:20px;padding:10px 16px;color:#504431;cursor:pointer}
+.pip-book-host h1{font:26px Georgia,serif;margin:0 0 6px;color:var(--color-text-primary,#504431)}
+.pip-book-host header p{margin:0;color:var(--color-text-secondary,#827458);font-size:13px}
 
-.storybook-picker{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0}.storybook-picker button{padding:12px 18px;border:1px solid #b9c8b7;border-radius:14px;background:#fffaf0;color:#405644;cursor:pointer}.storybook-picker button[aria-pressed="true"]{background:#405e49;color:white;border-color:#405e49}.storybook-picker button:focus-visible{outline:3px solid #d6ae58;outline-offset:3px}
+/* Bookshelf: each story shows its stars and how far the reader got. */
+.storybook-shelf{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:0 0 16px}
+.storybook-shelf button{display:flex;align-items:center;gap:12px;min-width:0;padding:12px 14px;border:1px solid #d9cba9;border-radius:16px;background:#fffaf0;color:#4a4030;text-align:left;cursor:pointer;transition:transform .15s,box-shadow .15s,border-color .15s}
+.storybook-shelf button:hover{transform:translateY(-2px);box-shadow:0 8px 18px rgba(80,60,30,.12)}
+.storybook-shelf button[aria-pressed="true"]{border-color:#405e49;background:#f5faf0;box-shadow:0 0 0 2px #405e49,0 10px 22px rgba(40,70,50,.16)}
+.storybook-shelf button:focus-visible{outline:3px solid #d6ae58;outline-offset:3px}
+.shelf-icon{flex:none;width:50px;height:50px;display:grid;place-items:center;font-size:28px;border-radius:14px;background:linear-gradient(160deg,#2c3a75,#151b3f);box-shadow:inset 0 0 0 2px rgba(255,255,255,.12),0 4px 10px rgba(21,27,63,.25)}
+.shelf-text{display:flex;flex:1;flex-direction:column;gap:2px;min-width:0}
+.shelf-text strong{overflow:hidden;color:#3f4a33;font-size:15px;white-space:nowrap;text-overflow:ellipsis}
+.shelf-text small{overflow:hidden;color:#8a7c60;font:12px Georgia,serif;white-space:nowrap;text-overflow:ellipsis}
+.shelf-meta{display:flex;justify-content:space-between;gap:8px;margin-top:4px;color:#6c6250;font-size:12px}
+.shelf-stars{color:#b07f12;font-weight:700}
+.shelf-done{color:#3d7a3f;font-weight:700}
+.shelf-bar{height:5px;margin-top:5px;overflow:hidden;border-radius:3px;background:#ece2cb}
+.shelf-bar i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#e8b84a,#d79a2b);transition:width .4s}
+
+.pip-book-frame{position:relative}
+.pip-book-host iframe{display:block;width:100%;border:0;border-radius:20px;background:#2a1a0c}
+.pip-book-note{font-size:13px;line-height:1.8;color:var(--color-text-secondary,#756b5a)}
+.pip-vocabulary{border:1px solid #ddcfb4;border-radius:16px;background:#fcf7ed;padding:18px;color:#504431}.pip-vocabulary summary{cursor:pointer;font-weight:600}.pip-vocabulary>div{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;margin-top:18px}.pip-vocabulary button{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px;border:1px solid #dfd0b1;border-radius:12px;background:#fffaf0;color:#5e4e35;cursor:pointer}.pip-vocabulary strong{font:21px Georgia,serif}.pip-vocabulary button>span:first-child{font-size:26px}
 
 .book-reading-guide{margin:20px 0;padding:20px;border:1px solid #c7d1bd;border-radius:16px;background:#f7f8ef;color:#344d3b;line-height:1.7}.book-reading-guide summary{font-weight:700;cursor:pointer}.book-reading-guide fieldset{min-width:0;margin:24px 0;padding:16px;border:1px solid #c7d1bd;border-radius:12px}.book-reading-guide legend{padding:0 8px;font-weight:600;max-width:100%;overflow-wrap:anywhere}.book-reading-guide small{display:block;font-weight:400;font-size:14px}.book-answer-options{display:grid;gap:10px}.book-answer-options button{padding:12px;text-align:left;border:1px solid #aebca7;border-radius:10px;background:white;color:#344d3b;white-space:normal;line-height:1.5}.book-answer-options button[aria-pressed=true]{background:#e1ecd6;border-color:#4e7053}.book-answer-options button:focus-visible{outline:3px solid #b88828;outline-offset:2px}.book-answer-feedback{padding:12px;background:#e8eddf;border-radius:10px}.book-reading-guide blockquote{margin:16px 0;padding:4px 16px;border-left:3px solid #8da681}.book-reading-guide h2{font-size:21px}
+
+@media(max-width:600px){
+ .pip-book-host{padding:6px 2px}
+ .pip-book-host>header{flex-wrap:wrap;gap:8px 10px;margin-bottom:10px}
+ .pip-book-host>header>div{order:3;flex-basis:100%}
+ .pip-back{padding:8px 13px;font-size:14px}
+ .pip-book-host h1{font-size:21px;margin-bottom:4px}
+ .storybook-shelf{display:flex;gap:10px;margin:0 -2px 12px;padding:2px 2px 6px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}
+ .storybook-shelf::-webkit-scrollbar{display:none}
+ .storybook-shelf button{flex:0 0 76%;padding:10px 12px;scroll-snap-align:start}
+ .storybook-shelf button:hover{transform:none}
+ .shelf-icon{width:44px;height:44px;font-size:24px}
+ .pip-book-host iframe{border-radius:16px}
+ .pip-vocabulary{padding:14px}
+}
+
+/* An opened book on a phone fills the screen above the app's sticky bars. */
+.pip-book-host.is-immersive .pip-book-frame{position:fixed;inset:0;z-index:120;background:#352820;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
+.pip-book-host.is-immersive .pip-book-frame iframe{height:100%!important;border-radius:0}

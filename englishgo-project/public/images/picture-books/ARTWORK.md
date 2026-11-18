@@ -54,3 +54,10 @@ Built-in image_gen tool; original transparent RGBA PNGs, alpha checked, no raste
 - `rock-paper.png`: Isolated rounded slate-lavender mountain rock, mineral flecks, cracks and subtle moss; detailed watercolor/colored pencil and ivory edge, transparent background.
 - `star-paper.png`: Friendly five-point honey-gold star, kind eyes and tiny smile, rounded points, watercolor pigment/pencil shading/paper grain, ivory edge; transparent background, not emoji or CGI.
 - `cloud-paper.png`: Isolated low wispy night cloud, ivory/lavender watercolor and pencil, fine ivory edge; genuine transparency, no backdrop or text.
+
+## Web delivery (2026-11-18)
+
+The storybooks load `.webp` copies derived from the PNG masters in this folder
+(longest side 720px, the Dori valley backdrop 1400px, WebP quality 82). The
+PNG masters stay as the editable source; regenerate the WebP files after
+changing a master.

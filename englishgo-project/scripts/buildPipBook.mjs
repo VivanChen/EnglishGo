@@ -4,6 +4,9 @@ import {readFile,writeFile,mkdir} from 'node:fs/promises';
 import {PIP_PAGES,PIP_VOCAB} from '../src/data/pipBook.js';
 import {MILO_PAGES,MILO_VOCAB} from '../src/data/miloBook.js';
 import {makeNovelAudioItem} from '../src/data/novelAudio.js';
+import {STORYBOOK_QUESTS} from '../src/data/storybookQuests.js';
+// Each book receives its page-by-page "find it" targets next to its scenes.
+const quests=id=>'const QUESTS = '+JSON.stringify(STORYBOOK_QUESTS[id])+';\n';
 const root = new URL('../', import.meta.url);
 let html=await readFile(new URL('src/content/pip-and-the-lost-star.html',root),'utf8');
 html=html.replace('width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no','width=device-width, initial-scale=1');
@@ -15,14 +18,14 @@ html=html.replace('<body>','<body class="storybook-layout">');
 html=html.replace('const POPS = {',`for (const name of ['fox','tree','basket','owl','house','bush','rock','star','cloud']) {
   A[name] = (w=150) => {
     const h = name==='star'?150:['bush','rock','cloud'].includes(name)?95:['house','basket'].includes(name)?140:190;
-    return '<svg width="'+w+'" viewBox="0 0 150 '+h+'"><image href="/images/picture-books/'+name+'-paper.png" width="150" height="'+h+'" preserveAspectRatio="xMidYMax meet"/></svg>';
+    return '<svg width="'+w+'" viewBox="0 0 150 '+h+'"><image href="/images/picture-books/'+name+'-paper.webp" width="150" height="'+h+'" preserveAspectRatio="xMidYMax meet"/></svg>';
   };
 }
 const POPS = {`);
 const items=PIP_PAGES.map((p,i)=>makeNovelAudioItem({novelId:'picture-book-pip-lost-star',chapterNo:i+1,lang:'en-US',text:p.x}));
 html=html.replace('</body>','<script src="/picture-books/pip-audio-items.js"></script>\n<script src="/picture-books/pip-enhancements.js"></script>\n</body>');
 await mkdir(new URL('public/picture-books/',root),{recursive:true});
-const pip=html.replace('/* ================= STATE ================= */',await readFile(new URL('src/content/pip-scenes.js',root),'utf8')+'\n/* ================= STATE ================= */');
+const pip=html.replace('/* ================= STATE ================= */',await readFile(new URL('src/content/pip-scenes.js',root),'utf8')+'\n'+quests('pip-and-the-lost-star')+'/* ================= STATE ================= */');
 await writeFile(new URL('public/picture-books/pip-and-the-lost-star.html',root),pip);
 await writeFile(new URL('public/picture-books/pip-audio-items.js',root),'window.PIP_AUDIO_ITEMS = '+JSON.stringify(items,null,2)+';\n');
 console.log(`Preserved Pip: ${PIP_PAGES.length} pages, ${Object.keys(PIP_VOCAB).length} original vocabulary cards.`);
@@ -34,7 +37,7 @@ let milo=html.replace('<body class="storybook-layout">','<body class="storybook-
  .replace(/const VOCAB = [\s\S]*?(?=\/\* ================= SVG ART)/,
    'const VOCAB = '+JSON.stringify(MILO_VOCAB)+';\nconst PAGES = '+JSON.stringify(MILO_PAGES)+';\n')
  .replace('/picture-books/pip-audio-items.js','/picture-books/milo-audio-items.js')
- .replace('/* ================= STATE ================= */',await readFile(new URL('src/content/milo-scenes.js',root),'utf8')+'\n/* ================= STATE ================= */');
+ .replace('/* ================= STATE ================= */',await readFile(new URL('src/content/milo-scenes.js',root),'utf8')+'\n'+quests('milo-and-the-little-storm')+'/* ================= STATE ================= */');
 const miloItems=MILO_PAGES.map((p,i)=>makeNovelAudioItem({novelId:'picture-book-milo-little-storm',chapterNo:i+1,lang:'en-US',text:p.x}));
 await writeFile(new URL('public/picture-books/milo-and-the-little-storm.html',root),milo);
 await writeFile(new URL('public/picture-books/milo-audio-items.js',root),'window.PIP_AUDIO_ITEMS = '+JSON.stringify(miloItems,null,2)+';\n');
@@ -47,7 +50,7 @@ const dori=html.replace('<body class="storybook-layout">','<body class="storyboo
  .replace('🦊⭐','🦕🌿').replace('Pip counted the stars. One star winked back.','Pause, check the clues, and ask for help.')
  .replace(/const VOCAB = [\s\S]*?(?=\/\* ================= SVG ART)/,'const VOCAB = '+JSON.stringify(DORI_VOCAB)+';\nconst PAGES = '+JSON.stringify(DORI_PAGES)+';\n')
  .replace('/picture-books/pip-audio-items.js','/picture-books/dori-audio-items.js')
- .replace('/* ================= STATE ================= */',await readFile(new URL('src/content/dori-scenes.js',root),'utf8')+'\n/* ================= STATE ================= */');
+ .replace('/* ================= STATE ================= */',await readFile(new URL('src/content/dori-scenes.js',root),'utf8')+'\n'+quests('dori-and-the-echo-in-the-mist')+'/* ================= STATE ================= */');
 const doriItems=DORI_PAGES.map((p,i)=>makeNovelAudioItem({novelId:'picture-book-dori-echo-mist',chapterNo:i+1,lang:'en-US',text:p.x}));
 await writeFile(new URL('public/picture-books/dori-and-the-echo-in-the-mist.html',root),dori);
 await writeFile(new URL('public/picture-books/dori-audio-items.js',root),'window.PIP_AUDIO_ITEMS = '+JSON.stringify(doriItems,null,2)+';\n');

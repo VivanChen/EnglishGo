@@ -48,7 +48,7 @@ describe('Milo storybook',()=>{
   render(<PictureBooks onBack={vi.fn()} stopSpeech={vi.fn()}/>);
   const old=screen.getByTitle('Pip and the Lost Star 互動立體童書');
   const send=vi.spyOn(old.contentWindow,'postMessage');
-  fireEvent.click(screen.getByRole('button',{name:'👑 米洛王子的小風暴'}));
+  fireEvent.click(screen.getByRole('button',{name:/^米洛王子的小風暴/}));
   expect(send).toHaveBeenCalledWith({type:'pip:stop'},window.location.origin);
   expect(screen.getByTitle('Prince Milo and the Little Storm 互動立體童書')).toHaveAttribute('src','/picture-books/milo-and-the-little-storm.html');
   expect(screen.getByRole('button',{name:'朗讀 angry 生氣的',hidden:true})).toBeInTheDocument();
@@ -71,7 +71,7 @@ describe('Milo storybook',()=>{
 describe('Dori upper-elementary storybook',()=>{
  it('offers the new book, bilingual support and evidence-based reading practice',()=>{
   render(<PictureBooks onBack={vi.fn()} stopSpeech={vi.fn()}/>);
-  fireEvent.click(screen.getByRole('button',{name:'🦕 小恐龍朵里尋找媽媽'}));
+  fireEvent.click(screen.getByRole('button',{name:/^小恐龍朵里尋找媽媽/}));
   expect(screen.getByTitle('Dori and the Echo in the Mist 互動立體童書')).toHaveAttribute('src','/picture-books/dori-and-the-echo-in-the-mist.html');
   expect(screen.getByText(/國小五～六年級/)).toBeVisible();
   fireEvent.click(screen.getByText('讀後探索 · 4 題推理練習與 3 個句型'));
@@ -119,16 +119,16 @@ describe('storybook reading-guide participation',()=>{
  it('keeps each book’s answers and completion separate, including Dori’s four questions',()=>{
   const onLearningEvent=vi.fn();const view=render(<PictureBooks onBack={vi.fn()} stopSpeech={vi.fn()} onLearningEvent={onLearningEvent}/>);
   const pip=BOOK_READING_GUIDES['pip-and-the-lost-star'].questions,milo=BOOK_READING_GUIDES['milo-and-the-little-storm'].questions;
-  selectCorrect(pip);fireEvent.click(screen.getByRole('button',{name:'👑 米洛王子的小風暴'}));
+  selectCorrect(pip);fireEvent.click(screen.getByRole('button',{name:/^米洛王子的小風暴/}));
   expect(MILO_PAGES[1].x).toContain('caught a block');expect(MILO_PAGES[4].x).toContain('breathed in slowly');
   fireEvent.click(screen.getByRole('button',{name:milo[0].options[milo[0].answer],hidden:true}));
   expect(onLearningEvent).toHaveBeenCalledTimes(1);
   view.unmount();render(<PictureBooks onBack={vi.fn()} stopSpeech={vi.fn()} onLearningEvent={onLearningEvent}/>);
-  fireEvent.click(screen.getByRole('button',{name:'👑 米洛王子的小風暴'}));
+  fireEvent.click(screen.getByRole('button',{name:/^米洛王子的小風暴/}));
   expect(screen.getByRole('button',{name:milo[0].options[milo[0].answer],hidden:true})).toHaveAttribute('aria-pressed','true');
   fireEvent.click(screen.getByRole('button',{name:milo[1].options[milo[1].answer],hidden:true}));
   expect(onLearningEvent).toHaveBeenCalledTimes(2);
-  fireEvent.click(screen.getByRole('button',{name:'🦕 小恐龍朵里尋找媽媽'}));
+  fireEvent.click(screen.getByRole('button',{name:/^小恐龍朵里尋找媽媽/}));
   selectCorrect(DORI_QUESTIONS.slice(0,3));expect(onLearningEvent).toHaveBeenCalledTimes(2);
   selectCorrect(DORI_QUESTIONS.slice(3));expect(onLearningEvent).toHaveBeenCalledTimes(3);
   expect(onLearningEvent.mock.calls[2][0]).toMatchObject({contentId:'dori-and-the-echo-in-the-mist',questionCount:4,outcome:'participated'});
@@ -145,4 +145,105 @@ describe('storybook reading-guide participation',()=>{
   fireEvent(window,new MessageEvent('message',{origin:window.location.origin,source:frame.contentWindow,data:{type:'pip:guide-complete',completed:true}}));
   expect(onLearningEvent).not.toHaveBeenCalled();
  });
+});
+
+describe('storybook progress, stars and rewards',()=>{
+ const KEY='eg_pictureBookProgress:v1',origin=window.location.origin;
+ const saved=()=>JSON.parse(localStorage.getItem(KEY))['pip-and-the-lost-star'];
+ const fromFrame=(frame,data)=>fireEvent(window,new MessageEvent('message',{origin,source:frame.contentWindow,data}));
+ function open(props={}){
+  const handlers={onBack:vi.fn(),stopSpeech:vi.fn(),onXp:vi.fn(),trackWeak:vi.fn(),onLearningEvent:vi.fn(),...props};
+  render(<PictureBooks {...handlers}/>);
+  const frame=screen.getByTitle('Pip and the Lost Star 互動立體童書');
+  const send=vi.spyOn(frame.contentWindow,'postMessage');
+  return {...handlers,frame,send,book:data=>fromFrame(frame,data)};
+ }
+ function withPhone(run){
+  const original=Object.getOwnPropertyDescriptor(window,'matchMedia');
+  Object.defineProperty(window,'matchMedia',{configurable:true,writable:true,value:vi.fn(()=>({matches:true,addEventListener:vi.fn(),removeEventListener:vi.fn()}))});
+  try{run();}finally{if(original)Object.defineProperty(window,'matchMedia',original);else delete window.matchMedia;}
+ }
+
+ it('shows saved progress on the shelf and resumes the book where the reader stopped',()=>{
+  localStorage.setItem(KEY,JSON.stringify({'pip-and-the-lost-star':{page:3,seen:[0,1,2,3],stars:[0,2],completed:false}}));
+  const {book,send}=open();
+  expect(screen.getByRole('button',{name:'皮皮與迷路的小星星，讀到第 4 頁，星星 2 / 8'})).toHaveAttribute('aria-pressed','true');
+  expect(screen.getByRole('button',{name:'米洛王子的小風暴，新故事，星星 0 / 8'})).toHaveAttribute('aria-pressed','false');
+  book({type:'pip:ready'});
+  expect(send).toHaveBeenCalledWith({type:'pip:immersive',active:false},origin);
+  expect(send).toHaveBeenCalledWith({type:'pip:init',page:3,stars:[0,2],completed:false,autoOpen:false},origin);
+ });
+
+ it('awards each found star once on an opened page and sends missed targets to weak-word review',()=>{
+  const {book,onXp,trackWeak}=open();
+  book({type:'pip:star',page:0,word:'house',firstTry:true});
+  expect(onXp).not.toHaveBeenCalled();
+  book({type:'pip:page',page:0});
+  book({type:'pip:miss',page:0,word:'house'});
+  expect(trackWeak).toHaveBeenCalledWith('house',1);
+  book({type:'pip:star',page:0,word:'fox',firstTry:true});
+  book({type:'pip:star',page:0,word:'house',firstTry:false});
+  book({type:'pip:star',page:0,word:'house',firstTry:true});
+  expect(onXp).toHaveBeenCalledTimes(1);expect(onXp).toHaveBeenCalledWith(2);
+  expect(trackWeak).toHaveBeenCalledTimes(1);
+  book({type:'pip:page',page:1});
+  book({type:'pip:star',page:1,word:'garden',firstTry:true});
+  expect(trackWeak).toHaveBeenLastCalledWith('garden',-1);
+  expect(saved()).toMatchObject({page:1,seen:[0,1],stars:[0,1]});
+  expect(screen.getByRole('button',{name:'皮皮與迷路的小星星，讀到第 2 頁，星星 2 / 8'})).toBeInTheDocument();
+  book({type:'pip:review',word:'owl'});book({type:'pip:review',word:'dinosaur'});
+  expect(trackWeak).toHaveBeenCalledTimes(3);expect(trackWeak).toHaveBeenLastCalledWith('owl',1);
+ });
+
+ it('rewards finishing once, only after every page was opened, and saves before the event',()=>{
+  const onLearningEvent=vi.fn(()=>expect(saved().completed).toBe(true));
+  const {book,send,onXp}=open({onLearningEvent});
+  for(let page=0;page<7;page++)book({type:'pip:page',page});
+  book({type:'pip:finish'});
+  expect(onXp).not.toHaveBeenCalled();
+  expect(send).toHaveBeenLastCalledWith({type:'pip:reward',xp:0,first:false,missing:1},origin);
+  book({type:'pip:page',page:7});book({type:'pip:finish'});
+  expect(onXp).toHaveBeenCalledWith(20);
+  expect(onLearningEvent).toHaveBeenCalledTimes(1);
+  expect(onLearningEvent.mock.calls[0][0]).toMatchObject({id:'pictureBooks:pip-and-the-lost-star:read:v1',source:'pictureBooks',contentId:'pip-and-the-lost-star',kind:'complete',outcome:'participated',activity:'storybook',pageCount:8});
+  expect(send).toHaveBeenLastCalledWith({type:'pip:reward',xp:20,first:true,missing:0},origin);
+  book({type:'pip:finish'});
+  expect(onXp).toHaveBeenCalledTimes(1);expect(onLearningEvent).toHaveBeenCalledTimes(1);
+  expect(screen.getByRole('button',{name:'皮皮與迷路的小星星，已讀完，星星 0 / 8'})).toBeInTheDocument();
+ });
+
+ it('ignores progress and rewards claimed by other windows',()=>{
+  const {frame,onXp}=open();
+  fireEvent(window,new MessageEvent('message',{origin:'https://example.com',source:frame.contentWindow,data:{type:'pip:page',page:0}}));
+  fireEvent(window,new MessageEvent('message',{origin,source:window,data:{type:'pip:finish'}}));
+  expect(localStorage.getItem(KEY)).toBeNull();expect(onXp).not.toHaveBeenCalled();
+ });
+
+ it('opens the reading guide when the last page asks for it',()=>{
+  const {book}=open();
+  const details=screen.getByText(/^讀後探索 · 2 題推理練習/).closest('details');
+  expect(details.open).toBe(false);
+  book({type:'pip:guide'});
+  expect(details.open).toBe(true);
+ });
+
+ it('reads full screen on a phone and carries the reader straight into the next book',()=>withPhone(()=>{
+  const {book,send}=open();
+  const host=screen.getByRole('region',{name:'互動童書'});
+  expect(host).not.toHaveClass('is-immersive');
+  book({type:'pip:reading',open:true});
+  expect(host).toHaveClass('is-immersive');
+  expect(document.documentElement.style.overflow).toBe('hidden');
+  expect(send).toHaveBeenLastCalledWith({type:'pip:immersive',active:true},origin);
+  book({type:'pip:next-book'});
+  const milo=screen.getByTitle('Prince Milo and the Little Storm 互動立體童書');
+  expect(host).toHaveClass('is-immersive');
+  const miloSend=vi.spyOn(milo.contentWindow,'postMessage');
+  fromFrame(milo,{type:'pip:ready'});
+  expect(miloSend).toHaveBeenCalledWith({type:'pip:immersive',active:true},origin);
+  expect(miloSend).toHaveBeenCalledWith(expect.objectContaining({type:'pip:init',autoOpen:true}),origin);
+  fromFrame(milo,{type:'pip:reading',open:false});
+  expect(host).not.toHaveClass('is-immersive');
+  expect(document.documentElement.style.overflow).toBe('');
+ }));
 });

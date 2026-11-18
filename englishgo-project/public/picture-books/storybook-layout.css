@@ -11,6 +11,7 @@
  .storybook-layout #controls{left:67%;gap:14px;width:390px;justify-content:center}
  .storybook-layout .mode{white-space:nowrap;flex-shrink:0}
  .storybook-layout .stars{left:67%}
+ .storybook-layout #quest{left:67%;top:66px}
  .storybook-layout .lamp{display:none}
  .storybook-layout .brand{left:24px;font-size:25px}
 }

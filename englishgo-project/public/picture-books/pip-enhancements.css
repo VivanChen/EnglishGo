@@ -8,6 +8,53 @@
 .w:focus-visible,.pop:focus-visible{outline:3px solid #f6c445;outline-offset:3px}
 #vocab.show{pointer-events:auto}#vocab{user-select:text}
 #audioStatus{position:absolute;bottom:10px;left:18px;z-index:45;font:12px sans-serif;color:#fff1d5;background:#392a20de;padding:7px 10px;border-radius:8px;max-width:260px;text-align:left}
+#audioStatus.ready{color:#dff0cf}
+#audioStatus:disabled{cursor:progress;opacity:.8}
+
+/* ---------- stars: dim until found, the current page sits larger ---------- */
+.stars i.now:not(.on){opacity:.85}
+
+/* ---------- "find it" challenge ---------- */
+#quest{position:absolute;left:50%;top:70px;transform:translateX(-50%);z-index:22;display:flex;align-items:center;gap:8px;height:42px;padding:0 18px;border-radius:21px;background:linear-gradient(180deg,#fffaf0,#f3dfb2);border:2px solid #c99a4f;box-shadow:0 4px 0 #9c6f33,0 10px 18px rgba(0,0,0,.35);font:800 18px/1 var(--h);color:#5a3f1e;white-space:nowrap}
+#quest[hidden],body:not(.reading) #quest{display:none}
+#quest .q-star{color:#e8ad1f;font-size:21px;text-shadow:0 1px 0 #9c6f33}
+#quest.quest-idle{animation:questNudge 2.6s ease-in-out infinite}
+#quest.quest-active{background:linear-gradient(180deg,#fffef6,#ffe8a0);border-color:#e3a72a;box-shadow:0 4px 0 #b5801f,0 0 0 5px rgba(246,196,69,.35),0 10px 18px rgba(0,0,0,.35)}
+#quest.quest-active b{color:#b04f1c;font-size:21px}
+#quest.quest-done{background:linear-gradient(180deg,#f4fbe9,#dcebc6);border-color:#86a86a;box-shadow:0 4px 0 #5f7f4a,0 10px 18px rgba(0,0,0,.3)}
+#quest .q-ok{color:#3d7a3f}
+#quest:active{transform:translateX(-50%) translateY(2px)}
+@keyframes questNudge{0%,100%{transform:translateX(-50%) scale(1)}50%{transform:translateX(-50%) scale(1.07)}}
+/* Labels hide while the child searches; one wrong guess brings them back as a hint. */
+body.quest-on .pop:not(.down) .tag{opacity:0;pointer-events:none;transition-delay:0s}
+body.quest-on.quest-hint .pop:not(.down) .tag{opacity:1}
+.quest-burst{position:absolute;z-index:46;width:48px;height:48px;margin:-24px 0 0 -24px;pointer-events:none;background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='%23f6c445' stroke='%23c9931b' stroke-width='1' d='M12 1.8l3 6.5 7 .9-5.1 4.9 1.3 7-6.2-3.5L5.8 21l1.3-7L2 9.2l7-.9z'/></svg>") center/contain no-repeat;filter:drop-shadow(0 0 10px #ffe58a)}
+
+/* ---------- close button for the phone full-screen book ---------- */
+#closeBook{display:none;position:absolute;left:12px;top:10px;z-index:50;width:38px;height:38px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#fff8e8,#e6d3a8);box-shadow:0 3px 0 #a67d44,0 6px 12px rgba(0,0,0,.35);color:#5a3f1e;font:800 17px/1 var(--h);place-items:center}
+body.immersive #closeBook{display:grid}
+body.immersive .brand{display:none}
+
+/* ---------- cover: resume and progress ---------- */
+.cover .open{white-space:nowrap}
+.cover .cover-progress{margin-top:10px;font:700 15px var(--b);color:#ffe38f}
+.cover .cover-progress:empty{display:none}
+.cover .start-over{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);z-index:2;padding:6px 12px;font:700 14px var(--b);color:#eef0ff;text-decoration:underline;text-underline-offset:3px;white-space:nowrap}
+.cover .start-over[hidden]{display:none}
+.cover.has-resume .open{bottom:48px}
+
+/* ---------- ending: stars, reward and next steps ---------- */
+#endOv{background:radial-gradient(ellipse at 50% 40%,rgba(28,32,68,.84),rgba(10,8,20,.95))}
+.end-stars{display:flex;justify-content:center;gap:6px;margin:8px 0 2px}
+.end-stars i{width:30px;height:30px;display:block;background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='%23e9e0c8' d='M12 1.8l3 6.5 7 .9-5.1 4.9 1.3 7-6.2-3.5L5.8 21l1.3-7L2 9.2l7-.9z'/></svg>") center/contain no-repeat;opacity:.35}
+.end-stars i.on{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='%23f6c445' stroke='%23c9931b' stroke-width='1' d='M12 1.8l3 6.5 7 .9-5.1 4.9 1.3 7-6.2-3.5L5.8 21l1.3-7L2 9.2l7-.9z'/></svg>");opacity:1}
+.end .end-summary{margin:6px 0 0;font:700 19px var(--b);color:#fff2cf}
+.end .end-reward{min-height:26px;margin:6px 0 18px;font:800 20px var(--h);color:var(--gold)}
+.end-actions{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;align-items:center}
+.end-actions .open{position:static!important;transform:none!important}
+.end-btn{height:48px;padding:0 20px;border-radius:24px;background:#f3e6c9;color:#5a3f1e;font:800 17px var(--h);box-shadow:0 4px 0 #a67d44;white-space:nowrap}
+.end-btn:active{transform:translateY(2px);box-shadow:0 2px 0 #a67d44}
+
 @media(max-width:600px){
  html,body{height:auto;min-height:100%;overflow-x:hidden;overflow-y:auto}
  #app{position:relative;left:0;top:0;width:100%;height:auto;min-height:780px;transform:none!important;display:flex;flex-direction:column;padding:105px 0 18px;border-radius:16px}
@@ -23,12 +70,54 @@
  .nav{width:44px;height:44px;flex-shrink:0}#play{min-width:175px;font-size:18px}.mode{padding:0 8px;font-size:12px}
  #vocab{position:fixed;top:100px;left:50%;width:210px;transform:translateX(-50%) scale(.6)}#vocab.show{transform:translateX(-50%)}
  #audioStatus{position:relative;left:auto;bottom:auto;align-self:center;max-width:90%}
- .cover{width:calc(100% - 55px);max-width:360px;height:510px}.cover .ct{font-size:32px}
+ .cover{width:calc(100% - 48px);max-width:360px;height:470px}.cover .ct{font-size:32px}
  .overlay{min-height:780px;align-items:start;padding-top:110px;box-sizing:border-box}.overlay.hide{display:none}
  #toast{position:fixed;bottom:15px;right:12px;max-width:85%}.end{padding:30px 18px}.end .open{position:relative;left:auto;bottom:auto;transform:none}.end p{font-size:18px}
+ #quest{top:112px}
+
+ /* Inline on the page, a closed book shows only its cover. */
+ body:not(.reading) #app{min-height:0;height:560px;padding:0}
+ body:not(.reading) #stage,body:not(.reading) #card,body:not(.reading) #controls{display:none}
+ body:not(.reading) .overlay{min-height:0;padding-top:22px}
+ body:not(.reading) #audioStatus{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);white-space:nowrap}
+
+ /* Full-screen phone book: scene on top, scrolling story card, page controls always in reach. */
+ body.immersive{overflow:hidden}
+ body.immersive #app{height:100vh;height:100dvh;min-height:0;padding:56px 0 10px;border-radius:0;box-shadow:none}
+ body.immersive .stars{top:16px;left:60px;transform:none;padding:5px 8px;gap:3px}
+ body.immersive .stars i{width:15px;height:15px}
+ body.immersive .stars i.now{transform:scale(1.3)}
+ body.immersive .topbtns{top:9px;right:10px;gap:5px}
+ body.immersive .round{width:34px;height:34px;font-size:16px}
+ body.immersive #stage{height:clamp(180px,40vh,340px)}
+ body.immersive #book{transform:scale(var(--book-scale,.5)) rotateX(58deg) translateY(-5px)}
+ body.immersive #card{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;margin:2px 12px 0;padding:16px 18px 26px;-webkit-mask-image:linear-gradient(#000 calc(100% - 22px),transparent);mask-image:linear-gradient(#000 calc(100% - 22px),transparent)}
+ body.immersive #card.hide{display:block;visibility:hidden}
+ body.immersive #title{font-size:21px;margin-bottom:8px}
+ body.immersive #text{font-size:19px;line-height:1.65}
+ body.immersive .hint{display:none}
+ body.immersive #controls{margin:10px 10px 0}
+ body.immersive #audioStatus{display:none}
+ body.immersive #quest{top:58px}
+ /* Notices sit at the foot of the scene, clear of the quest chip and the page controls. */
+ /* The play button already shows loading, so only voice errors surface here. */
+ body.immersive #eg-tts-loading-toast{display:none}
+ body.immersive #eg-tts-status-toast{top:calc(10px + clamp(180px,40vh,340px));bottom:auto;max-width:88%}
+ body.immersive #toast{top:calc(10px + clamp(180px,40vh,340px));bottom:auto;left:50%;right:auto;transform:translateX(-50%);width:max-content;max-width:88%;text-align:center}
+ body.immersive .overlay{min-height:0;padding:0;align-items:center}
+ body.immersive .end{padding:20px 14px}
+ body.immersive .end .big{font-size:60px;margin-bottom:0}
+ body.immersive .end h2{font-size:46px}
 }
-@media(max-width:360px){#book{transform:scale(.44) rotateX(58deg)}.brand{font-size:14px}.topbtns{gap:3px}.round{width:32px;height:32px}#stage{height:320px}}
+@media(max-width:360px){#book{transform:scale(.44) rotateX(58deg)}.brand{font-size:14px}.topbtns{gap:3px}.round{width:32px;height:32px}#stage{height:320px}body.immersive .round{width:31px;height:31px}}
+/* A landscape phone keeps the scaled canvas; enlarge its close button to a comfortable target. */
+@media(min-width:601px){body.immersive #closeBook{width:62px;height:62px;font-size:26px;left:22px;top:16px}}
 #pops{position:absolute;inset:0;transform-style:preserve-3d}
-#vocab{position:absolute!important;width:230px;transform:scale(.85)!important}#vocab.show{transform:scale(1)!important}#vocab .spk{display:none}.vocab-close{position:absolute;right:8px;top:6px;width:36px;height:36px;font:26px sans-serif;color:#6b573c}.vocab-repeat{display:block;margin:12px auto 0;padding:9px 18px;background:#e9d5a7;border-radius:20px;color:#584329;font:16px sans-serif}#audioStatus:disabled{cursor:progress;opacity:.8}
+#vocab{position:absolute!important;width:230px;z-index:45;transform:scale(.85)!important}#vocab.show{transform:scale(1)!important}#vocab .spk{display:none}.vocab-close{position:absolute;right:8px;top:6px;width:36px;height:36px;font:26px sans-serif;color:#6b573c}
+.vocab-actions{display:flex;justify-content:center;gap:8px;margin-top:12px}
+.vocab-repeat,.vocab-review{padding:9px 14px;border-radius:20px;font:700 15px sans-serif;white-space:nowrap}
+.vocab-repeat{background:#e9d5a7;color:#584329}
+.vocab-review{background:#d9e8c8;color:#35502e}
+.vocab-review:disabled{opacity:.75;cursor:default}
 
 #vocab{visibility:hidden}#vocab.show{visibility:visible}
