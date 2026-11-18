@@ -334,6 +334,24 @@ describe("Speech provider adapter", () => {
     await vi.waitFor(() => expect(u.onerror).toHaveBeenCalledOnce());
     expect(nativeSpeak).not.toHaveBeenCalled();
   });
+  it("sends a whole storybook page to the selected voice only when it is marked long-form", async () => {
+    const { nativeSpeak } = installPatchEnv();
+    globalThis.fetch = vi.fn(() => Promise.resolve(new Response("mp3", { headers: { "Content-Type": "audio/mpeg" } })));
+    globalThis.Audio = vi.fn(() => ({ play: vi.fn(() => Promise.resolve()), pause: vi.fn() }));
+    loadPatch("elevenlabs");
+    const page = `${"The waves were crashing against the rocks. ".repeat(9)}Nova waited.`;
+    expect(page.length).toBeGreaterThan(350);
+    const plain = new SpeechSynthesisUtterance(page);
+    window.speechSynthesis.speak(plain);
+    expect(nativeSpeak).toHaveBeenCalledWith(plain);
+    expect(fetch).not.toHaveBeenCalled();
+    const book = new SpeechSynthesisUtterance(page);
+    book.__englishGoLongForm = true;
+    window.speechSynthesis.speak(book);
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce());
+    expect(JSON.parse(fetch.mock.calls[0][1].body)).toMatchObject({ text: page, modelId: "eleven_v4" });
+    await expect(window.EnglishGoTTS.getAudioUrl("a".repeat(901), { longForm: true })).rejects.toThrow("not eligible");
+  });
   it("does not report an HTML fallback page as downloaded audio", async () => {
     installPatchEnv();
     globalThis.fetch = vi.fn(() => Promise.resolve(new Response('<html>app</html>', { headers: { 'Content-Type': 'text/html' } })));

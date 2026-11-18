@@ -39,32 +39,44 @@
   const extra = { tree:['🌳','樹'], bush:['🌿','灌木'], rock:['🪨','岩石'], garden:['🌷','花園'], sky:['🌌','天空'] };
   Object.assign(VOCAB, extra);
 
-  /* ---------- narration (prerecorded API audio) ---------- */
+  /* ---------- narration: the learner's own voice settings, with recordings as a fallback ---------- */
   const oldButtons = setPlayBtn;
   setPlayBtn = function() { oldButtons(); if (loading) { $('playIcon').textContent='■'; $('playTxt').textContent='Cancel loading'; } };
   stopRead = function() { run++; clearTimeout(watchdog); S?.cancel(); loading=false; playing=false; paused=false; clearHl(); setPlayBtn(); };
-  // Book recordings follow EnglishGo's one site-wide reading speed.
-  function utterance(text) {
+  // Pages and words both use the speech service, voice and speed chosen in Settings, so read-aloud
+  // and tapped words always sound alike. A failed cloud request comes back here (not to a system
+  // voice) and the book plays its prerecorded file instead.
+  function utterance(text, recording='') {
     const u=new SpeechSynthesisUtterance(text); u.lang='en-US'; u.rate=.9;
     u.__englishGoApiTts=true; u.__englishGoRequireApi=true; u.__englishGoTrackWords=true; u.__englishGoUseGlobalSpeed=true; u.__englishGoPlaybackRate=1;
+    u.__englishGoLongForm=true;
+    if(recording)u.__englishGoAudioUrl=recording;
     return u;
   }
-  say = function(text, cb) {
+  const wordItem=text=>window.PIP_WORD_AUDIO_ITEMS?.[String(text).toLowerCase().replace(/^'|'$/g,'')];
+  say = function(text, cb, useRecording=false) {
     stopRead(); if (!S || !sound) return;
-    const item=window.PIP_WORD_AUDIO_ITEMS?.[String(text).toLowerCase().replace(/^'|'$/g,'')];
-    if(!item){toast('這個單字尚未備妥音檔。');return;}
-    const u=utterance(item.text);u.__englishGoAudioUrl=item.audioUrl; u.onend=cb; u.onerror=()=>toast('語音暫時無法播放，請再試一次。'); S.speak(u); return u;
+    const item=wordItem(text),recording=useRecording?item?.audioUrl:'';
+    if(useRecording&&!recording){toast('語音暫時無法播放，請再試一次。');return;}
+    const u=utterance(item?.text||String(text),recording); u.onend=cb;
+    u.onerror=()=>{if(!useRecording&&item?.audioUrl){say(text,cb,true);return;}toast('語音暫時無法播放，請再試一次。');};
+    S.speak(u); return u;
   };
-  startRead = function() {
+  startRead = function() { readPage(false); };
+  function readPage(useRecording) {
     stopRead(); if (!S || !sound) { toast('請開啟聲音，或選擇自己讀。'); return; }
     if (!isReading()) return;
     $('vocab').classList.remove('show');
     const id=run; exact=false; loading=true; setPlayBtn();
-    const u=utterance(PAGES[page].x); utter=u;
-    u.__englishGoAudioUrl=window.PIP_AUDIO_ITEMS?.[page]?.audioUrl;
+    const recording=window.PIP_AUDIO_ITEMS?.[page]?.audioUrl||'';
+    const u=utterance(PAGES[page].x,useRecording?recording:''); utter=u;
     const valid=()=>run===id;
-    const failed=()=>{if(!valid())return;stopRead();toast('聲音準備較久，請再按一次播放。');};
-    watchdog=setTimeout(failed,25000);
+    const failed=()=>{
+      if(!valid())return;
+      if(!useRecording&&recording){readPage(true);return;}
+      stopRead();toast('聲音準備較久，請再按一次播放。');
+    };
+    watchdog=setTimeout(failed,useRecording?25000:20000);
     u.onstart=()=>{if(!valid())return;clearTimeout(watchdog);loading=false;playing=true;setPlayBtn();hl(0);};
     u.onboundary=e=>{if(!valid()||paused||(e.name&&e.name!=='word'))return;exact=true;const t=tokens.find(t=>e.charIndex>=t.start&&e.charIndex<t.end);if(t)hl(t.i);};
     u.onprogress=e=>{
@@ -90,17 +102,24 @@
     startRead();
   };
 
-  // Audio is fetched as the story needs it: this page, the next page, and this page's key words.
+  // Audio in the chosen voice is fetched as the story needs it: this page and its key words come
+  // from the shared voice cache when someone has heard them before, and the next page is prepared
+  // while this one is being read.
+  let nextPageTimer;
   function warmAudio(index,{words=true}={}){
     const tts=window.EnglishGoTTS;if(typeof tts?.preloadMany!=='function'||!PAGES[index])return;
-    const pages=window.PIP_AUDIO_ITEMS||[],wordItems=window.PIP_WORD_AUDIO_ITEMS||{};
+    if(tts.getSettings?.().provider==='device')return;
     const keys=new Set();
     if(words){
       (PAGES[index].x.match(/[A-Za-z']+/g)||[]).forEach(w=>{const key=w.toLowerCase().replace(/^'|'$/g,'');if(VOCAB[key])keys.add(key);});
       if(QUEST_LIST[index])keys.add(QUEST_LIST[index]);
     }
-    const list=[pages[index],pages[index+1],...[...keys].map(key=>wordItems[key])].filter(Boolean);
-    if(list.length)Promise.resolve(tts.preloadMany(list,{limit:list.length,concurrency:2})).catch(()=>{});
+    const list=[{text:PAGES[index].x,lang:'en-US',longForm:true},...[...keys].map(key=>({text:wordItem(key)?.text||key,lang:'en-US'}))];
+    Promise.resolve(tts.preloadMany(list,{limit:12,concurrency:2})).catch(()=>{});
+    clearTimeout(nextPageTimer);
+    if(PAGES[index+1]&&typeof tts.getAudioUrl==='function')nextPageTimer=setTimeout(()=>{
+      if(page===index&&isReading())Promise.resolve(tts.getAudioUrl(PAGES[index+1].x,{lang:'en-US',longForm:true})).catch(()=>{});
+    },1500);
   }
 
   /* ---------- vocabulary card ---------- */
@@ -388,7 +407,7 @@
     if(vocabBox.classList.contains('show')){vocabBox.classList.remove('show');return;}
     if(body.classList.contains('immersive')&&body.classList.contains('reading'))closeBook();
   });
-  addEventListener('pagehide',()=>{active=false;clearTimeout(turnTimer);clearTimeout(sheetTimer);stopRead();});
+  addEventListener('pagehide',()=>{active=false;clearTimeout(turnTimer);clearTimeout(sheetTimer);clearTimeout(nextPageTimer);stopRead();});
   addEventListener('message',e=>{
     if(e.source!==parent||e.origin!==location.origin)return;
     const data=e.data||{};
@@ -408,21 +427,21 @@
   });
 
   /* ---------- offline audio pack ---------- */
-  const status=document.createElement('button');status.id='audioStatus';status.type='button';status.setAttribute('aria-label','下載全本語音，離線也能播放');$('app').append(status);
+  const status=document.createElement('button');status.id='audioStatus';status.type='button';status.setAttribute('aria-label','下載預錄朗讀，離線或連線不穩時使用');$('app').append(status);
   const pageItems=()=>window.PIP_AUDIO_ITEMS||[],wordList=()=>Object.values(window.PIP_WORD_AUDIO_ITEMS||{});
   async function refreshAudioStatus(){
-    status.textContent='↓ 下載全本語音（離線用）';
+    status.textContent='↓ 下載離線備用朗讀';
     try{
       const cache=await caches.open('storybook-audio-v1');
       const saved=new Set((await cache.keys()).map(request=>new URL(request.url).pathname));
       const all=[...pageItems(),...wordList()];
-      if(all.length&&all.every(item=>saved.has(item.audioUrl))){status.textContent='✓ 全本語音可離線播放';status.classList.add('ready');}
+      if(all.length&&all.every(item=>saved.has(item.audioUrl))){status.textContent='✓ 離線備用朗讀已備妥';status.classList.add('ready');}
     }catch{/* Cache Storage is optional. */}
   }
   let downloading=false;
   async function preload(){
     if(downloading||typeof window.EnglishGoTTS?.preloadMany!=='function')return;
-    downloading=true;status.disabled=true;status.classList.remove('ready');status.textContent=`↓ 正在下載 ${PAGES.length} 頁文章與單字音檔…`;
+    downloading=true;status.disabled=true;status.classList.remove('ready');status.textContent=`↓ 正在下載 ${PAGES.length} 頁預錄朗讀與單字…`;
     const pages=pageItems(),words=wordList();
     let pageReady=0,wordReady=0;
     const show=()=>{status.textContent=`↓ 文章 ${pageReady}/${pages.length} · 單字 ${wordReady}/${words.length}`;};
@@ -430,7 +449,7 @@
       pageReady=await window.EnglishGoTTS.preloadMany(pages,{limit:pages.length,concurrency:3,onProgress:n=>{pageReady=n;show();}});
       wordReady=await window.EnglishGoTTS.preloadMany(words,{limit:words.length,concurrency:3,onProgress:n=>{wordReady=n;show();}});
       const done=pageReady===pages.length&&wordReady===words.length;
-      status.textContent=done?'✓ 全本語音可離線播放':`↓ 點此重試 · 文章 ${pageReady}/${pages.length} · 單字 ${wordReady}/${words.length}`;status.classList.toggle('ready',done);
+      status.textContent=done?'✓ 離線備用朗讀已備妥':`↓ 點此重試 · 文章 ${pageReady}/${pages.length} · 單字 ${wordReady}/${words.length}`;status.classList.toggle('ready',done);
     }catch{status.textContent='音檔下載未完成 · 點此重試';}
     finally{downloading=false;status.disabled=false;}
   }

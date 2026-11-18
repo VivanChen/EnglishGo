@@ -20,6 +20,8 @@
   const MAX_CACHE_ENTRIES = 128;
   let cacheBytes = 0;
   const MAX_CHARS = 350;
+  // Storybook pages read a whole page at once, up to the synthesis endpoint's own limit.
+  const MAX_LONG_FORM_CHARS = 900;
   const LS_PROVIDER = "eg_tts_provider";
   const LS_SPEED = "eg_tts_speed";
   const DEFAULT_PROVIDER = "elevenlabs";
@@ -73,9 +75,9 @@
     return /^zh/i.test(String(lang || ""));
   }
 
-  function isEligibleText(text, lang = "en-US") {
+  function isEligibleText(text, lang = "en-US", longForm = false) {
     const normalized = normalizeText(text);
-    if (!normalized || normalized.length > MAX_CHARS) return false;
+    if (!normalized || normalized.length > (longForm ? MAX_LONG_FORM_CHARS : MAX_CHARS)) return false;
     return isChineseLang(lang) ? CHINESE_RE.test(normalized) : /[A-Za-z]/.test(normalized);
   }
 
@@ -161,7 +163,7 @@
     if (utterance?.__englishGoWebSpeechOnly) return false;
     const text = String(utterance?.text || "").trim();
     const lang = String(utterance?.lang || "en-US");
-    if (!text || text.length > MAX_CHARS) return false;
+    if (!text || text.length > (utterance?.__englishGoLongForm === true ? MAX_LONG_FORM_CHARS : MAX_CHARS)) return false;
     if (utterance?.__englishGoAudioUrl) return true;
     if (getSettings().provider === "device") return false;
     if (typeof utterance.onboundary === "function" && !utterance.__englishGoTrackWords) return false;
@@ -277,7 +279,7 @@
     settings.provider = baseSettings.provider;
     if (settings.provider === "device" && !options.audioUrl) return null;
     const normalized = normalizeTtsText(text);
-    if (!isEligibleText(normalized, settings.lang)) throw new Error("Text is not eligible for cloud speech");
+    if (!isEligibleText(normalized, settings.lang, options.longForm === true)) throw new Error("Text is not eligible for cloud speech");
     if (forceRegenerate && options.audioUrl) throw new Error("Fixed audio assets cannot be regenerated");
     if (forceRegenerate && cacheOnly) throw new Error("Cache lookups cannot regenerate speech");
     const cacheKey = makeCacheKey(normalized, settings);
@@ -405,7 +407,7 @@
       const itemOptions = item && typeof item === "object" ? { ...options, ...item } : options;
       const normalized = normalizeText(item && typeof item === "object" ? item.text : item);
       const uniqueKey = itemOptions.audioUrl || `${itemOptions.lang || "en-US"}|${normalized}`;
-      if (!isEligibleText(normalized, itemOptions.lang) || seen.has(uniqueKey)) continue;
+      if (!isEligibleText(normalized, itemOptions.lang, itemOptions.longForm === true) || seen.has(uniqueKey)) continue;
       seen.add(uniqueKey);
       items.push({ text: normalized, options: itemOptions });
       if (items.length >= limit) break;
@@ -550,6 +552,7 @@
       lang: utterance.lang,
       audioUrl: utterance.__englishGoAudioUrl,
       forceRegenerate: utterance.__englishGoForceRegenerate === true,
+      longForm: utterance.__englishGoLongForm === true,
     })
       .then((url) => {
         if (activeAudio !== audio) return null;
