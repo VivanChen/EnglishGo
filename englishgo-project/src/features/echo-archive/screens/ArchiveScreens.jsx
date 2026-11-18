@@ -143,7 +143,7 @@ export function CodexScreen({ collection, onBack, onGacha }) {
     <header className="ea-archive-head">
       <button type="button" className="ea-back-link is-inline" onClick={onBack}>‹ 回到標題</button>
       <div><span className="ea-eyebrow" lang="en">CARD CODEX</span><h1 id="ea-codex-title">卡牌圖鑑</h1></div>
-      <span className="ea-codex-progress"><b>{ownedTotal}</b> / {CODEX_CARDS.length}<small>已收集</small></span>
+      <span className="ea-codex-progress"><span><b>{ownedTotal}</b> / {CODEX_CARDS.length}</span><small>已收集</small></span>
     </header>
     <div className="ea-codex-tabs" role="tablist" aria-label="依流派篩選">{tabs.map(([id, label]) => <button type="button" key={id} role="tab" aria-selected={filter === id} className={filter === id ? 'is-active' : ''} onClick={() => setFilter(id)}>{label}</button>)}</div>
     {filter !== 'all' && filter !== 'locked' && <p className="ea-codex-arch"><b lang="en">{ARCHETYPES[filter].en}</b> {ARCHETYPES[filter].text}</p>}

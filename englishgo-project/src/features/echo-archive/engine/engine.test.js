@@ -173,6 +173,7 @@ function botStep(run, seedOffset) {
       const c = run.combat;
       if (c.phase === 'won' || c.phase === 'lost') return act(run, { type: 'FINISH_COMBAT' });
       if (c.phase === 'enemy') return act(run, { type: 'ENEMY_STEP' });
+      if (c.choice) return act(run, { type: 'CHOOSE_CARD', uid: c.choice.options[seedOffset % c.choice.options.length] });
       const potion = run.hero.potions.findIndex(Boolean);
       if (potion >= 0 && c.round === 2) {
         const next = act(run, { type: 'USE_POTION', slot: potion, target: living(c)[0]?.uid });
@@ -281,6 +282,57 @@ describe('echo archive expansion cards', () => {
     run = act(run, { type: 'PLAY_CARD', uid: smudge });
     expect(run.combat.faded).toContain(smudge);
     expect(run.combat.hand.length).toBe(handBefore);
+  });
+
+  it('pauses for a card choice and resolves Recall, Foresee, Sift and Offering', () => {
+    let run = fresh();
+    const slash = run.combat.hand.find(uid => run.combat.cards[uid].id === 'slash') || give(run, 'slash');
+    run = act(run, { type: 'PLAY_CARD', uid: slash, target: 'e0' });
+    run = act(run, { type: 'PLAY_CARD', uid: give(run, 'recall') });
+    expect(run.combat.choice).toMatchObject({ from: 'discard', action: 'toHand' });
+    expect(canPlay(run, run.combat.hand[0])).toBe(false);
+    run = act(run, { type: 'CHOOSE_CARD', uid: slash });
+    expect(run.combat.hand).toContain(slash);
+    expect(run.combat.choice).toBeNull();
+
+    run = act(run, { type: 'PLAY_CARD', uid: give(run, 'foresee') });
+    const top = run.combat.choice.options;
+    expect(top).toHaveLength(Math.min(3, top.length));
+    run = act(run, { type: 'CHOOSE_CARD', uid: top[0] });
+    expect(run.combat.hand).toContain(top[0]);
+    top.slice(1).forEach(uid => expect(run.combat.discard).toContain(uid));
+
+    const before = run.combat.hand.length;
+    run = act(run, { type: 'PLAY_CARD', uid: give(run, 'sift') });
+    expect(run.combat.hand.length).toBe(before + 2);
+    run = act(run, { type: 'CHOOSE_CARD', uid: run.combat.choice.options[0] });
+    expect(run.combat.hand.length).toBe(before + 1);
+
+    run.combat.energy = 0;
+    run = act(run, { type: 'PLAY_CARD', uid: give(run, 'offering') });
+    run = act(run, { type: 'CHOOSE_CARD', uid: run.combat.choice.options[0] });
+    expect(run.combat.energy).toBe(2);
+  });
+
+  it('grows Patience while kept, upgrades with Whetblade and draws X+1 with Word Flood', () => {
+    let run = fresh();
+    const patience = give(run, 'patience');
+    run.combat.enemies[0].move = 'burrow';
+    run = act(run, { type: 'END_TURN' });
+    finishEnemyPhase(run);
+    expect(run.combat.cards[patience].kept).toBe(1);
+    run = act(run, { type: 'PLAY_CARD', uid: patience });
+    expect(run.combat.player.ward).toBe(6 + 3);
+
+    const target = give(run, 'slash');
+    run = act(run, { type: 'PLAY_CARD', uid: give(run, 'whetblade', true) });
+    expect(run.combat.cards[target].up).toBe(true);
+
+    run.combat.energy = 2;
+    const hand = run.combat.hand.length;
+    run = act(run, { type: 'PLAY_CARD', uid: give(run, 'wordflood') });
+    expect(run.combat.hand.length).toBe(Math.min(10, hand + 3));
+    expect(run.combat.energy).toBe(0);
   });
 
   it('only offers Archive cards that are unlocked', () => {

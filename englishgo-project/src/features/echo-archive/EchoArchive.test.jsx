@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import { describe, expect, it, vi } from 'vitest';
 import EchoArchive from './EchoArchive.jsx';
 import { makeChant } from './chant.js';
+import { ARCHIVE_CARDS } from './data/cards.js';
 
 const words = [
   { w: 'apple', m: '蘋果', p: 'n.' }, { w: 'happy', m: '開心的', p: 'adj.' }, { w: 'school', m: '學校', p: 'n.' },
@@ -125,7 +126,7 @@ describe('Echo Archive', () => {
     fireEvent.click(screen.getByRole('button', { name: '打開卡牌圖鑑' }));
     expect(screen.getByRole('heading', { name: '卡牌圖鑑' })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('tab', { name: '未解鎖' }));
-    expect(screen.getAllByRole('button', { name: /未解鎖的/ })).toHaveLength(27);
+    expect(screen.getAllByRole('button', { name: /未解鎖的/ })).toHaveLength(ARCHIVE_CARDS.length - 1);
   }, 15000);
 
   it('lets the player abandon a run from the menu', async () => {

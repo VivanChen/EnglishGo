@@ -122,6 +122,24 @@ Object.assign(GLYPHS, {
   hat: <><path d="M32 4L46 44H18Z" {...F}/><path d="M6 46C6 40 58 40 58 46C58 54 6 54 6 46Z" {...F}/><path d={star4(30, 26, 6)} fill="#fff" fillOpacity=".7" stroke="none"/></>,
   livingInk: <><path d="M30 10C38 8 40 18 46 16C54 14 56 26 50 30C58 34 54 46 46 44C46 54 34 56 32 48C26 56 14 52 18 44C8 44 8 32 16 30C10 22 20 14 26 20C24 14 26 11 30 10Z" {...F}/><circle cx="26" cy="32" r="4" fill="#fff" stroke="none"/><circle cx="40" cy="32" r="4" fill="#fff" stroke="none"/><path d="M26 42Q33 46 40 42" stroke="#fff" strokeWidth="2.5"/></>,
 });
+Object.assign(GLYPHS, {
+  // Wave 2
+  recall: <><path d="M16 18H40V56H16Z" {...soft}/><path d="M16 18H40V56H16Z"/><path d="M48 44V14M40 22L48 12L56 22" strokeWidth="4"/></>,
+  sift: <><path d="M8 10H56L36 34V54L28 58V34Z" {...soft}/><path d="M8 10H56L36 34V54L28 58V34Z"/><circle cx="22" cy="18" r="2.5" {...F}/><circle cx="34" cy="16" r="2.5" {...F}/><circle cx="44" cy="20" r="2.5" {...F}/></>,
+  crystal: <><circle cx="32" cy="28" r="20" {...soft}/><circle cx="32" cy="28" r="20"/><path d="M14 56H50L44 46H20Z" {...F}/><path d={star4(26, 22, 6)} fill="#fff" fillOpacity=".75" stroke="none"/></>,
+  whetblade: <><path d="M14 52L46 14" strokeWidth="6"/><path d="M42 10L54 6L50 18Z" {...F}/><path d="M10 40L22 52" strokeWidth="4"/><path d={star4(48, 42, 9)} {...F}/></>,
+  leech: <><path d="M32 6C42 20 48 30 48 40A16 16 0 0 1 16 40C16 30 22 20 32 6Z" {...F}/><path d="M24 40L28 46L32 40L36 46L40 40" stroke="#fff" strokeOpacity=".7" strokeWidth="2.5"/></>,
+  thunderclap: <><path d="M36 6L18 34H30L26 58L46 28H34Z" {...F}/><path d="M8 32A24 24 0 0 1 14 16M56 32A24 24 0 0 0 50 16M8 40A24 24 0 0 0 14 52M56 40A24 24 0 0 1 50 52" strokeWidth="3"/></>,
+  patience: <><path d={SHIELD} {...soft}/><path d="M24 16H40M24 48H40M26 16C26 28 38 28 38 32C38 36 26 36 26 48M38 16C38 28 26 28 26 32C26 36 38 36 38 48"/></>,
+  wordflood: <><path d="M4 44C12 34 20 34 28 44S44 54 52 44S60 38 62 40" strokeWidth="4"/><path d="M12 30L16 14L20 30M13.5 24H18.5M28 14V30H36M42 14H50L44 30H52" strokeWidth="3"/></>,
+  offering: <><path d="M8 44C16 44 24 48 32 48S48 44 56 44V52C48 56 16 56 8 52Z" {...F}/><path d="M32 8C38 16 42 22 40 30C38 36 34 38 32 38C28 38 24 34 24 30C24 24 28 22 30 16C31 20 32 22 32 24C34 20 34 14 32 8Z" {...F}/></>,
+  paperCut: <><path d="M12 10H40L52 22V54H12Z" {...soft}/><path d="M12 10H40L52 22V54H12ZM40 10V22H52"/><path d="M6 58L58 6" strokeWidth="4"/></>,
+  emberRain: <><path d="M16 22C10 22 10 12 18 12C20 4 34 4 36 12C44 8 52 14 48 22Z" {...soft}/><path d="M16 22C10 22 10 12 18 12C20 4 34 4 36 12C44 8 52 14 48 22Z"/><path d="M20 30C23 35 22 38 20 40C18 38 17 35 20 30ZM34 34C37 39 36 42 34 44C32 42 31 39 34 34ZM46 30C49 35 48 38 46 40C44 38 43 35 46 30ZM26 46C29 51 28 54 26 56C24 54 23 51 26 46Z" {...F}/></>,
+  bookwall: <><path d="M8 54H56" strokeWidth="4"/><path d="M10 54V20H20V54M22 54V12H32V54M34 54V24H44V54M46 54V16H56V54" {...soft}/><path d="M10 54V20H20V54M22 54V12H32V54M34 54V24H44V54M46 54V16H56V54"/></>,
+  palimpsest: <><path d="M14 8H42C48 8 50 12 50 16V56H18C14 56 12 52 14 48Z" {...soft}/><path d="M14 8H42C48 8 50 12 50 16V56H18C14 56 12 52 14 48ZM20 20H40M20 28H36" opacity=".8"/><path d="M58 18L34 46L30 50L32 44Z" {...F}/></>,
+  library: <><path d="M6 58V18L32 4L58 18V58Z" {...soft}/><path d="M6 58V18L32 4L58 18V58ZM6 30H58M6 44H58"/><path d="M12 30V20M18 30V22M24 30V19M40 44V34M46 44V36M52 44V33M14 58V48M22 58V47" strokeWidth="3"/></>,
+});
+
 // Status and power icons share the card art.
 Object.assign(GLYPHS, { charge: GLYPHS.surge, bastion: GLYPHS.helm, momentum: GLYPHS.dash, thousandCuts: GLYPHS.cuts, archmage: GLYPHS.hat, inscribe: GLYPHS.rune, shard: GLYPHS.shard });
 

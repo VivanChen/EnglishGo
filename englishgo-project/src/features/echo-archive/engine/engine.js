@@ -161,7 +161,7 @@ export function cardContext(r) {
 
 export function canPlay(r, uid) {
   const c = r.combat;
-  if (!c || c.phase !== 'player' || !c.hand.includes(uid)) return false;
+  if (!c || c.phase !== 'player' || c.choice || !c.hand.includes(uid)) return false;
   const cost = cardCost(r, c.cards[uid]);
   if (cost === null) return false;
   return cost === 'X' || cost <= c.energy;
@@ -233,6 +233,10 @@ function startPlayerTurn(r) {
   if (c.player.st.burn) { hurtPlayer(r, c.player.st.burn, 'burn'); add(c.player.st, 'burn', -1); }
   if (c.player.pw.wildfire) living(c).forEach(enemy => add(enemy.st, 'burn', c.player.pw.wildfire));
   if (c.player.pw.ascend) add(c.player.st, 'might', c.player.pw.ascend);
+  if (c.player.pw.library) {
+    const skills = cardPool(r).filter(id => CARDS[id].type === 'skill' && CARDS[id].rarity !== 'mythic' && !CARDS[id].fx.some(item => item.op === 'choose' || item.op === 'upgradeHand'));
+    for (let i = 0; i < c.player.pw.library; i++) addTempToHand(r, pick(r, skills));
+  }
   if (c.round === 1 && hasRelic(r, 'anchor')) gainWard(r, 10, false);
   const count = 5 + (c.player.pw.clarity || 0) + (hasRelic(r, 'runeHeart') ? 1 : 0) + (c.round === 1 && hasRelic(r, 'bookmark') ? 2 : 0);
   drawCards(r, count);
@@ -259,6 +263,49 @@ function inscribe(r, uid, amount) {
   fx(r, { kind: 'buff', to: 'player', st: 'inscribe' });
 }
 
+// "Choose a card" effects pause the turn until the player picks (CHOOSE_CARD).
+const CHOICE_ACTIONS = new Set(['toHand', 'discard', 'fade', 'inscribe', 'upgrade']);
+function offerChoice(r, effect, up) {
+  const c = r.combat;
+  let options = [];
+  if (effect.from === 'discard') options = [...c.discard];
+  else if (effect.from === 'top') {
+    if (!c.draw.length && c.discard.length) { c.draw = shuffle(r, c.discard); c.discard = []; fx(r, { kind: 'shuffle' }); }
+    options = c.draw.slice(0, val(effect.n, up) || 3);
+  } else options = [...c.hand];
+  if (effect.action === 'upgrade') options = options.filter(uid => !c.cards[uid].up && ['attack', 'skill', 'power'].includes(CARDS[c.cards[uid].id].type));
+  if (effect.action === 'inscribe') options = options.filter(uid => CARDS[c.cards[uid].id].fx.some(item => item.op === 'damage' || item.op === 'ward'));
+  if (!options.length || !CHOICE_ACTIONS.has(effect.action)) return;
+  c.choice = { from: effect.from, action: effect.action, options, v: val(effect.v, up) || 0, energy: val(effect.energy, up) || 0 };
+}
+
+export function chooseCard(r, uid) {
+  const c = r.combat;
+  const choice = c?.choice;
+  if (!choice || !choice.options.includes(uid)) return false;
+  const take = pile => { c[pile] = c[pile].filter(item => item !== uid); };
+  switch (choice.action) {
+    case 'toHand':
+      if (choice.from === 'top') {
+        take('draw');
+        const rest = choice.options.filter(item => item !== uid);
+        c.draw = c.draw.filter(item => !rest.includes(item));
+        c.discard.push(...rest);
+      } else take('discard');
+      if (c.hand.length < HAND_LIMIT) c.hand.push(uid); else c.discard.push(uid);
+      break;
+    case 'discard': take('hand'); c.discard.push(uid); break;
+    case 'fade': take('hand'); c.faded.push(uid); c.energy += choice.energy; fx(r, { kind: 'energy', amount: choice.energy }); break;
+    case 'upgrade': c.cards[uid].up = true; fx(r, { kind: 'buff', to: 'player', st: 'upgrade' }); break;
+    case 'inscribe': inscribe(r, uid, choice.v); break;
+    default: break;
+  }
+  fx(r, { kind: 'chosen', card: c.cards[uid].id, action: choice.action });
+  c.choice = null;
+  settle(r);
+  return true;
+}
+
 const TARGETED = new Set(['doubleBurn', 'stripWard', 'ifExposed', 'detonate', 'spreadBurn']);
 function resolve(r, effects, up, target, ctx) {
   const c = r.combat;
@@ -274,7 +321,10 @@ function resolve(r, effects, up, target, ctx) {
           const pool = living(c);
           if (!pool.length) break;
           const targets = effect.all ? pool : effect.random ? [pick(r, pool)] : [target];
-          targets.forEach(enemy => attackEnemy(r, enemy, base, ctx.mult));
+          targets.forEach(enemy => {
+            attackEnemy(r, enemy, base, ctx.mult);
+            if (effect.burnPerHit && !enemy.dead) add(enemy.st, 'burn', effect.burnPerHit);
+          });
         }
         if (effect.onKill && target?.dead) {
           const gain = val(effect.onKill, up);
@@ -284,7 +334,16 @@ function resolve(r, effects, up, target, ctx) {
         break;
       }
       case 'damageWard': (effect.all ? living(c) : [target]).forEach(enemy => attackEnemy(r, enemy, c.player.ward, ctx.mult)); break;
-      case 'ward': gainWard(r, v + (ctx.bonus || 0)); break;
+      case 'ward': gainWard(r, v + (ctx.bonus || 0) + (effect.perKept ? val(effect.perKept, up) * (ctx.kept || 0) : 0)); break;
+      case 'wardPerHand': gainWard(r, v * c.hand.length); break;
+      case 'drawX': drawCards(r, (ctx.x || 0) + v); break;
+      case 'choose': offerChoice(r, effect, up); break;
+      case 'upgradeHand': {
+        const open = c.hand.filter(uid => !c.cards[uid].up && ['attack', 'skill', 'power'].includes(CARDS[c.cards[uid].id].type));
+        if (val(effect.all, up)) { open.forEach(uid => { c.cards[uid].up = true; }); if (open.length) fx(r, { kind: 'buff', to: 'player', st: 'upgrade' }); }
+        else offerChoice(r, { from: 'hand', action: 'upgrade' }, up);
+        break;
+      }
       case 'detonate': { const burn = target.st.burn || 0; delete target.st.burn; if (burn) hurtEnemy(r, target, burn * v * (ctx.mult || 1)); break; }
       case 'spreadBurn': { const burn = target.st.burn || 0; if (burn) living(c).filter(enemy => enemy !== target).forEach(enemy => { add(enemy.st, 'burn', burn); fx(r, { kind: 'status', to: enemy.uid, st: 'burn' }); }); break; }
       case 'burnTickAll': living(c).forEach(enemy => { if (enemy.st.burn) hurtEnemy(r, enemy, enemy.st.burn, 'burn'); }); break;
@@ -401,7 +460,7 @@ export function playCard(r, uid, targetUid, chant = null) {
     if (!living(c).length) break;
     if (card.target === 'enemy' && (!target || target.dead)) target = pick(r, living(c));
     if (i > 0) fx(r, { kind: 'echo' });
-    resolve(r, effects, inst.up, target, { x, mult, combo, uid, bonus: inst.bonus || 0 });
+    resolve(r, effects, inst.up, target, { x, mult, combo, uid, bonus: inst.bonus || 0, kept: inst.kept || 0 });
   }
   if (empowered) {
     if (hasRelic(r, 'goldenQuill')) drawCards(r, 1);
@@ -410,6 +469,7 @@ export function playCard(r, uid, targetUid, chant = null) {
   }
   if (card.type === 'skill' && c.player.pw.resonance && living(c).length) hurtEnemy(r, pick(r, living(c)), c.player.pw.resonance);
   inst.free = false;
+  inst.kept = 0;
   if (card.type !== 'power') (cardFades(card, inst.up) ? c.faded : c.discard).push(uid);
   afterCardPlayed(r, inst);
   settle(r);
@@ -434,7 +494,7 @@ export function usePotion(r, slot, targetUid) {
     r.hero.hp = Math.min(r.hero.maxHp, r.hero.hp + 20);
     return true;
   }
-  if (c.phase !== 'player') return false;
+  if (c.phase !== 'player' || c.choice) return false;
   let target = null;
   if (POTIONS[id].target === 'enemy') {
     const pool = living(c);
@@ -460,13 +520,13 @@ export function usePotion(r, slot, targetUid) {
 
 export function endTurn(r) {
   const c = r.combat;
-  if (!c || c.phase !== 'player') return;
+  if (!c || c.phase !== 'player' || c.choice) return;
   const kept = [];
   for (const uid of [...c.hand]) {
     const inst = c.cards[uid], card = CARDS[inst.id];
     inst.free = false;
     if (card.endTurn) resolve(r, card.endTurn, inst.up, null, {});
-    if (card.keep) kept.push(uid);
+    if (card.keep) { kept.push(uid); inst.kept = (inst.kept || 0) + 1; }
     else (card.fleeting ? c.faded : c.discard).push(uid);
   }
   c.hand = kept;
@@ -807,6 +867,7 @@ export function runReducer(state, action) {
     case 'SHOP_BUY': shopBuy(r, action.kind, action.index); break;
     case 'SHOP_REMOVE': if (r.shop && !r.shop.removed && r.hero.gold >= r.removeCost) r.pending = { kind: 'remove', cancellable: true, source: 'shop' }; break;
     case 'PICK_CARD': pickCard(r, action.uid); break;
+    case 'CHOOSE_CARD': if (!chooseCard(r, action.uid)) return state; break;
     case 'CANCEL_PICK': if (r.pending?.cancellable) r.pending = null; break;
     case 'OPEN_CHEST':
       if (r.treasure && !r.treasure.opened) {

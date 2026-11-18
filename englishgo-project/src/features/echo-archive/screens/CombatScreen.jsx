@@ -29,8 +29,10 @@ export function Statuses({ st = {}, pw = {} }) {
 }
 
 function HpBar({ hp, max, ward }) {
+  const width = `${Math.max(0, Math.min(100, (hp / max) * 100))}%`;
   return <div className={`ea-hp ${ward > 0 ? 'has-ward' : ''}`}>
-    <div className="ea-hp-fill" style={{ width: `${Math.max(0, Math.min(100, (hp / max) * 100))}%` }}/>
+    <div className="ea-hp-lag" style={{ width }}/>
+    <div className="ea-hp-fill" style={{ width }}/>
     {ward > 0 && <span className="ea-ward-badge" aria-label={`Ward ${ward}`}><Glyph name="defend" size={13}/>{ward}</span>}
     <span className="ea-hp-text">{hp} / {max}</span>
   </div>;
@@ -38,6 +40,19 @@ function HpBar({ hp, max, ward }) {
 
 function Floaters({ items }) {
   return <div className="ea-floaters" aria-hidden="true">{items.map(item => <span key={item.key} className={`ea-floater is-${item.kind}`} style={{ animationDelay: `${item.delay}ms`, '--fx': `${item.jitter}px` }}>{item.text}</span>)}</div>;
+}
+
+// Short-lived visual effects drawn on top of a hero or enemy.
+const range = n => Array.from({ length: n }, (_, i) => i);
+function Impacts({ items }) {
+  return <div className="ea-impacts" aria-hidden="true">{items.map(item => (
+    <span key={item.key} className={`ea-impact is-${item.kind}`} style={{ '--rot': `${item.rot}deg`, animationDelay: `${item.delay}ms` }}>
+      {item.kind === 'slash' && <svg viewBox="0 0 100 100"><path d="M8 84Q46 52 94 10"/><path d="M18 92Q52 62 96 26" opacity=".55"/></svg>}
+      {item.kind === 'claw' && <svg viewBox="0 0 100 100"><path d="M20 10Q30 50 18 92M44 6Q54 50 42 94M68 10Q78 50 66 92"/></svg>}
+      {item.kind === 'death' && range(12).map(i => <i key={i} style={{ '--a': `${i * 30}deg`, '--d': `${46 + (i % 3) * 16}px`, '--s': `${6 + (i % 4) * 2}px` }}/>)}
+      {(item.kind === 'heal' || item.kind === 'burn') && range(6).map(i => <i key={i} style={{ '--x': `${(i - 2.5) * 15}px`, '--t': `${i * 55}ms` }}/>)}
+    </span>
+  ))}</div>;
 }
 
 function describeIntent(intent) {
@@ -58,7 +73,7 @@ function Intent({ run, enemy }) {
   const main = intent.kinds[0] || 'unknown';
   const def = ENEMIES[enemy.id];
   const countdown = def.countdown ? 3 - (enemy.turns % 4) : null;
-  return <div className="ea-intent-wrap">
+  return <div className="ea-intent-wrap" key={`${enemy.move}-${enemy.turns}`}>
     <div className={`ea-intent is-${main}`} tabIndex={0} data-tip={describeIntent(intent)} aria-label={describeIntent(intent)}>
       {intent.kinds.length ? intent.kinds.map(kind => <Glyph key={kind} name={kind} size={kind === main ? 24 : 16}/>) : <Glyph name="unknown" size={22}/>}
       {intent.dmg != null && <b>{intent.dmg}{intent.hits > 1 && <small>×{intent.hits}</small>}</b>}
@@ -67,7 +82,7 @@ function Intent({ run, enemy }) {
   </div>;
 }
 
-function Enemy({ run, enemy, targetable, over, mark, floaters, onClick }) {
+function Enemy({ run, enemy, targetable, over, mark, floaters, impacts, onClick }) {
   const def = ENEMIES[enemy.id];
   return <div
     className={`ea-enemy ${def.boss ? 'is-boss' : def.elite ? 'is-elite' : ''} ${enemy.dead ? 'is-dead' : ''} ${targetable ? 'is-targetable' : ''} ${over ? 'is-over' : ''} ${mark ? `is-${mark}` : ''}`}
@@ -78,7 +93,7 @@ function Enemy({ run, enemy, targetable, over, mark, floaters, onClick }) {
     onKeyDown={event => { if ((event.key === 'Enter' || event.key === ' ') && !enemy.dead) { event.preventDefault(); onClick(enemy.uid); } }}
   >
     {!enemy.dead && run.combat.phase !== 'won' && <Intent run={run} enemy={enemy}/>}
-    <div className="ea-enemy-body"><EnemyArt art={def.art}/><Floaters items={floaters}/></div>
+    <div className="ea-enemy-body"><EnemyArt art={def.art}/><Impacts items={impacts}/><Floaters items={floaters}/></div>
     <div className="ea-unit-info">
       <div className="ea-unit-name"><b lang="en">{def.en}</b><span>{def.zh}</span></div>
       <HpBar hp={enemy.hp} max={enemy.maxHp} ward={enemy.ward}/>
@@ -120,6 +135,32 @@ function ChantOverlay({ chant, onDone, speak, voice }) {
           onClick={() => answer(index)}><small>{index + 1}</small>{option.label}</button>
       ))}</div>
       {picked === null && <button type="button" className="ea-chant-skip" onClick={() => onDone(null)}>略過，直接施放</button>}
+    </div>
+  </div>;
+}
+
+const CHOICE_TITLES = {
+  toHand: { discard: '從棄牌堆挑 1 張牌回到手中', top: '挑 1 張牌加入手中，其餘放進棄牌堆' },
+  discard: '挑 1 張要丟掉的牌',
+  fade: '挑 1 張牌獻祭（消逝），換取能量',
+  upgrade: '挑 1 張牌升級（本場戰鬥）',
+  inscribe: '挑 1 張牌永久銘刻',
+};
+
+function ChoicePanel({ run, onChoose }) {
+  const c = run.combat, choice = c.choice;
+  const title = typeof CHOICE_TITLES[choice.action] === 'string' ? CHOICE_TITLES[choice.action] : CHOICE_TITLES[choice.action][choice.from];
+  return <div className="ea-choice-panel" role="dialog" aria-modal="true" aria-labelledby="ea-choice-title">
+    <div className="ea-choice-sheet">
+      <span className="ea-eyebrow" lang="en">CHOOSE A CARD</span>
+      <h2 id="ea-choice-title">{title}</h2>
+      <div className="ea-choice-cards">{choice.options.map((uid, index) => {
+        const inst = c.cards[uid];
+        const preview = choice.action === 'upgrade' ? { ...inst, up: true } : choice.action === 'inscribe' ? { ...inst, bonus: (inst.bonus || 0) + choice.v } : inst;
+        return <button type="button" key={uid} className="ea-choice-option" style={{ '--i': index }} onClick={() => { sfx.select(); onChoose(uid); }} aria-label={`${CARDS[inst.id].en} ${CARDS[inst.id].zh}`}>
+          <CardFace inst={preview} ctx={cardContext(run)}/>
+        </button>;
+      })}</div>
     </div>
   </div>;
 }
@@ -176,6 +217,11 @@ export default function CombatScreen({ run, dispatch, settings, pool, speak, pot
   const [inspect, setInspect] = useState(null);
   const [showEnd, setShowEnd] = useState(false);
   const [handWidth, setHandWidth] = useState(720);
+  const [impacts, setImpacts] = useState([]);
+  const [shake, setShake] = useState(0);
+  const [discarding, setDiscarding] = useState(false);
+  const fieldRef = useRef(null);
+  const flightRef = useRef(null);
   // A combat restored from a save should not replay its last animations.
   const seen = useRef({ id: c.id, fx: resumed ? c.fxSeq : 0 });
   const recent = useRef([]);
@@ -183,7 +229,7 @@ export default function CombatScreen({ run, dispatch, settings, pool, speak, pot
   const dragRef = useRef(null);
   const suppressClick = useRef(false);
   const alive = useRef(true);
-  useEffect(() => () => { alive.current = false; }, []);
+  useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
   const later = useCallback((fn, ms) => window.setTimeout(() => { if (alive.current) fn(); }, ms), []);
 
   // Turn engine events into floating numbers, shakes, banners and sounds.
@@ -192,29 +238,39 @@ export default function CombatScreen({ run, dispatch, settings, pool, speak, pot
     const fresh = c.fx.filter(item => item.id > seen.current.fx);
     if (!fresh.length) return;
     seen.current.fx = Math.max(...fresh.map(item => item.id));
-    const spawn = [], nextMarks = {};
-    let heavy = false, hurt = false;
+    const spawn = [], nextMarks = {}, bursts = [];
+    let heavy = false, hurt = false, quake = 0;
+    const burst = (to, kind) => bursts.push({ to, kind, rot: Math.round((Math.random() - 0.5) * 50), delay: bursts.filter(item => item.to === to).length * 90 });
     for (const f of fresh) {
       switch (f.kind) {
         case 'hit': case 'thorns':
           spawn.push({ to: f.to, text: f.amount > 0 ? `-${f.amount}` : 'Blocked', kind: f.amount > 0 ? 'dmg' : 'blocked' });
-          if (f.amount > 0) { nextMarks[f.to] = 'hit'; if (f.to === 'player') hurt = true; if (f.amount >= 15) heavy = true; }
-          else sfx.block();
+          if (f.amount > 0) {
+            nextMarks[f.to] = 'hit';
+            burst(f.to, f.to === 'player' ? 'claw' : 'slash');
+            if (f.to === 'player') { hurt = true; quake = Math.max(quake, f.amount >= 12 ? 2 : 1); }
+            if (f.amount >= 15) heavy = true;
+            if (f.to !== 'player' && f.amount >= 20) quake = Math.max(quake, 1);
+          } else { sfx.block(); burst(f.to, 'shield'); }
           break;
-        case 'burn': spawn.push({ to: f.to, text: `-${f.amount}`, kind: 'burn' }); nextMarks[f.to] = 'hit'; sfx.burn(); break;
+        case 'burn': spawn.push({ to: f.to, text: `-${f.amount}`, kind: 'burn' }); nextMarks[f.to] = 'hit'; burst(f.to, 'burn'); sfx.burn(); break;
         case 'loss': spawn.push({ to: f.to, text: `-${f.amount}`, kind: 'dmg' }); break;
-        case 'ward': if (f.amount > 0) { spawn.push({ to: f.to, text: `+${f.amount}`, kind: 'ward' }); sfx.block(); } break;
-        case 'heal': spawn.push({ to: f.to, text: `+${f.amount}`, kind: 'heal' }); sfx.heal(); break;
+        case 'ward': if (f.amount > 0) { spawn.push({ to: f.to, text: `+${f.amount}`, kind: 'ward' }); burst(f.to, 'shield'); sfx.block(); } break;
+        case 'heal': spawn.push({ to: f.to, text: `+${f.amount}`, kind: 'heal' }); burst(f.to, 'heal'); sfx.heal(); break;
+        case 'death': burst(f.to, 'death'); break;
         case 'maxhp': spawn.push({ to: 'player', text: `Max HP +${f.amount}`, kind: 'heal' }); break;
         case 'revive': spawn.push({ to: 'player', text: 'Phoenix!', kind: 'heal' }); sfx.heal(); break;
-        case 'status': spawn.push({ to: f.to, text: KEYWORDS[f.st]?.en || f.st, kind: 'debuff' }); sfx.debuff(); break;
-        case 'buff': spawn.push({ to: f.to, text: KEYWORDS[f.st]?.en || POWER_TEXT[f.st]?.en || f.st, kind: 'buff' }); sfx.buff(); break;
+        case 'status': spawn.push({ to: f.to, text: KEYWORDS[f.st]?.en || f.st, kind: 'debuff' }); burst(f.to, 'debuff'); sfx.debuff(); break;
+        case 'buff': spawn.push({ to: f.to, text: f.st === 'upgrade' ? 'Upgrade!' : KEYWORDS[f.st]?.en || POWER_TEXT[f.st]?.en || f.st, kind: 'buff' }); burst(f.to, 'buff'); sfx.buff(); break;
+        case 'chosen': sfx.card(); break;
         case 'cards': spawn.push({ to: 'player', text: `+${f.amount} ${CARDS[f.card].en}`, kind: 'debuff' }); break;
         case 'echo': spawn.push({ to: 'player', text: 'Echo!', kind: 'buff' }); break;
         case 'conjure': spawn.push({ to: 'player', text: `+ ${CARDS[f.card].en}`, kind: 'buff' }); break;
         case 'act': nextMarks[f.from] = 'act'; break;
         case 'play': {
-          setGhost({ key: `${c.id}-${f.id}`, inst: { id: f.card, up: f.up }, empowered: f.empowered }); sfx.card();
+          const flight = flightRef.current?.uid === f.uid ? flightRef.current : null;
+          flightRef.current = null;
+          setGhost({ key: `${c.id}-${f.id}`, inst: { id: f.card, up: f.up }, empowered: f.empowered, flight }); sfx.card();
           const guardLeft = c.hand.some(uid => c.cards[uid].id === 'guard');
           setCoach(step => (step === 'play' ? (guardLeft && f.card !== 'guard' ? 'ward' : 'end') : step === 'ward' && CARDS[f.card].type === 'skill' ? 'end' : step));
           break;
@@ -235,7 +291,30 @@ export default function CombatScreen({ run, dispatch, settings, pool, speak, pot
       setMarks(previous => ({ ...previous, ...nextMarks }));
       later(() => setMarks(previous => { const next = { ...previous }; Object.keys(nextMarks).forEach(key => { if (next[key] === nextMarks[key]) delete next[key]; }); return next; }), 460);
     }
+    if (bursts.length) {
+      const items = bursts.map(item => ({ ...item, key: `i${++floaterSeq}` }));
+      setImpacts(list => [...list, ...items].slice(-24));
+      later(() => setImpacts(list => list.filter(item => !items.includes(item))), 900);
+    }
+    if (quake) {
+      setShake(quake);
+      later(() => setShake(0), 420);
+    }
   }, [c.id, c.fxSeq, c.fx, later]);
+
+  // Remember where a played card starts and where it lands, for the fly animation.
+  const rememberFlight = useCallback((uid, targetUid) => {
+    const field = fieldRef.current?.closest('.ea-combat')?.getBoundingClientRect();
+    const from = document.querySelector(`[data-hand-uid="${uid}"]`)?.getBoundingClientRect();
+    if (!field || !from) { flightRef.current = null; return; }
+    const card = CARDS[c.cards[uid].id];
+    const goal = targetUid ? document.querySelector(`[data-enemy="${targetUid}"] .ea-enemy-body`)
+      : card.type === 'attack' ? document.querySelector('.ea-enemies')
+      : document.querySelector('.ea-hero-body');
+    const to = goal?.getBoundingClientRect();
+    const center = rect => ({ x: rect.left + rect.width / 2 - field.left, y: rect.top + rect.height / 2 - field.top });
+    flightRef.current = { uid, from: center(from), to: to ? center(to) : { x: field.width / 2, y: field.height * 0.4 } };
+  }, [c.cards]);
 
   useEffect(() => { if (!banner) return undefined; const t = window.setTimeout(() => setBanner(null), 1150); return () => window.clearTimeout(t); }, [banner]);
   useEffect(() => { if (!ghost) return undefined; const t = window.setTimeout(() => setGhost(null), 700); return () => window.clearTimeout(t); }, [ghost]);
@@ -296,18 +375,20 @@ export default function CombatScreen({ run, dispatch, settings, pool, speak, pot
       setChant({ uid, target, card: inst.id, q });
       return;
     }
+    rememberFlight(uid, target);
     dispatch({ type: 'PLAY_CARD', uid, target });
-  }, [c, run, settings.chant, pool, dispatch]);
+  }, [c, run, settings.chant, pool, dispatch, rememberFlight]);
 
   const finishChant = useCallback(ok => {
     setChant(current => {
       if (current) {
+        rememberFlight(current.uid, current.target);
         dispatch({ type: 'PLAY_CARD', uid: current.uid, target: current.target, chant: ok === null ? null : { word: current.q.word, meaning: current.q.meaning, ok } });
         if (ok !== null) onWord?.(current.q.word, ok);
       }
       return null;
     });
-  }, [dispatch, onWord]);
+  }, [dispatch, onWord, rememberFlight]);
 
   const selectCard = useCallback(uid => {
     if (c.phase !== 'player' || chant) return;
@@ -324,12 +405,18 @@ export default function CombatScreen({ run, dispatch, settings, pool, speak, pot
     setInspect(previous => (previous === uid ? null : uid));
   };
 
+  // The hand sweeps toward the discard pile before the enemy phase starts.
   const endTurn = useCallback(() => {
-    if (c.phase !== 'player' || chant) return;
+    if (c.phase !== 'player' || chant || c.choice || discarding) return;
     setSelected(null); setInspect(null); setPotionAim(null);
-    setBanner({ key: `e${Date.now()}`, en: 'Enemy Turn', zh: '敵人的回合' });
-    dispatch({ type: 'END_TURN' });
-  }, [c.phase, chant, dispatch, setPotionAim]);
+    const sweep = c.hand.some(uid => !CARDS[c.cards[uid].id].keep);
+    setDiscarding(sweep);
+    later(() => {
+      setDiscarding(false);
+      setBanner({ key: `e${Date.now()}`, en: 'Enemy Turn', zh: '敵人的回合' });
+      dispatch({ type: 'END_TURN' });
+    }, sweep ? 300 : 0);
+  }, [c.phase, c.choice, c.hand, c.cards, chant, discarding, dispatch, setPotionAim, later]);
 
   useEffect(() => {
     const onKey = event => {
@@ -384,11 +471,11 @@ export default function CombatScreen({ run, dispatch, settings, pool, speak, pot
 
   const coachAt = coach && coach !== 'wait' && !chant ? COACH[coach].at : null;
   return <section className={`ea-combat act-${run.act} ${targeting ? 'is-targeting' : ''} ${coachAt ? `coach-${coachAt}` : ''}`} aria-label="戰鬥">
-    <div className="ea-field">
+    <div className={`ea-field ${shake ? `is-shaking shake-${shake}` : ''}`} ref={fieldRef}>
       <Backdrop act={run.act}/>
       <div className="ea-stage">
         <div className={`ea-hero ${marks.player ? `is-${marks.player}` : ''}`}>
-          <div className="ea-hero-body"><HeroArt/><Floaters items={floaters.filter(item => item.to === 'player')}/></div>
+          <div className="ea-hero-body"><HeroArt/><Impacts items={impacts.filter(item => item.to === 'player')}/><Floaters items={floaters.filter(item => item.to === 'player')}/></div>
           <div className="ea-unit-info">
             <div className="ea-unit-name"><b lang="en">The Scribe</b><span>詞術師</span></div>
             <HpBar hp={run.hero.hp} max={run.hero.maxHp} ward={c.player.ward}/>
@@ -397,11 +484,11 @@ export default function CombatScreen({ run, dispatch, settings, pool, speak, pot
           </div>
         </div>
         <div className={`ea-enemies count-${c.enemies.length}`}>
-          {c.enemies.map(enemy => <Enemy key={enemy.uid} run={run} enemy={enemy} targetable={targeting && !enemy.dead} over={drag?.over === enemy.uid} mark={marks[enemy.uid]} floaters={floaters.filter(item => item.to === enemy.uid)} onClick={clickEnemy}/>)}
+          {c.enemies.map(enemy => <Enemy key={enemy.uid} run={run} enemy={enemy} targetable={targeting && !enemy.dead} over={drag?.over === enemy.uid} mark={marks[enemy.uid]} floaters={floaters.filter(item => item.to === enemy.uid)} impacts={impacts.filter(item => item.to === enemy.uid)} onClick={clickEnemy}/>)}
         </div>
       </div>
       {banner && <div key={banner.key} className="ea-banner"><b lang="en">{banner.en}</b><span>{banner.zh}</span></div>}
-      {ghost && <div key={ghost.key} className={`ea-ghost ${ghost.empowered ? 'is-empowered' : ''}`} aria-hidden="true"><CardFace inst={ghost.inst}/></div>}
+      {ghost && !ghost.flight && <div key={ghost.key} className={`ea-ghost ${ghost.empowered ? 'is-empowered' : ''}`} aria-hidden="true"><CardFace inst={ghost.inst}/></div>}
       {notice && <div key={notice.key} className="ea-notice" role="status">{notice.text}</div>}
       {!chant && focus && c.cards[focus] && <aside className="ea-keyword-panel" aria-live="polite"><KeywordList inst={c.cards[focus]}/>{selected === focus && <p className="ea-play-hint">{CARDS[c.cards[focus].id].target === 'enemy' && living(c).length > 1 ? '點選敵人，或把牌拖到敵人身上' : '再點一次打出，或向上拖曳'}</p>}</aside>}
       {coach && coach !== 'wait' && !chant && c.phase === 'player' && <Coach step={coach} multi={living(c).length > 1} onSkip={finishCoach} onNext={() => (coach === 'after' ? finishCoach() : setCoach(COACH_NEXT[coach] || coach))}/>}
@@ -411,10 +498,10 @@ export default function CombatScreen({ run, dispatch, settings, pool, speak, pot
 
     <div className="ea-tray">
       <div className="ea-tray-side">
-        <div className={`ea-energy ${c.energy === 0 ? 'is-empty' : ''}`} aria-label={`能量 ${c.energy} / ${c.maxEnergy}`}><b>{c.energy}</b><small>/{c.maxEnergy}</small><i lang="en">Energy</i></div>
+        <div className={`ea-energy ${c.energy === 0 ? 'is-empty' : ''}`} aria-label={`能量 ${c.energy} / ${c.maxEnergy}`}><b key={c.energy}>{c.energy}</b><small>/{c.maxEnergy}</small><i lang="en">Energy</i></div>
         <button type="button" className="ea-pile" onClick={() => onShowPile('draw')} aria-label={`抽牌堆 ${c.draw.length} 張`}><Glyph name="deck" size={22}/><b>{c.draw.length}</b><small>抽牌堆</small></button>
       </div>
-      <div className="ea-hand" ref={handRef} style={{ '--card-w': `${cardW}px` }} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={() => { dragRef.current = null; setDrag(null); }}>
+      <div className={`ea-hand ${discarding ? 'is-discarding' : ''}`} ref={handRef} style={{ '--card-w': `${cardW}px` }} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={() => { dragRef.current = null; setDrag(null); }}>
         {c.hand.map((uid, index) => {
           const inst = c.cards[uid];
           const offset = index - (n - 1) / 2;
@@ -431,8 +518,17 @@ export default function CombatScreen({ run, dispatch, settings, pool, speak, pot
           };
           const cardCtx = isDrag && aimedEnemy ? { ...ctx, exposed: aimedEnemy.st.exposed } : ctx;
           return <button type="button" key={uid}
-            className={`ea-hand-card ${lifted ? 'is-selected' : ''} ${isDrag ? 'is-dragging' : ''} ${isDrag && drag.zone && CARDS[inst.id].target !== 'enemy' ? 'is-armed' : ''}`}
-            style={style}
+            className={`ea-hand-card ${lifted ? 'is-selected' : ''} ${isDrag ? 'is-dragging' : ''} ${isDrag && drag.zone && CARDS[inst.id].target !== 'enemy' ? 'is-armed' : ''} ${CARDS[inst.id].keep ? 'is-kept' : ''}`}
+            style={{ ...style, '--i': index }}
+            data-hand-uid={uid}
+            onMouseMove={event => {
+              const rect = event.currentTarget.getBoundingClientRect();
+              const px = (event.clientX - rect.left) / rect.width, py = (event.clientY - rect.top) / rect.height;
+              event.currentTarget.style.setProperty('--tx', `${(px - 0.5) * 16}deg`);
+              event.currentTarget.style.setProperty('--ty', `${(0.5 - py) * 12}deg`);
+              event.currentTarget.style.setProperty('--gx', `${px * 100}%`);
+              event.currentTarget.style.setProperty('--gy', `${py * 100}%`);
+            }}
             aria-label={`${CARDS[inst.id].en}${inst.up ? '+' : ''} ${CARDS[inst.id].zh}，費用 ${cardCost(run, inst) ?? '無'}${playable ? '' : '，現在無法打出'}${selected === uid ? '，再按一次打出' : ''}`}
             aria-pressed={selected === uid}
             onClick={() => { if (!suppressClick.current) selectCard(uid); }}
@@ -446,13 +542,16 @@ export default function CombatScreen({ run, dispatch, settings, pool, speak, pot
       </div>
       <div className="ea-tray-side is-right">
         <button type="button" className="ea-pile" onClick={() => onShowPile('discard')} aria-label={`棄牌堆 ${c.discard.length} 張`}><Glyph name="deck" size={22}/><b>{c.discard.length}</b><small>棄牌堆</small></button>
-        <button type="button" className={`ea-end-turn ${c.phase === 'player' && !c.hand.some(uid => canPlay(run, uid)) ? 'is-ready' : ''}`} disabled={c.phase !== 'player' || Boolean(chant)} onClick={endTurn}>
+        <button type="button" className={`ea-end-turn ${c.phase === 'player' && !c.hand.some(uid => canPlay(run, uid)) ? 'is-ready' : ''}`} disabled={c.phase !== 'player' || Boolean(chant) || Boolean(c.choice)} onClick={endTurn}>
           <span lang="en">{c.phase === 'enemy' ? 'Enemy…' : 'End Turn'}</span><small>{c.phase === 'enemy' ? '敵人行動中' : '結束回合 (E)'}</small>
         </button>
       </div>
 
     </div>
+      {ghost?.flight && <div key={ghost.key} className={`ea-ghost is-flying ${ghost.empowered ? 'is-empowered' : ''}`} aria-hidden="true"
+        style={{ '--x0': `${ghost.flight.from.x}px`, '--y0': `${ghost.flight.from.y}px`, '--x1': `${ghost.flight.to.x}px`, '--y1': `${ghost.flight.to.y}px` }}><CardFace inst={ghost.inst}/></div>}
       {chant && <ChantOverlay chant={chant} onDone={finishChant} speak={speak} voice={settings.voice}/>}
+      {c.choice && c.phase === 'player' && !chant && <ChoicePanel run={run} onChoose={uid => dispatch({ type: 'CHOOSE_CARD', uid })}/>}
       {showEnd && (c.phase === 'won'
         ? <div className="ea-combat-end is-won"><span lang="en">VICTORY</span><h2>戰鬥勝利</h2><p>寂靜退散了，戰利品在等著你。</p><button type="button" className="ea-btn is-gold" autoFocus onClick={() => dispatch({ type: 'FINISH_COMBAT' })}>收集戰利品 →</button></div>
         : <div className="ea-combat-end is-lost"><span lang="en">THE SILENCE WINS</span><h2>你倒下了</h2><p>但每一次遠征，都讓下一次更強。</p><button type="button" className="ea-btn" autoFocus onClick={() => dispatch({ type: 'FINISH_COMBAT' })}>查看這趟旅程</button></div>)}

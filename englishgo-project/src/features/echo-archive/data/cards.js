@@ -66,6 +66,7 @@ export const POWER_TEXT = {
   thousandCuts: { en: 'Thousand Cuts', zh: '千刃', text: v => [`每打出一張牌，對所有敵人造成 `, num(v), ` 傷害`] },
   archmage: { en: 'Archmage', zh: '大法師', kw: 'chant', text: () => ['你的 ', kw('chant'), ' 牌會打出兩次'] },
   livingInk: { en: 'Living Ink', zh: '活墨', kw: 'statusCard', text: () => [kw('statusCard'), ' 費用變成 0 且可以打出：打出時消逝並抽 1 張牌'] },
+  library: { en: 'Grand Library', zh: '大圖書館', kw: 'conjure', text: v => ['回合開始時 ', kw('conjure'), ' ', num(v), ' 張隨機技能牌'] },
 };
 
 export const CARDS = {
@@ -164,6 +165,23 @@ export const CARDS = {
   quillDance: { en: 'Quill Dance', zh: '筆舞', type: 'attack', rarity: 'rare', cost: 1, target: 'enemy', glyph: 'quill', arch: 'ink', pack: true, fx: [{ op: 'damage', v: [4, 6] }, { op: 'conjure', kind: 'attack', v: 1 }] },
   livingInk: { en: 'Living Ink', zh: '活墨', type: 'power', rarity: 'mythic', cost: [1, 0], target: 'self', glyph: 'livingInk', arch: 'ink', pack: true, fx: [{ op: 'power', id: 'livingInk', v: 1, set: true }] },
 
+  // ── Wave 2: choices and new tricks (base collection) ──
+  recall: { en: 'Recall', zh: '回想', type: 'skill', rarity: 'uncommon', cost: [1, 0], target: 'self', glyph: 'recall', arch: 'combo', fx: [{ op: 'choose', from: 'discard', action: 'toHand' }] },
+  sift: { en: 'Sift', zh: '篩選', type: 'skill', rarity: 'common', cost: 0, target: 'self', glyph: 'sift', arch: 'combo', fx: [{ op: 'draw', v: [2, 3] }, { op: 'choose', from: 'hand', action: 'discard' }] },
+  foresee: { en: 'Foresee', zh: '預見', type: 'skill', rarity: 'uncommon', cost: 1, target: 'self', glyph: 'crystal', arch: 'combo', fx: [{ op: 'choose', from: 'top', n: [3, 5], action: 'toHand' }, { op: 'ward', v: [3, 5] }] },
+  whetblade: { en: 'Whetblade', zh: '淬鍊', type: 'skill', rarity: 'uncommon', cost: 1, target: 'self', glyph: 'whetblade', arch: 'blade', fx: [{ op: 'upgradeHand', all: [false, true] }, { op: 'ward', v: 4 }] },
+  leech: { en: 'Leech', zh: '吸取', type: 'attack', rarity: 'common', cost: 1, target: 'enemy', glyph: 'leech', arch: 'blade', fx: [{ op: 'damage', v: [7, 9] }, { op: 'heal', v: [2, 3] }] },
+  thunderclap: { en: 'Thunderclap', zh: '雷擊', type: 'attack', rarity: 'common', cost: 1, target: 'all', glyph: 'thunderclap', arch: 'blade', fx: [{ op: 'damage', v: [4, 6], all: true }, { op: 'debuff', st: 'weak', v: 1, all: true }] },
+  patience: { en: 'Patience', zh: '沉著', type: 'skill', rarity: 'uncommon', cost: 1, target: 'self', glyph: 'patience', arch: 'ward', keep: true, fx: [{ op: 'ward', v: [6, 8], perKept: [3, 4] }] },
+  wordflood: { en: 'Word Flood', zh: '文思泉湧', type: 'skill', rarity: 'rare', cost: 'X', target: 'self', glyph: 'wordflood', arch: 'combo', fx: [{ op: 'drawX', v: [1, 2] }] },
+  // ── Wave 2: Archive Gacha ──
+  offering: { en: 'Offering', zh: '獻祭', type: 'skill', rarity: 'common', cost: 0, target: 'self', glyph: 'offering', arch: 'ink', pack: true, fx: [{ op: 'choose', from: 'hand', action: 'fade', energy: [2, 3] }] },
+  paperCut: { en: 'Paper Cut', zh: '紙割', type: 'attack', rarity: 'common', cost: 0, target: 'enemy', glyph: 'paperCut', arch: 'combo', pack: true, fx: [{ op: 'damage', v: [2, 3], hits: 2, perCombo: 1 }] },
+  emberRain: { en: 'Ember Rain', zh: '餘燼雨', type: 'attack', rarity: 'uncommon', cost: 1, target: 'all', glyph: 'emberRain', arch: 'burn', pack: true, fx: [{ op: 'damage', v: 3, hits: [4, 5], random: true, burnPerHit: 1 }] },
+  bookwall: { en: 'Book Wall', zh: '書牆', type: 'skill', rarity: 'uncommon', cost: 2, target: 'self', glyph: 'bookwall', arch: 'ward', pack: true, fx: [{ op: 'wardPerHand', v: [3, 4] }] },
+  palimpsest: { en: 'Palimpsest', zh: '重寫', type: 'skill', rarity: 'rare', cost: 1, target: 'self', glyph: 'palimpsest', arch: 'chant', pack: true, fx: [{ op: 'choose', from: 'hand', action: 'inscribe', v: [3, 4] }], fade: true },
+  grandLibrary: { en: 'Grand Library', zh: '大圖書館', type: 'power', rarity: 'mythic', cost: [2, 1], target: 'self', glyph: 'library', arch: 'ink', pack: true, fx: [{ op: 'power', id: 'library', v: 1 }] },
+
   // Statuses and curses
   smudge: { en: 'Smudge', zh: '墨漬', type: 'status', rarity: 'special', cost: null, target: 'none', glyph: 'blot', fx: [], fleeting: true },
   dust: { en: 'Dust', zh: '塵埃', type: 'status', rarity: 'special', cost: null, target: 'none', glyph: 'dust', fx: [] },
@@ -231,14 +249,18 @@ function effectText(effect, up, ctx) {
       const hits = effect.hits === 'X' ? 'X' : val(effect.hits || 1, up);
       const times = hits === 'X' ? [' X 次'] : hits > 1 ? [` ×${hits}`] : [];
       if (effect.comboHits) return ['隨機對敵人造成 ', shown, ' 傷害，次數等於本回合已打出的牌數 +1（', kw('combo'), '）'];
-      if (effect.random) return ['隨機對敵人造成 ', shown, ' 傷害', ...times];
+      if (effect.random) return ['隨機對敵人造成 ', shown, ' 傷害', ...times, ...(effect.burnPerHit ? ['，每次命中施加 ', num(effect.burnPerHit), ' 層 ', kw('burn')] : [])];
       let base = effect.all ? ['對所有敵人造成 ', shown, ' 傷害', ...times] : ['造成 ', shown, ' 傷害', ...times];
       if (effect.perCombo) base = [...base, '。', kw('combo'), '：本回合每打出過 1 張牌，傷害 +', num(val(effect.perCombo, up))];
       if (effect.perChant) base = [...base, '。本場每成功 ', kw('chant'), ' 1 次，傷害 +', num(val(effect.perChant, up))];
       return effect.onKill ? [...base, '。若擊倒目標，最大生命 +', num(val(effect.onKill, up))] : base;
     }
     case 'damageWard': return [effect.all ? '對所有敵人造成等同你 ' : '造成等同你目前 ', kw('ward'), ' 的傷害'];
-    case 'ward': return ['獲得 ', toned(previewWard(v + bonus, ctx), v), ' ', kw('ward')];
+    case 'ward': {
+      const kept = effect.perKept ? val(effect.perKept, up) * (ctx.kept || 0) : 0;
+      const base = ['獲得 ', toned(previewWard(v + bonus + kept, ctx), v), ' ', kw('ward')];
+      return effect.perKept ? [...base, '。每在手中保留過 1 回合，再 +', num(val(effect.perKept, up))] : base;
+    }
     case 'detonate': return ['造成等同目標 ', kw('burn'), ' ×', num(v), ' 的傷害，並移除它的 ', kw('burn')];
     case 'spreadBurn': return ['把目標的 ', kw('burn'), ' 複製給其他所有敵人'];
     case 'burnTickAll': return ['所有敵人立刻受到等同自身 ', kw('burn'), ' 的傷害'];
@@ -248,6 +270,18 @@ function effectText(effect, up, ctx) {
     case 'addStatus': return ['把 ', num(v), ' 張 Smudge 放進你的棄牌堆'];
     case 'wardPerStatus': return ['獲得 ', toned(previewWard(v + val(effect.per, up) * (ctx.statuses || 0), ctx), v), ' ', kw('ward'), '，牌組中每有 1 張 ', kw('statusCard'), ' 再 +', num(val(effect.per, up))];
     case 'inscribe': return [kw('inscribe'), ' ', num(v), '：這張牌的數值永久 +', num(v)];
+    case 'choose': {
+      const n = val(effect.n, up);
+      const what = { toHand: '加入手中', discard: '丟進棄牌堆', fade: '消逝', inscribe: '' }[effect.action];
+      if (effect.from === 'discard') return ['從棄牌堆挑 1 張牌', what];
+      if (effect.from === 'top') return ['查看抽牌堆頂 ', num(n), ' 張，挑 1 張', what, '，其餘放進棄牌堆'];
+      if (effect.action === 'fade') return ['挑手中 1 張牌', what, '，獲得 ', num(val(effect.energy, up)), ' 點能量'];
+      if (effect.action === 'inscribe') return ['挑手中 1 張牌 ', kw('inscribe'), ' ', num(v), '（永久 +', num(v), '）'];
+      return ['挑手中 1 張牌', what];
+    }
+    case 'upgradeHand': return val(effect.all, up) ? ['本場戰鬥中，升級手中所有的牌'] : ['本場戰鬥中，升級手中 1 張牌（自選）'];
+    case 'drawX': return ['抽 X+', num(v), ' 張牌'];
+    case 'wardPerHand': return ['手中每有 1 張牌，獲得 ', toned(previewWard(v, ctx), v), ' ', kw('ward')];
     case 'draw': return [`抽 `, num(v), ` 張牌`];
     case 'energy': return ['獲得 ', num(v), ' 點能量'];
     case 'debuff': return [effect.all ? '對所有敵人施加 ' : '施加 ', num(v), ' 層 ', kw(effect.st)];
@@ -277,7 +311,7 @@ function joinSentences(parts) {
 export function describeCard(inst, ctx = {}) {
   const card = CARDS[inst.id], up = Boolean(inst.up);
   const lines = [];
-  ctx = { ...ctx, bonus: inst.bonus || 0 };
+  ctx = { ...ctx, bonus: inst.bonus || 0, kept: inst.kept || 0 };
   if (card.cost === null && !ctx.livingInk) lines.push([kw('unplayable'), '。']);
   if (card.cost === null && ctx.livingInk) lines.push(['（', kw('statusCard'), '）打出時消逝並抽 1 張牌。']);
   if (card.keep) lines.push([kw('keep'), '。']);
