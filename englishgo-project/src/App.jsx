@@ -3354,7 +3354,7 @@ function ColorIslandM(props){return <Suspense fallback={<ModuleLoading label="�
 const LazyWordDash=lazy(()=>import("./features/WordDash.jsx"));
 function WordDashM(props){return <Suspense fallback={<ModuleLoading label="正在搭建 3D 賽道…"/>}><LazyWordDash key={props.lv} {...props} deps={{V,speak:speakWebSpeech,stopSpeech,playSound,loadExtraWords,fetchCloudVocab}}/></Suspense>}
 const LazyEchoArchive=lazy(()=>import("./features/echo-archive/EchoArchive.jsx"));
-function EchoArchiveM(props){return <Suspense fallback={<ModuleLoading label="正在點亮書庫的提燈…"/>}><LazyEchoArchive key={props.lv} {...props} deps={{V,speak:speakWebSpeech,stopSpeech,loadExtraWords,fetchCloudVocab}}/></Suspense>}
+function EchoArchiveM(props){return <Suspense fallback={<ModuleLoading label="正在點亮書庫的提燈…"/>}><LazyEchoArchive key={props.lv} {...props} deps={{V,speak,stopSpeech,loadExtraWords,fetchCloudVocab}}/></Suspense>}
 const LazyArcadeGames=lazy(()=>import("./features/ArcadeGames.jsx"));
 function ArcadeM({game,...props}){
   const deps={V,SCRAM,LV,loadExtraWords,fetchCloudVocab,speak,stopSpeech,playSound,Hdr};
