@@ -398,7 +398,74 @@ const ART = {
       {['A', 'e', 's', 'W', 'o', 'r'].map((ch, i) => <text key={ch} x={[44, 156, 52, 146, 72, 130][i]} y={[64, 72, 152, 142, 34, 38][i]} fontSize={[16, 14, 12, 15, 11, 12][i]} fontFamily="Georgia,serif" fill="#6b5fa8" opacity={0.3 + (i % 3) * 0.15}>{ch}</text>)}
     </g>
   </>,
+
+  // Second bosses: the Inkwell Kraken and its arms, the clockwork twins, the Whisper Thief.
+  kraken: id => <>
+    <Defs id={id} from="#3a6a8e" to="#0f1e33" glow={5}/>
+    <Shadow w={80} y={192}/>
+    <path d="M64 134C38 130 18 108 28 84C36 66 56 70 54 86C52 98 40 100 42 110C44 120 58 122 68 118Z" fill={`url(#${id('body')})`}/>
+    <path d="M136 134C162 130 182 108 172 84C164 66 144 70 146 86C148 98 160 100 158 110C156 120 142 122 132 118Z" fill={`url(#${id('body')})`}/>
+    {[[44, 104], [36, 90], [156, 104], [164, 90]].map(([x, y]) => <circle key={`${x}${y}`} cx={x} cy={y} r="3.2" fill="#9fd8f0" opacity=".5"/>)}
+    <g className="ea-float">
+      <path d="M62 134C54 84 74 38 100 38S146 84 138 134Z" fill={`url(#${id('body')})`}/>
+      <path d="M62 134C54 84 74 38 100 38S146 84 138 134" fill={`url(#${id('sheen')})`}/>
+      <circle cx="80" cy="62" r="5" fill="#9fd8f0" opacity=".25"/><circle cx="122" cy="70" r="7" fill="#9fd8f0" opacity=".2"/><circle cx="104" cy="52" r="3.5" fill="#9fd8f0" opacity=".3"/>
+      <Eyes x1={84} x2={116} y={96} r={10} color="#7ff0ff" id={id('glow')}/>
+      <path d="M86 120Q100 128 114 120" stroke="#7ff0ff" strokeOpacity=".6" strokeWidth="3" fill="none" strokeLinecap="round"/>
+    </g>
+    <path d="M40 190L52 140H148L160 190Z" fill="#1a1f33" stroke="#e8c47a" strokeWidth="3"/>
+    <path d="M58 140V130H142V140Z" fill="#2a3150" stroke="#e8c47a" strokeWidth="3"/>
+    <path d="M56 162H144" stroke="#e8c47a" strokeOpacity=".35" strokeWidth="2"/>
+    <path d="M70 172C72 180 84 182 86 174" stroke="#3a6a8e" strokeWidth="4" fill="none" strokeLinecap="round"/>
+  </>,
+  tentacle: id => <>
+    <Defs id={id} from="#3a6a8e" to="#0f1e33"/>
+    <Shadow w={46}/>
+    <ellipse cx="100" cy="186" rx="48" ry="9" fill="#0c1426"/>
+    <path d="M82 186C78 150 70 118 90 90C106 68 132 62 136 80C140 94 122 98 118 110C112 126 122 152 120 186Z" fill={`url(#${id('body')})`}/>
+    <path d="M82 186C78 150 70 118 90 90C106 68 132 62 136 80" fill={`url(#${id('sheen')})`}/>
+    {[[116, 118], [112, 138], [114, 158], [118, 176]].map(([x, y]) => <circle key={y} cx={x} cy={y} r="4" fill="#9fd8f0" opacity=".45"/>)}
+    <path d="M136 80C144 70 140 58 128 60" stroke="#2a4a6a" strokeWidth="6" fill="none" strokeLinecap="round"/>
+  </>,
+  twinTick: id => clockTwin(id, { face: '#dbe9ff', eye: '#3f9bff', hands: 'M100 104L100 74M100 104L120 114', cheek: '#9cc7ff' }),
+  twinTock: id => clockTwin(id, { face: '#ffe1d6', eye: '#ff5a4a', hands: 'M100 104L100 134M100 104L78 92', cheek: '#ffb0a0' }),
+  thief: id => <>
+    <Defs id={id} from="#3b2f5a" to="#0d0a1a" glow={4}/>
+    <Shadow w={72}/>
+    <path d="M32 170C24 152 36 136 52 138C66 138 72 154 64 170Z" fill="#6b5a3a"/>
+    <path d="M42 138C44 128 52 126 56 134" stroke="#3b2f1a" strokeWidth="3" fill="none"/>
+    <path d="M40 190C46 140 58 96 74 70C82 52 92 40 100 38C108 40 118 52 126 70C142 96 154 140 160 190Z" fill={`url(#${id('body')})`}/>
+    <path d="M74 70C82 52 92 40 100 38C108 40 118 52 126 70" fill={`url(#${id('sheen')})`}/>
+    <path d="M80 94C80 72 90 60 100 60S120 72 120 94C114 102 86 102 80 94Z" fill="#05040b"/>
+    <Eyes x1={91} x2={109} y={84} r={5} color="#ffd36b" id={id('glow')}/>
+    <path d="M82 102C92 108 108 108 118 102" stroke="#c64b5a" strokeWidth="6" fill="none" strokeLinecap="round"/>
+    <path d="M126 114C138 122 146 130 150 132" stroke="#2a2142" strokeWidth="12" strokeLinecap="round" fill="none"/>
+    <path d="M150 128L178 92" stroke="#dfe6f2" strokeWidth="5" strokeLinecap="round"/><path d="M144 136L156 124" stroke="#6b4a2a" strokeWidth="7" strokeLinecap="round"/>
+    <path d="M70 120C60 128 56 140 58 146" stroke="#2a2142" strokeWidth="11" strokeLinecap="round" fill="none"/>
+    {['a', 'W', 'o', 'r', 'd'].map((ch, i) => <text key={ch} x={[34, 52, 24, 160, 168][i]} y={[118, 104, 134, 62, 46][i]} fontSize={[15, 13, 11, 14, 11][i]} fontFamily="Georgia,serif" fill="#ffd36b" opacity={0.45 + (i % 3) * 0.15}>{ch}</text>)}
+  </>,
 };
+
+// Tick and Tock share one brass body with a different face.
+function clockTwin(id, { face, eye, hands, cheek }) {
+  return <>
+    <Defs id={id} from="#e2bd72" to="#7a5520"/>
+    <Shadow w={58}/>
+    <path d="M80 158L70 188M120 158L130 188" stroke="#5a3d18" strokeWidth="9" strokeLinecap="round"/>
+    <path d="M100 44V28M86 20H114M86 14C86 4 98 4 98 14M102 14C102 4 114 4 114 14" stroke="#c9a04e" strokeWidth="5" fill="none" strokeLinecap="round"/>
+    <g className="ea-float">
+      <circle cx="100" cy="104" r="60" fill={`url(#${id('body')})`}/>
+      <circle cx="100" cy="104" r="60" fill={`url(#${id('sheen')})`}/>
+      <circle cx="100" cy="104" r="60" fill="none" stroke="#fff1cc" strokeOpacity=".5" strokeWidth="3"/>
+      <circle cx="100" cy="104" r="44" fill={face}/>
+      {Array.from({ length: 12 }, (_, i) => { const a = (i / 12) * Math.PI * 2; return <path key={i} d={`M${100 + Math.sin(a) * 38} ${104 - Math.cos(a) * 38}L${100 + Math.sin(a) * 43} ${104 - Math.cos(a) * 43}`} stroke="#5a3d18" strokeWidth={i % 3 ? 2 : 4}/>; })}
+      <Eyes x1={84} x2={116} y={96} r={7} color={eye} id={id('glow')}/>
+      <circle cx="74" cy="114" r="5" fill={cheek} opacity=".6"/><circle cx="126" cy="114" r="5" fill={cheek} opacity=".6"/>
+      <path d={hands} stroke="#1a1208" strokeWidth="4" strokeLinecap="round" opacity=".55"/>
+      <circle cx="100" cy="104" r="4" fill="#1a1208"/>
+    </g>
+  </>;
+}
 
 export const ENEMY_ART = Object.keys(ART);
 

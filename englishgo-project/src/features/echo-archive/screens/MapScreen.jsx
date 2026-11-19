@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
-import { ACTS, ENCOUNTERS, ENEMIES } from '../data/enemies.js';
+import { ACTS, ENEMIES, bossName, bossOf } from '../data/enemies.js';
 import { MAP_COLS, MAP_ROWS, ROOM_TYPES, availableNodes } from '../engine/map.js';
+import { actBoss } from '../engine/engine.js';
 import Glyph from '../components/Glyph.jsx';
 import { EnemyArt } from '../components/Creatures.jsx';
 import { sfx } from '../sound.js';
@@ -20,7 +21,8 @@ export default function MapScreen({ run, dispatch }) {
   const traveled = new Set(run.path.slice(1).map((id, index) => `${run.path[index]}>${id}`));
   const visited = new Set(run.path);
   const scroller = useRef(null);
-  const boss = ENEMIES[ENCOUNTERS[run.act].boss[0]];
+  const encounter = actBoss(run);
+  const boss = { ...bossName(encounter), art: ENEMIES[bossOf(encounter)].art };
   const actInfo = ACTS[run.act];
 
   useEffect(() => {

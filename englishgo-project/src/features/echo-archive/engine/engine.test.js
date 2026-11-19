@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ARCHIVE_CARDS, CARDS, describeCard } from '../data/cards.js';
-import { ENEMIES } from '../data/enemies.js';
+import { ENCOUNTERS, ENEMIES, bossName, bossOf } from '../data/enemies.js';
+import { ENEMY_ART } from '../components/Creatures.jsx';
 import { claimWelcome, emptyCollection, pullArchive, shardsForRun } from '../archive.js';
 import { canUpgrade, cardOptions, createRun, canPlay, eventChoices, finishEnemyPhase, living, moveBase, restHealAmount, runReducer } from './engine.js';
 import { BASE_MODS, SILENCE_LEVELS, buildMods, dailyBonus, dailyChallenge, dateKey, previousDateKey } from '../data/challenges.js';
@@ -8,7 +9,7 @@ import { HISTORY_LIMIT, addRecord, recordDeck, runRecord } from '../history.js';
 import { HEROES, heroPool, heroUnlocked, inHeroPool } from '../data/heroes.js';
 import { RELICS } from '../data/relics.js';
 import { EVENTS } from '../data/events.js';
-import { SKIP_CARD_HP, cardCost, cardPool, deckFocus, hasAllKeys, intentOf, randomRelic } from './engine.js';
+import { SKIP_CARD_HP, actBoss, cardCost, cardPool, deckFocus, hasAllKeys, intentOf, randomRelic } from './engine.js';
 import { MAP_ROWS, TREASURE_ROW, availableNodes, generateMap } from './map.js';
 
 const act = (run, action) => runReducer(run, action);
@@ -1251,5 +1252,100 @@ describe('echo archive power cards', () => {
       steps++;
     }
     expect(['victory', 'defeat']).toContain(run.screen);
+  });
+});
+
+// ───────────── Wave 6: a second boss for each of the first three acts ─────────────
+const KRAKEN = ['tentacle', 'inkKraken', 'tentacle'];
+function bossFight(encounter, seed = 61) {
+  const run = toMap(seed);
+  run.map.boss = encounter;
+  run.pos = Object.values(run.map.nodes).find(node => node.next.includes('boss')).id;
+  return act(run, { type: 'MAP_SELECT', id: 'boss' });
+}
+const foe = (run, id) => run.combat.enemies.find(enemy => enemy.id === id && !enemy.dead);
+
+describe('echo archive second bosses', () => {
+  it('draws one of two bosses per act, fights the drawn one and keeps old saves on the first', () => {
+    const drawn = new Set();
+    for (let seed = 1; seed <= 40; seed++) drawn.add(bossOf(actBoss(createRun({ seed }))));
+    expect([...drawn].sort()).toEqual(['hollowTome', 'inkKraken']);
+    [1, 2, 3].forEach(act => expect(ENCOUNTERS[act].bosses).toHaveLength(2));
+    const old = createRun({ seed: 3 });
+    delete old.map.boss;
+    expect(actBoss(old)).toEqual(['hollowTome']);
+    const fight = bossFight(['whisperThief']);
+    expect(fight.combat.kind).toBe('boss');
+    expect(fight.combat.enemies.map(enemy => enemy.id)).toEqual(['whisperThief']);
+    expect(bossName(['tick', 'tock']).zh).toBe('滴答雙子');
+    expect(bossName(KRAKEN).zh).toBe('墨池巨怪');
+  });
+
+  it('regrows the Kraken\'s arms and drops them all when the head falls', () => {
+    let run = bossFight(KRAKEN);
+    expect(run.combat.enemies.map(enemy => enemy.id)).toEqual(KRAKEN);
+    run.combat.enemies[0].hp = 1;
+    foe(run, 'inkKraken').ward = 5;
+    run = play(run, 'slash', 'e0');
+    expect(run.combat.enemies[0].dead).toBe(true);
+    expect(foe(run, 'inkKraken').hp).toBe(foe(run, 'inkKraken').maxHp - ENEMIES.tentacle.severs);
+    run = act(run, { type: 'END_TURN' });
+    finishEnemyPhase(run);
+    expect(foe(run, 'inkKraken').move).toBe('regrow');
+    run = act(run, { type: 'END_TURN' });
+    finishEnemyPhase(run);
+    expect(living(run.combat).filter(enemy => enemy.id === 'tentacle')).toHaveLength(2);
+    const head = foe(run, 'inkKraken');
+    Object.assign(head, { hp: 1, ward: 0 });
+    run.combat.energy = 3;
+    run = play(run, 'slash', head.uid);
+    expect(living(run.combat)).toHaveLength(0);
+    expect(run.combat.phase).toBe('won');
+  });
+
+  it('enrages the surviving twin when Tick or Tock falls', () => {
+    let run = bossFight(['tick', 'tock']);
+    Object.assign(run.combat.enemies[0], { hp: 1, ward: 0 });
+    run = play(run, 'slash', 'e0');
+    expect(run.combat.enemies[0].dead).toBe(true);
+    expect(run.combat.enemies[1].st.might).toBe(4);
+    expect(run.combat.phase).toBe('player');
+  });
+
+  it('steals the player\'s Ward before the Whisper Thief strikes', () => {
+    let run = bossFight(['whisperThief']);
+    run.combat.enemies[0].move = 'pilfer';
+    run.combat.player.ward = 20;
+    const hit = intentOf(run, run.combat.enemies[0]).dmg;
+    const hp = run.hero.hp;
+    run = act(run, { type: 'END_TURN' });
+    run = act(run, { type: 'ENEMY_STEP' });
+    expect(run.combat.enemies[0].ward).toBe(10);
+    expect(hp - run.hero.hp).toBe(hit);
+  });
+
+  it('gives the new bosses working moves and art', () => {
+    ['tentacle', 'inkKraken', 'tick', 'tock', 'whisperThief'].forEach(id => {
+      const def = ENEMIES[id];
+      expect(ENEMY_ART, id).toContain(def.art);
+      for (let turn = 0; turn < 12; turn++) {
+        const enemy = { hp: turn % 2 ? def.hp[0] : 1, maxHp: def.hp[0], turns: turn, history: [], uses: {} };
+        expect(def.moves[def.next(enemy, (turn * 0.37) % 1, { allies: [] })], `${id} turn ${turn}`).toBeTruthy();
+      }
+    });
+  });
+
+  it.each([['kraken', KRAKEN], ['twins', ['tick', 'tock']], ['thief', ['whisperThief']]])('a bot fights the %s to the end without getting stuck', (name, encounter) => {
+    // A starter deck against a late boss: plenty of health so the fight runs to its end.
+    let run = bossFight(encounter, 70);
+    run.hero.hp = run.hero.maxHp = 3000;
+    let steps = 0;
+    while (run.screen === 'combat' && steps < 4000) {
+      const next = botStep(run, steps);
+      expect(next).not.toBe(run);
+      run = next;
+      steps++;
+    }
+    expect(run.screen).toBe('reward');
   });
 });

@@ -86,6 +86,27 @@ export const ENEMIES = {
     },
     next: enemy => (enemy.hp < enemy.maxHp / 2 && !enemy.uses?.lastChapter ? 'lastChapter' : ['torrent', 'erase', 'blank'][enemy.turns % 3]),
   },
+  // Second Act I boss: fight the arms or go for the head (the arms fall with it).
+  tentacle: {
+    en: 'Tentacle', zh: '觸手', hp: [16, 18], art: 'tentacle', minion: true, severs: 10,
+    moves: { slap: { en: 'Slap', zh: '拍擊', dmg: 4 }, grab: { en: 'Grab', zh: '纏捲', dmg: 2, weak: 1 } },
+    next: mix([['slap', 60], ['grab', 40]]),
+  },
+  inkKraken: {
+    en: 'Inkwell Kraken', zh: '墨池巨怪', hp: [100, 100], art: 'kraken', boss: true,
+    passive: '每打倒一條觸手，本體就受到 10 傷害；打倒本體，觸手會一起消失。觸手少於兩條時，牠會再長出新的。',
+    moves: {
+      inkJet: { en: 'Ink Jet', zh: '墨噴', dmg: 7, cards: [{ id: 'smudge', n: 1 }] },
+      murk: { en: 'Murk', zh: '墨霧', allyWard: 7, weak: 2 },
+      crush: { en: 'Crushing Arm', zh: '巨觸壓頂', dmg: 16 },
+      regrow: { en: 'Regrow', zh: '再生', summon: [{ id: 'tentacle', n: 1 }], ward: 6 },
+    },
+    next: (enemy, roll, { allies = [] } = {}) => {
+      const arms = allies.filter(ally => ally.id === 'tentacle').length;
+      if (enemy.turns > 0 && arms < 2 && enemy.history.at(-1) !== 'regrow') return 'regrow';
+      return ['inkJet', 'murk', 'crush'][enemy.turns % 3];
+    },
+  },
 
   // ── Act II · The Rusted Clockwork ──
   cogRat: {
@@ -159,6 +180,27 @@ export const ENEMIES = {
       midnight: { en: 'Midnight', zh: '午夜鐘響', dmg: 34 },
     },
     next: enemy => ['tick', 'tock', 'gears', 'midnight'][enemy.turns % 4],
+  },
+  // Second Act II boss: two clockwork twins; the survivor rages when one falls.
+  tick: {
+    en: 'Tick', zh: '滴', hp: [95, 95], art: 'twinTick', boss: true, title: { en: 'Tick & Tock', zh: '滴答雙子' },
+    avenge: { might: 4 }, passive: '雙子其中一個倒下時，另一個會暴怒（Might +4）。盡量讓兩個一起倒下！',
+    moves: {
+      rattle: { en: 'Rattle', zh: '連響', dmg: 4, hits: 3 },
+      quick: { en: 'Quickstep', zh: '急拍', dmg: 8, frail: 1 },
+      wind: { en: 'Wind Up', zh: '上鍊', ward: 10, might: 1 },
+    },
+    next: cycle('rattle', 'quick', 'wind'),
+  },
+  tock: {
+    en: 'Tock', zh: '答', hp: [105, 105], art: 'twinTock', boss: true,
+    avenge: { might: 4 }, passive: '雙子其中一個倒下時，另一個會暴怒（Might +4）。盡量讓兩個一起倒下！',
+    moves: {
+      brace: { en: 'Calibrate', zh: '校準', allyWard: 8 },
+      toll: { en: 'Heavy Toll', zh: '重鳴', dmg: 15 },
+      shake: { en: 'Shake', zh: '震盪', dmg: 7, exposed: 2 },
+    },
+    next: cycle('brace', 'toll', 'shake'),
   },
 
   // ── Act III · The Throne of Silence ──
@@ -237,6 +279,20 @@ export const ENEMIES = {
       ? ['crown', 'voidBeam', 'unwrite', 'devour'][enemy.turns % 4]
       : ['silence', 'voidBeam', 'devour', 'crown'][enemy.turns % 4]),
   },
+  // Second Act III boss: steals your Ward before it strikes, so read its intent.
+  whisperThief: {
+    en: 'The Whisper Thief', zh: '竊語者', hp: [270, 270], art: 'thief', boss: true,
+    passive: '「竊取」會先偷走你全部的 Ward（其中一半變成牠的），再攻擊你。看到這個意圖時，改用攻擊應對！',
+    moves: {
+      muffle: { en: 'Muffle', zh: '封口', weak: 2, frail: 2, cards: [{ id: 'doubt', n: 1 }] },
+      flurry: { en: 'Knife Flurry', zh: '亂刃', dmg: 6, hits: 4 },
+      pilfer: { en: 'Pilfer', zh: '竊取', stealWard: true, dmg: 12 },
+      hoard: { en: 'Hoard', zh: '囤積', ward: 22, might: 2 },
+    },
+    next: enemy => (enemy.hp < enemy.maxHp / 2
+      ? ['pilfer', 'flurry', 'pilfer', 'hoard'][enemy.turns % 4]
+      : ['muffle', 'flurry', 'pilfer', 'hoard'][enemy.turns % 4]),
+  },
 
   // ── Act IV · The Last Page (hidden; needs all three keys) ──
   gatekeeper: {
@@ -273,27 +329,32 @@ export const ENCOUNTERS = {
     easy: [['inkling', 'inkling'], ['moth'], ['dustWisp', 'dustWisp', 'dustWisp'], ['candleImp', 'candleImp']],
     normal: [['bookworm'], ['inkling', 'moth'], ['moth', 'dustWisp', 'dustWisp'], ['bookworm', 'inkling'], ['inkling', 'inkling', 'inkling'], ['ribbonSerpent'], ['ribbonSerpent', 'candleImp'], ['candleImp', 'inkling', 'dustWisp']],
     elite: [['quillKnight'], ['librarian'], ['inkweaver']],
-    boss: ['hollowTome'],
+    bosses: [['hollowTome'], ['tentacle', 'inkKraken', 'tentacle']],
   },
   2: {
     easy: [['cogRat', 'cogRat'], ['sentinel'], ['rustMite', 'rustMite', 'rustMite'], ['springJack', 'cogRat']],
     normal: [['pendulum', 'rustMite'], ['sentinel', 'cogRat'], ['cogRat', 'cogRat', 'rustMite'], ['pendulum', 'cogRat'], ['oilSlick', 'springJack'], ['oilSlick', 'rustMite'], ['springJack', 'springJack']],
     elite: [['brassGolem'], ['twinGear', 'twinGear'], ['duelist']],
-    boss: ['clockwarden'],
+    bosses: [['clockwarden'], ['tick', 'tock']],
   },
   3: {
     easy: [['hushWraith'], ['echoShade', 'echoShade'], ['muteBell']],
     normal: [['gargoyle', 'echoShade'], ['hushWraith', 'echoShade'], ['gargoyle'], ['echoShade', 'echoShade', 'echoShade'], ['forgottenScribe', 'muteBell'], ['forgottenScribe', 'echoShade'], ['muteBell', 'hushWraith']],
     elite: [['veiledOracle'], ['silentKnight'], ['choir']],
-    boss: ['unspoken'],
+    bosses: [['unspoken'], ['whisperThief']],
   },
   4: {
     easy: [['silentKnight']],
     normal: [['silentKnight']],
     elite: [['gatekeeper']],
-    boss: ['lastSilence'],
+    bosses: [['lastSilence']],
   },
 };
+
+// The enemy that stands for a boss encounter (on the map and in the records),
+// and the name to show for it (twins share one title).
+export const bossOf = encounter => encounter.find(id => ENEMIES[id]?.boss) || encounter[0];
+export const bossName = encounter => { const def = ENEMIES[bossOf(encounter)]; return def.title || def; };
 
 export const ACTS = {
   1: { en: 'The Whispering Stacks', zh: '低語書庫', roman: 'I', mood: '被寂靜侵蝕的書架之間，墨跡開始蠕動。' },

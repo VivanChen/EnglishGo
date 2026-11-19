@@ -36,6 +36,9 @@ function addCard(r, id, up = false) {
 // Cards the run may offer: the base collection plus Archive cards the player
 // has unlocked. Fixed at run start so a save resumes with the same pool.
 export const cardPool = r => REWARD_POOL.filter(id => isUnlocked(id, r.unlocked) && inHeroPool(id, heroOf(r)));
+// The boss encounter waiting at the end of this act's map (older saves
+// predate the draw and keep the act's first boss).
+export const actBoss = r => r.map?.boss || ENCOUNTERS[r.act]?.bosses[0];
 export const KEY_IDS = ['flame', 'page', 'echo'];
 export const hasAllKeys = r => KEY_IDS.every(id => r.keys?.[id]);
 
@@ -74,6 +77,9 @@ export function createRun({ seed = makeSeed(), difficulty = 'standard', lv = 'el
 // Each map of Acts I–III hides one echoing elite until the Echo Key is found.
 function makeMap(r, act) {
   const map = generateMap(r, act);
+  // Each act draws one of its bosses; the map shows it from the start.
+  const bosses = ENCOUNTERS[act]?.bosses || [];
+  map.boss = bosses.length > 1 ? pick(r, bosses) : bosses[0];
   if (act > 3 || r.keys?.echo) return map;
   const nodes = Object.values(map.nodes);
   let elites = nodes.filter(node => node.type === 'elite');
@@ -103,7 +109,7 @@ export function computeAttack(base, attacker = {}, defender = {}) {
 function hurtEnemy(r, enemy, amount, kind = 'hit') {
   if (enemy.dead) return 0;
   let blocked = 0;
-  if (kind !== 'burn' && enemy.ward > 0) { blocked = Math.min(enemy.ward, amount); enemy.ward -= blocked; }
+  if (kind !== 'burn' && kind !== 'sever' && enemy.ward > 0) { blocked = Math.min(enemy.ward, amount); enemy.ward -= blocked; }
   const loss = Math.min(enemy.hp, amount - blocked);
   enemy.hp -= loss;
   r.stats.damage += loss;
@@ -112,6 +118,19 @@ function hurtEnemy(r, enemy, amount, kind = 'hit') {
     enemy.dead = true; enemy.ward = 0; enemy.hp = 0;
     r.stats.kills += 1;
     fx(r, { kind: 'death', to: enemy.uid });
+    const c = r.combat;
+    if (c) {
+      // A boss's minions fall with it; a severed arm wounds its boss (through
+      // Ward); twins rage when their partner falls.
+      if (ENEMIES[enemy.id].boss) living(c).filter(other => ENEMIES[other.id].minion).forEach(other => { other.dead = true; other.hp = 0; other.ward = 0; fx(r, { kind: 'death', to: other.uid }); });
+      const severs = ENEMIES[enemy.id].severs;
+      const head = severs && living(c).find(other => ENEMIES[other.id].boss);
+      if (head) hurtEnemy(r, head, severs, 'sever');
+      living(c).forEach(other => {
+        const avenge = ENEMIES[other.id].avenge;
+        if (avenge?.might) { add(other.st, 'might', avenge.might); fx(r, { kind: 'buff', to: other.uid, st: 'might' }); }
+      });
+    }
   }
   return loss;
 }
@@ -259,12 +278,13 @@ export function intentOf(r, enemy) {
   if (move.ward || move.allyWard) kinds.push('defend');
   if (move.might || move.heal) kinds.push('buff');
   if (move.summon) kinds.push('summon');
-  if (move.weak || move.exposed || move.frail || move.burn || move.cards) kinds.push('debuff');
+  if (move.weak || move.exposed || move.frail || move.burn || move.cards || move.stealWard) kinds.push('debuff');
   return { id: enemy.move, move, kinds, dmg, hits: move.hits || 1 };
 }
 
 function planMove(r, enemy) {
-  enemy.move = ENEMIES[enemy.id].next(enemy, rnd(r));
+  const allies = r.combat ? living(r.combat).filter(item => item !== enemy) : [];
+  enemy.move = ENEMIES[enemy.id].next(enemy, rnd(r), { allies });
 }
 
 function spawnEnemy(r, id, index, kind, echo = false) {
@@ -749,6 +769,13 @@ export function endTurn(r) {
 function performMove(r, enemy) {
   const c = r.combat, move = ENEMIES[enemy.id].moves[enemy.move], diff = DIFFICULTIES[r.difficulty];
   fx(r, { kind: 'act', from: enemy.uid, move: enemy.move });
+  // Pilfer: the player's Ward is taken before the thief strikes; it keeps half.
+  if (move.stealWard && c.player.ward > 0) {
+    const stolen = c.player.ward;
+    c.player.ward = 0;
+    enemy.ward += Math.floor(stolen / 2);
+    fx(r, { kind: 'steal', to: enemy.uid, amount: stolen, kept: Math.floor(stolen / 2) });
+  }
   if (move.dmg != null) {
     const base = moveBase(r, enemy);
     for (let i = 0; i < (move.hits || 1) && r.hero.hp > 0 && !enemy.dead; i++) {
@@ -1021,7 +1048,7 @@ export function enterNode(r, nodeId) {
   switch (node.type) {
     case 'monster': startCombat(r, 'monster', pickEncounter(r, 'monster')); break;
     case 'elite': startCombat(r, 'elite', pickEncounter(r, 'elite'), { echo: Boolean(node.echo) && !r.keys?.echo }); break;
-    case 'boss': startCombat(r, 'boss', ENCOUNTERS[r.act].boss); break;
+    case 'boss': startCombat(r, 'boss', actBoss(r)); break;
     case 'event': startEvent(r); break;
     case 'rest': r.rest = { done: false, healed: 0, upgraded: null }; r.screen = 'rest'; break;
     case 'shop': r.shop = makeShop(r); r.screen = 'shop'; break;

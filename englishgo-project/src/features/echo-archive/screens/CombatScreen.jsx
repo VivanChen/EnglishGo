@@ -34,16 +34,26 @@ export function Statuses({ st = {}, pw = {} }) {
 export function incomingDamage(run) {
   const c = run.combat;
   if (!c || c.phase !== 'player') return null;
-  const attack = living(c).reduce((sum, enemy) => { const intent = intentOf(run, enemy); return sum + (intent?.dmg != null ? intent.dmg * intent.hits : 0); }, 0);
   const stone = c.player.pw.stoneheart || 0;
   const block = c.player.ward + stone + (hasRelic(run, 'owlFeather') && c.player.ward + stone === 0 ? 6 : 0);
-  return { attack, block, loss: Math.max(0, attack - block) };
+  // Walk the enemies in order: a Ward thief empties the Ward before its hits.
+  let attack = 0, left = block, loss = 0, stolen = false;
+  living(c).forEach(enemy => {
+    const intent = intentOf(run, enemy);
+    if (!intent) return;
+    if (intent.move.stealWard && left > 0) { left = 0; stolen = true; }
+    for (let i = 0; i < (intent.dmg != null ? intent.hits : 0); i++) {
+      const absorbed = Math.min(left, intent.dmg);
+      left -= absorbed; loss += intent.dmg - absorbed; attack += intent.dmg;
+    }
+  });
+  return { attack, block, loss, stolen };
 }
 
 function Incoming({ run }) {
   const info = incomingDamage(run);
   if (!info || !info.attack) return null;
-  const tip = `敵人這輪預計造成 ${info.attack} 傷害，你會有 ${info.block} Ward，${info.loss ? `將失去 ${info.loss} 生命` : '可以全部擋下'}。`;
+  const tip = `敵人這輪預計造成 ${info.attack} 傷害，你會有 ${info.block} Ward${info.stolen ? '（但會被偷走）' : ''}，${info.loss ? `將失去 ${info.loss} 生命` : '可以全部擋下'}。`;
   return <div className={`ea-incoming ${info.loss ? 'is-hurt' : 'is-safe'}`} tabIndex={0} data-tip={tip} aria-label={tip}>
     <Glyph name="attack" size={13}/><b>{info.attack}</b>
     <Glyph name="defend" size={13}/><b>{info.block}</b>
@@ -82,6 +92,7 @@ function Impacts({ items }) {
 function describeIntent(intent) {
   const { move, dmg, hits } = intent;
   const parts = [];
+  if (move.stealWard) parts.push('先偷走你全部的 Ward（一半變成牠的）');
   if (dmg != null) parts.push(`攻擊 ${dmg}${hits > 1 ? ` × ${hits}` : ''} 傷害`);
   if (move.ward) parts.push('獲得 Ward');
   if (move.allyWard) parts.push('為同伴加上 Ward');
@@ -197,6 +208,7 @@ function EnemySheet({ run, enemy, onClose }) {
     <button type="button" className="ea-sheet-close" onClick={onClose} aria-label="關閉">×</button>
     <h3><span lang="en">{def.en}</span><small>{def.zh}{def.boss ? ' · Boss' : def.elite ? ' · Elite' : ''}</small></h3>
     {intent && <p className="ea-sheet-intent"><b>下一步</b>{describeIntent(intent)}</p>}
+    {def.passive && <p className="ea-sheet-intent"><b>特性</b>{def.passive}</p>}
     <ul>{Object.entries(enemy.st).map(([key, value]) => <li key={key}><b lang="en">{KEYWORDS[key]?.en} {value}</b>{KEYWORDS[key]?.text}</li>)}</ul>
     <p className="ea-sheet-moves"><b>招式</b>{Object.values(def.moves).map(move => <span key={move.en} lang="en">{move.en}<small>{move.zh}</small></span>)}</p>
   </div>;
@@ -269,7 +281,7 @@ export default function CombatScreen({ run, dispatch, settings, pool, speak, pot
     const burst = (to, kind) => bursts.push({ to, kind, rot: Math.round((Math.random() - 0.5) * 50), delay: bursts.filter(item => item.to === to).length * 90 });
     for (const f of fresh) {
       switch (f.kind) {
-        case 'hit': case 'thorns':
+        case 'hit': case 'thorns': case 'sever':
           spawn.push({ to: f.to, text: f.amount > 0 ? `-${f.amount}` : 'Blocked', kind: f.amount > 0 ? 'dmg' : 'blocked' });
           if (f.amount > 0) {
             nextMarks[f.to] = 'hit';
@@ -295,6 +307,7 @@ export default function CombatScreen({ run, dispatch, settings, pool, speak, pot
         case 'burst': spawn.push({ to: 'player', text: `Burst ×${f.amount}`, kind: 'buff' }); break;
         case 'abyss': spawn.push({ to: 'player', text: 'Abyss!', kind: 'buff' }); break;
         case 'colossus': spawn.push({ to: 'player', text: 'Colossus!', kind: 'buff' }); break;
+        case 'steal': spawn.push({ to: 'player', text: `−${f.amount} Ward`, kind: 'debuff' }, { to: f.to, text: `+${f.kept ?? f.amount} Ward`, kind: 'ward' }); setNotice({ key: f.id, text: `Ward 被偷走了 ${f.amount} 點！` }); sfx.debuff(); break;
         case 'act': nextMarks[f.from] = 'act'; break;
         case 'familiar': nextMarks.familiar = 'strike'; burst(f.to, 'spirit'); if (f.all) living(c).forEach(enemy => { if (enemy.uid !== f.to) burst(enemy.uid, 'spirit'); }); break;
         case 'feed': spawn.push({ to: 'familiar', text: f.amount > 0 ? `+${f.amount}` : `${f.amount}`, kind: 'buff' }); nextMarks.familiar = nextMarks.familiar || 'grow'; sfx.buff(); break;
@@ -350,7 +363,13 @@ export default function CombatScreen({ run, dispatch, settings, pool, speak, pot
 
   useEffect(() => { if (!banner) return undefined; const t = window.setTimeout(() => setBanner(null), 1150); return () => window.clearTimeout(t); }, [banner]);
   useEffect(() => { if (!ghost) return undefined; const t = window.setTimeout(() => setGhost(null), 700); return () => window.clearTimeout(t); }, [ghost]);
-  useEffect(() => { if (!notice) return undefined; const t = window.setTimeout(() => setNotice(null), 1600); return () => window.clearTimeout(t); }, [notice]);
+  useEffect(() => { if (!notice) return undefined; const t = window.setTimeout(() => setNotice(null), notice.ms || 1600); return () => window.clearTimeout(t); }, [notice]);
+  // A boss with a special rule explains it once when the fight begins.
+  useEffect(() => {
+    if (resumed || c.kind !== 'boss' || c.round !== 1) return;
+    const def = living(c).map(enemy => ENEMIES[enemy.id]).find(item => item.boss && item.passive);
+    if (def) setNotice({ key: `boss-${c.id}`, text: `${(def.title || def).zh}：${def.passive}`, ms: 5200 });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Enemies act one by one so each attack reads clearly.
   useEffect(() => {
