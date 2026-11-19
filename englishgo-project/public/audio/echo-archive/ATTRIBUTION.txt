@@ -1,0 +1,10 @@
+Echo Archive background music (one track per act).
+
+Original EnglishGo music, generated on 2026-11-19 with ElevenLabs Music
+(eleven_music_v2_5, instrumental, 60 seconds, 192 kbps MP3). The game loops
+each track with a four-second crossfade between passes (src/features/echo-archive/music.js).
+
+act1.mp3  The Whispering Stacks: celesta and harp arpeggios, warm low strings, music box
+act2.mp3  The Rusted Clockwork: pizzicato strings, ticking woodblock, glockenspiel, muted brass
+act3.mp3  The Throne of Silence: slow pads, cello drones, distant bells, sparse piano
+act4.mp3  The Last Page: harp and celesta, swelling strings, solo flute

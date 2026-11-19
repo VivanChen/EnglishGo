@@ -275,6 +275,47 @@ describe('Echo Archive art', () => {
     });
   });
 
+  it('ships a painted WebP for every rare and mythic card', async () => {
+    const { readFileSync } = await import('node:fs');
+    const { PAINTED_CARDS, cardImage } = await import('./components/paintedArt.js');
+    const special = Object.entries(CARDS).filter(([, card]) => ['rare', 'mythic'].includes(card.rarity)).map(([id]) => id);
+    expect([...PAINTED_CARDS].sort()).toEqual(special.sort());
+    special.forEach(id => {
+      const bytes = readFileSync(`public${cardImage(id)}`);
+      expect(bytes.toString('ascii', 0, 4), id).toBe('RIFF');
+      expect(bytes.toString('ascii', 8, 12), id).toBe('WEBP');
+      expect(bytes.length, id).toBeLessThan(64 * 1024);
+    });
+    expect(cardImage('inkBolt')).toBeNull();
+  });
+
+  it('fades a painting in over the glyph and keeps the glyph if it fails to load', async () => {
+    const { default: CardFace } = await import('./components/CardFace.jsx');
+    const { container, unmount } = render(<CardFace inst={{ id: 'finale' }}/>);
+    const art = container.querySelector('.ea-card-art-inner');
+    const img = art.querySelector('img.ea-card-painting');
+    expect(img.getAttribute('src')).toBe('/images/echo-archive/cards/finale.webp');
+    expect(art.classList.contains('is-painted')).toBe(false);
+    fireEvent.load(img);
+    expect(art.classList.contains('is-painted')).toBe(true);
+    unmount();
+    const failed = render(<CardFace inst={{ id: 'sunfall' }}/>);
+    fireEvent.error(failed.container.querySelector('img.ea-card-painting'));
+    expect(failed.container.querySelector('img.ea-card-painting')).toBeNull();
+    expect(failed.container.querySelector('.ea-card-art-inner .ea-glyph')).not.toBeNull();
+  });
+
+  it('ships a music track for every act', async () => {
+    const { readFileSync } = await import('node:fs');
+    const { ACTS } = await import('./data/enemies.js');
+    const { trackUrl } = await import('./music.js');
+    Object.keys(ACTS).forEach(act => {
+      const bytes = readFileSync(`public${trackUrl(Number(act))}`);
+      expect(bytes.toString('ascii', 0, 3), act).toBe('ID3');
+      expect(bytes.length, act).toBeLessThan(2 * 1024 * 1024);
+    });
+  });
+
   it('draws an icon for every card, relic and power', () => {
     Object.entries(CARDS).forEach(([id, card]) => expect(hasGlyph(card.glyph), id).toBe(true));
     Object.entries(RELICS).forEach(([id, relic]) => expect(hasGlyph(relic.glyph), id).toBe(true));

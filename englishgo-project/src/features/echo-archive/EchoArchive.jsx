@@ -8,7 +8,8 @@ import { buildRunePool } from './chant.js';
 import { claimWelcome, normalizeCollection, pullArchive, shardsForRun, unlockedCards } from './archive.js';
 import { DAILY_BLESSINGS, DAILY_TRIALS, MAX_SILENCE, SILENCE_CLEAR_BONUS, dailyBonus, dailyChallenge, dateKey, previousDateKey, silenceRules } from './data/challenges.js';
 import { addRecord, runKey, runRecord } from './history.js';
-import { setSoundEnabled, sfx } from './sound.js';
+import { hasHaptics, setHapticsEnabled, setSoundEnabled, sfx } from './sound.js';
+import { setMusicAct, setMusicEnabled } from './music.js';
 import Glyph from './components/Glyph.jsx';
 import { FoilContext } from './components/CardFace.jsx';
 import { PotionArt } from './components/Creatures.jsx';
@@ -24,7 +25,7 @@ const RUN_KEY = 'eg_echo_archive_run';
 const META_KEY = 'eg_echo_archive_meta';
 // silenceTop: highest Silence level won (-1 = none yet). daily: the last
 // daily challenge played ({ date, streak, result }).
-const DEFAULT_META = { runs: 0, wins: 0, bestAct: 0, bestFloor: 0, lastDifficulty: 'story', lastHero: 'scribe', silenceTop: -1, lastSilence: 0, trueEndings: 0, daily: null, history: [], settings: { sfx: true, voice: true, chant: true, endWarn: true } };
+const DEFAULT_META = { runs: 0, wins: 0, bestAct: 0, bestFloor: 0, lastDifficulty: 'story', lastHero: 'scribe', silenceTop: -1, lastSilence: 0, trueEndings: 0, daily: null, history: [], settings: { sfx: true, music: true, haptics: true, voice: true, chant: true, endWarn: true } };
 
 function readJSON(key) { try { return JSON.parse(localStorage.getItem(key)); } catch { return null; } }
 function writeJSON(key, value) {
@@ -128,6 +129,13 @@ export default function EchoArchive({ lv = 'elementary', onBack, onXp, trackWeak
   const settings = meta.settings;
 
   useEffect(() => { setSoundEnabled(settings.sfx); }, [settings.sfx]);
+  useEffect(() => { setHapticsEnabled(settings.haptics); }, [settings.haptics]);
+  useEffect(() => { setMusicEnabled(settings.music); }, [settings.music]);
+  // Each act has its own music while a run is on screen; titles, the codex
+  // and the end-of-run summary stay quiet.
+  const musicAct = view === 'run' && run && !['victory', 'defeat'].includes(run.screen) ? run.act : null;
+  useEffect(() => { setMusicAct(musicAct); }, [musicAct]);
+  useEffect(() => () => setMusicAct(null), []);
   useEffect(() => { writeJSON(META_KEY, meta); }, [meta]);
   useEffect(() => {
     if (!run) { writeJSON(RUN_KEY, null); return; }
@@ -349,6 +357,8 @@ export default function EchoArchive({ lv = 'elementary', onBack, onXp, trackWeak
     {overlay?.kind === 'menu' && <Modal title="暫停選單" kicker="MENU" onClose={() => setOverlay(null)} className="ea-menu-modal">
       <div className="ea-settings">
         <Toggle label="音效" hint="出牌、打擊與勝利的聲音" checked={settings.sfx} onChange={value => setSetting('sfx', value)}/>
+        <Toggle label="背景音樂" hint="每一幕都有自己的書庫配樂" checked={settings.music} onChange={value => setSetting('music', value)}/>
+        {hasHaptics() && <Toggle label="震動" hint="受到攻擊和打出重擊時，手機會輕輕震動" checked={settings.haptics} onChange={value => setSetting('haptics', value)}/>}
         <Toggle label="單字發音" hint="詠唱時自動唸出英文符文" checked={settings.voice} onChange={value => setSetting('voice', value)}/>
         <Toggle label="詠唱題目" hint="關閉後 Chant 牌直接以基本效果施放" checked={settings.chant} onChange={value => setSetting('chant', value)}/>
         <Toggle label="結束回合前提醒" hint="還有能打的牌時，結束回合要再按一次確認" checked={settings.endWarn} onChange={value => setSetting('endWarn', value)}/>

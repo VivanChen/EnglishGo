@@ -13,3 +13,13 @@ heroes facing right and creatures facing left, suitable for a children's card ga
 
 Each creature keeps the design of its earlier hand-drawn SVG, which remains in
 src/features/echo-archive/components/Creatures.jsx as the fallback.
+
+Card illustrations (cards/): one painting for each of the 47 Rare and Mythic
+cards, generated on 2026-11-19 with the same model (bytedance-seedream-5.5,
+16:9), then centre-cropped to the card's art window and saved as 560x272 WebP.
+Shared style prompt: hand-painted storybook fantasy card illustration in
+gouache and watercolor with ink linework and visible paper texture, soft rim
+light, set in a magical ancient library of living ink and paper, palette by
+card type (Attack crimson, ember and gold; Skill teal, sea blue and silver;
+Power violet, indigo and gold), Mythic cards with an extra radiant gold glow,
+no text. The card's glyph stays as the fallback while a painting loads.

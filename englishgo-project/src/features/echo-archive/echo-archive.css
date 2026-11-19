@@ -184,6 +184,13 @@
 .ea-type-attack .ea-card-art, .ea-type-attack .ea-card-art-inner { border-radius: 0; clip-path: polygon(9% 0, 91% 0, 100% 13%, 100% 78%, 50% 100%, 0 78%, 0 13%); }
 .ea-type-power .ea-card-art, .ea-type-power .ea-card-art-inner { border-radius: 50% 50% 4cqw 4cqw / 44% 44% 4cqw 4cqw; }
 .ea-card-art .ea-glyph { position: relative; width: 44cqw; height: 44cqw; filter: drop-shadow(0 0 3cqw var(--glow)) drop-shadow(0 .8cqw 0 rgba(0, 0, 0, .35)); }
+/* Painted illustrations (rare and mythic cards) fade in over the glyph. */
+.ea-card-painting { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .35s ease; pointer-events: none; user-select: none; -webkit-user-drag: none; }
+.ea-card-art-inner.is-painted .ea-card-painting { opacity: 1; }
+.ea-card-art-inner.is-painted .ea-glyph, .ea-card-art-inner.is-painted::before { display: none; }
+.ea-card-art-inner.is-painted::after { content: ''; position: absolute; inset: 0; pointer-events: none; box-shadow: inset 0 -5cqw 9cqw rgba(0, 0, 0, .42), inset 0 0 0 .5cqw rgba(0, 0, 0, .45); }
+.ea-card.is-foil .ea-card-art-inner.is-painted::after { background: linear-gradient(115deg, rgba(255, 120, 200, .16), rgba(255, 231, 166, .08) 45%, rgba(120, 220, 255, .16)); }
+.ea-card-chant, .ea-card-bonus { z-index: 2; }
 .ea-card-chant { position: absolute; right: 4cqw; top: 3cqw; color: var(--ea-gold); font-size: 9cqw; text-shadow: 0 0 3cqw rgba(232, 196, 122, .9); animation: ea-twinkle 2.4s ease-in-out infinite; }
 .ea-card-type { position: relative; z-index: 1; display: flex; justify-content: center; gap: 3cqw; align-items: baseline; margin: 2cqw 0 1.4cqw; font: 800 5.2cqw/1 var(--ea-sans); letter-spacing: .22em; text-transform: uppercase; color: var(--rim-light); text-shadow: 0 .4cqw .8cqw rgba(0, 0, 0, .6); }
 .ea-card-type i { font-style: normal; letter-spacing: .05em; opacity: .8; }

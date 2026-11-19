@@ -8,7 +8,8 @@ import CardFace, { KeywordList } from '../components/CardFace.jsx';
 import Glyph from '../components/Glyph.jsx';
 import { Backdrop, EnemyArt, FamiliarArt, HeroArt } from '../components/Creatures.jsx';
 import { makeChant } from '../chant.js';
-import { sfx } from '../sound.js';
+import { haptic, sfx } from '../sound.js';
+import { duckMusic } from '../music.js';
 
 const DEBUFFS = new Set(['weak', 'exposed', 'frail', 'burn']);
 const plain = segs => segs.map(seg => (typeof seg === 'string' ? seg : seg.kw ? KEYWORDS[seg.kw].en : seg.n)).join('');
@@ -145,6 +146,8 @@ function ChantOverlay({ chant, onDone, speak, voice }) {
   const doneRef = useRef(onDone);
   doneRef.current = onDone;
   useEffect(() => { if (voice && q.direction === 'en') speak(q.word); }, [q, voice, speak]);
+  // Keep the rune word clear over the music while the chant is open.
+  useEffect(() => { duckMusic(true); return () => duckMusic(false); }, []);
   const answer = useCallback(index => {
     if (picked !== null) return;
     setPicked(index);
@@ -326,7 +329,7 @@ export default function CombatScreen({ run, dispatch, settings, pool, speak, pot
         default: break;
       }
     }
-    if (hurt) sfx.hurt(); else if (Object.values(nextMarks).includes('hit')) sfx.hit(heavy);
+    if (hurt) { sfx.hurt(); haptic.hurt(); } else if (Object.values(nextMarks).includes('hit')) { sfx.hit(heavy); if (heavy) haptic.heavy(); }
     if (spawn.length) {
       const items = spawn.map((item, index) => ({ ...item, key: `f${++floaterSeq}`, delay: index * 110, jitter: Math.round((Math.random() - 0.5) * 40) }));
       setFloaters(list => [...list, ...items].slice(-30));
@@ -380,7 +383,7 @@ export default function CombatScreen({ run, dispatch, settings, pool, speak, pot
 
   useEffect(() => {
     if (c.phase !== 'won' && c.phase !== 'lost') { setShowEnd(false); return undefined; }
-    if (c.phase === 'won') sfx.victory(); else sfx.defeat();
+    if (c.phase === 'won') { sfx.victory(); haptic.victory(); } else sfx.defeat();
     const t = window.setTimeout(() => setShowEnd(true), 750);
     return () => window.clearTimeout(t);
   }, [c.phase]);

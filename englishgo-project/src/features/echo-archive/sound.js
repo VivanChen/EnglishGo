@@ -2,22 +2,47 @@
 // oscillators or a filtered noise burst, so it costs nothing to load.
 let context = null;
 let enabled = true;
+let haptics = true;
 
 export function setSoundEnabled(value) { enabled = Boolean(value); }
+export function setHapticsEnabled(value) { haptics = Boolean(value); }
 
-function audio() {
-  if (!enabled || typeof window === 'undefined') return null;
-  if (document.documentElement.dataset.egQuiet === 'true') return null;
+// One audio context for effects and music alike.
+export function sharedAudioContext() {
+  if (typeof window === 'undefined') return null;
   try {
     const Ctor = window.AudioContext || window.webkitAudioContext;
     if (!Ctor) return null;
     context ||= new Ctor();
-    if (context.state === 'suspended') context.resume?.();
     return context;
   } catch {
     return null;
   }
 }
+
+function audio() {
+  if (!enabled || typeof window === 'undefined') return null;
+  if (document.documentElement.dataset.egQuiet === 'true') return null;
+  const ac = sharedAudioContext();
+  if (ac?.state === 'suspended') ac.resume?.();
+  return ac;
+}
+
+export const canVibrate = () => typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function';
+// Desktop Chrome has navigator.vibrate but no motor; offer the setting on touch screens only.
+export const hasHaptics = () => canVibrate() && typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches;
+
+function buzz(pattern) {
+  if (!haptics || !canVibrate()) return;
+  try { navigator.vibrate(pattern); } catch { /* blocked until the first tap */ }
+}
+
+// Short vibrations on phones that support them (most Android browsers).
+export const haptic = {
+  hurt: () => buzz(45),
+  heavy: () => buzz(22),
+  victory: () => buzz([30, 70, 40]),
+};
 
 function tone(freq, { at = 0, dur = 0.18, type = 'sine', gain = 0.07, to = null } = {}) {
   const ac = audio();

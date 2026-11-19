@@ -17,6 +17,20 @@ export const PAINTED_CREATURES = new Set([
 ]);
 export const PAINTED_HEROES = new Set(['scribe', 'caller']);
 
+// Rare and mythic cards carry a painted illustration in the art window; other
+// cards keep their glyph, which also shows until a painting has loaded.
+export const PAINTED_CARDS = new Set([
+  // Rare
+  'finale', 'devour', 'storm', 'sanctum', 'wildfire', 'clarity', 'ascend', 'scholar', 'ironWill', 'mirrorImage',
+  'runeStorm', 'quillDance', 'wordflood', 'palimpsest', 'legion', 'unboundSpirit', 'inkStorm', 'lastLight', 'twinSpirit',
+  'finalFold', 'eternalFlame', 'epic', 'mountainCleaver', 'flashpoint', 'mirrorWall', 'finisher', 'eloquence', 'blackout',
+  'origamiWorkshop', 'spiritSurge',
+  // Mythic
+  'sunfall', 'aegis', 'thousandCuts', 'archmage', 'livingInk', 'grandLibrary', 'inkSovereign', 'thousandCranes',
+  'afterimage', 'swordSaint', 'hellfire', 'colossus', 'perpetualMotion', 'runeChoir', 'abyssalInk', 'paperDragon', 'eternalSpirit',
+]);
+
+export const cardImage = id => (PAINTED_CARDS.has(id) ? `${ROOT}/cards/${id}.webp` : null);
 export const creatureImage = art => (PAINTED_CREATURES.has(art) ? `${ROOT}/creatures/${art}.webp` : null);
 export const heroImage = hero => (PAINTED_HEROES.has(hero) ? `${ROOT}/heroes/${hero}.webp` : null);
 export const FAMILIAR_IMAGE = `${ROOT}/heroes/familiar.webp`;
