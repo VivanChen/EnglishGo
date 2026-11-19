@@ -226,6 +226,40 @@ describe('Echo Archive', () => {
   });
 });
 
+describe('Echo Archive combat clarity', () => {
+  async function seededFight(settings) {
+    localStorage.setItem('eg_echo_archive_meta', JSON.stringify({ runs: 3, tutorialDone: true, ...(settings ? { settings } : {}) }));
+    const { createRun, runReducer } = await import('./engine/engine.js');
+    const { availableNodes } = await import('./engine/map.js');
+    let run = createRun({ seed: 5, difficulty: 'standard' });
+    run = runReducer(run, { type: 'EVENT_CHOOSE', index: 3 });
+    run = runReducer(run, { type: 'EVENT_CONTINUE' });
+    run = runReducer(run, { type: 'ACK_ACT' });
+    run = runReducer(run, { type: 'MAP_SELECT', id: availableNodes(run)[0] });
+    run.combat.enemies = [{ ...run.combat.enemies[0], id: 'bookworm', hp: 40, maxHp: 40, move: 'gnaw', st: {}, ward: 0 }];
+    localStorage.setItem('eg_echo_archive_run', JSON.stringify(run));
+    render(<EchoArchive lv="elementary" onBack={vi.fn()} deps={deps()}/>);
+    fireEvent.click(screen.getByRole('button', { name: /繼續遠征/ }));
+  }
+
+  it('shows incoming damage against Ward and asks before ending a turn with playable cards', async () => {
+    await seededFight();
+    expect(screen.getByLabelText(/敵人這輪預計造成 \d+ 傷害，你會有 0 Ward，將失去 \d+ 生命/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /結束回合/ }));
+    expect(screen.getByRole('button', { name: /再按一次結束回合/ })).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('張牌可以打出');
+    expect(screen.queryByText('敵人行動中')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /結束回合/ }));
+    expect(await screen.findByText('敵人行動中', {}, { timeout: 4000 })).toBeInTheDocument();
+  });
+
+  it('ends the turn at once when the reminder is switched off', async () => {
+    await seededFight({ endWarn: false });
+    fireEvent.click(screen.getByRole('button', { name: /結束回合/ }));
+    expect(await screen.findByText('敵人行動中', {}, { timeout: 4000 })).toBeInTheDocument();
+  });
+});
+
 describe('Echo Archive art', () => {
   it('draws an icon for every card, relic and power', () => {
     Object.entries(CARDS).forEach(([id, card]) => expect(hasGlyph(card.glyph), id).toBe(true));

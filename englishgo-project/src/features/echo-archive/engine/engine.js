@@ -1,4 +1,4 @@
-import { ARCHIVE_CARDS, CARDS, CHANT_CARDS, REWARD_POOL, STARTER_DECK, baseCost, cardFades, isUnlocked, val } from '../data/cards.js';
+import { ARCHIVE_CARDS, CARDS, CHANT_CARDS, REWARD_POOL, STARTER_DECK, archOf, baseCost, cardFades, isUnlocked, val } from '../data/cards.js';
 import { BASE_MODS, MAX_SILENCE, buildMods } from '../data/challenges.js';
 import { HEROES, heroOf, inHeroPool } from '../data/heroes.js';
 import { ENCOUNTERS, ENEMIES } from '../data/enemies.js';
@@ -823,6 +823,21 @@ function rollRarity(r, kind, pool) {
   return table.length ? weighted(r, table) : null;
 }
 
+// The play style the deck is building: the archetype with the most cards the
+// player chose (starters and curses do not count), once there are two of them.
+export function deckFocus(r) {
+  const counts = {}, last = {};
+  r.hero.deck.forEach((card, index) => {
+    const def = CARDS[card.id];
+    if (!def || ['starter', 'special'].includes(def.rarity)) return;
+    const arch = archOf(card.id);
+    counts[arch] = (counts[arch] || 0) + 1;
+    last[arch] = index;
+  });
+  const best = Object.keys(counts).sort((a, b) => counts[b] - counts[a] || last[b] - last[a])[0];
+  return best && counts[best] >= 2 ? best : null;
+}
+
 export function cardOptions(r, kind, count, rarity) {
   const options = [];
   let guard = 0;
@@ -833,7 +848,28 @@ export function cardOptions(r, kind, count, rarity) {
     if (pool.length) options.push(pick(r, pool));
     else if (!wanted) break;
   }
+  // With 80+ cards in the pool, a build rarely gets its pieces by chance, so
+  // one option always comes from the deck's play style (same rarity if possible).
+  const focus = deckFocus(r);
+  if (focus && options.length && !options.some(id => archOf(id) === focus)) {
+    const slot = options.length - 1;
+    const fits = cardPool(r).filter(id => archOf(id) === focus && !options.includes(id));
+    const same = fits.filter(id => CARDS[id].rarity === CARDS[options[slot]].rarity);
+    const plain = fits.filter(id => ['common', 'uncommon'].includes(CARDS[id].rarity));
+    const choices = same.length ? same : plain;
+    if (choices.length) options[slot] = pick(r, choices);
+  }
   return options;
+}
+
+// Passing on a card reward is a real choice: the deck stays lean and the hero gets sturdier.
+export const SKIP_CARD_HP = 2;
+function skipCards(r, item) {
+  if (item.taken) return;
+  item.taken = true;
+  item.skipped = true;
+  r.hero.maxHp += SKIP_CARD_HP;
+  r.hero.hp += SKIP_CARD_HP;
 }
 
 export function randomRelic(r, tier) {
@@ -869,7 +905,7 @@ function makeReward(r, kind) {
     else r.potionChance = Math.min(80, r.potionChance + 10);
   }
   if (kind === 'elite') { const id = randomRelic(r); if (id) items.push({ kind: 'relic', id, taken: false }); }
-  items.push({ kind: 'cards', options: cardOptions(r, kind, 3 + (hasRelic(r, 'starChart') ? 1 : 0)), taken: false });
+  items.push({ kind: 'cards', options: cardOptions(r, kind, 3 + (hasRelic(r, 'starChart') ? 1 : 0)), focus: deckFocus(r), taken: false });
   return { kind, items, after: kind === 'boss' ? 'boss' : 'map' };
 }
 
@@ -880,8 +916,8 @@ function takeReward(r, index, choice) {
   if (item.kind === 'potion' && gainPotion(r, item.id)) item.taken = true;
   if (item.kind === 'relic') { gainRelic(r, item.id); item.taken = true; }
   if (item.kind === 'cards') {
-    if (choice != null && item.options[choice]) { addCard(r, item.options[choice]); item.chosen = item.options[choice]; }
-    item.taken = true;
+    if (choice != null && item.options[choice]) { addCard(r, item.options[choice]); item.chosen = item.options[choice]; item.taken = true; }
+    else skipCards(r, item);
   }
   if (item.kind === 'key') {
     r.keys = { ...(r.keys || {}), [item.key]: true };
@@ -896,6 +932,7 @@ function takeReward(r, index, choice) {
 
 function leaveReward(r) {
   const after = r.reward?.after;
+  (r.reward?.items || []).forEach(item => { if (item.kind === 'cards') skipCards(r, item); });
   r.reward = null;
   if (after === 'boss' && r.act >= 4) { r.trueEnding = true; r.screen = 'victory'; return; }
   if (after === 'boss') {
@@ -1019,7 +1056,7 @@ function applyOutcome(r, effects = []) {
       case 'upgrade': if (r.hero.deck.some(canUpgrade)) r.pending = { kind: 'upgrade', cancellable: false, source: 'event' }; break;
       case 'remove': r.pending = { kind: 'remove', cancellable: false, source: 'event' }; break;
       case 'upgradeRandom': shuffle(r, r.hero.deck.filter(canUpgrade)).slice(0, effect.v).forEach(card => { card.up = true; gains.push({ type: 'upgrade', id: card.id }); }); break;
-      case 'cardChoice': r.event = null; r.reward = { kind: 'event', items: [{ kind: 'cards', options: cardOptions(r, 'monster', 3, effect.rarity), taken: false }], after: 'map' }; r.screen = 'reward'; break;
+      case 'cardChoice': r.event = null; r.reward = { kind: 'event', items: [{ kind: 'cards', options: cardOptions(r, 'monster', 3, effect.rarity), focus: deckFocus(r), taken: false }], after: 'map' }; r.screen = 'reward'; break;
       case 'fight': r.event = null; startCombat(r, effect.kind || 'monster', effect.encounter); break;
       default: break;
     }

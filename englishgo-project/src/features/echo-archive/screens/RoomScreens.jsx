@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { CARDS } from '../data/cards.js';
+import { ARCHETYPES, CARDS, archOf } from '../data/cards.js';
 import { POTIONS, RELICS } from '../data/relics.js';
 import { KEYS } from '../data/enemies.js';
-import { canUpgrade, eventChoices, eventDef, meetsReq, restHealAmount, hasRelic } from '../engine/engine.js';
+import { SKIP_CARD_HP, canUpgrade, eventChoices, eventDef, meetsReq, restHealAmount, hasRelic } from '../engine/engine.js';
 import CardFace, { KeywordList } from '../components/CardFace.jsx';
 import Glyph from '../components/Glyph.jsx';
 import { PotionArt, SceneArt } from '../components/Creatures.jsx';
@@ -40,10 +40,16 @@ export function Modal({ title, kicker, onClose, children, wide = false, classNam
   </div>;
 }
 
-export function DeckViewer({ title, kicker, cards, onClose, note }) {
+export function DeckViewer({ title, kicker, cards, onClose, note, extra }) {
+  const grid = list => <div className="ea-card-grid">{sortCards(list).map(card => <div key={card.uid} className="ea-grid-card"><CardFace inst={card}/></div>)}</div>;
   return <Modal title={title} kicker={kicker} onClose={onClose} wide>
     {note && <p className="ea-modal-note">{note}</p>}
-    {cards.length ? <div className="ea-card-grid">{sortCards(cards).map(card => <div key={card.uid} className="ea-grid-card"><CardFace inst={card}/></div>)}</div> : <p className="ea-empty">這裡目前沒有牌。</p>}
+    {cards.length ? grid(cards) : <p className="ea-empty">這裡目前沒有牌。</p>}
+    {extra?.cards.length > 0 && <section className="ea-viewer-extra" aria-label={extra.title}>
+      <h3>{extra.title}</h3>
+      {extra.note && <p className="ea-modal-note">{extra.note}</p>}
+      {grid(extra.cards)}
+    </section>}
   </Modal>;
 }
 
@@ -95,18 +101,23 @@ export function RewardScreen({ run, dispatch }) {
           {item.kind === 'potion' && <><span className="ea-reward-icon"><PotionArt color={POTIONS[item.id].color} size={26}/></span><span><b lang="en">{POTIONS[item.id].en}</b><small>{POTIONS[item.id].zh} · {blocked ? '藥劑欄已滿，先使用或丟棄一瓶' : POTIONS[item.id].text}</small></span></>}
           {item.kind === 'relic' && <><span className="ea-reward-icon"><RelicIcon id={item.id} size={30}/></span><span><b lang="en">{RELICS[item.id].en}</b><small>{item.skipped ? '你選擇了鑰匙' : `${RELICS[item.id].zh} · ${RELICS[item.id].text}`}</small></span></>}
           {item.kind === 'key' && <><span className="ea-reward-icon is-key" style={{ '--key': KEYS[item.key].color }}><Glyph name="key" size={28}/></span><span><b>{KEYS[item.key].zh}</b><small>{item.skipped ? '你選擇了遺物' : `${KEYS[item.key].en} · ${item.or != null ? '和遺物只能二選一' : '集齊三把鑰匙，第三章之後還有路'}`}</small></span></>}
-          {item.kind === 'cards' && <><span className="ea-reward-icon is-cards"><Glyph name="deck" size={28}/></span><span><b>{item.taken ? (item.chosen ? `已加入 ${CARDS[item.chosen].en}` : '已略過卡牌') : '選擇一張牌加入牌組'}</b><small lang="en">Add a card to your deck</small></span></>}
+          {item.kind === 'cards' && <><span className="ea-reward-icon is-cards"><Glyph name="deck" size={28}/></span><span><b>{item.taken ? (item.chosen ? `已加入 ${CARDS[item.chosen].en}` : `已略過卡牌 · 最大生命 +${SKIP_CARD_HP}`) : '選擇一張牌加入牌組'}</b><small>{item.focus && !item.taken ? `其中一張配合你的${ARCHETYPES[item.focus].zh}` : <span lang="en">Add a card to your deck</span>}</small></span></>}
           {item.taken && <i className="ea-check" aria-hidden="true">✓</i>}
         </button>;
       })}</div>
       <button type="button" className={`ea-btn ${pending ? '' : 'is-gold'}`} onClick={() => dispatch({ type: 'LEAVE_REWARD' })}>{reward.after === 'boss' ? '前往首領寶庫 →' : pending ? '略過剩下的獎勵 →' : '繼續前進 →'}</button>
     </div>
     {choice && !choice.taken && <Modal title="選擇一張牌" kicker="CHOOSE A CARD" onClose={() => setChoosing(null)} wide className="ea-choice-modal">
-      <div className="ea-choice-row">{choice.options.map((id, i) => <button type="button" key={id} className="ea-choice-card" onClick={() => { sfx.card(); dispatch({ type: 'TAKE_REWARD', index: choosing, choice: i }); setChoosing(null); }}>
-        <CardFace inst={{ id, up: false }}/>
-        <KeywordList inst={{ id, up: false }}/>
-      </button>)}</div>
-      <button type="button" className="ea-btn is-quiet" onClick={() => { dispatch({ type: 'TAKE_REWARD', index: choosing, choice: null }); setChoosing(null); }}>不拿卡牌（Skip）</button>
+      {choice.focus && <p className="ea-modal-note">你的牌組偏向 <b>{ARCHETYPES[choice.focus].zh}</b>，所以至少有一張選項會配合它。</p>}
+      <div className="ea-choice-row">{choice.options.map((id, i) => {
+        const fits = choice.focus && archOf(id) === choice.focus;
+        return <button type="button" key={id} className={`ea-choice-card ${fits ? 'is-fit' : ''}`} aria-label={`${CARDS[id].en} ${CARDS[id].zh}${fits ? `，配合你的${ARCHETYPES[choice.focus].zh}` : ''}`} onClick={() => { sfx.card(); dispatch({ type: 'TAKE_REWARD', index: choosing, choice: i }); setChoosing(null); }}>
+          {fits && <span className="ea-fit-tag">配合你的{ARCHETYPES[choice.focus].zh}</span>}
+          <CardFace inst={{ id, up: false }}/>
+          <KeywordList inst={{ id, up: false }}/>
+        </button>;
+      })}</div>
+      <button type="button" className="ea-btn is-quiet" onClick={() => { dispatch({ type: 'TAKE_REWARD', index: choosing, choice: null }); setChoosing(null); }}>不拿卡牌，最大生命 +{SKIP_CARD_HP}（Skip）</button>
     </Modal>}
   </section>;
 }

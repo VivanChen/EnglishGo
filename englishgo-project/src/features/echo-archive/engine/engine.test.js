@@ -8,7 +8,7 @@ import { HISTORY_LIMIT, addRecord, recordDeck, runRecord } from '../history.js';
 import { HEROES, heroPool, heroUnlocked, inHeroPool } from '../data/heroes.js';
 import { RELICS } from '../data/relics.js';
 import { EVENTS } from '../data/events.js';
-import { cardCost, cardPool, hasAllKeys, intentOf, randomRelic } from './engine.js';
+import { SKIP_CARD_HP, cardCost, cardPool, deckFocus, hasAllKeys, intentOf, randomRelic } from './engine.js';
 import { MAP_ROWS, TREASURE_ROW, availableNodes, generateMap } from './map.js';
 
 const act = (run, action) => runReducer(run, action);
@@ -1213,6 +1213,31 @@ describe('echo archive power cards', () => {
     expect(run.combat.player.familiar).toBe(8 + 5);
     run = act(run, { type: 'END_TURN' });
     expect(run.combat.player.familiar).toBe(8 + 5);
+  });
+
+  it('leans one reward option toward the deck\'s play style and rewards skipping cards', () => {
+    let run = createRun({ seed: 12 });
+    expect(deckFocus(run)).toBeNull();
+    run.hero.deck.push({ uid: 'f1', id: 'fold', up: false }, { uid: 'f2', id: 'crease', up: false }, { uid: 'b1', id: 'cleave', up: false });
+    expect(deckFocus(run)).toBe('fold');
+    for (let i = 0; i < 40; i++) expect(cardOptions(run, i % 5 ? 'monster' : 'elite', 3).some(id => CARDS[id].arch === 'fold')).toBe(true);
+    run.hero.deck.push({ uid: 'b2', id: 'comet', up: false }, { uid: 'b3', id: 'dash', up: false });
+    expect(deckFocus(run)).toBe('blade');
+
+    let fight = intoCombat(13, ['bookworm']);
+    fight.combat.enemies[0].hp = 1;
+    fight = act(fight, { type: 'PLAY_CARD', uid: handCard(fight, 'slash'), target: 'e0' });
+    fight = act(fight, { type: 'FINISH_COMBAT' });
+    const cards = fight.reward.items.findIndex(item => item.kind === 'cards');
+    const maxHp = fight.hero.maxHp, deck = fight.hero.deck.length;
+    const skipped = act(fight, { type: 'TAKE_REWARD', index: cards, choice: null });
+    expect(skipped.hero.maxHp).toBe(maxHp + SKIP_CARD_HP);
+    expect(skipped.hero.deck).toHaveLength(deck);
+    expect(skipped.reward.items[cards]).toMatchObject({ taken: true, skipped: true });
+    const left = act(fight, { type: 'LEAVE_REWARD' });
+    expect(left.hero.maxHp).toBe(maxHp + SKIP_CARD_HP);
+    const picked = act(act(fight, { type: 'TAKE_REWARD', index: cards, choice: 0 }), { type: 'LEAVE_REWARD' });
+    expect(picked.hero.maxHp).toBe(maxHp);
   });
 
   it.each([[81, 'scribe'], [82, 'caller']])('seed %i with every power card in a %s deck finishes without getting stuck', (seed, hero) => {

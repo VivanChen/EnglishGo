@@ -24,7 +24,7 @@ const RUN_KEY = 'eg_echo_archive_run';
 const META_KEY = 'eg_echo_archive_meta';
 // silenceTop: highest Silence level won (-1 = none yet). daily: the last
 // daily challenge played ({ date, streak, result }).
-const DEFAULT_META = { runs: 0, wins: 0, bestAct: 0, bestFloor: 0, lastDifficulty: 'story', lastHero: 'scribe', silenceTop: -1, lastSilence: 0, trueEndings: 0, daily: null, history: [], settings: { sfx: true, voice: true, chant: true } };
+const DEFAULT_META = { runs: 0, wins: 0, bestAct: 0, bestFloor: 0, lastDifficulty: 'story', lastHero: 'scribe', silenceTop: -1, lastSilence: 0, trueEndings: 0, daily: null, history: [], settings: { sfx: true, voice: true, chant: true, endWarn: true } };
 
 function readJSON(key) { try { return JSON.parse(localStorage.getItem(key)); } catch { return null; } }
 function writeJSON(key, value) {
@@ -336,7 +336,8 @@ export default function EchoArchive({ lv = 'elementary', onBack, onXp, trackWeak
 
     {overlay?.kind === 'deck' && <DeckViewer title={`你的牌組（${run.hero.deck.length}）`} kicker="DECK" cards={run.hero.deck} onClose={() => setOverlay(null)}/>}
     {overlay?.kind === 'draw' && c && <DeckViewer title={`抽牌堆（${c.draw.length}）`} kicker="DRAW PILE" note="順序已隱藏，依類型排列。" cards={c.draw.map(uid => c.cards[uid])} onClose={() => setOverlay(null)}/>}
-    {overlay?.kind === 'discard' && c && <DeckViewer title={`棄牌堆（${c.discard.length}）`} kicker="DISCARD PILE" note={c.faded.length ? `另有 ${c.faded.length} 張牌已 Fade（消逝）。` : null} cards={c.discard.map(uid => c.cards[uid])} onClose={() => setOverlay(null)}/>}
+    {overlay?.kind === 'discard' && c && <DeckViewer title={`棄牌堆（${c.discard.length}）`} kicker="DISCARD PILE" cards={c.discard.map(uid => c.cards[uid])} onClose={() => setOverlay(null)}
+      extra={{ title: `本場已消逝（${c.faded.length}）`, note: 'Fade 的牌在這場戰鬥中不會再回來，下一場戰鬥會回到牌組。', cards: c.faded.map(uid => c.cards[uid]) }}/>}
     {overlay?.kind === 'potion' && potionId && <Modal title={POTIONS[potionId].zh} kicker={POTIONS[potionId].en} onClose={() => setOverlay(null)} className="ea-potion-modal">
       <div className="ea-potion-detail"><PotionArt color={POTIONS[potionId].color} size={48}/><p>{POTIONS[potionId].text}</p></div>
       {!potionUsable && <p className="ea-modal-note">{c ? '等到你的回合再使用。' : '藥劑只能在戰鬥中使用。'}</p>}
@@ -350,6 +351,7 @@ export default function EchoArchive({ lv = 'elementary', onBack, onXp, trackWeak
         <Toggle label="音效" hint="出牌、打擊與勝利的聲音" checked={settings.sfx} onChange={value => setSetting('sfx', value)}/>
         <Toggle label="單字發音" hint="詠唱時自動唸出英文符文" checked={settings.voice} onChange={value => setSetting('voice', value)}/>
         <Toggle label="詠唱題目" hint="關閉後 Chant 牌直接以基本效果施放" checked={settings.chant} onChange={value => setSetting('chant', value)}/>
+        <Toggle label="結束回合前提醒" hint="還有能打的牌時，結束回合要再按一次確認" checked={settings.endWarn} onChange={value => setSetting('endWarn', value)}/>
       </div>
       <p className="ea-modal-note">進度會自動保存，隨時可以回來繼續。</p>
       <div className="ea-modal-actions is-stack">

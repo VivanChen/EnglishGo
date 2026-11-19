@@ -3,7 +3,7 @@ import { CARDS, KEYWORDS, POWER_TEXT } from '../data/cards.js';
 import { ENEMIES } from '../data/enemies.js';
 import { POTIONS } from '../data/relics.js';
 import { HEROES, heroOf } from '../data/heroes.js';
-import { canPlay, cardContext, cardCost, intentOf, living } from '../engine/engine.js';
+import { canPlay, cardContext, cardCost, hasRelic, intentOf, living } from '../engine/engine.js';
 import CardFace, { KeywordList } from '../components/CardFace.jsx';
 import Glyph from '../components/Glyph.jsx';
 import { Backdrop, EnemyArt, FamiliarArt, HeroArt } from '../components/Creatures.jsx';
@@ -27,6 +27,28 @@ export function Statuses({ st = {}, pw = {} }) {
       <Glyph name={key} size={15}/><b>{value}</b>
     </span>
   ))}</div>;
+}
+
+// What the enemies will hit for this round against the Ward you will have
+// when they attack (Stoneheart and Owl Feather add theirs at end of turn).
+export function incomingDamage(run) {
+  const c = run.combat;
+  if (!c || c.phase !== 'player') return null;
+  const attack = living(c).reduce((sum, enemy) => { const intent = intentOf(run, enemy); return sum + (intent?.dmg != null ? intent.dmg * intent.hits : 0); }, 0);
+  const stone = c.player.pw.stoneheart || 0;
+  const block = c.player.ward + stone + (hasRelic(run, 'owlFeather') && c.player.ward + stone === 0 ? 6 : 0);
+  return { attack, block, loss: Math.max(0, attack - block) };
+}
+
+function Incoming({ run }) {
+  const info = incomingDamage(run);
+  if (!info || !info.attack) return null;
+  const tip = `敵人這輪預計造成 ${info.attack} 傷害，你會有 ${info.block} Ward，${info.loss ? `將失去 ${info.loss} 生命` : '可以全部擋下'}。`;
+  return <div className={`ea-incoming ${info.loss ? 'is-hurt' : 'is-safe'}`} tabIndex={0} data-tip={tip} aria-label={tip}>
+    <Glyph name="attack" size={13}/><b>{info.attack}</b>
+    <Glyph name="defend" size={13}/><b>{info.block}</b>
+    <span>{info.loss ? `−${info.loss}` : '擋得住'}</span>
+  </div>;
 }
 
 function HpBar({ hp, max, ward }) {
@@ -415,9 +437,21 @@ export default function CombatScreen({ run, dispatch, settings, pool, speak, pot
     setInspect(previous => (previous === uid ? null : uid));
   };
 
+  // Ending a turn with playable cards left asks once more (unless switched off).
+  const [confirmEnd, setConfirmEnd] = useState(false);
+  useEffect(() => { setConfirmEnd(false); }, [c.energy, c.hand.length, c.phase]);
+
   // The hand sweeps toward the discard pile before the enemy phase starts.
   const endTurn = useCallback(() => {
     if (c.phase !== 'player' || chant || c.choice || discarding) return;
+    const playable = c.hand.filter(uid => canPlay(run, uid)).length;
+    if (playable && !confirmEnd && !coach && settings.endWarn !== false) {
+      setConfirmEnd(true);
+      setNotice({ key: Date.now(), text: `還有 ${playable} 張牌可以打出，再按一次就結束回合` });
+      sfx.select();
+      return;
+    }
+    setConfirmEnd(false);
     setSelected(null); setInspect(null); setPotionAim(null);
     const sweep = c.hand.some(uid => !CARDS[c.cards[uid].id].keep);
     setDiscarding(sweep);
@@ -426,7 +460,7 @@ export default function CombatScreen({ run, dispatch, settings, pool, speak, pot
       setBanner({ key: `e${Date.now()}`, en: 'Enemy Turn', zh: '敵人的回合' });
       dispatch({ type: 'END_TURN' });
     }, sweep ? 300 : 0);
-  }, [c.phase, c.choice, c.hand, c.cards, chant, discarding, dispatch, setPotionAim, later]);
+  }, [c.phase, c.choice, c.hand, c.cards, run, chant, discarding, confirmEnd, coach, settings.endWarn, dispatch, setPotionAim, later]);
 
   useEffect(() => {
     const onKey = event => {
@@ -502,6 +536,7 @@ export default function CombatScreen({ run, dispatch, settings, pool, speak, pot
           <div className="ea-unit-info">
             <div className="ea-unit-name"><b lang="en">{hero.en}</b><span>{hero.zh}</span></div>
             <HpBar hp={run.hero.hp} max={run.hero.maxHp} ward={c.player.ward}/>
+            <Incoming run={run}/>
             <Statuses st={c.player.st} pw={c.player.pw}/>
             {c.echo > 0 && <span className="ea-echo-chip" lang="en">Echo ×{c.echo}</span>}
           </div>
@@ -565,8 +600,9 @@ export default function CombatScreen({ run, dispatch, settings, pool, speak, pot
       </div>
       <div className="ea-tray-side is-right">
         <button type="button" className="ea-pile" onClick={() => onShowPile('discard')} aria-label={`棄牌堆 ${c.discard.length} 張`}><Glyph name="deck" size={22}/><b>{c.discard.length}</b><small>棄牌堆</small></button>
-        <button type="button" className={`ea-end-turn ${c.phase === 'player' && !c.hand.some(uid => canPlay(run, uid)) ? 'is-ready' : ''}`} disabled={c.phase !== 'player' || Boolean(chant) || Boolean(c.choice)} onClick={endTurn}>
-          <span lang="en">{c.phase === 'enemy' ? 'Enemy…' : 'End Turn'}</span><small>{c.phase === 'enemy' ? '敵人行動中' : '結束回合 (E)'}</small>
+        <button type="button" className={`ea-end-turn ${c.phase === 'player' && !c.hand.some(uid => canPlay(run, uid)) ? 'is-ready' : ''} ${confirmEnd ? 'is-confirm' : ''}`} disabled={c.phase !== 'player' || Boolean(chant) || Boolean(c.choice)} onClick={endTurn}
+          aria-label={c.phase === 'enemy' ? 'Enemy 敵人行動中' : confirmEnd ? 'Sure? 再按一次結束回合' : 'End Turn 結束回合 (E)'}>
+          <span lang="en">{c.phase === 'enemy' ? 'Enemy…' : confirmEnd ? 'Sure?' : 'End Turn'}</span><small>{c.phase === 'enemy' ? '敵人行動中' : confirmEnd ? '再按一次結束回合' : '結束回合 (E)'}</small>
         </button>
       </div>
 
