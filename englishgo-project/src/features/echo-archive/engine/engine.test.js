@@ -875,3 +875,200 @@ describe('echo archive Inkcaller full runs', () => {
     expect(['victory', 'defeat']).toContain(run.screen);
   });
 });
+
+// ───────────── Wave 4: Fold and new tricks for the older play styles ─────────────
+const WAVE4 = ['fold', 'crease', 'paperFan', 'confetti', 'origami', 'keenCrease', 'paperArmor', 'finalFold', 'paperPlane', 'thousandCranes', 'honedEdge', 'execute', 'afterimage', 'scorch', 'brand', 'eternalFlame', 'verse', 'spellbook', 'wordsmith', 'epic', 'smear', 'scrub', 'inkTide', 'spiritHowl', 'pounce'];
+const bladesIn = run => run.combat.hand.filter(uid => run.combat.cards[uid].id === 'paperBlade');
+const foeHp = (run, index = 0) => run.combat.enemies[index].hp;
+const withChant = (run, id, ok) => act(run, { type: 'PLAY_CARD', uid: giveCard(run, id), target: 'e0', chant: { word: 'star', meaning: '星星', ok } });
+function addJunk(run, pile, n) {
+  for (let i = 0; i < n; i++) {
+    const uid = `j${pile}${i}`;
+    run.combat.cards[uid] = { uid, id: 'smudge', up: false, temp: true };
+    run.combat[pile].push(uid);
+  }
+}
+
+describe('echo archive fold', () => {
+  it('folds Paper Blades that hit, fade, power up and feed Final Fold', () => {
+    let run = heroCombat('scribe', ['bookworm']);
+    run.combat.hand = [];
+    run = play(run, 'fold');
+    expect(bladesIn(run)).toHaveLength(2);
+    run = play(run, 'keenCrease');
+    run = play(run, 'paperArmor');
+    let hp = foeHp(run);
+    const ward = run.combat.player.ward;
+    const first = bladesIn(run)[0];
+    run = act(run, { type: 'PLAY_CARD', uid: first, target: 'e0' });
+    expect(hp - foeHp(run)).toBe(4 + 2);
+    expect(run.combat.player.ward).toBe(ward + 2);
+    expect(run.combat.faded).toContain(first);
+    expect(run.combat.blades).toBe(1);
+    hp = foeHp(run);
+    run = play(run, 'finalFold');
+    expect(hp - foeHp(run)).toBe(6 + 3);
+    const left = bladesIn(run)[0];
+    run = act(run, { type: 'END_TURN' });
+    expect(run.combat.faded).toContain(left);
+    expect(run.combat.discard).not.toContain(left);
+    expect(run.hero.deck.some(card => card.id === 'paperBlade')).toBe(false);
+  });
+
+  it('bursts blades with Confetti, fills the hand with Thousand Cranes and folds each turn with Origami', () => {
+    let run = heroCombat('scribe', ['bookworm', 'inkling']);
+    run.combat.hand = [];
+    run = play(run, 'fold', 'e0', true);
+    expect(bladesIn(run)).toHaveLength(3);
+    const before = [foeHp(run, 0), foeHp(run, 1)];
+    run = play(run, 'confetti');
+    expect(before[0] - foeHp(run, 0)).toBe(3 + 3 * 4);
+    expect(before[1] - foeHp(run, 1)).toBe(3 + 3 * 4);
+    expect(bladesIn(run)).toHaveLength(0);
+    run = play(run, 'thousandCranes');
+    expect(run.combat.hand).toHaveLength(10);
+    expect(bladesIn(run).every(uid => run.combat.cards[uid].up)).toBe(true);
+    run.combat.hand = [];
+    run = play(run, 'origami');
+    run = act(run, { type: 'END_TURN' });
+    finishEnemyPhase(run);
+    expect(bladesIn(run)).toHaveLength(1);
+
+    let boxed = toMap(9);
+    boxed.hero.relics.push('origamiBox');
+    boxed = act(boxed, { type: 'MAP_SELECT', id: availableNodes(boxed)[0] });
+    expect(bladesIn(boxed)).toHaveLength(2);
+    expect(boxed.combat.hand).toHaveLength(7);
+  });
+
+  it('keeps Paper Blades out of rewards but lets both heroes build Fold', () => {
+    expect(cardPool(createRun({ seed: 4 }))).not.toContain('paperBlade');
+    expect(cardPool(createRun({ seed: 4, hero: 'caller' }))).toContain('crease');
+    expect(inHeroPool('origami', 'caller')).toBe(true);
+    expect(inHeroPool('execute', 'caller')).toBe(false);
+    expect(ARCHIVE_CARDS).toEqual(expect.arrayContaining(['paperPlane', 'thousandCranes', 'afterimage']));
+    const text = (id, ctx = {}) => JSON.stringify(describeCard({ id, up: false }, ctx));
+    expect(text('paperBlade', { keen: 2 })).toContain('"n":6');
+    expect(text('finalFold', { blades: 3 })).toContain('"n":15');
+    expect(text('smear', { statuses: 2 })).toContain('"n":10');
+    expect(text('scrub')).not.toContain('能量');
+  });
+});
+
+describe('echo archive wave 4 cards', () => {
+  it('grows Honed Edge for one combat, doubles Execute on wounded foes and repeats with Afterimage', () => {
+    let run = heroCombat('scribe', ['bookworm']);
+    const uid = giveCard(run, 'honedEdge');
+    let hp = foeHp(run);
+    run = act(run, { type: 'PLAY_CARD', uid, target: 'e0' });
+    expect(hp - foeHp(run)).toBe(6);
+    run.combat.discard = run.combat.discard.filter(item => item !== uid);
+    run.combat.hand.push(uid);
+    hp = foeHp(run);
+    run = act(run, { type: 'PLAY_CARD', uid, target: 'e0' });
+    expect(hp - foeHp(run)).toBe(9);
+    expect(run.combat.cards[uid].grow).toBe(6);
+    expect(run.hero.deck.some(card => card.grow)).toBe(false);
+
+    run.combat.enemies[0].hp = 60;
+    run = play(run, 'execute');
+    expect(60 - foeHp(run)).toBe(10);
+    run.combat.enemies[0].hp = 30;
+    run = play(run, 'execute');
+    expect(30 - foeHp(run)).toBe(20);
+
+    run.combat.enemies[0].hp = 60;
+    run = play(run, 'afterimage');
+    run = act(run, { type: 'END_TURN' });
+    finishEnemyPhase(run);
+    expect(run.combat.echo).toBe(1);
+    run.combat.energy = 5;
+    run = play(run, 'slash');
+    expect(60 - foeHp(run)).toBe(12);
+  });
+
+  it('scales Scorch with burn, brands, and keeps burn alive with Eternal Flame', () => {
+    let run = heroCombat('scribe', ['bookworm']);
+    run.combat.enemies[0].st.burn = 5;
+    let hp = foeHp(run);
+    run = play(run, 'scorch');
+    expect(hp - foeHp(run)).toBe(10);
+    run = play(run, 'brand');
+    expect(run.combat.enemies[0].st).toMatchObject({ burn: 9, exposed: 1 });
+    run = play(run, 'eternalFlame');
+    hp = foeHp(run);
+    run = act(run, { type: 'END_TURN' });
+    finishEnemyPhase(run);
+    expect(hp - foeHp(run)).toBe(9);
+    expect(run.combat.enemies[0].st.burn).toBe(9);
+  });
+
+  it('strengthens Verse, Spellbook, Wordsmith and Epic through chants', () => {
+    let run = heroCombat('scribe', ['bookworm', 'inkling']);
+    let hp = foeHp(run);
+    run = withChant(run, 'verse', false);
+    expect(hp - foeHp(run)).toBe(8);
+    hp = foeHp(run);
+    run = withChant(run, 'verse', true);
+    expect(hp - foeHp(run)).toBe(12);
+    run = play(run, 'wordsmith');
+    run.combat.hand = [];
+    const energy = run.combat.energy, ward = run.combat.player.ward;
+    run = withChant(run, 'spellbook', true);
+    expect(run.combat.energy).toBe(energy - 1 + 1);
+    expect(run.combat.hand).toHaveLength(2);
+    expect(run.combat.player.ward).toBe(ward + 5);
+    const before = [foeHp(run, 0), foeHp(run, 1)];
+    run = withChant(run, 'epic', true);
+    expect(before[0] - foeHp(run, 0)).toBe(13 + 7);
+    expect(before[1] - foeHp(run, 1)).toBe(13 + 7);
+  });
+
+  it('turns status cards into damage with Smear and Ink Tide, and fades a card with Scrub', () => {
+    let run = heroCombat('scribe', ['bookworm', 'inkling']);
+    addJunk(run, 'discard', 2);
+    const hp = foeHp(run);
+    run = play(run, 'smear');
+    expect(hp - foeHp(run)).toBe(6 + 2 * 2);
+    run.combat.hand = [];
+    addJunk(run, 'hand', 2);
+    const before = [foeHp(run, 0), foeHp(run, 1)];
+    run = play(run, 'inkTide');
+    expect(before[0] - foeHp(run, 0)).toBe(5 + 2 * 5);
+    expect(before[1] - foeHp(run, 1)).toBe(5 + 2 * 5);
+    expect(run.combat.faded).toEqual(expect.arrayContaining(['jhand0', 'jhand1']));
+    expect(run.combat.hand).toHaveLength(0);
+    const energy = run.combat.energy;
+    run = play(run, 'scrub');
+    expect(run.combat.choice?.action).toBe('fade');
+    const pick = run.combat.choice.options[0];
+    run = act(run, { type: 'CHOOSE_CARD', uid: pick });
+    expect(run.combat.faded).toContain(pick);
+    expect(run.combat.energy).toBe(energy - 1);
+  });
+
+  it('gives the Inkcaller Spirit Howl and Pounce', () => {
+    let run = heroCombat('caller', ['bookworm', 'inkling']);
+    run = play(run, 'spiritHowl');
+    expect(run.combat.enemies.every(enemy => enemy.st.weak === 1)).toBe(true);
+    expect(run.combat.player.familiar).toBe(4);
+    run.combat.enemies[1].hp = 30;
+    const hp = foeHp(run);
+    run = play(run, 'pounce');
+    expect(hp - foeHp(run)).toBe(5);
+    expect(30 - foeHp(run, 1)).toBe(4);
+  });
+
+  it.each([[71, 'scribe'], [72, 'caller']])('seed %i with every new card in a %s deck finishes without getting stuck', (seed, hero) => {
+    let run = createRun({ seed: seed * 7919, difficulty: 'story', hero, unlocked: ARCHIVE_CARDS });
+    WAVE4.filter(id => inHeroPool(id, hero)).forEach((id, index) => run.hero.deck.push({ uid: `w${index}`, id, up: index % 2 === 0 }));
+    let steps = 0;
+    while (!['victory', 'defeat'].includes(run.screen) && steps < 9000) {
+      const next = botStep(run, seed + steps);
+      expect(next).not.toBe(run);
+      run = next;
+      steps++;
+    }
+    expect(['victory', 'defeat']).toContain(run.screen);
+  });
+});

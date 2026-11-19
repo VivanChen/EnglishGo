@@ -7,6 +7,7 @@ export const RELICS = {
   paperCrane: { en: 'Paper Crane', zh: '紙鶴', tier: 'common', glyph: 'crane', color: '#f4ead2', text: '每場戰鬥開始時，所有敵人獲得 1 層 Weak。' },
   smudgedLens: { en: 'Smudged Lens', zh: '污損鏡片', tier: 'common', glyph: 'lens', color: '#9aa6c9', text: '每抽到 1 張狀態牌或詛咒，獲得 3 Ward。' },
   spiritBell: { en: 'Spirit Bell', zh: '召靈鈴', tier: 'common', glyph: 'bell', color: '#c39bff', hero: 'caller', text: '每場戰鬥開始時，墨靈 +2。' },
+  origamiBox: { en: 'Origami Box', zh: '摺紙盒', tier: 'common', glyph: 'origamiBox', color: '#f4ead2', text: '每場戰鬥第一回合，把 2 張 Paper Blade 加入手中。' },
   metronome: { en: 'Metronome', zh: '節拍器', tier: 'uncommon', glyph: 'metronome', color: '#d6a648', text: '每回合打出第 6 張牌時，獲得 1 點能量。' },
   runestone: { en: 'Runestone', zh: '符文石', tier: 'uncommon', glyph: 'rune', color: '#7fe0d0', text: '每場戰鬥第一次 Chant 強化成功時，獲得 1 點能量並抽 1 張牌。' },
   goldLeaf: { en: 'Gold Leaf', zh: '金箔', tier: 'uncommon', glyph: 'leaf', color: '#f2c76b', text: '商店所有商品打 8 折。' },

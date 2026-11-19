@@ -16,7 +16,7 @@ export const HEROES = {
 export const HERO_IDS = Object.keys(HEROES);
 export const heroOf = run => (HEROES[run?.hero?.id] ? run.hero.id : 'scribe');
 
-// The Inkcaller shares the Burn, Chant and Ink cards plus a few utility
+// The Inkcaller shares the Burn, Chant, Ink and Fold cards plus a few utility
 // skills with the Scribe; everything else in its pool is its own.
 const CALLER_UTILITY = new Set(['focus', 'insight', 'parry', 'barrier', 'smoke', 'haste', 'rewind', 'clarity', 'sanctum', 'mend', 'hex', 'echo', 'surge']);
 export function inHeroPool(id, hero = 'scribe') {
@@ -24,7 +24,7 @@ export function inHeroPool(id, hero = 'scribe') {
   if (!card) return false;
   if (card.hero) return card.hero === hero;
   if (hero === 'scribe') return true;
-  return ['burn', 'chant', 'ink'].includes(archOf(id)) || CALLER_UTILITY.has(id);
+  return ['burn', 'chant', 'ink', 'fold'].includes(archOf(id)) || CALLER_UTILITY.has(id);
 }
 export const heroPool = hero => REWARD_POOL.filter(id => inHeroPool(id, hero));
 

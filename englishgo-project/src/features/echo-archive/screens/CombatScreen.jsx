@@ -269,7 +269,8 @@ export default function CombatScreen({ run, dispatch, settings, pool, speak, pot
         case 'chosen': sfx.card(); break;
         case 'cards': spawn.push({ to: 'player', text: `+${f.amount} ${CARDS[f.card].en}`, kind: 'debuff' }); break;
         case 'echo': spawn.push({ to: 'player', text: 'Echo!', kind: 'buff' }); break;
-        case 'conjure': spawn.push({ to: 'player', text: `+ ${CARDS[f.card].en}`, kind: 'buff' }); break;
+        case 'conjure': spawn.push({ to: 'player', text: `+${f.amount > 1 ? f.amount : ''} ${CARDS[f.card].en}`, kind: 'buff' }); break;
+        case 'burst': spawn.push({ to: 'player', text: `Burst ×${f.amount}`, kind: 'buff' }); break;
         case 'act': nextMarks[f.from] = 'act'; break;
         case 'familiar': nextMarks.familiar = 'strike'; burst(f.to, 'spirit'); if (f.all) living(c).forEach(enemy => { if (enemy.uid !== f.to) burst(enemy.uid, 'spirit'); }); break;
         case 'feed': spawn.push({ to: 'familiar', text: f.amount > 0 ? `+${f.amount}` : `${f.amount}`, kind: 'buff' }); nextMarks.familiar = nextMarks.familiar || 'grow'; sfx.buff(); break;
@@ -470,7 +471,8 @@ export default function CombatScreen({ run, dispatch, settings, pool, speak, pot
 
   const n = c.hand.length;
   const cardW = handWidth < 520 ? 84 : handWidth < 760 ? 112 : 132;
-  const overlap = n > 1 ? Math.min(cardW * 0.62, Math.max(0, (n * cardW - (handWidth - 16)) / (n - 1))) : 0;
+  // Fold can fill the hand, so a full hand squeezes until it fits a phone.
+  const overlap = n > 1 ? Math.min(cardW * 0.7, Math.max(0, (n * cardW - (handWidth - 28)) / (n - 1))) : 0;
   const focus = drag?.uid || selected || hovered;
   const aimedEnemy = c.enemies.find(enemy => enemy.uid === (drag?.over || null));
   const ctx = cardContext(run);

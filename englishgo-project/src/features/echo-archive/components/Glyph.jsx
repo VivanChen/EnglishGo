@@ -168,6 +168,39 @@ Object.assign(GLYPHS, {
   key: <><circle cx="20" cy="22" r="12" {...soft}/><circle cx="20" cy="22" r="12"/><circle cx="20" cy="22" r="4" {...F}/><path d="M28 30L54 56M44 46L50 40M50 52L56 46" strokeWidth="4"/></>,
   summon: <><ellipse cx="32" cy="50" rx="24" ry="8" {...soft}/><ellipse cx="32" cy="50" rx="24" ry="8"/><path d="M22 48C22 30 26 18 32 18S42 30 42 48" {...soft}/><path d="M22 48C22 30 26 18 32 18S42 30 42 48"/><circle cx="28" cy="30" r="2.5" {...F}/><circle cx="37" cy="30" r="2.5" {...F}/><path d="M10 18L15 23M54 18L49 23M32 4V9" opacity=".7"/></>,
 });
+// Wave 4: Fold (paper blades) and new tricks for the older play styles.
+const CRANE = 'M4 30L28 36L36 12L40 36L60 22L44 44L22 46Z';
+const LYRE = 'M18 10C10 24 14 44 24 50H40C50 44 54 24 46 10';
+Object.assign(GLYPHS, {
+  paperBlade: <><path d="M8 56L52 6L30 40Z" {...F}/><path d="M8 56L52 6L40 46Z" {...soft}/><path d="M8 56L52 6L40 46Z"/></>,
+  fold: <><path d="M12 12H52V36L36 52H12Z" {...soft}/><path d="M12 12H52V36L36 52H12Z"/><path d="M52 36H36V52Z" {...F}/><path d="M20 24C28 18 36 20 40 28M34 22L40 28L33 31" opacity=".7"/></>,
+  crease: <><path d="M10 14L32 8L54 14V50L32 56L10 50Z" {...soft}/><path d="M10 14L32 8L54 14V50L32 56L10 50ZM32 8V56"/><path d="M6 46L58 18" strokeWidth="5"/></>,
+  paperFan: <><path d="M32 54L6 26A30 30 0 0 1 58 26Z" {...soft}/><path d="M32 54L6 26A30 30 0 0 1 58 26ZM32 54L15 13M32 54V4M32 54L49 13"/><circle cx="32" cy="54" r="4" {...F}/></>,
+  confetti: <><path d="M10 14L18 10L20 18L12 22Z" {...F}/><path d="M40 8L48 12L44 20Z" {...soft}/><path d="M40 8L48 12L44 20Z"/><path d="M26 30L34 26L38 34L30 38Z" {...F} fillOpacity=".7"/><path d="M50 34L58 38L52 46Z" {...F}/><path d="M8 44L16 40L18 50Z" {...soft}/><path d="M8 44L16 40L18 50Z"/><path d="M30 50L38 48L40 56L32 58Z" {...F}/><path d="M24 4V8M58 20H62M2 30H6" opacity=".6"/></>,
+  origami: <><path d="M32 32V6L46 18Z" {...F}/><path d="M32 32H58L46 46Z" {...F} fillOpacity=".55"/><path d="M32 32V58L18 46Z" {...F}/><path d="M32 32H6L18 18Z" {...F} fillOpacity=".55"/><path d="M32 6L46 18L58 32L46 46L32 58L18 46L6 32L18 18Z"/></>,
+  keenCrease: <><path d="M12 52L46 10L52 16L18 56Z" {...soft}/><path d="M12 52L46 10L52 16L18 56Z"/><path d="M15 54L49 13" opacity=".6"/><path d={star4(48, 44, 9)} {...F}/></>,
+  paperArmor: <><path d={SHIELD} {...soft}/><path d={SHIELD}/><path d="M12 15L32 30L52 15M32 30V57" opacity=".75"/><path d="M13 32L32 45L51 32" opacity=".5"/></>,
+  finalFold: <><path d="M6 58L50 6L58 14L14 58Z" {...F}/><path d="M10 58L54 10" stroke="#fff" strokeOpacity=".5"/><path d={star4(44, 44, 12)} {...F}/><path d={star4(18, 18, 7)} {...F} fillOpacity=".6"/></>,
+  paperPlane: <><path d="M4 30L60 8L40 56L30 38Z" {...soft}/><path d="M4 30L60 8L40 56L30 38ZM60 8L30 38M30 38L28 50L36 46"/></>,
+  thousandCranes: <>{[[0, 2, 0.5], [30, 0, 0.5], [14, 24, 0.55], [32, 34, 0.45], [-2, 40, 0.38]].map(([x, y, s]) => <g key={`${x}-${y}`} transform={`translate(${x} ${y}) scale(${s})`}><path d={CRANE} {...F} fillOpacity={s > 0.45 ? 1 : 0.6}/></g>)}</>,
+  honedEdge: <><path d="M8 52H40L48 44H16Z" {...soft}/><path d="M8 52H40L48 44H16Z"/><path d="M20 38L54 6" strokeWidth="5"/><path d="M48 34L56 30M42 38L46 44M54 42L60 44" opacity=".7"/></>,
+  execute: <><path d="M18 58L44 10" strokeWidth="5"/><path d="M34 12C44 2 60 10 56 26C50 20 42 20 36 24Z" {...F}/></>,
+  afterimage: <><path d="M18 58Q34 42 58 16" strokeWidth="6" opacity=".3"/><path d="M4 44Q20 30 42 6" opacity=".3"/><path d="M10 52Q26 36 50 10" strokeWidth="6"/><path d={star4(50, 46, 7)} {...F}/></>,
+  scorch: <><path d={FLAME} {...soft}/><path d="M12 50L52 14" strokeWidth="5"/><path d="M20 56L56 24" opacity=".5"/></>,
+  brand: <><path d="M8 56L30 34" strokeWidth="5"/><path d="M28 20H50V42H28Z" {...F}/><path d="M34 26L44 36M44 26L34 36" stroke="#000" strokeOpacity=".45" strokeWidth="3.5"/><path d="M54 14C56 10 54 6 56 4M60 24C62 20 60 16 62 14" opacity=".7"/></>,
+  eternalFlame: <><path d={FLAME} transform="translate(8 0) scale(.75)" {...F}/><path d="M12 52C12 44 22 44 32 52S52 60 52 52S42 44 32 52S12 60 12 52Z" strokeWidth="3.5"/></>,
+  verse: <><path d={LYRE} {...soft}/><path d={LYRE}/><path d="M26 16V50M32 14V50M38 16V50" strokeWidth="2.2"/><path d="M20 56H44" strokeWidth="4"/></>,
+  spellbook: <><path d="M14 8H48V56H14Z" {...soft}/><path d="M14 8H48V56H14ZM20 8V56"/><path d={star4(34, 30, 11)} {...F}/></>,
+  wordsmith: <><path d="M10 26H50C50 34 44 38 38 38V46H46V54H18V46H26V38H22C16 38 10 34 10 26Z" {...soft}/><path d="M10 26H50C50 34 44 38 38 38V46H46V54H18V46H26V38H22C16 38 10 34 10 26Z"/><path d="M24 18L30 4L36 18M26.5 12.5H33.5" strokeWidth="2.6"/></>,
+  epic: <><path d="M32 26C24 20 14 20 6 22V54C14 52 24 52 32 58C40 52 50 52 58 54V22C50 20 40 20 32 26Z" {...F}/><path d="M32 26V58" stroke="#000" strokeOpacity=".35"/><path d="M32 4V14M14 8L20 16M50 8L44 16M4 16L12 20M60 16L52 20" strokeWidth="3"/></>,
+  smear: <><path d="M8 40C16 28 28 24 40 26C50 28 56 22 58 16C58 32 48 40 36 40C26 40 18 46 14 56C10 52 6 46 8 40Z" {...F}/><circle cx="50" cy="44" r="4" {...F}/><circle cx="56" cy="54" r="2.5" {...F}/></>,
+  scrub: <><path d="M10 34L34 10L54 30L30 54Z" {...soft}/><path d="M10 34L34 10L54 30L30 54ZM22 22L42 42"/><path d="M4 58C12 56 16 60 24 58M38 60H58" opacity=".6"/></>,
+  inkTide: <><path d="M4 44C10 30 22 24 32 30C26 34 26 42 34 44C44 46 52 38 50 26C58 32 62 44 56 52C50 60 14 60 4 52Z" {...F}/><path d="M10 20C16 14 22 14 28 20M36 12C42 6 48 6 54 12" opacity=".6"/></>,
+  howl: <><path d={BLOB} {...soft}/><path d={BLOB}/><circle cx="25" cy="26" r="3.5" {...F}/><circle cx="39" cy="26" r="3.5" {...F}/><ellipse cx="32" cy="40" rx="5" ry="7" {...F}/><path d="M5 22C1 30 1 38 5 46M59 22C63 30 63 38 59 46" opacity=".7"/></>,
+  pounce: <><path d={ghost(38, 28, 15)} {...soft}/><path d={ghost(38, 28, 15)}/><circle cx="33" cy="28" r="2.4" {...F}/><circle cx="43" cy="28" r="2.4" {...F}/><path d="M4 30H18M8 40H20M6 50H16" strokeWidth="3.5" opacity=".6"/></>,
+  origamiBox: <><path d="M10 30H54V56H10Z" {...soft}/><path d="M10 30H54V56H10ZM10 30L18 22H46L54 30"/><path d="M22 26L30 6L34 24Z" {...F}/><path d="M34 24L46 8L42 26Z" {...F} fillOpacity=".6"/></>,
+});
+
 GLYPHS.familiar = GLYPHS.spirit;
 GLYPHS.emberSpirit = GLYPHS.spiritFlame;
 GLYPHS.twinStrike = GLYPHS.bond;

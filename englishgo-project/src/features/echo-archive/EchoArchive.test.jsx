@@ -2,7 +2,9 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import { describe, expect, it, vi } from 'vitest';
 import EchoArchive from './EchoArchive.jsx';
 import { makeChant } from './chant.js';
-import { ARCHIVE_CARDS } from './data/cards.js';
+import { ARCHIVE_CARDS, CARDS, POWER_TEXT } from './data/cards.js';
+import { RELICS } from './data/relics.js';
+import { hasGlyph } from './components/Glyph.jsx';
 
 const words = [
   { w: 'apple', m: '蘋果', p: 'n.' }, { w: 'happy', m: '開心的', p: 'adj.' }, { w: 'school', m: '學校', p: 'n.' },
@@ -221,5 +223,13 @@ describe('Echo Archive', () => {
     act(() => { fireEvent.click(within(menu).getByRole('button', { name: /確定放棄/ })); });
     expect(screen.getByRole('button', { name: /開始遠征/ })).toBeInTheDocument();
     expect(localStorage.getItem('eg_echo_archive_run')).toBeNull();
+  });
+});
+
+describe('Echo Archive art', () => {
+  it('draws an icon for every card, relic and power', () => {
+    Object.entries(CARDS).forEach(([id, card]) => expect(hasGlyph(card.glyph), id).toBe(true));
+    Object.entries(RELICS).forEach(([id, relic]) => expect(hasGlyph(relic.glyph), id).toBe(true));
+    Object.keys(POWER_TEXT).forEach(id => expect(hasGlyph(id), id).toBe(true));
   });
 });
