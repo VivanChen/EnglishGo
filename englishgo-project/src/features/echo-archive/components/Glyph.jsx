@@ -201,6 +201,30 @@ Object.assign(GLYPHS, {
   origamiBox: <><path d="M10 30H54V56H10Z" {...soft}/><path d="M10 30H54V56H10ZM10 30L18 22H46L54 30"/><path d="M22 26L30 6L34 24Z" {...F}/><path d="M34 24L46 8L42 26Z" {...F} fillOpacity=".6"/></>,
 });
 
+// Wave 5: a Rare and a Mythic for every play style.
+const BLOT = 'M30 10C38 8 40 18 46 16C54 14 56 26 50 30C58 34 54 46 46 44C46 54 34 56 32 48C26 56 14 52 18 44C8 44 8 32 16 30C10 22 20 14 26 20C24 14 26 11 30 10Z';
+const INFINITY = 'M12 52C12 44 22 44 32 52S52 60 52 52S42 44 32 52S12 60 12 52Z';
+const DRAGON = 'M6 40L26 22L34 30L50 10L46 30L58 34L40 42L30 56L26 42Z';
+Object.assign(GLYPHS, {
+  mountainCleaver: <><path d="M4 56L22 24L30 36L40 18L60 56Z" {...soft}/><path d="M4 56L22 24L30 36L40 18L60 56Z"/><path d="M38 4L30 60" strokeWidth="5"/><path d={star4(44, 10, 7)} {...F}/></>,
+  swordSaint: <><circle cx="32" cy="14" r="9" opacity=".6"/><path d="M12 56L44 16M52 56L20 16" strokeWidth="5"/><path d="M8 46L18 56M56 46L46 56" strokeWidth="4"/></>,
+  flashpoint: <><path d="M32 4L36 18L48 10L42 24L58 26L44 34L54 46L38 40L32 56L26 40L10 46L20 34L6 26L22 24L16 10L28 18Z" {...soft}/><path d="M32 4L36 18L48 10L42 24L58 26L44 34L54 46L38 40L32 56L26 40L10 46L20 34L6 26L22 24L16 10L28 18Z"/><path d={FLAME} transform="translate(16 14) scale(.5)" {...F}/></>,
+  hellfire: <><path d={FLAME} transform="translate(-6 6) scale(.8)" {...F} fillOpacity=".55"/><path d={FLAME} transform="translate(14 2) scale(.85)" {...F}/><path d="M6 58H58" strokeWidth="4"/></>,
+  mirrorWall: <><path d={SHIELD} {...soft}/><path d={SHIELD}/><path d="M22 20L42 40M30 16L46 32" stroke="#fff" strokeOpacity=".6"/><path d="M50 22L60 10M60 10H51M60 10V19" strokeWidth="3.5"/></>,
+  colossus: <><circle cx="32" cy="13" r="8" {...F}/><path d="M10 58V34C10 26 18 22 32 22S54 26 54 34V58Z" {...soft}/><path d="M10 58V34C10 26 18 22 32 22S54 26 54 34V58ZM22 58V40M42 58V40"/></>,
+  finisher: <><path d="M10 10L54 54M54 10L10 54" strokeWidth="6"/><path d="M32 2V10M32 54V62M2 32H10M54 32H62" opacity=".6"/><circle cx="32" cy="32" r="6" {...F}/></>,
+  perpetualMotion: <><circle cx="32" cy="32" r="10" {...F}/><path d="M32 8A24 24 0 0 1 56 32M32 56A24 24 0 0 1 8 32" strokeWidth="4"/><path d="M50 26L56 33L62 26M14 38L8 31L2 38" strokeWidth="3.5"/></>,
+  eloquence: <><path d="M8 12H56V42H30L18 54V42H8Z" {...soft}/><path d="M8 12H56V42H30L18 54V42H8Z"/><path d="M35 15L24 30H32L28 40L41 24H33Z" {...F}/></>,
+  runeChoir: <><path d="M14 20L22 30L14 40L6 30Z" {...F}/><path d="M32 6L42 20L32 34L22 20Z" {...F}/><path d="M50 20L58 30L50 40L42 30Z" {...F} fillOpacity=".7"/><path d="M8 50C16 44 24 56 32 50S48 44 56 50" strokeWidth="3"/></>,
+  blackout: <><circle cx="32" cy="32" r="26" {...soft}/><path d={BLOT} {...F}/><path d="M32 0V5M32 59V64M0 32H5M59 32H64" opacity=".6"/></>,
+  abyssalInk: <><path d={BLOT} {...F}/><circle cx="32" cy="32" r="9" fill="#fff" stroke="none"/><circle cx="32" cy="32" r="4.5" {...F}/></>,
+  origamiWorkshop: <><path d="M6 48H58M12 48V58M52 48V58" strokeWidth="4"/><g transform="translate(8 6) scale(.75)"><path d={CRANE} {...F}/></g></>,
+  paperDragon: <><path d={DRAGON} {...soft}/><path d={DRAGON}/><path d="M26 22V42M34 30L40 42M46 30L40 42"/><circle cx="44" cy="22" r="2.5" {...F}/></>,
+  spiritSurge: <><g transform="translate(8 2) scale(.75)"><path d={BLOB} {...F}/></g><circle cx="27" cy="25" r="2.5" fill="#fff" stroke="none"/><circle cx="37" cy="25" r="2.5" fill="#fff" stroke="none"/><path d="M2 56C10 48 18 48 26 56S42 64 50 56S58 50 62 52" strokeWidth="3.5"/></>,
+  eternalSpirit: <><g transform="translate(8 0) scale(.75)"><path d={BLOB} {...soft}/><path d={BLOB}/></g><circle cx="27" cy="23" r="2.5" {...F}/><circle cx="37" cy="23" r="2.5" {...F}/><path d={INFINITY} strokeWidth="3.5"/></>,
+});
+GLYPHS.reflect = GLYPHS.mirrorWall;
+
 GLYPHS.familiar = GLYPHS.spirit;
 GLYPHS.emberSpirit = GLYPHS.spiritFlame;
 GLYPHS.twinStrike = GLYPHS.bond;

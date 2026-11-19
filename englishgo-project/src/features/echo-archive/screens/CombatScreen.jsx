@@ -271,6 +271,8 @@ export default function CombatScreen({ run, dispatch, settings, pool, speak, pot
         case 'echo': spawn.push({ to: 'player', text: 'Echo!', kind: 'buff' }); break;
         case 'conjure': spawn.push({ to: 'player', text: `+${f.amount > 1 ? f.amount : ''} ${CARDS[f.card].en}`, kind: 'buff' }); break;
         case 'burst': spawn.push({ to: 'player', text: `Burst ×${f.amount}`, kind: 'buff' }); break;
+        case 'abyss': spawn.push({ to: 'player', text: 'Abyss!', kind: 'buff' }); break;
+        case 'colossus': spawn.push({ to: 'player', text: 'Colossus!', kind: 'buff' }); break;
         case 'act': nextMarks[f.from] = 'act'; break;
         case 'familiar': nextMarks.familiar = 'strike'; burst(f.to, 'spirit'); if (f.all) living(c).forEach(enemy => { if (enemy.uid !== f.to) burst(enemy.uid, 'spirit'); }); break;
         case 'feed': spawn.push({ to: 'familiar', text: f.amount > 0 ? `+${f.amount}` : `${f.amount}`, kind: 'buff' }); nextMarks.familiar = nextMarks.familiar || 'grow'; sfx.buff(); break;

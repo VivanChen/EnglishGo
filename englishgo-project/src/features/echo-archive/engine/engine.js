@@ -231,7 +231,7 @@ export function cardContext(r) {
   const c = r.combat;
   if (!c) return {};
   const st = c.player.st;
-  return { might: st.might, weak: st.weak, grace: st.grace, frail: st.frail, combo: c.played || 0, chants: c.chantsOk || 0, statuses: statusCount(c), blades: c.blades || 0, keen: c.player.pw.keenCrease || 0, livingInk: Boolean(c.player.pw.livingInk), familiar: heroOf(r) === 'caller' || c.player.familiar ? c.player.familiar || 0 : undefined };
+  return { might: st.might, weak: st.weak, grace: st.grace, frail: st.frail, combo: c.played || 0, chants: c.chantsOk || 0, statuses: statusCount(c), blades: c.blades || 0, keen: c.player.pw.keenCrease || 0, dragon: c.player.pw.paperDragon || 0, livingInk: Boolean(c.player.pw.livingInk), familiar: heroOf(r) === 'caller' || c.player.familiar ? c.player.familiar || 0 : undefined };
 }
 
 export function canPlay(r, uid) {
@@ -324,6 +324,7 @@ function startPlayerTurn(r) {
   c.round += 1;
   c.phase = 'player';
   c.bloodInk = false;
+  delete c.player.st.reflect;
   if (!c.player.pw.bastion) c.player.ward = hasRelic(r, 'bulwark') ? Math.floor(c.player.ward / 2) : 0;
   c.energy = c.maxEnergy;
   c.played = 0;
@@ -334,6 +335,7 @@ function startPlayerTurn(r) {
   if (c.round % 3 === 0 && hasRelic(r, 'hourglass')) c.energy += 1;
   if (c.player.st.burn) { hurtPlayer(r, c.player.st.burn, 'burn'); add(c.player.st, 'burn', -1); }
   if (c.player.pw.wildfire) living(c).forEach(enemy => add(enemy.st, 'burn', c.player.pw.wildfire));
+  if (c.player.pw.hellfire) living(c).forEach(enemy => { add(enemy.st, 'burn', c.player.pw.hellfire); hurtEnemy(r, enemy, burnDamage(r, enemy.st.burn), 'burn'); });
   if (c.player.pw.ascend) add(c.player.st, 'might', c.player.pw.ascend);
   if (c.player.pw.legion) feedFamiliar(r, c.player.pw.legion);
   if (hasRelic(r, 'cinderCharm') && living(c).length) { const enemy = pick(r, living(c)); add(enemy.st, 'burn', 2); fx(r, { kind: 'status', to: enemy.uid, st: 'burn' }); }
@@ -347,6 +349,14 @@ function startPlayerTurn(r) {
   drawCards(r, count);
   const paper = (c.player.pw.origami || 0) + (c.round === 1 && hasRelic(r, 'origamiBox') ? 2 : 0);
   if (paper) foldPaper(r, paper);
+  if (c.player.pw.runeChoir) {
+    const chants = cardPool(r).filter(id => CARDS[id].chant && CARDS[id].rarity !== 'mythic');
+    for (let i = 0; i < c.player.pw.runeChoir && chants.length; i++) addTempToHand(r, pick(r, chants));
+  }
+  if (c.player.pw.abyssalInk && c.hand.length < HAND_LIMIT) {
+    c.hand.push(makeTemp(r, 'smudge'));
+    fx(r, { kind: 'cards', to: 'player', card: 'smudge', amount: 1 });
+  }
   fx(r, { kind: 'turn', round: c.round });
   settle(r);
 }
@@ -373,6 +383,17 @@ function foldPaper(r, count, up = false) {
   }
   if (made) fx(r, { kind: 'conjure', card: 'paperBlade', amount: made });
   return made;
+}
+
+// Every card that fades goes through here so Abyssal Ink can feed on status cards.
+function fadeCard(r, uid) {
+  const c = r.combat;
+  c.faded.push(uid);
+  const power = c.player.pw.abyssalInk;
+  if (power && isJunk(CARDS[c.cards[uid].id]) && living(c).length) {
+    fx(r, { kind: 'abyss', amount: power });
+    living(c).forEach(enemy => hurtEnemy(r, enemy, power));
+  }
 }
 
 function inscribe(r, uid, amount) {
@@ -416,7 +437,7 @@ export function chooseCard(r, uid) {
       if (c.hand.length < HAND_LIMIT) c.hand.push(uid); else c.discard.push(uid);
       break;
     case 'discard': take('hand'); c.discard.push(uid); break;
-    case 'fade': take('hand'); c.faded.push(uid); if (choice.energy) { c.energy += choice.energy; fx(r, { kind: 'energy', amount: choice.energy }); } break;
+    case 'fade': take('hand'); fadeCard(r, uid); if (choice.energy) { c.energy += choice.energy; fx(r, { kind: 'energy', amount: choice.energy }); } break;
     case 'upgrade': c.cards[uid].up = true; fx(r, { kind: 'buff', to: 'player', st: 'upgrade' }); break;
     case 'inscribe': inscribe(r, uid, choice.v); break;
     default: break;
@@ -432,19 +453,22 @@ function resolve(r, effects, up, target, ctx) {
   const c = r.combat;
   for (const effect of effects) {
     const v = val(effect.v, up);
-    const single = TARGETED.has(effect.op) || (effect.op === 'damageWard' && !effect.all) || (effect.op === 'damage' && !effect.all && !effect.random) || (effect.op === 'debuff' && !effect.all);
+    const single = (TARGETED.has(effect.op) && !effect.all) ||(effect.op === 'damageWard' && !effect.all) || (effect.op === 'damage' && !effect.all && !effect.random) || (effect.op === 'debuff' && !effect.all);
     if (single && (!target || target.dead)) continue;
     switch (effect.op) {
       case 'damage': {
         const familiar = c.player.familiar || 0;
         const base = v + (ctx.bonus || 0) + (ctx.grow || 0) + (effect.perCombo ? val(effect.perCombo, up) * (ctx.combo || 0) : 0) + (effect.perChant ? val(effect.perChant, up) * (c.chantsOk || 0) : 0) + (effect.perFamiliar ? val(effect.perFamiliar, up) * familiar : 0)
           + (effect.perBlade ? val(effect.perBlade, up) * (c.blades || 0) : 0) + (effect.perStatus ? val(effect.perStatus, up) * statusCount(c) : 0)
-          + (effect.perBurn && target ? val(effect.perBurn, up) * (target.st.burn || 0) : 0) + (ctx.id === 'paperBlade' ? c.player.pw.keenCrease || 0 : 0);
-        const hits = effect.hits === 'X' ? ctx.x : effect.comboHits ? (ctx.combo || 0) + 1 : effect.hitsPerFamiliar ? 1 + Math.floor(familiar / effect.hitsPerFamiliar) : val(effect.hits || 1, up);
+          + (effect.perBurn && target ? val(effect.perBurn, up) * (target.st.burn || 0) : 0) + (ctx.id === 'paperBlade' ? (c.player.pw.keenCrease || 0) + (c.player.pw.paperDragon || 0) : 0)
+          + (effect.mightMult ? (c.player.st.might || 0) * (val(effect.mightMult, up) - 1) : 0);
+        const hits = effect.hits === 'X' ? ctx.x : effect.comboHits ? (ctx.combo || 0) + 1 : effect.hitsPerFamiliar ? 1 + Math.floor(familiar / effect.hitsPerFamiliar) : effect.hitsPerStatus ? val(effect.hits || 1, up) + statusCount(c) : val(effect.hits || 1, up);
+        // Sword Saint (single-target attacks) and Paper Dragon (Paper Blades) hit everyone.
+        const sweep = !effect.all && !effect.random && ((c.player.pw.swordSaint && CARDS[ctx.id]?.type === 'attack') || (ctx.id === 'paperBlade' && c.player.pw.paperDragon));
         for (let i = 0; i < hits; i++) {
           const pool = living(c);
           if (!pool.length) break;
-          const targets = effect.all ? pool : effect.random ? [pick(r, pool)] : [target];
+          const targets = effect.all || sweep ? pool : effect.random ? [pick(r, pool)] : [target];
           targets.forEach(enemy => {
             // Execute: double damage once the target is at half health or less.
             const finish = effect.wounded && enemy.hp * 2 <= enemy.maxHp ? 2 : 1;
@@ -481,7 +505,7 @@ function resolve(r, effects, up, target, ctx) {
         const burst = c.hand.filter(uid => (effect.kind === 'junk' ? isJunk(CARDS[c.cards[uid].id]) : c.cards[uid].id === 'paperBlade'));
         if (!burst.length) break;
         c.hand = c.hand.filter(uid => !burst.includes(uid));
-        c.faded.push(...burst);
+        burst.forEach(uid => fadeCard(r, uid));
         fx(r, { kind: 'burst', amount: burst.length });
         burst.forEach(() => living(c).forEach(enemy => attackEnemy(r, enemy, v, ctx.mult)));
         break;
@@ -516,7 +540,7 @@ function resolve(r, effects, up, target, ctx) {
       case 'absorb': {
         const junk = c.hand.filter(uid => isJunk(CARDS[c.cards[uid].id]));
         c.hand = c.hand.filter(uid => !junk.includes(uid));
-        c.faded.push(...junk);
+        junk.forEach(uid => fadeCard(r, uid));
         if (junk.length) { c.energy += junk.length; fx(r, { kind: 'energy', amount: junk.length }); }
         if (val(effect.draw, up)) drawCards(r, 1);
         break;
@@ -532,7 +556,8 @@ function resolve(r, effects, up, target, ctx) {
       case 'loseHp': hurtPlayer(r, v, 'loss'); break;
       case 'selfWeak': add(c.player.st, 'weak', v); break;
       case 'doubleWard': gainWard(r, c.player.ward, false); break;
-      case 'doubleBurn': if (target.st.burn) { add(target.st, 'burn', target.st.burn); fx(r, { kind: 'status', to: target.uid, st: 'burn' }); } break;
+      case 'doubleBurn': (effect.all ? living(c) : [target]).forEach(enemy => { if (enemy.st.burn) { add(enemy.st, 'burn', enemy.st.burn); fx(r, { kind: 'status', to: enemy.uid, st: 'burn' }); } }); break;
+      case 'reflect': c.player.st.reflect = 1; fx(r, { kind: 'buff', to: 'player', st: 'reflect' }); break;
       case 'stripWard': target.ward = 0; break;
       case 'echo': c.echo += v; break;
       case 'power':
@@ -591,7 +616,7 @@ export function playCard(r, uid, targetUid, chant = null) {
   if (isJunk(card)) {
     // Living Ink: status and curse cards are burned for a fresh draw.
     fx(r, { kind: 'play', card: inst.id, uid, up: false, empowered: false, target: null });
-    c.faded.push(uid);
+    fadeCard(r, uid);
     drawCards(r, 1);
     afterCardPlayed(r, inst);
     settle(r);
@@ -628,6 +653,7 @@ export function playCard(r, uid, targetUid, chant = null) {
     if (hasRelic(r, 'sageEye')) heal(r, 2);
     if (c.player.pw.scholar) { c.energy += c.player.pw.scholar; fx(r, { kind: 'energy', amount: c.player.pw.scholar }); }
     if (c.player.pw.wordsmith) gainWard(r, c.player.pw.wordsmith, false);
+    if (c.player.pw.eloquence) living(c).forEach(enemy => hurtEnemy(r, enemy, c.player.pw.eloquence));
   }
   if (card.type === 'skill' && c.player.pw.resonance && living(c).length) hurtEnemy(r, pick(r, living(c)), c.player.pw.resonance);
   inst.free = false;
@@ -648,6 +674,8 @@ function afterCardPlayed(r, inst) {
   }
   if (c.player.pw.thousandCuts) living(c).forEach(enemy => hurtEnemy(r, enemy, c.player.pw.thousandCuts));
   if (c.player.pw.momentum && c.played % c.player.pw.momentum === 0) drawCards(r, 1);
+  if (c.player.pw.perpetualMotion && c.played % c.player.pw.perpetualMotion === 0) { c.energy += 1; fx(r, { kind: 'energy', amount: 1 }); drawCards(r, 1); }
+  if (c.player.pw.origamiWorkshop && inst.id !== 'paperBlade') foldPaper(r, c.player.pw.origamiWorkshop);
   if (c.player.pw.sovereign && CARDS[inst.id].type === 'attack') feedFamiliar(r, c.player.pw.sovereign);
   if (c.played === 6 && hasRelic(r, 'metronome')) { c.energy += 1; fx(r, { kind: 'energy', amount: 1 }); }
 }
@@ -695,16 +723,22 @@ export function endTurn(r) {
     inst.free = false;
     if (card.endTurn) resolve(r, card.endTurn, inst.up, null, {});
     if (card.keep) { kept.push(uid); inst.kept = (inst.kept || 0) + 1; }
-    else (card.fleeting ? c.faded : c.discard).push(uid);
+    else if (card.fleeting) fadeCard(r, uid);
+    else c.discard.push(uid);
   }
   c.hand = kept;
   // The familiar bites at the end of your turn, and its ink thins a little.
   if (c.player.familiar > 0) {
     familiarStrike(r);
-    c.player.familiar -= 1;
+    if (!c.player.pw.eternalSpirit) c.player.familiar -= 1;
   }
   if (c.player.pw.stoneheart) gainWard(r, c.player.pw.stoneheart, false);
   if (hasRelic(r, 'owlFeather') && c.player.ward === 0) gainWard(r, 6, false);
+  if (c.player.pw.colossus && c.player.ward >= 2) {
+    const amount = Math.floor(c.player.ward / 2);
+    fx(r, { kind: 'colossus', amount });
+    living(c).forEach(enemy => hurtEnemy(r, enemy, amount));
+  }
   decay(c.player.st);
   c.echo = 0;
   c.phase = 'enemy';
@@ -718,7 +752,10 @@ function performMove(r, enemy) {
   if (move.dmg != null) {
     const base = moveBase(r, enemy);
     for (let i = 0; i < (move.hits || 1) && r.hero.hp > 0 && !enemy.dead; i++) {
+      const ward = c.player.ward;
       hurtPlayer(r, computeAttack(base, enemy.st, c.player.st));
+      // Mirror Wall: whatever the Ward stopped flies back at the attacker.
+      if (c.player.st.reflect && ward > c.player.ward) hurtEnemy(r, enemy, ward - c.player.ward, 'thorns');
       if (c.player.st.spikes) hurtEnemy(r, enemy, c.player.st.spikes, 'thorns');
     }
   }

@@ -56,6 +56,7 @@ export const KEYWORDS = {
   statusCard: { en: 'Status', zh: '狀態牌', text: '敵人塞進你牌組的 Smudge、Dust，以及詛咒牌。' },
   familiar: { en: 'Familiar', zh: '墨靈', text: '喚墨師的墨靈夥伴。層數就是它的攻擊力：每回合結束時攻擊生命最低的敵人，之後層數 -1。整場戰鬥都會保留。' },
   paperBlade: { en: 'Paper Blade', zh: '紙刃', text: '摺出來的 0 費攻擊牌，造成 4 傷害。打出後消逝；回合結束時還在手中也會消逝。' },
+  reflect: { en: 'Reflect', zh: '反射', text: '敵人這一輪攻擊你時，被 Ward 擋下的傷害會反彈給攻擊者。你的回合開始時消失。' },
 };
 
 export const POWER_TEXT = {
@@ -82,6 +83,16 @@ export const POWER_TEXT = {
   afterimage: { en: 'Afterimage', zh: '殘影', kw: 'echo', text: v => ['回合開始時獲得 ', num(v), ' 次 ', kw('echo'), '：本回合第一張攻擊牌打出兩次'] },
   eternalFlame: { en: 'Eternal Flame', zh: '不滅之火', kw: 'burn', text: () => ['敵人身上的 ', kw('burn'), ' 不再每回合減少'] },
   wordsmith: { en: 'Wordsmith', zh: '詞匠', kw: 'chant', text: v => [kw('chant'), ' 強化成功時，獲得 ', num(v), ' ', kw('ward')] },
+  swordSaint: { en: 'Sword Saint', zh: '劍聖', text: () => ['你的單體攻擊牌會同時打中所有敵人'] },
+  hellfire: { en: 'Hellfire', zh: '業火', kw: 'burn', text: v => ['回合開始時，對所有敵人施加 ', num(v), ' 層 ', kw('burn'), '，然後所有敵人的 ', kw('burn'), ' 額外引燃一次（不會減少層數）'] },
+  colossus: { en: 'Colossus', zh: '巨像', kw: 'ward', text: () => ['回合結束時，對所有敵人造成等同你 ', kw('ward'), ' 一半的傷害'] },
+  perpetualMotion: { en: 'Perpetual Motion', zh: '永動機', kw: 'combo', text: v => ['每回合每打出第 ', num(v), ' 張牌，獲得 1 點能量並抽 1 張牌'] },
+  eloquence: { en: 'Eloquence', zh: '雄辯', kw: 'chant', text: v => [kw('chant'), ' 強化成功時，對所有敵人造成 ', num(v), ' 傷害'] },
+  runeChoir: { en: 'Rune Choir', zh: '符文合唱', kw: 'chant', text: v => ['回合開始時，把 ', num(v), ' 張隨機 ', kw('chant'), ' 牌加入手中，本回合 0 費'] },
+  abyssalInk: { en: 'Abyssal Ink', zh: '深淵之墨', kw: 'statusCard', text: v => ['回合開始時，把 1 張 Smudge 加入手中。每有 1 張 ', kw('statusCard'), ' 消逝，對所有敵人造成 ', num(v), ' 傷害'] },
+  origamiWorkshop: { en: 'Origami Workshop', zh: '摺紙工坊', kw: 'paperBlade', text: v => ['每打出 1 張不是 ', kw('paperBlade'), ' 的牌，把 ', num(v), ' 張 ', kw('paperBlade'), ' 加入手中'] },
+  paperDragon: { en: 'Paper Dragon', zh: '紙龍', kw: 'paperBlade', text: v => [kw('paperBlade'), ' 改為攻擊所有敵人，且傷害 +', num(v)] },
+  eternalSpirit: { en: 'Eternal Spirit', zh: '永恆之靈', kw: 'familiar', text: () => [kw('familiar'), ' 攻擊後不再減少層數'] },
 };
 
 export const CARDS = {
@@ -256,6 +267,24 @@ export const CARDS = {
   scrub: { en: 'Scrub', zh: '擦拭', type: 'skill', rarity: 'common', cost: [1, 0], target: 'self', glyph: 'scrub', arch: 'ink', fx: [{ op: 'draw', v: 2 }, { op: 'choose', from: 'hand', action: 'fade' }] },
   inkTide: { en: 'Ink Tide', zh: '墨潮', type: 'attack', rarity: 'uncommon', cost: 1, target: 'all', glyph: 'inkTide', arch: 'ink', fx: [{ op: 'damage', v: [5, 7], all: true }, { op: 'burstHand', kind: 'junk', v: [5, 7] }] },
 
+  // ── Wave 5: a Rare payoff and a Mythic centrepiece for every play style ──
+  mountainCleaver: { en: 'Mountain Cleaver', zh: '開山斬', type: 'attack', rarity: 'rare', cost: 2, target: 'enemy', glyph: 'mountainCleaver', arch: 'blade', fx: [{ op: 'damage', v: [18, 22], mightMult: [3, 4] }] },
+  swordSaint: { en: 'Sword Saint', zh: '劍聖', type: 'power', rarity: 'mythic', cost: 2, target: 'self', glyph: 'swordSaint', arch: 'blade', fx: [{ op: 'power', id: 'swordSaint', v: 1, set: true }, { op: 'buff', st: 'might', v: [2, 3] }] },
+  flashpoint: { en: 'Flashpoint', zh: '燃點', type: 'skill', rarity: 'rare', cost: [1, 0], target: 'self', glyph: 'flashpoint', arch: 'burn', fx: [{ op: 'debuff', st: 'burn', v: [3, 4], all: true }, { op: 'doubleBurn', all: true }], fade: true },
+  hellfire: { en: 'Hellfire', zh: '業火', type: 'power', rarity: 'mythic', cost: [3, 2], target: 'self', glyph: 'hellfire', arch: 'burn', fx: [{ op: 'power', id: 'hellfire', v: [2, 3] }] },
+  mirrorWall: { en: 'Mirror Wall', zh: '鏡牆', type: 'skill', rarity: 'rare', cost: 2, target: 'self', glyph: 'mirrorWall', arch: 'ward', fx: [{ op: 'ward', v: [13, 17] }, { op: 'reflect' }] },
+  colossus: { en: 'Colossus', zh: '巨像', type: 'power', rarity: 'mythic', cost: [3, 2], target: 'self', glyph: 'colossus', arch: 'ward', fx: [{ op: 'ward', v: [10, 14] }, { op: 'power', id: 'colossus', v: 1, set: true }] },
+  finisher: { en: 'Finisher', zh: '終結技', type: 'attack', rarity: 'rare', cost: 1, target: 'enemy', glyph: 'finisher', arch: 'combo', fx: [{ op: 'damage', v: [5, 7], comboHits: true }] },
+  perpetualMotion: { en: 'Perpetual Motion', zh: '永動機', type: 'power', rarity: 'mythic', cost: 2, target: 'self', glyph: 'perpetualMotion', arch: 'combo', fx: [{ op: 'power', id: 'perpetualMotion', v: [4, 3], set: true }] },
+  eloquence: { en: 'Eloquence', zh: '雄辯', type: 'power', rarity: 'rare', cost: 1, target: 'self', glyph: 'eloquence', arch: 'chant', fx: [{ op: 'power', id: 'eloquence', v: [6, 8] }] },
+  runeChoir: { en: 'Rune Choir', zh: '符文合唱', type: 'power', rarity: 'mythic', cost: [3, 2], target: 'self', glyph: 'runeChoir', arch: 'chant', fx: [{ op: 'power', id: 'runeChoir', v: 2 }] },
+  blackout: { en: 'Blackout', zh: '墨染', type: 'attack', rarity: 'rare', cost: 2, target: 'all', glyph: 'blackout', arch: 'ink', fx: [{ op: 'damage', v: [4, 5], hits: 2, all: true, hitsPerStatus: true }, { op: 'addStatus', id: 'smudge', v: 1 }] },
+  abyssalInk: { en: 'Abyssal Ink', zh: '深淵之墨', type: 'power', rarity: 'mythic', cost: [3, 2], target: 'self', glyph: 'abyssalInk', arch: 'ink', fx: [{ op: 'power', id: 'abyssalInk', v: 5 }] },
+  origamiWorkshop: { en: 'Origami Workshop', zh: '摺紙工坊', type: 'power', rarity: 'rare', cost: [2, 1], target: 'self', glyph: 'origamiWorkshop', arch: 'fold', fx: [{ op: 'power', id: 'origamiWorkshop', v: 1 }] },
+  paperDragon: { en: 'Paper Dragon', zh: '紙龍', type: 'power', rarity: 'mythic', cost: [3, 2], target: 'self', glyph: 'paperDragon', arch: 'fold', fx: [{ op: 'power', id: 'paperDragon', v: 2 }, { op: 'fold', v: [3, 4] }] },
+  spiritSurge: { en: 'Spirit Surge', zh: '靈潮', type: 'skill', rarity: 'rare', cost: 2, target: 'self', glyph: 'spiritSurge', hero: 'caller', arch: 'familiar', fx: [{ op: 'feed', v: [6, 8] }, { op: 'unleash', v: 2 }] },
+  eternalSpirit: { en: 'Eternal Spirit', zh: '永恆之靈', type: 'power', rarity: 'mythic', cost: [2, 1], target: 'self', glyph: 'eternalSpirit', hero: 'caller', arch: 'familiar', fx: [{ op: 'feed', v: [5, 7] }, { op: 'power', id: 'eternalSpirit', v: 1, set: true }] },
+
   // Statuses and curses
   smudge: { en: 'Smudge', zh: '墨漬', type: 'status', rarity: 'special', cost: null, target: 'none', glyph: 'blot', fx: [], fleeting: true },
   dust: { en: 'Dust', zh: '塵埃', type: 'status', rarity: 'special', cost: null, target: 'none', glyph: 'dust', fx: [] },
@@ -319,11 +348,16 @@ function effectText(effect, up, ctx) {
   switch (effect.op) {
     case 'damage': {
       const raw = v + bonus + (effect.perCombo ? val(effect.perCombo, up) * (ctx.combo || 0) : 0) + (effect.perChant ? val(effect.perChant, up) * (ctx.chants || 0) : 0) + (effect.perFamiliar ? val(effect.perFamiliar, up) * (ctx.familiar || 0) : 0)
-        + (effect.perBlade ? val(effect.perBlade, up) * (ctx.blades || 0) : 0) + (effect.perStatus ? val(effect.perStatus, up) * (ctx.statuses || 0) : 0);
+        + (effect.perBlade ? val(effect.perBlade, up) * (ctx.blades || 0) : 0) + (effect.perStatus ? val(effect.perStatus, up) * (ctx.statuses || 0) : 0)
+        + (effect.mightMult ? (ctx.might || 0) * (val(effect.mightMult, up) - 1) : 0);
       const shown = toned(previewDamage(raw, ctx), v);
       const hits = effect.hits === 'X' ? 'X' : val(effect.hits || 1, up);
       const times = hits === 'X' ? [' X 次'] : hits > 1 ? [` ×${hits}`] : [];
-      if (effect.comboHits) return ['隨機對敵人造成 ', shown, ' 傷害，次數等於本回合已打出的牌數 +1（', kw('combo'), '）'];
+      if (effect.comboHits) return [effect.random ? '隨機對敵人造成 ' : '造成 ', shown, ' 傷害，次數等於本回合已打出的牌數 +1（', kw('combo'), '）', ...(ctx.combo != null ? ['（目前 ', num((ctx.combo || 0) + 1, 'up'), ' 次）'] : [])];
+      if (effect.hitsPerStatus) {
+        const now = ctx.statuses != null ? ['（目前 ', num(hits + ctx.statuses, 'up'), ' 次）'] : [];
+        return ['對所有敵人造成 ', shown, ' 傷害 ×', num(hits), '。牌組中每有 1 張 ', kw('statusCard'), '，再多打 1 次', ...now];
+      }
       if (effect.hitsPerFamiliar) {
         const extra = ctx.familiar != null ? ['（目前 ', num(1 + Math.floor((ctx.familiar || 0) / effect.hitsPerFamiliar), 'up'), ' 次）'] : [];
         return ['隨機對敵人造成 ', shown, ' 傷害 1 次，', kw('familiar'), ' 每有 ', num(effect.hitsPerFamiliar), ' 層再多 1 次', ...extra];
@@ -338,6 +372,7 @@ function effectText(effect, up, ctx) {
       if (effect.perBurn) base = [...base, '。目標每有 1 層 ', kw('burn'), '，傷害 +', num(val(effect.perBurn, up))];
       if (effect.wounded) base = [...base, '。若目標生命在一半以下，傷害加倍'];
       if (effect.grow) base = [...base, '。每打出一次，本場戰鬥中這張牌的傷害 +', num(val(effect.grow, up))];
+      if (effect.mightMult) base = [...base, '。', kw('might'), ' 對這張牌有 ', num(val(effect.mightMult, up)), ' 倍效果'];
       return effect.onKill ? [...base, '。若擊倒目標，最大生命 +', num(val(effect.onKill, up))] : base;
     }
     case 'damageWard': return [effect.all ? '對所有敵人造成等同你 ' : '造成等同你目前 ', kw('ward'), ' 的傷害'];
@@ -375,7 +410,8 @@ function effectText(effect, up, ctx) {
     case 'loseHp': return ['失去 ', num(v), ' 生命'];
     case 'selfWeak': return ['回合結束時若在手中，獲得 ', num(v), ' 層 ', kw('weak')];
     case 'doubleWard': return ['使你的 ', kw('ward'), ' 加倍'];
-    case 'doubleBurn': return ['使目標的 ', kw('burn'), ' 加倍'];
+    case 'doubleBurn': return [effect.all ? '使所有敵人的 ' : '使目標的 ', kw('burn'), ' 加倍'];
+    case 'reflect': return [kw('reflect'), '：直到你的下回合，被 ', kw('ward'), ' 擋下的攻擊傷害會反彈給攻擊者'];
     case 'stripWard': return ['移除目標所有 ', kw('ward')];
     case 'echo': return [kw('echo'), '：下一張攻擊牌打出兩次'];
     case 'wardFromBurn': return ['獲得等同所有敵人 ', kw('burn'), ' 總和的 ', kw('ward')];
@@ -411,7 +447,7 @@ function joinSentences(parts) {
 export function describeCard(inst, ctx = {}) {
   const card = CARDS[inst.id], up = Boolean(inst.up);
   const lines = [];
-  ctx = { ...ctx, bonus: (inst.bonus || 0) + (inst.grow || 0) + (inst.id === 'paperBlade' ? ctx.keen || 0 : 0), kept: inst.kept || 0 };
+  ctx = { ...ctx, bonus: (inst.bonus || 0) + (inst.grow || 0) + (inst.id === 'paperBlade' ? (ctx.keen || 0) + (ctx.dragon || 0) : 0), kept: inst.kept || 0 };
   if (card.cost === null && !ctx.livingInk) lines.push([kw('unplayable'), '。']);
   if (card.cost === null && ctx.livingInk) lines.push(['（', kw('statusCard'), '）打出時消逝並抽 1 張牌。']);
   if (card.keep) lines.push([kw('keep'), '。']);

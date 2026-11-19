@@ -8,7 +8,7 @@ import { HISTORY_LIMIT, addRecord, recordDeck, runRecord } from '../history.js';
 import { HEROES, heroPool, heroUnlocked, inHeroPool } from '../data/heroes.js';
 import { RELICS } from '../data/relics.js';
 import { EVENTS } from '../data/events.js';
-import { cardPool, hasAllKeys, randomRelic } from './engine.js';
+import { cardCost, cardPool, hasAllKeys, intentOf, randomRelic } from './engine.js';
 import { MAP_ROWS, TREASURE_ROW, availableNodes, generateMap } from './map.js';
 
 const act = (run, action) => runReducer(run, action);
@@ -1062,6 +1062,162 @@ describe('echo archive wave 4 cards', () => {
   it.each([[71, 'scribe'], [72, 'caller']])('seed %i with every new card in a %s deck finishes without getting stuck', (seed, hero) => {
     let run = createRun({ seed: seed * 7919, difficulty: 'story', hero, unlocked: ARCHIVE_CARDS });
     WAVE4.filter(id => inHeroPool(id, hero)).forEach((id, index) => run.hero.deck.push({ uid: `w${index}`, id, up: index % 2 === 0 }));
+    let steps = 0;
+    while (!['victory', 'defeat'].includes(run.screen) && steps < 9000) {
+      const next = botStep(run, seed + steps);
+      expect(next).not.toBe(run);
+      run = next;
+      steps++;
+    }
+    expect(['victory', 'defeat']).toContain(run.screen);
+  });
+});
+
+// ───────────── Wave 5: a Rare and a Mythic for every play style ─────────────
+const WAVE5 = ['mountainCleaver', 'swordSaint', 'flashpoint', 'hellfire', 'mirrorWall', 'colossus', 'finisher', 'perpetualMotion', 'eloquence', 'runeChoir', 'blackout', 'abyssalInk', 'origamiWorkshop', 'paperDragon', 'spiritSurge', 'eternalSpirit'];
+const allHp = run => run.combat.enemies.map(enemy => enemy.hp);
+const lost = (before, run) => before.map((hp, index) => hp - run.combat.enemies[index].hp);
+
+describe('echo archive power cards', () => {
+  it('gives every play style a Rare and a Mythic from the base collection', () => {
+    ['blade', 'burn', 'ward', 'combo', 'chant', 'ink', 'fold', 'familiar'].forEach(arch => {
+      expect(WAVE5.filter(id => CARDS[id].arch === arch).map(id => CARDS[id].rarity).sort(), arch).toEqual(['mythic', 'rare']);
+    });
+    WAVE5.forEach(id => expect(CARDS[id].pack, id).toBeFalsy());
+    expect(cardPool(createRun({ seed: 5 }))).toEqual(expect.arrayContaining(['swordSaint', 'hellfire', 'colossus', 'paperDragon']));
+    expect(cardPool(createRun({ seed: 5, hero: 'caller' }))).toEqual(expect.arrayContaining(['eternalSpirit', 'spiritSurge', 'runeChoir']));
+    const text = (id, ctx) => JSON.stringify(describeCard({ id, up: false }, ctx));
+    expect(text('mountainCleaver', { might: 2 })).toContain('"n":24');
+    expect(text('finisher', { combo: 3 })).toContain('"n":4,"tone":"up"');
+    expect(text('blackout', { statuses: 3 })).toContain('"n":5,"tone":"up"');
+  });
+
+  it('triples Might on Mountain Cleaver and sweeps every foe with Sword Saint', () => {
+    let run = heroCombat('scribe', ['bookworm', 'inkling', 'bookworm']);
+    run.combat.player.st.might = 2;
+    let before = allHp(run);
+    run = play(run, 'mountainCleaver');
+    expect(lost(before, run)).toEqual([18 + 2 * 3, 0, 0]);
+    run = play(run, 'swordSaint');
+    before = allHp(run);
+    run = play(run, 'slash', 'e1');
+    expect(run.combat.player.st.might).toBe(4);
+    expect(lost(before, run)).toEqual([10, 10, 10]);
+  });
+
+  it('doubles burn on every foe with Flashpoint and ticks it twice a round with Hellfire', () => {
+    let run = heroCombat('scribe', ['bookworm', 'inkling']);
+    run.combat.enemies[0].st.burn = 2;
+    run = play(run, 'flashpoint');
+    expect(run.combat.enemies.map(enemy => enemy.st.burn)).toEqual([10, 6]);
+    run = play(run, 'hellfire');
+    const before = allHp(run);
+    run = act(run, { type: 'END_TURN' });
+    finishEnemyPhase(run);
+    expect(lost(before, run)).toEqual([10 + (9 + 2), 6 + (5 + 2)]);
+  });
+
+  it('reflects blocked damage with Mirror Wall and turns Ward into damage with Colossus', () => {
+    let run = heroCombat('scribe', ['bookworm']);
+    run.combat.enemies[0].move = 'gnaw';
+    run.combat.hand = [];
+    run = play(run, 'mirrorWall');
+    expect(run.combat.player.st.reflect).toBe(1);
+    const ward = run.combat.player.ward;
+    const intent = intentOf(run, run.combat.enemies[0]);
+    let hp = foeHp(run);
+    run = act(run, { type: 'END_TURN' });
+    finishEnemyPhase(run);
+    expect(hp - foeHp(run)).toBe(Math.min(ward, intent.dmg * intent.hits));
+    expect(run.combat.player.st.reflect).toBeUndefined();
+
+    run.combat.energy = 10;
+    run = play(run, 'colossus');
+    run.combat.player.ward = 20;
+    hp = foeHp(run);
+    run = act(run, { type: 'END_TURN' });
+    expect(hp - foeHp(run)).toBe(10);
+  });
+
+  it('hits once per card played with Finisher and refuels every fourth card with Perpetual Motion', () => {
+    let run = heroCombat('scribe', ['bookworm']);
+    run = play(run, 'perpetualMotion');
+    run = play(run, 'guard');
+    run = play(run, 'guard');
+    const energy = run.combat.energy, hand = run.combat.hand.length;
+    run = play(run, 'guard');
+    expect(run.combat.energy).toBe(energy - 1 + 1);
+    expect(run.combat.hand.length).toBe(hand + 1);
+    const hp = foeHp(run);
+    run = play(run, 'finisher');
+    expect(hp - foeHp(run)).toBe(5 * 5);
+  });
+
+  it('blasts every foe on correct chants with Eloquence and deals free chant cards with Rune Choir', () => {
+    let run = heroCombat('scribe', ['bookworm', 'inkling']);
+    run = play(run, 'eloquence');
+    let before = allHp(run);
+    run = withChant(run, 'spellbook', true);
+    expect(lost(before, run)).toEqual([6, 6]);
+    before = allHp(run);
+    run = withChant(run, 'spellbook', false);
+    expect(lost(before, run)).toEqual([0, 0]);
+    run = play(run, 'runeChoir');
+    run.combat.hand = [];
+    run = act(run, { type: 'END_TURN' });
+    finishEnemyPhase(run);
+    const gifts = run.combat.hand.filter(uid => run.combat.cards[uid].temp && CARDS[run.combat.cards[uid].id].chant);
+    expect(gifts).toHaveLength(2);
+    expect(gifts.every(uid => cardCost(run, run.combat.cards[uid]) === 0)).toBe(true);
+  });
+
+  it('hits again per status card with Blackout and feeds on fading status cards with Abyssal Ink', () => {
+    let run = heroCombat('scribe', ['bookworm', 'inkling']);
+    addJunk(run, 'discard', 2);
+    let before = allHp(run);
+    run = play(run, 'blackout');
+    expect(lost(before, run)).toEqual([4 * 4, 4 * 4]);
+    expect(run.combat.discard.filter(uid => run.combat.cards[uid].id === 'smudge')).toHaveLength(3);
+    run = play(run, 'abyssalInk');
+    run.combat.hand = [];
+    addJunk(run, 'hand', 1);
+    before = allHp(run);
+    run = act(run, { type: 'END_TURN' });
+    expect(lost(before, run)).toEqual([5, 5]);
+    finishEnemyPhase(run);
+    expect(run.combat.hand.some(uid => run.combat.cards[uid].id === 'smudge')).toBe(true);
+  });
+
+  it('folds a blade for every other card with Origami Workshop and lets Paper Dragon blades hit everyone', () => {
+    let run = heroCombat('scribe', ['bookworm', 'inkling', 'bookworm']);
+    run.combat.hand = [];
+    run = play(run, 'origamiWorkshop');
+    expect(bladesIn(run)).toHaveLength(1);
+    run = play(run, 'guard');
+    expect(bladesIn(run)).toHaveLength(2);
+    run = act(run, { type: 'PLAY_CARD', uid: bladesIn(run)[0], target: 'e0' });
+    expect(bladesIn(run)).toHaveLength(1);
+    run = play(run, 'paperDragon');
+    const before = allHp(run);
+    run = act(run, { type: 'PLAY_CARD', uid: bladesIn(run)[0], target: 'e1' });
+    expect(lost(before, run)).toEqual([6, 6, 6]);
+  });
+
+  it('surges the familiar and keeps its stacks with Eternal Spirit', () => {
+    let run = heroCombat('caller', ['bookworm', 'inkling']);
+    run.combat.enemies[1].hp = 50;
+    run = play(run, 'spiritSurge');
+    expect(run.combat.player.familiar).toBe(8);
+    expect(50 - foeHp(run, 1)).toBe(16);
+    run = play(run, 'eternalSpirit');
+    expect(run.combat.player.familiar).toBe(8 + 5);
+    run = act(run, { type: 'END_TURN' });
+    expect(run.combat.player.familiar).toBe(8 + 5);
+  });
+
+  it.each([[81, 'scribe'], [82, 'caller']])('seed %i with every power card in a %s deck finishes without getting stuck', (seed, hero) => {
+    let run = createRun({ seed: seed * 7919, difficulty: 'standard', hero, unlocked: ARCHIVE_CARDS });
+    WAVE5.filter(id => inHeroPool(id, hero)).forEach((id, index) => run.hero.deck.push({ uid: `p${index}`, id, up: index % 2 === 1 }));
     let steps = 0;
     while (!['victory', 'defeat'].includes(run.screen) && steps < 9000) {
       const next = botStep(run, seed + steps);
