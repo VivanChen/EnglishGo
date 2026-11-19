@@ -5,6 +5,8 @@ import { SAVE_VERSION, living, runReducer } from './engine/engine.js';
 import { makeSeed } from './engine/rng.js';
 import { buildRunePool } from './chant.js';
 import { claimWelcome, normalizeCollection, pullArchive, shardsForRun, unlockedCards } from './archive.js';
+import { DAILY_BLESSINGS, DAILY_TRIALS, MAX_SILENCE, SILENCE_CLEAR_BONUS, dailyBonus, dailyChallenge, dateKey, previousDateKey, silenceRules } from './data/challenges.js';
+import { addRecord, runKey, runRecord } from './history.js';
 import { setSoundEnabled, sfx } from './sound.js';
 import Glyph from './components/Glyph.jsx';
 import { FoilContext } from './components/CardFace.jsx';
@@ -13,12 +15,15 @@ import CombatScreen from './screens/CombatScreen.jsx';
 import MapScreen from './screens/MapScreen.jsx';
 import { CodexScreen, GachaScreen } from './screens/ArchiveScreens.jsx';
 import TitleScreen, { RunSummary } from './screens/TitleScreen.jsx';
+import HistoryScreen from './screens/HistoryScreen.jsx';
 import { BossRelicScreen, CardPicker, DeckViewer, EventScreen, Modal, RelicIcon, RestScreen, RewardScreen, ShopScreen, TreasureScreen } from './screens/RoomScreens.jsx';
 import './echo-archive.css';
 
 const RUN_KEY = 'eg_echo_archive_run';
 const META_KEY = 'eg_echo_archive_meta';
-const DEFAULT_META = { runs: 0, wins: 0, bestAct: 0, bestFloor: 0, lastDifficulty: 'story', settings: { sfx: true, voice: true, chant: true } };
+// silenceTop: highest Silence level won (-1 = none yet). daily: the last
+// daily challenge played ({ date, streak, result }).
+const DEFAULT_META = { runs: 0, wins: 0, bestAct: 0, bestFloor: 0, lastDifficulty: 'story', silenceTop: -1, lastSilence: 0, daily: null, history: [], settings: { sfx: true, voice: true, chant: true } };
 
 function readJSON(key) { try { return JSON.parse(localStorage.getItem(key)); } catch { return null; } }
 function writeJSON(key, value) {
@@ -30,7 +35,18 @@ function loadRun() {
 }
 function loadMeta() {
   const saved = readJSON(META_KEY) || {};
-  return { ...DEFAULT_META, ...saved, settings: { ...DEFAULT_META.settings, ...(saved.settings || {}) }, collection: normalizeCollection(saved.collection) };
+  return { ...DEFAULT_META, ...saved, history: Array.isArray(saved.history) ? saved.history : [], settings: { ...DEFAULT_META.settings, ...(saved.settings || {}) }, collection: normalizeCollection(saved.collection) };
+}
+
+// Small badges in the top bar for daily and Silence runs; tapping or hovering
+// lists the rules in play.
+function ModeChip({ run }) {
+  if (run.daily) {
+    const blessing = DAILY_BLESSINGS[run.daily.blessing], trial = DAILY_TRIALS[run.daily.trial];
+    return <span className="ea-mode-chip is-daily" data-tip={`每日挑戰 · 祝福「${blessing?.zh}」：${blessing?.text} 試煉「${trial?.zh}」：${trial?.text}`}>每日</span>;
+  }
+  if (run.silence > 0) return <span className="ea-mode-chip is-silence" data-tip={`靜默層級 ${run.silence}：${silenceRules(run.silence).map(rule => rule.text).join(' ')}`}>靜默 {run.silence}</span>;
+  return null;
 }
 
 function TopBar({ run, potionAim, onPotion, onDeck, onMenu }) {
@@ -42,7 +58,7 @@ function TopBar({ run, potionAim, onPotion, onDeck, onMenu }) {
     <div className="ea-potions" aria-label="藥劑欄">{hero.potions.map((id, slot) => <button type="button" key={slot} className={`ea-potion ${potionAim === slot ? 'is-aiming' : ''}`} disabled={!id} onClick={() => onPotion(slot)} data-tip={id ? `${POTIONS[id].en}（${POTIONS[id].zh}）：${POTIONS[id].text}` : undefined} aria-label={id ? `${POTIONS[id].zh}，點選使用` : '空的藥劑欄'}>
       <PotionArt color={id ? POTIONS[id].color : undefined} empty={!id} size={20}/>
     </button>)}</div>
-    <div className="ea-floor"><b lang="en">Act {ACTS[run.act].roman}</b><small>第 {run.floor} 層</small></div>
+    <div className="ea-floor"><b lang="en">Act {ACTS[run.act].roman}<ModeChip run={run}/></b><small>第 {run.floor} 層</small></div>
     <div className="ea-relics" aria-label="遺物">{hero.relics.map(id => <RelicIcon key={id} id={id} size={22}/>)}</div>
     <div className="ea-topbar-actions">
       <button type="button" className="ea-icon-btn" onClick={onDeck} aria-label={`查看牌組，共 ${hero.deck.length} 張`}><Glyph name="deck" size={20}/><b>{hero.deck.length}</b></button>
@@ -129,20 +145,31 @@ export default function EchoArchive({ lv = 'elementary', onBack, onXp, trackWeak
     onXp?.(c.kind === 'boss' ? 15 : c.kind === 'elite' ? 8 : 4);
   }, [run?.combat?.phase, run?.combat?.id, run?.seed, run?.combat?.kind, onXp]);
 
+  // End of a run: shards (with daily and Silence bonuses), records, history.
+  const dailyState = meta.daily, silenceTop = meta.silenceTop;
   useEffect(() => {
-    if (!run || !['victory', 'defeat'].includes(run.screen) || recorded.current === run.seed) return;
-    recorded.current = run.seed;
-    const shards = shardsForRun(run);
-    setEarned(shards);
+    if (!run || !['victory', 'defeat'].includes(run.screen) || recorded.current === runKey(run)) return;
+    recorded.current = runKey(run);
+    const won = run.screen === 'victory';
+    const bonus = [];
+    const daily = run.daily && dailyState?.date === run.daily.date && !dailyState.result ? dailyState : null;
+    if (daily) bonus.push([`每日挑戰（連續 ${daily.streak} 天）`, dailyBonus(daily.streak)]);
+    const newLevel = won && run.difficulty === 'heroic' && !run.daily && (run.silence || 0) > (silenceTop ?? -1);
+    if (newLevel) bonus.push([`靜默 ${run.silence} 首勝`, SILENCE_CLEAR_BONUS]);
+    const shards = shardsForRun(run, bonus);
+    setEarned({ ...shards, unlocked: newLevel && run.silence < MAX_SILENCE ? run.silence + 1 : null });
     setMeta(previous => ({
       ...previous,
-      wins: previous.wins + (run.screen === 'victory' ? 1 : 0),
+      wins: previous.wins + (won ? 1 : 0),
       bestAct: Math.max(previous.bestAct, run.act),
       bestFloor: Math.max(previous.bestFloor, run.floor),
+      silenceTop: newLevel ? Math.max(previous.silenceTop ?? -1, run.silence || 0) : previous.silenceTop,
+      daily: daily && previous.daily?.date === run.daily.date ? { ...previous.daily, result: { outcome: run.screen, act: run.act, floor: run.floor, shards: shards.total } } : previous.daily,
+      history: addRecord(previous.history, runRecord(run, run.screen, shards.total)),
       collection: { ...previous.collection, shards: previous.collection.shards + shards.total },
     }));
-    if (run.screen === 'victory') onXp?.(30);
-  }, [run, onXp]);
+    if (won) onXp?.(30);
+  }, [run, onXp, dailyState, silenceTop]);
 
   // Keep the game framed under the app's navigation bar on screen changes.
   useEffect(() => {
@@ -167,13 +194,38 @@ export default function EchoArchive({ lv = 'elementary', onBack, onXp, trackWeak
     return () => { html.style.overflow = previous; };
   }, [immersive]);
 
-  const startRun = difficulty => {
+  // A run left unfinished (abandoned, or replaced by a new one) still goes
+  // into the chronicle, and an unfinished daily counts as today's attempt.
+  const logAbandoned = () => {
+    if (!run || ['victory', 'defeat'].includes(run.screen)) return;
+    setMeta(previous => ({
+      ...previous,
+      history: addRecord(previous.history, runRecord(run, 'abandon')),
+      daily: run.daily && previous.daily?.date === run.daily.date && !previous.daily.result ? { ...previous.daily, result: { outcome: 'abandon', act: run.act, floor: run.floor, shards: 0 } } : previous.daily,
+    }));
+  };
+  const beginRun = action => {
+    logAbandoned();
     resumedCombat.current = null;
     awarded.current = null;
-    setMeta(previous => ({ ...previous, runs: previous.runs + 1, lastDifficulty: difficulty }));
-    dispatch({ type: 'NEW_RUN', seed: makeSeed(), difficulty, lv, unlocked: unlockedCards(meta.collection) });
+    dispatch({ type: 'NEW_RUN', lv, unlocked: unlockedCards(meta.collection), startedAt: Date.now(), ...action });
     setView('run');
     sfx.chantOk();
+  };
+  const startRun = (difficulty, silence = 0) => {
+    const level = difficulty === 'heroic' ? Math.max(0, Math.min(silence, (meta.silenceTop ?? -1) + 1, MAX_SILENCE)) : 0;
+    setMeta(previous => ({ ...previous, runs: previous.runs + 1, lastDifficulty: difficulty, lastSilence: difficulty === 'heroic' ? level : previous.lastSilence }));
+    beginRun({ seed: makeSeed(), difficulty, silence: level });
+  };
+  const startDaily = () => {
+    const today = dateKey();
+    if (meta.daily?.date === today) return;
+    setMeta(previous => ({
+      ...previous,
+      runs: previous.runs + 1,
+      daily: { date: today, streak: previous.daily?.date === previousDateKey(today) ? (previous.daily.streak || 1) + 1 : 1, result: null },
+    }));
+    beginRun({ daily: dailyChallenge(today) });
   };
   const pullCards = count => {
     const result = pullArchive(meta.collection, count);
@@ -214,9 +266,17 @@ export default function EchoArchive({ lv = 'elementary', onBack, onXp, trackWeak
     </div>);
   }
 
+  if (view === 'history') {
+    return withFoils(<div ref={root} className="ea-root screen-history" onClick={showTip}>
+      {tip && <TipPopover key={tip.key} tip={tip} onClose={closeTip}/>}
+      <HistoryScreen meta={meta} onBack={() => setView('title')}/>
+    </div>);
+  }
+
   if (view === 'title' || !run) {
-    return withFoils(<div ref={root} className="ea-root screen-title">
-      <TitleScreen saved={run && !['victory', 'defeat'].includes(run.screen) ? run : null} meta={meta} onContinue={continueRun} onNew={startRun} onBack={onBack} onGacha={() => setView('gacha')} onCodex={() => setView('codex')}/>
+    return withFoils(<div ref={root} className="ea-root screen-title" onClick={showTip}>
+      {tip && <TipPopover key={tip.key} tip={tip} onClose={closeTip}/>}
+      <TitleScreen saved={run && !['victory', 'defeat'].includes(run.screen) ? run : null} meta={meta} onContinue={continueRun} onNew={startRun} onDaily={startDaily} onBack={onBack} onGacha={() => setView('gacha')} onCodex={() => setView('codex')} onHistory={() => setView('history')}/>
     </div>);
   }
 
@@ -279,7 +339,7 @@ export default function EchoArchive({ lv = 'elementary', onBack, onXp, trackWeak
         <button type="button" className="ea-btn is-gold" onClick={() => setOverlay(null)}>繼續遊戲</button>
         <button type="button" className="ea-btn" onClick={toTitle}>回到標題（保留進度）</button>
         {!confirmAbandon ? <button type="button" className="ea-btn is-danger" onClick={() => setConfirmAbandon(true)}>放棄這次遠征</button>
-          : <button type="button" className="ea-btn is-danger" onClick={() => { dispatch({ type: 'CLEAR' }); setOverlay(null); setView('title'); }}>確定放棄？進度將無法復原</button>}
+          : <button type="button" className="ea-btn is-danger" onClick={() => { logAbandoned(); dispatch({ type: 'CLEAR' }); setOverlay(null); setView('title'); }}>確定放棄？進度將無法復原</button>}
       </div>
     </Modal>}
   </div>);

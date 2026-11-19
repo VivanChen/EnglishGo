@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { ARCHIVE_CARDS, CARDS, describeCard } from '../data/cards.js';
 import { ENEMIES } from '../data/enemies.js';
 import { claimWelcome, emptyCollection, pullArchive, shardsForRun } from '../archive.js';
-import { canUpgrade, cardOptions, createRun, canPlay, eventChoices, finishEnemyPhase, living, runReducer } from './engine.js';
+import { canUpgrade, cardOptions, createRun, canPlay, eventChoices, finishEnemyPhase, living, moveBase, restHealAmount, runReducer } from './engine.js';
+import { BASE_MODS, SILENCE_LEVELS, buildMods, dailyBonus, dailyChallenge, dateKey, previousDateKey } from '../data/challenges.js';
+import { HISTORY_LIMIT, addRecord, recordDeck, runRecord } from '../history.js';
 import { MAP_ROWS, TREASURE_ROW, availableNodes, generateMap } from './map.js';
 
 const act = (run, action) => runReducer(run, action);
@@ -409,5 +411,154 @@ describe('echo archive full runs', () => {
     }
     expect(['victory', 'defeat']).toContain(run.screen);
     expect(run.hero.hp).toBeGreaterThanOrEqual(0);
+  });
+
+  it.each([
+    ['Silence 10', () => createRun({ seed: 4242, difficulty: 'heroic', silence: 10 })],
+    ['a daily challenge', () => createRun({ daily: dailyChallenge('2026-11-19') })],
+    ['a cursed elite-nest daily', () => createRun({ daily: { ...dailyChallenge('2026-11-20'), blessing: 'alchemist', trial: 'eliteNest' } })],
+  ])('%s run finishes without getting stuck', (name, make) => {
+    let run = make();
+    let steps = 0;
+    while (!['victory', 'defeat'].includes(run.screen) && steps < 8000) {
+      const next = botStep(run, steps);
+      expect(next).not.toBe(run);
+      run = next;
+      steps++;
+    }
+    expect(['victory', 'defeat']).toContain(run.screen);
+  });
+});
+
+describe('echo archive silence levels', () => {
+  it('stacks every rule up to the chosen level', () => {
+    expect(SILENCE_LEVELS).toHaveLength(10);
+    const top = buildMods({ silence: 10 });
+    expect(top).toMatchObject({ eliteHp: 1.15, bossHp: 1.12, restHeal: 0.22, actHeal: 0.4, heroHp: -6, bossMight: 1, startCurses: ['doubt'] });
+    expect(top.gold).toBeCloseTo(0.8);
+    expect(buildMods({ silence: 2 })).toMatchObject({ eliteHp: 1.15, monsterDmg: 1.1, restHeal: 0.3 });
+    expect(buildMods()).toEqual({ ...BASE_MODS, startCurses: [] });
+  });
+
+  it('applies to Heroic runs only and changes the run from the start', () => {
+    expect(createRun({ seed: 5, difficulty: 'story', silence: 6 }).silence).toBe(0);
+    const base = createRun({ seed: 5, difficulty: 'heroic' });
+    const run = createRun({ seed: 5, difficulty: 'heroic', silence: 10 });
+    expect(run.silence).toBe(10);
+    expect(run.hero.maxHp).toBe(base.hero.maxHp - 6);
+    expect(run.hero.deck.map(card => card.id)).toContain('doubt');
+    expect(run.removeCost).toBe(Math.round(75 * 1.15));
+    expect(restHealAmount(run)).toBe(Math.round(run.hero.maxHp * 0.22));
+    expect(createRun({ seed: 5, difficulty: 'heroic', silence: 99 }).silence).toBe(10);
+  });
+
+  it('scales enemy health and damage through the run mods', () => {
+    const plain = toMap(11);
+    const node = availableNodes(plain)[0];
+    const tough = { ...plain, mods: { ...BASE_MODS, enemyHp: 2, enemyDmg: 1.5 } };
+    const a = act(plain, { type: 'MAP_SELECT', id: node }).combat;
+    const b = act(tough, { type: 'MAP_SELECT', id: node }).combat;
+    a.enemies.forEach((enemy, index) => expect(b.enemies[index].maxHp).toBe(Math.round((enemy.maxHp / 1) * 2)));
+    const attacker = a.enemies.find(enemy => moveBase(plain, enemy) != null);
+    if (attacker) {
+      const runA = { ...plain, combat: a }, runB = { ...tough, combat: b };
+      const twin = b.enemies.find(enemy => enemy.uid === attacker.uid);
+      expect(moveBase(runB, twin)).toBe(Math.round(ENEMIES[attacker.id].moves[attacker.move].dmg * 1.5));
+      expect(moveBase(runA, attacker)).toBe(ENEMIES[attacker.id].moves[attacker.move].dmg);
+    }
+  });
+
+  it('pays more shards per level and adds flat bonuses after the multiplier', () => {
+    const run = createRun({ seed: 1, difficulty: 'heroic', silence: 3 });
+    run.stats = { ...run.stats, floors: 10, kills: 10 };
+    run.screen = 'defeat';
+    const result = shardsForRun(run, [['bonus', 40], ['nothing', 0]]);
+    expect(result.mult).toBe(1.8);
+    expect(result.total).toBe(Math.round(30 * 1.8) + 40);
+    expect(result.bonus).toEqual([['bonus', 40]]);
+  });
+});
+
+describe('echo archive daily challenge', () => {
+  it('derives the same challenge from the same date', () => {
+    expect(dailyChallenge('2026-11-19')).toEqual(dailyChallenge('2026-11-19'));
+    const week = Array.from({ length: 7 }, (_, i) => dailyChallenge(`2026-12-0${i + 1}`));
+    expect(new Set(week.map(day => day.seed)).size).toBe(7);
+    week.forEach(day => expect(CARDS[day.card].rarity).toBe('rare'));
+    expect(dateKey(new Date(2026, 0, 5))).toBe('2026-01-05');
+    expect(previousDateKey('2026-03-01')).toBe('2026-02-28');
+    expect(dailyBonus(1)).toBe(30);
+    expect(dailyBonus(4)).toBe(45);
+    expect(dailyBonus(30)).toBe(55);
+  });
+
+  it('builds a Standard run with the daily seed, featured card, blessing and trial', () => {
+    const challenge = { ...dailyChallenge('2026-11-19'), blessing: 'richRoad', trial: 'cursed' };
+    const run = createRun({ daily: challenge, difficulty: 'heroic', silence: 5, seed: 1 });
+    expect(run.difficulty).toBe('standard');
+    expect(run.silence).toBe(0);
+    expect(run.seed).toBe(challenge.seed);
+    expect(run.daily).toEqual({ date: '2026-11-19', blessing: 'richRoad', trial: 'cursed', card: challenge.card });
+    expect(run.hero.gold).toBe(249);
+    const ids = run.hero.deck.map(card => card.id);
+    expect(ids).toContain(challenge.card);
+    expect(ids.filter(id => id === 'regret' || id === 'doubt')).toHaveLength(2);
+    expect(createRun({ daily: challenge }).map).toEqual(run.map);
+    const shards = shardsForRun({ ...run, screen: 'defeat', stats: { ...run.stats, floors: 5 } });
+    expect(shards.mult).toBe(1.5);
+  });
+
+  it('applies combat blessings on the first turn', () => {
+    const challenge = { ...dailyChallenge('2026-11-19'), blessing: 'swiftHand', trial: 'giants' };
+    let run = createRun({ daily: challenge });
+    run = act(run, { type: 'EVENT_CHOOSE', index: 3 });
+    run = act(run, { type: 'EVENT_CONTINUE' });
+    run = act(run, { type: 'MAP_SELECT', id: availableNodes(run)[0] });
+    expect(run.combat.hand).toHaveLength(6);
+    const spark = createRun({ daily: { ...challenge, blessing: 'spark' } });
+    let next = act(act(spark, { type: 'EVENT_CHOOSE', index: 3 }), { type: 'EVENT_CONTINUE' });
+    next = act(next, { type: 'MAP_SELECT', id: availableNodes(next)[0] });
+    expect(next.combat.energy).toBe(4);
+    const might = createRun({ daily: { ...challenge, blessing: 'sharpInk' } });
+    let third = act(act(might, { type: 'EVENT_CHOOSE', index: 3 }), { type: 'EVENT_CONTINUE' });
+    third = act(third, { type: 'MAP_SELECT', id: availableNodes(third)[0] });
+    expect(third.combat.player.st.might).toBe(1);
+  });
+
+  it('fills potion slots and adds elite rooms', () => {
+    const challenge = { ...dailyChallenge('2026-11-19'), blessing: 'alchemist', trial: 'eliteNest' };
+    const run = createRun({ daily: challenge });
+    expect(run.hero.potions.every(Boolean)).toBe(true);
+    let plain = 0, nest = 0;
+    for (let seed = 1; seed <= 30; seed++) {
+      plain += Object.values(generateMap({ rng: seed }, 2).nodes).filter(node => node.type === 'elite').length;
+      nest += Object.values(generateMap({ rng: seed, mods: { eliteRooms: 2.2 } }, 2).nodes).filter(node => node.type === 'elite').length;
+    }
+    expect(nest).toBeGreaterThan(plain * 1.4);
+  });
+});
+
+describe('echo archive chronicle', () => {
+  it('records how a run ended and rebuilds its deck', () => {
+    let run = intoCombat(13);
+    run.startedAt = 1000;
+    run.hero.deck[0].up = true;
+    const record = runRecord(run, 'defeat', 42, 1000 + 25 * 60000);
+    expect(record).toMatchObject({ outcome: 'defeat', difficulty: 'standard', act: 1, shards: 42, minutes: 25, foeKind: 'monster' });
+    expect(record.foes).toEqual([...new Set(living(run.combat).map(enemy => enemy.id))]);
+    const deck = recordDeck(record);
+    expect(deck).toHaveLength(run.hero.deck.length);
+    expect(deck.filter(card => card.up)).toHaveLength(1);
+    expect(runRecord(run, 'victory').foes).toEqual([]);
+  });
+
+  it('keeps the newest records first without duplicates', () => {
+    let history = [];
+    for (let i = 0; i < HISTORY_LIMIT + 5; i++) history = addRecord(history, { key: `k${i}`, at: i });
+    expect(history).toHaveLength(HISTORY_LIMIT);
+    expect(history[0].key).toBe(`k${HISTORY_LIMIT + 4}`);
+    history = addRecord(history, { key: 'k24', at: 99 });
+    expect(history.filter(item => item.key === 'k24')).toHaveLength(1);
+    expect(addRecord(undefined, { key: 'a' })).toEqual([{ key: 'a' }]);
   });
 });

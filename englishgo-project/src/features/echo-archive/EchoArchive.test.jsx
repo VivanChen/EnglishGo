@@ -129,6 +129,66 @@ describe('Echo Archive', () => {
     expect(screen.getAllByRole('button', { name: /未解鎖的/ })).toHaveLength(ARCHIVE_CARDS.length - 1);
   }, 15000);
 
+  it('starts today\'s daily challenge once and offers to continue it', async () => {
+    localStorage.setItem('eg_echo_archive_meta', JSON.stringify({ runs: 2, tutorialDone: true }));
+    render(<EchoArchive lv="elementary" onBack={vi.fn()} deps={deps()}/>);
+    const card = screen.getByRole('article', { name: '每日挑戰' });
+    expect(within(card).getByText('祝福')).toBeInTheDocument();
+    expect(within(card).getByText('今日卡牌')).toBeInTheDocument();
+    fireEvent.click(within(card).getByRole('button', { name: /接受挑戰/ }));
+    expect(await screen.findByText('The Lantern Keeper')).toBeInTheDocument();
+    expect(screen.getByText('每日')).toBeInTheDocument();
+    const saved = JSON.parse(localStorage.getItem('eg_echo_archive_run'));
+    expect(saved.daily.date).toBe(saved.daily.date.match(/^\d{4}-\d{2}-\d{2}$/)[0]);
+    expect(saved.difficulty).toBe('standard');
+    const meta = JSON.parse(localStorage.getItem('eg_echo_archive_meta'));
+    expect(meta.daily).toMatchObject({ date: saved.daily.date, streak: 1, result: null });
+
+    fireEvent.click(screen.getByRole('button', { name: '選單與設定' }));
+    fireEvent.click(screen.getByRole('button', { name: '回到標題（保留進度）' }));
+    fireEvent.click(within(screen.getByRole('article', { name: '每日挑戰' })).getByRole('button', { name: /繼續今日挑戰/ }));
+    expect(screen.getByText('The Lantern Keeper')).toBeInTheDocument();
+  });
+
+  it('unlocks Silence levels on Heroic and starts a run at the chosen level', async () => {
+    localStorage.setItem('eg_echo_archive_meta', JSON.stringify({ runs: 3, wins: 1, tutorialDone: true, silenceTop: -1 }));
+    const view = render(<EchoArchive lv="elementary" onBack={vi.fn()} deps={deps()}/>);
+    fireEvent.click(screen.getByRole('button', { name: /開始遠征/ }));
+    fireEvent.click(screen.getByRole('radio', { name: /Heroic/ }));
+    expect(screen.getByText(/就能解鎖「靜默層級」/)).toBeInTheDocument();
+    view.unmount();
+
+    localStorage.setItem('eg_echo_archive_meta', JSON.stringify({ runs: 3, wins: 1, tutorialDone: true, silenceTop: 1 }));
+    render(<EchoArchive lv="elementary" onBack={vi.fn()} deps={deps()}/>);
+    fireEvent.click(screen.getByRole('button', { name: /開始遠征/ }));
+    fireEvent.click(screen.getByRole('radio', { name: /Heroic/ }));
+    const raise = screen.getByRole('button', { name: '提高靜默層級' });
+    fireEvent.click(raise);
+    fireEvent.click(raise);
+    expect(screen.getByLabelText('靜默層級 2')).toBeInTheDocument();
+    expect(raise).toBeDisabled();
+    expect(screen.getByText('沉重打擊')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '出發 →' }));
+    expect(await screen.findByText('The Lantern Keeper')).toBeInTheDocument();
+    expect(screen.getByText('靜默 2')).toBeInTheDocument();
+    expect(JSON.parse(localStorage.getItem('eg_echo_archive_run')).silence).toBe(2);
+    expect(JSON.parse(localStorage.getItem('eg_echo_archive_meta')).lastSilence).toBe(2);
+  });
+
+  it('writes abandoned runs into the chronicle', async () => {
+    await startRun();
+    fireEvent.click(screen.getByRole('button', { name: '選單與設定' }));
+    const menu = screen.getByRole('dialog', { name: '暫停選單' });
+    fireEvent.click(within(menu).getByRole('button', { name: '放棄這次遠征' }));
+    act(() => { fireEvent.click(within(menu).getByRole('button', { name: /確定放棄/ })); });
+    fireEvent.click(screen.getByRole('button', { name: '打開遠征紀錄' }));
+    expect(screen.getByRole('heading', { name: '遠征紀錄' })).toBeInTheDocument();
+    expect(screen.getByText('出發前就放棄了')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /查看這次的牌組，共 10 張/ }));
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(JSON.parse(localStorage.getItem('eg_echo_archive_meta')).history).toHaveLength(1);
+  });
+
   it('lets the player abandon a run from the menu', async () => {
     await startRun();
     fireEvent.click(screen.getByRole('button', { name: '選單與設定' }));

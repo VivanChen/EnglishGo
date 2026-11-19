@@ -1,4 +1,5 @@
 import { ARCHIVE_CARDS, CARDS, CHANT_CARDS, REWARD_POOL, STARTER_DECK, baseCost, cardFades, isUnlocked, val } from '../data/cards.js';
+import { BASE_MODS, MAX_SILENCE, buildMods } from '../data/challenges.js';
 import { ENCOUNTERS, ENEMIES } from '../data/enemies.js';
 import { EVENTS, KEEPER } from '../data/events.js';
 import { ENERGY_RELICS, POTIONS, RELICS } from '../data/relics.js';
@@ -20,6 +21,9 @@ const add = (st, key, n) => { st[key] = (st[key] || 0) + n; if (st[key] <= 0) de
 const decay = st => ['weak', 'exposed', 'frail'].forEach(key => { if (st[key]) add(st, key, -1); });
 export const eventDef = id => (id === 'keeper' ? KEEPER : EVENTS[id]);
 export const canUpgrade = card => !card.up && ['attack', 'skill', 'power'].includes(CARDS[card.id]?.type);
+// Rule tweaks from Silence levels and the daily challenge (saves made before
+// they existed simply play with the base values).
+export const runMods = r => r.mods || BASE_MODS;
 
 // ───────────── Run setup ─────────────
 function addCard(r, id, up = false) {
@@ -32,19 +36,31 @@ function addCard(r, id, up = false) {
 // has unlocked. Fixed at run start so a save resumes with the same pool.
 export const cardPool = r => REWARD_POOL.filter(id => isUnlocked(id, r.unlocked));
 
-export function createRun({ seed = makeSeed(), difficulty = 'standard', lv = 'elementary', unlocked = [] } = {}) {
-  const diff = DIFFICULTIES[difficulty] || DIFFICULTIES.standard;
+// `daily` is a challenge from dailyChallenge(): it fixes the seed, plays on
+// Standard and adds its featured card. `silence` (0–10) only applies on Heroic.
+export function createRun({ seed = makeSeed(), difficulty = 'standard', lv = 'elementary', unlocked = [], silence = 0, daily = null, startedAt = null } = {}) {
+  const mode = daily ? 'standard' : DIFFICULTIES[difficulty] ? difficulty : 'standard';
+  const diff = DIFFICULTIES[mode];
+  const level = mode === 'heroic' && !daily ? Math.max(0, Math.min(MAX_SILENCE, Math.floor(silence) || 0)) : 0;
+  const challenge = daily ? { date: daily.date, blessing: daily.blessing, trial: daily.trial, card: daily.card } : null;
+  const mods = buildMods({ silence: level, daily: challenge });
+  const runSeed = (daily ? daily.seed : seed) >>> 0;
+  const maxHp = Math.max(20, diff.heroHp + mods.heroHp);
   const r = {
-    version: SAVE_VERSION, seed, rng: seed >>> 0, difficulty: DIFFICULTIES[difficulty] ? difficulty : 'standard', lv,
+    version: SAVE_VERSION, seed: runSeed, rng: runSeed, difficulty: mode, lv,
+    silence: level, daily: challenge, mods, startedAt,
     unlocked: (unlocked || []).filter(id => ARCHIVE_CARDS.includes(id)),
-    act: 1, floor: 0, uid: 0, attacks: 0, fights: 0, actFights: 0, removeCost: 75, potionChance: 40,
-    hero: { hp: diff.heroHp, maxHp: diff.heroHp, gold: 99, deck: [], relics: ['inkwell'], potions: [null, null, null], flags: {} },
+    act: 1, floor: 0, uid: 0, attacks: 0, fights: 0, actFights: 0, removeCost: Math.round(75 * mods.shopPrice), potionChance: 40,
+    hero: { hp: maxHp, maxHp, gold: 99 + mods.startGold, deck: [], relics: ['inkwell'], potions: [null, null, null], flags: {} },
     map: null, pos: null, path: [], screen: 'event', actIntro: true,
     combat: null, reward: null, shop: null, rest: null, treasure: null, bossRelics: null, pending: null,
     event: { id: 'keeper', result: null, gains: [] }, seenEvents: [], lastEncounter: null,
     stats: { kills: 0, elites: 0, bosses: 0, chants: 0, chantsOk: 0, words: [], damage: 0, cards: 0, floors: 0 },
   };
   STARTER_DECK.forEach(id => addCard(r, id));
+  if (challenge?.card && CARDS[challenge.card]) addCard(r, challenge.card);
+  mods.startCurses.forEach(id => addCard(r, id));
+  for (let i = 0; i < Math.min(3, mods.startPotions); i++) r.hero.potions[i] = pick(r, Object.keys(POTIONS));
   r.map = generateMap(r, 1);
   return r;
 }
@@ -170,7 +186,9 @@ export function canPlay(r, uid) {
 export function moveBase(r, enemy, moveId = enemy.move) {
   const move = ENEMIES[enemy.id].moves[moveId];
   if (!move || move.dmg == null) return null;
-  return Math.round((move.dmg + (move.grow || 0) * (enemy.uses[moveId] || 0)) * DIFFICULTIES[r.difficulty].dmg);
+  const mods = runMods(r);
+  const scale = DIFFICULTIES[r.difficulty].dmg * mods.enemyDmg * (r.combat?.kind === 'monster' ? mods.monsterDmg : 1);
+  return Math.round((move.dmg + (move.grow || 0) * (enemy.uses[moveId] || 0)) * scale);
 }
 
 export function intentOf(r, enemy) {
@@ -189,9 +207,10 @@ function planMove(r, enemy) {
   enemy.move = ENEMIES[enemy.id].next(enemy, rnd(r));
 }
 
-function spawnEnemy(r, id, index) {
-  const def = ENEMIES[id], diff = DIFFICULTIES[r.difficulty];
-  const hp = Math.max(1, Math.round(randInt(r, def.hp[0], def.hp[1]) * diff.hp));
+function spawnEnemy(r, id, index, kind) {
+  const def = ENEMIES[id], diff = DIFFICULTIES[r.difficulty], mods = runMods(r);
+  const scale = diff.hp * mods.enemyHp * (kind === 'elite' ? mods.eliteHp : kind === 'boss' ? mods.bossHp : 1);
+  const hp = Math.max(1, Math.round(randInt(r, def.hp[0], def.hp[1]) * scale));
   return { uid: `e${index}`, id, hp, maxHp: hp, ward: 0, st: { ...(def.start || {}) }, move: null, history: [], uses: {}, turns: 0, dead: false };
 }
 
@@ -204,7 +223,7 @@ function startCombat(r, kind, encounter) {
     id: r.fights, kind, round: 0, energy: 0, maxEnergy: 3 + bonus, cards, tmp: 0,
     draw: shuffle(r, Object.keys(cards)), hand: [], discard: [], faded: [],
     player: { ward: 0, st: {}, pw: {} },
-    enemies: encounter.map((id, index) => spawnEnemy(r, id, index)),
+    enemies: encounter.map((id, index) => spawnEnemy(r, id, index, kind)),
     echo: 0, mirror: hasRelic(r, 'mirrorShard'), phase: 'player', queue: [], fx: [], fxSeq: 0, reward: null,
     played: 0, lastPlayed: null, chantsOk: 0,
   };
@@ -215,6 +234,9 @@ function startCombat(r, kind, encounter) {
   if (hasRelic(r, 'emberStone')) living(c).forEach(enemy => add(enemy.st, 'burn', 3));
   if (hasRelic(r, 'crownOfEchoes')) living(c).forEach(enemy => add(enemy.st, 'might', 1));
   if (hasRelic(r, 'grandCodex')) for (let i = 0; i < 2; i++) c.draw.splice(randInt(r, 0, c.draw.length), 0, makeTemp(r, 'smudge'));
+  const mods = runMods(r);
+  if (mods.startMight) add(c.player.st, 'might', mods.startMight);
+  if (kind === 'boss' && mods.bossMight) living(c).forEach(enemy => add(enemy.st, 'might', mods.bossMight));
   living(c).forEach(enemy => planMove(r, enemy));
   startPlayerTurn(r);
 }
@@ -229,6 +251,7 @@ function startPlayerTurn(r) {
   c.lastPlayed = null;
   if (c.player.st.charge) { c.energy += c.player.st.charge; fx(r, { kind: 'energy', amount: c.player.st.charge }); delete c.player.st.charge; }
   if (c.round === 1 && hasRelic(r, 'lantern')) c.energy += 1;
+  if (c.round === 1) c.energy += runMods(r).firstTurnEnergy;
   if (c.round % 3 === 0 && hasRelic(r, 'hourglass')) c.energy += 1;
   if (c.player.st.burn) { hurtPlayer(r, c.player.st.burn, 'burn'); add(c.player.st, 'burn', -1); }
   if (c.player.pw.wildfire) living(c).forEach(enemy => add(enemy.st, 'burn', c.player.pw.wildfire));
@@ -238,7 +261,7 @@ function startPlayerTurn(r) {
     for (let i = 0; i < c.player.pw.library; i++) addTempToHand(r, pick(r, skills));
   }
   if (c.round === 1 && hasRelic(r, 'anchor')) gainWard(r, 10, false);
-  const count = 5 + (c.player.pw.clarity || 0) + (hasRelic(r, 'runeHeart') ? 1 : 0) + (c.round === 1 && hasRelic(r, 'bookmark') ? 2 : 0);
+  const count = 5 + runMods(r).drawBonus + (c.player.pw.clarity || 0) + (hasRelic(r, 'runeHeart') ? 1 : 0) + (c.round === 1 && hasRelic(r, 'bookmark') ? 2 : 0);
   drawCards(r, count);
   fx(r, { kind: 'turn', round: c.round });
   settle(r);
@@ -600,7 +623,10 @@ const RARITY_WEIGHTS = {
 
 // Only rarities that still have unchosen, unlocked cards can be rolled.
 function rollRarity(r, kind, pool) {
-  const table = (RARITY_WEIGHTS[kind] || RARITY_WEIGHTS.monster).filter(([rarity]) => pool.some(id => CARDS[id].rarity === rarity));
+  const boost = runMods(r).rareBoost;
+  const table = (RARITY_WEIGHTS[kind] || RARITY_WEIGHTS.monster)
+    .map(([rarity, weight]) => [rarity, kind !== 'boss' && (rarity === 'rare' || rarity === 'mythic') ? weight * boost : weight])
+    .filter(([rarity]) => pool.some(id => CARDS[id].rarity === rarity));
   return table.length ? weighted(r, table) : null;
 }
 
@@ -643,7 +669,7 @@ function gainPotion(r, id) {
 function makeReward(r, kind) {
   const diff = DIFFICULTIES[r.difficulty];
   const [low, high] = kind === 'boss' ? [70, 85] : kind === 'elite' ? [28, 38] : [12, 20];
-  const items = [{ kind: 'gold', amount: Math.round(randInt(r, low, high) * diff.gold), taken: false }];
+  const items = [{ kind: 'gold', amount: Math.round(randInt(r, low, high) * diff.gold * runMods(r).gold), taken: false }];
   if (kind !== 'boss') {
     if (randInt(r, 1, 100) <= r.potionChance) { items.push({ kind: 'potion', id: pick(r, Object.keys(POTIONS)), taken: false }); r.potionChance = Math.max(10, r.potionChance - 10); }
     else r.potionChance = Math.min(80, r.potionChance + 10);
@@ -680,7 +706,7 @@ function nextAct(r) {
   r.act += 1;
   r.map = generateMap(r, r.act);
   r.pos = null; r.path = []; r.actFights = 0; r.lastEncounter = null;
-  r.hero.hp = Math.min(r.hero.maxHp, r.hero.hp + Math.round((r.hero.maxHp - r.hero.hp) * 0.75));
+  r.hero.hp = Math.min(r.hero.maxHp, r.hero.hp + Math.round((r.hero.maxHp - r.hero.hp) * runMods(r).actHeal));
   r.screen = 'map';
   r.actIntro = true;
 }
@@ -706,7 +732,9 @@ function startEvent(r) {
 }
 
 function makeShop(r) {
-  const price = rarity => ({ common: randInt(r, 45, 55), uncommon: randInt(r, 68, 82), rare: randInt(r, 135, 160), mythic: randInt(r, 190, 220) })[rarity];
+  const markup = runMods(r).shopPrice;
+  const scaled = amount => Math.round(amount * markup);
+  const price = rarity => scaled({ common: randInt(r, 45, 55), uncommon: randInt(r, 68, 82), rare: randInt(r, 135, 160), mythic: randInt(r, 190, 220) }[rarity]);
   const chosen = [];
   const cards = ['attack', 'attack', 'skill', 'skill', 'power'].map(type => {
     const open = cardPool(r).filter(id => CARDS[id].type === type && !chosen.includes(id));
@@ -725,9 +753,9 @@ function makeShop(r) {
   const relics = [];
   for (let i = 0; i < 2; i++) {
     const id = randomRelic(r);
-    if (id && !relics.some(item => item.id === id)) relics.push({ id, price: { common: randInt(r, 140, 160), uncommon: randInt(r, 195, 225), rare: randInt(r, 255, 285) }[RELICS[id].tier], sold: false });
+    if (id && !relics.some(item => item.id === id)) relics.push({ id, price: scaled({ common: randInt(r, 140, 160), uncommon: randInt(r, 195, 225), rare: randInt(r, 255, 285) }[RELICS[id].tier]), sold: false });
   }
-  const potions = [0, 1, 2].map(() => ({ id: pick(r, Object.keys(POTIONS)), price: randInt(r, 48, 72), sold: false }));
+  const potions = [0, 1, 2].map(() => ({ id: pick(r, Object.keys(POTIONS)), price: scaled(randInt(r, 48, 72)), sold: false }));
   return { cards, relics, potions, removed: false };
 }
 
@@ -761,7 +789,7 @@ export function enterNode(r, nodeId) {
   }
 }
 
-export const restHealAmount = r => (hasRelic(r, 'midnightOil') ? 0 : Math.round(r.hero.maxHp * 0.3) + (hasRelic(r, 'teaSet') ? 15 : 0));
+export const restHealAmount = r => (hasRelic(r, 'midnightOil') ? 0 : Math.round(r.hero.maxHp * runMods(r).restHeal) + (hasRelic(r, 'teaSet') ? 15 : 0));
 
 // ───────────── Events ─────────────
 export const meetsReq = (r, req) => !req || ((req.gold == null || r.hero.gold >= req.gold) && (req.hp == null || r.hero.hp >= req.hp));

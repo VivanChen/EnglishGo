@@ -69,10 +69,13 @@ export function pullArchive(collection, count, random = Math.random) {
   return { collection: next, results };
 }
 
-// Ink Shards earned at the end of a run, win or lose.
-export function shardsForRun(run) {
+// Ink Shards earned at the end of a run, win or lose. Daily runs pay like
+// Heroic, and each Silence level adds 10%. `bonus` holds flat extras (daily
+// reward, new Silence record) that are added after the multiplier.
+export function shardsForRun(run, bonus = []) {
   const s = run.stats;
-  const mult = { story: 1, standard: 1.25, heroic: 1.5 }[run.difficulty] || 1;
+  const mult = run.daily ? 1.5 : Math.round(((({ story: 1, standard: 1.25, heroic: 1.5 })[run.difficulty] || 1) + (run.silence || 0) * 0.1) * 100) / 100;
+  const extras = bonus.filter(([, amount]) => amount > 0);
   const parts = [
     ['抵達樓層', s.floors * 2],
     ['擊倒敵人', s.kills],
@@ -82,7 +85,8 @@ export function shardsForRun(run) {
     ['通關獎勵', run.screen === 'victory' ? 60 : 0],
   ].filter(([, amount]) => amount > 0);
   const base = parts.reduce((sum, [, amount]) => sum + amount, 0);
-  return { total: Math.round(base * mult), mult, parts };
+  const flat = extras.reduce((sum, [, amount]) => sum + amount, 0);
+  return { total: Math.round(base * mult) + flat, mult, parts, bonus: extras };
 }
 
 export const odds = ODDS.map(([rarity, weight]) => ({ rarity, percent: weight, cards: ARCHIVE_CARDS.filter(id => CARDS[id].rarity === rarity).length }));

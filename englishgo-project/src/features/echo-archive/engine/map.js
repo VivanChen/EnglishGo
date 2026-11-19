@@ -31,7 +31,7 @@ function roomFor(holder, node, parents, act) {
   const table = [
     ['monster', 46],
     ['event', 24],
-    ['elite', early ? 0 : act === 1 ? 10 : 13],
+    ['elite', early ? 0 : Math.round((act === 1 ? 10 : 13) * (holder.mods?.eliteRooms || 1))],
     ['rest', early || node.row === MAP_ROWS - 2 ? 0 : 10],
     ['shop', early ? 0 : 9],
   ].filter(([type, weight]) => weight > 0 && !(type !== 'monster' && type !== 'event' && parentTypes.has(type)));
