@@ -21,6 +21,33 @@ function shuffled(list, random) {
   return copy;
 }
 
+// Distinct words with distinct short meanings, for the event word games.
+export function pickRunes(pool, count, random = Math.random) {
+  const source = pool?.length >= count * 2 ? pool : [...(pool || []), ...FALLBACK_RUNES];
+  const out = [];
+  for (const word of shuffled(source, random)) {
+    const meaning = shortMeaning(word.m);
+    if (!meaning || out.some(item => item.w === word.w || item.meaning === meaning)) continue;
+    out.push({ w: word.w, m: word.m, meaning });
+    if (out.length === count) break;
+  }
+  return out;
+}
+
+// One round of the Hall of Echoes: a word to hear and two look-alikes
+// (same first letter or a similar length) to tell it apart from.
+export function echoRound(pool, used = [], random = Math.random) {
+  const source = pool?.length >= 6 ? pool : [...(pool || []), ...FALLBACK_RUNES];
+  const fresh = source.filter(word => !used.includes(word.w));
+  const target = (fresh.length ? fresh : source)[Math.floor(random() * (fresh.length || source.length))];
+  const closeness = word => (word.w[0] === target.w[0] ? 0 : 2) + Math.abs(word.w.length - target.w.length) * 0.5;
+  const distractors = shuffled(source.filter(word => word.w !== target.w), random)
+    .sort((a, b) => closeness(a) - closeness(b))
+    .filter((word, index, list) => list.findIndex(other => other.w === word.w) === index)
+    .slice(0, 2);
+  return { word: target.w, m: target.m, meaning: shortMeaning(target.m), options: shuffled([target, ...distractors].map(word => word.w), random) };
+}
+
 export function makeChant(pool, recent = [], random = Math.random) {
   const source = pool?.length >= 3 ? pool : FALLBACK_RUNES;
   const fresh = source.filter(word => !recent.includes(word.w));

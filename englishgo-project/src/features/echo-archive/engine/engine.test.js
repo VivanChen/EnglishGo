@@ -164,6 +164,9 @@ function botStep(run, seedOffset) {
     case 'event': {
       if (run.pending) return act(run, { type: 'PICK_CARD', uid: (run.pending.kind === 'upgrade' ? run.hero.deck.find(canUpgrade) : run.hero.deck[0]).uid });
       if (run.event?.result) return act(run, { type: 'EVENT_CONTINUE' });
+      // The word games run on screen and report a score; the duel takes moves.
+      if (['memory', 'echo'].includes(run.event?.game?.kind)) return act(run, { type: 'EVENT_GAME', score: seedOffset % 5, words: [{ w: 'star', m: '星星', ok: seedOffset % 2 === 0 }] });
+      if (run.event?.game?.kind === 'duel') return act(run, { type: 'EVENT_DUEL', move: ['sword', 'shield', 'scroll'][seedOffset % 3] });
       const options = eventChoices(run);
       for (let i = 0; i < options.length; i++) {
         const next = act(run, { type: 'EVENT_CHOOSE', index: (i + seedOffset) % options.length });
@@ -828,7 +831,12 @@ describe('echo archive new events and relics', () => {
     }
     expect(wins).toBeGreaterThan(5);
     expect(wins).toBeLessThan(25);
-    Object.values(EVENTS).forEach(def => (def.choices || []).forEach(choice => expect(choice.result || choice.effects.some(effect => ['cardChoice', 'fight'].includes(effect.op))).toBeTruthy()));
+    // Every way through an event ends in a result, leaves for a fight or a
+    // card reward, turns to a page that exists, or starts a game.
+    const ends = (def, res) => Boolean(res.result || res.effects?.some(effect => ['cardChoice', 'fight'].includes(effect.op)) || (res.goto && def.stages?.[res.goto]) || res.game);
+    const settles = (def, choice) => (choice.outcomes ? choice.outcomes.every(item => ends(def, item)) : choice.branch ? ends(def, choice.branch.yes) && ends(def, choice.branch.no) : ends(def, choice));
+    Object.values(EVENTS).forEach(def => [...(def.choices || []), ...Object.values(def.stages || {}).flatMap(stage => stage.choices)]
+      .forEach(choice => expect(settles(def, choice), `${def.title.en}: ${choice.en}`).toBe(true)));
   });
 
   it('applies the new relics in combat and in shops', () => {

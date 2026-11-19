@@ -1685,6 +1685,7 @@ function makeUtterance(t,l="en-US",r=0.9,opts={},token=_speechToken){
   if(opts.globalSpeed!==false)u.__englishGoUseGlobalSpeed=true;
   if(opts.audioUrl)u.__englishGoAudioUrl=opts.audioUrl;
   if(opts.requireApi)u.__englishGoRequireApi=true;
+  if(opts.hideText)u.__englishGoHideText=true;
   if(opts.forceRegenerate){u.__englishGoForceRegenerate=true;u.__englishGoRequireApi=true}
   u.cancel=()=>{if(token===_speechToken)stopSpeech()};
   return u;

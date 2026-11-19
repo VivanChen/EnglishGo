@@ -305,6 +305,19 @@ describe('Echo Archive art', () => {
     expect(failed.container.querySelector('.ea-card-art-inner .ea-glyph')).not.toBeNull();
   });
 
+  it('ships a painted scene for the keeper and every event', async () => {
+    const { readFileSync } = await import('node:fs');
+    const { EVENTS } = await import('./data/events.js');
+    const { PAINTED_EVENTS, eventImage } = await import('./components/paintedArt.js');
+    expect([...PAINTED_EVENTS].sort()).toEqual(['keeper', ...Object.keys(EVENTS)].sort());
+    PAINTED_EVENTS.forEach(id => {
+      const bytes = readFileSync(`public${eventImage(id)}`);
+      expect(bytes.toString('ascii', 0, 4), id).toBe('RIFF');
+      expect(bytes.toString('ascii', 8, 12), id).toBe('WEBP');
+      expect(bytes.length, id).toBeLessThan(140 * 1024);
+    });
+  });
+
   it('ships a music track for every act', async () => {
     const { readFileSync } = await import('node:fs');
     const { ACTS } = await import('./data/enemies.js');

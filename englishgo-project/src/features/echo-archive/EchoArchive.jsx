@@ -18,7 +18,9 @@ import MapScreen from './screens/MapScreen.jsx';
 import { CodexScreen, GachaScreen } from './screens/ArchiveScreens.jsx';
 import TitleScreen, { RunSummary } from './screens/TitleScreen.jsx';
 import HistoryScreen from './screens/HistoryScreen.jsx';
-import { BossRelicScreen, CardPicker, DeckViewer, EventScreen, Modal, RelicIcon, RestScreen, RewardScreen, ShopScreen, TreasureScreen } from './screens/RoomScreens.jsx';
+import { BossRelicScreen, CardPicker, DeckViewer, Modal, RelicIcon, RestScreen, RewardScreen, ShopScreen, TreasureScreen } from './screens/RoomScreens.jsx';
+import EventScreen from './screens/EventScreen.jsx';
+import { BOONS } from './data/events.js';
 import './echo-archive.css';
 
 const RUN_KEY = 'eg_echo_archive_run';
@@ -63,6 +65,14 @@ function KeyRing({ run }) {
   </div>;
 }
 
+// Event blessings (and the omen) in effect for the next few fights.
+function BoonChip({ boon }) {
+  const def = BOONS[boon.id];
+  if (!def) return null;
+  const tip = `${def.en}（${def.zh}）：${def.text}還剩 ${boon.fights} 場戰鬥。`;
+  return <span className={`ea-boon ${def.bad ? 'is-bad' : ''}`} tabIndex={0} data-tip={tip} aria-label={tip}><Glyph name={def.glyph} size={18}/><b>{boon.fights}</b></span>;
+}
+
 function TopBar({ run, potionAim, onPotion, onDeck, onMenu }) {
   const { hero } = run;
   const low = hero.hp <= hero.maxHp * 0.3;
@@ -74,7 +84,8 @@ function TopBar({ run, potionAim, onPotion, onDeck, onMenu }) {
     </button>)}</div>
     <div className="ea-floor"><b lang="en">Act {ACTS[run.act].roman}<ModeChip run={run}/></b><small>第 {run.floor} 層</small></div>
     <KeyRing run={run}/>
-    <div className="ea-relics" aria-label="遺物">{hero.relics.map(id => <RelicIcon key={id} id={id} size={22}/>)}</div>
+    <div className="ea-relics" aria-label="遺物">{hero.relics.map(id => <RelicIcon key={id} id={id} size={22}/>)}
+      {(hero.boons || []).map(boon => <BoonChip key={boon.id} boon={boon}/>)}</div>
     <div className="ea-topbar-actions">
       <button type="button" className="ea-icon-btn" onClick={onDeck} aria-label={`查看牌組，共 ${hero.deck.length} 張`}><Glyph name="deck" size={20}/><b>{hero.deck.length}</b></button>
       <button type="button" className="ea-icon-btn" onClick={onMenu} aria-label="選單與設定"><Glyph name="gear" size={20}/></button>
@@ -155,7 +166,7 @@ export default function EchoArchive({ lv = 'elementary', onBack, onXp, trackWeak
   // Missed rune words flow into the app's weak-word review; recalled ones ease off.
   const recordWord = useCallback((word, ok) => { trackWeak?.(word, ok ? -1 : 1); }, [trackWeak]);
   const finishTutorial = useCallback(() => setMeta(previous => (previous.tutorialDone ? previous : { ...previous, tutorialDone: true })), []);
-  const sayAlways = useCallback(text => { if (text) speak(text); }, [speak]);
+  const sayAlways = useCallback((text, opts) => { if (text) speak(text, 'en-US', 0.9, opts); }, [speak]);
 
   // Learning XP for the main app: small amounts for each victory.
   useEffect(() => {
@@ -319,11 +330,11 @@ export default function EchoArchive({ lv = 'elementary', onBack, onXp, trackWeak
   switch (run.screen) {
     case 'map': screen = <MapScreen run={run} dispatch={dispatch}/>; break;
     case 'combat': screen = <CombatScreen key={c.id} run={run} dispatch={dispatch} settings={settings} pool={pool} speak={say} potionAim={potionAim} setPotionAim={setPotionAim} resumed={resumedCombat.current === c.id} tutorial={!meta.tutorialDone && meta.runs <= 1 && c.id === 1} onTutorialDone={finishTutorial} onWord={recordWord} onShowPile={kind => setOverlay({ kind })}/>; break;
-    case 'event': screen = <EventScreen key={run.event?.id} run={run} dispatch={dispatch} speak={sayAlways}/>; break;
+    case 'event': screen = <EventScreen key={run.event?.id} run={run} dispatch={dispatch} speak={sayAlways} voice={settings.voice} pool={pool} onWord={recordWord}/>; break;
     case 'reward': screen = <RewardScreen run={run} dispatch={dispatch}/>; break;
     case 'rest': screen = <RestScreen run={run} dispatch={dispatch}/>; break;
     case 'shop': screen = <ShopScreen run={run} dispatch={dispatch}/>; break;
-    case 'treasure': screen = <TreasureScreen dispatch={dispatch}/>; break;
+    case 'treasure': screen = <TreasureScreen run={run} dispatch={dispatch}/>; break;
     case 'bossRelic': screen = <BossRelicScreen run={run} dispatch={dispatch}/>; break;
     default: screen = null;
   }

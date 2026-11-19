@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ARCHETYPES, CARDS, archOf } from '../data/cards.js';
 import { POTIONS, RELICS } from '../data/relics.js';
 import { KEYS } from '../data/enemies.js';
-import { SKIP_CARD_HP, canUpgrade, eventChoices, eventDef, meetsReq, restHealAmount, hasRelic } from '../engine/engine.js';
+import { SKIP_CARD_HP, canUpgrade, restHealAmount, hasRelic } from '../engine/engine.js';
 import CardFace, { KeywordList } from '../components/CardFace.jsx';
 import Glyph from '../components/Glyph.jsx';
 import { PotionArt, SceneArt } from '../components/Creatures.jsx';
@@ -162,9 +162,11 @@ export function ShopScreen({ run, dispatch }) {
     <div className="ea-shop-head">
       <SceneArt kind="shop"/>
       <div>
-        <span className="ea-eyebrow" lang="en">THE INK MERCHANT</span>
-        <h2>墨商的攤位</h2>
-        <p className="ea-quote"><span lang="en">“Words for coins, coins for words. Take your time.”</span><small>「用金幣換文字，用文字換金幣。慢慢挑吧。」</small></p>
+        <span className="ea-eyebrow" lang="en">{shop.surprise ? 'UNKNOWN · WANDERING MERCHANT' : 'THE INK MERCHANT'}</span>
+        <h2>{shop.surprise ? '流浪墨商' : '墨商的攤位'}</h2>
+        {shop.surprise
+          ? <p className="ea-quote"><span lang="en">“Oh! A customer, way out here? Lucky us both.”</span><small>「喔！在這種地方也有客人？我們都很幸運呢。」</small></p>
+          : <p className="ea-quote"><span lang="en">“Words for coins, coins for words. Take your time.”</span><small>「用金幣換文字，用文字換金幣。慢慢挑吧。」</small></p>}
       </div>
     </div>
     <div className="ea-shop-section">
@@ -199,67 +201,14 @@ export function ShopScreen({ run, dispatch }) {
   </section>;
 }
 
-const EVENT_GLYPHS = {
-  lantern: 'lantern', mirror: 'shard', fountain: 'wave', door: 'event', lute: 'echo', statue: 'crown', binder: 'thread',
-  candle: 'flame', guardian: 'stone', page: 'pages', quill: 'quill', well: 'coin', scholar: 'book', altar: 'emberHeart', gear: 'metronome', choir: 'bell',
-};
-
-function Gain({ gain }) {
-  if (gain.type === 'relic') return <span className="ea-gain"><RelicIcon id={gain.id} size={18}/>{RELICS[gain.id].en}</span>;
-  if (gain.type === 'potion') return <span className="ea-gain"><PotionArt color={POTIONS[gain.id].color} size={14}/>{POTIONS[gain.id].en}</span>;
-  if (gain.type === 'gold') return <span className="ea-gain"><Glyph name="gold" size={14}/>+{gain.amount}</span>;
-  if (gain.type === 'lostPotion') return <span className="ea-gain is-removed"><PotionArt color={POTIONS[gain.id].color} size={14}/>失去 {POTIONS[gain.id].en}</span>;
-  const prefix = { card: '獲得', upgrade: '升級', removed: '移除' }[gain.type];
-  return <span className={`ea-gain is-${gain.type}`}>{prefix} <b lang="en">{CARDS[gain.id].en}</b></span>;
-}
-
-export function EventScreen({ run, dispatch, speak, voice }) {
-  const ev = run.event;
-  const def = eventDef(ev.id);
-  const [showZh, setShowZh] = useState(!def.riddle);
-  const choices = eventChoices(run);
-  const riddle = def.riddle ? def.riddles[ev.riddle] : null;
-  const choose = (choice, index) => {
-    const line = choice.effects?.find(effect => effect.op === 'speak');
-    if (line) speak(line.text);
-    if (def.riddle && index < riddle.options.length) { if (riddle.options[index].ok) sfx.chantOk(); else sfx.chantMiss(); }
-    dispatch({ type: 'EVENT_CHOOSE', index });
-  };
-  return <section className="ea-room ea-event" aria-label={def.title.zh}>
-    <div className="ea-room-panel is-event">
-      <div className="ea-event-art"><Glyph name={EVENT_GLYPHS[def.art] || 'book'} size={64}/></div>
-      <span className="ea-eyebrow" lang="en">{ev.id === 'keeper' ? 'PROLOGUE' : 'EVENT'}</span>
-      <h2><span lang="en">{def.title.en}</span><small>{def.title.zh}</small></h2>
-      <div className="ea-story">
-        <p lang="en">{def.body.en}<button type="button" className="ea-speak" onClick={() => speak(def.body.en)} aria-label="朗讀英文">♪</button></p>
-        <p className="ea-zh">{def.body.zh}</p>
-        {riddle && <div className="ea-riddle">
-          <p lang="en"><b>{riddle.q.en}</b><button type="button" className="ea-speak" onClick={() => speak(riddle.q.en)} aria-label="朗讀謎題">♪</button></p>
-          {showZh ? <p className="ea-zh">{riddle.q.zh}</p> : <button type="button" className="ea-link" onClick={() => setShowZh(true)}>需要中文提示嗎？</button>}
-        </div>}
-      </div>
-      {!ev.result ? <div className="ea-event-choices">{choices.map((choice, index) => {
-        const ok = meetsReq(run, choice.req);
-        return <button type="button" key={index} className="ea-choice" disabled={!ok} onClick={() => choose(choice, index)}>
-          <span className="ea-choice-mark" aria-hidden="true">{index + 1}</span>
-          <span><b lang="en">{choice.en}</b>{(showZh || !riddle || index === choices.length - 1) && <small>{choice.zh}{choice.note ? ` — ${choice.note}` : ''}</small>}</span>
-        </button>;
-      })}</div> : <div className="ea-event-result">
-        <p lang="en">{ev.result.en}</p><p className="ea-zh">{ev.result.zh}</p>
-        {ev.gains?.length > 0 && <div className="ea-gains">{ev.gains.map((gain, index) => <Gain key={index} gain={gain}/>)}</div>}
-        <button type="button" className="ea-btn is-gold" disabled={Boolean(run.pending)} onClick={() => dispatch({ type: 'EVENT_CONTINUE' })}>{ev.id === 'keeper' ? '踏入書庫 →' : '繼續前進 →'}</button>
-      </div>}
-    </div>
-  </section>;
-}
-
-export function TreasureScreen({ dispatch }) {
+export function TreasureScreen({ run, dispatch }) {
+  const surprise = run?.treasure?.surprise;
   return <section className="ea-room ea-treasure" aria-label="寶箱">
     <div className="ea-room-panel">
-      <span className="ea-eyebrow" lang="en">TREASURE</span>
-      <h2>塵封的寶箱</h2>
+      <span className="ea-eyebrow" lang="en">{surprise ? 'UNKNOWN · TREASURE' : 'TREASURE'}</span>
+      <h2>{surprise ? '未知房間裡的寶箱！' : '塵封的寶箱'}</h2>
       <button type="button" className="ea-chest" onClick={() => { sfx.coin(); dispatch({ type: 'OPEN_CHEST' }); }} aria-label="打開寶箱"><SceneArt kind="treasure"/></button>
-      <p className="ea-room-lead">鎖已經鏽掉了。輕輕一推，蓋子就會打開。</p>
+      <p className="ea-room-lead">{surprise ? '本來以為會遇到什麼怪事，結果書架後面藏著一個寶箱。' : '鎖已經鏽掉了。輕輕一推，蓋子就會打開。'}</p>
       <button type="button" className="ea-btn is-gold" onClick={() => { sfx.coin(); dispatch({ type: 'OPEN_CHEST' }); }}>打開寶箱</button>
     </div>
   </section>;

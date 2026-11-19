@@ -525,14 +525,16 @@
     }
 
     const text = normalizeTtsText(utterance.text);
-    if (!utterance.__englishGoAudioUrl && /^en/i.test(String(utterance.lang || "en-US"))) {
+    // Listening games pass hideText so the loading toast cannot give the answer away.
+    const hideText = utterance.__englishGoHideText === true;
+    if (!hideText && !utterance.__englishGoAudioUrl && /^en/i.test(String(utterance.lang || "en-US"))) {
       lastRegenerableText = text;
       window.dispatchEvent(new CustomEvent("englishgo:tts-last-regenerable", { detail: { text } }));
     }
 
     stopActiveAudio();
     nativeCancel();
-    const loadingToken = showTtsLoading(text);
+    const loadingToken = showTtsLoading(hideText ? "" : text);
     const audio = new Audio(SILENT_AUDIO_URL);
     activeAudio = audio;
     activeAudioPaused = false;

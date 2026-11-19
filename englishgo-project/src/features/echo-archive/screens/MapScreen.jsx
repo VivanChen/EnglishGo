@@ -65,7 +65,7 @@ export default function MapScreen({ run, dispatch }) {
             style={{ left: `${p.x}%`, top: p.y }}
             disabled={!can}
             aria-label={label}
-            data-tip={can ? `${ROOM_TYPES[node.type].en} · ${ROOM_TYPES[node.type].zh}${echo ? ' · 回聲菁英：更強，但守著回聲之鑰' : ''}` : undefined}
+            data-tip={can ? `${ROOM_TYPES[node.type].en} · ${ROOM_TYPES[node.type].zh}${echo ? ' · 回聲菁英：更強，但守著回聲之鑰' : ''}${node.type === 'event' ? ' · 多半是事件，偶爾是伏擊、寶箱或流浪墨商' : ''}` : undefined}
             onClick={() => enter(node.id)}>
             {isBoss ? <span className="ea-boss-portrait"><EnemyArt art={boss.art}/></span> : <Glyph name={node.type} size={26}/>}
             {echo && <i className="ea-node-key" aria-hidden="true"><Glyph name="key" size={13}/></i>}

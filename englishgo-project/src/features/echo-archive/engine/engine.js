@@ -2,7 +2,7 @@ import { ARCHIVE_CARDS, CARDS, CHANT_CARDS, REWARD_POOL, STARTER_DECK, archOf, b
 import { BASE_MODS, MAX_SILENCE, buildMods } from '../data/challenges.js';
 import { HEROES, heroOf, inHeroPool } from '../data/heroes.js';
 import { ENCOUNTERS, ENEMIES } from '../data/enemies.js';
-import { EVENTS, KEEPER } from '../data/events.js';
+import { BOONS, DUEL_MOVES, EVENTS, KEEPER } from '../data/events.js';
 import { ENERGY_RELICS, POTIONS, RELICS } from '../data/relics.js';
 import { availableNodes, generateMap } from './map.js';
 import { makeSeed, pick, randInt, rnd, shuffle, weighted } from './rng.js';
@@ -322,7 +322,13 @@ function startCombat(r, kind, encounter, options = {}) {
     enemies: encounter.map((id, index) => spawnEnemy(r, id, index, kind, Boolean(options.echo))),
     echo: 0, mirror: hasRelic(r, 'mirrorShard'), phase: 'player', queue: [], fx: [], fxSeq: 0, reward: null,
     played: 0, lastPlayed: null, chantsOk: 0, echoElite: Boolean(options.echo), spawned: encounter.length,
+    ambush: Boolean(options.ambush),
   };
+  // Event blessings last a few fights: note the ones active here, then count down.
+  c.boons = (r.hero.boons || []).map(boon => boon.id);
+  r.hero.boons = (r.hero.boons || []).map(boon => ({ ...boon, fights: boon.fights - 1 })).filter(boon => boon.fights > 0);
+  if (c.boons.includes('sun')) add(c.player.st, 'might', 2);
+  if (c.boons.includes('omen')) living(c).forEach(enemy => add(enemy.st, 'might', 1));
   c.player.familiar = (hasRelic(r, 'spiritJar') ? 2 : 0) + (hasRelic(r, 'spiritBell') ? 2 : 0);
   if (hasRelic(r, 'paperCrane')) living(c).forEach(enemy => add(enemy.st, 'weak', 1));
   r.screen = 'combat';
@@ -352,6 +358,7 @@ function startPlayerTurn(r) {
   if (c.player.st.charge) { c.energy += c.player.st.charge; fx(r, { kind: 'energy', amount: c.player.st.charge }); delete c.player.st.charge; }
   if (c.round === 1 && hasRelic(r, 'lantern')) c.energy += 1;
   if (c.round === 1) c.energy += runMods(r).firstTurnEnergy;
+  if (c.round === 1 && c.boons?.includes('comet')) c.energy += 1;
   if (c.round % 3 === 0 && hasRelic(r, 'hourglass')) c.energy += 1;
   if (c.player.st.burn) { hurtPlayer(r, c.player.st.burn, 'burn'); add(c.player.st, 'burn', -1); }
   if (c.player.pw.wildfire) living(c).forEach(enemy => add(enemy.st, 'burn', c.player.pw.wildfire));
@@ -364,8 +371,10 @@ function startPlayerTurn(r) {
     for (let i = 0; i < c.player.pw.library; i++) addTempToHand(r, pick(r, skills));
   }
   if (c.round === 1 && hasRelic(r, 'anchor')) gainWard(r, 10, false);
+  if (c.round === 1 && c.boons?.includes('moon')) gainWard(r, 8, false);
   if (c.player.pw.afterimage) c.echo += c.player.pw.afterimage;
-  const count = 5 + runMods(r).drawBonus + (c.player.pw.clarity || 0) + (hasRelic(r, 'runeHeart') ? 1 : 0) + (c.round === 1 && hasRelic(r, 'bookmark') ? 2 : 0);
+  const count = 5 + runMods(r).drawBonus + (c.player.pw.clarity || 0) + (hasRelic(r, 'runeHeart') ? 1 : 0) + (c.round === 1 && hasRelic(r, 'bookmark') ? 2 : 0)
+    + (c.round === 1 && c.boons?.includes('star') ? 2 : 0);
   drawCards(r, count);
   const paper = (c.player.pw.origami || 0) + (c.round === 1 && hasRelic(r, 'origamiBox') ? 2 : 0);
   if (paper) foldPaper(r, paper);
@@ -990,12 +999,27 @@ function pickEncounter(r, kind) {
   return chosen;
 }
 
+// An unknown room is usually a story, but now and then something else waits
+// there: an ambush, a forgotten chest or a wandering merchant. Never in the
+// first room of an act.
+export const SURPRISE_ODDS = { ambush: 12, treasure: 8, shop: 6 };
+
 function startEvent(r) {
+  if (r.path.length > 1) {
+    let roll = randInt(r, 1, 100);
+    if ((roll -= SURPRISE_ODDS.ambush) <= 0) { startCombat(r, 'monster', pickEncounter(r, 'monster'), { ambush: true }); return; }
+    if ((roll -= SURPRISE_ODDS.treasure) <= 0) { r.treasure = { opened: false, surprise: true }; r.screen = 'treasure'; return; }
+    if ((roll -= SURPRISE_ODDS.shop) <= 0) { r.shop = { ...makeShop(r), surprise: true }; r.screen = 'shop'; return; }
+  }
   const pool = Object.keys(EVENTS).filter(id => EVENTS[id].acts.includes(r.act) && !r.seenEvents.includes(id));
   if (!pool.length) { startCombat(r, 'monster', pickEncounter(r, 'monster')); return; }
   const id = pick(r, pool);
+  const def = EVENTS[id];
   r.seenEvents.push(id);
-  r.event = { id, result: null, gains: [], riddle: EVENTS[id].riddle ? randInt(r, 0, EVENTS[id].riddles.length - 1) : null };
+  r.event = { id, result: null, gains: [], riddle: def.riddle ? randInt(r, 0, def.riddles.length - 1) : null };
+  if (def.roll) r.event.flags = Object.fromEntries(Object.entries(def.roll).map(([flag, chance]) => [flag, randInt(r, 1, 100) <= chance]));
+  if (def.game === 'climb') r.event.game = { kind: 'climb', step: 0, loot: 0 };
+  if (def.game === 'wheel') r.event.game = { kind: 'wheel', spins: [] };
   r.screen = 'event';
 }
 
@@ -1073,7 +1097,22 @@ function applyOutcome(r, effects = []) {
       case 'maxHp': r.hero.maxHp += effect.v; r.hero.hp += effect.v; break;
       case 'curse': addCard(r, effect.id); gains.push({ type: 'card', id: effect.id }); break;
       case 'relic': { const id = randomRelic(r, effect.tier); if (gainRelic(r, id)) gains.push({ type: 'relic', id }); else { r.hero.gold += 50; gains.push({ type: 'gold', amount: 50 }); } break; }
-      case 'potion': { const id = pick(r, Object.keys(POTIONS)); if (gainPotion(r, id)) gains.push({ type: 'potion', id }); break; }
+      case 'potion': {
+        const id = pick(r, Object.keys(POTIONS));
+        if (gainPotion(r, id)) gains.push({ type: 'potion', id });
+        else { r.hero.gold += 20; gains.push({ type: 'gold', amount: 20 }); } // no free slot: the bottle is sold on the spot
+        break;
+      }
+      case 'boon': {
+        const def = BOONS[effect.id];
+        if (!def) break;
+        const fights = effect.fights || def.fights;
+        const boons = (r.hero.boons || []).filter(boon => boon.id !== effect.id);
+        const current = (r.hero.boons || []).find(boon => boon.id === effect.id);
+        r.hero.boons = [...boons, { id: effect.id, fights: Math.max(fights, current?.fights || 0) }];
+        gains.push({ type: 'boon', id: effect.id, fights });
+        break;
+      }
       case 'chantCard': { const id = pick(r, CHANT_CARDS.filter(card => CARDS[card].rarity !== 'starter' && isUnlocked(card, r.unlocked) && inHeroPool(card, heroOf(r)))); addCard(r, id); gains.push({ type: 'card', id }); break; }
       case 'duplicate': if (r.hero.deck.length) r.pending = { kind: 'duplicate', cancellable: false, source: 'event' }; break;
       case 'transform': if (r.hero.deck.length) r.pending = { kind: 'transform', cancellable: false, source: 'event' }; break;
@@ -1090,6 +1129,27 @@ function applyOutcome(r, effects = []) {
   }
 }
 
+const MOVE_ON = { en: 'You move on.', zh: '你繼續前進。' };
+
+// The climb and the wheel build their buttons from how far the player got.
+function climbChoices(r, def) {
+  const { step, loot } = r.event.game;
+  const { loot: gains, fall } = def.climb;
+  return [
+    { en: 'Climb higher', zh: '再往上爬', note: `${step === gains.length - 1 ? '登上塔頂：多拿' : '多拿'} ${gains[step]} 金幣${step === gains.length - 1 ? '和 1 件遺物' : ''}，${fall[step] ? `${fall[step]}% 機率摔下來` : '這一層很穩'}`, act: 'climb' },
+    step ? { en: 'Climb down with the loot', zh: '帶著戰利品爬下來', note: `帶走 ${loot} 金幣`, act: 'stop' } : { en: 'Walk away', zh: '轉身離開', note: '什麼也不發生', act: 'stop' },
+  ];
+}
+
+function wheelChoices(r, def) {
+  const spins = r.event.game.spins.length;
+  const cost = def.wheel.cost[spins];
+  return [
+    { en: spins ? `Spin again (${cost} gold)` : `Spin the wheel (${cost} gold)`, zh: spins ? `再轉一次（${cost} 金幣）` : `轉動轉盤（${cost} 金幣）`, note: '遺物、金幣、藥劑……也可能槓龜', req: { gold: cost }, act: 'spin' },
+    spins ? { en: 'Take your prizes and go', zh: '帶著獎品離開', note: '', act: 'stop' } : { en: 'Walk on', zh: '繼續前進', note: '什麼也不發生', act: 'stop' },
+  ];
+}
+
 export function eventChoices(r) {
   const ev = r.event, def = ev && eventDef(ev.id);
   if (!def) return [];
@@ -1097,7 +1157,66 @@ export function eventChoices(r) {
     const riddle = def.riddles[ev.riddle];
     return [...riddle.options.map(option => ({ en: option.en, zh: option.zh, note: '' })), def.leave];
   }
+  if (ev.game?.kind === 'climb') return climbChoices(r, def);
+  if (ev.game?.kind === 'wheel') return wheelChoices(r, def);
+  if (ev.game) return []; // a word game or duel is being played
+  if (ev.stage) return def.stages?.[ev.stage]?.choices || [];
   return def.choices;
+}
+
+// The body text for the page of the event the player is on.
+export const eventBody = r => {
+  const def = r.event && eventDef(r.event.id);
+  return (r.event?.stage && def?.stages?.[r.event.stage]?.body) || def?.body;
+};
+
+function finishEvent(r, result) {
+  if (r.event) r.event.result = result || MOVE_ON;
+}
+
+// Applies one resolution { effects, result, goto, game }. A fight or a card
+// reward leaves the event screen, so nothing else happens after it.
+function resolveEventChoice(r, res) {
+  applyOutcome(r, res.effects);
+  const ev = r.event;
+  if (!ev || r.screen !== 'event') return;
+  if (res.goto) { ev.stage = res.goto; return; }
+  if (res.game) { ev.game = { kind: res.game }; return; }
+  finishEvent(r, res.result);
+}
+
+function climbStep(r, def, act) {
+  const ev = r.event, game = ev.game;
+  const { loot, fall, hurt } = def.climb;
+  if (act === 'stop') {
+    if (game.loot) applyOutcome(r, [{ op: 'gold', v: game.loot }]);
+    finishEvent(r, game.step ? def.results.down : def.results.leave);
+    return;
+  }
+  if (randInt(r, 1, 100) <= fall[game.step]) {
+    game.fell = true;
+    applyOutcome(r, [{ op: 'hurt', v: hurt }]);
+    finishEvent(r, def.results.fall);
+    return;
+  }
+  game.loot += loot[game.step];
+  game.step += 1;
+  if (game.step >= loot.length) {
+    applyOutcome(r, [{ op: 'gold', v: game.loot }, { op: 'relic', tier: 'common' }]);
+    finishEvent(r, def.results.top);
+  }
+}
+
+function wheelSpin(r, def, act) {
+  const ev = r.event, game = ev.game;
+  if (act === 'stop') { finishEvent(r, game.spins.length ? def.results.done : def.results.leave); return; }
+  const cost = def.wheel.cost[game.spins.length];
+  if (cost == null || r.hero.gold < cost) return;
+  r.hero.gold -= cost;
+  const segment = weighted(r, def.wheel.segments.map((item, index) => [index, item.w || 1]));
+  game.spins.push(segment);
+  applyOutcome(r, def.wheel.segments[segment].effects);
+  if (game.spins.length >= def.wheel.cost.length) finishEvent(r, def.results.done);
 }
 
 function chooseEvent(r, index) {
@@ -1109,11 +1228,67 @@ function chooseEvent(r, index) {
     const riddle = def.riddles[ev.riddle];
     choice = index === riddle.options.length ? def.leave : riddle.options[index] ? (riddle.options[index].ok ? def.correct : def.wrong) : null;
     ev.answered = index;
-  } else choice = def.choices[index];
+  } else choice = eventChoices(r)[index];
   if (!choice || !meetsReq(r, choice.req)) return;
   ev.chosen = index;
-  ev.result = choice.result || { en: 'You move on.', zh: '你繼續前進。' };
-  applyOutcome(r, choice.effects);
+  if (choice.act && ev.game?.kind === 'climb') { climbStep(r, def, choice.act); return; }
+  if (choice.act && ev.game?.kind === 'wheel') { wheelSpin(r, def, choice.act); return; }
+  if (choice.outcomes) {
+    // The choice's own effects are its price, paid whatever happens next.
+    applyOutcome(r, choice.effects);
+    if (!r.event || r.screen !== 'event') return;
+    const picked = weighted(r, choice.outcomes.map((item, i) => [i, item.w || 1]));
+    ev.rolled = picked;
+    resolveEventChoice(r, choice.outcomes[picked]);
+    return;
+  }
+  if (choice.branch) {
+    applyOutcome(r, choice.effects);
+    if (!r.event || r.screen !== 'event') return;
+    resolveEventChoice(r, ev.flags?.[choice.branch.flag] ? choice.branch.yes : choice.branch.no);
+    return;
+  }
+  resolveEventChoice(r, choice);
+}
+
+// The memory and listening games are played on screen; the score they send
+// back picks the reward, and the words go into the run's word list.
+function finishWordGame(r, score, words = []) {
+  const ev = r.event;
+  if (!ev || ev.result || !['memory', 'echo'].includes(ev.game?.kind)) return;
+  const def = eventDef(ev.id);
+  const tier = [...(def.rewards || [])].sort((a, b) => b.min - a.min).find(item => score >= item.min);
+  ev.game.score = score;
+  words.filter(item => item?.w).forEach(item => {
+    r.stats.words = [...r.stats.words.filter(entry => entry.w !== item.w), { w: item.w, m: item.m, ok: Boolean(item.ok) }].slice(-60);
+  });
+  if (tier) applyOutcome(r, tier.effects);
+  finishEvent(r, tier?.result);
+}
+
+export const duelOutcome = (you, foe) => (you === foe ? 'draw' : DUEL_MOVES[you].beats === foe ? 'win' : 'lose');
+
+function duelRound(r, move) {
+  const ev = r.event;
+  if (!ev || ev.result || ev.game?.kind !== 'duel' || !DUEL_MOVES[move]) return;
+  const game = ev.game;
+  game.rounds ||= [];
+  game.you ||= 0;
+  game.foe ||= 0;
+  const foe = pick(r, Object.keys(DUEL_MOVES));
+  const outcome = duelOutcome(move, foe);
+  if (outcome === 'win') game.you += 1;
+  if (outcome === 'lose') game.foe += 1;
+  game.rounds.push({ you: move, foe, outcome });
+  const def = eventDef(ev.id);
+  // First to two; after seven rounds of stalemate the knight calls it a draw.
+  if (game.you >= 2 || game.foe >= 2 || game.rounds.length >= 7) {
+    const won = game.you > game.foe;
+    const tie = game.you === game.foe;
+    if (tie) applyOutcome(r, [{ op: 'gold', v: 30 }]);
+    else applyOutcome(r, (won ? def.rewards.win : def.rewards.lose).effects);
+    finishEvent(r, tie ? { en: '"A worthy match. Let us call it even."', zh: '「勢均力敵。這局就算平手吧。」' } : (won ? def.rewards.win : def.rewards.lose).result);
+  }
 }
 
 function pickCard(r, uid) {
@@ -1198,6 +1373,8 @@ export function runReducer(state, action) {
       }
       break;
     case 'EVENT_CHOOSE': chooseEvent(r, action.index); break;
+    case 'EVENT_GAME': finishWordGame(r, Math.max(0, Math.floor(action.score) || 0), action.words); break;
+    case 'EVENT_DUEL': duelRound(r, action.move); break;
     case 'EVENT_CONTINUE': if (r.event?.result && !r.pending) { r.event = null; r.screen = 'map'; } break;
     case 'LEAVE_ROOM': if (!r.pending) { r.shop = null; r.rest = null; r.treasure = null; r.screen = 'map'; } break;
     default: return state;

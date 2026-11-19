@@ -367,8 +367,10 @@ export default function CombatScreen({ run, dispatch, settings, pool, speak, pot
   useEffect(() => { if (!banner) return undefined; const t = window.setTimeout(() => setBanner(null), 1150); return () => window.clearTimeout(t); }, [banner]);
   useEffect(() => { if (!ghost) return undefined; const t = window.setTimeout(() => setGhost(null), 700); return () => window.clearTimeout(t); }, [ghost]);
   useEffect(() => { if (!notice) return undefined; const t = window.setTimeout(() => setNotice(null), notice.ms || 1600); return () => window.clearTimeout(t); }, [notice]);
-  // A boss with a special rule explains it once when the fight begins.
+  // A boss with a special rule explains it once when the fight begins; an
+  // unknown room that turned out to be an ambush says so.
   useEffect(() => {
+    if (!resumed && c.ambush && c.round === 1) { setNotice({ key: `ambush-${c.id}`, text: '伏擊！敵人從書架後衝了出來！', ms: 2600 }); return; }
     if (resumed || c.kind !== 'boss' || c.round !== 1) return;
     const def = living(c).map(enemy => ENEMIES[enemy.id]).find(item => item.boss && item.passive);
     if (def) setNotice({ key: `boss-${c.id}`, text: `${(def.title || def).zh}：${def.passive}`, ms: 5200 });

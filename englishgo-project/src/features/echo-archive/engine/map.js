@@ -10,7 +10,7 @@ export const ROOM_TYPES = {
   elite: { en: 'Elite', zh: '菁英' },
   rest: { en: 'Rest', zh: '燈下休憩' },
   shop: { en: 'Merchant', zh: '墨商' },
-  event: { en: 'Unknown', zh: '未知事件' },
+  event: { en: 'Unknown', zh: '未知' },
   treasure: { en: 'Treasure', zh: '寶箱' },
   boss: { en: 'Boss', zh: '首領' },
 };

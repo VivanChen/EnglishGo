@@ -31,6 +31,14 @@ export const PAINTED_CARDS = new Set([
 ]);
 
 export const cardImage = id => (PAINTED_CARDS.has(id) ? `${ROOT}/cards/${id}.webp` : null);
+
+// A painted scene for the keeper and every event.
+export const PAINTED_EVENTS = new Set([
+  'keeper', 'mirror', 'fountain', 'riddle', 'bard', 'statue', 'binder', 'candle', 'guardian', 'scriptorium', 'wishingWell',
+  'lostScholar', 'emberAltar', 'tinker', 'silentChoir', 'page',
+  'tower', 'matching', 'echoHall', 'fortuneTeller', 'mimicChest', 'inkKitten', 'knightDuel', 'clockworkTea', 'fortuneWheel', 'readingRoom',
+]);
+export const eventImage = id => (PAINTED_EVENTS.has(id) ? `${ROOT}/events/${id}.webp` : null);
 export const creatureImage = art => (PAINTED_CREATURES.has(art) ? `${ROOT}/creatures/${art}.webp` : null);
 export const heroImage = hero => (PAINTED_HEROES.has(hero) ? `${ROOT}/heroes/${hero}.webp` : null);
 export const FAMILIAR_IMAGE = `${ROOT}/heroes/familiar.webp`;

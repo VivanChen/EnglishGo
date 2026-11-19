@@ -23,3 +23,11 @@ light, set in a magical ancient library of living ink and paper, palette by
 card type (Attack crimson, ember and gold; Skill teal, sea blue and silver;
 Power violet, indigo and gold), Mythic cards with an extra radiant gold glow,
 no text. The card's glyph stays as the fallback while a painting loads.
+
+Event scenes (events/): one painting for the Lantern Keeper and each of the 25
+events, generated on 2026-11-20 with the same model (16:9) and saved as
+960x540 WebP. Shared style prompt: hand-painted storybook fantasy scene
+illustration in gouache and watercolor with ink linework and visible paper
+texture, soft rim light, cozy yet mysterious mood, inside a magical ancient
+library tower of living ink and paper, palette chosen per scene, no text.
+The event's glyph is the fallback if a scene cannot load.
