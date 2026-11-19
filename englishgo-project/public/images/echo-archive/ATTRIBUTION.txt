@@ -1,0 +1,15 @@
+Echo Archive painted sprites (heroes/, creatures/).
+
+Original EnglishGo artwork, generated on 2026-11-19 with ElevenLabs image generation
+(model: bytedance-seedream-5.5, transparent background; three images had their
+backgrounds removed with birefnet-v2-bg-removal), then trimmed and resized to
+512x512 WebP so each figure stands on the bottom edge of its square.
+
+Shared style prompt: hand-painted dark-fantasy storybook game illustration,
+gouache and ink brushwork with visible paper texture, rim light, jewel-tone
+palette per act (Act I midnight blue and violet, Act II brass and copper,
+Act III deep purple and silver, Act IV parchment and void), full-body sprite,
+heroes facing right and creatures facing left, suitable for a children's card game.
+
+Each creature keeps the design of its earlier hand-drawn SVG, which remains in
+src/features/echo-archive/components/Creatures.jsx as the fallback.

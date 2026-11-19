@@ -1,4 +1,5 @@
-import { useId } from 'react';
+import { useId, useState } from 'react';
+import { FAMILIAR_IMAGE, creatureImage, heroImage } from './paintedArt.js';
 
 // Hand-built SVG creatures. Each one stands on y≈190 inside a 200×200 box and
 // shares the same language: dark ink bodies, a cool rim light, glowing eyes.
@@ -469,9 +470,22 @@ function clockTwin(id, { face, eye, hands, cheek }) {
 
 export const ENEMY_ART = Object.keys(ART);
 
-export function EnemyArt({ art, className = '' }) {
+// A painted sprite, falling back to the SVG drawing if the image cannot load.
+function Painted({ src, className, fallback }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) return fallback;
+  return <img src={src} alt="" aria-hidden="true" draggable="false" decoding="async" className={`${className} is-painted`} onError={() => setFailed(true)}/>;
+}
+
+function EnemySvg({ art, className }) {
   const id = useIds();
   return <svg viewBox="0 0 200 200" className={`ea-creature ${className}`} aria-hidden="true">{(ART[art] || ART.inkling)(id)}</svg>;
+}
+
+export function EnemyArt({ art, className = '' }) {
+  const svg = <EnemySvg art={art} className={className}/>;
+  const src = creatureImage(art);
+  return src ? <Painted src={src} className={`ea-creature ${className}`} fallback={svg}/> : svg;
 }
 
 // The Inkcaller: a hooded summoner with a spirit jar.
@@ -507,6 +521,10 @@ function CallerArt({ id }) {
 
 // The Inkcaller's ink spirit. Its size grows a little with its stacks.
 export function FamiliarArt({ className = '' }) {
+  return <Painted src={FAMILIAR_IMAGE} className={`ea-familiar-art ${className}`} fallback={<FamiliarSvg className={className}/>}/>;
+}
+
+function FamiliarSvg({ className = '' }) {
   const id = useIds();
   return <svg viewBox="0 0 100 100" className={`ea-familiar-art ${className}`} aria-hidden="true">
     <defs>
@@ -524,6 +542,12 @@ export function FamiliarArt({ className = '' }) {
 }
 
 export function HeroArt({ className = '', hero = 'scribe' }) {
+  const svg = <HeroSvg className={className} hero={hero}/>;
+  const src = heroImage(hero);
+  return src ? <Painted src={src} className={`ea-creature ea-hero-art ${hero === 'caller' ? 'is-caller' : ''} ${className}`} fallback={svg}/> : svg;
+}
+
+function HeroSvg({ className = '', hero = 'scribe' }) {
   const id = useIds();
   if (hero === 'caller') return <svg viewBox="0 0 200 220" className={`ea-creature ea-hero-art is-caller ${className}`} aria-hidden="true"><CallerArt id={id}/></svg>;
   return <svg viewBox="0 0 200 220" className={`ea-creature ea-hero-art ${className}`} aria-hidden="true">

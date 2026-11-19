@@ -261,6 +261,20 @@ describe('Echo Archive combat clarity', () => {
 });
 
 describe('Echo Archive art', () => {
+  it('ships a painted WebP sprite for every creature, both heroes and the familiar', async () => {
+    const { readFileSync } = await import('node:fs');
+    const { ENEMY_ART } = await import('./components/Creatures.jsx');
+    const { FAMILIAR_IMAGE, PAINTED_CREATURES, creatureImage, heroImage } = await import('./components/paintedArt.js');
+    expect([...PAINTED_CREATURES].sort()).toEqual([...ENEMY_ART].sort());
+    const files = [...ENEMY_ART.map(creatureImage), heroImage('scribe'), heroImage('caller'), FAMILIAR_IMAGE];
+    files.forEach(src => {
+      const bytes = readFileSync(`public${src}`);
+      expect(bytes.toString('ascii', 0, 4), src).toBe('RIFF');
+      expect(bytes.toString('ascii', 8, 12), src).toBe('WEBP');
+      expect(bytes.length, src).toBeLessThan(120 * 1024);
+    });
+  });
+
   it('draws an icon for every card, relic and power', () => {
     Object.entries(CARDS).forEach(([id, card]) => expect(hasGlyph(card.glyph), id).toBe(true));
     Object.entries(RELICS).forEach(([id, relic]) => expect(hasGlyph(relic.glyph), id).toBe(true));

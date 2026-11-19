@@ -1,9 +1,10 @@
 import { useEffect, useRef } from 'react';
-import { ACTS, ENEMIES, bossName, bossOf } from '../data/enemies.js';
+import { ACTS, ENCOUNTERS, ENEMIES, bossName, bossOf } from '../data/enemies.js';
 import { MAP_COLS, MAP_ROWS, ROOM_TYPES, availableNodes } from '../engine/map.js';
 import { actBoss } from '../engine/engine.js';
 import Glyph from '../components/Glyph.jsx';
 import { EnemyArt } from '../components/Creatures.jsx';
+import { actCreatureImages, preloadImages } from '../components/paintedArt.js';
 import { sfx } from '../sound.js';
 
 const ROW_H = 92;
@@ -24,6 +25,9 @@ export default function MapScreen({ run, dispatch }) {
   const encounter = actBoss(run);
   const boss = { ...bossName(encounter), art: ENEMIES[bossOf(encounter)].art };
   const actInfo = ACTS[run.act];
+
+  // Fetch this act's creature paintings while the player studies the map.
+  useEffect(() => { preloadImages(actCreatureImages(run.act, ENCOUNTERS, ENEMIES)); }, [run.act]);
 
   useEffect(() => {
     const el = scroller.current;
