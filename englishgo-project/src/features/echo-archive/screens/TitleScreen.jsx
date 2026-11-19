@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { ARCHIVE_CARDS, CARDS } from '../data/cards.js';
 import { ACTS } from '../data/enemies.js';
 import { DAILY_BLESSINGS, DAILY_TRIALS, MAX_SILENCE, dailyBonus, dailyChallenge, dateKey, previousDateKey, silenceRules } from '../data/challenges.js';
+import { HEROES, HERO_IDS, heroUnlocked } from '../data/heroes.js';
 import { DIFFICULTIES } from '../engine/engine.js';
 import { PULL_COST } from '../archive.js';
 import Glyph from '../components/Glyph.jsx';
@@ -60,7 +61,7 @@ function DailyCard({ meta, saved, onDaily, onContinue }) {
         : live ? <button type="button" className="ea-btn is-gold" onClick={onContinue}>繼續今日挑戰 →</button>
         : state ? <p className="ea-daily-result"><b>今天已經挑戰過了</b><small>明天會有新的書庫。</small></p>
         : <>
-          <small className="ea-daily-reward">標準難度 · 墨晶 ×1.5 · 完成再 +{dailyBonus(nextStreak)}</small>
+          <small className="ea-daily-reward">{HEROES[heroUnlocked(challenge.hero, meta) ? challenge.hero : 'scribe'].zh} · 標準難度 · 墨晶 ×1.5 · 完成再 +{dailyBonus(nextStreak)}</small>
           {saved && confirm ? <button type="button" className="ea-btn is-danger" onClick={onDaily}>放棄目前進度並開始？</button>
             : <button type="button" className="ea-btn is-gold" onClick={() => (saved ? setConfirm(true) : onDaily())}>接受挑戰 →</button>}
         </>}
@@ -87,9 +88,22 @@ function SilencePicker({ top, level, setLevel }) {
   </div>;
 }
 
+function HeroPicker({ meta, hero, setHero }) {
+  return <div className="ea-hero-pick" role="radiogroup" aria-label="選擇角色">
+    {HERO_IDS.map(id => {
+      const info = HEROES[id], open = heroUnlocked(id, meta);
+      return <button type="button" key={id} role="radio" aria-checked={hero === id} disabled={!open} className={`ea-hero-option is-${id} ${open ? '' : 'is-locked'}`} onClick={() => setHero(id)}>
+        <span className="ea-hero-portrait" aria-hidden="true"><HeroArt hero={id}/></span>
+        <span className="ea-hero-copy"><b lang="en">{info.en}</b><i>{info.zh} · {info.style}</i><small>{open ? info.text : `🔒 ${info.unlock}`}</small></span>
+      </button>;
+    })}
+  </div>;
+}
+
 export default function TitleScreen({ saved, meta, onContinue, onNew, onDaily, onBack, onGacha, onCodex, onHistory }) {
   const [picking, setPicking] = useState(false);
   const [difficulty, setDifficulty] = useState(meta.lastDifficulty || 'story');
+  const [hero, setHero] = useState(() => (heroUnlocked(meta.lastHero, meta) && HEROES[meta.lastHero] ? meta.lastHero : 'scribe'));
   const top = meta.silenceTop ?? -1;
   const [silence, setSilence] = useState(() => Math.max(0, Math.min(meta.lastSilence || 0, top + 1, MAX_SILENCE)));
   const winRate = meta.runs ? Math.round((meta.wins / meta.runs) * 100) : 0;
@@ -106,14 +120,17 @@ export default function TitleScreen({ saved, meta, onContinue, onNew, onDaily, o
             <span>繼續遠征</span><small lang="en">Act {ACTS[saved.act].roman} · Floor {saved.floor} · ♥ {saved.hero.hp}/{saved.hero.maxHp}</small>
           </button>}
           <button type="button" className={`ea-btn is-big ${saved ? '' : 'is-gold'}`} onClick={() => setPicking(true)}><span>{saved ? '開始新的遠征' : '開始遠征'}</span><small lang="en">New Run</small></button>
-        </div> : <div className="ea-difficulty" role="radiogroup" aria-label="選擇難度">
-          {Object.entries(DIFFICULTIES).map(([id, item]) => <button type="button" key={id} role="radio" aria-checked={difficulty === id} className={`ea-diff is-${id}`} onClick={() => setDifficulty(id)}>
-            <b lang="en">{item.en}</b><span>{item.zh}</span><small>{item.text}</small><i>♥ {item.heroHp}</i>
-          </button>)}
+        </div> : <div className="ea-difficulty">
+          <HeroPicker meta={meta} hero={hero} setHero={setHero}/>
+          <div className="ea-diff-row" role="radiogroup" aria-label="選擇難度">
+            {Object.entries(DIFFICULTIES).map(([id, item]) => <button type="button" key={id} role="radio" aria-checked={difficulty === id} className={`ea-diff is-${id}`} onClick={() => setDifficulty(id)}>
+              <b lang="en">{item.en}</b><span>{item.zh}</span><small>{item.text}</small><i>♥ {item.heroHp + HEROES[hero].hp}</i>
+            </button>)}
+          </div>
           {difficulty === 'heroic' && <SilencePicker top={top} level={silence} setLevel={setSilence}/>}
           <div className="ea-difficulty-actions">
             <button type="button" className="ea-btn is-quiet" onClick={() => setPicking(false)}>返回</button>
-            <button type="button" className="ea-btn is-gold" onClick={() => onNew(difficulty, difficulty === 'heroic' ? silence : 0)}>{saved ? '放棄目前進度，出發 →' : '出發 →'}</button>
+            <button type="button" className="ea-btn is-gold" onClick={() => onNew(difficulty, difficulty === 'heroic' ? silence : 0, hero)}>{saved ? '放棄目前進度，出發 →' : '出發 →'}</button>
           </div>
         </div>}
         {!picking && meta.collection && <ArchiveLinks collection={meta.collection} onGacha={onGacha} onCodex={onCodex}/>}
@@ -131,7 +148,7 @@ export default function TitleScreen({ saved, meta, onContinue, onNew, onDaily, o
       <div className="ea-title-side">
         <div className="ea-title-art" aria-hidden="true">
           <div className="ea-title-tower"><EnemyArt art="tome" className="ea-title-boss"/></div>
-          <HeroArt/>
+          <HeroArt hero={picking ? hero : meta.lastHero}/>
         </div>
         {!picking && meta.runs > 0 && <DailyCard meta={meta} saved={saved} onDaily={onDaily} onContinue={onContinue}/>}
       </div>
@@ -157,10 +174,13 @@ export function RunSummary({ run, earned, shards, onAgain, onTitle, onGacha, spe
   return <section className={`ea-summary ${won ? 'is-won' : 'is-lost'}`} aria-labelledby="ea-summary-title">
     <Backdrop act={run.act}/>
     <div className="ea-summary-panel">
-      <span className="ea-eyebrow" lang="en">{won ? 'THE ARCHIVE REMEMBERS' : 'THE SILENCE FALLS'}</span>
-      <h1 id="ea-summary-title">{won ? '話語回來了！' : '這次的遠征結束了'}</h1>
-      {(run.daily || run.silence > 0) && <p className="ea-summary-mode">{run.daily ? `每日挑戰 · ${run.daily.date}` : `英雄難度 · 靜默層級 ${run.silence}`}</p>}
-      <p className="ea-room-lead">{won ? '無言之主消散，書庫重新響起千萬個聲音。你是真正的詞術師。' : '寂靜暫時贏了。帶著這次的經驗，下一次會走得更遠。'}</p>
+      <span className="ea-eyebrow" lang="en">{run.trueEnding ? 'THE LAST PAGE IS WRITTEN' : won ? 'THE ARCHIVE REMEMBERS' : 'THE SILENCE FALLS'}</span>
+      <h1 id="ea-summary-title">{run.trueEnding ? '你寫下了最後一頁' : won ? '話語回來了！' : '這次的遠征結束了'}</h1>
+      <p className="ea-summary-mode">{[HEROES[run.hero.id || 'scribe'].zh, run.daily ? `每日挑戰 · ${run.daily.date}` : run.silence > 0 ? `英雄難度 · 靜默層級 ${run.silence}` : DIFFICULTIES[run.difficulty]?.zh].filter(Boolean).join(' · ')}</p>
+      <p className="ea-room-lead">{run.trueEnding
+        ? '終焉寂靜化成千萬個字，飄回書庫裡的每一本書。三把鑰匙闔上了最後一頁——這是真正的結局。'
+        : won ? `無言之主消散，書庫重新響起千萬個聲音。${run.keys && Object.values(run.keys).some(Boolean) ? '不過……你手上的鑰匙似乎還能打開什麼。' : '你是書庫真正的守護者。'}`
+        : '寂靜暫時贏了。帶著這次的經驗，下一次會走得更遠。'}</p>
       {earned?.unlocked && <div className="ea-unlock" role="status"><Glyph name="crown" size={28}/><span><b>解鎖靜默層級 {earned.unlocked}！</b><small>{silenceRules(earned.unlocked).at(-1).zh}：{silenceRules(earned.unlocked).at(-1).text}</small></span></div>}
       <dl className="ea-summary-stats">{stats.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
       {earned && <div className="ea-earned">

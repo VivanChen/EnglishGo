@@ -102,6 +102,66 @@ export const EVENTS = {
       { en: 'Tiptoe past', zh: '躡手躡腳地離開', note: '什麼也不發生', effects: [], result: { en: 'The snoring continues.', zh: '打呼聲還在繼續。' } },
     ],
   },
+  scriptorium: {
+    acts: [1, 2], art: 'quill',
+    title: { en: 'The Busy Scriptorium', zh: '忙碌的抄寫室' },
+    body: { en: 'Monks with ink-stained fingers copy books by candlelight. "We can copy anything," one says, "even a spell."', zh: '手指沾滿墨水的修士在燭光下抄書。其中一人說：「我們什麼都能抄，連咒語也行。」' },
+    choices: [
+      { en: 'Copy a spell (40 gold)', zh: '抄寫一道咒語（40 金幣）', note: '複製牌組中的 1 張牌', req: { gold: 40 }, effects: [{ op: 'gold', v: -40 }, { op: 'duplicate' }], result: { en: 'The copy is perfect, down to the last smudge.', zh: '抄本完美無缺，連最後一點墨漬都一模一樣。' } },
+      { en: 'Lend a hand', zh: '幫忙抄寫', note: '失去 5 生命，隨機升級 1 張牌，獲得 30 金幣', req: { hp: 6 }, effects: [{ op: 'hurt', v: 5 }, { op: 'upgradeRandom', v: 1 }, { op: 'gold', v: 30 }], result: { en: 'Your hand aches, but your spells feel sharper.', zh: '你的手很痠，但咒語變得更鋒利了。' } },
+      { en: 'Leave quietly', zh: '悄悄離開', note: '什麼也不發生', effects: [], result: { en: 'The scratching of quills follows you out.', zh: '羽筆的沙沙聲一路跟著你出去。' } },
+    ],
+  },
+  wishingWell: {
+    acts: [1, 2, 3], art: 'well',
+    title: { en: 'The Wishing Well', zh: '許願井' },
+    body: { en: 'A well full of glowing coins. A small sign says: "One coin, one wish. Maybe."', zh: '一口裝滿發光錢幣的井，旁邊的小牌子寫著：「一枚錢幣，一個願望。大概吧。」' },
+    choices: [
+      { en: 'Toss a coin (30 gold)', zh: '丟一枚金幣（30 金幣）', note: '一半機率得到 1 件遺物', req: { gold: 30 }, effects: [{ op: 'gold', v: -30 }, { op: 'chance', p: 50, then: [{ op: 'relic', tier: 'common' }] }], result: { en: 'The coin sinks. The water glows... or does it?', zh: '金幣沉了下去。水面亮了一下……真的嗎？' } },
+      { en: 'Drink the water', zh: '喝一口井水', note: '回復 15 生命', effects: [{ op: 'heal', v: 15 }], result: { en: 'It tastes like copper and moonlight.', zh: '嚐起來像銅幣和月光。' } },
+      { en: 'Walk on', zh: '繼續前進', note: '什麼也不發生', effects: [], result: { en: 'Wishes can wait.', zh: '願望可以等一等。' } },
+    ],
+  },
+  lostScholar: {
+    acts: [1, 2, 3], art: 'scholar',
+    title: { en: 'The Lost Scholar', zh: '迷路的學者' },
+    body: { en: '"Excuse me, which way is the exit?" A scholar is lost among the shelves, holding a tall stack of notes.', zh: '「不好意思，請問出口在哪裡？」一位學者抱著一大疊筆記，在書架間迷了路。' },
+    choices: [
+      { en: 'Show him the way', zh: '為他指路', note: '獲得 1 張隨機 Chant 牌', effects: [{ op: 'chantCard' }], result: { en: '"Thank you, friend! Please, take one of my spells."', zh: '「謝謝你，朋友！請收下我的一道咒語。」' } },
+      { en: 'Trade notes', zh: '交換筆記', note: '移除 1 張牌，獲得 50 金幣', effects: [{ op: 'remove' }, { op: 'gold', v: 50 }], result: { en: 'He pays well for your old page.', zh: '他為你的舊書頁付了不錯的價錢。' } },
+      { en: 'Keep walking', zh: '繼續趕路', note: '什麼也不發生', effects: [], result: { en: 'You hear him asking a bookshelf for directions.', zh: '你聽見他在向一座書架問路。' } },
+    ],
+  },
+  emberAltar: {
+    acts: [2, 3], art: 'altar',
+    title: { en: 'The Ember Altar', zh: '餘燼祭壇' },
+    body: { en: 'An altar of warm black stone. Cards placed on it burn away, and something new rises from the ashes.', zh: '一座溫熱的黑石祭壇。放上去的牌會燒成灰，再從灰燼中升起新的東西。' },
+    choices: [
+      { en: 'Offer a card', zh: '獻上一張牌', note: '把 1 張牌變成隨機的另一張牌，較容易是稀有卡', effects: [{ op: 'transform' }], result: { en: 'The ashes swirl and take a new shape.', zh: '灰燼旋轉著，化成了新的形狀。' } },
+      { en: 'Offer your blood', zh: '獻上鮮血', note: '失去 10 生命，獲得 1 件稀有遺物', req: { hp: 11 }, effects: [{ op: 'hurt', v: 10 }, { op: 'relic', tier: 'uncommon' }], result: { en: 'The altar drinks, and gives something back.', zh: '祭壇喝下了鮮血，回贈你一樣東西。' } },
+      { en: 'Step back', zh: '退後一步', note: '什麼也不發生', effects: [], result: { en: 'The embers sigh and dim.', zh: '餘燼輕嘆一聲，暗了下去。' } },
+    ],
+  },
+  tinker: {
+    acts: [2], art: 'gear',
+    title: { en: "The Tinker's Stall", zh: '修鐘匠的攤子' },
+    body: { en: 'A tiny tinker sits among a thousand ticking parts. "Trade? Fix? Both?"', zh: '一位小小的修鐘匠坐在上千個滴答作響的零件中間：「交易？修理？還是都要？」' },
+    choices: [
+      { en: 'Sell a potion', zh: '賣掉一瓶藥劑', note: '失去 1 瓶藥劑，獲得 75 金幣', req: { potion: true }, effects: [{ op: 'losePotion' }, { op: 'gold', v: 75 }], result: { en: '"Fine glass, fine color. Sold!"', zh: '「好瓶子、好顏色。成交！」' } },
+      { en: 'Tune your deck (60 gold)', zh: '調校牌組（60 金幣）', note: '隨機升級 2 張牌', req: { gold: 60 }, effects: [{ op: 'gold', v: -60 }, { op: 'upgradeRandom', v: 2 }], result: { en: 'Click, whirr, ding. Good as new.', zh: '喀、嗡、叮。跟新的一樣。' } },
+      { en: 'Leave', zh: '離開', note: '什麼也不發生', effects: [], result: { en: 'Tick, tick, tick...', zh: '滴答、滴答、滴答……' } },
+    ],
+  },
+  silentChoir: {
+    acts: [3], art: 'choir',
+    title: { en: 'The Silent Choir', zh: '無聲合唱' },
+    body: { en: 'Pale singers open their mouths, but no sound comes out. Their hymnbook glows on a stand.', zh: '蒼白的歌者張開嘴，卻發不出任何聲音。他們的聖歌集在架子上發著光。' },
+    choices: [
+      { en: 'Sing for them', zh: '為他們歌唱', note: '最大生命 +6', effects: [{ op: 'speak', text: 'Every voice deserves a song.' }, { op: 'maxHp', v: 6 }], result: { en: 'For a moment, they sing along. You feel lighter.', zh: '有那麼一刻，他們跟著你一起唱。你覺得輕盈多了。' } },
+      { en: 'Take the hymnbook', zh: '拿走聖歌集', note: '獲得 1 件遺物，加入詛咒 Doubt', effects: [{ op: 'relic' }, { op: 'curse', id: 'doubt' }], result: { en: 'The book is warm. The silence behind you is cold.', zh: '書本很溫暖，身後的寂靜卻冰冷。' } },
+      { en: 'Leave', zh: '離開', note: '什麼也不發生', effects: [], result: { en: 'You leave them to their quiet song.', zh: '你讓他們繼續唱那首安靜的歌。' } },
+    ],
+  },
   page: {
     acts: [1, 2], art: 'page',
     title: { en: 'A Forgotten Page', zh: '遺落的書頁' },

@@ -38,7 +38,21 @@ function roomFor(holder, node, parents, act) {
   return weighted(holder, table);
 }
 
+// The hidden fourth act is a short, fixed climb: rest, merchant, the
+// Gatekeeper, then the final boss.
+function finalMap() {
+  const col = (MAP_COLS - 1) / 2;
+  const steps = ['rest', 'shop', 'elite'];
+  const nodes = {};
+  steps.forEach((type, row) => {
+    nodes[id(row, col)] = { id: id(row, col), row, col, type, next: [row < steps.length - 1 ? id(row + 1, col) : 'boss'], dx: 0, dy: 0 };
+  });
+  nodes.boss = { id: 'boss', row: steps.length, col, type: 'boss', next: [], dx: 0, dy: 0 };
+  return { act: 4, rows: steps.length, nodes };
+}
+
 export function generateMap(holder, act) {
+  if (act >= 4) return finalMap();
   const nodes = {}, edges = [];
   const ensure = (row, col) => (nodes[id(row, col)] ||= { id: id(row, col), row, col, type: null, next: [], dx: 0, dy: 0 });
   const starts = [];

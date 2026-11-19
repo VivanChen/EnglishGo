@@ -1,5 +1,6 @@
 import { ARCHIVE_CARDS, CARDS, CHANT_CARDS, REWARD_POOL, STARTER_DECK, baseCost, cardFades, isUnlocked, val } from '../data/cards.js';
 import { BASE_MODS, MAX_SILENCE, buildMods } from '../data/challenges.js';
+import { HEROES, heroOf, inHeroPool } from '../data/heroes.js';
 import { ENCOUNTERS, ENEMIES } from '../data/enemies.js';
 import { EVENTS, KEEPER } from '../data/events.js';
 import { ENERGY_RELICS, POTIONS, RELICS } from '../data/relics.js';
@@ -34,35 +35,54 @@ function addCard(r, id, up = false) {
 
 // Cards the run may offer: the base collection plus Archive cards the player
 // has unlocked. Fixed at run start so a save resumes with the same pool.
-export const cardPool = r => REWARD_POOL.filter(id => isUnlocked(id, r.unlocked));
+export const cardPool = r => REWARD_POOL.filter(id => isUnlocked(id, r.unlocked) && inHeroPool(id, heroOf(r)));
+export const KEY_IDS = ['flame', 'page', 'echo'];
+export const hasAllKeys = r => KEY_IDS.every(id => r.keys?.[id]);
 
 // `daily` is a challenge from dailyChallenge(): it fixes the seed, plays on
 // Standard and adds its featured card. `silence` (0–10) only applies on Heroic.
-export function createRun({ seed = makeSeed(), difficulty = 'standard', lv = 'elementary', unlocked = [], silence = 0, daily = null, startedAt = null } = {}) {
+export function createRun({ seed = makeSeed(), difficulty = 'standard', lv = 'elementary', unlocked = [], silence = 0, daily = null, startedAt = null, hero = 'scribe' } = {}) {
+  const heroId = HEROES[daily?.hero || hero] ? daily?.hero || hero : 'scribe';
+  const heroDef = HEROES[heroId];
   const mode = daily ? 'standard' : DIFFICULTIES[difficulty] ? difficulty : 'standard';
   const diff = DIFFICULTIES[mode];
   const level = mode === 'heroic' && !daily ? Math.max(0, Math.min(MAX_SILENCE, Math.floor(silence) || 0)) : 0;
-  const challenge = daily ? { date: daily.date, blessing: daily.blessing, trial: daily.trial, card: daily.card } : null;
+  const challenge = daily ? { date: daily.date, blessing: daily.blessing, trial: daily.trial, card: daily.card, hero: heroId } : null;
   const mods = buildMods({ silence: level, daily: challenge });
   const runSeed = (daily ? daily.seed : seed) >>> 0;
-  const maxHp = Math.max(20, diff.heroHp + mods.heroHp);
+  const maxHp = Math.max(20, diff.heroHp + heroDef.hp + mods.heroHp);
   const r = {
     version: SAVE_VERSION, seed: runSeed, rng: runSeed, difficulty: mode, lv,
     silence: level, daily: challenge, mods, startedAt,
     unlocked: (unlocked || []).filter(id => ARCHIVE_CARDS.includes(id)),
     act: 1, floor: 0, uid: 0, attacks: 0, fights: 0, actFights: 0, removeCost: Math.round(75 * mods.shopPrice), potionChance: 40,
-    hero: { hp: maxHp, maxHp, gold: 99 + mods.startGold, deck: [], relics: ['inkwell'], potions: [null, null, null], flags: {} },
+    hero: { id: heroId, hp: maxHp, maxHp, gold: 99 + mods.startGold, deck: [], relics: [heroDef.relic], potions: [null, null, null], flags: {} },
+    keys: { flame: false, page: false, echo: false }, trueEnding: false,
     map: null, pos: null, path: [], screen: 'event', actIntro: true,
     combat: null, reward: null, shop: null, rest: null, treasure: null, bossRelics: null, pending: null,
     event: { id: 'keeper', result: null, gains: [] }, seenEvents: [], lastEncounter: null,
     stats: { kills: 0, elites: 0, bosses: 0, chants: 0, chantsOk: 0, words: [], damage: 0, cards: 0, floors: 0 },
   };
-  STARTER_DECK.forEach(id => addCard(r, id));
+  heroDef.deck.forEach(id => addCard(r, id));
   if (challenge?.card && CARDS[challenge.card]) addCard(r, challenge.card);
   mods.startCurses.forEach(id => addCard(r, id));
   for (let i = 0; i < Math.min(3, mods.startPotions); i++) r.hero.potions[i] = pick(r, Object.keys(POTIONS));
-  r.map = generateMap(r, 1);
+  r.map = makeMap(r, 1);
   return r;
+}
+
+// Each map of Acts I–III hides one echoing elite until the Echo Key is found.
+function makeMap(r, act) {
+  const map = generateMap(r, act);
+  if (act > 3 || r.keys?.echo) return map;
+  const nodes = Object.values(map.nodes);
+  let elites = nodes.filter(node => node.type === 'elite');
+  if (!elites.length) {
+    const spare = nodes.filter(node => node.type === 'monster' && node.row >= 3 && node.row <= 6);
+    if (spare.length) { const node = pick(r, spare); node.type = 'elite'; elites = [node]; }
+  }
+  if (elites.length) pick(r, elites).echo = true;
+  return map;
 }
 
 // ───────────── Combat helpers ─────────────
@@ -103,8 +123,45 @@ function hurtPlayer(r, amount, kind = 'hit') {
   const loss = Math.min(r.hero.hp, amount - blocked);
   r.hero.hp -= loss;
   fx(r, { kind, to: 'player', amount: amount - blocked, blocked });
+  if (c && loss > 0 && hasRelic(r, 'bloodInk') && !c.bloodInk) {
+    c.bloodInk = true;
+    add(c.player.st, 'might', 1);
+    fx(r, { kind: 'buff', to: 'player', st: 'might' });
+  }
   return loss;
 }
+
+// ───────────── Familiar (the Inkcaller's ink spirit) ─────────────
+function feedFamiliar(r, amount) {
+  const c = r.combat;
+  if (!c || !amount) return;
+  c.player.familiar = Math.max(0, (c.player.familiar || 0) + amount);
+  fx(r, { kind: 'feed', to: 'player', amount });
+}
+
+// The familiar bites the weakest enemy (or all of them with Ink Sovereign)
+// for damage equal to its stacks. Might and Weak do not change it.
+function familiarStrike(r) {
+  const c = r.combat;
+  const power = c.player.familiar || 0;
+  if (power <= 0) return;
+  const strikes = 1 + (c.player.pw.twinStrike || 0);
+  for (let i = 0; i < strikes; i++) {
+    const pool = living(c);
+    if (!pool.length) return;
+    const targets = c.player.pw.sovereign ? pool : [pool.reduce((low, enemy) => (enemy.hp < low.hp ? enemy : low))];
+    fx(r, { kind: 'familiar', to: targets[0].uid, all: targets.length > 1, amount: power });
+    const burn = (c.player.pw.emberSpirit || 0) + (hasRelic(r, 'inkHorn') ? 2 : 0);
+    targets.forEach(enemy => {
+      hurtEnemy(r, enemy, power);
+      if (burn && !enemy.dead) { add(enemy.st, 'burn', burn); fx(r, { kind: 'status', to: enemy.uid, st: 'burn' }); }
+    });
+    if (c.player.pw.bond) gainWard(r, c.player.pw.bond, false);
+  }
+}
+
+// Burn ticks on enemies, boosted by Ember Heart.
+const burnDamage = (r, stacks) => (hasRelic(r, 'emberHeart') ? Math.floor(stacks * 1.5) : stacks);
 
 function attackEnemy(r, enemy, base, mult = 1) {
   const c = r.combat;
@@ -148,8 +205,10 @@ function drawCards(r, count) {
       c.discard = [];
       fx(r, { kind: 'shuffle' });
     }
-    c.hand.push(c.draw.shift());
+    const uid = c.draw.shift();
+    c.hand.push(uid);
     drawn += 1;
+    if (hasRelic(r, 'smudgedLens') && isJunk(CARDS[c.cards[uid].id])) gainWard(r, 3, false);
   }
   if (drawn) fx(r, { kind: 'draw', amount: drawn });
 }
@@ -172,7 +231,7 @@ export function cardContext(r) {
   const c = r.combat;
   if (!c) return {};
   const st = c.player.st;
-  return { might: st.might, weak: st.weak, grace: st.grace, frail: st.frail, combo: c.played || 0, chants: c.chantsOk || 0, statuses: statusCount(c), livingInk: Boolean(c.player.pw.livingInk) };
+  return { might: st.might, weak: st.weak, grace: st.grace, frail: st.frail, combo: c.played || 0, chants: c.chantsOk || 0, statuses: statusCount(c), livingInk: Boolean(c.player.pw.livingInk), familiar: heroOf(r) === 'caller' || c.player.familiar ? c.player.familiar || 0 : undefined };
 }
 
 export function canPlay(r, uid) {
@@ -199,6 +258,7 @@ export function intentOf(r, enemy) {
   if (move.dmg != null) { dmg = computeAttack(moveBase(r, enemy), enemy.st, r.combat.player.st); kinds.push('attack'); }
   if (move.ward || move.allyWard) kinds.push('defend');
   if (move.might || move.heal) kinds.push('buff');
+  if (move.summon) kinds.push('summon');
   if (move.weak || move.exposed || move.frail || move.burn || move.cards) kinds.push('debuff');
   return { id: enemy.move, move, kinds, dmg, hits: move.hits || 1 };
 }
@@ -207,14 +267,30 @@ function planMove(r, enemy) {
   enemy.move = ENEMIES[enemy.id].next(enemy, rnd(r));
 }
 
-function spawnEnemy(r, id, index, kind) {
+function spawnEnemy(r, id, index, kind, echo = false) {
   const def = ENEMIES[id], diff = DIFFICULTIES[r.difficulty], mods = runMods(r);
-  const scale = diff.hp * mods.enemyHp * (kind === 'elite' ? mods.eliteHp : kind === 'boss' ? mods.bossHp : 1);
+  const scale = diff.hp * mods.enemyHp * (kind === 'elite' ? mods.eliteHp : kind === 'boss' ? mods.bossHp : 1) * (echo ? 1.25 : 1);
   const hp = Math.max(1, Math.round(randInt(r, def.hp[0], def.hp[1]) * scale));
-  return { uid: `e${index}`, id, hp, maxHp: hp, ward: 0, st: { ...(def.start || {}) }, move: null, history: [], uses: {}, turns: 0, dead: false };
+  const st = { ...(def.start || {}) };
+  if (echo) st.might = (st.might || 0) + 1;
+  return { uid: `e${index}`, id, hp, maxHp: hp, ward: 0, st, move: null, history: [], uses: {}, turns: 0, dead: false };
 }
 
-function startCombat(r, kind, encounter) {
+// Minions join the fight in a free slot (a fallen enemy's place counts).
+const MAX_ENEMIES = 4;
+function summonEnemy(r, id) {
+  const c = r.combat;
+  if (living(c).length >= MAX_ENEMIES) return null;
+  c.spawned = (c.spawned || c.enemies.length) + 1;
+  const enemy = spawnEnemy(r, id, c.spawned + 10, 'monster');
+  const slot = c.enemies.length >= MAX_ENEMIES ? c.enemies.findIndex(item => item.dead) : -1;
+  if (slot >= 0) c.enemies[slot] = enemy; else c.enemies.push(enemy);
+  planMove(r, enemy);
+  fx(r, { kind: 'summon', to: enemy.uid, enemy: id });
+  return enemy;
+}
+
+function startCombat(r, kind, encounter, options = {}) {
   const cards = {};
   r.hero.deck.forEach(card => { cards[card.uid] = { ...card }; });
   const bonus = r.hero.relics.filter(id => ENERGY_RELICS.includes(id)).length;
@@ -223,10 +299,12 @@ function startCombat(r, kind, encounter) {
     id: r.fights, kind, round: 0, energy: 0, maxEnergy: 3 + bonus, cards, tmp: 0,
     draw: shuffle(r, Object.keys(cards)), hand: [], discard: [], faded: [],
     player: { ward: 0, st: {}, pw: {} },
-    enemies: encounter.map((id, index) => spawnEnemy(r, id, index, kind)),
+    enemies: encounter.map((id, index) => spawnEnemy(r, id, index, kind, Boolean(options.echo))),
     echo: 0, mirror: hasRelic(r, 'mirrorShard'), phase: 'player', queue: [], fx: [], fxSeq: 0, reward: null,
-    played: 0, lastPlayed: null, chantsOk: 0,
+    played: 0, lastPlayed: null, chantsOk: 0, echoElite: Boolean(options.echo), spawned: encounter.length,
   };
+  c.player.familiar = (hasRelic(r, 'spiritJar') ? 2 : 0) + (hasRelic(r, 'spiritBell') ? 2 : 0);
+  if (hasRelic(r, 'paperCrane')) living(c).forEach(enemy => add(enemy.st, 'weak', 1));
   r.screen = 'combat';
   if (hasRelic(r, 'whetstone')) add(c.player.st, 'might', 1);
   if (hasRelic(r, 'thornRing')) add(c.player.st, 'spikes', 3);
@@ -245,7 +323,8 @@ function startPlayerTurn(r) {
   const c = r.combat;
   c.round += 1;
   c.phase = 'player';
-  if (!c.player.pw.bastion) c.player.ward = 0;
+  c.bloodInk = false;
+  if (!c.player.pw.bastion) c.player.ward = hasRelic(r, 'bulwark') ? Math.floor(c.player.ward / 2) : 0;
   c.energy = c.maxEnergy;
   c.played = 0;
   c.lastPlayed = null;
@@ -256,6 +335,8 @@ function startPlayerTurn(r) {
   if (c.player.st.burn) { hurtPlayer(r, c.player.st.burn, 'burn'); add(c.player.st, 'burn', -1); }
   if (c.player.pw.wildfire) living(c).forEach(enemy => add(enemy.st, 'burn', c.player.pw.wildfire));
   if (c.player.pw.ascend) add(c.player.st, 'might', c.player.pw.ascend);
+  if (c.player.pw.legion) feedFamiliar(r, c.player.pw.legion);
+  if (hasRelic(r, 'cinderCharm') && living(c).length) { const enemy = pick(r, living(c)); add(enemy.st, 'burn', 2); fx(r, { kind: 'status', to: enemy.uid, st: 'burn' }); }
   if (c.player.pw.library) {
     const skills = cardPool(r).filter(id => CARDS[id].type === 'skill' && CARDS[id].rarity !== 'mythic' && !CARDS[id].fx.some(item => item.op === 'choose' || item.op === 'upgradeHand'));
     for (let i = 0; i < c.player.pw.library; i++) addTempToHand(r, pick(r, skills));
@@ -338,8 +419,9 @@ function resolve(r, effects, up, target, ctx) {
     if (single && (!target || target.dead)) continue;
     switch (effect.op) {
       case 'damage': {
-        const base = v + (ctx.bonus || 0) + (effect.perCombo ? val(effect.perCombo, up) * (ctx.combo || 0) : 0) + (effect.perChant ? val(effect.perChant, up) * (c.chantsOk || 0) : 0);
-        const hits = effect.hits === 'X' ? ctx.x : effect.comboHits ? (ctx.combo || 0) + 1 : val(effect.hits || 1, up);
+        const familiar = c.player.familiar || 0;
+        const base = v + (ctx.bonus || 0) + (effect.perCombo ? val(effect.perCombo, up) * (ctx.combo || 0) : 0) + (effect.perChant ? val(effect.perChant, up) * (c.chantsOk || 0) : 0) + (effect.perFamiliar ? val(effect.perFamiliar, up) * familiar : 0);
+        const hits = effect.hits === 'X' ? ctx.x : effect.comboHits ? (ctx.combo || 0) + 1 : effect.hitsPerFamiliar ? 1 + Math.floor(familiar / effect.hitsPerFamiliar) : val(effect.hits || 1, up);
         for (let i = 0; i < hits; i++) {
           const pool = living(c);
           if (!pool.length) break;
@@ -369,7 +451,28 @@ function resolve(r, effects, up, target, ctx) {
       }
       case 'detonate': { const burn = target.st.burn || 0; delete target.st.burn; if (burn) hurtEnemy(r, target, burn * v * (ctx.mult || 1)); break; }
       case 'spreadBurn': { const burn = target.st.burn || 0; if (burn) living(c).filter(enemy => enemy !== target).forEach(enemy => { add(enemy.st, 'burn', burn); fx(r, { kind: 'status', to: enemy.uid, st: 'burn' }); }); break; }
-      case 'burnTickAll': living(c).forEach(enemy => { if (enemy.st.burn) hurtEnemy(r, enemy, enemy.st.burn, 'burn'); }); break;
+      case 'burnTickAll': living(c).forEach(enemy => { if (enemy.st.burn) hurtEnemy(r, enemy, burnDamage(r, enemy.st.burn), 'burn'); }); break;
+      case 'feed': feedFamiliar(r, v); break;
+      case 'unleash': {
+        const times = effect.x ? (ctx.x || 0) + val(effect.plus, up) : v;
+        for (let i = 0; i < times && living(c).length; i++) familiarStrike(r);
+        break;
+      }
+      case 'spend': {
+        const stacks = c.player.familiar || 0;
+        const used = effect.half ? Math.floor(stacks / 2) : stacks;
+        c.player.familiar = stacks - used;
+        if (used > 0 && target && !target.dead) attackEnemy(r, target, used * v, ctx.mult);
+        break;
+      }
+      case 'burnFromFamiliar': {
+        const stacks = Math.floor((c.player.familiar || 0) * v);
+        if (stacks > 0) living(c).forEach(enemy => { add(enemy.st, 'burn', stacks); fx(r, { kind: 'status', to: enemy.uid, st: 'burn' }); });
+        break;
+      }
+      case 'doubleFamiliar': feedFamiliar(r, c.player.familiar || 0); break;
+      case 'wardFamiliar': gainWard(r, v + (c.player.familiar || 0)); break;
+      case 'ifFamiliar': if ((c.player.familiar || 0) >= effect.n) resolve(r, effect.then, up, target, ctx); break;
       // Mirror Image never copies another copy effect, or two of them would loop for free.
       case 'copyLast': if (c.lastPlayed && !CARDS[c.lastPlayed.id].fx.some(item => item.op === 'copyLast')) addTempToHand(r, c.lastPlayed.id, c.lastPlayed.up); break;
       case 'conjure': {
@@ -435,6 +538,7 @@ function winCombat(r) {
   if (c.kind === 'elite') r.stats.elites += 1;
   if (c.kind === 'boss') r.stats.bosses += 1;
   c.reward = makeReward(r, c.kind);
+  if (c.echoElite && !r.keys?.echo) c.reward.items.unshift({ kind: 'key', key: 'echo', taken: false });
 }
 
 export function playCard(r, uid, targetUid, chant = null) {
@@ -486,6 +590,7 @@ export function playCard(r, uid, targetUid, chant = null) {
     resolve(r, effects, inst.up, target, { x, mult, combo, uid, bonus: inst.bonus || 0, kept: inst.kept || 0 });
   }
   if (empowered) {
+    if (hasRelic(r, 'runestone') && !c.runestoneUsed) { c.runestoneUsed = true; c.energy += 1; fx(r, { kind: 'energy', amount: 1 }); drawCards(r, 1); }
     if (hasRelic(r, 'goldenQuill')) drawCards(r, 1);
     if (hasRelic(r, 'sageEye')) heal(r, 2);
     if (c.player.pw.scholar) { c.energy += c.player.pw.scholar; fx(r, { kind: 'energy', amount: c.player.pw.scholar }); }
@@ -505,6 +610,8 @@ function afterCardPlayed(r, inst) {
   c.lastPlayed = { id: inst.id, up: Boolean(inst.up) };
   if (c.player.pw.thousandCuts) living(c).forEach(enemy => hurtEnemy(r, enemy, c.player.pw.thousandCuts));
   if (c.player.pw.momentum && c.played % c.player.pw.momentum === 0) drawCards(r, 1);
+  if (c.player.pw.sovereign && CARDS[inst.id].type === 'attack') feedFamiliar(r, c.player.pw.sovereign);
+  if (c.played === 6 && hasRelic(r, 'metronome')) { c.energy += 1; fx(r, { kind: 'energy', amount: 1 }); }
 }
 
 export function usePotion(r, slot, targetUid) {
@@ -553,6 +660,11 @@ export function endTurn(r) {
     else (card.fleeting ? c.faded : c.discard).push(uid);
   }
   c.hand = kept;
+  // The familiar bites at the end of your turn, and its ink thins a little.
+  if (c.player.familiar > 0) {
+    familiarStrike(r);
+    c.player.familiar -= 1;
+  }
   if (c.player.pw.stoneheart) gainWard(r, c.player.pw.stoneheart, false);
   if (hasRelic(r, 'owlFeather') && c.player.ward === 0) gainWard(r, 6, false);
   decay(c.player.st);
@@ -576,6 +688,12 @@ function performMove(r, enemy) {
     if (move.ward) { const amount = Math.round(move.ward * diff.ward); enemy.ward += amount; fx(r, { kind: 'ward', to: enemy.uid, amount }); }
     if (move.allyWard) living(c).forEach(ally => { const amount = Math.round(move.allyWard * diff.ward); ally.ward += amount; fx(r, { kind: 'ward', to: ally.uid, amount }); });
     if (move.might) { add(enemy.st, 'might', move.might); fx(r, { kind: 'buff', to: enemy.uid, st: 'might' }); }
+    if (move.heal) {
+      const before = enemy.hp;
+      enemy.hp = Math.min(enemy.maxHp, enemy.hp + Math.round(move.heal * diff.hp));
+      if (enemy.hp > before) fx(r, { kind: 'heal', to: enemy.uid, amount: enemy.hp - before });
+    }
+    (move.summon || []).forEach(({ id, n }) => { for (let i = 0; i < n; i++) summonEnemy(r, id); });
   }
   ['weak', 'exposed', 'frail', 'burn'].forEach(st => { if (move[st]) { add(c.player.st, st, move[st]); fx(r, { kind: 'status', to: 'player', st }); } });
   (move.cards || []).forEach(({ id, n }) => {
@@ -593,7 +711,7 @@ export function enemyStep(r) {
   const enemy = c.enemies.find(item => item.uid === uid);
   if (enemy && !enemy.dead) {
     enemy.ward = 0;
-    if (enemy.st.burn) { hurtEnemy(r, enemy, enemy.st.burn, 'burn'); add(enemy.st, 'burn', -1); }
+    if (enemy.st.burn) { hurtEnemy(r, enemy, burnDamage(r, enemy.st.burn), 'burn'); add(enemy.st, 'burn', -1); }
     if (!enemy.dead) {
       performMove(r, enemy);
       enemy.turns += 1;
@@ -646,8 +764,9 @@ export function cardOptions(r, kind, count, rarity) {
 export function randomRelic(r, tier) {
   const owned = new Set(r.hero.relics);
   const wanted = tier || weighted(r, [['common', 50], ['uncommon', 33], ['rare', 17]]);
-  let pool = Object.keys(RELICS).filter(id => RELICS[id].tier === wanted && !owned.has(id));
-  if (!pool.length) pool = Object.keys(RELICS).filter(id => ['common', 'uncommon', 'rare'].includes(RELICS[id].tier) && !owned.has(id));
+  const fits = id => !owned.has(id) && (!RELICS[id].hero || RELICS[id].hero === heroOf(r));
+  let pool = Object.keys(RELICS).filter(id => RELICS[id].tier === wanted && fits(id));
+  if (!pool.length) pool = Object.keys(RELICS).filter(id => ['common', 'uncommon', 'rare'].includes(RELICS[id].tier) && fits(id));
   return pool.length ? pick(r, pool) : null;
 }
 
@@ -689,11 +808,21 @@ function takeReward(r, index, choice) {
     if (choice != null && item.options[choice]) { addCard(r, item.options[choice]); item.chosen = item.options[choice]; }
     item.taken = true;
   }
+  if (item.kind === 'key') {
+    r.keys = { ...(r.keys || {}), [item.key]: true };
+    item.taken = true;
+  }
+  // A chest offers either its relic or the Page Key, not both.
+  if (item.or != null && item.taken) {
+    const other = r.reward.items[item.or];
+    if (other && !other.taken) { other.taken = true; other.skipped = true; }
+  }
 }
 
 function leaveReward(r) {
   const after = r.reward?.after;
   r.reward = null;
+  if (after === 'boss' && r.act >= 4) { r.trueEnding = true; r.screen = 'victory'; return; }
   if (after === 'boss') {
     r.bossRelics = shuffle(r, Object.keys(RELICS).filter(id => RELICS[id].tier === 'boss' && !hasRelic(r, id))).slice(0, 3);
     r.screen = 'bossRelic';
@@ -702,9 +831,9 @@ function leaveReward(r) {
 
 function nextAct(r) {
   r.bossRelics = null;
-  if (r.act >= 3) { r.screen = 'victory'; return; }
+  if (r.act >= 4 || (r.act === 3 && !hasAllKeys(r))) { r.screen = 'victory'; return; }
   r.act += 1;
-  r.map = generateMap(r, r.act);
+  r.map = makeMap(r, r.act);
   r.pos = null; r.path = []; r.actFights = 0; r.lastEncounter = null;
   r.hero.hp = Math.min(r.hero.maxHp, r.hero.hp + Math.round((r.hero.maxHp - r.hero.hp) * runMods(r).actHeal));
   r.screen = 'map';
@@ -732,7 +861,7 @@ function startEvent(r) {
 }
 
 function makeShop(r) {
-  const markup = runMods(r).shopPrice;
+  const markup = runMods(r).shopPrice * (hasRelic(r, 'goldLeaf') ? 0.8 : 1);
   const scaled = amount => Math.round(amount * markup);
   const price = rarity => scaled({ common: randInt(r, 45, 55), uncommon: randInt(r, 68, 82), rare: randInt(r, 135, 160), mythic: randInt(r, 190, 220) }[rarity]);
   const chosen = [];
@@ -779,7 +908,7 @@ export function enterNode(r, nodeId) {
   const node = r.map.nodes[nodeId];
   switch (node.type) {
     case 'monster': startCombat(r, 'monster', pickEncounter(r, 'monster')); break;
-    case 'elite': startCombat(r, 'elite', pickEncounter(r, 'elite')); break;
+    case 'elite': startCombat(r, 'elite', pickEncounter(r, 'elite'), { echo: Boolean(node.echo) && !r.keys?.echo }); break;
     case 'boss': startCombat(r, 'boss', ENCOUNTERS[r.act].boss); break;
     case 'event': startEvent(r); break;
     case 'rest': r.rest = { done: false, healed: 0, upgraded: null }; r.screen = 'rest'; break;
@@ -792,7 +921,7 @@ export function enterNode(r, nodeId) {
 export const restHealAmount = r => (hasRelic(r, 'midnightOil') ? 0 : Math.round(r.hero.maxHp * runMods(r).restHeal) + (hasRelic(r, 'teaSet') ? 15 : 0));
 
 // ───────────── Events ─────────────
-export const meetsReq = (r, req) => !req || ((req.gold == null || r.hero.gold >= req.gold) && (req.hp == null || r.hero.hp >= req.hp));
+export const meetsReq = (r, req) => !req || ((req.gold == null || r.hero.gold >= req.gold) && (req.hp == null || r.hero.hp >= req.hp) && (!req.potion || r.hero.potions.some(Boolean)));
 
 function applyOutcome(r, effects = []) {
   const gains = r.event?.gains || [];
@@ -806,7 +935,11 @@ function applyOutcome(r, effects = []) {
       case 'curse': addCard(r, effect.id); gains.push({ type: 'card', id: effect.id }); break;
       case 'relic': { const id = randomRelic(r, effect.tier); if (gainRelic(r, id)) gains.push({ type: 'relic', id }); else { r.hero.gold += 50; gains.push({ type: 'gold', amount: 50 }); } break; }
       case 'potion': { const id = pick(r, Object.keys(POTIONS)); if (gainPotion(r, id)) gains.push({ type: 'potion', id }); break; }
-      case 'chantCard': { const id = pick(r, CHANT_CARDS.filter(card => CARDS[card].rarity !== 'starter' && isUnlocked(card, r.unlocked))); addCard(r, id); gains.push({ type: 'card', id }); break; }
+      case 'chantCard': { const id = pick(r, CHANT_CARDS.filter(card => CARDS[card].rarity !== 'starter' && isUnlocked(card, r.unlocked) && inHeroPool(card, heroOf(r)))); addCard(r, id); gains.push({ type: 'card', id }); break; }
+      case 'duplicate': if (r.hero.deck.length) r.pending = { kind: 'duplicate', cancellable: false, source: 'event' }; break;
+      case 'transform': if (r.hero.deck.length) r.pending = { kind: 'transform', cancellable: false, source: 'event' }; break;
+      case 'chance': applyOutcome(r, randInt(r, 1, 100) <= effect.p ? effect.then : effect.else || []); break;
+      case 'losePotion': { const slot = r.hero.potions.findIndex(Boolean); if (slot >= 0) { gains.push({ type: 'lostPotion', id: r.hero.potions[slot] }); r.hero.potions[slot] = null; } break; }
       case 'randomCard': { const id = pick(r, cardPool(r).filter(card => CARDS[card].rarity === effect.rarity && (!effect.type || CARDS[card].type === effect.type))); addCard(r, id); gains.push({ type: 'card', id }); break; }
       case 'upgrade': if (r.hero.deck.some(canUpgrade)) r.pending = { kind: 'upgrade', cancellable: false, source: 'event' }; break;
       case 'remove': r.pending = { kind: 'remove', cancellable: false, source: 'event' }; break;
@@ -864,6 +997,19 @@ function pickCard(r, uid) {
     r.hero.deck = r.hero.deck.filter(item => item.uid !== uid);
     if (r.event) r.event.gains.push({ type: 'removed', id: card.id });
   }
+  if (pending.kind === 'duplicate') {
+    const copy = addCard(r, card.id, card.up);
+    if (r.event) r.event.gains.push({ type: 'card', id: copy.id });
+  }
+  if (pending.kind === 'transform') {
+    // Leans towards better cards: the ashes rarely give back a common.
+    const pool = cardPool(r).filter(id => id !== card.id);
+    const rarity = weighted(r, [['common', 25], ['uncommon', 45], ['rare', 25], ['mythic', 5]].filter(([tier]) => pool.some(id => CARDS[id].rarity === tier)));
+    const id = pick(r, pool.filter(item => CARDS[item].rarity === rarity));
+    r.hero.deck = r.hero.deck.filter(item => item.uid !== uid);
+    if (id) addCard(r, id);
+    if (r.event) { r.event.gains.push({ type: 'removed', id: card.id }); if (id) r.event.gains.push({ type: 'card', id }); }
+  }
   r.pending = null;
 }
 
@@ -892,6 +1038,7 @@ export function runReducer(state, action) {
     case 'BOSS_RELIC': if (action.id && r.bossRelics?.includes(action.id)) gainRelic(r, action.id); nextAct(r); break;
     case 'REST_HEAL': if (r.rest && !r.rest.done) { const before = r.hero.hp; r.hero.hp = Math.min(r.hero.maxHp, r.hero.hp + restHealAmount(r)); r.rest.healed = r.hero.hp - before; r.rest.done = true; } break;
     case 'REST_UPGRADE': if (r.rest && !r.rest.done && r.hero.deck.some(canUpgrade)) r.pending = { kind: 'upgrade', cancellable: true, source: 'rest' }; break;
+    case 'REST_KEY': if (r.rest && !r.rest.done && r.keys && !r.keys.flame && r.act <= 3) { r.keys.flame = true; r.rest.done = true; r.rest.key = true; } break;
     case 'SHOP_BUY': shopBuy(r, action.kind, action.index); break;
     case 'SHOP_REMOVE': if (r.shop && !r.shop.removed && r.hero.gold >= r.removeCost) r.pending = { kind: 'remove', cancellable: true, source: 'shop' }; break;
     case 'PICK_CARD': pickCard(r, action.uid); break;
@@ -901,7 +1048,13 @@ export function runReducer(state, action) {
       if (r.treasure && !r.treasure.opened) {
         r.treasure.opened = true;
         const id = randomRelic(r);
-        r.reward = { kind: 'treasure', items: [{ kind: 'gold', amount: randInt(r, 25, 45), taken: false }, ...(id ? [{ kind: 'relic', id, taken: false }] : [])], after: 'map' };
+        const items = [{ kind: 'gold', amount: randInt(r, 25, 45), taken: false }, ...(id ? [{ kind: 'relic', id, taken: false }] : [])];
+        if (r.keys && !r.keys.page && r.act <= 3) {
+          const relicIndex = items.findIndex(item => item.kind === 'relic');
+          items.push({ kind: 'key', key: 'page', taken: false, ...(relicIndex >= 0 ? { or: relicIndex } : {}) });
+          if (relicIndex >= 0) items[relicIndex].or = items.length - 1;
+        }
+        r.reward = { kind: 'treasure', items, after: 'map' };
         r.screen = 'reward';
       }
       break;

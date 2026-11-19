@@ -175,6 +175,30 @@ describe('Echo Archive', () => {
     expect(JSON.parse(localStorage.getItem('eg_echo_archive_meta')).lastSilence).toBe(2);
   });
 
+  it('locks the Inkcaller until the first boss falls, then starts a run with its familiar', async () => {
+    localStorage.setItem('eg_echo_archive_meta', JSON.stringify({ runs: 1, bestAct: 1, tutorialDone: true }));
+    const view = render(<EchoArchive lv="elementary" onBack={vi.fn()} deps={deps()}/>);
+    fireEvent.click(screen.getByRole('button', { name: /開始遠征/ }));
+    expect(screen.getByRole('radio', { name: /The Inkcaller/ })).toBeDisabled();
+    view.unmount();
+
+    localStorage.setItem('eg_echo_archive_meta', JSON.stringify({ runs: 3, bestAct: 2, tutorialDone: true }));
+    render(<EchoArchive lv="elementary" onBack={vi.fn()} deps={deps()}/>);
+    fireEvent.click(screen.getByRole('button', { name: /開始遠征/ }));
+    fireEvent.click(screen.getByRole('radio', { name: /The Inkcaller/ }));
+    fireEvent.click(screen.getByRole('radio', { name: /Story/ }));
+    fireEvent.click(screen.getByRole('button', { name: '出發 →' }));
+    expect(await screen.findByText('The Lantern Keeper')).toBeInTheDocument();
+    expect(JSON.parse(localStorage.getItem('eg_echo_archive_run')).hero.id).toBe('caller');
+    expect(screen.getByLabelText(/鑰匙 0 \/ 3/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Take the coin purse/ }));
+    fireEvent.click(screen.getByRole('button', { name: '踏入書庫 →' }));
+    fireEvent.click(screen.getByRole('button', { name: '展開地圖 →' }));
+    fireEvent.click(screen.getAllByRole('button', { name: /可以前往/ })[0]);
+    expect(await screen.findByLabelText(/墨靈 2 層/)).toBeInTheDocument();
+    expect(screen.getByText('喚墨師')).toBeInTheDocument();
+  });
+
   it('writes abandoned runs into the chronicle', async () => {
     await startRun();
     fireEvent.click(screen.getByRole('button', { name: '選單與設定' }));

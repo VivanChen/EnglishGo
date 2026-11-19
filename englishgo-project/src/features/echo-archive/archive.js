@@ -83,6 +83,7 @@ export function shardsForRun(run, bonus = []) {
     ['首領', s.bosses * 25],
     ['詠唱成功', s.chantsOk * 2],
     ['通關獎勵', run.screen === 'victory' ? 60 : 0],
+    ['真結局', run.trueEnding ? 100 : 0],
   ].filter(([, amount]) => amount > 0);
   const base = parts.reduce((sum, [, amount]) => sum + amount, 0);
   const flat = extras.reduce((sum, [, amount]) => sum + amount, 0);

@@ -140,6 +140,38 @@ Object.assign(GLYPHS, {
   library: <><path d="M6 58V18L32 4L58 18V58Z" {...soft}/><path d="M6 58V18L32 4L58 18V58ZM6 30H58M6 44H58"/><path d="M12 30V20M18 30V22M24 30V19M40 44V34M46 44V36M52 44V33M14 58V48M22 58V47" strokeWidth="3"/></>,
 });
 
+// Wave 3: the Inkcaller and its familiar, new relics, keys and summons.
+const BLOB = 'M32 8C46 8 52 20 52 32C52 44 48 52 40 56C38 50 34 50 32 56C30 50 26 50 24 56C16 52 12 44 12 32C12 20 18 8 32 8Z';
+const DROP = 'M32 6C40 20 50 30 50 42C50 52 42 58 32 58S14 52 14 42C14 30 24 20 32 6Z';
+const HEART = 'M32 56C14 44 6 34 6 22C6 12 14 6 22 6C27 6 30 9 32 13C34 9 37 6 42 6C50 6 58 12 58 22C58 34 50 44 32 56Z';
+const ghost = (x, y, r) => `M${x - r} ${y + r}C${x - r} ${y - r * 1.4} ${x + r} ${y - r * 1.4} ${x + r} ${y + r}L${x + r * 0.5} ${y + r * 0.6}L${x} ${y + r}L${x - r * 0.5} ${y + r * 0.6}Z`;
+Object.assign(GLYPHS, {
+  spirit: <><path d={BLOB} {...soft}/><path d={BLOB}/><circle cx="25" cy="30" r="4" {...F}/><circle cx="39" cy="30" r="4" {...F}/></>,
+  spiritClaw: <><path d="M14 10C22 24 22 40 16 56M28 8C36 24 36 40 30 58M42 10C50 24 50 40 44 56" strokeWidth="5"/><circle cx="54" cy="12" r="5" {...F}/></>,
+  inkDrop: <><path d={DROP} {...soft}/><path d={DROP}/><path d="M24 42C24 48 28 50 32 50" opacity=".7"/></>,
+  veil: <><path d="M10 12H54C50 26 52 40 56 54H8C12 40 14 26 10 12Z" {...soft}/><path d="M10 12H54M18 12C16 28 18 42 22 54M32 12V54M46 12C48 28 46 42 42 54"/></>,
+  inkSpray: <><circle cx="16" cy="44" r="8" {...F}/><circle cx="30" cy="30" r="6" {...soft}/><circle cx="30" cy="30" r="6"/><circle cx="44" cy="18" r="4" {...F}/><circle cx="54" cy="34" r="4"/><circle cx="44" cy="48" r="5" {...soft}/><path d="M6 58L14 50" strokeWidth="4"/></>,
+  command: <><path d="M14 26L36 12V52L14 38Z" {...soft}/><path d="M14 26L36 12V52L14 38ZM8 26V38H14"/><path d="M44 22C48 26 48 38 44 42M50 16C58 24 58 40 50 48" strokeWidth="3.5"/></>,
+  jar: <><path d="M22 10H42V16C50 20 54 28 54 38C54 50 44 58 32 58S10 50 10 38C10 28 14 20 22 16Z" {...soft}/><path d="M22 10H42V16C50 20 54 28 54 38C54 50 44 58 32 58S10 50 10 38C10 28 14 20 22 16ZM18 10H46"/><circle cx="27" cy="38" r="3" {...F}/><circle cx="37" cy="38" r="3" {...F}/></>,
+  swarm: <>{[[18, 20, 7], [42, 16, 6], [28, 38, 8], [48, 40, 6], [14, 52, 5]].map(([x, y, r]) => <g key={x}><circle cx={x} cy={y} r={r} {...soft}/><circle cx={x} cy={y} r={r}/><circle cx={x - r * 0.3} cy={y - r * 0.15} r="1.6" {...F}/><circle cx={x + r * 0.3} cy={y - r * 0.15} r="1.6" {...F}/></g>)}</>,
+  bond: <><path d="M8 32C8 20 20 18 32 32S56 44 56 32S44 20 32 32S8 44 8 32Z" {...soft}/><path d="M8 32C8 20 20 18 32 32S56 44 56 32S44 20 32 32S8 44 8 32Z"/><circle cx="32" cy="32" r="4" {...F}/></>,
+  spiritFlame: <><path d={FLAME} {...soft}/><path d={FLAME}/><circle cx="27" cy="41" r="3" {...F}/><circle cx="37" cy="41" r="3" {...F}/></>,
+  legion: <>{[[18, 40, 10], [46, 40, 10], [32, 24, 12]].map(([x, y, r]) => <g key={x}><path d={ghost(x, y, r)} {...soft}/><path d={ghost(x, y, r)}/><circle cx={x - r * 0.35} cy={y} r="1.8" {...F}/><circle cx={x + r * 0.35} cy={y} r="1.8" {...F}/></g>)}</>,
+  sovereign: <><path d="M14 26L20 10L28 20L32 6L36 20L44 10L50 26Z" {...F}/><path d="M16 30C16 48 22 58 32 58S48 48 48 30Z" {...soft}/><path d="M16 30C16 48 22 58 32 58S48 48 48 30Z"/><circle cx="26" cy="42" r="3" {...F}/><circle cx="38" cy="42" r="3" {...F}/></>,
+  charm: <><path d="M20 4L32 22L44 4" opacity=".7"/><circle cx="32" cy="40" r="18" {...soft}/><circle cx="32" cy="40" r="18"/><path d={FLAME} transform="translate(20 27) scale(.38)" {...F}/></>,
+  crane: <><path d="M4 30L28 36L36 12L40 36L60 22L44 44L22 46Z" {...soft}/><path d="M4 30L28 36L36 12L40 36L60 22L44 44L22 46ZM28 36L44 44M22 46L14 54"/></>,
+  lens: <><circle cx="26" cy="26" r="17" {...soft}/><circle cx="26" cy="26" r="17"/><path d="M38 38L56 56" strokeWidth="6"/><path d="M17 22C19 29 25 31 30 27" opacity=".7"/><circle cx="31" cy="19" r="3" {...F}/></>,
+  bell: <><path d="M32 8C20 8 16 18 16 30V40L10 48H54L48 40V30C48 18 44 8 32 8Z" {...soft}/><path d="M32 8C20 8 16 18 16 30V40L10 48H54L48 40V30C48 18 44 8 32 8ZM32 3V8"/><circle cx="32" cy="54" r="5" {...F}/></>,
+  metronome: <><path d="M24 6H40L52 58H12Z" {...soft}/><path d="M24 6H40L52 58H12ZM16 48H48"/><path d="M32 48L44 14" strokeWidth="3.5"/><circle cx="40" cy="25" r="4" {...F}/></>,
+  drop: <><path d={DROP} {...F}/><path d="M24 42C24 48 28 50 32 50" stroke="#fff" strokeOpacity=".6"/></>,
+  emberHeart: <><path d={HEART} {...soft}/><path d={HEART}/><path d={FLAME} transform="translate(20 16) scale(.38)" {...F}/></>,
+  key: <><circle cx="20" cy="22" r="12" {...soft}/><circle cx="20" cy="22" r="12"/><circle cx="20" cy="22" r="4" {...F}/><path d="M28 30L54 56M44 46L50 40M50 52L56 46" strokeWidth="4"/></>,
+  summon: <><ellipse cx="32" cy="50" rx="24" ry="8" {...soft}/><ellipse cx="32" cy="50" rx="24" ry="8"/><path d="M22 48C22 30 26 18 32 18S42 30 42 48" {...soft}/><path d="M22 48C22 30 26 18 32 18S42 30 42 48"/><circle cx="28" cy="30" r="2.5" {...F}/><circle cx="37" cy="30" r="2.5" {...F}/><path d="M10 18L15 23M54 18L49 23M32 4V9" opacity=".7"/></>,
+});
+GLYPHS.familiar = GLYPHS.spirit;
+GLYPHS.emberSpirit = GLYPHS.spiritFlame;
+GLYPHS.twinStrike = GLYPHS.bond;
+
 // Status and power icons share the card art.
 Object.assign(GLYPHS, { charge: GLYPHS.surge, bastion: GLYPHS.helm, momentum: GLYPHS.dash, thousandCuts: GLYPHS.cuts, archmage: GLYPHS.hat, inscribe: GLYPHS.rune, shard: GLYPHS.shard });
 

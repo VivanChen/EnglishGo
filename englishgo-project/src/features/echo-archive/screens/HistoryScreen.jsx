@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ACTS, ENEMIES } from '../data/enemies.js';
 import { DAILY_BLESSINGS, DAILY_TRIALS, dateKey, previousDateKey } from '../data/challenges.js';
 import { DIFFICULTIES } from '../engine/engine.js';
+import { HEROES } from '../data/heroes.js';
 import { recordDeck } from '../history.js';
 import Glyph from '../components/Glyph.jsx';
 import { EnemyArt } from '../components/Creatures.jsx';
@@ -14,6 +15,7 @@ function when(at) {
 }
 
 function headline(record) {
+  if (record.trueEnding) return '真結局：寫下最後一頁';
   if (record.outcome === 'victory') return '通關成功';
   if (record.outcome === 'abandon' && !record.floor) return '出發前就放棄了';
   const place = `Act ${ACTS[record.act]?.roman || 'I'} · 第 ${record.floor} 層`;
@@ -21,9 +23,10 @@ function headline(record) {
 }
 
 function modeLabel(record) {
-  if (record.daily) return `每日 ${record.daily.date.slice(5).replace('-', '/')}`;
+  const hero = record.hero && record.hero !== 'scribe' ? `${HEROES[record.hero]?.zh} · ` : '';
+  if (record.daily) return `${hero}每日 ${record.daily.date.slice(5).replace('-', '/')}`;
   const diff = DIFFICULTIES[record.difficulty]?.zh || '標準';
-  return record.silence > 0 ? `${diff} · 靜默 ${record.silence}` : diff;
+  return `${hero}${record.silence > 0 ? `${diff} · 靜默 ${record.silence}` : diff}`;
 }
 
 function Medal({ record }) {
@@ -76,6 +79,7 @@ export default function HistoryScreen({ meta, onBack }) {
     ['最遠', `Act ${ACTS[Math.max(1, meta.bestAct)]?.roman || 'I'}`],
     ['最高靜默', (meta.silenceTop ?? -1) >= 0 ? meta.silenceTop : '—'],
     ['每日連續', streak ? `${streak} 天` : '—'],
+    ...(meta.trueEndings ? [['真結局', meta.trueEndings]] : []),
   ];
   return <section className="ea-history" aria-labelledby="ea-history-title">
     <header className="ea-archive-head">

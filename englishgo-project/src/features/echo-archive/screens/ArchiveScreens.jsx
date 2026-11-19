@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ARCHETYPES, ARCHIVE_CARDS, CARDS, RARITIES, REWARD_POOL, STARTER_DECK, archOf } from '../data/cards.js';
+import { HEROES } from '../data/heroes.js';
 import { MYTHIC_PITY, PULL_COST, RARE_PITY, TEN_PULL_COST, WELCOME_SHARDS, odds } from '../archive.js';
 import CardFace, { CardBack, KeywordList } from '../components/CardFace.jsx';
 import Glyph from '../components/Glyph.jsx';
@@ -8,8 +9,8 @@ import { Modal } from './RoomScreens.jsx';
 import { sfx } from '../sound.js';
 
 const RARITY_ORDER = { starter: 0, common: 1, uncommon: 2, rare: 3, mythic: 4 };
-const ARCH_ORDER = ['blade', 'burn', 'ward', 'combo', 'chant', 'ink'];
-export const CODEX_CARDS = [...new Set([...STARTER_DECK, ...REWARD_POOL])]
+const ARCH_ORDER = ['blade', 'burn', 'ward', 'combo', 'chant', 'ink', 'familiar'];
+export const CODEX_CARDS = [...new Set([...STARTER_DECK, ...Object.values(HEROES).flatMap(hero => hero.deck), ...REWARD_POOL])]
   .sort((a, b) => ARCH_ORDER.indexOf(archOf(a)) - ARCH_ORDER.indexOf(archOf(b)) || RARITY_ORDER[CARDS[a].rarity] - RARITY_ORDER[CARDS[b].rarity] || CARDS[a].en.localeCompare(CARDS[b].en));
 const isOwned = (id, collection) => !CARDS[id].pack || collection.owned[id] > 0;
 

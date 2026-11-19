@@ -26,6 +26,7 @@ export const ARCHETYPES = {
   combo: { en: 'Combo', zh: '連擊流', text: '一回合打出很多張牌，越打越強。' },
   chant: { en: 'Chant', zh: '詠唱流', text: '讀對符文單字，讓牌永久成長。' },
   ink: { en: 'Ink', zh: '墨漬流', text: '把敵人塞來的廢牌變成燃料。' },
+  familiar: { en: 'Familiar', zh: '墨靈流', text: '喚墨師專屬：餵養墨靈，讓它替你戰鬥。' },
   special: { en: 'Special', zh: '特殊', text: '狀態牌與詛咒。' },
 };
 
@@ -52,6 +53,7 @@ export const KEYWORDS = {
   charge: { en: 'Charge', zh: '蓄能', text: '下回合開始時，獲得等同層數的額外能量。' },
   conjure: { en: 'Conjure', zh: '召喚', text: '把一張隨機的牌加入手中，本回合費用為 0。' },
   statusCard: { en: 'Status', zh: '狀態牌', text: '敵人塞進你牌組的 Smudge、Dust，以及詛咒牌。' },
+  familiar: { en: 'Familiar', zh: '墨靈', text: '喚墨師的墨靈夥伴。層數就是它的攻擊力：每回合結束時攻擊生命最低的敵人，之後層數 -1。整場戰鬥都會保留。' },
 };
 
 export const POWER_TEXT = {
@@ -67,6 +69,11 @@ export const POWER_TEXT = {
   archmage: { en: 'Archmage', zh: '大法師', kw: 'chant', text: () => ['你的 ', kw('chant'), ' 牌會打出兩次'] },
   livingInk: { en: 'Living Ink', zh: '活墨', kw: 'statusCard', text: () => [kw('statusCard'), ' 費用變成 0 且可以打出：打出時消逝並抽 1 張牌'] },
   library: { en: 'Grand Library', zh: '大圖書館', kw: 'conjure', text: v => ['回合開始時 ', kw('conjure'), ' ', num(v), ' 張隨機技能牌'] },
+  bond: { en: 'Soul Bond', zh: '心靈連結', kw: 'familiar', text: v => [kw('familiar'), ' 每次攻擊後，獲得 ', num(v), ' ', kw('ward')] },
+  emberSpirit: { en: 'Ember Spirit', zh: '燼靈', kw: 'familiar', text: v => [kw('familiar'), ' 攻擊時施加 ', num(v), ' 層 ', kw('burn')] },
+  legion: { en: 'Legion', zh: '墨之軍團', kw: 'familiar', text: v => ['回合開始時，', kw('familiar'), ' +', num(v)] },
+  twinStrike: { en: 'Twin Spirit', zh: '雙生靈', kw: 'familiar', text: () => [kw('familiar'), ' 每次會多攻擊 1 次'] },
+  sovereign: { en: 'Ink Sovereign', zh: '墨之君主', kw: 'familiar', text: () => ['每打出 1 張攻擊牌，', kw('familiar'), ' +1。', kw('familiar'), ' 改為攻擊所有敵人'] },
 };
 
 export const CARDS = {
@@ -182,6 +189,34 @@ export const CARDS = {
   palimpsest: { en: 'Palimpsest', zh: '重寫', type: 'skill', rarity: 'rare', cost: 1, target: 'self', glyph: 'palimpsest', arch: 'chant', pack: true, fx: [{ op: 'choose', from: 'hand', action: 'inscribe', v: [3, 4] }], fade: true },
   grandLibrary: { en: 'Grand Library', zh: '大圖書館', type: 'power', rarity: 'mythic', cost: [2, 1], target: 'self', glyph: 'library', arch: 'ink', pack: true, fx: [{ op: 'power', id: 'library', v: 1 }] },
 
+  // ── The Inkcaller (second hero): Familiar and Burn ──
+  inkBolt: { en: 'Ink Bolt', zh: '墨彈', type: 'attack', rarity: 'starter', cost: 1, target: 'enemy', glyph: 'inkDrop', hero: 'caller', arch: 'familiar', fx: [{ op: 'damage', v: [6, 9] }] },
+  inkVeil: { en: 'Ink Veil', zh: '墨幕', type: 'skill', rarity: 'starter', cost: 1, target: 'self', glyph: 'veil', hero: 'caller', arch: 'familiar', fx: [{ op: 'ward', v: [5, 8] }] },
+  summonSpirit: { en: 'Summon', zh: '喚靈', type: 'skill', rarity: 'starter', cost: 1, target: 'self', glyph: 'spirit', hero: 'caller', arch: 'familiar', fx: [{ op: 'feed', v: [3, 5] }], chant: [{ op: 'feed', v: [2, 3] }] },
+  cinderLash: { en: 'Cinder Lash', zh: '燼鞭', type: 'attack', rarity: 'starter', cost: 2, target: 'enemy', glyph: 'spiritFlame', hero: 'caller', arch: 'burn', fx: [{ op: 'damage', v: [7, 9] }, { op: 'debuff', st: 'burn', v: [4, 6] }] },
+  spiritClaw: { en: 'Spirit Claw', zh: '靈爪', type: 'attack', rarity: 'common', cost: 1, target: 'enemy', glyph: 'spiritClaw', hero: 'caller', arch: 'familiar', fx: [{ op: 'damage', v: [5, 7] }, { op: 'feed', v: [1, 2] }] },
+  inkSpray: { en: 'Ink Spray', zh: '墨霧', type: 'attack', rarity: 'common', cost: 1, target: 'all', glyph: 'inkSpray', hero: 'caller', arch: 'familiar', fx: [{ op: 'damage', v: [4, 6], all: true }, { op: 'feed', v: 1 }] },
+  command: { en: 'Command', zh: '號令', type: 'skill', rarity: 'common', cost: [1, 0], target: 'self', glyph: 'command', hero: 'caller', arch: 'familiar', fx: [{ op: 'unleash', v: 1 }] },
+  nourish: { en: 'Nourish', zh: '滋養', type: 'skill', rarity: 'common', cost: 1, target: 'self', glyph: 'jar', hero: 'caller', arch: 'familiar', fx: [{ op: 'feed', v: [4, 6] }] },
+  shadowGuard: { en: 'Shadow Guard', zh: '影衛', type: 'skill', rarity: 'common', cost: 1, target: 'self', glyph: 'veil', hero: 'caller', arch: 'familiar', fx: [{ op: 'wardFamiliar', v: [3, 6] }] },
+  smolder: { en: 'Smolder', zh: '悶燒', type: 'attack', rarity: 'common', cost: 1, target: 'enemy', glyph: 'flame', hero: 'caller', arch: 'burn', fx: [{ op: 'damage', v: [3, 4] }, { op: 'debuff', st: 'burn', v: [3, 4] }, { op: 'ifFamiliar', n: 5, then: [{ op: 'debuff', st: 'burn', v: 3 }] }] },
+  quickInk: { en: 'Quick Ink', zh: '速寫', type: 'skill', rarity: 'common', cost: 0, target: 'self', glyph: 'inkDrop', hero: 'caller', arch: 'familiar', fx: [{ op: 'draw', v: [1, 2] }, { op: 'feed', v: 1 }] },
+  inkLance: { en: 'Ink Lance', zh: '墨槍', type: 'attack', rarity: 'common', cost: 2, target: 'enemy', glyph: 'pierce', hero: 'caller', arch: 'familiar', fx: [{ op: 'damage', v: [9, 12], perFamiliar: 1 }] },
+  devourInk: { en: 'Feast', zh: '墨宴', type: 'attack', rarity: 'uncommon', cost: 1, target: 'enemy', glyph: 'maw', hero: 'caller', arch: 'familiar', fx: [{ op: 'spend', half: true, v: [2, 3] }] },
+  spiritBarrier: { en: 'Spirit Barrier', zh: '靈障', type: 'skill', rarity: 'uncommon', cost: 2, target: 'self', glyph: 'barrier', hero: 'caller', arch: 'familiar', fx: [{ op: 'ward', v: [10, 14] }, { op: 'feed', v: 2 }] },
+  kindredFlame: { en: 'Kindred Flame', zh: '同源之火', type: 'skill', rarity: 'uncommon', cost: 1, target: 'self', glyph: 'spiritFlame', hero: 'caller', arch: 'burn', fx: [{ op: 'burnFromFamiliar', v: [0.5, 1] }] },
+  swarm: { en: 'Swarm', zh: '群墨', type: 'attack', rarity: 'uncommon', cost: 1, target: 'all', glyph: 'swarm', hero: 'caller', arch: 'familiar', fx: [{ op: 'damage', v: [3, 4], random: true, hitsPerFamiliar: 3 }] },
+  bond: { en: 'Soul Bond', zh: '心靈連結', type: 'power', rarity: 'uncommon', cost: 1, target: 'self', glyph: 'bond', hero: 'caller', arch: 'familiar', fx: [{ op: 'power', id: 'bond', v: [3, 4] }] },
+  emberSpirit: { en: 'Ember Spirit', zh: '燼靈', type: 'power', rarity: 'uncommon', cost: 1, target: 'self', glyph: 'spiritFlame', hero: 'caller', arch: 'burn', fx: [{ op: 'power', id: 'emberSpirit', v: [2, 3] }] },
+  pact: { en: 'Blood Pact', zh: '血契', type: 'skill', rarity: 'uncommon', cost: 0, target: 'self', glyph: 'drop', hero: 'caller', arch: 'familiar', fx: [{ op: 'loseHp', v: 3 }, { op: 'feed', v: [5, 7] }] },
+  doubleCast: { en: 'Twin Command', zh: '雙重號令', type: 'skill', rarity: 'uncommon', cost: [2, 1], target: 'self', glyph: 'command', hero: 'caller', arch: 'familiar', fx: [{ op: 'unleash', v: 2 }] },
+  legion: { en: 'Legion', zh: '墨之軍團', type: 'power', rarity: 'rare', cost: 2, target: 'self', glyph: 'legion', hero: 'caller', arch: 'familiar', fx: [{ op: 'power', id: 'legion', v: [2, 3] }] },
+  unboundSpirit: { en: 'Unbound', zh: '解放之靈', type: 'skill', rarity: 'rare', cost: 1, target: 'self', glyph: 'spirit', hero: 'caller', arch: 'familiar', fx: [{ op: 'doubleFamiliar' }], fade: [true, false] },
+  inkStorm: { en: 'Ink Storm', zh: '墨暴', type: 'attack', rarity: 'rare', cost: 'X', target: 'self', glyph: 'swarm', hero: 'caller', arch: 'familiar', fx: [{ op: 'unleash', x: true, plus: [0, 1] }] },
+  lastLight: { en: 'Last Light', zh: '殘光', type: 'attack', rarity: 'rare', cost: 2, target: 'enemy', glyph: 'sun', hero: 'caller', arch: 'familiar', fx: [{ op: 'spend', v: [3, 4] }], fade: true },
+  twinSpirit: { en: 'Twin Spirit', zh: '雙生靈', type: 'power', rarity: 'rare', cost: [3, 2], target: 'self', glyph: 'bond', hero: 'caller', arch: 'familiar', fx: [{ op: 'power', id: 'twinStrike', v: 1 }] },
+  inkSovereign: { en: 'Ink Sovereign', zh: '墨之君主', type: 'power', rarity: 'mythic', cost: [3, 2], target: 'self', glyph: 'sovereign', hero: 'caller', arch: 'familiar', fx: [{ op: 'power', id: 'sovereign', v: 1 }] },
+
   // Statuses and curses
   smudge: { en: 'Smudge', zh: '墨漬', type: 'status', rarity: 'special', cost: null, target: 'none', glyph: 'blot', fx: [], fleeting: true },
   dust: { en: 'Dust', zh: '塵埃', type: 'status', rarity: 'special', cost: null, target: 'none', glyph: 'dust', fx: [] },
@@ -244,11 +279,16 @@ function effectText(effect, up, ctx) {
   const bonus = ctx.bonus || 0;
   switch (effect.op) {
     case 'damage': {
-      const raw = v + bonus + (effect.perCombo ? val(effect.perCombo, up) * (ctx.combo || 0) : 0) + (effect.perChant ? val(effect.perChant, up) * (ctx.chants || 0) : 0);
+      const raw = v + bonus + (effect.perCombo ? val(effect.perCombo, up) * (ctx.combo || 0) : 0) + (effect.perChant ? val(effect.perChant, up) * (ctx.chants || 0) : 0) + (effect.perFamiliar ? val(effect.perFamiliar, up) * (ctx.familiar || 0) : 0);
       const shown = toned(previewDamage(raw, ctx), v);
       const hits = effect.hits === 'X' ? 'X' : val(effect.hits || 1, up);
       const times = hits === 'X' ? [' X 次'] : hits > 1 ? [` ×${hits}`] : [];
       if (effect.comboHits) return ['隨機對敵人造成 ', shown, ' 傷害，次數等於本回合已打出的牌數 +1（', kw('combo'), '）'];
+      if (effect.hitsPerFamiliar) {
+        const extra = ctx.familiar != null ? ['（目前 ', num(1 + Math.floor((ctx.familiar || 0) / effect.hitsPerFamiliar), 'up'), ' 次）'] : [];
+        return ['隨機對敵人造成 ', shown, ' 傷害 1 次，', kw('familiar'), ' 每有 ', num(effect.hitsPerFamiliar), ' 層再多 1 次', ...extra];
+      }
+      if (effect.perFamiliar) return ['造成 ', shown, ' 傷害。', kw('familiar'), ' 每有 1 層，傷害 +', num(val(effect.perFamiliar, up))];
       if (effect.random) return ['隨機對敵人造成 ', shown, ' 傷害', ...times, ...(effect.burnPerHit ? ['，每次命中施加 ', num(effect.burnPerHit), ' 層 ', kw('burn')] : [])];
       let base = effect.all ? ['對所有敵人造成 ', shown, ' 傷害', ...times] : ['造成 ', shown, ' 傷害', ...times];
       if (effect.perCombo) base = [...base, '。', kw('combo'), '：本回合每打出過 1 張牌，傷害 +', num(val(effect.perCombo, up))];
@@ -297,6 +337,19 @@ function effectText(effect, up, ctx) {
     case 'ifExposed': return ['若目標有 ', kw('exposed'), '，', ...effect.then.flatMap(item => effectText(item, up, ctx))];
     case 'recycle': return ['將棄牌堆洗回抽牌堆'];
     case 'power': return POWER_TEXT[effect.id].text(v);
+    case 'feed': return [kw('familiar'), ' +', num(v)];
+    case 'unleash': {
+      if (effect.x) { const plus = val(effect.plus, up); return [kw('familiar'), ' 立刻攻擊 X', ...(plus ? ['+', num(plus)] : []), ' 次']; }
+      return [kw('familiar'), ' 立刻攻擊', ...(v > 1 ? [' ', num(v), ' 次'] : [])];
+    }
+    case 'spend': {
+      const now = ctx.familiar != null ? ['（目前 ', num((effect.half ? Math.floor(ctx.familiar / 2) : ctx.familiar) * v, 'up'), '）'] : [];
+      return [effect.half ? '消耗一半 ' : '消耗全部 ', kw('familiar'), '，造成消耗層數 ×', num(v), ' 的傷害', ...now];
+    }
+    case 'burnFromFamiliar': return ['對所有敵人施加等同 ', kw('familiar'), v < 1 ? ' 一半' : '', ' 層數的 ', kw('burn')];
+    case 'doubleFamiliar': return [kw('familiar'), ' 層數加倍'];
+    case 'wardFamiliar': return ['獲得 ', toned(previewWard(v + (ctx.familiar || 0), ctx), v), ' ', kw('ward'), '（', num(v), ' + ', kw('familiar'), ' 層數）'];
+    case 'ifFamiliar': return ['若 ', kw('familiar'), ' 有 ', num(effect.n), ' 層以上，', ...effect.then.flatMap(item => effectText(item, up, ctx))];
     default: return [];
   }
 }

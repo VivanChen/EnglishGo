@@ -2,10 +2,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { CARDS, KEYWORDS, POWER_TEXT } from '../data/cards.js';
 import { ENEMIES } from '../data/enemies.js';
 import { POTIONS } from '../data/relics.js';
+import { HEROES, heroOf } from '../data/heroes.js';
 import { canPlay, cardContext, cardCost, intentOf, living } from '../engine/engine.js';
 import CardFace, { KeywordList } from '../components/CardFace.jsx';
 import Glyph from '../components/Glyph.jsx';
-import { Backdrop, EnemyArt, HeroArt } from '../components/Creatures.jsx';
+import { Backdrop, EnemyArt, FamiliarArt, HeroArt } from '../components/Creatures.jsx';
 import { makeChant } from '../chant.js';
 import { sfx } from '../sound.js';
 
@@ -48,7 +49,8 @@ function Impacts({ items }) {
   return <div className="ea-impacts" aria-hidden="true">{items.map(item => (
     <span key={item.key} className={`ea-impact is-${item.kind}`} style={{ '--rot': `${item.rot}deg`, animationDelay: `${item.delay}ms` }}>
       {item.kind === 'slash' && <svg viewBox="0 0 100 100"><path d="M8 84Q46 52 94 10"/><path d="M18 92Q52 62 96 26" opacity=".55"/></svg>}
-      {item.kind === 'claw' && <svg viewBox="0 0 100 100"><path d="M20 10Q30 50 18 92M44 6Q54 50 42 94M68 10Q78 50 66 92"/></svg>}
+      {(item.kind === 'claw' || item.kind === 'spirit') && <svg viewBox="0 0 100 100"><path d="M20 10Q30 50 18 92M44 6Q54 50 42 94M68 10Q78 50 66 92"/></svg>}
+      {item.kind === 'summon' && range(10).map(i => <i key={i} style={{ '--a': `${i * 36}deg`, '--t': `${i * 40}ms` }}/>)}
       {item.kind === 'death' && range(12).map(i => <i key={i} style={{ '--a': `${i * 30}deg`, '--d': `${46 + (i % 3) * 16}px`, '--s': `${6 + (i % 4) * 2}px` }}/>)}
       {(item.kind === 'heal' || item.kind === 'burn') && range(6).map(i => <i key={i} style={{ '--x': `${(i - 2.5) * 15}px`, '--t': `${i * 55}ms` }}/>)}
     </span>
@@ -62,6 +64,8 @@ function describeIntent(intent) {
   if (move.ward) parts.push('獲得 Ward');
   if (move.allyWard) parts.push('為同伴加上 Ward');
   if (move.might) parts.push(`獲得 ${move.might} 層 Might`);
+  if (move.heal) parts.push(`回復 ${move.heal} 生命`);
+  (move.summon || []).forEach(item => parts.push(`召喚 ${item.n} 隻 ${ENEMIES[item.id].en}（${ENEMIES[item.id].zh}）`));
   ['weak', 'exposed', 'frail', 'burn'].forEach(st => { if (move[st]) parts.push(`施加 ${move[st]} 層 ${KEYWORDS[st].en}`); });
   (move.cards || []).forEach(card => parts.push(`把 ${card.n} 張 ${CARDS[card.id].en} 放進你的棄牌堆`));
   return `${move.en}（${move.zh}）：${parts.join('，') || '正在醞釀什麼…'}`;
@@ -72,13 +76,13 @@ function Intent({ run, enemy }) {
   if (!intent) return <div className="ea-intent is-empty"/>;
   const main = intent.kinds[0] || 'unknown';
   const def = ENEMIES[enemy.id];
-  const countdown = def.countdown ? 3 - (enemy.turns % 4) : null;
+  const countdown = def.countdown ? def.countdown.every - 1 - (enemy.turns % def.countdown.every) : null;
   return <div className="ea-intent-wrap" key={`${enemy.move}-${enemy.turns}`}>
     <div className={`ea-intent is-${main}`} tabIndex={0} data-tip={describeIntent(intent)} aria-label={describeIntent(intent)}>
       {intent.kinds.length ? intent.kinds.map(kind => <Glyph key={kind} name={kind} size={kind === main ? 24 : 16}/>) : <Glyph name="unknown" size={22}/>}
       {intent.dmg != null && <b>{intent.dmg}{intent.hits > 1 && <small>×{intent.hits}</small>}</b>}
     </div>
-    {countdown > 0 && <span className="ea-countdown" data-tip="午夜鐘響時會造成巨大傷害，記得提前準備 Ward！"><span lang="en">Midnight</span> {countdown}</span>}
+    {countdown > 0 && <span className="ea-countdown" data-tip={def.countdown.tip}><span lang="en">{def.countdown.en}</span> {countdown}</span>}
   </div>;
 }
 
@@ -267,6 +271,9 @@ export default function CombatScreen({ run, dispatch, settings, pool, speak, pot
         case 'echo': spawn.push({ to: 'player', text: 'Echo!', kind: 'buff' }); break;
         case 'conjure': spawn.push({ to: 'player', text: `+ ${CARDS[f.card].en}`, kind: 'buff' }); break;
         case 'act': nextMarks[f.from] = 'act'; break;
+        case 'familiar': nextMarks.familiar = 'strike'; burst(f.to, 'spirit'); if (f.all) living(c).forEach(enemy => { if (enemy.uid !== f.to) burst(enemy.uid, 'spirit'); }); break;
+        case 'feed': spawn.push({ to: 'familiar', text: f.amount > 0 ? `+${f.amount}` : `${f.amount}`, kind: 'buff' }); nextMarks.familiar = nextMarks.familiar || 'grow'; sfx.buff(); break;
+        case 'summon': burst(f.to, 'summon'); nextMarks[f.to] = 'summoned'; setNotice({ key: f.id, text: `${ENEMIES[f.enemy].en} · ${ENEMIES[f.enemy].zh} 加入戰鬥！` }); break;
         case 'play': {
           const flight = flightRef.current?.uid === f.uid ? flightRef.current : null;
           flightRef.current = null;
@@ -469,15 +476,27 @@ export default function CombatScreen({ run, dispatch, settings, pool, speak, pot
   const ctx = cardContext(run);
   const targeting = (selected && CARDS[c.cards[selected]?.id]?.target === 'enemy') || potionAim !== null || (drag && CARDS[c.cards[drag.uid]?.id]?.target === 'enemy');
 
+  const heroId = heroOf(run);
+  const hero = HEROES[heroId];
+  const familiar = c.player.familiar || 0;
   const coachAt = coach && coach !== 'wait' && !chant ? COACH[coach].at : null;
   return <section className={`ea-combat act-${run.act} ${targeting ? 'is-targeting' : ''} ${coachAt ? `coach-${coachAt}` : ''}`} aria-label="戰鬥">
     <div className={`ea-field ${shake ? `is-shaking shake-${shake}` : ''}`} ref={fieldRef}>
       <Backdrop act={run.act}/>
       <div className="ea-stage">
         <div className={`ea-hero ${marks.player ? `is-${marks.player}` : ''}`}>
-          <div className="ea-hero-body"><HeroArt/><Impacts items={impacts.filter(item => item.to === 'player')}/><Floaters items={floaters.filter(item => item.to === 'player')}/></div>
+          <div className="ea-hero-body">
+            <HeroArt hero={heroId}/>
+            {(heroId === 'caller' || familiar > 0) && <div className={`ea-familiar ${familiar > 0 ? '' : 'is-dormant'} ${marks.familiar ? `is-${marks.familiar}` : ''}`} style={{ '--grow': Math.min(1.35, 0.85 + familiar * 0.025) }} tabIndex={0}
+              data-tip={`${KEYWORDS.familiar.en}（${KEYWORDS.familiar.zh}）${familiar}：${KEYWORDS.familiar.text}`} aria-label={`墨靈 ${familiar} 層。${KEYWORDS.familiar.text}`}>
+              <FamiliarArt/>
+              <b>{familiar}</b>
+              <Floaters items={floaters.filter(item => item.to === 'familiar')}/>
+            </div>}
+            <Impacts items={impacts.filter(item => item.to === 'player')}/><Floaters items={floaters.filter(item => item.to === 'player')}/>
+          </div>
           <div className="ea-unit-info">
-            <div className="ea-unit-name"><b lang="en">The Scribe</b><span>詞術師</span></div>
+            <div className="ea-unit-name"><b lang="en">{hero.en}</b><span>{hero.zh}</span></div>
             <HpBar hp={run.hero.hp} max={run.hero.maxHp} ward={c.player.ward}/>
             <Statuses st={c.player.st} pw={c.player.pw}/>
             {c.echo > 0 && <span className="ea-echo-chip" lang="en">Echo ×{c.echo}</span>}

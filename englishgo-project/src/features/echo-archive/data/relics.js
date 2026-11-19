@@ -1,5 +1,19 @@
+// `hero` limits a relic to one hero's runs (starter relics and familiar ones).
 export const RELICS = {
   inkwell: { en: 'Endless Inkwell', zh: '不竭墨水瓶', tier: 'starter', glyph: 'inkwell', color: '#7aa8ff', text: '每場戰鬥勝利後回復 6 生命。' },
+  spiritJar: { en: 'Spirit Jar', zh: '靈瓶', tier: 'starter', glyph: 'jar', color: '#b48bff', hero: 'caller', text: '每場戰鬥開始時，墨靈 +2。' },
+
+  cinderCharm: { en: 'Cinder Charm', zh: '灰燼護符', tier: 'common', glyph: 'charm', color: '#ff8a4c', text: '每回合開始時，對隨機一名敵人施加 2 層 Burn。' },
+  paperCrane: { en: 'Paper Crane', zh: '紙鶴', tier: 'common', glyph: 'crane', color: '#f4ead2', text: '每場戰鬥開始時，所有敵人獲得 1 層 Weak。' },
+  smudgedLens: { en: 'Smudged Lens', zh: '污損鏡片', tier: 'common', glyph: 'lens', color: '#9aa6c9', text: '每抽到 1 張狀態牌或詛咒，獲得 3 Ward。' },
+  spiritBell: { en: 'Spirit Bell', zh: '召靈鈴', tier: 'common', glyph: 'bell', color: '#c39bff', hero: 'caller', text: '每場戰鬥開始時，墨靈 +2。' },
+  metronome: { en: 'Metronome', zh: '節拍器', tier: 'uncommon', glyph: 'metronome', color: '#d6a648', text: '每回合打出第 6 張牌時，獲得 1 點能量。' },
+  runestone: { en: 'Runestone', zh: '符文石', tier: 'uncommon', glyph: 'rune', color: '#7fe0d0', text: '每場戰鬥第一次 Chant 強化成功時，獲得 1 點能量並抽 1 張牌。' },
+  goldLeaf: { en: 'Gold Leaf', zh: '金箔', tier: 'uncommon', glyph: 'leaf', color: '#f2c76b', text: '商店所有商品打 8 折。' },
+  inkHorn: { en: 'Ink Horn', zh: '墨角', tier: 'uncommon', glyph: 'horn', color: '#9b7bff', hero: 'caller', text: '墨靈攻擊時，額外施加 2 層 Burn。' },
+  bulwark: { en: 'Bulwark Stone', zh: '城牆石', tier: 'rare', glyph: 'tower', color: '#8fb3c9', text: '回合開始時，Ward 只會消失一半。' },
+  bloodInk: { en: 'Blood Ink', zh: '血墨', tier: 'rare', glyph: 'drop', color: '#e2504f', text: '每回合第一次失去生命時，獲得 1 層 Might。' },
+  emberHeart: { en: 'Ember Heart', zh: '燼心', tier: 'rare', glyph: 'emberHeart', color: '#ff6a3d', text: '敵人受到的 Burn 傷害 +50%。' },
 
   lantern: { en: 'Brass Lantern', zh: '黃銅提燈', tier: 'common', glyph: 'lantern', color: '#f2c76b', text: '每場戰鬥第一回合多 1 點能量。' },
   bookmark: { en: 'Silk Bookmark', zh: '絲綢書籤', tier: 'common', glyph: 'bookmark', color: '#e0697a', text: '每場戰鬥第一回合多抽 2 張牌。' },

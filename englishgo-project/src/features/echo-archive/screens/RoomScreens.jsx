@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CARDS } from '../data/cards.js';
 import { POTIONS, RELICS } from '../data/relics.js';
+import { KEYS } from '../data/enemies.js';
 import { canUpgrade, eventChoices, eventDef, meetsReq, restHealAmount, hasRelic } from '../engine/engine.js';
 import CardFace, { KeywordList } from '../components/CardFace.jsx';
 import Glyph from '../components/Glyph.jsx';
@@ -52,14 +53,19 @@ export function CardPicker({ run, dispatch }) {
   const cards = useMemo(() => sortCards(pending.kind === 'upgrade' ? run.hero.deck.filter(canUpgrade) : run.hero.deck), [pending.kind, run.hero.deck]);
   const pick = cards.find(card => card.uid === chosen);
   const upgrade = pending.kind === 'upgrade';
-  const title = upgrade ? '銘刻：選一張牌升級' : '選一張牌移出牌組';
   const cost = pending.source === 'shop' ? run.removeCost : 0;
-  return <Modal title={title} kicker={upgrade ? 'INSCRIBE' : 'REMOVE A CARD'} onClose={pending.cancellable ? () => dispatch({ type: 'CANCEL_PICK' }) : null} wide>
-    <p className="ea-modal-note">{upgrade ? '升級後的牌名稱會加上「+」，數值更強或費用更低。' : `精簡牌組能讓好牌更常出現。${cost ? `需要 ${cost} 金幣。` : ''}`}</p>
+  const copy = {
+    upgrade: { title: '銘刻：選一張牌升級', kicker: 'INSCRIBE', note: '升級後的牌名稱會加上「+」，數值更強或費用更低。', action: id => `升級 ${id}` },
+    remove: { title: '選一張牌移出牌組', kicker: 'REMOVE A CARD', note: `精簡牌組能讓好牌更常出現。${cost ? `需要 ${cost} 金幣。` : ''}`, action: id => `移除 ${id}${cost ? `（${cost} 金幣）` : ''}` },
+    duplicate: { title: '選一張牌複製', kicker: 'COPY A CARD', note: '複製出的牌會保留升級狀態。', action: id => `複製 ${id}` },
+    transform: { title: '選一張牌獻給祭壇', kicker: 'TRANSFORM', note: '這張牌會燒成灰，換成一張隨機的牌，比較容易是稀有卡。', action: id => `獻上 ${id}` },
+  }[pending.kind] || {};
+  return <Modal title={copy.title} kicker={copy.kicker} onClose={pending.cancellable ? () => dispatch({ type: 'CANCEL_PICK' }) : null} wide>
+    <p className="ea-modal-note">{copy.note}</p>
     <div className="ea-card-grid">{cards.map(card => <button type="button" key={card.uid} className={`ea-grid-card ${chosen === card.uid ? 'is-chosen' : ''}`} aria-pressed={chosen === card.uid} onClick={() => { setChosen(card.uid); sfx.select(); }}><CardFace inst={card}/></button>)}</div>
     {pick && <div className="ea-picker-bar">
       {upgrade && <div className="ea-upgrade-preview"><CardFace inst={pick}/><span aria-hidden="true">→</span><CardFace inst={{ ...pick, up: true }}/></div>}
-      <button type="button" className="ea-btn is-gold" onClick={() => { sfx.buff(); dispatch({ type: 'PICK_CARD', uid: pick.uid }); }}>{upgrade ? `升級 ${CARDS[pick.id].en}` : `移除 ${CARDS[pick.id].en}${cost ? `（${cost} 金幣）` : ''}`}</button>
+      <button type="button" className="ea-btn is-gold" onClick={() => { sfx.buff(); dispatch({ type: 'PICK_CARD', uid: pick.uid }); }}>{copy.action(CARDS[pick.id].en)}</button>
     </div>}
   </Modal>;
 }
@@ -87,7 +93,8 @@ export function RewardScreen({ run, dispatch }) {
         return <button type="button" key={index} className={`ea-reward-item is-${item.kind} ${item.taken ? 'is-taken' : ''}`} disabled={item.taken || blocked} onClick={() => take(index)}>
           {item.kind === 'gold' && <><span className="ea-reward-icon is-gold"><Glyph name="gold" size={28}/></span><span><b>{item.amount} 金幣</b><small lang="en">Gold</small></span></>}
           {item.kind === 'potion' && <><span className="ea-reward-icon"><PotionArt color={POTIONS[item.id].color} size={26}/></span><span><b lang="en">{POTIONS[item.id].en}</b><small>{POTIONS[item.id].zh} · {blocked ? '藥劑欄已滿，先使用或丟棄一瓶' : POTIONS[item.id].text}</small></span></>}
-          {item.kind === 'relic' && <><span className="ea-reward-icon"><RelicIcon id={item.id} size={30}/></span><span><b lang="en">{RELICS[item.id].en}</b><small>{RELICS[item.id].zh} · {RELICS[item.id].text}</small></span></>}
+          {item.kind === 'relic' && <><span className="ea-reward-icon"><RelicIcon id={item.id} size={30}/></span><span><b lang="en">{RELICS[item.id].en}</b><small>{item.skipped ? '你選擇了鑰匙' : `${RELICS[item.id].zh} · ${RELICS[item.id].text}`}</small></span></>}
+          {item.kind === 'key' && <><span className="ea-reward-icon is-key" style={{ '--key': KEYS[item.key].color }}><Glyph name="key" size={28}/></span><span><b>{KEYS[item.key].zh}</b><small>{item.skipped ? '你選擇了遺物' : `${KEYS[item.key].en} · ${item.or != null ? '和遺物只能二選一' : '集齊三把鑰匙，第三章之後還有路'}`}</small></span></>}
           {item.kind === 'cards' && <><span className="ea-reward-icon is-cards"><Glyph name="deck" size={28}/></span><span><b>{item.taken ? (item.chosen ? `已加入 ${CARDS[item.chosen].en}` : '已略過卡牌') : '選擇一張牌加入牌組'}</b><small lang="en">Add a card to your deck</small></span></>}
           {item.taken && <i className="ea-check" aria-hidden="true">✓</i>}
         </button>;
@@ -122,10 +129,13 @@ export function RestScreen({ run, dispatch }) {
           <button type="button" className="ea-choice" disabled={!canInscribe} onClick={() => dispatch({ type: 'REST_UPGRADE' })}>
             <Glyph name="quill" size={30}/><span><b lang="en">Inscribe</b><small>銘刻：升級 1 張牌{canInscribe ? '' : '（沒有可升級的牌）'}</small></span>
           </button>
+          {run.keys && !run.keys.flame && run.act <= 3 && <button type="button" className="ea-choice is-key" style={{ '--key': KEYS.flame.color }} onClick={() => { sfx.buff(); dispatch({ type: 'REST_KEY' }); }}>
+            <Glyph name="key" size={30}/><span><b lang="en">Recall</b><small>取下燭火之鑰：放棄休息與銘刻，帶走三把鑰匙之一</small></span>
+          </button>}
         </div>
         <button type="button" className="ea-btn is-quiet ea-rest-skip" onClick={() => dispatch({ type: 'LEAVE_ROOM' })}>什麼都不做，繼續前進</button>
       </> : <>
-        <p className="ea-room-lead">{rest.healed ? `你睡了一場好覺，回復 ${rest.healed} 生命。` : rest.upgraded ? `你在燈下重寫了 ${CARDS[rest.upgraded].en}，它變得更強了。` : '你稍作休息。'}</p>
+        <p className="ea-room-lead">{rest.key ? '你從提燈裡取出燭火之鑰，它在掌心發著溫暖的光。' : rest.healed ? `你睡了一場好覺，回復 ${rest.healed} 生命。` : rest.upgraded ? `你在燈下重寫了 ${CARDS[rest.upgraded].en}，它變得更強了。` : '你稍作休息。'}</p>
         <button type="button" className="ea-btn is-gold" onClick={() => dispatch({ type: 'LEAVE_ROOM' })}>繼續前進 →</button>
       </>}
     </div>
@@ -178,10 +188,16 @@ export function ShopScreen({ run, dispatch }) {
   </section>;
 }
 
+const EVENT_GLYPHS = {
+  lantern: 'lantern', mirror: 'shard', fountain: 'wave', door: 'event', lute: 'echo', statue: 'crown', binder: 'thread',
+  candle: 'flame', guardian: 'stone', page: 'pages', quill: 'quill', well: 'coin', scholar: 'book', altar: 'emberHeart', gear: 'metronome', choir: 'bell',
+};
+
 function Gain({ gain }) {
   if (gain.type === 'relic') return <span className="ea-gain"><RelicIcon id={gain.id} size={18}/>{RELICS[gain.id].en}</span>;
   if (gain.type === 'potion') return <span className="ea-gain"><PotionArt color={POTIONS[gain.id].color} size={14}/>{POTIONS[gain.id].en}</span>;
   if (gain.type === 'gold') return <span className="ea-gain"><Glyph name="gold" size={14}/>+{gain.amount}</span>;
+  if (gain.type === 'lostPotion') return <span className="ea-gain is-removed"><PotionArt color={POTIONS[gain.id].color} size={14}/>失去 {POTIONS[gain.id].en}</span>;
   const prefix = { card: '獲得', upgrade: '升級', removed: '移除' }[gain.type];
   return <span className={`ea-gain is-${gain.type}`}>{prefix} <b lang="en">{CARDS[gain.id].en}</b></span>;
 }
@@ -200,7 +216,7 @@ export function EventScreen({ run, dispatch, speak, voice }) {
   };
   return <section className="ea-room ea-event" aria-label={def.title.zh}>
     <div className="ea-room-panel is-event">
-      <div className="ea-event-art"><Glyph name={ev.id === 'keeper' ? 'lantern' : def.riddle ? 'event' : 'book'} size={64}/></div>
+      <div className="ea-event-art"><Glyph name={EVENT_GLYPHS[def.art] || 'book'} size={64}/></div>
       <span className="ea-eyebrow" lang="en">{ev.id === 'keeper' ? 'PROLOGUE' : 'EVENT'}</span>
       <h2><span lang="en">{def.title.en}</span><small>{def.title.zh}</small></h2>
       <div className="ea-story">

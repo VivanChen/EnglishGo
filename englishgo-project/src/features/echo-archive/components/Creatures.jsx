@@ -251,6 +251,153 @@ const ART = {
       <path d="M36 124C14 116 8 96 14 80M164 124C186 116 192 96 186 80" stroke="#2a1650" strokeWidth="10" strokeLinecap="round" fill="none"/>
     </g>
   </>,
+
+  // ── Wave 3 ──
+  imp: id => <>
+    <Defs id={id} from="#f6ecd2" to="#b89a6a" glow={5}/>
+    <Shadow w={40}/>
+    <path d="M74 150L56 138M126 150L144 136" stroke="#b89a6a" strokeWidth="6" strokeLinecap="round"/>
+    <path d="M74 188V110C74 104 80 100 86 102C92 96 108 96 114 102C120 100 126 104 126 110V188Z" fill={`url(#${id('body')})`}/>
+    <path d="M82 104C82 124 86 132 86 144M118 106C118 120 116 128 118 136" stroke="#fffaf0" strokeWidth="5" strokeLinecap="round" opacity=".75"/>
+    <path d="M74 176H126" stroke="#8a7550" strokeWidth="3" opacity=".5"/>
+    <g filter={`url(#${id('glow')})`} className="ea-flicker">
+      <path d="M100 22C116 44 132 56 128 80C124 98 112 104 100 104C86 104 72 96 72 80C72 64 86 56 90 40C94 50 98 56 98 62C106 52 104 38 100 22Z" fill="#ffb347"/>
+      <path d="M100 56C108 66 112 74 110 84C108 92 104 96 100 96C94 96 90 92 90 84C90 76 96 70 98 64Z" fill="#fff1a8"/>
+    </g>
+    <circle cx="92" cy="80" r="4" fill="#5a2a0a"/><circle cx="108" cy="80" r="4" fill="#5a2a0a"/>
+    <path d="M94 90Q100 95 106 90" stroke="#5a2a0a" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+  </>,
+  serpent: id => <>
+    <Defs id={id} from="#e0697a" to="#7a2436"/>
+    <Shadow w={66}/>
+    <path d="M30 182C50 182 54 160 76 160C98 160 96 186 122 186C146 186 150 166 150 150C150 122 138 106 122 98" stroke={`url(#${id('body')})`} strokeWidth="20" fill="none" strokeLinecap="round"/>
+    <path d="M30 182C50 182 54 160 76 160C98 160 96 186 122 186C146 186 150 166 150 150" stroke="#ffd1d8" strokeWidth="3" strokeDasharray="6 10" fill="none" opacity=".55"/>
+    <path d="M96 72C96 58 108 50 122 52C138 54 146 66 142 80C138 94 120 100 106 94C98 90 96 82 96 72Z" fill="#c84358"/>
+    <path d="M98 76C110 82 128 82 142 78" stroke="#7a2436" strokeWidth="3" fill="none"/>
+    <Eyes x1={112} x2={130} y={66} r={4.5} color="#ffe36b" id={id('glow')}/>
+    <path d="M98 84L84 90L90 82L82 80Z" fill="#ff8fa3"/>
+    <path d="M30 182L18 166M30 182L12 186M30 182L22 197" stroke="#e8c47a" strokeWidth="4" strokeLinecap="round"/>
+    <circle cx="30" cy="182" r="6" fill="#e8c47a"/>
+  </>,
+  spider: id => <>
+    <Defs id={id} from="#3a2f6e" to="#0f0b24"/>
+    <path d="M100 4V70M20 26L100 72L180 26M8 88L100 72L192 88" stroke="#d9d2f0" strokeWidth="1.5" opacity=".3"/>
+    <Shadow w={78}/>
+    {[-1, 1].flatMap(s => [0, 1, 2, 3].map(i => <path key={`${s}${i}`} d={`M${100 + s * 26} ${116 + i * 9}Q${100 + s * (66 + i * 6)} ${68 + i * 18} ${100 + s * (78 + i * 5)} 188`} stroke="#1b1538" strokeWidth="6" fill="none" strokeLinecap="round"/>))}
+    <ellipse cx="100" cy="134" rx="44" ry="38" fill={`url(#${id('body')})`}/>
+    <ellipse cx="100" cy="134" rx="44" ry="38" fill={`url(#${id('sheen')})`}/>
+    <path d="M86 120L100 134L114 120M86 150L100 134L114 150" stroke="#c39bff" strokeWidth="3" fill="none" opacity=".7"/>
+    <circle cx="100" cy="94" r="20" fill="#1b1538"/>
+    <g filter={`url(#${id('glow')})`}>{[[91, 90, 5], [109, 90, 5], [84, 98, 3], [116, 98, 3]].map(([x, y, r]) => <circle key={x} cx={x} cy={y} r={r} fill="#ff5d8f"/>)}</g>
+    <path d="M94 108L90 116M106 108L110 116" stroke="#c39bff" strokeWidth="3" strokeLinecap="round"/>
+  </>,
+  jack: id => <>
+    <Defs id={id} from="#e05a4f" to="#7a2a24"/>
+    <Shadow w={52}/>
+    <rect x="58" y="140" width="84" height="50" rx="6" fill="#5e4320" stroke="#c99a4e" strokeWidth="4"/>
+    <path d="M58 154H142M100 154V190" stroke="#c99a4e" strokeWidth="3"/>
+    <g className="ea-bob">
+      <path d="M100 140C84 136 116 128 100 124C84 120 116 112 100 108C84 104 116 96 100 92" stroke="#c9d3df" strokeWidth="6" fill="none" strokeLinecap="round"/>
+      <circle cx="100" cy="66" r="28" fill="#f3e6c8"/>
+      <path d="M72 58C66 30 84 22 96 40L100 24L104 40C116 22 134 30 128 58Z" fill={`url(#${id('body')})`}/>
+      <circle cx="70" cy="34" r="6" fill="#e8c47a"/><circle cx="130" cy="34" r="6" fill="#e8c47a"/><circle cx="100" cy="20" r="5" fill="#e8c47a"/>
+      <Eyes x1={90} x2={110} y={68} r={4.5} color="#3a7bd5" id={id('glow')}/>
+      <path d="M86 82Q100 94 114 82" stroke="#7a2a24" strokeWidth="4" fill="none" strokeLinecap="round"/>
+      <circle cx="80" cy="78" r="5" fill="#ff8fa3" opacity=".6"/><circle cx="120" cy="78" r="5" fill="#ff8fa3" opacity=".6"/>
+    </g>
+  </>,
+  slick: id => <>
+    <Defs id={id} from="#3a3a48" to="#06060a"/>
+    <ellipse cx="100" cy="184" rx="80" ry="12" fill="#0b0b12"/>
+    <path d="M34 184C40 160 56 156 62 136C70 108 78 80 100 80C122 80 130 108 138 136C144 156 160 160 166 184Z" fill={`url(#${id('body')})`}/>
+    <path d="M74 120C88 112 112 112 126 120" stroke="#ffe36b" strokeWidth="3" fill="none" opacity=".35"/>
+    <path d="M60 150C80 138 120 138 140 150" stroke="#7af0ff" strokeWidth="3" fill="none" opacity=".45"/>
+    <path d="M66 162C84 152 116 152 134 162" stroke="#ff7ad9" strokeWidth="3" fill="none" opacity=".4"/>
+    <path d="M86 88C90 84 96 82 100 82" stroke="#fff" strokeWidth="4" strokeLinecap="round" opacity=".5"/>
+    <Eyes x1={88} x2={112} y={106} r={6} color="#ffb347" id={id('glow')}/>
+    <circle cx="44" cy="176" r="6" fill="#1a1a24"/><circle cx="158" cy="172" r="5" fill="#1a1a24"/>
+  </>,
+  duelist: id => <>
+    <Defs id={id} from="#d6a648" to="#6b4a1e"/>
+    <Shadow w={56}/>
+    <path d="M86 186L90 140M114 186L110 140" stroke="#6b4a1e" strokeWidth="8" strokeLinecap="round"/>
+    <path d="M78 140L84 84H116L122 140Z" fill={`url(#${id('body')})`}/>
+    <g className="ea-spin" style={{ transformOrigin: '100px 108px' }}><circle cx="100" cy="108" r="13" fill="none" stroke="#3a2a14" strokeWidth="5" strokeDasharray="5 4"/></g>
+    <circle cx="100" cy="108" r="5" fill="#3a2a14"/>
+    <path d="M84 92L60 120L70 128" stroke="#a87a38" strokeWidth="7" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M116 92L146 112" stroke="#a87a38" strokeWidth="7" strokeLinecap="round"/>
+    <path d="M146 112L192 58" stroke="#d9dde6" strokeWidth="3"/><path d="M138 106L154 120" stroke="#e8c47a" strokeWidth="5" strokeLinecap="round"/>
+    <rect x="84" y="46" width="32" height="38" rx="10" fill={`url(#${id('body')})`}/>
+    <rect x="88" y="58" width="24" height="8" rx="4" fill="#1a1208"/>
+    <g filter={`url(#${id('glow')})`}><circle cx="95" cy="62" r="2.6" fill="#7af0ff"/><circle cx="105" cy="62" r="2.6" fill="#7af0ff"/></g>
+    <path d="M90 46L100 28L110 46Z" fill="#c64b5a"/>
+  </>,
+  bell: id => <>
+    <Defs id={id} from="#8e939e" to="#2f3240"/>
+    <Shadow w={60}/>
+    <path d="M100 22V40" stroke="#5d616c" strokeWidth="8" strokeLinecap="round"/>
+    <circle cx="100" cy="180" r="11" fill="#5d616c"/>
+    <path d="M100 40C66 40 58 70 56 110C54 140 44 156 34 168H166C156 156 146 140 144 110C142 70 134 40 100 40Z" fill={`url(#${id('body')})`}/>
+    <path d="M100 40C66 40 58 70 56 110" fill="none" stroke="#c9d3df" strokeOpacity=".35" strokeWidth="4"/>
+    <path d="M34 168H166" stroke="#c9d3df" strokeOpacity=".4" strokeWidth="4"/>
+    <path d="M50 120C80 132 120 132 150 120L152 138C120 150 80 150 48 138Z" fill="#e9e3f5" opacity=".85"/>
+    <path d="M58 129C80 138 120 138 142 129" stroke="#b9b3e8" strokeWidth="2" fill="none" opacity=".7"/>
+    <Eyes x1={84} x2={116} y={92} r={6} color="#c39bff" id={id('glow')}/>
+  </>,
+  scribe: id => <>
+    <Defs id={id} from="#6a7a9a" to="#1a2033" glow={4}/>
+    <Shadow w={54}/>
+    <g className="ea-float">
+      <path d="M100 36C76 36 66 56 64 84C62 120 56 156 46 186H154C144 156 138 120 136 84C134 56 124 36 100 36Z" fill={`url(#${id('body')})`} opacity=".92"/>
+      <path d="M78 66C78 52 88 46 100 46S122 52 122 66C122 82 112 92 100 92S78 82 78 66Z" fill="#0d1020"/>
+      <Eyes x1={92} x2={108} y={68} r={4} color="#e2d8ff" id={id('glow')}/>
+      <path d="M64 120C80 128 104 128 124 118" stroke="#9aa6c0" strokeWidth="8" strokeLinecap="round" fill="none"/>
+      <path d="M120 120L162 84" stroke="#efe1c0" strokeWidth="3"/><path d="M170 68C156 72 146 82 142 96C152 92 162 84 170 68Z" fill="#f6ecd2"/>
+    </g>
+    <g opacity=".85">
+      <g transform="rotate(-10 38 78)"><path d="M24 68H50V92H24Z" fill="#efe4c6"/><path d="M28 74H46M28 80H44M28 86H40" stroke="#b39a6e" strokeWidth="1.5"/></g>
+      <g transform="rotate(8 166 140)"><path d="M154 128H178V150H154Z" fill="#efe4c6"/><path d="M158 134H174M158 140H172" stroke="#b39a6e" strokeWidth="1.5"/></g>
+    </g>
+  </>,
+  choir: id => <>
+    <Defs id={id} from="#efe8ff" to="#6b5fa8" glow={4}/>
+    <Shadow w={84}/>
+    {[[54, 114, 0.78], [146, 114, 0.78], [100, 96, 1]].map(([x, y, s]) => <g key={x} transform={`translate(${x} ${y}) scale(${s})`}>
+      <path d="M0 -60C-24 -60 -32 -36 -32 -10C-32 30 -38 60 -44 84H44C38 60 32 30 32 -10C32 -36 24 -60 0 -60Z" fill={`url(#${id('body')})`} opacity=".92"/>
+      <ellipse cx="0" cy="-26" rx="18" ry="20" fill="#14112b"/>
+      <g filter={`url(#${id('glow')})`}><circle cx="-7" cy="-30" r="3" fill="#e2d8ff"/><circle cx="7" cy="-30" r="3" fill="#e2d8ff"/></g>
+      <ellipse cx="0" cy="-15" rx="5" ry="7" fill="#000" stroke="#c39bff" strokeWidth="1.5"/>
+    </g>)}
+    <path d="M28 44Q34 34 40 44M160 40Q166 30 172 40M94 14Q100 4 106 14" stroke="#e2d8ff" strokeWidth="2" fill="none" opacity=".6"/>
+  </>,
+  gate: id => <>
+    <Defs id={id} from="#c9c2b0" to="#5a5446" glow={6}/>
+    <Shadow w={86}/>
+    <path d="M30 190V80C30 40 62 16 100 16S170 40 170 80V190H140V90C140 62 122 46 100 46S60 62 60 90V190Z" fill={`url(#${id('body')})`}/>
+    <path d="M30 80C30 40 62 16 100 16S170 40 170 80" fill="none" stroke="#efe4c6" strokeOpacity=".5" strokeWidth="4"/>
+    {[[45, 100], [45, 130], [45, 160], [155, 100], [155, 130], [155, 160]].map(([x, y]) => <path key={`${x}${y}`} d={`M${x - 12} ${y}H${x + 12}`} stroke="#3c382e" strokeWidth="3"/>)}
+    <path d="M60 190V90C60 62 78 46 100 46S140 62 140 90V190Z" fill="#0d0b1a"/>
+    <g filter={`url(#${id('glow')})`}><circle cx="100" cy="98" r="14" fill="#e8c47a"/><path d="M94 106L100 140L106 106Z" fill="#e8c47a"/></g>
+    <circle cx="100" cy="98" r="6" fill="#0d0b1a"/>
+    <g filter={`url(#${id('glow')})`}><circle cx="78" cy="32" r="6" fill="#ff5d8f"/><circle cx="122" cy="32" r="6" fill="#ff5d8f"/></g>
+    <path d="M60 154C80 164 120 164 140 154M60 174C80 184 120 184 140 174" stroke="#8a8270" strokeWidth="5" strokeDasharray="8 5" fill="none"/>
+  </>,
+  silence: id => <>
+    <defs>
+      <radialGradient id={id('void')} cx=".5" cy=".45" r=".55"><stop offset="0" stopColor="#000"/><stop offset=".7" stopColor="#120826"/><stop offset="1" stopColor="#3a1f6e" stopOpacity="0"/></radialGradient>
+      <linearGradient id={id('page')} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#fbf7ec"/><stop offset="1" stopColor="#a99cc9"/></linearGradient>
+      <filter id={id('glow')} x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    </defs>
+    <Shadow w={92} y={194}/>
+    <g className="ea-float">
+      <path d="M30 84C10 70 6 46 18 30M170 84C190 70 194 46 182 30" stroke="#bdb2d6" strokeWidth="8" strokeLinecap="round" fill="none"/>
+      <path d="M100 14C60 14 34 40 30 84C26 128 18 162 8 194H192C182 162 174 128 170 84C166 40 140 14 100 14Z" fill={`url(#${id('page')})`}/>
+      <path d="M8 194L22 184L34 194L48 182L62 194L76 184L90 194L104 182L118 194L132 184L146 194L160 182L174 194H192" fill="#e9e3f5"/>
+      <ellipse cx="100" cy="96" rx="46" ry="58" fill={`url(#${id('void')})`}/>
+      <g filter={`url(#${id('glow')})`}><path d="M80 84L94 90M120 84L106 90" stroke="#b77bff" strokeWidth="5" strokeLinecap="round"/></g>
+      {['A', 'e', 's', 'W', 'o', 'r'].map((ch, i) => <text key={ch} x={[44, 156, 52, 146, 72, 130][i]} y={[64, 72, 152, 142, 34, 38][i]} fontSize={[16, 14, 12, 15, 11, 12][i]} fontFamily="Georgia,serif" fill="#6b5fa8" opacity={0.3 + (i % 3) * 0.15}>{ch}</text>)}
+    </g>
+  </>,
 };
 
 export const ENEMY_ART = Object.keys(ART);
@@ -260,8 +407,58 @@ export function EnemyArt({ art, className = '' }) {
   return <svg viewBox="0 0 200 200" className={`ea-creature ${className}`} aria-hidden="true">{(ART[art] || ART.inkling)(id)}</svg>;
 }
 
-export function HeroArt({ className = '' }) {
+// The Inkcaller: a hooded summoner with a spirit jar.
+function CallerArt({ id }) {
+  return <>
+    <defs>
+      <linearGradient id={id('robe')} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#5b3d8f"/><stop offset="1" stopColor="#1a1030"/></linearGradient>
+      <radialGradient id={id('aura')} cx=".5" cy=".5" r=".5"><stop offset="0" stopColor="#c39bff" stopOpacity=".7"/><stop offset="1" stopColor="#c39bff" stopOpacity="0"/></radialGradient>
+      <filter id={id('glow')} x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    </defs>
+    <ellipse cx="96" cy="210" rx="60" ry="8" fill="#000" opacity=".35"/>
+    <circle cx="44" cy="150" r="38" fill={`url(#${id('aura')})`}/>
+    <path d="M96 38C68 38 56 62 56 90C56 124 46 164 34 206H158C146 164 136 124 136 90C136 62 124 38 96 38Z" fill={`url(#${id('robe')})`}/>
+    <path d="M96 38C68 38 56 62 56 90C56 124 46 164 34 206H60C64 168 70 128 76 100Z" fill="#120a22" opacity=".5"/>
+    <path d="M70 98L96 120L122 98" stroke="#e8c47a" strokeWidth="4" fill="none"/>
+    <path d="M96 120V204" stroke="#e8c47a" strokeWidth="3" opacity=".55"/>
+    <path d="M66 70C66 48 80 36 96 36S126 48 126 70C126 86 114 96 96 96S66 86 66 70Z" fill="#120a22"/>
+    <path d="M64 72C58 54 70 34 96 30C110 28 122 34 128 46" stroke="#7a5ab8" strokeWidth="4" fill="none" opacity=".6"/>
+    <ellipse cx="96" cy="74" rx="15" ry="13" fill="#e9d5c4"/>
+    <path d="M82 66C88 60 104 60 110 66" stroke="#120a22" strokeWidth="5" fill="none"/>
+    <circle cx="90" cy="76" r="2.4" fill="#2a1a3a"/><circle cx="102" cy="76" r="2.4" fill="#2a1a3a"/>
+    <path d="M93 83Q96 85 99 83" stroke="#a46a5a" strokeWidth="1.8" fill="none" strokeLinecap="round"/>
+    <path d="M72 132C60 136 54 142 50 150" stroke="#e9d5c4" strokeWidth="9" strokeLinecap="round" fill="none"/>
+    <g className="ea-bob">
+      <path d="M32 144H56V150C62 154 64 160 64 166C64 176 56 182 44 182S24 176 24 166C24 160 26 154 32 150Z" fill="#3a2a5e" stroke="#e8c47a" strokeWidth="2.5"/>
+      <g filter={`url(#${id('glow')})`}><circle cx="44" cy="166" r="9" fill="#c39bff"/></g>
+      <path d="M44 142C40 128 48 120 44 106" stroke="#c39bff" strokeWidth="3" fill="none" opacity=".7" strokeLinecap="round"/>
+    </g>
+    <path d="M122 120C140 126 150 140 152 156" stroke="#e9d5c4" strokeWidth="9" strokeLinecap="round" fill="none"/>
+    <g filter={`url(#${id('glow')})`}><circle cx="154" cy="162" r="5" fill="#8ef3ff"/></g>
+  </>;
+}
+
+// The Inkcaller's ink spirit. Its size grows a little with its stacks.
+export function FamiliarArt({ className = '' }) {
   const id = useIds();
+  return <svg viewBox="0 0 100 100" className={`ea-familiar-art ${className}`} aria-hidden="true">
+    <defs>
+      <radialGradient id={id('body')} cx=".4" cy=".35" r=".7"><stop offset="0" stopColor="#8a6ad0"/><stop offset="1" stopColor="#1a0f33"/></radialGradient>
+      <filter id={id('glow')} x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    </defs>
+    <ellipse cx="50" cy="95" rx="22" ry="4" fill="#000" opacity=".3"/>
+    <path d="M18 50C8 46 6 36 10 30M82 50C92 46 94 36 90 30" stroke="#3a2a5e" strokeWidth="5" strokeLinecap="round" fill="none"/>
+    <path d="M50 12C70 12 80 28 80 48C80 66 74 78 64 86C62 80 58 80 56 86C54 80 46 80 44 86C42 80 38 80 36 86C26 78 20 66 20 48C20 28 30 12 50 12Z" fill={`url(#${id('body')})`}/>
+    <path d="M34 26C40 18 52 16 60 20" stroke="#c39bff" strokeWidth="3" fill="none" strokeLinecap="round" opacity=".6"/>
+    <g filter={`url(#${id('glow')})`}><ellipse cx="40" cy="46" rx="6" ry="7" fill="#e2d8ff"/><ellipse cx="60" cy="46" rx="6" ry="7" fill="#e2d8ff"/></g>
+    <circle cx="41" cy="47" r="2.6" fill="#1a0f33"/><circle cx="61" cy="47" r="2.6" fill="#1a0f33"/>
+    <path d="M44 60Q50 64 56 60" stroke="#e2d8ff" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+  </svg>;
+}
+
+export function HeroArt({ className = '', hero = 'scribe' }) {
+  const id = useIds();
+  if (hero === 'caller') return <svg viewBox="0 0 200 220" className={`ea-creature ea-hero-art is-caller ${className}`} aria-hidden="true"><CallerArt id={id}/></svg>;
   return <svg viewBox="0 0 200 220" className={`ea-creature ea-hero-art ${className}`} aria-hidden="true">
     <defs>
       <linearGradient id={id('cloak')} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#34508f"/><stop offset="1" stopColor="#121a3a"/></linearGradient>
@@ -307,12 +504,14 @@ export function Backdrop({ act = 1 }) {
     1: ['#1b2048', '#0b0d1f', '#2b3266'],
     2: ['#3a2a1c', '#120c08', '#5e4320'],
     3: ['#2a1146', '#07040f', '#451f6e'],
+    4: ['#2e2540', '#08060e', '#e8c47a'],
   };
   const [top, bottom, accent] = palettes[act] || palettes[1];
+  const glow = { 2: '#ffb45c', 3: '#b77bff', 4: '#ffe7a6' }[act] || '#7ea2ff';
   return <svg className="ea-backdrop" viewBox="0 0 1200 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <defs>
       <linearGradient id={id('sky')} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={top}/><stop offset="1" stopColor={bottom}/></linearGradient>
-      <radialGradient id={id('light')} cx=".5" cy=".35" r=".55"><stop offset="0" stopColor={act === 2 ? '#ffb45c' : act === 3 ? '#b77bff' : '#7ea2ff'} stopOpacity=".28"/><stop offset="1" stopColor="#000" stopOpacity="0"/></radialGradient>
+      <radialGradient id={id('light')} cx=".5" cy=".35" r=".55"><stop offset="0" stopColor={glow} stopOpacity=".28"/><stop offset="1" stopColor="#000" stopOpacity="0"/></radialGradient>
     </defs>
     <rect width="1200" height="600" fill={`url(#${id('sky')})`}/>
     <rect width="1200" height="600" fill={`url(#${id('light')})`}/>
@@ -340,6 +539,14 @@ export function Backdrop({ act = 1 }) {
         <path d="M1040 600V250L1080 220L1120 250V600Z"/><path d="M920 600V360L948 340L976 360V600Z"/>
         <path d="M520 600V300C520 230 680 230 680 300V600Z" opacity=".55"/>
       </g>
+    </g>}
+    {act === 4 && <g>
+      <path d="M600 0L360 600H840Z" fill="#fff6dc" opacity=".05"/>
+      <path d="M600 0L520 600H680Z" fill="#fff6dc" opacity=".07"/>
+      {Array.from({ length: 16 }, (_, i) => {
+        const x = (i * 173) % 1150, y = (i * 97) % 430;
+        return <rect key={i} x={x} y={y} width="34" height="44" rx="3" fill="#f6ecd2" opacity={0.07 + (i % 4) * 0.05} transform={`rotate(${((i * 37) % 60) - 30} ${x + 17} ${y + 22})`}/>;
+      })}
     </g>}
     <rect y="470" width="1200" height="130" fill="#000" opacity=".35"/>
     <path d="M0 470H1200" stroke="#ffffff" strokeOpacity=".08" strokeWidth="2"/>

@@ -82,8 +82,10 @@ export function dailyChallenge(key = dateKey()) {
   const holder = { rng: seed ^ 0x9e3779b9 };
   const blessing = pick(holder, Object.keys(DAILY_BLESSINGS));
   const trial = pick(holder, Object.keys(DAILY_TRIALS));
-  const card = pick(holder, REWARD_POOL.filter(id => CARDS[id].rarity === 'rare' && !CARDS[id].pack));
-  return { date: key, seed, blessing, trial, card };
+  const card = pick(holder, REWARD_POOL.filter(id => CARDS[id].rarity === 'rare' && !CARDS[id].pack && !CARDS[id].hero));
+  // Picked last so earlier days keep the same blessing, trial and card.
+  const hero = pick(holder, ['scribe', 'caller']);
+  return { date: key, seed, blessing, trial, card, hero };
 }
 
 // Extra shards for daily runs and new silence records; added after the

@@ -5,6 +5,10 @@ import { claimWelcome, emptyCollection, pullArchive, shardsForRun } from '../arc
 import { canUpgrade, cardOptions, createRun, canPlay, eventChoices, finishEnemyPhase, living, moveBase, restHealAmount, runReducer } from './engine.js';
 import { BASE_MODS, SILENCE_LEVELS, buildMods, dailyBonus, dailyChallenge, dateKey, previousDateKey } from '../data/challenges.js';
 import { HISTORY_LIMIT, addRecord, recordDeck, runRecord } from '../history.js';
+import { HEROES, heroPool, heroUnlocked, inHeroPool } from '../data/heroes.js';
+import { RELICS } from '../data/relics.js';
+import { EVENTS } from '../data/events.js';
+import { cardPool, hasAllKeys, randomRelic } from './engine.js';
 import { MAP_ROWS, TREASURE_ROW, availableNodes, generateMap } from './map.js';
 
 const act = (run, action) => runReducer(run, action);
@@ -498,7 +502,7 @@ describe('echo archive daily challenge', () => {
     expect(run.difficulty).toBe('standard');
     expect(run.silence).toBe(0);
     expect(run.seed).toBe(challenge.seed);
-    expect(run.daily).toEqual({ date: '2026-11-19', blessing: 'richRoad', trial: 'cursed', card: challenge.card });
+    expect(run.daily).toEqual({ date: '2026-11-19', blessing: 'richRoad', trial: 'cursed', card: challenge.card, hero: challenge.hero });
     expect(run.hero.gold).toBe(249);
     const ids = run.hero.deck.map(card => card.id);
     expect(ids).toContain(challenge.card);
@@ -560,5 +564,314 @@ describe('echo archive chronicle', () => {
     history = addRecord(history, { key: 'k24', at: 99 });
     expect(history.filter(item => item.key === 'k24')).toHaveLength(1);
     expect(addRecord(undefined, { key: 'a' })).toEqual([{ key: 'a' }]);
+  });
+});
+
+// ───────────── Wave 3: the Inkcaller, new foes, keys and the last page ─────────────
+function heroCombat(hero, encounter, seed = 31) {
+  let run = createRun({ seed, hero });
+  run = act(run, { type: 'EVENT_CHOOSE', index: 3 });
+  run = act(run, { type: 'EVENT_CONTINUE' });
+  run = act(run, { type: 'MAP_SELECT', id: availableNodes(run)[0] });
+  if (encounter) run.combat.enemies = encounter.map((id, index) => ({ uid: `e${index}`, id, hp: 60, maxHp: 60, ward: 0, st: {}, move: Object.keys(ENEMIES[id].moves)[0], history: [], uses: {}, turns: 0, dead: false }));
+  run.combat.energy = 10;
+  return run;
+}
+function giveCard(run, id, up = false) {
+  const c = run.combat;
+  const uid = `g${Object.keys(c.cards).length}`;
+  c.cards[uid] = { uid, id, up };
+  c.hand.push(uid);
+  return uid;
+}
+const play = (run, id, target = 'e0', up = false) => act(run, { type: 'PLAY_CARD', uid: giveCard(run, id, up), target });
+
+describe('echo archive heroes', () => {
+  it('starts the Inkcaller with its own deck, relic, health and card pool', () => {
+    const run = createRun({ seed: 2, hero: 'caller', difficulty: 'standard' });
+    expect(run.hero.id).toBe('caller');
+    expect(run.hero.relics).toEqual(['spiritJar']);
+    expect(run.hero.maxHp).toBe(72 + HEROES.caller.hp);
+    expect(run.hero.deck.map(card => card.id)).toEqual(HEROES.caller.deck);
+    const pool = cardPool(run);
+    expect(pool).toContain('spiritClaw');
+    expect(pool).toContain('ember');
+    expect(pool).not.toContain('cleave');
+    expect(cardPool(createRun({ seed: 2 }))).not.toContain('spiritClaw');
+    expect(heroPool('caller').filter(id => CARDS[id].hero === 'caller').length).toBeGreaterThanOrEqual(20);
+    expect(inHeroPool('legion', 'scribe')).toBe(false);
+    expect(createRun({ seed: 2, hero: 'nobody' }).hero.id).toBe('scribe');
+    expect(heroUnlocked('caller', { bestAct: 1 })).toBe(false);
+    expect(heroUnlocked('caller', { bestAct: 2 })).toBe(true);
+  });
+
+  it('keeps hero-only relics out of the other hero\'s runs', () => {
+    const callerOnly = Object.keys(RELICS).filter(id => RELICS[id].hero === 'caller' && RELICS[id].tier !== 'starter');
+    const scribe = createRun({ seed: 3 });
+    const caller = createRun({ seed: 3, hero: 'caller' });
+    const seen = { scribe: new Set(), caller: new Set() };
+    for (let i = 0; i < 300; i++) {
+      seen.scribe.add(randomRelic(scribe));
+      seen.caller.add(randomRelic(caller));
+    }
+    callerOnly.forEach(id => { expect(seen.scribe.has(id)).toBe(false); expect(seen.caller.has(id)).toBe(true); });
+  });
+});
+
+describe('echo archive familiar', () => {
+  it('starts with Spirit Jar stacks, grows when fed and bites the weakest enemy at end of turn', () => {
+    let run = heroCombat('caller', ['bookworm', 'inkling']);
+    expect(run.combat.player.familiar).toBe(2);
+    run.combat.enemies[1].hp = 20;
+    run = play(run, 'summonSpirit');
+    expect(run.combat.player.familiar).toBe(5);
+    run = act(run, { type: 'END_TURN' });
+    expect(run.combat.enemies[1].hp).toBe(20 - 5);
+    expect(run.combat.enemies[0].hp).toBe(60);
+    expect(run.combat.player.familiar).toBe(4);
+  });
+
+  it('resolves the familiar cards', () => {
+    let run = heroCombat('caller', ['bookworm']);
+    run.combat.player.familiar = 8;
+    run = play(run, 'command');
+    expect(run.combat.enemies[0].hp).toBe(60 - 8);
+    run = play(run, 'devourInk');
+    expect(run.combat.player.familiar).toBe(4);
+    expect(run.combat.enemies[0].hp).toBe(60 - 8 - 4 * 2);
+    run = play(run, 'inkLance');
+    expect(run.combat.enemies[0].hp).toBe(60 - 8 - 8 - (9 + 4));
+    run = play(run, 'unboundSpirit');
+    expect(run.combat.player.familiar).toBe(8);
+    run = play(run, 'shadowGuard');
+    expect(run.combat.player.ward).toBe(3 + 8);
+    run = play(run, 'kindredFlame');
+    expect(run.combat.enemies[0].st.burn).toBe(4);
+    run = play(run, 'lastLight');
+    expect(run.combat.player.familiar).toBe(0);
+  });
+
+  it('powers up the familiar with Bond, Ember Spirit, Legion, Twin Spirit and Ink Sovereign', () => {
+    let run = heroCombat('caller', ['bookworm', 'inkling']);
+    run.combat.enemies.forEach(enemy => { enemy.hp = 200; enemy.maxHp = 200; });
+    run.combat.player.familiar = 5;
+    ['bond', 'emberSpirit', 'twinSpirit', 'inkSovereign', 'legion'].forEach(id => { run.combat.energy = 10; run = play(run, id); });
+    run.combat.energy = 10;
+    run = play(run, 'spiritClaw');
+    expect(run.combat.player.familiar).toBe(5 + 1 + 1);
+    run.combat.player.ward = 0;
+    run = act(run, { type: 'END_TURN' });
+    run.combat.enemies.forEach(enemy => expect(enemy.hp).toBeLessThanOrEqual(200 - 7 * 2));
+    run.combat.enemies.forEach(enemy => expect(enemy.st.burn).toBeGreaterThanOrEqual(2));
+    finishEnemyPhase(run);
+    expect(run.combat.player.familiar).toBe(7 - 1 + 2);
+  });
+
+  it('unleashes X times with Ink Storm and scales Swarm hits', () => {
+    let run = heroCombat('caller', ['bookworm']);
+    run.combat.player.familiar = 3;
+    run.combat.energy = 3;
+    run = play(run, 'inkStorm');
+    expect(run.combat.enemies[0].hp).toBe(60 - 9);
+    expect(run.combat.energy).toBe(0);
+    run.combat.energy = 5;
+    run.combat.player.familiar = 6;
+    const before = run.combat.enemies[0].hp;
+    run = play(run, 'swarm');
+    expect(before - run.combat.enemies[0].hp).toBe(3 * 3);
+  });
+});
+
+describe('echo archive new foes', () => {
+  it('lets enemies summon allies up to four and heal themselves', () => {
+    let run = heroCombat('scribe', ['inkweaver']);
+    run.combat.enemies[0].move = 'brood';
+    run = act(run, { type: 'END_TURN' });
+    finishEnemyPhase(run);
+    expect(run.combat.enemies.map(enemy => enemy.id)).toEqual(['inkweaver', 'inkling']);
+    expect(new Set(run.combat.enemies.map(enemy => enemy.uid)).size).toBe(2);
+    expect(run.combat.enemies[1].move).toBeTruthy();
+    for (let i = 0; i < 5; i++) {
+      run.combat.enemies.filter(enemy => enemy.id === 'inkweaver').forEach(enemy => { enemy.move = 'brood'; });
+      run.combat.enemies.filter(enemy => enemy.id === 'inkling').forEach(enemy => { enemy.move = 'smear'; });
+      run.hero.hp = 70;
+      run = act(run, { type: 'END_TURN' });
+      finishEnemyPhase(run);
+    }
+    expect(living(run.combat).length).toBe(4);
+    let slick = heroCombat('scribe', ['oilSlick']);
+    slick.combat.enemies[0].hp = 40;
+    slick.combat.enemies[0].move = 'ooze';
+    slick = act(slick, { type: 'END_TURN' });
+    finishEnemyPhase(slick);
+    expect(slick.combat.enemies[0].hp).toBe(46);
+  });
+
+  it('gives every new enemy working moves and art', () => {
+    ['candleImp', 'ribbonSerpent', 'inkweaver', 'springJack', 'oilSlick', 'duelist', 'muteBell', 'forgottenScribe', 'choir', 'gatekeeper', 'lastSilence'].forEach(id => {
+      const def = ENEMIES[id];
+      const enemy = { hp: def.hp[0], maxHp: def.hp[0], turns: 0, history: [], uses: {} };
+      for (let turn = 0; turn < 12; turn++) {
+        enemy.turns = turn;
+        const move = def.next(enemy, (turn * 0.37) % 1);
+        expect(def.moves[move], `${id} turn ${turn}`).toBeTruthy();
+      }
+    });
+    const boss = ENEMIES.lastSilence;
+    expect(boss.next({ hp: 380, maxHp: 380, turns: 4, history: [], uses: {} })).toBe('oblivion');
+    expect(boss.next({ hp: 100, maxHp: 380, turns: 0, history: [], uses: {} })).toBe('lastWord');
+  });
+});
+
+describe('echo archive keys and the last page', () => {
+  it('marks one echoing elite per map in the first three acts', () => {
+    for (let seed = 1; seed < 20; seed++) {
+      const run = createRun({ seed });
+      expect(Object.values(run.map.nodes).filter(node => node.echo)).toHaveLength(1);
+      expect(Object.values(run.map.nodes).find(node => node.echo).type).toBe('elite');
+    }
+  });
+
+  it('trades rest, relic or echo elite for the three keys', () => {
+    let run = toMap(41);
+    run.screen = 'rest'; run.rest = { done: false };
+    run = act(run, { type: 'REST_KEY' });
+    expect(run.keys.flame).toBe(true);
+    expect(run.rest).toMatchObject({ done: true, key: true });
+
+    run.screen = 'treasure'; run.treasure = { opened: false }; run.rest = null;
+    run = act(run, { type: 'OPEN_CHEST' });
+    const keyIndex = run.reward.items.findIndex(item => item.kind === 'key');
+    const relicIndex = run.reward.items.findIndex(item => item.kind === 'relic');
+    expect(run.reward.items[keyIndex].key).toBe('page');
+    const relics = run.hero.relics.length;
+    run = act(run, { type: 'TAKE_REWARD', index: keyIndex });
+    expect(run.keys.page).toBe(true);
+    expect(run.reward.items[relicIndex]).toMatchObject({ taken: true, skipped: true });
+    expect(run.hero.relics).toHaveLength(relics);
+
+    let fight = toMap(42);
+    const echoNode = Object.values(fight.map.nodes).find(node => node.echo);
+    fight.screen = 'map';
+    fight.pos = null;
+    fight.map.nodes[echoNode.id].row = 0;
+    fight = act(fight, { type: 'MAP_SELECT', id: echoNode.id });
+    expect(fight.combat.echoElite).toBe(true);
+    expect(fight.combat.enemies[0].st.might).toBeGreaterThanOrEqual(1);
+    fight.combat.enemies.forEach(enemy => { enemy.hp = 1; });
+    fight.combat.energy = 10;
+    fight = act(fight, { type: 'PLAY_CARD', uid: giveCard(fight, 'cleave'), target: 'e0' });
+    expect(fight.combat.reward.items[0]).toMatchObject({ kind: 'key', key: 'echo' });
+  });
+
+  it('opens Act IV only with all three keys and ends it with the true ending', () => {
+    let plain = toMap(43);
+    plain.act = 3; plain.screen = 'bossRelic'; plain.bossRelics = [];
+    plain = act(plain, { type: 'BOSS_RELIC' });
+    expect(plain.screen).toBe('victory');
+    expect(plain.trueEnding).toBe(false);
+
+    let run = toMap(43);
+    run.act = 3; run.screen = 'bossRelic'; run.bossRelics = [];
+    run.keys = { flame: true, page: true, echo: true };
+    expect(hasAllKeys(run)).toBe(true);
+    run = act(run, { type: 'BOSS_RELIC' });
+    expect(run.act).toBe(4);
+    expect(run.screen).toBe('map');
+    expect(Object.values(run.map.nodes).map(node => node.type).sort()).toEqual(['boss', 'elite', 'rest', 'shop']);
+    run.hero.hp = run.hero.maxHp = 5000;
+    run.hero.deck.forEach(card => { card.id = 'slash'; card.up = true; });
+    let steps = 0;
+    while (!['victory', 'defeat'].includes(run.screen) && steps < 6000) { run = botStep(run, steps); steps++; }
+    expect(run.screen).toBe('victory');
+    expect(run.trueEnding).toBe(true);
+    expect(run.stats.bosses).toBeGreaterThanOrEqual(1);
+    expect(shardsForRun(run).parts.some(([label]) => label === '真結局')).toBe(true);
+  });
+});
+
+describe('echo archive new events and relics', () => {
+  it('copies, transforms and gambles through the new events', () => {
+    let run = createRun({ seed: 51 });
+    run = act(run, { type: 'EVENT_CHOOSE', index: 3 });
+    run = act(run, { type: 'EVENT_CONTINUE' });
+    run.event = { id: 'scriptorium', result: null, gains: [] }; run.screen = 'event';
+    run = act(run, { type: 'EVENT_CHOOSE', index: 0 });
+    expect(run.pending.kind).toBe('duplicate');
+    run = act(run, { type: 'PICK_CARD', uid: run.hero.deck.find(card => card.id === 'thunder').uid });
+    expect(run.hero.deck.filter(card => card.id === 'thunder')).toHaveLength(2);
+
+    run.event = { id: 'emberAltar', result: null, gains: [] };
+    run = act(run, { type: 'EVENT_CHOOSE', index: 0 });
+    const size = run.hero.deck.length;
+    run = act(run, { type: 'PICK_CARD', uid: run.hero.deck[0].uid });
+    expect(run.hero.deck).toHaveLength(size);
+    expect(run.event.gains.map(gain => gain.type)).toEqual(['removed', 'card']);
+
+    run.event = { id: 'tinker', result: null, gains: [] };
+    expect(eventChoices(run)[0].req.potion).toBe(true);
+    const blocked = act(run, { type: 'EVENT_CHOOSE', index: 0 });
+    expect(blocked.event.result).toBeNull();
+    run.hero.potions = ['fireTonic', null, null];
+    const gold = run.hero.gold;
+    run = act(run, { type: 'EVENT_CHOOSE', index: 0 });
+    expect(run.hero.potions[0]).toBeNull();
+    expect(run.hero.gold).toBe(gold + 75);
+
+    let wins = 0;
+    for (let seed = 0; seed < 30; seed++) {
+      let well = createRun({ seed: 600 + seed });
+      well.event = { id: 'wishingWell', result: null, gains: [] };
+      well = act(well, { type: 'EVENT_CHOOSE', index: 0 });
+      if (well.hero.relics.length > 1) wins++;
+    }
+    expect(wins).toBeGreaterThan(5);
+    expect(wins).toBeLessThan(25);
+    Object.values(EVENTS).forEach(def => (def.choices || []).forEach(choice => expect(choice.result || choice.effects.some(effect => ['cardChoice', 'fight'].includes(effect.op))).toBeTruthy()));
+  });
+
+  it('applies the new relics in combat and in shops', () => {
+    let run = heroCombat('scribe', ['bookworm']);
+    run.hero.relics.push('bulwark', 'emberHeart', 'metronome', 'bloodInk');
+    run.combat.enemies[0].st.burn = 10;
+    run.combat.enemies[0].move = 'gnaw';
+    for (let i = 0; i < 6; i++) run = play(run, 'slash');
+    expect(run.combat.energy).toBe(10 - 6 + 1);
+    run.combat.player.ward = 20;
+    const hp = run.combat.enemies[0].hp;
+    run = act(run, { type: 'END_TURN' });
+    finishEnemyPhase(run);
+    expect(hp - run.combat.enemies[0].hp).toBe(15);
+    expect(run.combat.player.ward).toBe(Math.floor((20 - 9) / 2));
+    run.combat.enemies[0].st = {};
+    run.combat.enemies[0].hp = 60;
+    run.combat.enemies[0].move = 'gnaw';
+    run = act(run, { type: 'END_TURN' });
+    finishEnemyPhase(run);
+    expect(run.combat.player.st.might).toBe(1);
+
+    const shopAt = relics => {
+      const r = toMap(52);
+      r.hero.relics = relics;
+      Object.values(r.map.nodes).forEach(node => { if (node.row === 0) node.type = 'shop'; });
+      return act(r, { type: 'MAP_SELECT', id: availableNodes(r)[0] }).shop;
+    };
+    const full = shopAt(['inkwell']), cheap = shopAt(['inkwell', 'goldLeaf']);
+    full.cards.forEach((item, index) => { if (!item.sale) expect(cheap.cards[index].price).toBe(Math.round(item.price * 0.8)); });
+    full.potions.forEach((item, index) => expect(cheap.potions[index].price).toBe(Math.round(item.price * 0.8)));
+  });
+});
+
+describe('echo archive Inkcaller full runs', () => {
+  it.each([[61, 'story'], [62, 'standard'], [63, 'heroic']])('seed %i on %s finishes without getting stuck', (seed, difficulty) => {
+    let run = createRun({ seed: seed * 7919, difficulty, hero: 'caller', unlocked: ARCHIVE_CARDS });
+    let steps = 0;
+    while (!['victory', 'defeat'].includes(run.screen) && steps < 8000) {
+      const next = botStep(run, seed + steps);
+      expect(next).not.toBe(run);
+      run = next;
+      steps++;
+    }
+    expect(['victory', 'defeat']).toContain(run.screen);
   });
 });

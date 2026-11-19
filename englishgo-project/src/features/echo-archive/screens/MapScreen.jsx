@@ -12,7 +12,8 @@ export default function MapScreen({ run, dispatch }) {
   const { nodes } = run.map;
   const list = Object.values(nodes);
   const available = new Set(availableNodes(run));
-  const height = (MAP_ROWS + 1) * ROW_H + 70;
+  const rows = run.map.rows || MAP_ROWS;
+  const height = (rows + 1) * ROW_H + 70;
   const point = node => (node.id === 'boss'
     ? { x: 50, y: 64 }
     : { x: ((node.col + 0.5 + node.dx) / MAP_COLS) * 100, y: height - 46 - node.row * ROW_H - node.dy * 34 });
@@ -51,15 +52,17 @@ export default function MapScreen({ run, dispatch }) {
           const p = point(node);
           const isBoss = node.id === 'boss';
           const can = available.has(node.id);
-          const label = `${ROOM_TYPES[node.type].zh}${isBoss ? `：${boss.zh}` : ''}${can ? '，可以前往' : visited.has(node.id) ? '，已走過' : ''}`;
+          const echo = node.echo && !run.keys?.echo && !visited.has(node.id);
+          const label = `${ROOM_TYPES[node.type].zh}${echo ? '（發出回聲：擊倒可得回聲之鑰）' : ''}${isBoss ? `：${boss.zh}` : ''}${can ? '，可以前往' : visited.has(node.id) ? '，已走過' : ''}`;
           return <button type="button" key={node.id}
-            className={`ea-node is-${node.type} ${can ? 'is-available' : ''} ${visited.has(node.id) ? 'is-visited' : ''} ${run.pos === node.id ? 'is-current' : ''}`}
+            className={`ea-node is-${node.type} ${echo ? 'is-echo' : ''} ${can ? 'is-available' : ''} ${visited.has(node.id) ? 'is-visited' : ''} ${run.pos === node.id ? 'is-current' : ''}`}
             style={{ left: `${p.x}%`, top: p.y }}
             disabled={!can}
             aria-label={label}
-            data-tip={can ? `${ROOM_TYPES[node.type].en} · ${ROOM_TYPES[node.type].zh}` : undefined}
+            data-tip={can ? `${ROOM_TYPES[node.type].en} · ${ROOM_TYPES[node.type].zh}${echo ? ' · 回聲菁英：更強，但守著回聲之鑰' : ''}` : undefined}
             onClick={() => enter(node.id)}>
             {isBoss ? <span className="ea-boss-portrait"><EnemyArt art={boss.art}/></span> : <Glyph name={node.type} size={26}/>}
+            {echo && <i className="ea-node-key" aria-hidden="true"><Glyph name="key" size={13}/></i>}
             {isBoss && <span className="ea-boss-name"><b lang="en">{boss.en}</b><small>{boss.zh}</small></span>}
           </button>;
         })}

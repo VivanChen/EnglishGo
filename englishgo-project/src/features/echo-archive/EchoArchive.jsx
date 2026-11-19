@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
-import { ACTS } from './data/enemies.js';
+import { ACTS, KEYS } from './data/enemies.js';
+import { heroUnlocked } from './data/heroes.js';
 import { POTIONS } from './data/relics.js';
 import { SAVE_VERSION, living, runReducer } from './engine/engine.js';
 import { makeSeed } from './engine/rng.js';
@@ -23,7 +24,7 @@ const RUN_KEY = 'eg_echo_archive_run';
 const META_KEY = 'eg_echo_archive_meta';
 // silenceTop: highest Silence level won (-1 = none yet). daily: the last
 // daily challenge played ({ date, streak, result }).
-const DEFAULT_META = { runs: 0, wins: 0, bestAct: 0, bestFloor: 0, lastDifficulty: 'story', silenceTop: -1, lastSilence: 0, daily: null, history: [], settings: { sfx: true, voice: true, chant: true } };
+const DEFAULT_META = { runs: 0, wins: 0, bestAct: 0, bestFloor: 0, lastDifficulty: 'story', lastHero: 'scribe', silenceTop: -1, lastSilence: 0, trueEndings: 0, daily: null, history: [], settings: { sfx: true, voice: true, chant: true } };
 
 function readJSON(key) { try { return JSON.parse(localStorage.getItem(key)); } catch { return null; } }
 function writeJSON(key, value) {
@@ -49,6 +50,18 @@ function ModeChip({ run }) {
   return null;
 }
 
+// Three key slots: a quiet hint that something waits beyond the third act.
+function KeyRing({ run }) {
+  if (!run.keys) return null;
+  const owned = Object.keys(KEYS).filter(id => run.keys[id]);
+  const tip = owned.length === 3
+    ? '三把鑰匙都到手了！打倒第三章首領後，通往最後一頁的門會打開。'
+    : `鑰匙 ${owned.length} / 3。${Object.entries(KEYS).map(([id, key]) => `${run.keys[id] ? '✓' : '・'}${key.zh}：${key.how}`).join('　')}`;
+  return <div className={`ea-keys ${owned.length === 3 ? 'is-complete' : ''}`} data-tip={tip} aria-label={tip}>
+    {Object.entries(KEYS).map(([id, key]) => <span key={id} className={run.keys[id] ? 'is-owned' : ''} style={{ '--key': key.color }}><Glyph name="key" size={14}/></span>)}
+  </div>;
+}
+
 function TopBar({ run, potionAim, onPotion, onDeck, onMenu }) {
   const { hero } = run;
   const low = hero.hp <= hero.maxHp * 0.3;
@@ -59,6 +72,7 @@ function TopBar({ run, potionAim, onPotion, onDeck, onMenu }) {
       <PotionArt color={id ? POTIONS[id].color : undefined} empty={!id} size={20}/>
     </button>)}</div>
     <div className="ea-floor"><b lang="en">Act {ACTS[run.act].roman}<ModeChip run={run}/></b><small>第 {run.floor} 層</small></div>
+    <KeyRing run={run}/>
     <div className="ea-relics" aria-label="遺物">{hero.relics.map(id => <RelicIcon key={id} id={id} size={22}/>)}</div>
     <div className="ea-topbar-actions">
       <button type="button" className="ea-icon-btn" onClick={onDeck} aria-label={`查看牌組，共 ${hero.deck.length} 張`}><Glyph name="deck" size={20}/><b>{hero.deck.length}</b></button>
@@ -164,6 +178,7 @@ export default function EchoArchive({ lv = 'elementary', onBack, onXp, trackWeak
       bestAct: Math.max(previous.bestAct, run.act),
       bestFloor: Math.max(previous.bestFloor, run.floor),
       silenceTop: newLevel ? Math.max(previous.silenceTop ?? -1, run.silence || 0) : previous.silenceTop,
+      trueEndings: (previous.trueEndings || 0) + (run.trueEnding ? 1 : 0),
       daily: daily && previous.daily?.date === run.daily.date ? { ...previous.daily, result: { outcome: run.screen, act: run.act, floor: run.floor, shards: shards.total } } : previous.daily,
       history: addRecord(previous.history, runRecord(run, run.screen, shards.total)),
       collection: { ...previous.collection, shards: previous.collection.shards + shards.total },
@@ -212,10 +227,11 @@ export default function EchoArchive({ lv = 'elementary', onBack, onXp, trackWeak
     setView('run');
     sfx.chantOk();
   };
-  const startRun = (difficulty, silence = 0) => {
+  const startRun = (difficulty, silence = 0, hero = 'scribe') => {
     const level = difficulty === 'heroic' ? Math.max(0, Math.min(silence, (meta.silenceTop ?? -1) + 1, MAX_SILENCE)) : 0;
-    setMeta(previous => ({ ...previous, runs: previous.runs + 1, lastDifficulty: difficulty, lastSilence: difficulty === 'heroic' ? level : previous.lastSilence }));
-    beginRun({ seed: makeSeed(), difficulty, silence: level });
+    const heroId = heroUnlocked(hero, meta) ? hero : 'scribe';
+    setMeta(previous => ({ ...previous, runs: previous.runs + 1, lastDifficulty: difficulty, lastHero: heroId, lastSilence: difficulty === 'heroic' ? level : previous.lastSilence }));
+    beginRun({ seed: makeSeed(), difficulty, silence: level, hero: heroId });
   };
   const startDaily = () => {
     const today = dateKey();
@@ -225,7 +241,8 @@ export default function EchoArchive({ lv = 'elementary', onBack, onXp, trackWeak
       runs: previous.runs + 1,
       daily: { date: today, streak: previous.daily?.date === previousDateKey(today) ? (previous.daily.streak || 1) + 1 : 1, result: null },
     }));
-    beginRun({ daily: dailyChallenge(today) });
+    const challenge = dailyChallenge(today);
+    beginRun({ daily: heroUnlocked(challenge.hero, meta) ? challenge : { ...challenge, hero: 'scribe' } });
   };
   const pullCards = count => {
     const result = pullArchive(meta.collection, count);

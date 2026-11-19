@@ -15,6 +15,7 @@ export function runRecord(run, outcome, shards = 0, now = Date.now()) {
   const s = run.stats;
   return {
     key: runKey(run), at: now, outcome,
+    hero: run.hero.id || 'scribe', trueEnding: Boolean(run.trueEnding),
     difficulty: run.difficulty, silence: run.silence || 0,
     daily: run.daily ? { date: run.daily.date, blessing: run.daily.blessing, trial: run.daily.trial } : null,
     act: run.act, floor: run.floor, hp: Math.max(0, run.hero.hp), maxHp: run.hero.maxHp,
