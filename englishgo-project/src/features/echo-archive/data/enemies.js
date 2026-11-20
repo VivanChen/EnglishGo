@@ -85,6 +85,7 @@ export const ENEMIES = {
       lastChapter: { en: 'Last Chapter', zh: '最終章', dmg: 22 },
     },
     next: enemy => (enemy.hp < enemy.maxHp / 2 && !enemy.uses?.lastChapter ? 'lastChapter' : ['torrent', 'erase', 'blank'][enemy.turns % 3]),
+    phase2: { en: 'The Pages Turn Black', zh: '黑頁翻湧', text: '空白之書撕開最後一章：清除 Weak 與 Exposed，獲得 2 層 Might 和 12 Ward。', might: 2, ward: 12, cleanse: true },
   },
   // Second Act I boss: fight the arms or go for the head (the arms fall with it).
   tentacle: {
@@ -106,6 +107,7 @@ export const ENEMIES = {
       if (enemy.turns > 0 && arms < 2 && enemy.history.at(-1) !== 'regrow') return 'regrow';
       return ['inkJet', 'murk', 'crush'][enemy.turns % 3];
     },
+    phase2: { en: 'Rising Tide', zh: '深淵漲潮', text: '墨池巨怪從深處伸出兩條新觸手，並獲得 1 層 Might。', might: 1, summon: [{ id: 'tentacle', n: 2 }] },
   },
 
   // ── Act II · The Rusted Clockwork ──
@@ -180,6 +182,7 @@ export const ENEMIES = {
       midnight: { en: 'Midnight', zh: '午夜鐘響', dmg: 34 },
     },
     next: enemy => ['tick', 'tock', 'gears', 'midnight'][enemy.turns % 4],
+    phase2: { en: 'Overclock', zh: '超頻運轉', text: '時之守衛的齒輪開始超頻：獲得 3 層 Might 和 15 Ward。', might: 3, ward: 15 },
   },
   // Second Act II boss: two clockwork twins; the survivor rages when one falls.
   tick: {
@@ -278,6 +281,7 @@ export const ENEMIES = {
     next: enemy => (enemy.hp < enemy.maxHp / 2
       ? ['crown', 'voidBeam', 'unwrite', 'devour'][enemy.turns % 4]
       : ['silence', 'voidBeam', 'devour', 'crown'][enemy.turns % 4]),
+    phase2: { en: 'Crown of Silence', zh: '寂靜之冠', text: '無言之主戴上寂靜之冠：清除 Weak 與 Exposed，獲得 2 層 Might 和 25 Ward。', might: 2, ward: 25, cleanse: true },
   },
   // Second Act III boss: steals your Ward before it strikes, so read its intent.
   whisperThief: {
@@ -292,6 +296,7 @@ export const ENEMIES = {
     next: enemy => (enemy.hp < enemy.maxHp / 2
       ? ['pilfer', 'flurry', 'pilfer', 'hoard'][enemy.turns % 4]
       : ['muffle', 'flurry', 'pilfer', 'hoard'][enemy.turns % 4]),
+    phase2: { en: 'Shadow Step', zh: '影遁', text: '竊語者躲進陰影：獲得 1 層 Might 和 20 Ward，並把 1 張 Doubt 塞進你的棄牌堆。', might: 1, ward: 20, cards: [{ id: 'doubt', n: 1 }] },
   },
 
   // ── Act IV · The Last Page (hidden; needs all three keys) ──
@@ -321,6 +326,7 @@ export const ENEMIES = {
       const late = enemy.hp < enemy.maxHp / 2;
       return (late ? ['lastWord', 'call', 'nothing', 'erase'] : ['mute', 'unmake', 'call', 'erase'])[enemy.turns % 5];
     },
+    phase2: { en: 'The Final Page', zh: '最後一頁', text: '終焉寂靜翻開最後一頁：召來兩道殘響，獲得 2 層 Might 和 25 Ward。', might: 2, ward: 25, summon: [{ id: 'echoShade', n: 2 }] },
   },
 };
 
@@ -364,6 +370,19 @@ export const ACTS = {
 };
 
 // Keys that open the hidden fourth act.
+// Elite affixes: every elite fight gives its toughest foe one of these (two
+// with the Champions trial). `values` grow with the act.
+export const ELITE_AFFIXES = {
+  armored: { en: 'Armored', zh: '鋼甲', glyph: 'shield', values: [7, 10, 13, 16], text: '開戰和每次行動前都獲得 {v} Ward。' },
+  thorny: { en: 'Thorny', zh: '反刺', glyph: 'thorn', values: [2, 3, 4, 5], text: '帶著 {v} 層 Spikes：每次被攻擊都會反彈 {v} 傷害。' },
+  swift: { en: 'Swift', zh: '迅捷', glyph: 'dash', text: '第一回合會連續行動兩次。' },
+  vampiric: { en: 'Vampiric', zh: '吸血', glyph: 'leech', text: '攻擊造成的生命傷害，一半會回到牠身上。' },
+  enraged: { en: 'Enraged', zh: '狂怒', glyph: 'wrath', values: [3, 4, 5, 6], text: '生命第一次掉到一半以下時，獲得 {v} 層 Might。' },
+  splitting: { en: 'Splitting', zh: '分裂', glyph: 'burst', minions: { 1: 'inkling', 2: 'rustMite', 3: 'echoShade', 4: 'echoShade' }, text: '倒下時分裂出 2 隻小怪。' },
+};
+export const affixValue = (id, act) => ELITE_AFFIXES[id]?.values?.[Math.max(1, Math.min(4, act)) - 1] ?? 0;
+export const affixText = (id, act) => ELITE_AFFIXES[id].text.replaceAll('{v}', String(affixValue(id, act)));
+
 export const KEYS = {
   flame: { en: 'Flame Key', zh: '燭火之鑰', color: '#ffb35c', how: '在燈下休憩時取下（放棄休息或銘刻）' },
   page: { en: 'Page Key', zh: '書頁之鑰', color: '#9cc7ff', how: '打開寶箱時拿走（放棄寶箱裡的遺物）' },

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ARCHETYPES, ARCHIVE_CARDS, CARDS, RARITIES, REWARD_POOL, STARTER_DECK, archOf } from '../data/cards.js';
 import { HEROES } from '../data/heroes.js';
-import { MYTHIC_PITY, PULL_COST, RARE_PITY, TEN_PULL_COST, WELCOME_SHARDS, odds } from '../archive.js';
+import { FOIL_CHANCE, MYTHIC_PITY, PULL_COST, RARE_PITY, TEN_PULL_COST, WELCOME_SHARDS, odds } from '../archive.js';
 import CardFace, { CardBack, KeywordList } from '../components/CardFace.jsx';
 import Glyph from '../components/Glyph.jsx';
 import { Backdrop } from '../components/Creatures.jsx';
@@ -38,7 +38,7 @@ function TomeMachine({ charging }) {
   </svg>;
 }
 
-export function GachaScreen({ collection, onPull, onClaim, onBack, onCodex }) {
+export function GachaScreen({ collection, onPull, onClaim, onBack, onCodex, onDismissNotice }) {
   const [phase, setPhase] = useState('idle');
   const [results, setResults] = useState([]);
   const [revealed, setRevealed] = useState(0);
@@ -84,6 +84,11 @@ export function GachaScreen({ collection, onPull, onClaim, onBack, onCodex }) {
       <ShardBadge amount={collection.shards}/>
     </header>
 
+    {collection.notice?.kind === 'foilRefund' && <div className="ea-welcome is-notice" role="status">
+      <Glyph name="gem" size={30}/>
+      <span><b>閃卡規則更新</b><small>閃卡變得更稀有，但在遠征中拿到時就是升級版（+）。你原本的 {collection.notice.count} 張閃卡已換成 {collection.notice.shards} 墨晶。</small></span>
+      <button type="button" className="ea-btn" onClick={onDismissNotice}>知道了</button>
+    </div>}
     {!collection.welcomed && <div className="ea-welcome" role="status">
       <Glyph name="gem" size={30}/>
       <span><b>初次見面禮</b><small>送你 {WELCOME_SHARDS} 墨晶，足夠抽 {WELCOME_SHARDS / PULL_COST} 次！</small></span>
@@ -96,8 +101,8 @@ export function GachaScreen({ collection, onPull, onClaim, onBack, onCodex }) {
       {phase === 'reveal' && results.length > 0 && <div className={`ea-gacha-results count-${results.length}`}>
         {results.map((item, index) => <div key={index} className={`ea-gacha-slot glow-${item.rarity} ${index < revealed ? 'is-revealed' : ''}`} style={{ '--i': index }}>
           {index < revealed ? <>
-            <CardFace inst={{ id: item.id, up: false }} foil={item.outcome === 'foil' || undefined}/>
-            <span className={`ea-gacha-tag is-${item.outcome}`}>{item.outcome === 'new' ? 'NEW' : item.outcome === 'foil' ? '閃卡！' : `+${item.refund} 墨晶`}</span>
+            <CardFace inst={{ id: item.id, up: item.outcome === 'foil' }} foil={item.outcome === 'foil' || undefined}/>
+            <span className={`ea-gacha-tag is-${item.outcome}`}>{item.outcome === 'new' ? 'NEW' : item.outcome === 'foil' ? '閃卡！天生升級' : `+${item.refund} 墨晶`}</span>
           </> : <CardBack rarity={item.rarity}/>}
         </div>)}
       </div>}
@@ -125,8 +130,9 @@ export function GachaScreen({ collection, onPull, onClaim, onBack, onCodex }) {
       <ul className="ea-odds-notes">
         <li>每連續 {RARE_PITY} 抽，至少會出現 1 張「傳說」或「神話」，所以十連抽必定保底。</li>
         <li>連續 {MYTHIC_PITY} 抽沒出現「神話」，下一抽必定是「神話」。</li>
-        <li>第一次抽到重複的卡會變成「閃卡」外觀；之後再重複，會轉回部分墨晶。</li>
-        <li>扭蛋卡只會加入遠征的卡池，不會直接讓角色變強；墨晶不能用金幣或現金購買。</li>
+        <li>抽到已經擁有的卡時，有 {FOIL_CHANCE}% 機率變成「閃卡」，其餘會轉回部分墨晶（普通 4、稀有 7、傳說 12、神話 25）。</li>
+        <li>閃卡在遠征中拿到時就已經升級（+）：費用更低或數值更強，休息點的升級可以留給別張牌。</li>
+        <li>扭蛋卡會加入遠征的卡池；墨晶不能用金幣或現金購買。</li>
       </ul>
     </Modal>}
   </section>;
@@ -162,7 +168,7 @@ export function CodexScreen({ collection, onBack, onGacha }) {
           <div className="ea-upgrade-preview"><CardFace inst={{ id: focus, up: false }} foil={foils.has(focus)}/><span aria-hidden="true">→</span><CardFace inst={{ id: focus, up: true }} foil={foils.has(focus)}/></div>
           <KeywordList inst={{ id: focus, up: false }}/>
         </div>
-        <p className="ea-modal-note">{CARDS[focus].pack ? `扭蛋卡${foils.has(focus) ? ' · 已擁有閃卡' : ''}。已解鎖，會出現在遠征的獎勵與商店中。` : '基本收藏：一開始就會出現在遠征中。'}</p>
+        <p className="ea-modal-note">{CARDS[focus].pack ? (foils.has(focus) ? '閃卡：在遠征中拿到這張牌時，就已經是右邊的升級版。' : `扭蛋卡。已解鎖，會出現在遠征的獎勵與商店中。重複抽到時有 ${FOIL_CHANCE}% 機率變成閃卡。`) : '基本收藏：一開始就會出現在遠征中。'}</p>
       </> : <>
         <div className="ea-codex-locked"><CardBack rarity={CARDS[focus].rarity} label="?"/></div>
         <p className="ea-modal-note">這是一張「{RARITIES[CARDS[focus].rarity].zh}」的{ARCHETYPES[archOf(focus)].zh}卡。到書頁扭蛋召喚它，就能在遠征中遇見它。</p>

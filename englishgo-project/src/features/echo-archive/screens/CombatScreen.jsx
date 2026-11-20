@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { CARDS, KEYWORDS, POWER_TEXT } from '../data/cards.js';
-import { ENEMIES } from '../data/enemies.js';
+import { ELITE_AFFIXES, ENEMIES, affixText } from '../data/enemies.js';
 import { POTIONS } from '../data/relics.js';
 import { HEROES, heroOf } from '../data/heroes.js';
 import { canPlay, cardContext, cardCost, hasRelic, intentOf, living } from '../engine/engine.js';
@@ -39,6 +39,7 @@ export function incomingDamage(run) {
   const block = c.player.ward + stone + (hasRelic(run, 'owlFeather') && c.player.ward + stone === 0 ? 6 : 0);
   // Walk the enemies in order: a Ward thief empties the Ward before its hits.
   let attack = 0, left = block, loss = 0, stolen = false;
+  if (fogged(run)) return null;
   living(c).forEach(enemy => {
     const intent = intentOf(run, enemy);
     if (!intent) return;
@@ -105,7 +106,11 @@ function describeIntent(intent) {
   return `${move.en}（${move.zh}）：${parts.join('，') || '正在醞釀什麼…'}`;
 }
 
+// Ink Fog trial: no intents on the first turn of a fight.
+const fogged = run => Boolean(run.mods?.fog && run.combat?.round === 1 && run.combat.phase === 'player');
+
 function Intent({ run, enemy }) {
+  if (fogged(run)) return <div className="ea-intent-wrap"><div className="ea-intent is-fog" tabIndex={0} data-tip="墨霧：第一回合看不到敵人的意圖。" aria-label="墨霧遮住了意圖"><Glyph name="smoke" size={22}/><b>?</b></div></div>;
   const intent = intentOf(run, enemy);
   if (!intent) return <div className="ea-intent is-empty"/>;
   const main = intent.kinds[0] || 'unknown';
@@ -123,7 +128,7 @@ function Intent({ run, enemy }) {
 function Enemy({ run, enemy, targetable, over, mark, floaters, impacts, onClick }) {
   const def = ENEMIES[enemy.id];
   return <div
-    className={`ea-enemy ${def.boss ? 'is-boss' : def.elite ? 'is-elite' : ''} ${enemy.dead ? 'is-dead' : ''} ${targetable ? 'is-targetable' : ''} ${over ? 'is-over' : ''} ${mark ? `is-${mark}` : ''}`}
+    className={`ea-enemy ${def.boss ? 'is-boss' : def.elite ? 'is-elite' : ''} ${enemy.phased ? 'is-phased' : ''} ${enemy.affixes?.length ? 'has-affixes' : ''} ${enemy.dead ? 'is-dead' : ''} ${targetable ? 'is-targetable' : ''} ${over ? 'is-over' : ''} ${mark ? `is-${mark}` : ''}`}
     data-enemy={enemy.dead ? undefined : enemy.uid}
     role="button" tabIndex={enemy.dead ? -1 : 0}
     aria-label={`${def.en} ${def.zh}，生命 ${enemy.hp}/${enemy.maxHp}${enemy.ward ? `，Ward ${enemy.ward}` : ''}${targetable ? '，點選作為目標' : ''}`}
@@ -134,13 +139,17 @@ function Enemy({ run, enemy, targetable, over, mark, floaters, impacts, onClick 
     <div className="ea-enemy-body"><EnemyArt art={def.art}/><Impacts items={impacts}/><Floaters items={floaters}/></div>
     <div className="ea-unit-info">
       <div className="ea-unit-name"><b lang="en">{def.en}</b><span>{def.zh}</span></div>
+      {(enemy.affixes?.length > 0 || enemy.phased) && !enemy.dead && <div className="ea-affixes">
+        {(enemy.affixes || []).map(id => <span key={id} className={`ea-affix is-${id}`} tabIndex={0} data-tip={`${ELITE_AFFIXES[id].en}（${ELITE_AFFIXES[id].zh}）：${affixText(id, run.act)}`} aria-label={`${ELITE_AFFIXES[id].zh}：${affixText(id, run.act)}`}><Glyph name={ELITE_AFFIXES[id].glyph} size={12}/>{ELITE_AFFIXES[id].zh}</span>)}
+        {enemy.phased && <span className="ea-affix is-phase" tabIndex={0} data-tip={`${def.phase2.en}（${def.phase2.zh}）：${def.phase2.text}`}><Glyph name="wrath" size={12}/>第二階段</span>}
+      </div>}
       <HpBar hp={enemy.hp} max={enemy.maxHp} ward={enemy.ward}/>
       <Statuses st={enemy.st}/>
     </div>
   </div>;
 }
 
-function ChantOverlay({ chant, onDone, speak, voice }) {
+function ChantOverlay({ chant, onDone, speak, voice, strict = false }) {
   const [picked, setPicked] = useState(null);
   const { q } = chant;
   const doneRef = useRef(onDone);
@@ -157,10 +166,10 @@ function ChantOverlay({ chant, onDone, speak, voice }) {
     window.setTimeout(() => doneRef.current(ok), ok ? 700 : 1300);
   }, [picked, q, voice, speak]);
   useEffect(() => {
-    const onKey = event => { if (/^[1-3]$/.test(event.key)) answer(Number(event.key) - 1); if (event.key === 'Escape' && picked === null) doneRef.current(null); };
+    const onKey = event => { if (/^[1-3]$/.test(event.key)) answer(Number(event.key) - 1); if (event.key === 'Escape' && picked === null && !strict) doneRef.current(null); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [answer, picked]);
+  }, [answer, picked, strict]);
   const solved = picked !== null && q.options[picked].ok;
   return <div className="ea-chant" role="dialog" aria-modal="true" aria-labelledby="ea-chant-title">
     <div className={`ea-chant-sigil ${solved ? 'is-solved' : picked !== null ? 'is-missed' : ''}`}>
@@ -174,7 +183,8 @@ function ChantOverlay({ chant, onDone, speak, voice }) {
           className={picked === null ? '' : option.ok ? 'is-right' : picked === index ? 'is-wrong' : 'is-faded'}
           onClick={() => answer(index)}><small>{index + 1}</small>{option.label}</button>
       ))}</div>
-      {picked === null && <button type="button" className="ea-chant-skip" onClick={() => onDone(null)}>略過，直接施放</button>}
+      {picked === null && (strict ? <p className="ea-chant-strict">試煉「嚴格詠唱」：一定要作答，答錯會失去 2 生命。</p>
+        : <button type="button" className="ea-chant-skip" onClick={() => onDone(null)}>略過，直接施放</button>)}
     </div>
   </div>;
 }
@@ -210,8 +220,10 @@ function EnemySheet({ run, enemy, onClose }) {
   return <div className="ea-sheet" role="dialog" aria-label={`${def.en} 資訊`}>
     <button type="button" className="ea-sheet-close" onClick={onClose} aria-label="關閉">×</button>
     <h3><span lang="en">{def.en}</span><small>{def.zh}{def.boss ? ' · Boss' : def.elite ? ' · Elite' : ''}</small></h3>
-    {intent && <p className="ea-sheet-intent"><b>下一步</b>{describeIntent(intent)}</p>}
+    {intent && !fogged(run) && <p className="ea-sheet-intent"><b>下一步</b>{describeIntent(intent)}</p>}
     {def.passive && <p className="ea-sheet-intent"><b>特性</b>{def.passive}</p>}
+    {(enemy.affixes || []).map(id => <p key={id} className="ea-sheet-intent"><b>{ELITE_AFFIXES[id].zh}</b>{affixText(id, run.act)}</p>)}
+    {def.phase2 && <p className="ea-sheet-intent"><b>{enemy.phased ? '第二階段' : '半血時'}</b>{def.phase2.text}</p>}
     <ul>{Object.entries(enemy.st).map(([key, value]) => <li key={key}><b lang="en">{KEYWORDS[key]?.en} {value}</b>{KEYWORDS[key]?.text}</li>)}</ul>
     <p className="ea-sheet-moves"><b>招式</b>{Object.values(def.moves).map(move => <span key={move.en} lang="en">{move.en}<small>{move.zh}</small></span>)}</p>
   </div>;
@@ -296,6 +308,16 @@ export default function CombatScreen({ run, dispatch, settings, pool, speak, pot
           break;
         case 'burn': spawn.push({ to: f.to, text: `-${f.amount}`, kind: 'burn' }); nextMarks[f.to] = 'hit'; burst(f.to, 'burn'); sfx.burn(); break;
         case 'loss': spawn.push({ to: f.to, text: `-${f.amount}`, kind: 'dmg' }); break;
+        case 'strict': if (f.amount > 0) { spawn.push({ to: f.to, text: `-${f.amount}`, kind: 'dmg' }); nextMarks[f.to] = 'hit'; hurt = true; } break;
+        case 'phase': {
+          const phase = ENEMIES[f.enemy]?.phase2;
+          if (phase) {
+            setBanner({ key: `phase-${f.id}`, en: phase.en, zh: `第二階段 · ${phase.zh}` });
+            setNotice({ key: `phase-note-${f.id}`, text: phase.text, ms: 4200 });
+          }
+          nextMarks[f.to] = 'summoned'; burst(f.to, 'summon'); quake = Math.max(quake, 2); sfx.phase();
+          break;
+        }
         case 'ward': if (f.amount > 0) { spawn.push({ to: f.to, text: `+${f.amount}`, kind: 'ward' }); burst(f.to, 'shield'); sfx.block(); } break;
         case 'heal': spawn.push({ to: f.to, text: `+${f.amount}`, kind: 'heal' }); burst(f.to, 'heal'); sfx.heal(); break;
         case 'death': burst(f.to, 'death'); break;
@@ -425,7 +447,7 @@ export default function CombatScreen({ run, dispatch, settings, pool, speak, pot
     }
     setSelected(null);
     setInspect(null);
-    if (card.chant && settings.chant) {
+    if (card.chant && (settings.chant || run.mods?.strictChant)) {
       const q = makeChant(pool, recent.current);
       recent.current = [...recent.current, q.word].slice(-12);
       setChant({ uid, target, card: inst.id, q });
@@ -633,7 +655,7 @@ export default function CombatScreen({ run, dispatch, settings, pool, speak, pot
     </div>
       {ghost?.flight && <div key={ghost.key} className={`ea-ghost is-flying ${ghost.empowered ? 'is-empowered' : ''}`} aria-hidden="true"
         style={{ '--x0': `${ghost.flight.from.x}px`, '--y0': `${ghost.flight.from.y}px`, '--x1': `${ghost.flight.to.x}px`, '--y1': `${ghost.flight.to.y}px` }}><CardFace inst={ghost.inst}/></div>}
-      {chant && <ChantOverlay chant={chant} onDone={finishChant} speak={speak} voice={settings.voice}/>}
+      {chant && <ChantOverlay chant={chant} onDone={finishChant} speak={speak} voice={settings.voice} strict={Boolean(run.mods?.strictChant)}/>}
       {c.choice && c.phase === 'player' && !chant && <ChoicePanel run={run} onChoose={uid => dispatch({ type: 'CHOOSE_CARD', uid })}/>}
       {showEnd && (c.phase === 'won'
         ? <div className="ea-combat-end is-won"><span lang="en">VICTORY</span><h2>戰鬥勝利</h2><p>寂靜退散了，戰利品在等著你。</p><button type="button" className="ea-btn is-gold" autoFocus onClick={() => dispatch({ type: 'FINISH_COMBAT' })}>收集戰利品 →</button></div>

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ARCHETYPES, CARDS, archOf } from '../data/cards.js';
 import { POTIONS, RELICS } from '../data/relics.js';
 import { KEYS } from '../data/enemies.js';
-import { SKIP_CARD_HP, canUpgrade, restHealAmount, hasRelic } from '../engine/engine.js';
+import { SKIP_CARD_HP, canUpgrade, isFoil, restHealAmount, hasRelic } from '../engine/engine.js';
 import CardFace, { KeywordList } from '../components/CardFace.jsx';
 import Glyph from '../components/Glyph.jsx';
 import { PotionArt, SceneArt } from '../components/Creatures.jsx';
@@ -113,8 +113,8 @@ export function RewardScreen({ run, dispatch }) {
         const fits = choice.focus && archOf(id) === choice.focus;
         return <button type="button" key={id} className={`ea-choice-card ${fits ? 'is-fit' : ''}`} aria-label={`${CARDS[id].en} ${CARDS[id].zh}${fits ? `，配合你的${ARCHETYPES[choice.focus].zh}` : ''}`} onClick={() => { sfx.card(); dispatch({ type: 'TAKE_REWARD', index: choosing, choice: i }); setChoosing(null); }}>
           {fits && <span className="ea-fit-tag">配合你的{ARCHETYPES[choice.focus].zh}</span>}
-          <CardFace inst={{ id, up: false }}/>
-          <KeywordList inst={{ id, up: false }}/>
+          <CardFace inst={{ id, up: isFoil(run, id) }}/>
+          <KeywordList inst={{ id, up: isFoil(run, id) }}/>
         </button>;
       })}</div>
       <button type="button" className="ea-btn is-quiet" onClick={() => { dispatch({ type: 'TAKE_REWARD', index: choosing, choice: null }); setChoosing(null); }}>不拿卡牌，最大生命 +{SKIP_CARD_HP}（Skip）</button>
@@ -135,7 +135,7 @@ export function RestScreen({ run, dispatch }) {
         <p className="ea-room-lead">提燈的光暈很溫暖。你只來得及做一件事。</p>
         <div className="ea-room-choices">
           <button type="button" className="ea-choice" disabled={!amount || run.hero.hp >= run.hero.maxHp} onClick={() => { sfx.heal(); dispatch({ type: 'REST_HEAL' }); }}>
-            <Glyph name="heartFill" size={30}/><span><b lang="en">Rest</b><small>休息：回復 {amount} 生命{hasRelic(run, 'midnightOil') ? '（午夜燈油讓你無法入睡）' : ''}</small></span>
+            <Glyph name="heartFill" size={30}/><span><b lang="en">Rest</b><small>休息：回復 {amount} 生命{hasRelic(run, 'midnightOil') ? '（午夜燈油讓你無法入睡）' : run.trials?.includes('sleepless') ? '（試煉「無眠之夜」：無法回血）' : ''}</small></span>
           </button>
           <button type="button" className="ea-choice" disabled={!canInscribe} onClick={() => dispatch({ type: 'REST_UPGRADE' })}>
             <Glyph name="quill" size={30}/><span><b lang="en">Inscribe</b><small>銘刻：升級 1 張牌{canInscribe ? '' : '（沒有可升級的牌）'}</small></span>
@@ -172,7 +172,7 @@ export function ShopScreen({ run, dispatch }) {
     <div className="ea-shop-section">
       <h3><span lang="en">Cards</span> 卡牌</h3>
       <div className="ea-shop-cards">{shop.cards.map((item, index) => <button type="button" key={index} className={`ea-shop-item ${item.sold ? 'is-sold' : ''}`} disabled={item.sold || gold < item.price} onClick={() => buy('cards', index)} aria-label={`${CARDS[item.id].en} ${CARDS[item.id].zh}，${item.price} 金幣${item.sold ? '，已售出' : ''}`}>
-        <CardFace inst={{ id: item.id, up: false }}/>
+        <CardFace inst={{ id: item.id, up: isFoil(run, item.id) }}/>
         <span className={`ea-price ${gold < item.price ? 'is-short' : ''} ${item.sale ? 'is-sale' : ''}`}>{item.sold ? '已售出' : <><Glyph name="gold" size={14}/>{item.price}{item.sale && <i>特價</i>}</>}</span>
       </button>)}</div>
     </div>

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { ARCHIVE_CARDS, CARDS } from '../data/cards.js';
 import { ACTS } from '../data/enemies.js';
-import { DAILY_BLESSINGS, DAILY_TRIALS, MAX_SILENCE, dailyBonus, dailyChallenge, dateKey, previousDateKey, silenceRules } from '../data/challenges.js';
+import { DAILY_BLESSINGS, DAILY_TRIALS, MAX_SILENCE, TRIALS, TRIAL_IDS, dailyBonus, dailyChallenge, dateKey, previousDateKey, silenceRules, trialBonus } from '../data/challenges.js';
 import { HEROES, HERO_IDS, heroUnlocked } from '../data/heroes.js';
 import { DIFFICULTIES } from '../engine/engine.js';
 import { PULL_COST } from '../archive.js';
@@ -22,8 +22,8 @@ function ArchiveLinks({ collection, onGacha, onCodex }) {
   const owned = ARCHIVE_CARDS.filter(id => collection.owned[id] > 0).length;
   return <div className="ea-archive-links">
     <button type="button" className="ea-archive-link is-gacha" onClick={onGacha}>
-      <Glyph name="gem" size={26}/><span><b>書頁扭蛋</b><small>{collection.welcomed ? `召喚新卡牌 · 擁有 ${collection.shards} 墨晶` : '初次見面禮：100 墨晶！'}</small></span>
-      {(!collection.welcomed || collection.shards >= PULL_COST) && <i className="ea-dot" aria-label="可以抽卡"/>}
+      <Glyph name="gem" size={26}/><span><b>書頁扭蛋</b><small>{collection.notice?.kind === 'foilRefund' ? `閃卡規則更新 · 退還 ${collection.notice.shards} 墨晶` : collection.welcomed ? `召喚新卡牌 · 擁有 ${collection.shards} 墨晶` : '初次見面禮：100 墨晶！'}</small></span>
+      {(!collection.welcomed || collection.notice || collection.shards >= PULL_COST) && <i className="ea-dot" aria-label="可以抽卡"/>}
     </button>
     <button type="button" className="ea-archive-link" onClick={onCodex}>
       <Glyph name="book" size={26}/><span><b>卡牌圖鑑</b><small>扭蛋卡 {owned} / {ARCHIVE_CARDS.length}</small></span>
@@ -88,6 +88,25 @@ function SilencePicker({ top, level, setLevel }) {
   </div>;
 }
 
+// Optional trials for any run but the daily one: each adds a rule and more shards.
+function TrialPicker({ trials, setTrials }) {
+  const bonus = trialBonus(trials);
+  const toggle = id => setTrials(list => (list.includes(id) ? list.filter(item => item !== id) : [...list, id]));
+  return <details className="ea-trials" open={trials.length > 0}>
+    <summary><Glyph name="crown" size={18}/><span><b>自選試煉</b><small>{trials.length ? `已選 ${trials.length} 項 · 墨晶 +${bonus}%` : '想要更難？勾選限制，換更多墨晶'}</small></span></summary>
+    <div className="ea-trial-list" role="group" aria-label="自選試煉">
+      {TRIAL_IDS.map(id => {
+        const trial = TRIALS[id], on = trials.includes(id);
+        return <button type="button" key={id} role="checkbox" aria-checked={on} className={`ea-trial ${on ? 'is-on' : ''}`} onClick={() => toggle(id)}>
+          <Glyph name={trial.glyph} size={20}/>
+          <span><b>{trial.zh}<i>+{trial.bonus}%</i></b><small>{trial.text}</small></span>
+        </button>;
+      })}
+    </div>
+    {trials.length > 0 && <button type="button" className="ea-link" onClick={() => setTrials([])}>全部取消</button>}
+  </details>;
+}
+
 function HeroPicker({ meta, hero, setHero }) {
   return <div className="ea-hero-pick" role="radiogroup" aria-label="選擇角色">
     {HERO_IDS.map(id => {
@@ -106,6 +125,7 @@ export default function TitleScreen({ saved, meta, onContinue, onNew, onDaily, o
   const [hero, setHero] = useState(() => (heroUnlocked(meta.lastHero, meta) && HEROES[meta.lastHero] ? meta.lastHero : 'scribe'));
   const top = meta.silenceTop ?? -1;
   const [silence, setSilence] = useState(() => Math.max(0, Math.min(meta.lastSilence || 0, top + 1, MAX_SILENCE)));
+  const [trials, setTrials] = useState(() => (meta.lastTrials || []).filter(id => TRIALS[id]));
   const winRate = meta.runs ? Math.round((meta.wins / meta.runs) * 100) : 0;
   return <section className="ea-title" aria-labelledby="ea-title-heading">
     <Backdrop act={1}/>
@@ -128,9 +148,10 @@ export default function TitleScreen({ saved, meta, onContinue, onNew, onDaily, o
             </button>)}
           </div>
           {difficulty === 'heroic' && <SilencePicker top={top} level={silence} setLevel={setSilence}/>}
+          <TrialPicker trials={trials} setTrials={setTrials}/>
           <div className="ea-difficulty-actions">
             <button type="button" className="ea-btn is-quiet" onClick={() => setPicking(false)}>返回</button>
-            <button type="button" className="ea-btn is-gold" onClick={() => onNew(difficulty, difficulty === 'heroic' ? silence : 0, hero)}>{saved ? '放棄目前進度，出發 →' : '出發 →'}</button>
+            <button type="button" className="ea-btn is-gold" onClick={() => onNew(difficulty, difficulty === 'heroic' ? silence : 0, hero, trials)}>{saved ? '放棄目前進度，出發 →' : '出發 →'}</button>
           </div>
         </div>}
         {!picking && meta.collection && <ArchiveLinks collection={meta.collection} onGacha={onGacha} onCodex={onCodex}/>}
@@ -176,7 +197,7 @@ export function RunSummary({ run, earned, shards, onAgain, onTitle, onGacha, spe
     <div className="ea-summary-panel">
       <span className="ea-eyebrow" lang="en">{run.trueEnding ? 'THE LAST PAGE IS WRITTEN' : won ? 'THE ARCHIVE REMEMBERS' : 'THE SILENCE FALLS'}</span>
       <h1 id="ea-summary-title">{run.trueEnding ? '你寫下了最後一頁' : won ? '話語回來了！' : '這次的遠征結束了'}</h1>
-      <p className="ea-summary-mode">{[HEROES[run.hero.id || 'scribe'].zh, run.daily ? `每日挑戰 · ${run.daily.date}` : run.silence > 0 ? `英雄難度 · 靜默層級 ${run.silence}` : DIFFICULTIES[run.difficulty]?.zh].filter(Boolean).join(' · ')}</p>
+      <p className="ea-summary-mode">{[HEROES[run.hero.id || 'scribe'].zh, run.daily ? `每日挑戰 · ${run.daily.date}` : run.silence > 0 ? `英雄難度 · 靜默層級 ${run.silence}` : DIFFICULTIES[run.difficulty]?.zh, run.trials?.length ? `試煉：${run.trials.map(id => TRIALS[id]?.zh).filter(Boolean).join('、')}` : null].filter(Boolean).join(' · ')}</p>
       <p className="ea-room-lead">{run.trueEnding
         ? '終焉寂靜化成千萬個字，飄回書庫裡的每一本書。三把鑰匙闔上了最後一頁——這是真正的結局。'
         : won ? `無言之主消散，書庫重新響起千萬個聲音。${run.keys && Object.values(run.keys).some(Boolean) ? '不過……你手上的鑰匙似乎還能打開什麼。' : '你是書庫真正的守護者。'}`

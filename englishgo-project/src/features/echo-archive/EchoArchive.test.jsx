@@ -23,6 +23,22 @@ async function startRun(onXp = vi.fn()) {
 }
 
 describe('Echo Archive', () => {
+  it('starts a run with the trials picked on the new-run screen and remembers them', async () => {
+    localStorage.clear();
+    render(<EchoArchive lv="elementary" onBack={vi.fn()} deps={deps()}/>);
+    fireEvent.click(screen.getByRole('button', { name: /開始遠征/ }));
+    fireEvent.click(screen.getByText('自選試煉'));
+    fireEvent.click(screen.getByRole('checkbox', { name: /墨霧/ }));
+    fireEvent.click(screen.getByRole('checkbox', { name: /狹窄書架/ }));
+    expect(screen.getByText(/已選 2 項 · 墨晶 \+25%/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '出發 →' }));
+    expect(await screen.findByText('The Lantern Keeper')).toBeInTheDocument();
+    const run = JSON.parse(localStorage.getItem('eg_echo_archive_run'));
+    expect(run.trials).toEqual(['fog', 'narrow']);
+    expect(run.mods).toMatchObject({ fog: true, cardChoices: 2 });
+    expect(JSON.parse(localStorage.getItem('eg_echo_archive_meta')).lastTrials).toEqual(['fog', 'narrow']);
+  });
+
   it('builds chant questions with exactly one right answer', () => {
     const question = makeChant(words, [], () => 0.1);
     expect(question.options).toHaveLength(3);

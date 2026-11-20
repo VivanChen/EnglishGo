@@ -1,7 +1,7 @@
 import { ARCHIVE_CARDS, CARDS, CHANT_CARDS, REWARD_POOL, STARTER_DECK, archOf, baseCost, cardFades, isUnlocked, val } from '../data/cards.js';
-import { BASE_MODS, MAX_SILENCE, buildMods } from '../data/challenges.js';
+import { BASE_MODS, MAX_SILENCE, TRIALS, buildMods } from '../data/challenges.js';
 import { HEROES, heroOf, inHeroPool } from '../data/heroes.js';
-import { ENCOUNTERS, ENEMIES } from '../data/enemies.js';
+import { ELITE_AFFIXES, ENCOUNTERS, ENEMIES, affixValue } from '../data/enemies.js';
 import { BOONS, DUEL_MOVES, EVENTS, KEEPER } from '../data/events.js';
 import { ENERGY_RELICS, POTIONS, RELICS } from '../data/relics.js';
 import { availableNodes, generateMap } from './map.js';
@@ -27,8 +27,11 @@ export const canUpgrade = card => !card.up && ['attack', 'skill', 'power'].inclu
 export const runMods = r => r.mods || BASE_MODS;
 
 // ───────────── Run setup ─────────────
+// Foil cards (rare duplicates from the Archive Gacha) always arrive upgraded.
+export const isFoil = (r, id) => Boolean(r.foils?.includes(id));
+
 function addCard(r, id, up = false) {
-  const card = { uid: `c${++r.uid}`, id, up };
+  const card = { uid: `c${++r.uid}`, id, up: up || isFoil(r, id) };
   r.hero.deck.push(card);
   return card;
 }
@@ -44,20 +47,22 @@ export const hasAllKeys = r => KEY_IDS.every(id => r.keys?.[id]);
 
 // `daily` is a challenge from dailyChallenge(): it fixes the seed, plays on
 // Standard and adds its featured card. `silence` (0–10) only applies on Heroic.
-export function createRun({ seed = makeSeed(), difficulty = 'standard', lv = 'elementary', unlocked = [], silence = 0, daily = null, startedAt = null, hero = 'scribe' } = {}) {
+export function createRun({ seed = makeSeed(), difficulty = 'standard', lv = 'elementary', unlocked = [], foils = [], silence = 0, trials = [], daily = null, startedAt = null, hero = 'scribe' } = {}) {
   const heroId = HEROES[daily?.hero || hero] ? daily?.hero || hero : 'scribe';
   const heroDef = HEROES[heroId];
   const mode = daily ? 'standard' : DIFFICULTIES[difficulty] ? difficulty : 'standard';
   const diff = DIFFICULTIES[mode];
   const level = mode === 'heroic' && !daily ? Math.max(0, Math.min(MAX_SILENCE, Math.floor(silence) || 0)) : 0;
   const challenge = daily ? { date: daily.date, blessing: daily.blessing, trial: daily.trial, card: daily.card, hero: heroId } : null;
-  const mods = buildMods({ silence: level, daily: challenge });
+  const chosenTrials = daily ? [] : [...new Set((trials || []).filter(id => TRIALS[id]))];
+  const mods = buildMods({ silence: level, daily: challenge, trials: chosenTrials });
   const runSeed = (daily ? daily.seed : seed) >>> 0;
   const maxHp = Math.max(20, diff.heroHp + heroDef.hp + mods.heroHp);
   const r = {
     version: SAVE_VERSION, seed: runSeed, rng: runSeed, difficulty: mode, lv,
-    silence: level, daily: challenge, mods, startedAt,
+    silence: level, daily: challenge, trials: chosenTrials, mods, startedAt,
     unlocked: (unlocked || []).filter(id => ARCHIVE_CARDS.includes(id)),
+    foils: (foils || []).filter(id => ARCHIVE_CARDS.includes(id) && (unlocked || []).includes(id)),
     act: 1, floor: 0, uid: 0, attacks: 0, fights: 0, actFights: 0, removeCost: Math.round(75 * mods.shopPrice), potionChance: 40,
     hero: { id: heroId, hp: maxHp, maxHp, gold: 99 + mods.startGold, deck: [], relics: [heroDef.relic], potions: [null, null, null], flags: {} },
     keys: { flame: false, page: false, echo: false }, trueEnding: false,
@@ -106,6 +111,25 @@ export function computeAttack(base, attacker = {}, defender = {}) {
   return Math.max(0, amount);
 }
 
+export const hasAffix = (enemy, id) => Boolean(enemy?.affixes?.includes(id));
+
+// A boss at half health turns the page: it shakes off Weak and Exposed,
+// gains Might and Ward, may call help, and shows its next move at once.
+function enterPhaseTwo(r, enemy) {
+  const def = ENEMIES[enemy.id].phase2, c = r.combat;
+  enemy.phased = true;
+  if (def.cleanse) ['weak', 'exposed'].forEach(st => { delete enemy.st[st]; });
+  if (def.might) add(enemy.st, 'might', def.might);
+  if (def.ward) enemy.ward += Math.round(def.ward * DIFFICULTIES[r.difficulty].ward);
+  (def.summon || []).forEach(({ id, n }) => { for (let i = 0; i < n; i++) summonEnemy(r, id); });
+  (def.cards || []).forEach(({ id, n }) => {
+    for (let i = 0; i < n; i++) c.discard.push(makeTemp(r, id));
+    fx(r, { kind: 'cards', to: 'player', card: id, amount: n });
+  });
+  fx(r, { kind: 'phase', to: enemy.uid, enemy: enemy.id });
+  planMove(r, enemy);
+}
+
 function hurtEnemy(r, enemy, amount, kind = 'hit') {
   if (enemy.dead) return 0;
   let blocked = 0;
@@ -114,6 +138,14 @@ function hurtEnemy(r, enemy, amount, kind = 'hit') {
   enemy.hp -= loss;
   r.stats.damage += loss;
   fx(r, { kind, to: enemy.uid, amount: amount - blocked, blocked });
+  if (enemy.hp > 0 && enemy.hp <= enemy.maxHp / 2 && r.combat) {
+    if (hasAffix(enemy, 'enraged') && !enemy.raged) {
+      enemy.raged = true;
+      add(enemy.st, 'might', affixValue('enraged', r.act));
+      fx(r, { kind: 'buff', to: enemy.uid, st: 'might' });
+    }
+    if (ENEMIES[enemy.id].phase2 && !enemy.phased) enterPhaseTwo(r, enemy);
+  }
   if (enemy.hp <= 0) {
     enemy.dead = true; enemy.ward = 0; enemy.hp = 0;
     r.stats.kills += 1;
@@ -130,6 +162,11 @@ function hurtEnemy(r, enemy, amount, kind = 'hit') {
         const avenge = ENEMIES[other.id].avenge;
         if (avenge?.might) { add(other.st, 'might', avenge.might); fx(r, { kind: 'buff', to: other.uid, st: 'might' }); }
       });
+      if (hasAffix(enemy, 'splitting') && !enemy.split) {
+        enemy.split = true;
+        const minion = ELITE_AFFIXES.splitting.minions[Math.min(4, r.act)];
+        for (let i = 0; i < 2; i++) summonEnemy(r, minion);
+      }
     }
   }
   return loss;
@@ -325,6 +362,21 @@ function startCombat(r, kind, encounter, options = {}) {
     ambush: Boolean(options.ambush),
   };
   // Event blessings last a few fights: note the ones active here, then count down.
+  // Elite fights: the toughest foe rolls its affixes (none in Story's first act).
+  if (kind === 'elite') {
+    const mods = runMods(r);
+    const count = Math.max(0, (mods.eliteAffixes ?? 1) - (r.difficulty === 'story' && r.act === 1 ? 1 : 0));
+    const leader = c.enemies.reduce((top, enemy) => (enemy.maxHp > top.maxHp ? enemy : top), c.enemies[0]);
+    if (leader && count) {
+      leader.affixes = shuffle(r, Object.keys(ELITE_AFFIXES)).slice(0, count);
+      if (hasAffix(leader, 'thorny')) add(leader.st, 'spikes', affixValue('thorny', r.act));
+      if (hasAffix(leader, 'armored')) leader.ward += affixValue('armored', r.act);
+    }
+  }
+  if (runMods(r).startWard) {
+    const ward = Math.round((kind === 'boss' ? 20 : kind === 'elite' ? 12 : 6) * DIFFICULTIES[r.difficulty].ward);
+    c.enemies.forEach(enemy => { enemy.ward += ward; });
+  }
   c.boons = (r.hero.boons || []).map(boon => boon.id);
   r.hero.boons = (r.hero.boons || []).map(boon => ({ ...boon, fights: boon.fights - 1 })).filter(boon => boon.fights > 0);
   if (c.boons.includes('sun')) add(c.player.st, 'might', 2);
@@ -394,7 +446,7 @@ function addTempToHand(r, id, up = false) {
   const c = r.combat;
   if (c.hand.length >= HAND_LIMIT) return;
   const uid = makeTemp(r, id);
-  c.cards[uid].up = up;
+  c.cards[uid].up = up || isFoil(r, id);
   c.cards[uid].free = true;
   c.hand.push(uid);
   fx(r, { kind: 'conjure', card: id });
@@ -658,6 +710,7 @@ export function playCard(r, uid, targetUid, chant = null) {
     r.stats.words = [...r.stats.words.filter(item => item.w !== chant.word), { w: chant.word, m: chant.meaning, ok: Boolean(chant.ok) }].slice(-60);
     empowered = Boolean(chant.ok);
     if (empowered) c.chantsOk += 1;
+    else if (runMods(r).strictChant) hurtPlayer(r, 2, 'strict');
   }
   fx(r, { kind: 'play', card: inst.id, uid, up: inst.up, empowered, target: target?.uid || null });
   const effects = empowered ? [...card.fx, ...card.chant] : card.fx;
@@ -771,7 +824,8 @@ export function endTurn(r) {
   decay(c.player.st);
   c.echo = 0;
   c.phase = 'enemy';
-  c.queue = living(c).map(enemy => enemy.uid);
+  c.acted = [];
+  c.queue = living(c).flatMap(enemy => (hasAffix(enemy, 'swift') && enemy.turns === 0 ? [enemy.uid, enemy.uid] : [enemy.uid]));
   settle(r);
 }
 
@@ -787,13 +841,16 @@ function performMove(r, enemy) {
   }
   if (move.dmg != null) {
     const base = moveBase(r, enemy);
+    let drained = 0;
     for (let i = 0; i < (move.hits || 1) && r.hero.hp > 0 && !enemy.dead; i++) {
       const ward = c.player.ward;
-      hurtPlayer(r, computeAttack(base, enemy.st, c.player.st));
+      drained += hurtPlayer(r, computeAttack(base, enemy.st, c.player.st));
       // Mirror Wall: whatever the Ward stopped flies back at the attacker.
       if (c.player.st.reflect && ward > c.player.ward) hurtEnemy(r, enemy, ward - c.player.ward, 'thorns');
       if (c.player.st.spikes) hurtEnemy(r, enemy, c.player.st.spikes, 'thorns');
     }
+    const heal = hasAffix(enemy, 'vampiric') && !enemy.dead ? Math.min(enemy.maxHp - enemy.hp, Math.floor(drained / 2)) : 0;
+    if (heal > 0) { enemy.hp += heal; fx(r, { kind: 'heal', to: enemy.uid, amount: heal }); }
   }
   if (!enemy.dead) {
     if (move.ward) { const amount = Math.round(move.ward * diff.ward); enemy.ward += amount; fx(r, { kind: 'ward', to: enemy.uid, amount }); }
@@ -821,13 +878,20 @@ export function enemyStep(r) {
   const uid = c.queue.shift();
   const enemy = c.enemies.find(item => item.uid === uid);
   if (enemy && !enemy.dead) {
-    enemy.ward = 0;
-    if (enemy.st.burn) { hurtEnemy(r, enemy, burnDamage(r, enemy.st.burn), 'burn'); if (!c.player.pw.eternalFlame) add(enemy.st, 'burn', -1); }
+    const first = !(c.acted || []).includes(uid);
+    c.acted = [...(c.acted || []), uid];
+    if (first) {
+      enemy.ward = 0;
+      if (enemy.st.burn) { hurtEnemy(r, enemy, burnDamage(r, enemy.st.burn), 'burn'); if (!c.player.pw.eternalFlame) add(enemy.st, 'burn', -1); }
+    }
+    if (!enemy.dead && hasAffix(enemy, 'armored')) { const amount = affixValue('armored', r.act); enemy.ward += amount; fx(r, { kind: 'ward', to: enemy.uid, amount }); }
     if (!enemy.dead) {
       performMove(r, enemy);
       enemy.turns += 1;
-      decay(enemy.st);
+      if (first) decay(enemy.st);
       if (enemy.st.ritual && !enemy.dead) add(enemy.st, 'might', enemy.st.ritual);
+      // A Swift foe's second action this turn needs a fresh move.
+      if (!enemy.dead && c.queue.includes(uid)) planMove(r, enemy);
     }
   }
   settle(r);
@@ -941,7 +1005,7 @@ function makeReward(r, kind) {
     else r.potionChance = Math.min(80, r.potionChance + 10);
   }
   if (kind === 'elite') { const id = randomRelic(r); if (id) items.push({ kind: 'relic', id, taken: false }); }
-  items.push({ kind: 'cards', options: cardOptions(r, kind, 3 + (hasRelic(r, 'starChart') ? 1 : 0)), focus: deckFocus(r), taken: false });
+  items.push({ kind: 'cards', options: cardOptions(r, kind, (runMods(r).cardChoices ?? 3) + (hasRelic(r, 'starChart') ? 1 : 0)), focus: deckFocus(r), taken: false });
   return { kind, items, after: kind === 'boss' ? 'boss' : 'map' };
 }
 
@@ -1122,7 +1186,7 @@ function applyOutcome(r, effects = []) {
       case 'upgrade': if (r.hero.deck.some(canUpgrade)) r.pending = { kind: 'upgrade', cancellable: false, source: 'event' }; break;
       case 'remove': r.pending = { kind: 'remove', cancellable: false, source: 'event' }; break;
       case 'upgradeRandom': shuffle(r, r.hero.deck.filter(canUpgrade)).slice(0, effect.v).forEach(card => { card.up = true; gains.push({ type: 'upgrade', id: card.id }); }); break;
-      case 'cardChoice': r.event = null; r.reward = { kind: 'event', items: [{ kind: 'cards', options: cardOptions(r, 'monster', 3, effect.rarity), focus: deckFocus(r), taken: false }], after: 'map' }; r.screen = 'reward'; break;
+      case 'cardChoice': r.event = null; r.reward = { kind: 'event', items: [{ kind: 'cards', options: cardOptions(r, 'monster', runMods(r).cardChoices ?? 3, effect.rarity), focus: deckFocus(r), taken: false }], after: 'map' }; r.screen = 'reward'; break;
       case 'fight': r.event = null; startCombat(r, effect.kind || 'monster', effect.encounter); break;
       default: break;
     }

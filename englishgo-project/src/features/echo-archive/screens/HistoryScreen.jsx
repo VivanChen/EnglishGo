@@ -26,7 +26,7 @@ function modeLabel(record) {
   const hero = record.hero && record.hero !== 'scribe' ? `${HEROES[record.hero]?.zh} · ` : '';
   if (record.daily) return `${hero}每日 ${record.daily.date.slice(5).replace('-', '/')}`;
   const diff = DIFFICULTIES[record.difficulty]?.zh || '標準';
-  return `${hero}${record.silence > 0 ? `${diff} · 靜默 ${record.silence}` : diff}`;
+  return `${hero}${record.silence > 0 ? `${diff} · 靜默 ${record.silence}` : diff}${record.trials?.length ? ` · 試煉 ${record.trials.length}` : ''}`;
 }
 
 function Medal({ record }) {

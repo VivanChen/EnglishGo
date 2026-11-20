@@ -95,4 +95,5 @@ export const sfx = {
   victory: () => [392, 523, 659, 784, 1047].forEach((f, i) => tone(f, { at: i * 0.1, dur: 0.4, gain: 0.05, type: 'triangle' })),
   defeat: () => [392, 330, 262, 196].forEach((f, i) => tone(f, { at: i * 0.18, dur: 0.5, gain: 0.05, type: 'sine' })),
   map: () => tone(587, { dur: 0.12, gain: 0.035, type: 'triangle' }),
+  phase: () => { noise({ dur: 0.6, gain: 0.14, freq: 220, q: 0.7 }); tone(110, { dur: 0.7, gain: 0.09, to: 55, type: 'sawtooth' }); tone(165, { at: 0.12, dur: 0.6, gain: 0.05, to: 82, type: 'sawtooth' }); },
 };

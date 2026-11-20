@@ -54,7 +54,7 @@ export default function CardFace({ inst, cost, ctx, playable = true, className =
           {inst.bonus > 0 && <span className="ea-card-bonus" lang="en">+{inst.bonus}</span>}
         </div>
       </div>
-      <div className="ea-card-type"><span lang="en">{CARD_TYPES[card.type].en}</span>{card.rarity !== 'starter' && card.rarity !== 'special' && <i>{RARITIES[card.rarity].zh}</i>}</div>
+      <div className="ea-card-type"><span lang="en">{CARD_TYPES[card.type].en}</span>{card.rarity !== 'starter' && card.rarity !== 'special' && <i>{RARITIES[card.rarity].zh}</i>}{shiny && <b className="ea-foil-chip" title="閃卡：在遠征中拿到時就是升級版">閃</b>}</div>
       <div className="ea-card-text"><CardText lines={lines}/></div>
       <i className="ea-card-gem" aria-hidden="true"/>
       <i className="ea-card-glare" aria-hidden="true"/>

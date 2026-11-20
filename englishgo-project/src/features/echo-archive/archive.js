@@ -1,8 +1,10 @@
 import { ARCHIVE_CARDS, CARDS } from './data/cards.js';
+import { trialBonus } from './data/challenges.js';
 
 // Archive Gacha: Ink Shards are earned only inside Echo Archive and spent here
 // to unlock new cards for future runs. Odds are shown to the player, every ten
-// pulls guarantee a Rare or better, and duplicates turn into foils or shards.
+// pulls guarantee a Rare or better, and duplicates turn into shards, or now
+// and then into a foil. A foil card always joins a run already upgraded.
 export const PULL_COST = 20;
 export const TEN_PULL_COST = 180;
 export const WELCOME_SHARDS = 100;
@@ -10,24 +12,41 @@ export const ODDS = [['common', 52], ['uncommon', 30], ['rare', 13], ['mythic', 
 export const RARE_PITY = 10;
 export const MYTHIC_PITY = 40;
 export const REFUND = { common: 4, uncommon: 7, rare: 12, mythic: 25 };
+export const FOIL_CHANCE = 10; // % of duplicates that become a foil
+// Foils used to be cosmetic and came with every first duplicate. Collections
+// saved under that rule trade their foils back for shards once.
+export const FOIL_RULE = 2;
 
-export const emptyCollection = () => ({ shards: 0, owned: {}, foils: [], sinceRare: 0, sinceMythic: 0, pulls: 0, welcomed: false });
+export const emptyCollection = () => ({ shards: 0, owned: {}, foils: [], sinceRare: 0, sinceMythic: 0, pulls: 0, welcomed: false, foilRule: FOIL_RULE, notice: null });
 
 export function normalizeCollection(raw) {
   const base = emptyCollection();
   if (!raw || typeof raw !== 'object') return base;
   const owned = {};
   Object.entries(raw.owned || {}).forEach(([id, count]) => { if (ARCHIVE_CARDS.includes(id) && Number(count) > 0) owned[id] = Math.floor(Number(count)); });
+  let shards = Math.max(0, Math.floor(Number(raw.shards) || 0));
+  let foils = (raw.foils || []).filter(id => owned[id]);
+  let notice = raw.notice?.kind === 'foilRefund' ? { kind: 'foilRefund', count: Number(raw.notice.count) || 0, shards: Number(raw.notice.shards) || 0 } : null;
+  if (raw.foilRule !== FOIL_RULE && foils.length) {
+    const refund = foils.reduce((sum, id) => sum + (REFUND[CARDS[id].rarity] || 0), 0);
+    notice = { kind: 'foilRefund', count: foils.length, shards: refund };
+    shards += refund;
+    foils = [];
+  }
   return {
-    shards: Math.max(0, Math.floor(Number(raw.shards) || 0)),
+    shards,
     owned,
-    foils: (raw.foils || []).filter(id => owned[id]),
+    foils,
     sinceRare: Math.max(0, Number(raw.sinceRare) || 0),
     sinceMythic: Math.max(0, Number(raw.sinceMythic) || 0),
     pulls: Math.max(0, Number(raw.pulls) || 0),
     welcomed: Boolean(raw.welcomed),
+    foilRule: FOIL_RULE,
+    notice,
   };
 }
+
+export const dismissNotice = collection => ({ ...collection, notice: null });
 
 export const unlockedCards = collection => ARCHIVE_CARDS.filter(id => collection.owned[id] > 0);
 export const pullCost = count => (count >= 10 ? TEN_PULL_COST : PULL_COST * count);
@@ -61,7 +80,7 @@ export function pullArchive(collection, count, random = Math.random) {
     next.sinceMythic = rarity === 'mythic' ? 0 : next.sinceMythic + 1;
     const owned = next.owned[id] || 0;
     let outcome = 'new', refund = 0;
-    if (owned > 0 && !next.foils.includes(id)) { outcome = 'foil'; next.foils.push(id); }
+    if (owned > 0 && !next.foils.includes(id) && random() * 100 < FOIL_CHANCE) { outcome = 'foil'; next.foils.push(id); }
     else if (owned > 0) { outcome = 'refund'; refund = REFUND[rarity]; next.shards += refund; }
     next.owned[id] = owned + 1;
     results.push({ id, rarity, outcome, refund });
@@ -74,7 +93,7 @@ export function pullArchive(collection, count, random = Math.random) {
 // reward, new Silence record) that are added after the multiplier.
 export function shardsForRun(run, bonus = []) {
   const s = run.stats;
-  const mult = run.daily ? 1.5 : Math.round(((({ story: 1, standard: 1.25, heroic: 1.5 })[run.difficulty] || 1) + (run.silence || 0) * 0.1) * 100) / 100;
+  const mult = run.daily ? 1.5 : Math.round(((({ story: 1, standard: 1.25, heroic: 1.5 })[run.difficulty] || 1) + (run.silence || 0) * 0.1 + trialBonus(run.trials) / 100) * 100) / 100;
   const extras = bonus.filter(([, amount]) => amount > 0);
   const parts = [
     ['抵達樓層', s.floors * 2],

@@ -16,7 +16,7 @@ export function runRecord(run, outcome, shards = 0, now = Date.now()) {
   return {
     key: runKey(run), at: now, outcome,
     hero: run.hero.id || 'scribe', trueEnding: Boolean(run.trueEnding),
-    difficulty: run.difficulty, silence: run.silence || 0,
+    difficulty: run.difficulty, silence: run.silence || 0, trials: run.trials || [],
     daily: run.daily ? { date: run.daily.date, blessing: run.daily.blessing, trial: run.daily.trial } : null,
     act: run.act, floor: run.floor, hp: Math.max(0, run.hero.hp), maxHp: run.hero.maxHp,
     foes, foeKind: foes.length ? c.kind : null,

@@ -190,6 +190,9 @@
 .ea-card-art-inner.is-painted .ea-glyph, .ea-card-art-inner.is-painted::before { display: none; }
 .ea-card-art-inner.is-painted::after { content: ''; position: absolute; inset: 0; pointer-events: none; box-shadow: inset 0 -5cqw 9cqw rgba(0, 0, 0, .42), inset 0 0 0 .5cqw rgba(0, 0, 0, .45); }
 .ea-card.is-foil .ea-card-art-inner.is-painted::after { background: linear-gradient(115deg, rgba(255, 120, 200, .16), rgba(255, 231, 166, .08) 45%, rgba(120, 220, 255, .16)); }
+/* Foils: a moving holographic sheen over the art and a rainbow tag. */
+.ea-card.is-foil .ea-card-art::after { content: ''; position: absolute; inset: 1cqw; z-index: 1; pointer-events: none; border-radius: 4.2cqw; mix-blend-mode: screen; background: linear-gradient(115deg, transparent 22%, rgba(255, 120, 200, .42) 36%, rgba(255, 231, 166, .46) 50%, rgba(120, 220, 255, .42) 64%, transparent 78%); background-size: 260% 100%; animation: ea-sheen 2.8s ease-in-out infinite; }
+.ea-foil-chip { padding: .3cqw 2cqw; border-radius: 2.4cqw; font: 900 5.4cqw/1.2 var(--ea-sans); letter-spacing: 0; color: #2a1906; text-shadow: none; background: linear-gradient(90deg, #ff7ad9, #ffd36b, #7ae0ff); box-shadow: 0 0 1.6cqw rgba(255, 255, 255, .55); }
 .ea-card-chant, .ea-card-bonus { z-index: 2; }
 .ea-card-chant { position: absolute; right: 4cqw; top: 3cqw; color: var(--ea-gold); font-size: 9cqw; text-shadow: 0 0 3cqw rgba(232, 196, 122, .9); animation: ea-twinkle 2.4s ease-in-out infinite; }
 .ea-card-type { position: relative; z-index: 1; display: flex; justify-content: center; gap: 3cqw; align-items: baseline; margin: 2cqw 0 1.4cqw; font: 800 5.2cqw/1 var(--ea-sans); letter-spacing: .22em; text-transform: uppercase; color: var(--rim-light); text-shadow: 0 .4cqw .8cqw rgba(0, 0, 0, .6); }
@@ -602,6 +605,34 @@
 .ea-wheel-pointer { position: relative; z-index: 1; width: 0; height: 0; margin-bottom: -10px; border-left: 12px solid transparent; border-right: 12px solid transparent; border-top: 22px solid #fff3d6; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .5)); }
 .ea-wheel-label { margin: 12px 0 0; min-height: 1.5em; color: #f2e8d2; }
 .ea-wheel-label b { color: var(--ea-gold); }
+
+/* Elite affixes and the boss's second phase, under the enemy's name. */
+.ea-affixes { display: flex; flex-wrap: wrap; justify-content: center; gap: 3px; margin: 2px 0 3px; }
+.ea-affix { display: inline-flex; align-items: center; gap: 3px; padding: 1px 7px 1px 5px; border-radius: 999px; font: 800 11px/1.5 var(--ea-sans); color: #ffe2b0; background: rgba(232, 150, 60, .2); box-shadow: inset 0 0 0 1px rgba(255, 190, 110, .45); white-space: nowrap; }
+.ea-affix.is-armored { color: #cdefff; background: rgba(110, 190, 255, .18); box-shadow: inset 0 0 0 1px rgba(140, 200, 255, .45); }
+.ea-affix.is-vampiric { color: #ffc4cf; background: rgba(220, 70, 100, .2); box-shadow: inset 0 0 0 1px rgba(255, 120, 150, .45); }
+.ea-affix.is-swift { color: #d9ffd2; background: rgba(110, 210, 120, .18); box-shadow: inset 0 0 0 1px rgba(140, 230, 150, .45); }
+.ea-affix.is-phase { color: #fff; background: linear-gradient(90deg, #b3263f, #e0562f); box-shadow: 0 0 10px rgba(255, 90, 70, .55); animation: ea-pulse-ring 1.8s ease-in-out infinite; }
+.ea-enemy.is-phased .ea-enemy-body { filter: drop-shadow(0 0 16px rgba(255, 70, 60, .7)); }
+.ea-intent.is-fog { color: #c9c3d9; background: rgba(120, 110, 150, .35); }
+.ea-intent.is-fog b { color: #fff; }
+.ea-chant-strict { margin: 10px 0 0; font-size: 13px; color: #ffb3b3; }
+
+/* Optional trials on the new-run screen. */
+.ea-trials { margin: 12px 0 4px; padding: 10px 12px; border-radius: 16px; border: 1px solid var(--ea-line); background: rgba(0, 0, 0, .18); text-align: left; }
+.ea-trials summary { display: flex; align-items: center; gap: 10px; cursor: pointer; list-style: none; color: var(--ea-gold); }
+.ea-trials summary::-webkit-details-marker { display: none; }
+.ea-trials summary span { display: flex; flex-direction: column; }
+.ea-trials summary b { color: #fff3d6; }
+.ea-trials summary small { color: var(--ea-muted); }
+.ea-trial-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; margin: 12px 0 8px; }
+.ea-trial { display: flex; align-items: flex-start; gap: 10px; padding: 9px 11px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, .12); background: rgba(255, 255, 255, .04); color: var(--ea-muted); text-align: left; transition: border-color .15s, background .15s; }
+.ea-trial > span { display: flex; flex-direction: column; gap: 2px; }
+.ea-trial b { display: flex; align-items: center; gap: 8px; color: #fff3d6; font-size: 14px; }
+.ea-trial b i { font-style: normal; font-size: 12px; color: var(--ea-gold); }
+.ea-trial small { font-size: 12px; line-height: 1.45; }
+.ea-trial.is-on { border-color: #ff8a6b; background: rgba(255, 110, 80, .12); color: #ffd3c4; }
+.ea-trial.is-on .ea-glyph { color: #ff9b7d; }
 
 /* Speech toasts sit at the top in the game, clear of answers and the hand. */
 body[data-eg-module="echoArchive"] #eg-tts-loading-toast,

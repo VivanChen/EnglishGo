@@ -8,6 +8,7 @@ export const BASE_MODS = {
   restHeal: 0.3, actHeal: 0.75, gold: 1, shopPrice: 1, eliteRooms: 1,
   heroHp: 0, startGold: 0, startPotions: 0, startCurses: [],
   startMight: 0, drawBonus: 0, firstTurnEnergy: 0, rareBoost: 1, bossMight: 0,
+  eliteAffixes: 1, startWard: false, fog: false, cardChoices: 3, strictChant: false,
 };
 
 // Silence levels stack on top of Heroic. Winning level N unlocks level N + 1.
@@ -46,13 +47,30 @@ export const DAILY_TRIALS = {
   poor: { zh: '拮据旅程', en: 'Lean Purse', glyph: 'coin', text: '戰鬥獲得的金幣 -40%，商店價格 +10%。', apply: m => { m.gold *= 0.6; m.shopPrice += 0.1; } },
 };
 
-export function buildMods({ silence = 0, daily = null } = {}) {
+// Trials the player may pick before any run but the daily one. Each adds its
+// bonus to the run's shard multiplier.
+export const TRIALS = {
+  giants: { ...DAILY_TRIALS.giants, bonus: 20 },
+  fury: { ...DAILY_TRIALS.fury, bonus: 20 },
+  champions: { zh: '菁英強化', en: 'Champions', glyph: 'elite', bonus: 20, text: '每隻菁英都帶兩個詞綴。', apply: m => { m.eliteAffixes = 2; } },
+  bound: { zh: '書皮護甲', en: 'Bound Covers', glyph: 'shield', bonus: 15, text: '敵人開戰時帶著 Ward（一般 6、菁英 12、首領 20）。', apply: m => { m.startWard = true; } },
+  narrow: { zh: '狹窄書架', en: 'Narrow Shelves', glyph: 'deck', bonus: 15, text: '卡牌獎勵只剩兩選一。', apply: m => { m.cardChoices = 2; } },
+  sleepless: { zh: '無眠之夜', en: 'Sleepless', glyph: 'rest', bonus: 20, text: '休息點不能回血（仍然可以升級或拿鑰匙）。', apply: m => { m.restHeal = 0; } },
+  glass: { ...DAILY_TRIALS.glass, bonus: 15 },
+  fog: { zh: '墨霧', en: 'Ink Fog', glyph: 'smoke', bonus: 10, text: '每場戰鬥的第一回合看不到敵人的意圖。', apply: m => { m.fog = true; } },
+  poor: { ...DAILY_TRIALS.poor, bonus: 10 },
+  strictChant: { zh: '嚴格詠唱', en: 'Strict Chant', glyph: 'rune', bonus: 10, text: '詠唱題目一定要回答，答錯失去 2 生命。', apply: m => { m.strictChant = true; } },
+};
+export const TRIAL_IDS = Object.keys(TRIALS);
+export const trialBonus = trials => (trials || []).reduce((sum, id) => sum + (TRIALS[id]?.bonus || 0), 0);
+
+export function buildMods({ silence = 0, daily = null, trials = [] } = {}) {
   const mods = { ...BASE_MODS, startCurses: [] };
   SILENCE_LEVELS.filter(item => item.level <= silence).forEach(item => item.apply(mods));
   if (daily) {
     DAILY_BLESSINGS[daily.blessing]?.apply(mods);
     DAILY_TRIALS[daily.trial]?.apply(mods);
-  }
+  } else (trials || []).forEach(id => TRIALS[id]?.apply(mods));
   return mods;
 }
 

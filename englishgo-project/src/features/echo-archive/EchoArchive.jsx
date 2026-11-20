@@ -5,7 +5,7 @@ import { POTIONS } from './data/relics.js';
 import { SAVE_VERSION, living, runReducer } from './engine/engine.js';
 import { makeSeed } from './engine/rng.js';
 import { buildRunePool } from './chant.js';
-import { claimWelcome, normalizeCollection, pullArchive, shardsForRun, unlockedCards } from './archive.js';
+import { claimWelcome, dismissNotice, normalizeCollection, pullArchive, shardsForRun, unlockedCards } from './archive.js';
 import { DAILY_BLESSINGS, DAILY_TRIALS, MAX_SILENCE, SILENCE_CLEAR_BONUS, dailyBonus, dailyChallenge, dateKey, previousDateKey, silenceRules } from './data/challenges.js';
 import { addRecord, runKey, runRecord } from './history.js';
 import { hasHaptics, setHapticsEnabled, setSoundEnabled, sfx } from './sound.js';
@@ -242,15 +242,15 @@ export default function EchoArchive({ lv = 'elementary', onBack, onXp, trackWeak
     logAbandoned();
     resumedCombat.current = null;
     awarded.current = null;
-    dispatch({ type: 'NEW_RUN', lv, unlocked: unlockedCards(meta.collection), startedAt: Date.now(), ...action });
+    dispatch({ type: 'NEW_RUN', lv, unlocked: unlockedCards(meta.collection), foils: meta.collection.foils, startedAt: Date.now(), ...action });
     setView('run');
     sfx.chantOk();
   };
-  const startRun = (difficulty, silence = 0, hero = 'scribe') => {
+  const startRun = (difficulty, silence = 0, hero = 'scribe', trials = []) => {
     const level = difficulty === 'heroic' ? Math.max(0, Math.min(silence, (meta.silenceTop ?? -1) + 1, MAX_SILENCE)) : 0;
     const heroId = heroUnlocked(hero, meta) ? hero : 'scribe';
-    setMeta(previous => ({ ...previous, runs: previous.runs + 1, lastDifficulty: difficulty, lastHero: heroId, lastSilence: difficulty === 'heroic' ? level : previous.lastSilence }));
-    beginRun({ seed: makeSeed(), difficulty, silence: level, hero: heroId });
+    setMeta(previous => ({ ...previous, runs: previous.runs + 1, lastDifficulty: difficulty, lastHero: heroId, lastSilence: difficulty === 'heroic' ? level : previous.lastSilence, lastTrials: trials }));
+    beginRun({ seed: makeSeed(), difficulty, silence: level, hero: heroId, trials });
   };
   const startDaily = () => {
     const today = dateKey();
@@ -293,7 +293,7 @@ export default function EchoArchive({ lv = 'elementary', onBack, onXp, trackWeak
 
   if (view === 'gacha') {
     return withFoils(<div ref={root} className="ea-root screen-gacha">
-      <GachaScreen collection={meta.collection} onPull={pullCards} onClaim={claimGift} onBack={() => setView('title')} onCodex={() => setView('codex')}/>
+      <GachaScreen collection={meta.collection} onPull={pullCards} onClaim={claimGift} onBack={() => setView('title')} onCodex={() => setView('codex')} onDismissNotice={() => setMeta(previous => ({ ...previous, collection: dismissNotice(previous.collection) }))}/>
     </div>);
   }
   if (view === 'codex') {
