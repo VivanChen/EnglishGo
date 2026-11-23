@@ -18,6 +18,7 @@ export function CardText({ lines }) {
   return <>{lines.map((line, index) => <span key={index} className="ea-card-line">{line.map((seg, i) => {
     if (typeof seg === 'string') return <span key={i}>{seg}</span>;
     if (seg.kw) return <b key={i} className={`ea-kw ea-kw-${seg.kw}`} lang="en">{KEYWORDS[seg.kw].en}</b>;
+    if (seg.sky) return <i key={i} className={`ea-sky-mark is-${seg.sky} ${seg.on ? 'is-on' : ''}`} aria-label={seg.sky === 'day' ? '白晝' : '黑夜'}>{seg.sky === 'day' ? '☀' : '☾'}</i>;
     return <b key={i} className={`ea-num ${seg.tone ? `is-${seg.tone}` : ''}`}>{seg.n}</b>;
   })}</span>)}</>;
 }
@@ -31,7 +32,7 @@ export default function CardFace({ inst, cost, ctx, playable = true, className =
   const shiny = foil ?? foils.has(inst.id);
   const lines = describeCard(inst, ctx);
   // Shrink rules text for wordy cards so it always fits the parchment.
-  const textLength = lines.flat().reduce((sum, seg) => sum + (typeof seg === 'string' ? seg.length : seg.kw ? 4 : String(seg.n).length), 0);
+  const textLength = lines.flat().reduce((sum, seg) => sum + (typeof seg === 'string' ? seg.length : seg.kw ? 4 : seg.sky ? 1 : String(seg.n).length), 0);
   const textSize = textLength > 64 ? '5.9cqw' : textLength > 50 ? '6.4cqw' : textLength > 36 ? '6.9cqw' : '7.3cqw';
   const style = { '--title-size': length > 10 ? '8.2cqw' : length > 8 ? '9.2cqw' : '10.2cqw', '--hue': hueOf(inst.id), '--text-size': textSize };
   // The glyph stays until the painting has loaded, and for good if it fails.

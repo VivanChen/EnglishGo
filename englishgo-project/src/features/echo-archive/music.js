@@ -3,7 +3,7 @@
 // the next over a few seconds instead of jumping back to the start.
 import { sharedAudioContext } from './sound.js';
 
-const TRACKS = { 1: 'act1', 2: 'act2', 3: 'act3', 4: 'act4' };
+const TRACKS = { 1: 'act1', 2: 'act2', 3: 'act3', 4: 'act4', drowned: 'drowned', observatory: 'observatory' };
 const LEVEL = 0.3;        // music sits well under effects and speech
 const DUCKED = 0.35;      // share of LEVEL kept while a word is being read
 const FADE_IN = 2.5;      // seconds

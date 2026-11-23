@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
-import { ACTS, KEYS } from './data/enemies.js';
-import { heroUnlocked } from './data/heroes.js';
+import { ACTS, KEYS, zoneOf } from './data/enemies.js';
+import { heroUnlocked, legacyClears, newlyUnlocked } from './data/heroes.js';
 import { POTIONS } from './data/relics.js';
 import { SAVE_VERSION, living, runReducer } from './engine/engine.js';
 import { makeSeed } from './engine/rng.js';
@@ -18,7 +18,7 @@ import MapScreen from './screens/MapScreen.jsx';
 import { CodexScreen, GachaScreen } from './screens/ArchiveScreens.jsx';
 import TitleScreen, { RunSummary } from './screens/TitleScreen.jsx';
 import HistoryScreen from './screens/HistoryScreen.jsx';
-import { BossRelicScreen, CardPicker, DeckViewer, Modal, RelicIcon, RestScreen, RewardScreen, ShopScreen, TreasureScreen } from './screens/RoomScreens.jsx';
+import { BossRelicScreen, CardPicker, DeckViewer, Modal, RelicIcon, RestScreen, RewardScreen, RouteScreen, ShopScreen, TreasureScreen } from './screens/RoomScreens.jsx';
 import EventScreen from './screens/EventScreen.jsx';
 import { BOONS } from './data/events.js';
 import './echo-archive.css';
@@ -26,8 +26,16 @@ import './echo-archive.css';
 const RUN_KEY = 'eg_echo_archive_run';
 const META_KEY = 'eg_echo_archive_meta';
 // silenceTop: highest Silence level won (-1 = none yet). daily: the last
-// daily challenge played ({ date, streak, result }).
-const DEFAULT_META = { runs: 0, wins: 0, bestAct: 0, bestFloor: 0, lastDifficulty: 'story', lastHero: 'scribe', silenceTop: -1, lastSilence: 0, trueEndings: 0, daily: null, history: [], settings: { sfx: true, music: true, haptics: true, voice: true, chant: true, endWarn: true } };
+// daily challenge played ({ date, streak, result }). clears: bosses beaten
+// per region ({ [zone]: count }), which unlock heroes.
+const DEFAULT_META = { clears: {}, runs: 0, wins: 0, bestAct: 0, bestFloor: 0, lastDifficulty: 'story', lastHero: 'scribe', silenceTop: -1, lastSilence: 0, trueEndings: 0, daily: null, history: [], settings: { sfx: true, music: true, haptics: true, voice: true, chant: true, endWarn: true } };
+
+// Adds the bosses a run beat to the per-region tally.
+function addClears(clears, run) {
+  const next = { ...(clears || {}) };
+  (run?.cleared || []).forEach(zone => { next[zone] = (next[zone] || 0) + 1; });
+  return next;
+}
 
 function readJSON(key) { try { return JSON.parse(localStorage.getItem(key)); } catch { return null; } }
 function writeJSON(key, value) {
@@ -39,7 +47,7 @@ function loadRun() {
 }
 function loadMeta() {
   const saved = readJSON(META_KEY) || {};
-  return { ...DEFAULT_META, ...saved, history: Array.isArray(saved.history) ? saved.history : [], settings: { ...DEFAULT_META.settings, ...(saved.settings || {}) }, collection: normalizeCollection(saved.collection) };
+  return { ...DEFAULT_META, ...saved, clears: saved.clears && typeof saved.clears === 'object' ? saved.clears : legacyClears(saved), history: Array.isArray(saved.history) ? saved.history : [], settings: { ...DEFAULT_META.settings, ...(saved.settings || {}) }, collection: normalizeCollection(saved.collection) };
 }
 
 // Small badges in the top bar for daily and Silence runs; tapping or hovering
@@ -82,7 +90,7 @@ function TopBar({ run, potionAim, onPotion, onDeck, onMenu }) {
     <div className="ea-potions" aria-label="藥劑欄">{hero.potions.map((id, slot) => <button type="button" key={slot} className={`ea-potion ${potionAim === slot ? 'is-aiming' : ''}`} disabled={!id} onClick={() => onPotion(slot)} data-tip={id ? `${POTIONS[id].en}（${POTIONS[id].zh}）：${POTIONS[id].text}` : undefined} aria-label={id ? `${POTIONS[id].zh}，點選使用` : '空的藥劑欄'}>
       <PotionArt color={id ? POTIONS[id].color : undefined} empty={!id} size={20}/>
     </button>)}</div>
-    <div className="ea-floor"><b lang="en">Act {ACTS[run.act].roman}<ModeChip run={run}/></b><small>第 {run.floor} 層</small></div>
+    <div className="ea-floor"><b lang="en">Act {ACTS[run.act].roman}<ModeChip run={run}/></b><small>{run.zone ? `${ACTS[zoneOf(run)].zh} · ` : ''}第 {run.floor} 層</small></div>
     <KeyRing run={run}/>
     <div className="ea-relics" aria-label="遺物">{hero.relics.map(id => <RelicIcon key={id} id={id} size={22}/>)}
       {(hero.boons || []).map(boon => <BoonChip key={boon.id} boon={boon}/>)}</div>
@@ -132,6 +140,8 @@ export default function EchoArchive({ lv = 'elementary', onBack, onXp, trackWeak
   const [tip, setTip] = useState(null);
   const [earned, setEarned] = useState(null);
   const closeTip = useCallback(() => setTip(null), []);
+  const metaRef = useRef(meta);
+  metaRef.current = meta;
   const foils = useMemo(() => new Set(meta.collection.foils), [meta.collection.foils]);
   const resumedCombat = useRef(null);
   const awarded = useRef(null);
@@ -144,7 +154,7 @@ export default function EchoArchive({ lv = 'elementary', onBack, onXp, trackWeak
   useEffect(() => { setMusicEnabled(settings.music); }, [settings.music]);
   // Each act has its own music while a run is on screen; titles, the codex
   // and the end-of-run summary stay quiet.
-  const musicAct = view === 'run' && run && !['victory', 'defeat'].includes(run.screen) ? run.act : null;
+  const musicAct = view === 'run' && run && !['victory', 'defeat'].includes(run.screen) ? zoneOf(run) : null;
   useEffect(() => { setMusicAct(musicAct); }, [musicAct]);
   useEffect(() => () => setMusicAct(null), []);
   useEffect(() => { writeJSON(META_KEY, meta); }, [meta]);
@@ -190,9 +200,12 @@ export default function EchoArchive({ lv = 'elementary', onBack, onXp, trackWeak
     const newLevel = won && run.difficulty === 'heroic' && !run.daily && (run.silence || 0) > (silenceTop ?? -1);
     if (newLevel) bonus.push([`靜默 ${run.silence} 首勝`, SILENCE_CLEAR_BONUS]);
     const shards = shardsForRun(run, bonus);
-    setEarned({ ...shards, unlocked: newLevel && run.silence < MAX_SILENCE ? run.silence + 1 : null });
+    const before = metaRef.current;
+    const heroes = newlyUnlocked(before, { ...before, wins: before.wins + (won ? 1 : 0), bestAct: Math.max(before.bestAct, run.act), clears: addClears(before.clears, run) });
+    setEarned({ ...shards, unlocked: newLevel && run.silence < MAX_SILENCE ? run.silence + 1 : null, heroes });
     setMeta(previous => ({
       ...previous,
+      clears: addClears(previous.clears, run),
       wins: previous.wins + (won ? 1 : 0),
       bestAct: Math.max(previous.bestAct, run.act),
       bestFloor: Math.max(previous.bestFloor, run.floor),
@@ -234,6 +247,8 @@ export default function EchoArchive({ lv = 'elementary', onBack, onXp, trackWeak
     if (!run || ['victory', 'defeat'].includes(run.screen)) return;
     setMeta(previous => ({
       ...previous,
+      clears: addClears(previous.clears, run),
+      bestAct: Math.max(previous.bestAct, run.act),
       history: addRecord(previous.history, runRecord(run, 'abandon')),
       daily: run.daily && previous.daily?.date === run.daily.date && !previous.daily.result ? { ...previous.daily, result: { outcome: 'abandon', act: run.act, floor: run.floor, shards: 0 } } : previous.daily,
     }));
@@ -336,10 +351,12 @@ export default function EchoArchive({ lv = 'elementary', onBack, onXp, trackWeak
     case 'shop': screen = <ShopScreen run={run} dispatch={dispatch}/>; break;
     case 'treasure': screen = <TreasureScreen run={run} dispatch={dispatch}/>; break;
     case 'bossRelic': screen = <BossRelicScreen run={run} dispatch={dispatch}/>; break;
+    case 'route': screen = <RouteScreen run={run} meta={meta} dispatch={dispatch}/>; break;
     default: screen = null;
   }
 
-  return withFoils(<div ref={root} className={`ea-root is-immersive screen-${run.screen} act-${run.act}`} onClick={showTip}>
+  const zoneInfo = ACTS[zoneOf(run)];
+  return withFoils(<div ref={root} className={`ea-root is-immersive screen-${run.screen} act-${run.act} zone-${zoneOf(run)}`} onClick={showTip}>
     <TopBar run={run} potionAim={potionAim} onPotion={slot => setOverlay({ kind: 'potion', slot })} onDeck={() => setOverlay({ kind: 'deck' })} onMenu={() => { setConfirmAbandon(false); setOverlay({ kind: 'menu' }); }}/>
     <div className="ea-main">{screen}</div>
 
@@ -347,9 +364,9 @@ export default function EchoArchive({ lv = 'elementary', onBack, onXp, trackWeak
     {run.pending && <CardPicker key={`${run.pending.kind}-${run.pending.source}`} run={run} dispatch={dispatch}/>}
 
     {run.screen === 'map' && run.actIntro && <div className="ea-act-intro" role="dialog" aria-modal="true" aria-labelledby="ea-act-title">
-      <span className="ea-act-roman" lang="en">ACT {ACTS[run.act].roman}</span>
-      <h2 id="ea-act-title"><span lang="en">{ACTS[run.act].en}</span><b>{ACTS[run.act].zh}</b></h2>
-      <p>{ACTS[run.act].mood}</p>
+      <span className="ea-act-roman" lang="en">ACT {zoneInfo.roman}</span>
+      <h2 id="ea-act-title"><span lang="en">{zoneInfo.en}</span><b>{zoneInfo.zh}</b></h2>
+      <p>{zoneInfo.mood}</p>
       <button type="button" className="ea-btn is-gold" autoFocus onClick={() => dispatch({ type: 'ACK_ACT' })}>展開地圖 →</button>
     </div>}
 

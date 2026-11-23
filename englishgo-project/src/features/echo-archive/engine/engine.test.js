@@ -213,6 +213,7 @@ function botStep(run, seedOffset) {
     }
     case 'treasure': return act(run, { type: 'OPEN_CHEST' });
     case 'bossRelic': return act(run, { type: 'BOSS_RELIC', id: run.bossRelics[0] });
+    case 'route': return act(run, { type: 'CHOOSE_ROUTE', zone: run.routes[seedOffset % run.routes.length] });
     default: return run;
   }
 }
@@ -876,6 +877,23 @@ describe('echo archive Inkcaller full runs', () => {
     let run = createRun({ seed: seed * 7919, difficulty, hero: 'caller', unlocked: ARCHIVE_CARDS });
     let steps = 0;
     while (!['victory', 'defeat'].includes(run.screen) && steps < 8000) {
+      const next = botStep(run, seed + steps);
+      expect(next).not.toBe(run);
+      run = next;
+      steps++;
+    }
+    expect(['victory', 'defeat']).toContain(run.screen);
+  });
+});
+
+// The Tinker and the Twilight Knight, through both routes of each act. Their
+// whole card pool is dealt into the starting deck so every card gets played.
+describe('echo archive Tinker and Twilight Knight full runs', () => {
+  it.each([[91, 'tinker', 'story'], [92, 'tinker', 'standard'], [93, 'knight', 'story'], [94, 'knight', 'heroic']])('seed %i as %s on %s finishes without getting stuck', (seed, hero, difficulty) => {
+    let run = createRun({ seed: seed * 7919, difficulty, hero, unlocked: ARCHIVE_CARDS });
+    Object.keys(CARDS).filter(id => CARDS[id].hero === hero).forEach((id, i) => run.hero.deck.push({ uid: `h${i}`, id, up: i % 3 === 0 }));
+    let steps = 0;
+    while (!['victory', 'defeat'].includes(run.screen) && steps < 9000) {
       const next = botStep(run, seed + steps);
       expect(next).not.toBe(run);
       run = next;

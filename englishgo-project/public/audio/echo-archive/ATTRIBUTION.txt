@@ -8,3 +8,6 @@ act1.mp3  The Whispering Stacks: celesta and harp arpeggios, warm low strings, m
 act2.mp3  The Rusted Clockwork: pizzicato strings, ticking woodblock, glockenspiel, muted brass
 act3.mp3  The Throne of Silence: slow pads, cello drones, distant bells, sparse piano
 act4.mp3  The Last Page: harp and celesta, swelling strings, solo flute
+drowned.mp3  The Drowned Stacks: harp and celesta arpeggios, glass harmonica, swelling low strings, bubbling marimba
+observatory.mp3  The Starlit Observatory: glockenspiel and music box melody, celesta, choir-like pads, pizzicato, french horn
+(both generated on 2026-11-23 with the same model and settings)

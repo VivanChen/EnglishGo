@@ -14,8 +14,12 @@ export const PAINTED_CREATURES = new Set([
   'wraith', 'shade', 'gargoyle', 'oracle', 'silentKnight', 'unspoken', 'bell', 'scribe', 'choir', 'thief',
   // Act IV
   'gate', 'silence',
+  // The Drowned Stacks
+  'bubble', 'crab', 'reader', 'eel', 'urchin', 'jelly', 'reef', 'siren', 'angler', 'leviathan', 'captain', 'shipAnchor',
+  // The Starlit Observatory
+  'mote', 'hound', 'orrery', 'astromage', 'voidMoth', 'meteor', 'bear', 'astronomer', 'gravity', 'starEater', 'regent',
 ]);
-export const PAINTED_HEROES = new Set(['scribe', 'caller']);
+export const PAINTED_HEROES = new Set(['scribe', 'caller', 'tinker', 'knight']);
 
 // Rare and mythic cards carry a painted illustration in the art window; other
 // cards keep their glyph, which also shows until a painting has loaded.
@@ -24,10 +28,11 @@ export const PAINTED_CARDS = new Set([
   'finale', 'devour', 'storm', 'sanctum', 'wildfire', 'clarity', 'ascend', 'scholar', 'ironWill', 'mirrorImage',
   'runeStorm', 'quillDance', 'wordflood', 'palimpsest', 'legion', 'unboundSpirit', 'inkStorm', 'lastLight', 'twinSpirit',
   'finalFold', 'eternalFlame', 'epic', 'mountainCleaver', 'flashpoint', 'mirrorWall', 'finisher', 'eloquence', 'blackout',
-  'origamiWorkshop', 'spiritSurge',
+  'origamiWorkshop', 'spiritSurge', 'overdrive', 'boilerBurst', 'exhaustEngine', 'totalEclipse', 'meteorLance', 'twinOrbit',
   // Mythic
   'sunfall', 'aegis', 'thousandCuts', 'archmage', 'livingInk', 'grandLibrary', 'inkSovereign', 'thousandCranes',
   'afterimage', 'swordSaint', 'hellfire', 'colossus', 'perpetualMotion', 'runeChoir', 'abyssalInk', 'paperDragon', 'eternalSpirit',
+  'safetyValve', 'eternalTwilight',
 ]);
 
 export const cardImage = id => (PAINTED_CARDS.has(id) ? `${ROOT}/cards/${id}.webp` : null);
@@ -37,6 +42,7 @@ export const PAINTED_EVENTS = new Set([
   'keeper', 'mirror', 'fountain', 'riddle', 'bard', 'statue', 'binder', 'candle', 'guardian', 'scriptorium', 'wishingWell',
   'lostScholar', 'emberAltar', 'tinker', 'silentChoir', 'page',
   'tower', 'matching', 'echoHall', 'fortuneTeller', 'mimicChest', 'inkKitten', 'knightDuel', 'clockworkTea', 'fortuneWheel', 'readingRoom',
+  'pearlClam', 'fallingStar',
 ]);
 export const eventImage = id => (PAINTED_EVENTS.has(id) ? `${ROOT}/events/${id}.webp` : null);
 export const creatureImage = art => (PAINTED_CREATURES.has(art) ? `${ROOT}/creatures/${art}.webp` : null);

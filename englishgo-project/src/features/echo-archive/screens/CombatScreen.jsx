@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { CARDS, KEYWORDS, POWER_TEXT } from '../data/cards.js';
-import { ELITE_AFFIXES, ENEMIES, affixText } from '../data/enemies.js';
+import { ELITE_AFFIXES, ENEMIES, affixText, zoneOf } from '../data/enemies.js';
 import { POTIONS } from '../data/relics.js';
 import { HEROES, heroOf } from '../data/heroes.js';
-import { canPlay, cardContext, cardCost, hasRelic, intentOf, living } from '../engine/engine.js';
+import { OVERHEAT_AT, OVERHEAT_HP, canPlay, cardContext, cardCost, hasRelic, intentOf, isDay, isGuarded, isNight, living } from '../engine/engine.js';
 import CardFace, { KeywordList } from '../components/CardFace.jsx';
 import Glyph from '../components/Glyph.jsx';
 import { Backdrop, EnemyArt, FamiliarArt, HeroArt } from '../components/Creatures.jsx';
@@ -12,7 +12,7 @@ import { haptic, sfx } from '../sound.js';
 import { duckMusic } from '../music.js';
 
 const DEBUFFS = new Set(['weak', 'exposed', 'frail', 'burn']);
-const plain = segs => segs.map(seg => (typeof seg === 'string' ? seg : seg.kw ? KEYWORDS[seg.kw].en : seg.n)).join('');
+const plain = segs => segs.map(seg => (typeof seg === 'string' ? seg : seg.kw ? KEYWORDS[seg.kw].en : seg.sky ? (seg.sky === 'day' ? '☀' : '☾') : seg.n)).join('');
 
 function statusTip(key, value, power) {
   if (power) { const info = POWER_TEXT[key]; return `${info.en}（${info.zh}）：${plain(info.text(value))}`; }
@@ -125,6 +125,27 @@ function Intent({ run, enemy }) {
   </div>;
 }
 
+// The Tinker's boiler: ten segments, red once the next end of turn would overheat.
+function SteamGauge({ steam, mark }) {
+  const hot = steam >= OVERHEAT_AT;
+  const tip = `${KEYWORDS.steam.en}（${KEYWORDS.steam.zh}）${steam}：${KEYWORDS.steam.text}`;
+  return <div className={`ea-steam ${hot ? 'is-hot' : steam >= OVERHEAT_AT - 3 ? 'is-warm' : ''} ${mark ? `is-${mark}` : ''}`} tabIndex={0} data-tip={tip} aria-label={`Steam ${steam} / ${OVERHEAT_AT}${hot ? '，回合結束時會過熱！' : ''}`}>
+    <span className="ea-steam-bar" aria-hidden="true">{Array.from({ length: OVERHEAT_AT }, (_, i) => <i key={i} className={i < steam ? 'is-on' : ''}/>)}</span>
+    <b><Glyph name="steam" size={14}/>{steam}</b>
+    {hot && <small>過熱!</small>}
+  </div>;
+}
+
+// The Twilight Knight's sky: Day, Night, or both under a Total Eclipse.
+function SkyBadge({ c, mark }) {
+  const day = isDay(c), night = isNight(c);
+  const name = day && night ? '全蝕' : day ? '白晝' : '黑夜';
+  const tip = `${name}：${day && night ? '白晝與黑夜的效果都會生效。' : day ? KEYWORDS.day.text : KEYWORDS.night.text}${c.player.holdSky ? '（至日：下回合不會交替）' : ''}`;
+  return <div className={`ea-sky ${day ? 'is-day' : ''} ${night ? 'is-night' : ''} ${mark ? `is-${mark}` : ''}`} tabIndex={0} data-tip={tip} aria-label={tip}>
+    <Glyph name={day && night ? 'eclipse' : day ? 'sun' : 'moon'} size={20}/><b>{name}</b>{c.player.holdSky && <small>⏸</small>}
+  </div>;
+}
+
 function Enemy({ run, enemy, targetable, over, mark, floaters, impacts, onClick }) {
   const def = ENEMIES[enemy.id];
   return <div
@@ -139,7 +160,8 @@ function Enemy({ run, enemy, targetable, over, mark, floaters, impacts, onClick 
     <div className="ea-enemy-body"><EnemyArt art={def.art}/><Impacts items={impacts}/><Floaters items={floaters}/></div>
     <div className="ea-unit-info">
       <div className="ea-unit-name"><b lang="en">{def.en}</b><span>{def.zh}</span></div>
-      {(enemy.affixes?.length > 0 || enemy.phased) && !enemy.dead && <div className="ea-affixes">
+      {(enemy.affixes?.length > 0 || enemy.phased || isGuarded(run.combat, enemy)) && !enemy.dead && <div className="ea-affixes">
+        {isGuarded(run.combat, enemy) && <span className="ea-affix is-guard" tabIndex={0} data-tip={`${ENEMIES[def.guard].zh}還在：${def.zh}受到的傷害減半。先打倒${ENEMIES[def.guard].zh}！`}><Glyph name="anchor" size={12}/>傷害減半</span>}
         {(enemy.affixes || []).map(id => <span key={id} className={`ea-affix is-${id}`} tabIndex={0} data-tip={`${ELITE_AFFIXES[id].en}（${ELITE_AFFIXES[id].zh}）：${affixText(id, run.act)}`} aria-label={`${ELITE_AFFIXES[id].zh}：${affixText(id, run.act)}`}><Glyph name={ELITE_AFFIXES[id].glyph} size={12}/>{ELITE_AFFIXES[id].zh}</span>)}
         {enemy.phased && <span className="ea-affix is-phase" tabIndex={0} data-tip={`${def.phase2.en}（${def.phase2.zh}）：${def.phase2.text}`}><Glyph name="wrath" size={12}/>第二階段</span>}
       </div>}
@@ -334,6 +356,10 @@ export default function CombatScreen({ run, dispatch, settings, pool, speak, pot
         case 'colossus': spawn.push({ to: 'player', text: 'Colossus!', kind: 'buff' }); break;
         case 'steal': spawn.push({ to: 'player', text: `−${f.amount} Ward`, kind: 'debuff' }, { to: f.to, text: `+${f.kept ?? f.amount} Ward`, kind: 'ward' }); setNotice({ key: f.id, text: `Ward 被偷走了 ${f.amount} 點！` }); sfx.debuff(); break;
         case 'act': nextMarks[f.from] = 'act'; break;
+        case 'steam': spawn.push({ to: 'player', text: `${f.amount > 0 ? '+' : ''}${f.amount} Steam`, kind: f.amount > 0 ? 'buff' : 'ward' }); nextMarks.steam = 'pulse'; break;
+        case 'vent': spawn.push({ to: 'player', text: `Vent −${f.amount}`, kind: 'ward' }); nextMarks.steam = 'vent'; burst('player', 'shield'); sfx.block(); break;
+        case 'overheat': setNotice({ key: f.id, text: c.player.pw.safetyValve ? '過熱！安全閥把蒸汽噴向所有敵人！' : `過熱！失去 ${OVERHEAT_HP} 生命，Steam 歸零。`, ms: 2200 }); nextMarks.steam = 'overheat'; quake = Math.max(quake, 1); break;
+        case 'sky': if (f.sky === 'both' || f.sky === 'hold') setNotice({ key: f.id, text: f.sky === 'both' ? '全蝕：這回合同時是白晝與黑夜！' : '至日：下回合維持現在的晝夜。' }); else setBanner({ key: `sky-${f.id}`, en: f.sky === 'day' ? 'Day ☀' : 'Night ☾', zh: f.sky === 'day' ? '白晝：攻擊的時刻' : '黑夜：防守的時刻' }); nextMarks.sky = 'flip'; sfx.buff(); break;
         case 'familiar': nextMarks.familiar = 'strike'; burst(f.to, 'spirit'); if (f.all) living(c).forEach(enemy => { if (enemy.uid !== f.to) burst(enemy.uid, 'spirit'); }); break;
         case 'feed': spawn.push({ to: 'familiar', text: f.amount > 0 ? `+${f.amount}` : `${f.amount}`, kind: 'buff' }); nextMarks.familiar = nextMarks.familiar || 'grow'; sfx.buff(); break;
         case 'summon': burst(f.to, 'summon'); nextMarks[f.to] = 'summoned'; setNotice({ key: f.id, text: `${ENEMIES[f.enemy].en} · ${ENEMIES[f.enemy].zh} 加入戰鬥！` }); break;
@@ -345,7 +371,7 @@ export default function CombatScreen({ run, dispatch, settings, pool, speak, pot
           setCoach(step => (step === 'play' ? (guardLeft && f.card !== 'guard' ? 'ward' : 'end') : step === 'ward' && CARDS[f.card].type === 'skill' ? 'end' : step));
           break;
         }
-        case 'turn': setBanner({ key: `t${c.id}-${f.id}`, en: 'Your Turn', zh: `第 ${f.round} 回合 · 你的行動` }); sfx.turn(); break;
+        case 'turn': setBanner({ key: `t${c.id}-${f.id}`, en: 'Your Turn', zh: `第 ${f.round} 回合 · ${c.player.sky ? (isDay(c) ? '☀ 白晝：攻擊的時刻' : '☾ 黑夜：防守的時刻') : '你的行動'}` }); sfx.turn(); break;
         case 'shuffle': setNotice({ key: f.id, text: '棄牌堆洗回抽牌堆' }); break;
         case 'potion': setNotice({ key: f.id, text: `${POTIONS[f.potion].en} · ${POTIONS[f.potion].zh}` }); break;
         default: break;
@@ -564,9 +590,9 @@ export default function CombatScreen({ run, dispatch, settings, pool, speak, pot
   const hero = HEROES[heroId];
   const familiar = c.player.familiar || 0;
   const coachAt = coach && coach !== 'wait' && !chant ? COACH[coach].at : null;
-  return <section className={`ea-combat act-${run.act} ${targeting ? 'is-targeting' : ''} ${coachAt ? `coach-${coachAt}` : ''}`} aria-label="戰鬥">
+  return <section className={`ea-combat act-${run.act} zone-${zoneOf(run)} ${c.player.sky ? `sky-${isDay(c) && isNight(c) ? 'both' : c.player.sky}` : ''} ${targeting ? 'is-targeting' : ''} ${coachAt ? `coach-${coachAt}` : ''}`} aria-label="戰鬥">
     <div className={`ea-field ${shake ? `is-shaking shake-${shake}` : ''}`} ref={fieldRef}>
-      <Backdrop act={run.act}/>
+      <Backdrop act={zoneOf(run)}/>
       <div className="ea-stage">
         <div className={`ea-hero ${marks.player ? `is-${marks.player}` : ''}`}>
           <div className="ea-hero-body">
@@ -577,6 +603,8 @@ export default function CombatScreen({ run, dispatch, settings, pool, speak, pot
               <b>{familiar}</b>
               <Floaters items={floaters.filter(item => item.to === 'familiar')}/>
             </div>}
+            {c.player.steam != null && <SteamGauge steam={c.player.steam} mark={marks.steam}/>}
+            {c.player.sky && <SkyBadge c={c} mark={marks.sky}/>}
             <Impacts items={impacts.filter(item => item.to === 'player')}/><Floaters items={floaters.filter(item => item.to === 'player')}/>
           </div>
           <div className="ea-unit-info">

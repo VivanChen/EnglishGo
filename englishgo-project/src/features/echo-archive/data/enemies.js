@@ -299,6 +299,202 @@ export const ENEMIES = {
     phase2: { en: 'Shadow Step', zh: '影遁', text: '竊語者躲進陰影：獲得 1 層 Might 和 20 Ward，並把 1 張 Doubt 塞進你的棄牌堆。', might: 1, ward: 20, cards: [{ id: 'doubt', n: 1 }] },
   },
 
+  // ── Act II (other route) · The Drowned Stacks ──
+  bubbleSprite: {
+    en: 'Bubble Sprite', zh: '泡泡精', hp: [14, 18], art: 'bubble',
+    moves: { pop: { en: 'Pop!', zh: '啵！', dmg: 7 }, froth: { en: 'Froth', zh: '吹泡泡', allyWard: 5 } },
+    next: mix([['pop', 60], ['froth', 40]]),
+  },
+  pageCrab: {
+    en: 'Page Crab', zh: '書頁蟹', hp: [26, 30], art: 'crab',
+    moves: {
+      pinch: { en: 'Pinch', zh: '夾擊', dmg: 4, hits: 2 },
+      shell: { en: 'Shell Up', zh: '縮進殼裡', ward: 11 },
+      snip: { en: 'Snip', zh: '剪頁', dmg: 8, frail: 1 },
+    },
+    next: cycle('pinch', 'shell', 'snip'),
+  },
+  drownedReader: {
+    en: 'Drowned Reader', zh: '溺讀者', hp: [36, 40], art: 'reader',
+    moves: {
+      grasp: { en: 'Soggy Grasp', zh: '濕冷之握', dmg: 9 },
+      mumble: { en: 'Mumble', zh: '喃喃自語', weak: 2, cards: [{ id: 'smudge', n: 1 }] },
+      soak: { en: 'Soak', zh: '浸透', dmg: 6, heal: 6 },
+    },
+    next: mix([['grasp', 45], ['mumble', 25], ['soak', 30]]),
+  },
+  voltEel: {
+    en: 'Volt Eel', zh: '電鰻', hp: [28, 32], art: 'eel',
+    moves: { shock: { en: 'Shock', zh: '電擊', dmg: 3, hits: 3 }, charge: { en: 'Charge Up', zh: '蓄電', ward: 6, might: 1 } },
+    next: mix([['shock', 60], ['charge', 40]]),
+  },
+  inkUrchin: {
+    en: 'Ink Urchin', zh: '墨海膽', hp: [22, 26], art: 'urchin', start: { spikes: 2 },
+    moves: { prick: { en: 'Prick', zh: '扎刺', dmg: 7 }, bristle: { en: 'Bristle', zh: '豎起尖刺', ward: 8, might: 1 } },
+    next: cycle('prick', 'bristle'),
+  },
+  lanternJelly: {
+    en: 'Lantern Jelly', zh: '燈水母', hp: [22, 26], art: 'jelly',
+    moves: {
+      sting: { en: 'Sting', zh: '螫刺', dmg: 5, frail: 2 },
+      glow: { en: 'Glow', zh: '微光', allyWard: 7 },
+      zap: { en: 'Zap', zh: '電光', dmg: 8 },
+    },
+    next: mix([['sting', 40], ['glow', 25], ['zap', 35]]),
+  },
+  reefWarden: {
+    en: 'Reef Warden', zh: '珊瑚守衛', hp: [106, 112], art: 'reef', elite: true,
+    moves: {
+      coral: { en: 'Coral Armor', zh: '珊瑚甲', ward: 16, might: 2 },
+      crash: { en: 'Reef Crash', zh: '礁石重擊', dmg: 21 },
+      barnacle: { en: 'Barnacle Barrage', zh: '藤壺亂射', dmg: 7, hits: 2, exposed: 1 },
+    },
+    next: cycle('coral', 'crash', 'barnacle'),
+  },
+  sirenScholar: {
+    en: 'Siren Scholar', zh: '海妖學者', hp: [88, 94], art: 'siren', elite: true,
+    moves: {
+      lullaby: { en: 'Lullaby', zh: '搖籃曲', weak: 2, frail: 2, cards: [{ id: 'doubt', n: 1 }] },
+      aria: { en: 'Aria', zh: '詠嘆調', dmg: 6, hits: 3 },
+      crescendo: { en: 'Crescendo', zh: '漸強', dmg: 13, grow: 3 },
+    },
+    next: cycle('lullaby', 'aria', 'crescendo'),
+  },
+  anglerFish: {
+    en: 'Lamp Angler', zh: '燈籠魚', hp: [100, 106], art: 'angler', elite: true,
+    moves: {
+      lure: { en: 'Lure', zh: '誘光', exposed: 2, ward: 12 },
+      chomp: { en: 'Chomp', zh: '大口咬下', dmg: 20 },
+      nibble: { en: 'Nibble', zh: '輕咬', dmg: 6, hits: 2 },
+    },
+    next: cycle('lure', 'chomp', 'nibble'),
+  },
+  paperLeviathan: {
+    en: 'The Paper Leviathan', zh: '紙鯨', hp: [195, 195], art: 'leviathan', boss: true,
+    countdown: { move: 'tidalWave', every: 4, en: 'Tidal Wave', tip: '每第 4 次行動，紙鯨會掀起巨浪造成大量傷害，記得提前準備 Ward！' },
+    moves: {
+      spout: { en: 'Spout', zh: '噴泉', summon: [{ id: 'bubbleSprite', n: 1 }], ward: 10 },
+      tailSlap: { en: 'Tail Slap', zh: '甩尾', dmg: 8, hits: 2 },
+      swallow: { en: 'Swallow', zh: '吞噬', dmg: 13, cards: [{ id: 'smudge', n: 2 }] },
+      tidalWave: { en: 'Tidal Wave', zh: '巨浪', dmg: 28 },
+    },
+    next: enemy => ['spout', 'tailSlap', 'swallow', 'tidalWave'][enemy.turns % 4],
+    phase2: { en: 'Breach', zh: '破浪而出', text: '紙鯨衝出水面：清除 Weak 與 Exposed，獲得 2 層 Might 和 18 Ward。', might: 2, ward: 18, cleanse: true },
+  },
+  // Second Drowned boss: the captain hides behind his anchor until it breaks.
+  ironAnchor: {
+    en: 'Iron Anchor', zh: '鐵錨', hp: [32, 36], art: 'shipAnchor', minion: true,
+    moves: { drag: { en: 'Drag Under', zh: '拖入水底', dmg: 6, frail: 1 }, brace: { en: 'Hold Fast', zh: '穩住', allyWard: 8 } },
+    next: cycle('drag', 'brace'),
+  },
+  drownedCaptain: {
+    en: 'The Drowned Captain', zh: '沉船船長', hp: [180, 180], art: 'captain', boss: true, guard: 'ironAnchor',
+    passive: '鐵錨還在時，船長受到的傷害減半。先打倒鐵錨！鐵錨沉下去後，船長會花一回合重新拋錨。',
+    moves: {
+      cutlass: { en: 'Cutlass', zh: '彎刀連斬', dmg: 8, hits: 2 },
+      broadside: { en: 'Broadside', zh: '舷砲齊射', dmg: 20 },
+      shanty: { en: 'Sea Shanty', zh: '水手之歌', might: 2, ward: 10 },
+      dropAnchor: { en: 'Drop Anchor', zh: '拋錨', summon: [{ id: 'ironAnchor', n: 1 }], ward: 8 },
+    },
+    next: (enemy, roll, { allies = [] } = {}) => {
+      const anchored = allies.some(ally => ally.id === 'ironAnchor');
+      if (enemy.turns > 0 && !anchored && enemy.history.at(-1) !== 'dropAnchor') return 'dropAnchor';
+      return ['cutlass', 'broadside', 'shanty'][enemy.turns % 3];
+    },
+    phase2: { en: 'All Hands!', zh: '全員上甲板', text: '沉船船長吹響號角：清除 Weak 與 Exposed，獲得 2 層 Might 和 15 Ward。', might: 2, ward: 15, cleanse: true },
+  },
+
+  // ── Act III (other route) · The Starlit Observatory ──
+  starMote: {
+    en: 'Star Mote', zh: '星塵', hp: [18, 22], art: 'mote',
+    moves: { twinkle: { en: 'Twinkle', zh: '閃爍', dmg: 7 }, flare: { en: 'Flare', zh: '耀斑', dmg: 3, burn: 2 } },
+    next: mix([['twinkle', 60], ['flare', 40]]),
+  },
+  cometHound: {
+    en: 'Comet Hound', zh: '彗星獵犬', hp: [40, 44], art: 'hound',
+    moves: { pounce: { en: 'Pounce', zh: '飛撲', dmg: 7, hits: 2 }, howl: { en: 'Howl', zh: '星嚎', might: 2, ward: 8 } },
+    next: mix([['pounce', 65], ['howl', 35]]),
+  },
+  orrerySentry: {
+    en: 'Orrery Sentry', zh: '星儀哨兵', hp: [58, 64], art: 'orrery',
+    moves: { align: { en: 'Align', zh: '行星連線', ward: 15, might: 2 }, beam: { en: 'Star Beam', zh: '星光射線', dmg: 17 } },
+    next: cycle('align', 'beam'),
+  },
+  astroMage: {
+    en: 'Astrolabe Mage', zh: '星盤術士', hp: [44, 48], art: 'astromage',
+    moves: {
+      chart: { en: 'Chart Fate', zh: '占星', exposed: 2, weak: 1 },
+      bolt: { en: 'Star Bolt', zh: '星彈', dmg: 13 },
+      mirror: { en: 'Mirror Sky', zh: '鏡空', allyWard: 9 },
+    },
+    next: mix([['bolt', 45], ['chart', 30], ['mirror', 25]]),
+  },
+  voidMoth: {
+    en: 'Void Moth', zh: '虛空蛾', hp: [38, 42], art: 'voidMoth',
+    moves: { dustWing: { en: 'Dust Wing', zh: '星塵之翼', dmg: 7, cards: [{ id: 'dust', n: 1 }] }, eclipseWing: { en: 'Eclipse Wing', zh: '蝕之翼', dmg: 5, hits: 2, frail: 1 } },
+    next: mix([['dustWing', 50], ['eclipseWing', 50]]),
+  },
+  meteorImp: {
+    en: 'Meteor Imp', zh: '隕石小鬼', hp: [30, 34], art: 'meteor',
+    moves: { crash: { en: 'Crash Down', zh: '墜擊', dmg: 15 }, smolder: { en: 'Smolder', zh: '餘火', dmg: 5, burn: 3 } },
+    next: mix([['crash', 50], ['smolder', 50]]),
+  },
+  greatBear: {
+    en: 'The Great Bear', zh: '大熊星座', hp: [140, 146], art: 'bear', elite: true,
+    moves: {
+      roar: { en: 'Star Roar', zh: '星吼', weak: 2, might: 3 },
+      maul: { en: 'Maul', zh: '熊掌連擊', dmg: 11, hits: 2 },
+      starHide: { en: 'Star Hide', zh: '星之毛皮', ward: 22 },
+    },
+    next: enemy => ['roar', 'maul', 'starHide', 'maul'][enemy.turns % 4],
+  },
+  astronomer: {
+    en: 'Clockwork Astronomer', zh: '機械天文學家', hp: [122, 128], art: 'astronomer', elite: true,
+    moves: {
+      observe: { en: 'Observe', zh: '觀測', summon: [{ id: 'starMote', n: 1 }], allyWard: 6 },
+      lens: { en: 'Focus Lens', zh: '聚焦', dmg: 9, exposed: 2 },
+      focus: { en: 'Sunbeam', zh: '日光束', dmg: 24 },
+      calibrate: { en: 'Calibrate', zh: '校準', allyWard: 10, might: 2 },
+    },
+    next: enemy => (enemy.turns === 0 ? 'observe' : ['lens', 'focus', 'calibrate', 'observe'][(enemy.turns - 1) % 4]),
+  },
+  gravityKnight: {
+    en: 'Gravity Knight', zh: '引力騎士', hp: [130, 136], art: 'gravity', elite: true,
+    moves: {
+      pull: { en: 'Gravity Pull', zh: '引力拉扯', dmg: 6, frail: 2, exposed: 2 },
+      crush: { en: 'Moon Crush', zh: '月錘', dmg: 18 },
+      orbit: { en: 'Orbit Guard', zh: '環繞護衛', ward: 18, might: 1 },
+    },
+    next: cycle('pull', 'crush', 'orbit'),
+  },
+  starEater: {
+    en: 'The Star Eater', zh: '噬星者', hp: [285, 285], art: 'starEater', boss: true,
+    countdown: { move: 'supernova', every: 4, en: 'Supernova', tip: '每第 4 次行動會引發超新星。場上每有一顆星塵，傷害就更高！' },
+    passive: '每有一顆星塵在場，「超新星」的傷害 +6。趁早清掉星塵！',
+    moves: {
+      callStars: { en: 'Call the Stars', zh: '召星', summon: [{ id: 'starMote', n: 2 }], ward: 12 },
+      starfall: { en: 'Starfall', zh: '星雨', dmg: 7, hits: 3 },
+      gravity: { en: 'Crushing Gravity', zh: '重力壓制', weak: 2, frail: 2, cards: [{ id: 'dust', n: 2 }] },
+      supernova: { en: 'Supernova', zh: '超新星', dmg: 34, perAlly: { id: 'starMote', dmg: 6 } },
+    },
+    next: enemy => ['callStars', 'starfall', 'gravity', 'supernova'][enemy.turns % 4],
+    phase2: { en: 'Event Horizon', zh: '事件視界', text: '噬星者張開黑洞：清除 Weak 與 Exposed，召來 2 顆星塵，並獲得 2 層 Might。', might: 2, cleanse: true, summon: [{ id: 'starMote', n: 2 }] },
+  },
+  // Second Observatory boss: storms by day, shields by night.
+  eclipseRegent: {
+    en: 'The Eclipse Regent', zh: '日蝕攝政', hp: [275, 275], art: 'regent', boss: true,
+    passive: '日蝕攝政在白晝與黑夜之間輪替：白晝時猛攻，黑夜時築起護盾並削弱你。黑夜是你進攻的好時機！',
+    moves: {
+      solarLance: { en: 'Solar Lance', zh: '日之槍', dmg: 12, hits: 2 },
+      lunarVeil: { en: 'Lunar Veil', zh: '月之帷', ward: 26, weak: 2 },
+      corona: { en: 'Corona', zh: '日冕', dmg: 9, burn: 4 },
+      umbra: { en: 'Umbra', zh: '本影', frail: 2, exposed: 2, cards: [{ id: 'doubt', n: 1 }] },
+      totality: { en: 'Totality', zh: '全蝕', dmg: 34 },
+    },
+    next: enemy => ['solarLance', 'lunarVeil', 'corona', 'umbra', enemy.phased ? 'totality' : 'solarLance', 'lunarVeil'][enemy.turns % 6],
+    phase2: { en: 'Totality', zh: '全蝕降臨', text: '日蝕攝政讓日月重疊：清除 Weak 與 Exposed，獲得 2 層 Might 和 20 Ward，白晝的攻擊會變成「全蝕」。', might: 2, ward: 20, cleanse: true },
+  },
+
   // ── Act IV · The Last Page (hidden; needs all three keys) ──
   gatekeeper: {
     en: 'The Gatekeeper', zh: '終頁守門人', hp: [170, 170], art: 'gate', elite: true,
@@ -355,6 +551,18 @@ export const ENCOUNTERS = {
     elite: [['gatekeeper']],
     bosses: [['lastSilence']],
   },
+  drowned: {
+    easy: [['bubbleSprite', 'bubbleSprite', 'bubbleSprite'], ['pageCrab'], ['inkUrchin', 'bubbleSprite'], ['voltEel']],
+    normal: [['drownedReader', 'bubbleSprite'], ['pageCrab', 'inkUrchin'], ['lanternJelly', 'voltEel'], ['drownedReader', 'lanternJelly'], ['pageCrab', 'pageCrab'], ['voltEel', 'bubbleSprite'], ['lanternJelly', 'bubbleSprite']],
+    elite: [['reefWarden'], ['sirenScholar', 'bubbleSprite'], ['anglerFish']],
+    bosses: [['paperLeviathan'], ['ironAnchor', 'drownedCaptain']],
+  },
+  observatory: {
+    easy: [['cometHound'], ['starMote', 'starMote', 'starMote'], ['meteorImp', 'starMote']],
+    normal: [['orrerySentry', 'starMote'], ['cometHound', 'starMote'], ['astroMage', 'meteorImp'], ['voidMoth', 'cometHound'], ['orrerySentry'], ['astroMage', 'voidMoth'], ['meteorImp', 'meteorImp', 'starMote']],
+    elite: [['greatBear'], ['astronomer'], ['gravityKnight']],
+    bosses: [['starEater'], ['eclipseRegent']],
+  },
 };
 
 // The enemy that stands for a boss encounter (on the map and in the records),
@@ -362,12 +570,21 @@ export const ENCOUNTERS = {
 export const bossOf = encounter => encounter.find(id => ENEMIES[id]?.boss) || encounter[0];
 export const bossName = encounter => { const def = ENEMIES[bossOf(encounter)]; return def.title || def; };
 
+// Regions ("zones"). Acts II and III each have two: the original climb and a
+// second route with its own foes, bosses and a differently shaped map. A run
+// keeps its act number for scaling; `run.zone` names the other route.
 export const ACTS = {
-  1: { en: 'The Whispering Stacks', zh: '低語書庫', roman: 'I', mood: '被寂靜侵蝕的書架之間，墨跡開始蠕動。' },
-  2: { en: 'The Rusted Clockwork', zh: '鏽蝕鐘塔', roman: 'II', mood: '時間在這裡生鏽，每一聲滴答都是警告。' },
-  3: { en: 'The Throne of Silence', zh: '靜默王座', roman: 'III', mood: '所有被遺忘的話語，都在王座下沉睡。' },
-  4: { en: 'The Last Page', zh: '最後一頁', roman: 'IV', mood: '三把鑰匙同時發光。王座後方，一頁空白的紙正在等你寫下結局。' },
+  1: { act: 1, en: 'The Whispering Stacks', zh: '低語書庫', roman: 'I', mood: '被寂靜侵蝕的書架之間，墨跡開始蠕動。' },
+  2: { act: 2, en: 'The Rusted Clockwork', zh: '鏽蝕鐘塔', roman: 'II', mood: '時間在這裡生鏽，每一聲滴答都是警告。', glyph: 'gear', route: '往上爬進鐘塔：齒輪怪物、商人與熟悉的岔路。' },
+  3: { act: 3, en: 'The Throne of Silence', zh: '靜默王座', roman: 'III', mood: '所有被遺忘的話語，都在王座下沉睡。', glyph: 'crown', route: '直上王座：寂靜的幽魂與無言之主。' },
+  4: { act: 4, en: 'The Last Page', zh: '最後一頁', roman: 'IV', mood: '三把鑰匙同時發光。王座後方，一頁空白的紙正在等你寫下結局。' },
+  drowned: { act: 2, en: 'The Drowned Stacks', zh: '沉沒書庫', roman: 'II', mood: '書庫的地下層早已沉入海中。往下潛吧，越深越暗，寶藏也越多。', glyph: 'drop', route: '往下潛進海底：地圖從上往下走，路比較窄。沒有商人，但有珍珠蚌送你寶物。' },
+  observatory: { act: 3, en: 'The Starlit Observatory', zh: '星辰天文台', roman: 'III', mood: '塔頂的天文台漂浮在群星之間，星門連通著一座座浮島。', glyph: 'stars', route: '登上浮空的天文台：三座浮島由星橋相連，踏上星門可以直接跳到更高的島。' },
 };
+// The routes the player can pick after each boss (the first is the original).
+export const ROUTES = { 2: [2, 'drowned'], 3: [3, 'observatory'] };
+// The zone a run is in: its route for this act, or the act itself.
+export const zoneOf = run => (run?.zone && ACTS[run.zone]?.act === run.act ? run.zone : run?.act || 1);
 
 // Keys that open the hidden fourth act.
 // Elite affixes: every elite fight gives its toughest foe one of these (two
@@ -378,7 +595,7 @@ export const ELITE_AFFIXES = {
   swift: { en: 'Swift', zh: '迅捷', glyph: 'dash', text: '第一回合會連續行動兩次。' },
   vampiric: { en: 'Vampiric', zh: '吸血', glyph: 'leech', text: '攻擊造成的生命傷害，一半會回到牠身上。' },
   enraged: { en: 'Enraged', zh: '狂怒', glyph: 'wrath', values: [3, 4, 5, 6], text: '生命第一次掉到一半以下時，獲得 {v} 層 Might。' },
-  splitting: { en: 'Splitting', zh: '分裂', glyph: 'burst', minions: { 1: 'inkling', 2: 'rustMite', 3: 'echoShade', 4: 'echoShade' }, text: '倒下時分裂出 2 隻小怪。' },
+  splitting: { en: 'Splitting', zh: '分裂', glyph: 'burst', minions: { 1: 'inkling', 2: 'rustMite', 3: 'echoShade', 4: 'echoShade', drowned: 'bubbleSprite', observatory: 'starMote' }, text: '倒下時分裂出 2 隻小怪。' },
 };
 export const affixValue = (id, act) => ELITE_AFFIXES[id]?.values?.[Math.max(1, Math.min(4, act)) - 1] ?? 0;
 export const affixText = (id, act) => ELITE_AFFIXES[id].text.replaceAll('{v}', String(affixValue(id, act)));

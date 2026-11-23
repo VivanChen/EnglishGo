@@ -31,3 +31,11 @@ illustration in gouache and watercolor with ink linework and visible paper
 texture, soft rim light, cozy yet mysterious mood, inside a magical ancient
 library tower of living ink and paper, palette chosen per scene, no text.
 The event's glyph is the fallback if a scene cannot load.
+
+Expansion (2026-11-23): the Tinker and the Twilight Knight (heroes/), the 23
+creatures of the Drowned Stacks and the Starlit Observatory (creatures/), the 8
+new Rare and Mythic hero cards (cards/) and the Pearl Clam and Falling Star
+scenes (events/), generated with the same model and the same style prompts
+(Drowned Stacks palette: deep sea teal, sea green and pearl; Starlit
+Observatory palette: midnight indigo, starlight gold and cyan), then processed
+the same way. Every new creature also has a simpler hand-drawn SVG fallback.

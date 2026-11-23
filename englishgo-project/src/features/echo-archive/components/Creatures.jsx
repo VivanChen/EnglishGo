@@ -468,6 +468,121 @@ function clockTwin(id, { face, eye, hands, cheek }) {
   </>;
 }
 
+// The Drowned Stacks and the Starlit Observatory: simpler fallback drawings
+// (each region has its painted sprites; these show only if an image fails).
+const Body = ({ id, d }) => <><path d={d} fill={`url(#${id('body')})`}/><path d={d} fill={`url(#${id('sheen')})`}/></>;
+const URCHIN_SPINES = Array.from({ length: 14 }, (_, i) => (Math.PI * (i + 0.5)) / 14);
+Object.assign(ART, {
+  bubble: id => <><Defs id={id} from="#7fe0d6" to="#1f6b6b"/><Shadow w={34}/>
+    <circle cx="100" cy="128" r="40" fill={`url(#${id('body')})`} opacity=".85"/><circle cx="100" cy="128" r="40" fill={`url(#${id('sheen')})`}/>
+    <circle cx="62" cy="88" r="12" fill="none" stroke="#c9fff6" strokeWidth="3" opacity=".6"/><circle cx="146" cy="96" r="8" fill="none" stroke="#c9fff6" strokeWidth="3" opacity=".6"/>
+    <Eyes x1={86} x2={114} y={124} r={7} id={id('glow')}/></>,
+  crab: id => <><Defs id={id} from="#b07a4a" to="#4a2a18"/><Shadow w={66}/>
+    <path d="M40 170L24 186M60 174L52 190M140 174L148 190M160 170L176 186" stroke="#4a2a18" strokeWidth="6" strokeLinecap="round"/>
+    <Body id={id} d="M44 168C40 132 64 112 100 112S160 132 156 168Z"/><path d="M100 114V168" stroke="#f4ead2" strokeWidth="4"/>
+    <path d="M40 140C20 120 24 96 40 92L52 108C40 112 44 124 54 132Z M160 140C180 120 176 96 160 92L148 108C160 112 156 124 146 132Z" fill="#f4ead2" stroke="#8a7550" strokeWidth="2"/>
+    <Eyes x1={84} x2={116} y={104} r={6} id={id('glow')}/></>,
+  reader: id => <><Defs id={id} from="#3a7a7a" to="#0c2428"/><Shadow w={50}/>
+    <Body id={id} d="M60 188C64 150 66 112 76 84C82 64 92 54 104 54C120 54 130 66 132 86C138 116 140 150 144 188Z"/>
+    <path d="M78 70C70 96 66 120 70 150M126 70C134 96 136 120 132 146" stroke="#3fae7a" strokeWidth="5" fill="none" opacity=".7"/>
+    <rect x="80" y="128" width="40" height="30" rx="3" fill="#c7b38c" transform="rotate(-8 100 143)"/>
+    <Eyes x1={92} x2={114} y={84} r={5} id={id('glow')}/></>,
+  eel: id => <><Defs id={id} from="#3f5fb8" to="#121a44"/><Shadow w={50}/>
+    <path d="M60 186C40 160 70 140 100 150S150 150 140 116C132 92 104 86 96 104" stroke={`url(#${id('body')})`} strokeWidth="26" fill="none" strokeLinecap="round"/>
+    <path d="M60 186C40 160 70 140 100 150S150 150 140 116" stroke="#ffd35c" strokeWidth="3" strokeDasharray="6 10" fill="none" opacity=".8"/>
+    <g filter={`url(#${id('glow')})`}><path d="M120 70L108 90H120L110 108" stroke="#ffe66b" strokeWidth="4" fill="none"/></g>
+    <Eyes x1={92} x2={104} y={102} r={4} color="#ffe66b" id={id('glow')}/></>,
+  urchin: id => <><Defs id={id} from="#3a2a5e" to="#120a22"/><Shadow w={46}/>
+    {URCHIN_SPINES.map(a => <path key={a} d={`M${100 + Math.cos(a) * 30} ${160 - Math.sin(a) * 30}L${100 + Math.cos(a) * 64} ${160 - Math.sin(a) * 64}`} stroke="#c7b38c" strokeWidth="4" strokeLinecap="round"/>)}
+    <Body id={id} d="M58 186C58 150 78 128 100 128S142 150 142 186Z"/><Eyes x1={88} x2={112} y={160} r={5} id={id('glow')}/></>,
+  jelly: id => <><Defs id={id} from="#ffd9a8" to="#e0697a"/><Shadow w={30}/>
+    <path d="M80 120C76 150 86 166 78 186M100 122C100 150 108 168 100 186M120 120C124 150 114 166 122 186" stroke="#ffb3c1" strokeWidth="4" fill="none" opacity=".7"/>
+    <g filter={`url(#${id('glow')})`}><Body id={id} d="M56 122C56 84 76 62 100 62S144 84 144 122C130 116 116 128 100 122C84 128 70 116 56 122Z"/></g>
+    <Eyes x1={88} x2={112} y={100} r={5} color="#2a1a3a" id={id('glow')}/></>,
+  reef: id => <><Defs id={id} from="#e98a8f" to="#5a2a3a"/><Shadow w={74}/>
+    <Body id={id} d="M40 188C36 140 48 100 72 80C80 54 120 50 132 76C160 96 168 140 162 188Z"/>
+    <path d="M60 96C50 76 54 60 64 52M140 96C152 72 148 58 138 50M84 70C80 54 86 44 94 40" stroke="#ffb3c1" strokeWidth="7" strokeLinecap="round" fill="none"/>
+    <circle cx="100" cy="116" r="12" fill="#04141a"/><g filter={`url(#${id('glow')})`}><circle cx="100" cy="116" r="7" fill="#8ff0e0"/></g></>,
+  siren: id => <><Defs id={id} from="#3fae9a" to="#0c3434"/><Shadow w={56}/>
+    <path d="M74 186C60 160 84 140 104 146C130 152 150 168 160 186C140 176 128 178 120 186Z" fill={`url(#${id('body')})`}/>
+    <Body id={id} d="M84 146C82 116 86 92 100 82S124 92 122 120C120 132 112 142 104 146Z"/>
+    <path d="M86 84C70 100 70 130 78 150M114 80C134 96 136 120 128 140" stroke="#7a5ab8" strokeWidth="6" fill="none"/>
+    <circle cx="100" cy="72" r="16" fill="#cfe9df"/><circle cx="94" cy="72" r="4" fill="none" stroke="#2a1a3a" strokeWidth="2"/><circle cx="106" cy="72" r="4" fill="none" stroke="#2a1a3a" strokeWidth="2"/>
+    <rect x="124" y="96" width="30" height="22" rx="2" fill="#f4ead2" transform="rotate(10 139 107)"/></>,
+  angler: id => <><Defs id={id} from="#2f4a7a" to="#0a1226"/><Shadow w={66}/>
+    <Body id={id} d="M40 140C40 100 80 84 120 92C150 98 166 120 166 140C166 166 140 182 104 182C64 182 40 166 40 140Z"/>
+    <path d="M56 146L80 136L72 154L94 142L90 160L110 146" stroke="#f4ead2" strokeWidth="4" fill="none"/>
+    <path d="M92 94C80 60 60 50 48 56" stroke="#2f4a7a" strokeWidth="4" fill="none"/><g filter={`url(#${id('glow')})`}><rect x="36" y="50" width="18" height="14" rx="2" fill="#ffe08a"/></g>
+    <Eyes x1={120} x2={136} y={120} r={6} color="#ffe08a" id={id('glow')}/></>,
+  leviathan: id => <><Defs id={id} from="#f4ead2" to="#5a8a8a"/><Shadow w={90}/>
+    <Body id={id} d="M14 150C14 104 60 76 116 80C160 84 188 112 186 150C184 176 150 188 100 188C50 188 14 178 14 150Z"/>
+    <path d="M40 120H160M30 140H170M40 160H160" stroke="#5a8a8a" strokeOpacity=".5" strokeWidth="3"/>
+    <path d="M150 84C150 60 140 40 130 30M150 84C160 62 176 50 186 48" stroke="#bff8ee" strokeWidth="4" fill="none" opacity=".7"/>
+    <Eyes x1={52} x2={68} y={128} r={7} color="#fff6dc" id={id('glow')}/></>,
+  captain: id => <><Defs id={id} from="#2f5f5f" to="#0a1e22"/><Shadow w={58}/>
+    <Body id={id} d="M56 188C60 150 62 110 74 92C82 80 92 76 100 76S118 80 126 92C138 110 140 150 144 188Z"/>
+    <path d="M60 64H140L128 48H72Z" fill="#14202a"/><path d="M76 64C76 50 86 44 100 44S124 50 124 64" fill="#14202a"/>
+    <circle cx="100" cy="80" r="14" fill="#9fd3c5"/><Eyes x1={94} x2={106} y={80} r={3.5} color="#8ff0e0" id={id('glow')}/>
+    <path d="M140 120L176 86" stroke="#c9d1dc" strokeWidth="6" strokeLinecap="round"/><path d="M60 110C40 130 40 160 52 176" stroke="#8a8a8a" strokeWidth="5" strokeDasharray="6 4" fill="none"/></>,
+  shipAnchor: id => <><Defs id={id} from="#6a7a86" to="#2a2f36"/><Shadow w={50}/>
+    <path d="M100 40V176M56 140C60 170 80 180 100 180S140 170 144 140" stroke={`url(#${id('body')})`} strokeWidth="14" fill="none" strokeLinecap="round"/>
+    <path d="M70 80H130" stroke="#6a7a86" strokeWidth="12" strokeLinecap="round"/><circle cx="100" cy="34" r="14" fill="none" stroke="#6a7a86" strokeWidth="8"/>
+    <Eyes x1={92} x2={108} y={110} r={4} color="#8ff0e0" id={id('glow')}/></>,
+  mote: id => <><Defs id={id} from="#fff1b8" to="#e8a93a"/><Shadow w={28}/>
+    <g filter={`url(#${id('glow')})`}><path d="M100 82L110 112L142 114L116 132L126 164L100 146L74 164L84 132L58 114L90 112Z" fill={`url(#${id('body')})`}/></g>
+    <circle cx="93" cy="124" r="3" fill="#3a2a1c"/><circle cx="107" cy="124" r="3" fill="#3a2a1c"/></>,
+  hound: id => <><Defs id={id} from="#3a3a8a" to="#0c0c2a"/><Shadow w={62}/>
+    <path d="M150 120C170 100 186 96 196 92" stroke="#ffe08a" strokeWidth="10" strokeLinecap="round" opacity=".6"/>
+    <Body id={id} d="M40 188L46 150C40 130 50 110 70 104L60 82L80 94C100 90 130 100 150 118C160 140 158 166 150 188H134L130 160H76L70 188Z"/>
+    <circle cx="70" cy="130" r="2" fill="#e8e4ff"/><circle cx="96" cy="144" r="2" fill="#e8e4ff"/><circle cx="120" cy="130" r="2" fill="#e8e4ff"/><circle cx="140" cy="144" r="2" fill="#e8e4ff"/>
+    <Eyes x1={60} x2={74} y={110} r={4} color="#ffe08a" id={id('glow')}/></>,
+  orrery: id => <><Defs id={id} from="#e8c47a" to="#6a4a1c"/><Shadow w={56}/>
+    <path d="M80 188L92 150M120 188L108 150M100 188V150" stroke="#8a6a2a" strokeWidth="6"/>
+    <ellipse cx="100" cy="110" rx="70" ry="22" fill="none" stroke="#e8c47a" strokeWidth="4"/><ellipse cx="100" cy="110" rx="46" ry="54" fill="none" stroke="#e8c47a" strokeWidth="3" opacity=".7"/>
+    <circle cx="100" cy="110" r="24" fill={`url(#${id('body')})`}/><circle cx="170" cy="110" r="8" fill="#9cc7ff"/><circle cx="100" cy="56" r="7" fill="#ff8a6a"/>
+    <g filter={`url(#${id('glow')})`}><circle cx="100" cy="110" r="9" fill="#8ef3ff"/></g></>,
+  astromage: id => <><Defs id={id} from="#2a2a6a" to="#0a0a22"/><Shadow w={50}/>
+    <Body id={id} d="M54 188C60 150 66 112 80 92L100 80L120 92C134 112 140 150 146 188Z"/>
+    <circle cx="80" cy="120" r="2" fill="#ffe08a"/><circle cx="100" cy="150" r="2" fill="#ffe08a"/><circle cx="120" cy="128" r="2" fill="#ffe08a"/><circle cx="110" cy="166" r="2" fill="#ffe08a"/>
+    <circle cx="100" cy="66" r="22" fill="#e8c47a"/><circle cx="100" cy="66" r="15" fill="none" stroke="#6a4a1c" strokeWidth="2"/><path d="M100 48V84M84 66H116" stroke="#6a4a1c" strokeWidth="2"/>
+    <g filter={`url(#${id('glow')})`}><circle cx="100" cy="66" r="4" fill="#8ef3ff"/></g></>,
+  voidMoth: id => <><Defs id={id} from="#5a3a9a" to="#140a2a"/><Shadow w={40}/>
+    <g className="ea-flap-l"><path d="M96 104C64 50 16 60 16 92C16 124 60 128 94 118Z" fill={`url(#${id('body')})`}/><circle cx="44" cy="88" r="2" fill="#ffe08a"/><circle cx="62" cy="100" r="2" fill="#ffe08a"/></g>
+    <g className="ea-flap-r"><path d="M104 104C136 50 184 60 184 92C184 124 140 128 106 118Z" fill={`url(#${id('body')})`}/><circle cx="156" cy="88" r="2" fill="#ffe08a"/><circle cx="138" cy="100" r="2" fill="#ffe08a"/></g>
+    <ellipse cx="100" cy="120" rx="10" ry="34" fill="#1a0f33"/><Eyes x1={95} x2={105} y={96} r={3} color="#ffe08a" id={id('glow')}/></>,
+  meteor: id => <><Defs id={id} from="#8a5a3a" to="#2a160c"/><Shadow w={50}/>
+    <path d="M150 70C130 90 120 110 118 130M170 90C150 104 140 120 136 140" stroke="#ff9f43" strokeWidth="10" strokeLinecap="round" opacity=".6"/>
+    <Body id={id} d="M50 186C40 160 54 132 84 126C112 120 140 140 142 166C144 186 120 190 96 190C76 190 56 192 50 186Z"/>
+    <g filter={`url(#${id('glow')})`}><path d="M84 126C80 106 90 94 100 90C102 100 110 104 108 118Z" fill="#ff6a3d"/></g>
+    <Eyes x1={88} x2={104} y={108} r={3.5} color="#ffe66b" id={id('glow')}/></>,
+  bear: id => <><Defs id={id} from="#2a3a8a" to="#080c2a"/><Shadow w={80}/>
+    <Body id={id} d="M24 188C20 150 36 120 64 108C70 84 92 70 118 76C140 66 162 80 164 104C178 120 182 156 176 188Z"/>
+    <path d="M40 160L64 120L96 110L130 96L156 110L170 150" stroke="#ffe08a" strokeWidth="2.5" fill="none" opacity=".8"/>
+    <path d="M40 160h.01M64 120h.01M96 110h.01M130 96h.01M156 110h.01M170 150h.01" stroke="#fff6dc" strokeWidth="8" strokeLinecap="round"/>
+    <Eyes x1={138} x2={152} y={92} r={4} color="#ffe08a" id={id('glow')}/></>,
+  astronomer: id => <><Defs id={id} from="#c99a4e" to="#4a3216"/><Shadow w={54}/>
+    <Body id={id} d="M58 188C62 146 70 108 84 90H116C130 108 138 146 142 188Z"/>
+    <circle cx="100" cy="128" r="14" fill="none" stroke="#2a1a08" strokeWidth="3"/><path d="M100 114V142M86 128H114" stroke="#2a1a08" strokeWidth="2"/>
+    <path d="M118 100L170 64" stroke="#e8c47a" strokeWidth="10" strokeLinecap="round"/><circle cx="172" cy="62" r="7" fill="#8ef3ff"/>
+    <rect x="84" y="54" width="32" height="36" rx="6" fill="#3a2a1c"/><g filter={`url(#${id('glow')})`}><circle cx="100" cy="72" r="7" fill="#8ef3ff"/></g></>,
+  gravity: id => <><Defs id={id} from="#3a2a6a" to="#0c0820"/><Shadow w={60}/>
+    <Body id={id} d="M52 188C54 146 60 110 76 92C84 82 92 78 100 78S116 82 124 92C140 110 146 146 148 188Z"/>
+    <path d="M78 62C78 46 88 38 100 38S122 46 122 62V82H78Z" fill="#241a4a"/><path d="M86 62H114" stroke="#8ef3ff" strokeWidth="4"/>
+    <ellipse cx="100" cy="120" rx="80" ry="16" fill="none" stroke="#c9b2ff" strokeOpacity=".5" strokeWidth="2"/><circle cx="24" cy="118" r="8" fill="#ff8a6a"/><circle cx="176" cy="124" r="6" fill="#9cc7ff"/>
+    <path d="M140 130L168 90" stroke="#5a4a8a" strokeWidth="8"/><circle cx="170" cy="82" r="14" fill="#1a1238"/></>,
+  starEater: id => <><Defs id={id} from="#5a2a8a" to="#0a0418"/><Shadow w={90}/>
+    <path d="M30 186C10 150 30 110 70 112C100 114 110 150 140 150C170 150 180 120 172 96" stroke={`url(#${id('body')})`} strokeWidth="40" fill="none" strokeLinecap="round"/>
+    <path d="M150 40C190 40 196 90 172 108L150 80L128 92C116 64 126 40 150 40Z" fill="#3a1a6a"/><path d="M150 80L172 108" stroke="#ff8ab0" strokeWidth="4"/>
+    <path d="M136 70h.01M160 92h.01M60 140h.01M110 140h.01" stroke="#ffe08a" strokeWidth="5" strokeLinecap="round"/>
+    <Eyes x1={140} x2={164} y={56} r={5} color="#c39bff" id={id('glow')}/></>,
+  regent: id => <><Defs id={id} from="#e8c47a" to="#2a2a6a"/><Shadow w={66}/>
+    <path d="M50 188C56 140 70 100 100 84C130 100 144 140 150 188Z" fill="#c9a24a"/><path d="M100 84C130 100 144 140 150 188H100Z" fill="#9ab0d8"/>
+    <circle cx="100" cy="70" r="16" fill="#f2e6d0"/>
+    <g filter={`url(#${id('glow')})`}><circle cx="100" cy="40" r="16" fill="#ffd35c"/><circle cx="106" cy="36" r="13" fill="#0b0d1f"/></g>
+    <path d="M144 120L172 70" stroke="#e8c47a" strokeWidth="5"/><circle cx="174" cy="66" r="7" fill="#ffd35c"/>
+    <Eyes x1={94} x2={106} y={70} r={3} color="#8ef3ff" id={id('glow')}/></>,
+});
+
 export const ENEMY_ART = Object.keys(ART);
 
 // A painted sprite, falling back to the SVG drawing if the image cannot load.
@@ -541,15 +656,57 @@ function FamiliarSvg({ className = '' }) {
   </svg>;
 }
 
+// The Tinker: goggles, apron and a little boiler on the back.
+function TinkerArt({ id }) {
+  return <>
+    <defs>
+      <linearGradient id={id('coat')} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#8a5a34"/><stop offset="1" stopColor="#2e1c10"/></linearGradient>
+      <filter id={id('glow')} x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    </defs>
+    <ellipse cx="96" cy="210" rx="60" ry="8" fill="#000" opacity=".35"/>
+    <rect x="44" y="92" width="34" height="56" rx="10" fill="#b87333" stroke="#e8c47a" strokeWidth="3"/>
+    <circle cx="61" cy="108" r="9" fill="#f4ead2" stroke="#3a2a1c" strokeWidth="2"/><path d="M61 108L66 103" stroke="#e2504f" strokeWidth="2.5"/>
+    <g className="ea-bob" opacity=".7"><circle cx="50" cy="80" r="10" fill="#f4f4f4"/><circle cx="40" cy="66" r="7" fill="#f4f4f4"/><circle cx="34" cy="54" r="5" fill="#f4f4f4"/></g>
+    <path d="M96 66C74 66 64 86 64 108C64 140 56 170 48 206H146C140 170 130 140 130 108C130 86 118 66 96 66Z" fill={`url(#${id('coat')})`}/>
+    <path d="M80 110H114V196H80Z" fill="#c9a26b" opacity=".85"/><circle cx="97" cy="140" r="7" fill="none" stroke="#6a4a1c" strokeWidth="3"/>
+    <ellipse cx="96" cy="74" rx="18" ry="17" fill="#f2d9bf"/><path d="M78 66C80 50 112 50 114 66" fill="#5a3a1c"/>
+    <circle cx="88" cy="62" r="7" fill="#7fe0d0" stroke="#b87333" strokeWidth="3"/><circle cx="104" cy="62" r="7" fill="#7fe0d0" stroke="#b87333" strokeWidth="3"/>
+    <circle cx="90" cy="78" r="2.4" fill="#22263a"/><circle cx="102" cy="78" r="2.4" fill="#22263a"/><path d="M92 85Q96 88 100 85" stroke="#a46a5a" strokeWidth="1.8" fill="none" strokeLinecap="round"/>
+    <path d="M120 120C136 126 146 138 150 152" stroke="#f2d9bf" strokeWidth="9" strokeLinecap="round" fill="none"/>
+    <g transform="rotate(-30 156 150)"><path d="M150 150H182" stroke="#9aa6b4" strokeWidth="7" strokeLinecap="round"/><path d="M182 142C192 142 194 158 182 158" stroke="#9aa6b4" strokeWidth="6" fill="none"/></g>
+  </>;
+}
+
+// The Twilight Knight: armour half sun-gold, half moon-silver.
+function KnightArt({ id }) {
+  return <>
+    <defs>
+      <linearGradient id={id('sun')} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#f2c76b"/><stop offset="1" stopColor="#8a5a1c"/></linearGradient>
+      <linearGradient id={id('moon')} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#c9d8f2"/><stop offset="1" stopColor="#3a4a7a"/></linearGradient>
+      <filter id={id('glow')} x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    </defs>
+    <ellipse cx="96" cy="210" rx="60" ry="8" fill="#000" opacity=".35"/>
+    <path d="M60 90C40 120 34 170 30 206H96V90Z" fill="#2a2468"/><circle cx="48" cy="150" r="1.6" fill="#fff"/><circle cx="40" cy="186" r="1.6" fill="#fff"/>
+    <path d="M96 84C78 84 68 98 68 118V206H96Z" fill={`url(#${id('sun')})`}/><path d="M96 84C114 84 124 98 124 118V206H96Z" fill={`url(#${id('moon')})`}/>
+    <path d="M74 66C74 48 84 40 96 40S118 48 118 66V86H74Z" fill="#d8c08a"/><path d="M96 40C108 40 118 48 118 66V86H96Z" fill="#9ab0d8"/>
+    <path d="M80 66H112" stroke="#14102a" strokeWidth="6"/><g filter={`url(#${id('glow')})`}><circle cx="88" cy="66" r="2.4" fill="#ffe08a"/><circle cx="104" cy="66" r="2.4" fill="#8ef3ff"/></g>
+    <g className="ea-bob"><path d="M128 122L172 70" stroke="#f4ead2" strokeWidth="5"/><circle cx="176" cy="64" r="8" fill="#ffd35c"/></g>
+    <circle cx="62" cy="150" r="22" fill="#2a3a6a" stroke="#c9d8f2" strokeWidth="3"/><path d="M66 138A12 12 0 1 0 72 160A10 10 0 1 1 66 138Z" fill="#e2e8ff"/>
+  </>;
+}
+
+const HERO_SVGS = { caller: CallerArt, tinker: TinkerArt, knight: KnightArt };
+
 export function HeroArt({ className = '', hero = 'scribe' }) {
   const svg = <HeroSvg className={className} hero={hero}/>;
   const src = heroImage(hero);
-  return src ? <Painted src={src} className={`ea-creature ea-hero-art ${hero === 'caller' ? 'is-caller' : ''} ${className}`} fallback={svg}/> : svg;
+  return src ? <Painted src={src} className={`ea-creature ea-hero-art is-${hero} ${className}`} fallback={svg}/> : svg;
 }
 
 function HeroSvg({ className = '', hero = 'scribe' }) {
   const id = useIds();
-  if (hero === 'caller') return <svg viewBox="0 0 200 220" className={`ea-creature ea-hero-art is-caller ${className}`} aria-hidden="true"><CallerArt id={id}/></svg>;
+  const Art = HERO_SVGS[hero];
+  if (Art) return <svg viewBox="0 0 200 220" className={`ea-creature ea-hero-art is-${hero} ${className}`} aria-hidden="true"><Art id={id}/></svg>;
   return <svg viewBox="0 0 200 220" className={`ea-creature ea-hero-art ${className}`} aria-hidden="true">
     <defs>
       <linearGradient id={id('cloak')} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#34508f"/><stop offset="1" stopColor="#121a3a"/></linearGradient>
@@ -596,9 +753,11 @@ export function Backdrop({ act = 1 }) {
     2: ['#3a2a1c', '#120c08', '#5e4320'],
     3: ['#2a1146', '#07040f', '#451f6e'],
     4: ['#2e2540', '#08060e', '#e8c47a'],
+    drowned: ['#0e4a52', '#03141a', '#2a8a86'],
+    observatory: ['#1c1c58', '#04041a', '#c9b2ff'],
   };
   const [top, bottom, accent] = palettes[act] || palettes[1];
-  const glow = { 2: '#ffb45c', 3: '#b77bff', 4: '#ffe7a6' }[act] || '#7ea2ff';
+  const glow = { 2: '#ffb45c', 3: '#b77bff', 4: '#ffe7a6', drowned: '#8ff0e0', observatory: '#ffe08a' }[act] || '#7ea2ff';
   return <svg className="ea-backdrop" viewBox="0 0 1200 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <defs>
       <linearGradient id={id('sky')} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={top}/><stop offset="1" stopColor={bottom}/></linearGradient>
@@ -638,6 +797,27 @@ export function Backdrop({ act = 1 }) {
         const x = (i * 173) % 1150, y = (i * 97) % 430;
         return <rect key={i} x={x} y={y} width="34" height="44" rx="3" fill="#f6ecd2" opacity={0.07 + (i % 4) * 0.05} transform={`rotate(${((i * 37) % 60) - 30} ${x + 17} ${y + 22})`}/>;
       })}
+    </g>}
+    {act === 'drowned' && <g>
+      {[180, 420, 700, 980].map((x, i) => <path key={x} d={`M${x} 0L${x + 70 + i * 10} 0L${x + 220} 600L${x + 90} 600Z`} fill="#bff8ee" opacity={0.05 + (i % 2) * 0.03} className="ea-sway" style={{ transformOrigin: `${x}px 0px` }}/>)}
+      <g opacity=".45" fill={accent}>
+        {[0, 1, 2, 3, 4].map(i => <g key={i} transform={`translate(${i < 2 ? 40 + i * 120 : 860 + (i - 2) * 110} 120) rotate(${i % 2 ? 4 : -3})`}>
+          <rect width="96" height="380" rx="6"/>
+          {[0, 1, 2, 3, 4].map(row => <rect key={row} x="8" y={30 + row * 72} width="80" height="6" fill="#03141a"/>)}
+        </g>)}
+      </g>
+      {[[90, 470], [300, 520], [930, 480], [1120, 510]].map(([x, y], i) => <path key={x} className="ea-sway" style={{ transformOrigin: `${x}px ${y + 130}px` }} d={`M${x} ${y + 130}C${x - 30} ${y + 60} ${x + 30} ${y + 20} ${x} ${y - 90 - i * 20}`} stroke="#3fae7a" strokeWidth="14" fill="none" strokeLinecap="round" opacity=".55"/>)}
+      {Array.from({ length: 26 }, (_, i) => <circle key={i} className="ea-bubble" style={{ animationDelay: `${(i % 9) * 0.7}s` }} cx={(i * 211) % 1200} cy={160 + ((i * 97) % 420)} r={3 + (i % 4) * 2} fill="none" stroke="#c9fff6" strokeOpacity=".35" strokeWidth="2"/>)}
+    </g>}
+    {act === 'observatory' && <g>
+      {Array.from({ length: 90 }, (_, i) => <circle key={i} cx={(i * 197) % 1200} cy={(i * 89) % 470} r={i % 7 === 0 ? 2.4 : i % 3 === 0 ? 1.5 : 1} fill={i % 5 ? '#e8e4ff' : '#ffe08a'} opacity={0.3 + (i % 4) * 0.17} className={i % 6 === 0 ? 'ea-twinkle' : undefined}/>)}
+      <ellipse cx="600" cy="140" rx="300" ry="40" fill="none" stroke={accent} strokeOpacity=".18" strokeWidth="3"/>
+      <ellipse cx="600" cy="140" rx="200" ry="26" fill="none" stroke={accent} strokeOpacity=".14" strokeWidth="2"/>
+      <circle cx="600" cy="140" r="34" fill="#ffe08a" opacity=".2"/>
+      {[[140, 380, 150], [1040, 340, 170], [600, 430, 120]].map(([x, y, w]) => <g key={x} opacity=".55">
+        <path d={`M${x - w} ${y}Q${x} ${y - 24} ${x + w} ${y}Q${x + w * 0.4} ${y + 90} ${x} ${y + 120}Q${x - w * 0.4} ${y + 90} ${x - w} ${y}Z`} fill="#2a2468"/>
+        <path d={`M${x - w} ${y}Q${x} ${y - 24} ${x + w} ${y}`} stroke={accent} strokeOpacity=".5" strokeWidth="3" fill="none"/>
+      </g>)}
     </g>}
     <rect y="470" width="1200" height="130" fill="#000" opacity=".35"/>
     <path d="M0 470H1200" stroke="#ffffff" strokeOpacity=".08" strokeWidth="2"/>

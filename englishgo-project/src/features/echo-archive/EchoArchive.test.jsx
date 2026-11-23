@@ -277,12 +277,12 @@ describe('Echo Archive combat clarity', () => {
 });
 
 describe('Echo Archive art', () => {
-  it('ships a painted WebP sprite for every creature, both heroes and the familiar', async () => {
+  it('ships a painted WebP sprite for every creature, every hero and the familiar', async () => {
     const { readFileSync } = await import('node:fs');
     const { ENEMY_ART } = await import('./components/Creatures.jsx');
     const { FAMILIAR_IMAGE, PAINTED_CREATURES, creatureImage, heroImage } = await import('./components/paintedArt.js');
     expect([...PAINTED_CREATURES].sort()).toEqual([...ENEMY_ART].sort());
-    const files = [...ENEMY_ART.map(creatureImage), heroImage('scribe'), heroImage('caller'), FAMILIAR_IMAGE];
+    const files = [...ENEMY_ART.map(creatureImage), ...['scribe', 'caller', 'tinker', 'knight'].map(heroImage), FAMILIAR_IMAGE];
     files.forEach(src => {
       const bytes = readFileSync(`public${src}`);
       expect(bytes.toString('ascii', 0, 4), src).toBe('RIFF');
@@ -339,7 +339,7 @@ describe('Echo Archive art', () => {
     const { ACTS } = await import('./data/enemies.js');
     const { trackUrl } = await import('./music.js');
     Object.keys(ACTS).forEach(act => {
-      const bytes = readFileSync(`public${trackUrl(Number(act))}`);
+      const bytes = readFileSync(`public${trackUrl(Number(act) || act)}`);
       expect(bytes.toString('ascii', 0, 3), act).toBe('ID3');
       expect(bytes.length, act).toBeLessThan(2 * 1024 * 1024);
     });

@@ -18,7 +18,7 @@ function headline(record) {
   if (record.trueEnding) return '真結局：寫下最後一頁';
   if (record.outcome === 'victory') return '通關成功';
   if (record.outcome === 'abandon' && !record.floor) return '出發前就放棄了';
-  const place = `Act ${ACTS[record.act]?.roman || 'I'} · 第 ${record.floor} 層`;
+  const place = `Act ${ACTS[record.act]?.roman || 'I'}${record.zone && ACTS[record.zone] ? ` ${ACTS[record.zone].zh}` : ''} · 第 ${record.floor} 層`;
   return record.outcome === 'abandon' ? `中途放棄 · ${place}` : `倒在 ${place}`;
 }
 

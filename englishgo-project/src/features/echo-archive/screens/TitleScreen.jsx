@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { ARCHIVE_CARDS, CARDS } from '../data/cards.js';
-import { ACTS } from '../data/enemies.js';
+import { ACTS, zoneOf } from '../data/enemies.js';
 import { DAILY_BLESSINGS, DAILY_TRIALS, MAX_SILENCE, TRIALS, TRIAL_IDS, dailyBonus, dailyChallenge, dateKey, previousDateKey, silenceRules, trialBonus } from '../data/challenges.js';
 import { HEROES, HERO_IDS, heroUnlocked } from '../data/heroes.js';
 import { DIFFICULTIES } from '../engine/engine.js';
@@ -111,9 +111,12 @@ function HeroPicker({ meta, hero, setHero }) {
   return <div className="ea-hero-pick" role="radiogroup" aria-label="選擇角色">
     {HERO_IDS.map(id => {
       const info = HEROES[id], open = heroUnlocked(id, meta);
-      return <button type="button" key={id} role="radio" aria-checked={hero === id} disabled={!open} className={`ea-hero-option is-${id} ${open ? '' : 'is-locked'}`} onClick={() => setHero(id)}>
-        <span className="ea-hero-portrait" aria-hidden="true"><HeroArt hero={id}/></span>
-        <span className="ea-hero-copy"><b lang="en">{info.en}</b><i>{info.zh} · {info.style}</i><small>{open ? info.text : `🔒 ${info.unlock}`}</small></span>
+      return <button type="button" key={id} role="radio" aria-checked={hero === id} disabled={!open} className={`ea-hero-option is-${id} ${open ? '' : 'is-locked'}`} onClick={() => setHero(id)}
+        aria-label={`${info.en} ${info.zh}，${open ? info.style : `尚未解鎖：${info.unlock}`}`}>
+        <span className="ea-hero-portrait" aria-hidden="true"><HeroArt hero={id}/>{!open && <i className="ea-hero-lock"><Glyph name="key" size={16}/></i>}</span>
+        <span className="ea-hero-copy"><b lang="en">{info.en}</b><i>{info.zh} · {info.style}</i>
+          {open ? <small>{info.text}</small> : <small className="ea-hero-goal"><Glyph name="crown" size={13}/>解鎖條件：{info.unlock}{info.goal ? `（${info.goal.how}）` : ''}</small>}
+        </span>
       </button>;
     })}
   </div>;
@@ -187,21 +190,25 @@ export function RunSummary({ run, earned, shards, onAgain, onTitle, onGacha, spe
   const s = run.stats;
   const words = [...s.words].reverse();
   const stats = [
-    ['抵達', `Act ${ACTS[run.act].roman} · 第 ${run.floor} 層`],
+    ['抵達', `Act ${ACTS[run.act].roman}${run.zone ? ` ${ACTS[zoneOf(run)].zh}` : ''} · 第 ${run.floor} 層`],
     ['擊倒敵人', s.kills], ['菁英', s.elites], ['首領', s.bosses],
     ['打出卡牌', s.cards], ['造成傷害', s.damage],
     ['詠唱成功', `${s.chantsOk} / ${s.chants}`], ['牌組', `${run.hero.deck.length} 張`],
   ];
   return <section className={`ea-summary ${won ? 'is-won' : 'is-lost'}`} aria-labelledby="ea-summary-title">
-    <Backdrop act={run.act}/>
+    <Backdrop act={zoneOf(run)}/>
     <div className="ea-summary-panel">
       <span className="ea-eyebrow" lang="en">{run.trueEnding ? 'THE LAST PAGE IS WRITTEN' : won ? 'THE ARCHIVE REMEMBERS' : 'THE SILENCE FALLS'}</span>
       <h1 id="ea-summary-title">{run.trueEnding ? '你寫下了最後一頁' : won ? '話語回來了！' : '這次的遠征結束了'}</h1>
       <p className="ea-summary-mode">{[HEROES[run.hero.id || 'scribe'].zh, run.daily ? `每日挑戰 · ${run.daily.date}` : run.silence > 0 ? `英雄難度 · 靜默層級 ${run.silence}` : DIFFICULTIES[run.difficulty]?.zh, run.trials?.length ? `試煉：${run.trials.map(id => TRIALS[id]?.zh).filter(Boolean).join('、')}` : null].filter(Boolean).join(' · ')}</p>
       <p className="ea-room-lead">{run.trueEnding
         ? '終焉寂靜化成千萬個字，飄回書庫裡的每一本書。三把鑰匙闔上了最後一頁——這是真正的結局。'
-        : won ? `無言之主消散，書庫重新響起千萬個聲音。${run.keys && Object.values(run.keys).some(Boolean) ? '不過……你手上的鑰匙似乎還能打開什麼。' : '你是書庫真正的守護者。'}`
+        : won ? `${zoneOf(run) === 'observatory' ? '星辰天文台的星光重新亮起，' : '無言之主消散，'}書庫重新響起千萬個聲音。${run.keys && Object.values(run.keys).some(Boolean) ? '不過……你手上的鑰匙似乎還能打開什麼。' : '你是書庫真正的守護者。'}`
         : '寂靜暫時贏了。帶著這次的經驗，下一次會走得更遠。'}</p>
+      {(earned?.heroes || []).map(id => <div key={id} className={`ea-unlock is-hero is-${id}`} role="status">
+        <span className="ea-unlock-hero" aria-hidden="true"><HeroArt hero={id}/></span>
+        <span><b>新角色解鎖：{HEROES[id].zh}（{HEROES[id].en}）！</b><small>{HEROES[id].style} · {HEROES[id].text}</small></span>
+      </div>)}
       {earned?.unlocked && <div className="ea-unlock" role="status"><Glyph name="crown" size={28}/><span><b>解鎖靜默層級 {earned.unlocked}！</b><small>{silenceRules(earned.unlocked).at(-1).zh}：{silenceRules(earned.unlocked).at(-1).text}</small></span></div>}
       <dl className="ea-summary-stats">{stats.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
       {earned && <div className="ea-earned">

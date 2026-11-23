@@ -28,6 +28,8 @@ export const ARCHETYPES = {
   ink: { en: 'Ink', zh: '墨漬流', text: '把敵人塞來的廢牌變成燃料。' },
   familiar: { en: 'Familiar', zh: '墨靈流', text: '喚墨師專屬：餵養墨靈，讓它替你戰鬥。' },
   fold: { en: 'Fold', zh: '摺紙流', text: '摺出一疊 0 費的紙刃，一回合打出一大串。' },
+  steam: { en: 'Steam', zh: '蒸汽流', text: '機巧師專屬：累積 Steam 讓牌變強，在過熱前一口氣洩壓。' },
+  twilight: { en: 'Twilight', zh: '晝夜流', text: '暮光騎士專屬：白晝進攻、黑夜防守，抓準交替的時機。' },
   special: { en: 'Special', zh: '特殊', text: '狀態牌與詛咒。' },
 };
 
@@ -57,6 +59,12 @@ export const KEYWORDS = {
   familiar: { en: 'Familiar', zh: '墨靈', text: '喚墨師的墨靈夥伴。層數就是它的攻擊力：每回合結束時攻擊生命最低的敵人，之後層數 -1。整場戰鬥都會保留。' },
   paperBlade: { en: 'Paper Blade', zh: '紙刃', text: '摺出來的 0 費攻擊牌，造成 4 傷害。打出後消逝；回合結束時還在手中也會消逝。' },
   reflect: { en: 'Reflect', zh: '反射', text: '敵人這一輪攻擊你時，被 Ward 擋下的傷害會反彈給攻擊者。你的回合開始時消失。' },
+  steam: { en: 'Steam', zh: '蒸汽', text: '機巧師的鍋爐壓力，整場戰鬥都會保留。很多牌會隨 Steam 變強。回合結束時若 Steam 達到 10，就會過熱：失去 6 生命並歸零。' },
+  vent: { en: 'Vent', zh: '洩壓', text: '把 Steam 一口氣放光，歸零。' },
+  overheat: { en: 'Overheat', zh: '過熱', text: '回合結束時 Steam 達到 10 以上：失去 6 生命（無視 Ward），Steam 歸零。' },
+  day: { en: 'Day', zh: '白晝', text: '暮光騎士的第 1、3、5… 回合是白晝。標著 ☀ 的效果只在白晝生效。' },
+  night: { en: 'Night', zh: '黑夜', text: '暮光騎士的第 2、4、6… 回合是黑夜。標著 ☾ 的效果只在黑夜生效。' },
+  eclipse: { en: 'Eclipse', zh: '晝夜交替', text: '立刻把白晝換成黑夜，或把黑夜換成白晝。下回合開始時仍會照常交替。' },
 };
 
 export const POWER_TEXT = {
@@ -93,6 +101,14 @@ export const POWER_TEXT = {
   origamiWorkshop: { en: 'Origami Workshop', zh: '摺紙工坊', kw: 'paperBlade', text: v => ['每打出 1 張不是 ', kw('paperBlade'), ' 的牌，把 ', num(v), ' 張 ', kw('paperBlade'), ' 加入手中'] },
   paperDragon: { en: 'Paper Dragon', zh: '紙龍', kw: 'paperBlade', text: v => [kw('paperBlade'), ' 改為攻擊所有敵人，且傷害 +', num(v)] },
   eternalSpirit: { en: 'Eternal Spirit', zh: '永恆之靈', kw: 'familiar', text: () => [kw('familiar'), ' 攻擊後不再減少層數'] },
+  turbine: { en: 'Turbine', zh: '渦輪', kw: 'steam', text: v => ['回合開始時，', kw('steam'), ' +', num(v)] },
+  heatSink: { en: 'Heat Sink', zh: '散熱片', kw: 'vent', text: v => ['每次 ', kw('steam'), ' 歸零（', kw('vent'), ' 或 ', kw('overheat'), '），獲得 ', num(v), ' ', kw('ward')] },
+  exhaust: { en: 'Exhaust Engine', zh: '排氣引擎', kw: 'vent', text: v => ['每次 ', kw('steam'), ' 歸零（', kw('vent'), ' 或 ', kw('overheat'), '），抽 ', num(v), ' 張牌'] },
+  safetyValve: { en: 'Safety Valve', zh: '安全閥', kw: 'overheat', text: v => [kw('overheat'), ' 不再傷害你，改為對所有敵人造成 ', num(v), ' 傷害'] },
+  dayborn: { en: 'Dayborn', zh: '晝之子', kw: 'day', text: v => ['每次進入 ', kw('day'), '，獲得 ', num(v), ' 層 ', kw('might')] },
+  nightwatch: { en: 'Nightwatch', zh: '夜巡', kw: 'night', text: v => ['每次進入 ', kw('night'), '，獲得 ', num(v), ' ', kw('ward')] },
+  orbit: { en: 'Twin Orbit', zh: '雙星軌道', kw: 'eclipse', text: v => ['每次白晝與黑夜交替，對所有敵人造成 ', num(v), ' 傷害'] },
+  eternalTwilight: { en: 'Eternal Twilight', zh: '永恆暮光', kw: 'eclipse', text: () => ['每次白晝與黑夜交替，獲得 1 點能量並抽 1 張牌'] },
 };
 
 export const CARDS = {
@@ -285,6 +301,54 @@ export const CARDS = {
   spiritSurge: { en: 'Spirit Surge', zh: '靈潮', type: 'skill', rarity: 'rare', cost: 2, target: 'self', glyph: 'spiritSurge', hero: 'caller', arch: 'familiar', fx: [{ op: 'feed', v: [6, 8] }, { op: 'unleash', v: 2 }] },
   eternalSpirit: { en: 'Eternal Spirit', zh: '永恆之靈', type: 'power', rarity: 'mythic', cost: [2, 1], target: 'self', glyph: 'eternalSpirit', hero: 'caller', arch: 'familiar', fx: [{ op: 'feed', v: [5, 7] }, { op: 'power', id: 'eternalSpirit', v: 1, set: true }] },
 
+  // ── The Tinker (third hero): Steam ──
+  // Steam builds up as cards are played and makes `perSteam` cards hit harder;
+  // `vent` cards cash it in. At 10 or more at the end of a turn it overheats.
+  wrench: { en: 'Wrench', zh: '扳手', type: 'attack', rarity: 'starter', cost: 1, target: 'enemy', glyph: 'wrench', hero: 'tinker', arch: 'steam', fx: [{ op: 'damage', v: [6, 9] }, { op: 'steam', v: 1 }] },
+  plating: { en: 'Plating', zh: '鐵板', type: 'skill', rarity: 'starter', cost: 1, target: 'self', glyph: 'helm', hero: 'tinker', arch: 'steam', fx: [{ op: 'ward', v: [5, 8] }, { op: 'steam', v: 1 }] },
+  stoke: { en: 'Stoke', zh: '加煤', type: 'skill', rarity: 'starter', cost: 1, target: 'self', glyph: 'kindle', hero: 'tinker', arch: 'steam', fx: [{ op: 'steam', v: [3, 4] }, { op: 'draw', v: 1 }], chant: [{ op: 'draw', v: 1 }] },
+  steamBlast: { en: 'Steam Blast', zh: '蒸汽噴射', type: 'attack', rarity: 'starter', cost: 1, target: 'enemy', glyph: 'steam', hero: 'tinker', arch: 'steam', fx: [{ op: 'damage', v: [4, 6], perSteam: [2, 3] }, { op: 'vent' }] },
+  pistonPunch: { en: 'Piston Punch', zh: '活塞拳', type: 'attack', rarity: 'common', cost: 1, target: 'enemy', glyph: 'fist', hero: 'tinker', arch: 'steam', fx: [{ op: 'damage', v: [4, 6], perSteam: 1 }] },
+  rivetGun: { en: 'Rivet Gun', zh: '鉚釘槍', type: 'attack', rarity: 'common', cost: 1, target: 'enemy', glyph: 'pierce', hero: 'tinker', arch: 'steam', fx: [{ op: 'damage', v: [3, 4], hits: 2 }, { op: 'steam', v: 2 }] },
+  spannerSpin: { en: 'Spanner Spin', zh: '扳手迴旋', type: 'attack', rarity: 'common', cost: 1, target: 'all', glyph: 'whirl', hero: 'tinker', arch: 'steam', fx: [{ op: 'damage', v: [5, 7], all: true }, { op: 'steam', v: 1 }] },
+  coolant: { en: 'Coolant', zh: '冷卻液', type: 'skill', rarity: 'common', cost: 1, target: 'self', glyph: 'drop', hero: 'tinker', arch: 'steam', fx: [{ op: 'ward', v: [7, 10] }, { op: 'steam', v: -3 }] },
+  boilerPlate: { en: 'Boiler Plate', zh: '鍋爐裝甲', type: 'skill', rarity: 'common', cost: 1, target: 'self', glyph: 'helm', hero: 'tinker', arch: 'steam', fx: [{ op: 'ward', v: [4, 6], perSteam: 1 }] },
+  tuneUp: { en: 'Tune-Up', zh: '調校', type: 'skill', rarity: 'common', cost: 0, target: 'self', glyph: 'gear', hero: 'tinker', arch: 'steam', fx: [{ op: 'draw', v: [1, 2] }, { op: 'steam', v: 2 }] },
+  steamHammer: { en: 'Steam Hammer', zh: '蒸汽錘', type: 'attack', rarity: 'uncommon', cost: 2, target: 'enemy', glyph: 'shatter', hero: 'tinker', arch: 'steam', fx: [{ op: 'damage', v: [12, 16], perSteam: 1 }, { op: 'steam', v: 2 }] },
+  ventStorm: { en: 'Vent Storm', zh: '噴氣風暴', type: 'attack', rarity: 'uncommon', cost: 1, target: 'all', glyph: 'steam', hero: 'tinker', arch: 'steam', fx: [{ op: 'damage', v: [2, 4], perSteam: 1, all: true }, { op: 'vent' }] },
+  turbine: { en: 'Turbine', zh: '渦輪', type: 'power', rarity: 'uncommon', cost: 1, target: 'self', glyph: 'perpetualMotion', hero: 'tinker', arch: 'steam', fx: [{ op: 'power', id: 'turbine', v: [2, 3] }] },
+  heatSink: { en: 'Heat Sink', zh: '散熱片', type: 'power', rarity: 'uncommon', cost: [1, 0], target: 'self', glyph: 'stone', hero: 'tinker', arch: 'steam', fx: [{ op: 'power', id: 'heatSink', v: [7, 9] }] },
+  gaugeCheck: { en: 'Gauge Check', zh: '看壓力錶', type: 'skill', rarity: 'uncommon', cost: 0, target: 'self', glyph: 'gauge', hero: 'tinker', arch: 'steam', fx: [{ op: 'draw', v: [1, 2] }, { op: 'ifSteam', n: 6, then: [{ op: 'energy', v: 1 }] }] },
+  overclock: { en: 'Overclock', zh: '超頻', type: 'skill', rarity: 'uncommon', cost: 0, target: 'self', glyph: 'surge', hero: 'tinker', arch: 'steam', fx: [{ op: 'energy', v: [1, 2] }, { op: 'steam', v: 4 }] },
+  overdrive: { en: 'Overdrive', zh: '極限運轉', type: 'skill', rarity: 'rare', cost: [1, 0], target: 'self', glyph: 'gauge', hero: 'tinker', arch: 'steam', fx: [{ op: 'doubleSteam' }, { op: 'draw', v: 1 }] },
+  boilerBurst: { en: 'Boiler Burst', zh: '鍋爐爆裂', type: 'attack', rarity: 'rare', cost: 3, target: 'all', glyph: 'burst', hero: 'tinker', arch: 'steam', fx: [{ op: 'damage', v: [12, 16], perSteam: [3, 4], all: true }, { op: 'vent' }], fade: true },
+  exhaustEngine: { en: 'Exhaust Engine', zh: '排氣引擎', type: 'power', rarity: 'rare', cost: [2, 1], target: 'self', glyph: 'steam', hero: 'tinker', arch: 'steam', fx: [{ op: 'power', id: 'exhaust', v: 2 }] },
+  safetyValve: { en: 'Safety Valve', zh: '安全閥', type: 'power', rarity: 'mythic', cost: [2, 1], target: 'self', glyph: 'valve', hero: 'tinker', arch: 'steam', fx: [{ op: 'power', id: 'safetyValve', v: 15, set: true }, { op: 'steam', v: 3 }] },
+
+  // ── The Twilight Knight (fourth hero): Day and Night ──
+  // Turns alternate Day (odd rounds) and Night (even rounds). `day`/`night` on
+  // an effect add to its number; `onDay`/`onNight` on a card add effects.
+  sunblade: { en: 'Sunblade', zh: '日刃', type: 'attack', rarity: 'starter', cost: 1, target: 'enemy', glyph: 'sunblade', hero: 'knight', arch: 'twilight', fx: [{ op: 'damage', v: [5, 7], day: [3, 4] }] },
+  moonguard: { en: 'Moonguard', zh: '月盾', type: 'skill', rarity: 'starter', cost: 1, target: 'self', glyph: 'moonshield', hero: 'knight', arch: 'twilight', fx: [{ op: 'ward', v: [4, 6], night: [3, 4] }] },
+  duskStrike: { en: 'Dusk Strike', zh: '暮光斬', type: 'attack', rarity: 'starter', cost: 2, target: 'enemy', glyph: 'sunblade', hero: 'knight', arch: 'twilight', fx: [{ op: 'damage', v: [9, 12] }], onDay: [{ op: 'debuff', st: 'exposed', v: 2 }], onNight: [{ op: 'ward', v: [6, 8] }], chant: [{ op: 'damage', v: [5, 7] }] },
+  eclipse: { en: 'Eclipse', zh: '日月交替', type: 'skill', rarity: 'starter', cost: [1, 0], target: 'self', glyph: 'eclipse', hero: 'knight', arch: 'twilight', fx: [{ op: 'eclipse' }, { op: 'draw', v: 1 }] },
+  solarFlare: { en: 'Solar Flare', zh: '日焰', type: 'attack', rarity: 'common', cost: 1, target: 'all', glyph: 'sun', hero: 'knight', arch: 'twilight', fx: [{ op: 'damage', v: [5, 7], all: true, day: 3 }] },
+  moonbeam: { en: 'Moonbeam', zh: '月光', type: 'attack', rarity: 'common', cost: 1, target: 'enemy', glyph: 'moon', hero: 'knight', arch: 'twilight', fx: [{ op: 'damage', v: [7, 10] }], onNight: [{ op: 'draw', v: 1 }] },
+  dawnStrike: { en: 'Dawn Strike', zh: '晨擊', type: 'attack', rarity: 'common', cost: 0, target: 'enemy', glyph: 'spark', hero: 'knight', arch: 'twilight', fx: [{ op: 'damage', v: [4, 6], day: [3, 4] }] },
+  starlitVeil: { en: 'Starlit Veil', zh: '星紗', type: 'skill', rarity: 'common', cost: 1, target: 'self', glyph: 'veil', hero: 'knight', arch: 'twilight', fx: [{ op: 'ward', v: [6, 9] }], onNight: [{ op: 'debuff', st: 'weak', v: 1, all: true }] },
+  twilightStep: { en: 'Twilight Step', zh: '暮步', type: 'skill', rarity: 'common', cost: 1, target: 'self', glyph: 'dash', hero: 'knight', arch: 'twilight', fx: [{ op: 'ward', v: [5, 8] }, { op: 'eclipse' }] },
+  crescentCut: { en: 'Crescent Cut', zh: '新月斬', type: 'attack', rarity: 'common', cost: 1, target: 'enemy', glyph: 'arc', hero: 'knight', arch: 'twilight', fx: [{ op: 'damage', v: [4, 5], hits: 2 }], onNight: [{ op: 'damage', v: [4, 5] }] },
+  zenith: { en: 'Zenith', zh: '天頂斬', type: 'attack', rarity: 'uncommon', cost: 2, target: 'enemy', glyph: 'sunblade', hero: 'knight', arch: 'twilight', fx: [{ op: 'damage', v: [13, 17], day: [6, 8] }] },
+  midnightVigil: { en: 'Midnight Vigil', zh: '午夜守望', type: 'skill', rarity: 'uncommon', cost: 1, target: 'self', glyph: 'moonshield', hero: 'knight', arch: 'twilight', fx: [{ op: 'ward', v: [8, 11] }], onNight: [{ op: 'buff', st: 'charge', v: 1 }] },
+  solstice: { en: 'Solstice', zh: '至日', type: 'skill', rarity: 'uncommon', cost: [1, 0], target: 'self', glyph: 'hourglass', hero: 'knight', arch: 'twilight', fx: [{ op: 'holdSky' }, { op: 'draw', v: 2 }] },
+  dayborn: { en: 'Dayborn', zh: '晝之子', type: 'power', rarity: 'uncommon', cost: [1, 0], target: 'self', glyph: 'sun', hero: 'knight', arch: 'twilight', fx: [{ op: 'power', id: 'dayborn', v: 1 }] },
+  nightwatch: { en: 'Nightwatch', zh: '夜巡', type: 'power', rarity: 'uncommon', cost: 1, target: 'self', glyph: 'moon', hero: 'knight', arch: 'twilight', fx: [{ op: 'power', id: 'nightwatch', v: [7, 10] }] },
+  eclipseBurst: { en: 'Eclipse Burst', zh: '蝕爆', type: 'attack', rarity: 'uncommon', cost: 1, target: 'all', glyph: 'eclipse', hero: 'knight', arch: 'twilight', fx: [{ op: 'damage', v: [7, 10], all: true }, { op: 'eclipse' }] },
+  totalEclipse: { en: 'Total Eclipse', zh: '全蝕', type: 'skill', rarity: 'rare', cost: [2, 1], target: 'self', glyph: 'eclipse', hero: 'knight', arch: 'twilight', fx: [{ op: 'bothSky' }, { op: 'draw', v: 1 }], fade: true },
+  meteorLance: { en: 'Meteor Lance', zh: '星墜之槍', type: 'attack', rarity: 'rare', cost: 2, target: 'enemy', glyph: 'comet', hero: 'knight', arch: 'twilight', fx: [{ op: 'damage', v: [10, 13] }], onDay: [{ op: 'damage', v: [10, 13] }] },
+  twinOrbit: { en: 'Twin Orbit', zh: '雙星軌道', type: 'power', rarity: 'rare', cost: [2, 1], target: 'self', glyph: 'stars', hero: 'knight', arch: 'twilight', fx: [{ op: 'power', id: 'orbit', v: [5, 7] }] },
+  eternalTwilight: { en: 'Eternal Twilight', zh: '永恆暮光', type: 'power', rarity: 'mythic', cost: [3, 2], target: 'self', glyph: 'eclipse', hero: 'knight', arch: 'twilight', fx: [{ op: 'power', id: 'eternalTwilight', v: 1, set: true }] },
+
   // Statuses and curses
   smudge: { en: 'Smudge', zh: '墨漬', type: 'status', rarity: 'special', cost: null, target: 'none', glyph: 'blot', fx: [], fleeting: true },
   dust: { en: 'Dust', zh: '塵埃', type: 'status', rarity: 'special', cost: null, target: 'none', glyph: 'dust', fx: [] },
@@ -341,6 +405,20 @@ export function previewWard(base, ctx = {}) {
   return Math.max(0, amount);
 }
 const toned = (shown, base) => num(shown, shown > base ? 'up' : shown < base ? 'down' : null);
+// A ☀ or ☾ mark; `on` lights it up when that half of the day is active.
+const sky = (which, on) => ({ sky: which, on: Boolean(on) });
+
+// Extra from Steam and from the Day/Night bonus of an effect, as the engine adds it.
+export function skyBonus(effect, up, ctx = {}) {
+  return (effect.day && ctx.day ? val(effect.day, up) : 0) + (effect.night && ctx.night ? val(effect.night, up) : 0);
+}
+const steamBonus = (effect, up, ctx = {}) => (effect.perSteam ? Math.floor(val(effect.perSteam, up) * (ctx.steam || 0)) : 0);
+function skyNote(effect, up, ctx) {
+  const notes = [];
+  if (effect.day) notes.push(['（', sky('day', ctx.day), ' +', num(val(effect.day, up)), '）']);
+  if (effect.night) notes.push(['（', sky('night', ctx.night), ' +', num(val(effect.night, up)), '）']);
+  return notes.flat();
+}
 
 function effectText(effect, up, ctx) {
   const v = val(effect.v, up);
@@ -349,8 +427,13 @@ function effectText(effect, up, ctx) {
     case 'damage': {
       const raw = v + bonus + (effect.perCombo ? val(effect.perCombo, up) * (ctx.combo || 0) : 0) + (effect.perChant ? val(effect.perChant, up) * (ctx.chants || 0) : 0) + (effect.perFamiliar ? val(effect.perFamiliar, up) * (ctx.familiar || 0) : 0)
         + (effect.perBlade ? val(effect.perBlade, up) * (ctx.blades || 0) : 0) + (effect.perStatus ? val(effect.perStatus, up) * (ctx.statuses || 0) : 0)
-        + (effect.mightMult ? (ctx.might || 0) * (val(effect.mightMult, up) - 1) : 0);
+        + (effect.mightMult ? (ctx.might || 0) * (val(effect.mightMult, up) - 1) : 0) + steamBonus(effect, up, ctx) + skyBonus(effect, up, ctx);
       const shown = toned(previewDamage(raw, ctx), v);
+      if (effect.perSteam || effect.day || effect.night) {
+        const head = effect.all ? ['對所有敵人造成 ', shown, ' 傷害'] : ['造成 ', shown, ' 傷害'];
+        const hits = val(effect.hits || 1, up);
+        return [...head, ...(hits > 1 ? [` ×${hits}`] : []), ...skyNote(effect, up, ctx), ...(effect.perSteam ? ['。', kw('steam'), ' 每層 +', num(val(effect.perSteam, up))] : [])];
+      }
       const hits = effect.hits === 'X' ? 'X' : val(effect.hits || 1, up);
       const times = hits === 'X' ? [' X 次'] : hits > 1 ? [` ×${hits}`] : [];
       if (effect.comboHits) return [effect.random ? '隨機對敵人造成 ' : '造成 ', shown, ' 傷害，次數等於本回合已打出的牌數 +1（', kw('combo'), '）', ...(ctx.combo != null ? ['（目前 ', num((ctx.combo || 0) + 1, 'up'), ' 次）'] : [])];
@@ -378,9 +461,17 @@ function effectText(effect, up, ctx) {
     case 'damageWard': return [effect.all ? '對所有敵人造成等同你 ' : '造成等同你目前 ', kw('ward'), ' 的傷害'];
     case 'ward': {
       const kept = effect.perKept ? val(effect.perKept, up) * (ctx.kept || 0) : 0;
-      const base = ['獲得 ', toned(previewWard(v + bonus + kept, ctx), v), ' ', kw('ward')];
+      const base = ['獲得 ', toned(previewWard(v + bonus + kept + steamBonus(effect, up, ctx) + skyBonus(effect, up, ctx) + (ctx.moonstone && ctx.night ? 3 : 0), ctx), v), ' ', kw('ward'), ...skyNote(effect, up, ctx)];
+      if (effect.perSteam) return [...base, '。', kw('steam'), ' 每層 +', num(val(effect.perSteam, up))];
       return effect.perKept ? [...base, '。每在手中保留過 1 回合，再 +', num(val(effect.perKept, up))] : base;
     }
+    case 'steam': return v >= 0 ? [kw('steam'), ' +', num(v)] : [kw('steam'), ' −', num(-v)];
+    case 'vent': return [kw('vent'), '：', kw('steam'), ' 歸零'];
+    case 'doubleSteam': return [kw('steam'), ' 加倍', ...(ctx.steam != null ? ['（目前 ', num(ctx.steam, 'up'), ' → ', num(ctx.steam * 2, 'up'), '）'] : [])];
+    case 'ifSteam': return ['若 ', kw('steam'), ' 有 ', num(effect.n), ' 以上，', ...effect.then.flatMap(item => effectText(item, up, ctx))];
+    case 'eclipse': return [kw('eclipse'), '：', sky('day', ctx.day), ' ⇄ ', sky('night', ctx.night)];
+    case 'bothSky': return ['本回合同時算作 ', kw('day'), ' 和 ', kw('night'), '（兩邊的效果都會生效）'];
+    case 'holdSky': return ['下回合不會交替晝夜，維持現在的 ', sky('day', ctx.day), '/', sky('night', ctx.night)];
     case 'detonate': return ['造成等同目標 ', kw('burn'), ' ×', num(v), ' 的傷害，並移除它的 ', kw('burn')];
     case 'spreadBurn': return ['把目標的 ', kw('burn'), ' 複製給其他所有敵人'];
     case 'burnTickAll': return ['所有敵人立刻受到等同自身 ', kw('burn'), ' 的傷害'];
@@ -454,6 +545,8 @@ export function describeCard(inst, ctx = {}) {
   const body = card.fx.map(effect => effectText(effect, up, ctx));
   if (card.endTurn) body.push(...card.endTurn.map(effect => effect.op === 'loseHp' ? ['回合結束時若在手中，失去 ', num(val(effect.v, up)), ' 生命'] : effectText(effect, up, ctx)));
   if (body.length) lines.push(joinSentences(body));
+  if (card.onDay) lines.push([sky('day', ctx.day), kw('day'), '：', ...joinSentences(card.onDay.map(effect => effectText(effect, up, ctx)))]);
+  if (card.onNight) lines.push([sky('night', ctx.night), kw('night'), '：', ...joinSentences(card.onNight.map(effect => effectText(effect, up, ctx)))]);
   if (card.chant) lines.push([kw('chant'), '：', ...joinSentences(card.chant.map(effect => effectText(effect, up, ctx)))]);
   if (card.type === 'power' && card.fx.some(effect => effect.op === 'buff')) lines.push(['（持續整場戰鬥）']);
   if (cardFades(card, up)) lines.push([kw('fade'), '。']);

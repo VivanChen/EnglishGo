@@ -15,7 +15,7 @@ const EVENT_GLYPHS = {
   lantern: 'lantern', mirror: 'shard', fountain: 'wave', door: 'event', lute: 'echo', statue: 'crown', binder: 'thread',
   candle: 'flame', guardian: 'stone', page: 'pages', quill: 'quill', well: 'coin', scholar: 'book', altar: 'emberHeart', gear: 'metronome', choir: 'bell',
   tower: 'tower', matching: 'deck', echoHall: 'echo', fortuneTeller: 'stars', mimicChest: 'treasure', inkKitten: 'inkDrop',
-  knightDuel: 'helm', clockworkTea: 'tea', fortuneWheel: 'coin', readingRoom: 'book',
+  knightDuel: 'helm', clockworkTea: 'tea', fortuneWheel: 'coin', readingRoom: 'book', pearl: 'pearl', stars: 'stars',
 };
 
 const shuffle = list => { const copy = [...list]; for (let i = copy.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [copy[i], copy[j]] = [copy[j], copy[i]]; } return copy; };

@@ -1,7 +1,7 @@
 import { ARCHIVE_CARDS, CARDS, CHANT_CARDS, REWARD_POOL, STARTER_DECK, archOf, baseCost, cardFades, isUnlocked, val } from '../data/cards.js';
 import { BASE_MODS, MAX_SILENCE, TRIALS, buildMods } from '../data/challenges.js';
 import { HEROES, heroOf, inHeroPool } from '../data/heroes.js';
-import { ELITE_AFFIXES, ENCOUNTERS, ENEMIES, affixValue } from '../data/enemies.js';
+import { ACTS, ELITE_AFFIXES, ENCOUNTERS, ENEMIES, ROUTES, affixValue, zoneOf } from '../data/enemies.js';
 import { BOONS, DUEL_MOVES, EVENTS, KEEPER } from '../data/events.js';
 import { ENERGY_RELICS, POTIONS, RELICS } from '../data/relics.js';
 import { availableNodes, generateMap } from './map.js';
@@ -41,7 +41,7 @@ function addCard(r, id, up = false) {
 export const cardPool = r => REWARD_POOL.filter(id => isUnlocked(id, r.unlocked) && inHeroPool(id, heroOf(r)));
 // The boss encounter waiting at the end of this act's map (older saves
 // predate the draw and keep the act's first boss).
-export const actBoss = r => r.map?.boss || ENCOUNTERS[r.act]?.bosses[0];
+export const actBoss = r => r.map?.boss || ENCOUNTERS[zoneOf(r)]?.bosses[0];
 export const KEY_IDS = ['flame', 'page', 'echo'];
 export const hasAllKeys = r => KEY_IDS.every(id => r.keys?.[id]);
 
@@ -66,7 +66,7 @@ export function createRun({ seed = makeSeed(), difficulty = 'standard', lv = 'el
     act: 1, floor: 0, uid: 0, attacks: 0, fights: 0, actFights: 0, removeCost: Math.round(75 * mods.shopPrice), potionChance: 40,
     hero: { id: heroId, hp: maxHp, maxHp, gold: 99 + mods.startGold, deck: [], relics: [heroDef.relic], potions: [null, null, null], flags: {} },
     keys: { flame: false, page: false, echo: false }, trueEnding: false,
-    map: null, pos: null, path: [], screen: 'event', actIntro: true,
+    zone: null, cleared: [], map: null, pos: null, path: [], screen: 'event', actIntro: true,
     combat: null, reward: null, shop: null, rest: null, treasure: null, bossRelics: null, pending: null,
     event: { id: 'keeper', result: null, gains: [] }, seenEvents: [], lastEncounter: null,
     stats: { kills: 0, elites: 0, bosses: 0, chants: 0, chantsOk: 0, words: [], damage: 0, cards: 0, floors: 0 },
@@ -80,10 +80,11 @@ export function createRun({ seed = makeSeed(), difficulty = 'standard', lv = 'el
 }
 
 // Each map of Acts I–III hides one echoing elite until the Echo Key is found.
-function makeMap(r, act) {
-  const map = generateMap(r, act);
+// `zone` picks the region (another route through the same act).
+function makeMap(r, act, zone = act) {
+  const map = generateMap(r, act, zone);
   // Each act draws one of its bosses; the map shows it from the start.
-  const bosses = ENCOUNTERS[act]?.bosses || [];
+  const bosses = ENCOUNTERS[zone]?.bosses || ENCOUNTERS[act]?.bosses || [];
   map.boss = bosses.length > 1 ? pick(r, bosses) : bosses[0];
   if (act > 3 || r.keys?.echo) return map;
   const nodes = Object.values(map.nodes);
@@ -130,8 +131,15 @@ function enterPhaseTwo(r, enemy) {
   planMove(r, enemy);
 }
 
+// A boss with a `guard` takes half damage while that minion still stands.
+export const isGuarded = (c, enemy) => {
+  const guard = ENEMIES[enemy.id]?.guard;
+  return Boolean(guard && c && living(c).some(other => other.id === guard));
+};
+
 function hurtEnemy(r, enemy, amount, kind = 'hit') {
   if (enemy.dead) return 0;
+  if (kind !== 'sever' && isGuarded(r.combat, enemy)) amount = Math.ceil(amount / 2);
   let blocked = 0;
   if (kind !== 'burn' && kind !== 'sever' && enemy.ward > 0) { blocked = Math.min(enemy.ward, amount); enemy.ward -= blocked; }
   const loss = Math.min(enemy.hp, amount - blocked);
@@ -164,7 +172,7 @@ function hurtEnemy(r, enemy, amount, kind = 'hit') {
       });
       if (hasAffix(enemy, 'splitting') && !enemy.split) {
         enemy.split = true;
-        const minion = ELITE_AFFIXES.splitting.minions[Math.min(4, r.act)];
+        const minion = ELITE_AFFIXES.splitting.minions[zoneOf(r)] || ELITE_AFFIXES.splitting.minions[Math.min(4, r.act)];
         for (let i = 0; i < 2; i++) summonEnemy(r, minion);
       }
     }
@@ -216,6 +224,56 @@ function familiarStrike(r) {
   }
 }
 
+// ───────────── Steam (the Tinker) ─────────────
+export const OVERHEAT_AT = 10;
+export const OVERHEAT_HP = 6;
+function addSteam(r, amount) {
+  const c = r.combat;
+  if (!c || !amount) return;
+  const before = c.player.steam || 0;
+  c.player.steam = Math.max(0, before + amount);
+  if (c.player.steam !== before) fx(r, { kind: 'steam', to: 'player', amount: c.player.steam - before });
+}
+
+// Steam drops to zero (a vent or an overheat): Heat Sink and Exhaust Engine fire.
+function releaseSteam(r) {
+  const c = r.combat;
+  const had = c.player.steam || 0;
+  if (had <= 0) return 0;
+  c.player.steam = 0;
+  fx(r, { kind: 'vent', to: 'player', amount: had });
+  if (c.player.pw.heatSink) gainWard(r, c.player.pw.heatSink, false);
+  if (c.player.pw.exhaust) drawCards(r, c.player.pw.exhaust);
+  return had;
+}
+
+function overheat(r) {
+  const c = r.combat;
+  fx(r, { kind: 'overheat', to: 'player', amount: c.player.steam });
+  if (c.player.pw.safetyValve) living(c).forEach(enemy => hurtEnemy(r, enemy, c.player.pw.safetyValve));
+  else hurtPlayer(r, OVERHEAT_HP, 'loss');
+  releaseSteam(r);
+}
+
+// ───────────── Day and Night (the Twilight Knight) ─────────────
+export const isDay = c => Boolean(c?.player.sky) && (c.player.sky === 'day' || Boolean(c.player.both));
+export const isNight = c => Boolean(c?.player.sky) && (c.player.sky === 'night' || Boolean(c.player.both));
+
+function flipSky(r) {
+  const c = r.combat;
+  if (!c.player.sky) return;
+  c.player.both = false;
+  c.player.sky = c.player.sky === 'day' ? 'night' : 'day';
+  fx(r, { kind: 'sky', to: 'player', sky: c.player.sky });
+  if (hasRelic(r, 'twilightLocket')) gainWard(r, 2, false);
+  if (c.player.sky === 'day') {
+    if (c.player.pw.dayborn) { add(c.player.st, 'might', c.player.pw.dayborn); fx(r, { kind: 'buff', to: 'player', st: 'might' }); }
+    if (hasRelic(r, 'sundial')) drawCards(r, 1);
+  } else if (c.player.pw.nightwatch) gainWard(r, c.player.pw.nightwatch, false);
+  if (c.player.pw.orbit) living(c).forEach(enemy => hurtEnemy(r, enemy, c.player.pw.orbit));
+  if (c.player.pw.eternalTwilight) { c.energy += 1; fx(r, { kind: 'energy', amount: 1 }); drawCards(r, 1); }
+}
+
 // Burn ticks on enemies, boosted by Ember Heart.
 const burnDamage = (r, stacks) => (hasRelic(r, 'emberHeart') ? Math.floor(stacks * 1.5) : stacks);
 
@@ -228,7 +286,7 @@ function attackEnemy(r, enemy, base, mult = 1) {
 
 function gainWard(r, base, fromCard = true) {
   const c = r.combat;
-  let amount = fromCard ? base + (c.player.st.grace || 0) : base;
+  let amount = fromCard ? base + (c.player.st.grace || 0) + (hasRelic(r, 'moonstone') && isNight(c) ? 3 : 0) : base;
   if (fromCard && c.player.st.frail) amount = Math.floor(amount * 0.75);
   amount = Math.max(0, amount);
   c.player.ward += amount;
@@ -287,7 +345,8 @@ export function cardContext(r) {
   const c = r.combat;
   if (!c) return {};
   const st = c.player.st;
-  return { might: st.might, weak: st.weak, grace: st.grace, frail: st.frail, combo: c.played || 0, chants: c.chantsOk || 0, statuses: statusCount(c), blades: c.blades || 0, keen: c.player.pw.keenCrease || 0, dragon: c.player.pw.paperDragon || 0, livingInk: Boolean(c.player.pw.livingInk), familiar: heroOf(r) === 'caller' || c.player.familiar ? c.player.familiar || 0 : undefined };
+  return { might: st.might, weak: st.weak, grace: st.grace, frail: st.frail, combo: c.played || 0, chants: c.chantsOk || 0, statuses: statusCount(c), blades: c.blades || 0, keen: c.player.pw.keenCrease || 0, dragon: c.player.pw.paperDragon || 0, livingInk: Boolean(c.player.pw.livingInk), familiar: heroOf(r) === 'caller' || c.player.familiar ? c.player.familiar || 0 : undefined,
+    steam: c.player.steam != null ? c.player.steam : undefined, day: isDay(c), night: isNight(c), moonstone: hasRelic(r, 'moonstone') };
 }
 
 export function canPlay(r, uid) {
@@ -303,7 +362,9 @@ export function moveBase(r, enemy, moveId = enemy.move) {
   if (!move || move.dmg == null) return null;
   const mods = runMods(r);
   const scale = DIFFICULTIES[r.difficulty].dmg * mods.enemyDmg * (r.combat?.kind === 'monster' ? mods.monsterDmg : 1);
-  return Math.round((move.dmg + (move.grow || 0) * (enemy.uses[moveId] || 0)) * scale);
+  // Supernova grows with every Star Mote still shining.
+  const allies = move.perAlly && r.combat ? living(r.combat).filter(other => other.id === move.perAlly.id).length : 0;
+  return Math.round((move.dmg + (move.grow || 0) * (enemy.uses[moveId] || 0) + allies * (move.perAlly?.dmg || 0)) * scale);
 }
 
 export function intentOf(r, enemy) {
@@ -382,6 +443,9 @@ function startCombat(r, kind, encounter, options = {}) {
   if (c.boons.includes('sun')) add(c.player.st, 'might', 2);
   if (c.boons.includes('omen')) living(c).forEach(enemy => add(enemy.st, 'might', 1));
   c.player.familiar = (hasRelic(r, 'spiritJar') ? 2 : 0) + (hasRelic(r, 'spiritBell') ? 2 : 0);
+  // The Tinker's boiler starts warm; the Twilight Knight's first turn is Day.
+  if (heroOf(r) === 'tinker') c.player.steam = hasRelic(r, 'pocketBoiler') ? 3 : 0;
+  if (heroOf(r) === 'knight') c.player.sky = 'day';
   if (hasRelic(r, 'paperCrane')) living(c).forEach(enemy => add(enemy.st, 'weak', 1));
   r.screen = 'combat';
   if (hasRelic(r, 'whetstone')) add(c.player.st, 'might', 1);
@@ -412,6 +476,12 @@ function startPlayerTurn(r) {
   if (c.round === 1) c.energy += runMods(r).firstTurnEnergy;
   if (c.round === 1 && c.boons?.includes('comet')) c.energy += 1;
   if (c.round % 3 === 0 && hasRelic(r, 'hourglass')) c.energy += 1;
+  // Day and Night take turns (Solstice holds the sky for one turn).
+  if (c.player.sky) {
+    c.player.both = false;
+    if (c.round > 1) { if (c.player.holdSky) delete c.player.holdSky; else flipSky(r); }
+  }
+  if (c.player.steam != null) addSteam(r, (c.player.pw.turbine || 0) + (hasRelic(r, 'copperCoil') ? 1 : 0));
   if (c.player.st.burn) { hurtPlayer(r, c.player.st.burn, 'burn'); add(c.player.st, 'burn', -1); }
   if (c.player.pw.wildfire) living(c).forEach(enemy => add(enemy.st, 'burn', c.player.pw.wildfire));
   if (c.player.pw.hellfire) living(c).forEach(enemy => { add(enemy.st, 'burn', c.player.pw.hellfire); hurtEnemy(r, enemy, burnDamage(r, enemy.st.burn), 'burn'); });
@@ -529,6 +599,13 @@ export function chooseCard(r, uid) {
   return true;
 }
 
+// What Steam (`perSteam`) and the Day/Night bonus (`day`, `night`) add to an
+// effect's number right now.
+function extraFor(c, effect, up) {
+  return (effect.perSteam ? Math.floor(val(effect.perSteam, up) * (c.player.steam || 0)) : 0)
+    + (effect.day && isDay(c) ? val(effect.day, up) : 0) + (effect.night && isNight(c) ? val(effect.night, up) : 0);
+}
+
 const TARGETED = new Set(['doubleBurn', 'stripWard', 'ifExposed', 'detonate', 'spreadBurn']);
 function resolve(r, effects, up, target, ctx) {
   const c = r.combat;
@@ -542,7 +619,7 @@ function resolve(r, effects, up, target, ctx) {
         const base = v + (ctx.bonus || 0) + (ctx.grow || 0) + (effect.perCombo ? val(effect.perCombo, up) * (ctx.combo || 0) : 0) + (effect.perChant ? val(effect.perChant, up) * (c.chantsOk || 0) : 0) + (effect.perFamiliar ? val(effect.perFamiliar, up) * familiar : 0)
           + (effect.perBlade ? val(effect.perBlade, up) * (c.blades || 0) : 0) + (effect.perStatus ? val(effect.perStatus, up) * statusCount(c) : 0)
           + (effect.perBurn && target ? val(effect.perBurn, up) * (target.st.burn || 0) : 0) + (ctx.id === 'paperBlade' ? (c.player.pw.keenCrease || 0) + (c.player.pw.paperDragon || 0) : 0)
-          + (effect.mightMult ? (c.player.st.might || 0) * (val(effect.mightMult, up) - 1) : 0);
+          + (effect.mightMult ? (c.player.st.might || 0) * (val(effect.mightMult, up) - 1) : 0) + extraFor(c, effect, up);
         const hits = effect.hits === 'X' ? ctx.x : effect.comboHits ? (ctx.combo || 0) + 1 : effect.hitsPerFamiliar ? 1 + Math.floor(familiar / effect.hitsPerFamiliar) : effect.hitsPerStatus ? val(effect.hits || 1, up) + statusCount(c) : val(effect.hits || 1, up);
         // Sword Saint (single-target attacks) and Paper Dragon (Paper Blades) hit everyone.
         const sweep = !effect.all && !effect.random && ((c.player.pw.swordSaint && CARDS[ctx.id]?.type === 'attack') || (ctx.id === 'paperBlade' && c.player.pw.paperDragon));
@@ -566,7 +643,14 @@ function resolve(r, effects, up, target, ctx) {
         break;
       }
       case 'damageWard': (effect.all ? living(c) : [target]).forEach(enemy => attackEnemy(r, enemy, c.player.ward, ctx.mult)); break;
-      case 'ward': gainWard(r, v + (ctx.bonus || 0) + (effect.perKept ? val(effect.perKept, up) * (ctx.kept || 0) : 0)); break;
+      case 'ward': gainWard(r, v + (ctx.bonus || 0) + (effect.perKept ? val(effect.perKept, up) * (ctx.kept || 0) : 0) + extraFor(c, effect, up)); break;
+      case 'steam': addSteam(r, v); break;
+      case 'vent': releaseSteam(r); break;
+      case 'doubleSteam': addSteam(r, c.player.steam || 0); break;
+      case 'ifSteam': if ((c.player.steam || 0) >= effect.n) resolve(r, effect.then, up, target, ctx); break;
+      case 'eclipse': flipSky(r); break;
+      case 'bothSky': if (c.player.sky) { c.player.both = true; fx(r, { kind: 'sky', to: 'player', sky: 'both' }); } break;
+      case 'holdSky': if (c.player.sky) { c.player.holdSky = true; fx(r, { kind: 'sky', to: 'player', sky: 'hold' }); } break;
       case 'wardPerHand': gainWard(r, v * c.hand.length); break;
       case 'drawX': drawCards(r, (ctx.x || 0) + v); break;
       case 'choose': offerChoice(r, effect, up); break;
@@ -675,7 +759,11 @@ function winCombat(r) {
   c.phase = 'won';
   if (hasRelic(r, 'inkwell')) heal(r, 6);
   if (c.kind === 'elite') r.stats.elites += 1;
-  if (c.kind === 'boss') r.stats.bosses += 1;
+  if (c.kind === 'boss') {
+    r.stats.bosses += 1;
+    // Bosses beaten per region unlock heroes (counted once the run ends).
+    r.cleared = [...(r.cleared || []), String(zoneOf(r))];
+  }
   c.reward = makeReward(r, c.kind);
   if (c.echoElite && !r.keys?.echo) c.reward.items.unshift({ kind: 'key', key: 'echo', taken: false });
 }
@@ -713,7 +801,8 @@ export function playCard(r, uid, targetUid, chant = null) {
     else if (runMods(r).strictChant) hurtPlayer(r, 2, 'strict');
   }
   fx(r, { kind: 'play', card: inst.id, uid, up: inst.up, empowered, target: target?.uid || null });
-  const effects = empowered ? [...card.fx, ...card.chant] : card.fx;
+  // The Day or Night line joins the card's effects when its half of the day is up.
+  const effects = [...card.fx, ...(card.onDay && isDay(c) ? card.onDay : []), ...(card.onNight && isNight(c) ? card.onNight : []), ...(empowered ? card.chant : [])];
   let repeats = 1, mult = 1;
   if (card.type === 'attack') {
     if (c.echo > 0) { repeats += 1; c.echo -= 1; }
@@ -821,6 +910,9 @@ export function endTurn(r) {
     fx(r, { kind: 'colossus', amount });
     living(c).forEach(enemy => hurtEnemy(r, enemy, amount));
   }
+  // The boiler: 10 Steam or more at the end of the turn overheats it.
+  if ((c.player.steam || 0) >= OVERHEAT_AT) overheat(r);
+  else if (hasRelic(r, 'pressureGauge') && c.player.steam >= 7) { add(c.player.st, 'charge', 1); fx(r, { kind: 'buff', to: 'player', st: 'charge' }); }
   decay(c.player.st);
   c.echo = 0;
   c.phase = 'enemy';
@@ -1041,11 +1133,20 @@ function leaveReward(r) {
   } else r.screen = 'map';
 }
 
+// After a boss, an act with two regions lets the player pick the route.
 function nextAct(r) {
   r.bossRelics = null;
   if (r.act >= 4 || (r.act === 3 && !hasAllKeys(r))) { r.screen = 'victory'; return; }
-  r.act += 1;
-  r.map = makeMap(r, r.act);
+  const routes = ROUTES[r.act + 1];
+  if (routes) { r.routes = routes.map(String); r.screen = 'route'; return; }
+  enterAct(r, r.act + 1);
+}
+
+function enterAct(r, act, zone = act) {
+  r.routes = null;
+  r.act = act;
+  r.zone = ACTS[zone]?.act === act && String(zone) !== String(act) ? zone : null;
+  r.map = makeMap(r, act, r.zone || act);
   r.pos = null; r.path = []; r.actFights = 0; r.lastEncounter = null;
   r.hero.hp = Math.min(r.hero.maxHp, r.hero.hp + Math.round((r.hero.maxHp - r.hero.hp) * runMods(r).actHeal));
   r.screen = 'map';
@@ -1054,7 +1155,7 @@ function nextAct(r) {
 
 // ───────────── Rooms ─────────────
 function pickEncounter(r, kind) {
-  const table = ENCOUNTERS[r.act];
+  const table = ENCOUNTERS[zoneOf(r)] || ENCOUNTERS[r.act];
   const list = kind === 'elite' ? table.elite : r.actFights < 2 ? table.easy : table.normal;
   const options = list.filter(item => item.join() !== r.lastEncounter);
   const chosen = pick(r, options.length ? options : list);
@@ -1075,11 +1176,24 @@ function startEvent(r) {
     if ((roll -= SURPRISE_ODDS.treasure) <= 0) { r.treasure = { opened: false, surprise: true }; r.screen = 'treasure'; return; }
     if ((roll -= SURPRISE_ODDS.shop) <= 0) { r.shop = { ...makeShop(r), surprise: true }; r.screen = 'shop'; return; }
   }
-  const pool = Object.keys(EVENTS).filter(id => EVENTS[id].acts.includes(r.act) && !r.seenEvents.includes(id));
+  const pool = Object.keys(EVENTS).filter(id => eventFits(r, EVENTS[id]) && !r.seenEvents.includes(id));
   if (!pool.length) { startCombat(r, 'monster', pickEncounter(r, 'monster')); return; }
   const id = pick(r, pool);
-  const def = EVENTS[id];
   r.seenEvents.push(id);
+  openEvent(r, id);
+}
+
+// Events belong to acts; a few only to one region (`zones`), and the ones that
+// are about a region's own setting (`home`) stay out of the other route.
+export function eventFits(r, def) {
+  if (def.room) return false;
+  const zone = String(zoneOf(r));
+  if (def.zones) return def.zones.includes(zone);
+  return def.acts.includes(r.act) && !(def.home != null && String(def.home) !== zone);
+}
+
+function openEvent(r, id) {
+  const def = EVENTS[id];
   r.event = { id, result: null, gains: [], riddle: def.riddle ? randInt(r, 0, def.riddles.length - 1) : null };
   if (def.roll) r.event.flags = Object.fromEntries(Object.entries(def.roll).map(([flag, chance]) => [flag, randInt(r, 1, 100) <= chance]));
   if (def.game === 'climb') r.event.game = { kind: 'climb', step: 0, loot: 0 };
@@ -1141,6 +1255,7 @@ export function enterNode(r, nodeId) {
     case 'rest': r.rest = { done: false, healed: 0, upgraded: null }; r.screen = 'rest'; break;
     case 'shop': r.shop = makeShop(r); r.screen = 'shop'; break;
     case 'treasure': r.treasure = { opened: false }; r.screen = 'treasure'; break;
+    case 'pearl': openEvent(r, 'pearlClam'); break;
     default: break;
   }
 }
@@ -1414,6 +1529,7 @@ export function runReducer(state, action) {
     case 'TAKE_REWARD': takeReward(r, action.index, action.choice); break;
     case 'LEAVE_REWARD': leaveReward(r); break;
     case 'BOSS_RELIC': if (action.id && r.bossRelics?.includes(action.id)) gainRelic(r, action.id); nextAct(r); break;
+    case 'CHOOSE_ROUTE': if (r.screen === 'route' && r.routes?.includes(String(action.zone))) enterAct(r, r.act + 1, action.zone); else return state; break;
     case 'REST_HEAL': if (r.rest && !r.rest.done) { const before = r.hero.hp; r.hero.hp = Math.min(r.hero.maxHp, r.hero.hp + restHealAmount(r)); r.rest.healed = r.hero.hp - before; r.rest.done = true; } break;
     case 'REST_UPGRADE': if (r.rest && !r.rest.done && r.hero.deck.some(canUpgrade)) r.pending = { kind: 'upgrade', cancellable: true, source: 'rest' }; break;
     case 'REST_KEY': if (r.rest && !r.rest.done && r.keys && !r.keys.flame && r.act <= 3) { r.keys.flame = true; r.rest.done = true; r.rest.key = true; } break;

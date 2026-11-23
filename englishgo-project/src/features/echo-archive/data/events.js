@@ -169,7 +169,7 @@ export const EVENTS = {
     ],
   },
   tinker: {
-    acts: [2], art: 'gear',
+    acts: [2], home: 2, art: 'gear',
     title: { en: "The Tinker's Stall", zh: '修鐘匠的攤子' },
     body: { en: 'A tiny tinker sits among a thousand ticking parts. "Trade? Fix? Both?"', zh: '一位小小的修鐘匠坐在上千個滴答作響的零件中間：「交易？修理？還是都要？」' },
     choices: [
@@ -179,7 +179,7 @@ export const EVENTS = {
     ],
   },
   silentChoir: {
-    acts: [3], art: 'choir',
+    acts: [3], home: 3, art: 'choir',
     title: { en: 'The Silent Choir', zh: '無聲合唱' },
     body: { en: 'Pale singers open their mouths, but no sound comes out. Their hymnbook glows on a stand.', zh: '蒼白的歌者張開嘴，卻發不出任何聲音。他們的聖歌集在架子上發著光。' },
     choices: [
@@ -329,7 +329,7 @@ export const EVENTS = {
     },
   },
   clockworkTea: {
-    acts: [2], art: 'clockworkTea',
+    acts: [2], home: 2, art: 'clockworkTea',
     title: { en: 'The Clockwork Tea Party', zh: '發條茶會' },
     body: { en: 'Little wind-up guests click their cups together. The teapot whistles a tune, though one of its gears is clearly loose.', zh: '小小的發條客人們叮叮噹噹地碰杯。茶壺吹著口哨唱歌，不過它有個齒輪明顯鬆掉了。' },
     choices: [
@@ -386,6 +386,30 @@ export const EVENTS = {
         { w: 45, effects: [{ op: 'fight', encounter: ['echoShade', 'echoShade'] }] },
       ] },
       { en: 'Blow out the candles', zh: '吹熄蠟燭', note: '菁英戰鬥，勝利可得遺物', effects: [{ op: 'fight', encounter: ['hushWraith', 'echoShade'], kind: 'elite' }] },
+    ],
+  },
+
+  // ── Region events ──
+  // The Drowned Stacks have no merchant; a Pearl Clam room opens this instead.
+  pearlClam: {
+    acts: [], room: true, art: 'pearl',
+    title: { en: 'The Pearl Clam', zh: '珍珠蚌' },
+    body: { en: 'A giant clam yawns open on the sunken floor. Inside, pearls glow like little moons. "Take one," it bubbles, "only one."', zh: '巨大的蚌殼在沉沒的地板上緩緩張開，裡面的珍珠像小月亮一樣發光。「拿一顆吧，」它吐著泡泡說，「只能一顆喔。」' },
+    choices: [
+      { en: 'The rose pearl', zh: '玫瑰珍珠', note: '最大生命 +6，回復 12 生命', effects: [{ op: 'maxHp', v: 6 }, { op: 'heal', v: 12 }], result: { en: 'The pearl melts into warmth in your hand.', zh: '珍珠在手心化成一股暖流。' } },
+      { en: 'The golden pearl', zh: '金色珍珠', note: '獲得 80 金幣', effects: [{ op: 'gold', v: 80 }], result: { en: 'It clinks like a pile of coins. It is a pile of coins.', zh: '它叮噹作響，像一堆錢幣。原來真的是一堆錢幣。' } },
+      { en: 'The moon pearl', zh: '月光珍珠', note: '隨機升級 2 張牌', effects: [{ op: 'upgradeRandom', v: 2 }], result: { en: 'Moonlight seeps into your cards.', zh: '月光滲進了你的牌裡。' } },
+      { en: 'The black pearl', zh: '黑珍珠', note: '從牌組移除 1 張牌', effects: [{ op: 'remove' }], result: { en: 'The pearl swallows a page and goes quiet.', zh: '黑珍珠吞下一頁紙，安靜了下來。' } },
+    ],
+  },
+  fallingStar: {
+    acts: [], zones: ['observatory'], art: 'stars',
+    title: { en: 'The Falling Star', zh: '墜落的星星' },
+    body: { en: 'A tiny falling star is caught in the lens of the great telescope. It blinks at you, waiting for a wish.', zh: '一顆小小的流星卡在大望遠鏡的鏡片裡。它對你眨眨眼，好像在等你許願。' },
+    choices: [
+      { en: 'Make a wish aloud', zh: '大聲許願', note: '回復 30% 生命，接下來 3 場戰鬥的第一回合多抽 2 張牌', effects: [{ op: 'speak', text: 'Star light, star bright, I wish I may, I wish I might.' }, { op: 'healPct', v: 30 }, { op: 'boon', id: 'star' }], result: { en: 'The star glows brighter, as if it heard every word.', zh: '星星變得更亮了，好像聽見了你說的每一個字。' } },
+      { en: 'Wish for courage', zh: '許願：勇氣', note: '失去 6 生命，從 3 張傳說卡中選 1 張', req: { hp: 7 }, effects: [{ op: 'hurt', v: 6 }, { op: 'cardChoice', rarity: 'rare' }] },
+      { en: 'Keep the star in a jar', zh: '把星星裝進瓶子', note: '獲得 1 件遺物，加入詛咒 Doubt', effects: [{ op: 'relic' }, { op: 'curse', id: 'doubt' }], result: { en: 'The jar is warm. The star inside looks a little sad.', zh: '瓶子暖暖的，裡面的星星看起來有點難過。' } },
     ],
   },
 };

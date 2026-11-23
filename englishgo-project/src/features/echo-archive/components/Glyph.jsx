@@ -233,6 +233,19 @@ GLYPHS.twinStrike = GLYPHS.bond;
 Object.assign(GLYPHS, { charge: GLYPHS.surge, bastion: GLYPHS.helm, momentum: GLYPHS.dash, thousandCuts: GLYPHS.cuts, archmage: GLYPHS.hat, inscribe: GLYPHS.rune, shard: GLYPHS.shard });
 
 GLYPHS.stoneheart = GLYPHS.stone;
+// The Tinker, the Twilight Knight and the new regions.
+Object.assign(GLYPHS, {
+  wrench: <><path d="M44 8C36 6 28 12 30 21L9 42C6 45 6 50 9 53S17 56 20 53L41 32C50 34 56 26 54 18L47 25L41 23L39 17Z" {...soft}/><path d="M44 8C36 6 28 12 30 21L9 42C6 45 6 50 9 53S17 56 20 53L41 32C50 34 56 26 54 18L47 25L41 23L39 17Z"/><circle cx="14" cy="48" r="2.5" {...F}/></>,
+  steam: <><path d="M16 46C8 46 8 34 16 34C16 26 28 24 30 30C32 22 46 22 46 32C56 30 58 46 48 46Z" {...soft}/><path d="M16 46C8 46 8 34 16 34C16 26 28 24 30 30C32 22 46 22 46 32C56 30 58 46 48 46Z"/><path d="M22 56C26 52 22 50 26 46M34 58C38 54 34 52 38 48" opacity=".6"/><path d="M24 18C28 14 24 12 28 8M38 18C42 14 38 12 42 8" opacity=".5"/></>,
+  gauge: <><circle cx="32" cy="34" r="24" {...soft}/><circle cx="32" cy="34" r="24"/><path d="M14 40A19 19 0 0 1 50 40" opacity=".5"/><path d="M44 30L50 26M46 40H52" stroke="#e2504f" strokeWidth="4"/><path d="M32 34L46 22" strokeWidth="4"/><circle cx="32" cy="34" r="4" {...F}/></>,
+  valve: <><circle cx="32" cy="30" r="20"/><circle cx="32" cy="30" r="6" {...F}/><path d="M32 10V24M32 36V50M12 30H26M38 30H52" strokeWidth="4"/><path d="M26 50H38V60H26Z" {...F} fillOpacity=".6"/></>,
+  eclipse: <><circle cx="32" cy="32" r="22" {...soft}/><path d="M32 4V9M32 55V60M4 32H9M55 32H60M12 12L16 16M48 48L52 52M52 12L48 16M12 52L16 48" strokeWidth="3.5"/><circle cx="32" cy="32" r="15" {...F}/><circle cx="38" cy="28" r="13" fill="#0b0d1f" stroke="none" fillOpacity=".85"/></>,
+  sunblade: <><path d="M14 50L46 18" strokeWidth="6"/><path d="M10 46L18 54M42 12L52 22" strokeWidth="4"/><circle cx="48" cy="16" r="7" {...F}/><path d="M48 4V7M60 16H57M56 8L54 10M56 24L54 22" opacity=".7"/></>,
+  moonshield: <><path d={SHIELD} {...soft}/><path d={SHIELD}/><path d="M36 18A13 13 0 1 0 42 42A11 11 0 1 1 36 18Z" {...F}/></>,
+  gate: <><path d="M14 58V28C14 16 22 8 32 8S50 16 50 28V58" strokeWidth="4"/><path d="M22 58V30C22 22 26 16 32 16S42 22 42 30V58" {...soft}/><path d={star4(32, 36, 9)} {...F}/></>,
+  pearl: <><path d="M8 40C8 22 20 12 32 12S56 22 56 40Z" {...soft}/><path d="M8 40C8 22 20 12 32 12S56 22 56 40M8 40Q32 58 56 40" /><circle cx="32" cy="36" r="8" {...F}/><circle cx="29" cy="33" r="2.4" fill="#fff" stroke="none"/></>,
+});
+Object.assign(GLYPHS, { turbine: GLYPHS.perpetualMotion, heatSink: GLYPHS.stone, exhaust: GLYPHS.steam, safetyValve: GLYPHS.valve, dayborn: GLYPHS.sun, nightwatch: GLYPHS.moon, orbit: GLYPHS.stars, eternalTwilight: GLYPHS.eclipse });
 GLYPHS.clarity = GLYPHS.moon;
 GLYPHS.resonance = GLYPHS.wave;
 GLYPHS.scholar = GLYPHS.book;

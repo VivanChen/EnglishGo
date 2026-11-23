@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ARCHETYPES, CARDS, archOf } from '../data/cards.js';
 import { POTIONS, RELICS } from '../data/relics.js';
-import { KEYS } from '../data/enemies.js';
+import { ACTS, ENCOUNTERS, ENEMIES, KEYS, bossName, bossOf } from '../data/enemies.js';
+import { HEROES, HERO_IDS, heroUnlocked } from '../data/heroes.js';
 import { SKIP_CARD_HP, canUpgrade, isFoil, restHealAmount, hasRelic } from '../engine/engine.js';
 import CardFace, { KeywordList } from '../components/CardFace.jsx';
 import Glyph from '../components/Glyph.jsx';
-import { PotionArt, SceneArt } from '../components/Creatures.jsx';
+import { Backdrop, EnemyArt, PotionArt, SceneArt } from '../components/Creatures.jsx';
 import { sfx } from '../sound.js';
 
 const TYPE_ORDER = { attack: 0, skill: 1, power: 2, status: 3, curse: 4 };
@@ -224,6 +225,35 @@ export function BossRelicScreen({ run, dispatch }) {
         <Glyph name={RELICS[id].glyph} size={54}/><b lang="en">{RELICS[id].en}</b><small>{RELICS[id].zh}</small><p>{RELICS[id].text}</p>
       </button>)}</div>
       <button type="button" className="ea-btn is-quiet" onClick={() => dispatch({ type: 'BOSS_RELIC', id: null })}>都不要，直接前進</button>
+    </div>
+  </section>;
+}
+
+// After a boss: two regions lead on to the next act. Each card shows the
+// region's mood, how its map works and the bosses that may wait there.
+export function RouteScreen({ run, meta = {}, dispatch }) {
+  const routes = run.routes || [];
+  return <section className="ea-room ea-route" aria-label="選擇路線">
+    <div className="ea-room-panel is-wide">
+      <span className="ea-eyebrow" lang="en">CHOOSE YOUR ROUTE · ACT {ACTS[run.act + 1]?.roman}</span>
+      <h2>前方的路分成兩條</h2>
+      <p className="ea-room-lead">兩個區域的敵人、首領和地圖都不一樣。選一條路繼續前進吧。</p>
+      <div className="ea-routes">{routes.map(zone => {
+        const info = ACTS[zone];
+        const bosses = (ENCOUNTERS[zone]?.bosses || []).map(encounter => ({ ...bossName(encounter), art: ENEMIES[bossOf(encounter)].art }));
+        const fresh = !(meta.clears?.[zone] > 0);
+        const prize = HERO_IDS.find(id => HEROES[id].goal?.zone === String(zone) && !heroUnlocked(id, meta));
+        return <button type="button" key={zone} className={`ea-route-card zone-${zone}`} onClick={() => { sfx.map(); dispatch({ type: 'CHOOSE_ROUTE', zone }); }}>
+          <span className="ea-route-art" aria-hidden="true"><Backdrop act={zone}/><span className="ea-route-bosses">{bosses.map(boss => <EnemyArt key={boss.en} art={boss.art}/>)}</span></span>
+          <span className="ea-route-copy">
+            <span className="ea-route-name"><Glyph name={info.glyph || 'monster'} size={22}/><b lang="en">{info.en}</b>{fresh && <i>新區域</i>}</span>
+            <strong>{info.zh}</strong>
+            <small>{info.route}</small>
+            <em>首領：{bosses.map(boss => boss.zh).join(' 或 ')}</em>
+            {prize && <span className="ea-route-prize"><Glyph name="crown" size={16}/>在這裡打倒首領，就能解鎖「{HEROES[prize].zh}」！</span>}
+          </span>
+        </button>;
+      })}</div>
     </div>
   </section>;
 }

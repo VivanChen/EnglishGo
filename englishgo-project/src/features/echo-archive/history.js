@@ -18,7 +18,7 @@ export function runRecord(run, outcome, shards = 0, now = Date.now()) {
     hero: run.hero.id || 'scribe', trueEnding: Boolean(run.trueEnding),
     difficulty: run.difficulty, silence: run.silence || 0, trials: run.trials || [],
     daily: run.daily ? { date: run.daily.date, blessing: run.daily.blessing, trial: run.daily.trial } : null,
-    act: run.act, floor: run.floor, hp: Math.max(0, run.hero.hp), maxHp: run.hero.maxHp,
+    act: run.act, zone: run.zone || null, floor: run.floor, hp: Math.max(0, run.hero.hp), maxHp: run.hero.maxHp,
     foes, foeKind: foes.length ? c.kind : null,
     deck: [...counts], relics: [...run.hero.relics],
     kills: s.kills, damage: s.damage, cards: s.cards, chants: s.chants, chantsOk: s.chantsOk, shards,

@@ -9,7 +9,7 @@ import { Modal } from './RoomScreens.jsx';
 import { sfx } from '../sound.js';
 
 const RARITY_ORDER = { starter: 0, common: 1, uncommon: 2, rare: 3, mythic: 4 };
-const ARCH_ORDER = ['blade', 'burn', 'ward', 'combo', 'chant', 'ink', 'fold', 'familiar'];
+const ARCH_ORDER = ['blade', 'burn', 'ward', 'combo', 'chant', 'ink', 'fold', 'familiar', 'steam', 'twilight'];
 export const CODEX_CARDS = [...new Set([...STARTER_DECK, ...Object.values(HEROES).flatMap(hero => hero.deck), ...REWARD_POOL])]
   .sort((a, b) => ARCH_ORDER.indexOf(archOf(a)) - ARCH_ORDER.indexOf(archOf(b)) || RARITY_ORDER[CARDS[a].rarity] - RARITY_ORDER[CARDS[b].rarity] || CARDS[a].en.localeCompare(CARDS[b].en));
 const isOwned = (id, collection) => !CARDS[id].pack || collection.owned[id] > 0;

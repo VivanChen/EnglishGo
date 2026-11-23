@@ -1257,3 +1257,95 @@ button.ea-grid-card:hover { transform: translateY(-4px); }
 @media (prefers-reduced-motion: reduce) {
   .ea-root *, .ea-root *::before, .ea-root *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+/* ── New heroes: the Tinker (Steam) and the Twilight Knight (Day/Night) ── */
+.ea-hero-option.is-tinker { --hero-tint: rgba(232, 162, 92, .24); }
+.ea-hero-option.is-knight { --hero-tint: rgba(199, 182, 255, .24); }
+.ea-hero-portrait { position: relative; }
+.ea-hero-lock { position: absolute; right: -2px; bottom: 2px; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: #1a1430; border: 1px solid var(--ea-gold); color: var(--ea-gold); font-style: normal; }
+.ea-hero-goal { display: inline-flex; align-items: flex-start; gap: 4px; color: #f2d79b !important; }
+.ea-hero-goal .ea-glyph { flex: none; margin-top: 2px; }
+.ea-hero-option.is-locked { cursor: help; }
+.ea-sky-mark { font-style: normal; font-weight: 800; opacity: .45; margin-right: 1px; }
+.ea-sky-mark.is-day { color: #c27a00; }
+.ea-sky-mark.is-night { color: #3a4fa8; }
+.ea-sky-mark.is-on { opacity: 1; text-shadow: 0 0 6px rgba(255, 200, 80, .8); }
+.ea-sky-mark.is-night.is-on { text-shadow: 0 0 6px rgba(140, 170, 255, .9); }
+.ea-kw-steam, .ea-kw-vent, .ea-kw-overheat { color: #9a4a12; }
+.ea-kw-day { color: #a86400; }
+.ea-kw-night, .ea-kw-eclipse { color: #3a4fa8; }
+
+.ea-steam { position: absolute; z-index: 3; right: -10%; bottom: 8%; display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: help; outline: none; }
+.ea-steam-bar { display: flex; flex-direction: column-reverse; gap: 2px; padding: 4px; border-radius: 9px; background: rgba(20, 12, 6, .82); border: 1px solid #b87333; box-shadow: 0 2px 10px rgba(0, 0, 0, .5); }
+.ea-steam-bar i { display: block; width: 12px; height: 7px; border-radius: 2px; background: rgba(255, 255, 255, .1); transition: background .25s; }
+.ea-steam-bar i.is-on { background: linear-gradient(90deg, #ffe0a6, #e8a25c); }
+.ea-steam.is-warm .ea-steam-bar i.is-on { background: linear-gradient(90deg, #ffc48a, #ee7a3c); }
+.ea-steam.is-hot .ea-steam-bar { border-color: #ff5a4a; animation: ea-steam-hot .6s ease-in-out infinite; }
+.ea-steam.is-hot .ea-steam-bar i.is-on { background: linear-gradient(90deg, #ff9a8a, #e2504f); }
+.ea-steam > b { display: inline-flex; align-items: center; gap: 2px; padding: 1px 7px; border-radius: 99px; background: linear-gradient(180deg, #e8a25c, #8a4a1c); border: 1px solid #ffe0a6; color: #fff; font: 800 13px/1.3 var(--ea-serif); }
+.ea-steam > small { font: 800 11px var(--ea-sans); color: #ff8e86; text-shadow: 0 1px 3px #000; }
+.ea-steam.is-pulse > b { animation: ea-badge-bump .35s ease-out; }
+.ea-steam.is-vent .ea-steam-bar { animation: ea-steam-vent .6s ease-out; }
+.ea-steam.is-overheat .ea-steam-bar { animation: ea-steam-hot .3s ease-in-out 3; }
+@keyframes ea-steam-hot { 0%, 100% { box-shadow: 0 0 0 rgba(255, 90, 74, 0); } 50% { box-shadow: 0 0 16px rgba(255, 90, 74, .8); } }
+@keyframes ea-steam-vent { 0% { box-shadow: 0 0 0 rgba(255, 255, 255, 0); } 40% { box-shadow: 0 -12px 28px rgba(255, 255, 255, .7); } 100% { box-shadow: 0 0 0 rgba(255, 255, 255, 0); } }
+
+.ea-sky { position: absolute; z-index: 3; left: -4%; top: 2%; display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px 3px 6px; border-radius: 99px; font: 800 12.5px/1.2 var(--ea-sans); cursor: help; outline: none; border: 1px solid rgba(255, 255, 255, .3); box-shadow: 0 2px 10px rgba(0, 0, 0, .45); }
+.ea-sky.is-day { background: linear-gradient(180deg, #ffe9a6, #e8a93a); color: #4a2a06; }
+.ea-sky.is-night { background: linear-gradient(180deg, #3a4a9a, #141a48); color: #e2e8ff; }
+.ea-sky.is-day.is-night { background: linear-gradient(90deg, #e8a93a 0 50%, #2a3a8a 50%); color: #fff; }
+.ea-sky small { font-size: 10px; }
+.ea-sky.is-flip { animation: ea-badge-bump .45s ease-out; }
+.ea-combat .ea-field > .ea-backdrop { transition: filter .6s; }
+.ea-combat.sky-night .ea-field > .ea-backdrop { filter: brightness(.72) saturate(.85) hue-rotate(12deg); }
+.ea-affix.is-guard { background: rgba(80, 140, 150, .3); border-color: #8ff0e0; color: #c9fff6; }
+
+/* ── New regions: map shapes and the route choice ── */
+.ea-node.is-pearl { --node: #ffd1e6; }
+.ea-map-legend .is-pearl { color: #ffd1e6; }
+.ea-map-legend .is-gate { color: #ffe08a; }
+.ea-node-gate { position: absolute; top: -8px; left: -8px; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: #1c1c58; border: 1px solid #ffe08a; color: #ffe08a; font-style: normal; }
+.ea-node.is-gate-open .ea-node-gate { animation: ea-twinkle 1.2s ease-in-out infinite; }
+.ea-map-lines path { fill: none; stroke: rgba(255, 224, 138, .35); stroke-width: 2.5; stroke-dasharray: 1 6; stroke-linecap: round; }
+.ea-map-lines path.is-open { stroke: #ffe08a; stroke-width: 3; animation: ea-dash 1s linear infinite; }
+.ea-map-lines path.is-traveled { stroke: var(--ea-gold); stroke-width: 3.5; stroke-dasharray: none; filter: drop-shadow(0 0 4px rgba(255, 224, 138, .7)); }
+.ea-map-island { position: absolute; left: 2%; right: 2%; border-radius: 45%; background: radial-gradient(60% 70% at 50% 50%, rgba(80, 70, 180, .28), rgba(40, 30, 110, .1) 70%, transparent 72%); box-shadow: inset 0 -6px 0 rgba(201, 178, 255, .08); pointer-events: none; }
+.ea-map.zone-drowned .ea-map-scroll { background: linear-gradient(180deg, rgba(120, 230, 220, .1), rgba(4, 30, 40, .35)), repeating-linear-gradient(90deg, transparent 0 60px, rgba(143, 240, 224, .03) 60px 61px); box-shadow: inset 0 0 0 1px rgba(143, 240, 224, .22), inset 0 0 60px rgba(0, 0, 0, .5); }
+.ea-map.zone-drowned .ea-map-lines line { stroke: rgba(143, 240, 224, .25); }
+.ea-map.zone-drowned .ea-map-lines line.is-open { stroke: rgba(191, 248, 238, .9); }
+.ea-map.zone-observatory .ea-map-scroll { background: radial-gradient(2px 2px at 20% 30%, #fff8, transparent), radial-gradient(2px 2px at 70% 60%, #fff6, transparent), radial-gradient(1.5px 1.5px at 40% 80%, #ffe08a99, transparent), radial-gradient(1.5px 1.5px at 85% 15%, #fff7, transparent), linear-gradient(180deg, rgba(40, 30, 110, .3), rgba(10, 8, 40, .3)); box-shadow: inset 0 0 0 1px rgba(201, 178, 255, .22), inset 0 0 60px rgba(0, 0, 0, .5); }
+.ea-map.zone-observatory .ea-map-lines line { stroke: rgba(201, 178, 255, .3); }
+.ea-backdrop .ea-sway { animation: ea-sway 7s ease-in-out infinite alternate; }
+.ea-backdrop .ea-bubble { transform-box: fill-box; transform-origin: center; animation: ea-bubble-rise 9s linear infinite; }
+.ea-backdrop .ea-twinkle { transform-box: fill-box; transform-origin: center; animation: ea-twinkle 3s ease-in-out infinite; }
+@keyframes ea-sway { from { transform: rotate(-2deg); } to { transform: rotate(2deg); } }
+@keyframes ea-bubble-rise { 0% { transform: translateY(0); opacity: 0; } 15% { opacity: 1; } 100% { transform: translateY(-160px); opacity: 0; } }
+
+.ea-routes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 8px; }
+.ea-route-card { display: flex; flex-direction: column; overflow: hidden; padding: 0; border-radius: 20px; text-align: left; color: inherit; border: 1px solid rgba(255, 255, 255, .16); background: rgba(10, 12, 30, .8); transition: transform .18s, border-color .18s, box-shadow .2s; }
+.ea-route-card:hover, .ea-route-card:focus-visible { transform: translateY(-5px); border-color: var(--ea-gold); box-shadow: 0 0 30px rgba(232, 196, 122, .3); }
+.ea-route-art { position: relative; display: block; height: 150px; overflow: hidden; }
+.ea-route-art .ea-backdrop { position: absolute; inset: 0; }
+.ea-route-bosses { position: absolute; inset: auto 0 0; display: flex; justify-content: center; gap: 6px; }
+.ea-route-bosses .ea-creature { width: 128px; filter: drop-shadow(0 6px 10px rgba(0, 0, 0, .6)); }
+.ea-route-copy { display: flex; flex-direction: column; gap: 4px; padding: 14px 16px 16px; }
+.ea-route-name { display: flex; align-items: center; gap: 6px; color: var(--route, var(--ea-gold)); }
+.ea-route-name b { font: 700 16px var(--ea-serif); color: #fff3d6; }
+.ea-route-name i { margin-left: auto; padding: 2px 8px; border-radius: 99px; font: 800 11px var(--ea-sans); font-style: normal; color: #0d2414; background: linear-gradient(180deg, #b6f3c0, #6fcf80); }
+.ea-route-copy strong { font: 800 20px var(--ea-serif); color: #fff; }
+.ea-route-copy small { font-size: 13px; line-height: 1.6; color: #d6cfbe; }
+.ea-route-copy em { font-style: normal; font-size: 12.5px; color: var(--ea-muted); }
+.ea-route-prize { display: inline-flex; align-items: center; gap: 6px; margin-top: 4px; padding: 6px 10px; border-radius: 10px; font: 700 12.5px var(--ea-sans); color: #ffe7a6; background: rgba(232, 196, 122, .14); border: 1px solid rgba(232, 196, 122, .45); }
+.ea-route-card.zone-drowned { --route: #8ff0e0; }
+.ea-route-card.zone-observatory { --route: #c9b2ff; }
+.ea-unlock.is-hero { border-color: #ffe7a6; background: linear-gradient(120deg, rgba(255, 231, 166, .24), rgba(143, 240, 224, .14)); }
+.ea-unlock-hero { flex: none; width: 64px; height: 70px; }
+.ea-unlock-hero .ea-creature { width: 100%; height: 100%; }
+@media (max-width: 720px) {
+  .ea-routes { grid-template-columns: 1fr; gap: 12px; }
+  .ea-route-art { height: 112px; }
+  .ea-route-bosses .ea-creature { width: 96px; }
+  .ea-steam { right: -4%; }
+  .ea-steam-bar i { width: 9px; height: 5px; }
+  .ea-sky { font-size: 11px; padding: 2px 8px 2px 4px; }
+}
