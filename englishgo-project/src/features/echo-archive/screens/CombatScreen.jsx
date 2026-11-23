@@ -140,10 +140,22 @@ function SteamGauge({ steam, mark }) {
 function SkyBadge({ c, mark }) {
   const day = isDay(c), night = isNight(c);
   const name = day && night ? '全蝕' : day ? '白晝' : '黑夜';
-  const tip = `${name}：${day && night ? '白晝與黑夜的效果都會生效。' : day ? KEYWORDS.day.text : KEYWORDS.night.text}${c.player.holdSky ? '（至日：下回合不會交替）' : ''}`;
+  // What the next turn will be: the sky flips each turn unless Solstice holds it.
+  const next = c.player.holdSky ? c.player.sky : c.player.sky === 'day' ? 'night' : 'day';
+  const tip = `${name}：${day && night ? '白晝與黑夜的效果都會生效。' : day ? KEYWORDS.day.text : KEYWORDS.night.text}下回合是${next === 'day' ? '白晝 ☀' : '黑夜 ☾'}${c.player.holdSky ? '（至日：不會交替）' : ''}。`;
   return <div className={`ea-sky ${day ? 'is-day' : ''} ${night ? 'is-night' : ''} ${mark ? `is-${mark}` : ''}`} tabIndex={0} data-tip={tip} aria-label={tip}>
-    <Glyph name={day && night ? 'eclipse' : day ? 'sun' : 'moon'} size={20}/><b>{name}</b>{c.player.holdSky && <small>⏸</small>}
+    <Glyph name={day && night ? 'eclipse' : day ? 'sun' : 'moon'} size={20}/><b>{name}</b>
+    <small className="ea-sky-next" aria-hidden="true">{c.player.holdSky ? '⏸' : '→'}{next === 'day' ? '☀' : '☾'}</small>
   </div>;
+}
+
+// Whether a card's Day or Night bonus is live this turn (the card glows).
+function skyLit(card, c) {
+  if (!c.player.sky) return null;
+  const has = key => Boolean(card[key === 'day' ? 'onDay' : 'onNight']) || card.fx.some(effect => effect[key]);
+  if (has('day') && isDay(c)) return 'day';
+  if (has('night') && isNight(c)) return 'night';
+  return null;
 }
 
 function Enemy({ run, enemy, targetable, over, mark, floaters, impacts, onClick }) {
@@ -517,9 +529,14 @@ export default function CombatScreen({ run, dispatch, settings, pool, speak, pot
   const endTurn = useCallback(() => {
     if (c.phase !== 'player' || chant || c.choice || discarding) return;
     const playable = c.hand.filter(uid => canPlay(run, uid)).length;
-    if (playable && !confirmEnd && !coach && settings.endWarn !== false) {
+    // A full boiler always gets a warning: ending the turn now would overheat it.
+    const steam = c.player.steam || 0;
+    const willOverheat = steam >= OVERHEAT_AT && !c.player.pw.safetyValve && !c.player.pw.steamTitan;
+    if ((willOverheat || (playable && settings.endWarn !== false)) && !confirmEnd && !coach) {
       setConfirmEnd(true);
-      setNotice({ key: Date.now(), text: `還有 ${playable} 張牌可以打出，再按一次就結束回合` });
+      setNotice(willOverheat
+        ? { key: Date.now(), text: `Steam 已經 ${steam}！現在結束回合會過熱、失去 ${OVERHEAT_HP} 生命。可以先打洩壓的牌，或再按一次結束回合`, ms: 3600 }
+        : { key: Date.now(), text: `還有 ${playable} 張牌可以打出，再按一次就結束回合` });
       sfx.select();
       return;
     }
@@ -650,7 +667,7 @@ export default function CombatScreen({ run, dispatch, settings, pool, speak, pot
           };
           const cardCtx = isDrag && aimedEnemy ? { ...ctx, exposed: aimedEnemy.st.exposed } : ctx;
           return <button type="button" key={uid}
-            className={`ea-hand-card ${lifted ? 'is-selected' : ''} ${isDrag ? 'is-dragging' : ''} ${isDrag && drag.zone && CARDS[inst.id].target !== 'enemy' ? 'is-armed' : ''} ${CARDS[inst.id].keep ? 'is-kept' : ''}`}
+            className={`ea-hand-card ${lifted ? 'is-selected' : ''} ${isDrag ? 'is-dragging' : ''} ${isDrag && drag.zone && CARDS[inst.id].target !== 'enemy' ? 'is-armed' : ''} ${CARDS[inst.id].keep ? 'is-kept' : ''} ${skyLit(CARDS[inst.id], c) ? `is-sky-${skyLit(CARDS[inst.id], c)}` : ''}`}
             style={{ ...style, '--i': index }}
             data-hand-uid={uid}
             onMouseMove={event => {

@@ -1296,6 +1296,10 @@ button.ea-grid-card:hover { transform: translateY(-4px); }
 .ea-sky.is-day.is-night { background: linear-gradient(90deg, #e8a93a 0 50%, #2a3a8a 50%); color: #fff; }
 .ea-sky small { font-size: 10px; }
 .ea-sky.is-flip { animation: ea-badge-bump .45s ease-out; }
+.ea-sky .ea-sky-next { margin-left: 2px; padding-left: 5px; border-left: 1px solid currentColor; opacity: .75; font-size: 10.5px; }
+/* A card whose Day/Night bonus is live this turn glows in that light. */
+.ea-hand-card.is-sky-day .ea-card { filter: drop-shadow(0 0 7px rgba(255, 205, 110, .95)) drop-shadow(0 0 2px rgba(255, 230, 160, .9)); }
+.ea-hand-card.is-sky-night .ea-card { filter: drop-shadow(0 0 7px rgba(130, 165, 255, .95)) drop-shadow(0 0 2px rgba(190, 210, 255, .9)); }
 .ea-combat .ea-field > .ea-backdrop { transition: filter .6s; }
 .ea-combat.sky-night .ea-field > .ea-backdrop { filter: brightness(.72) saturate(.85) hue-rotate(12deg); }
 .ea-affix.is-guard { background: rgba(80, 140, 150, .3); border-color: #8ff0e0; color: #c9fff6; }

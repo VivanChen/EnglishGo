@@ -39,3 +39,8 @@ scenes (events/), generated with the same model and the same style prompts
 (Drowned Stacks palette: deep sea teal, sea green and pearl; Starlit
 Observatory palette: midnight indigo, starlight gold and cyan), then processed
 the same way. Every new creature also has a simpler hand-drawn SVG fallback.
+
+Hero gacha cards (2026-11-23, cards/): paintings for the 8 Rare and Mythic hero
+cards of the Archive Gacha (Grand Inscription, Sword & Shield, Spirit Tide,
+Spirit King, Rocket Barrage, Steam Titan, Aurora, Celestial Crown), generated
+with the same model and card style prompt, centre-cropped to 560x272 WebP.

@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { ACTS, ENCOUNTERS, ENEMIES, ROUTES } from '../data/enemies.js';
-import { CARDS, describeCard } from '../data/cards.js';
+import { ARCHIVE_CARDS, CARDS, describeCard } from '../data/cards.js';
 import { EVENTS } from '../data/events.js';
 import { HEROES, heroPool, heroUnlocked, inHeroPool, legacyClears, newlyUnlocked } from '../data/heroes.js';
-import { OVERHEAT_HP, cardContext, createRun, eventFits, finishEnemyPhase, intentOf, isDay, isNight, living, moveBase, runReducer } from './engine.js';
+import { OVERHEAT_HP, cardContext, cardPool, createRun, eventFits, finishEnemyPhase, intentOf, isDay, isNight, living, moveBase, runReducer } from './engine.js';
 import { availableNodes, generateMap } from './map.js';
 
 const act = (run, action) => runReducer(run, action);
+const HERO_PACK = { scribe: ['runeRiposte', 'grandInscription', 'bladeBulwark'], caller: ['frenzy', 'spiritTide', 'spiritKing'], tinker: ['springFist', 'rocketBarrage', 'steamTitan'], knight: ['duskWaltz', 'aurora', 'celestialCrown'] };
 
 function toMap(options = {}) {
   let run = createRun({ seed: 11, ...options });
@@ -309,6 +310,22 @@ describe('hero unlocks', () => {
     expect(newlyUnlocked({ clears: { 1: 1 } }, { clears: { 1: 1, observatory: 1 } })).toEqual(['knight']);
   });
 
+  it('gives every hero three power cards in the Archive Gacha, playable only by that hero once pulled', () => {
+    expect(ARCHIVE_CARDS).toHaveLength(49);
+    Object.entries(HERO_PACK).forEach(([hero, ids]) => {
+      expect(ids.map(id => CARDS[id].rarity)).toEqual(['uncommon', 'rare', 'mythic']);
+      const other = hero === 'scribe' ? 'caller' : 'scribe';
+      ids.forEach(id => {
+        expect(ARCHIVE_CARDS).toContain(id);
+        expect(CARDS[id].hero).toBe(hero);
+        expect(cardPool(createRun({ seed: 3, hero }))).not.toContain(id);
+        expect(cardPool(createRun({ seed: 3, hero, unlocked: [id] }))).toContain(id);
+        expect(cardPool(createRun({ seed: 3, hero: other, unlocked: [id] }))).not.toContain(id);
+        [false, true].forEach(up => describeCard({ id, up }).flat().forEach(seg => expect(seg, id).not.toBeUndefined()));
+      });
+    });
+  });
+
   it('gives each new hero a full set of cards with text for every effect', () => {
     ['tinker', 'knight'].forEach(hero => {
       const own = Object.keys(CARDS).filter(id => CARDS[id].hero === hero);
@@ -320,5 +337,100 @@ describe('hero unlocks', () => {
         lines.flat().forEach(seg => expect(seg, id).not.toBeUndefined());
       }));
     });
+  });
+});
+
+// A tough training dummy: plenty of health, no Ward or special rules.
+const dummy = (uid = 'e0') => foe('reefWarden', uid, { hp: 300, maxHp: 300 });
+const lost = (run, uid = 'e0') => 300 - run.combat.enemies.find(enemy => enemy.uid === uid).hp;
+const text = (id, ctx) => describeCard({ id, up: false }, ctx).flat().map(seg => (typeof seg === 'string' ? seg : seg.n ?? '')).join('');
+
+describe('easier new heroes and the hero gacha cards', () => {
+  it('starts the Tinker with a Release Valve, and overheating costs 4 health', () => {
+    expect(HEROES.tinker.deck).toContain('releaseValve');
+    expect(OVERHEAT_HP).toBe(4);
+    let run = fight({ hero: 'tinker' });
+    run.combat.enemies = [dummy()];
+    run.combat.player.steam = 7;
+    const ward = run.combat.player.ward;
+    run = play(run, 'releaseValve');
+    expect(run.combat.player.ward - ward).toBe(4 + 7);
+    expect(run.combat.player.steam).toBe(0);
+  });
+
+  it('halves Steam with Spring Fist, fires a rocket per Steam and never overheats with the Steam Titan', () => {
+    let run = fight({ hero: 'tinker' });
+    run.combat.enemies = [dummy()];
+    run.combat.player.steam = 6;
+    run = play(run, 'springFist');
+    expect(lost(run)).toBe(5 + 2 * 6);
+    expect(run.combat.player.steam).toBe(3);
+    const before = lost(run);
+    run = play(run, 'rocketBarrage');
+    expect(lost(run) - before).toBe(3 * 4);
+    expect(run.combat.player.steam).toBe(0);
+    run = play(run, 'steamTitan');
+    expect(run.combat.player.steam).toBe(4);
+    run.combat.player.steam = 12;
+    const hp = run.hero.hp, dealt = lost(run);
+    run = act(run, { type: 'END_TURN' });
+    expect(run.hero.hp).toBe(hp);
+    expect(lost(run) - dealt).toBe(12);
+    expect(run.combat.player.steam).toBe(12);
+  });
+
+  it('doubles Day and Night bonuses with the Celestial Crown and flips the sky twice with Aurora', () => {
+    let run = fight({ hero: 'knight' });
+    run.combat.enemies = [dummy()];
+    expect(isDay(run.combat)).toBe(true);
+    run = play(run, 'sunblade');
+    expect(lost(run)).toBe(5 + 3);
+    run = play(run, 'celestialCrown');
+    let before = lost(run);
+    run = play(run, 'sunblade');
+    expect(lost(run) - before).toBe(5 + 6);
+    before = lost(run);
+    run = play(run, 'duskWaltz');
+    expect(lost(run) - before).toBe(5 * 3);
+    expect(text('sunblade', { day: true, celestial: true })).toContain('11');
+    run = play(run, 'twinOrbit');
+    before = lost(run);
+    run = play(run, 'aurora');
+    expect(isDay(run.combat)).toBe(true);
+    expect(lost(run) - before).toBe(5 * 2);
+  });
+
+  it('sharpens the Scribe with Sword & Shield and makes the hand stronger for good with Grand Inscription', () => {
+    let run = fight({});
+    run.combat.enemies = [dummy()];
+    run = play(run, 'bladeBulwark');
+    run = play(run, 'guard');
+    expect(run.combat.player.st.edge).toBe(4);
+    expect(text('slash', { edge: 4 })).toContain('10');
+    const ward = run.combat.player.ward;
+    run = play(run, 'slash');
+    expect(lost(run)).toBe(6 + 4);
+    expect(run.combat.player.st.edge).toBeUndefined();
+    expect(run.combat.player.ward - ward).toBe(3);
+    const kept = run.hero.deck.find(card => card.id === 'slash').uid;
+    ['draw', 'discard'].forEach(pile => { run.combat[pile] = run.combat[pile].filter(uid => uid !== kept); });
+    run.combat.hand = [kept];
+    run = play(run, 'grandInscription');
+    expect(run.hero.deck.find(card => card.uid === kept).bonus).toBe(2);
+  });
+
+  it('spends the familiar on every foe with Spirit Tide and doubles its bite with the Spirit King', () => {
+    let run = fight({ hero: 'caller' });
+    run.combat.enemies = [dummy('e0'), dummy('e1')];
+    run.combat.player.familiar = 6;
+    run = play(run, 'spiritTide');
+    expect([lost(run, 'e0'), lost(run, 'e1')]).toEqual([9, 9]);
+    expect(run.combat.player.familiar).toBe(3);
+    run = play(run, 'spiritKing');
+    expect(run.combat.player.familiar).toBe(7);
+    const before = lost(run, 'e0') + lost(run, 'e1');
+    run = play(run, 'frenzy');
+    expect(run.combat.player.familiar).toBe(10);
+    expect(lost(run, 'e0') + lost(run, 'e1') - before).toBe(20);
   });
 });

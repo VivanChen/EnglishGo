@@ -29,10 +29,12 @@ export const PAINTED_CARDS = new Set([
   'runeStorm', 'quillDance', 'wordflood', 'palimpsest', 'legion', 'unboundSpirit', 'inkStorm', 'lastLight', 'twinSpirit',
   'finalFold', 'eternalFlame', 'epic', 'mountainCleaver', 'flashpoint', 'mirrorWall', 'finisher', 'eloquence', 'blackout',
   'origamiWorkshop', 'spiritSurge', 'overdrive', 'boilerBurst', 'exhaustEngine', 'totalEclipse', 'meteorLance', 'twinOrbit',
+  'grandInscription', 'spiritTide', 'rocketBarrage', 'aurora',
   // Mythic
   'sunfall', 'aegis', 'thousandCuts', 'archmage', 'livingInk', 'grandLibrary', 'inkSovereign', 'thousandCranes',
   'afterimage', 'swordSaint', 'hellfire', 'colossus', 'perpetualMotion', 'runeChoir', 'abyssalInk', 'paperDragon', 'eternalSpirit',
   'safetyValve', 'eternalTwilight',
+  'bladeBulwark', 'spiritKing', 'steamTitan', 'celestialCrown',
 ]);
 
 export const cardImage = id => (PAINTED_CARDS.has(id) ? `${ROOT}/cards/${id}.webp` : null);

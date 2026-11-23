@@ -207,7 +207,8 @@ function feedFamiliar(r, amount) {
 // for damage equal to its stacks. Might and Weak do not change it.
 function familiarStrike(r) {
   const c = r.combat;
-  const power = c.player.familiar || 0;
+  // Spirit King doubles every bite.
+  const power = (c.player.familiar || 0) * (c.player.pw.spiritKing ? 2 : 1);
   if (power <= 0) return;
   const strikes = 1 + (c.player.pw.twinStrike || 0);
   for (let i = 0; i < strikes; i++) {
@@ -226,7 +227,7 @@ function familiarStrike(r) {
 
 // ───────────── Steam (the Tinker) ─────────────
 export const OVERHEAT_AT = 10;
-export const OVERHEAT_HP = 6;
+export const OVERHEAT_HP = 4;
 function addSteam(r, amount) {
   const c = r.combat;
   if (!c || !amount) return;
@@ -346,7 +347,8 @@ export function cardContext(r) {
   if (!c) return {};
   const st = c.player.st;
   return { might: st.might, weak: st.weak, grace: st.grace, frail: st.frail, combo: c.played || 0, chants: c.chantsOk || 0, statuses: statusCount(c), blades: c.blades || 0, keen: c.player.pw.keenCrease || 0, dragon: c.player.pw.paperDragon || 0, livingInk: Boolean(c.player.pw.livingInk), familiar: heroOf(r) === 'caller' || c.player.familiar ? c.player.familiar || 0 : undefined,
-    steam: c.player.steam != null ? c.player.steam : undefined, day: isDay(c), night: isNight(c), moonstone: hasRelic(r, 'moonstone') };
+    steam: c.player.steam != null ? c.player.steam : undefined, day: isDay(c), night: isNight(c), moonstone: hasRelic(r, 'moonstone'),
+    celestial: Boolean(c.player.pw.celestial), edge: st.edge || 0 };
 }
 
 export function canPlay(r, uid) {
@@ -601,9 +603,11 @@ export function chooseCard(r, uid) {
 
 // What Steam (`perSteam`) and the Day/Night bonus (`day`, `night`) add to an
 // effect's number right now.
+// Celestial Crown doubles the Day/Night bonuses.
 function extraFor(c, effect, up) {
+  const sky = c.player.pw.celestial ? 2 : 1;
   return (effect.perSteam ? Math.floor(val(effect.perSteam, up) * (c.player.steam || 0)) : 0)
-    + (effect.day && isDay(c) ? val(effect.day, up) : 0) + (effect.night && isNight(c) ? val(effect.night, up) : 0);
+    + (effect.day && isDay(c) ? val(effect.day, up) * sky : 0) + (effect.night && isNight(c) ? val(effect.night, up) * sky : 0);
 }
 
 const TARGETED = new Set(['doubleBurn', 'stripWard', 'ifExposed', 'detonate', 'spreadBurn']);
@@ -619,8 +623,10 @@ function resolve(r, effects, up, target, ctx) {
         const base = v + (ctx.bonus || 0) + (ctx.grow || 0) + (effect.perCombo ? val(effect.perCombo, up) * (ctx.combo || 0) : 0) + (effect.perChant ? val(effect.perChant, up) * (c.chantsOk || 0) : 0) + (effect.perFamiliar ? val(effect.perFamiliar, up) * familiar : 0)
           + (effect.perBlade ? val(effect.perBlade, up) * (c.blades || 0) : 0) + (effect.perStatus ? val(effect.perStatus, up) * statusCount(c) : 0)
           + (effect.perBurn && target ? val(effect.perBurn, up) * (target.st.burn || 0) : 0) + (ctx.id === 'paperBlade' ? (c.player.pw.keenCrease || 0) + (c.player.pw.paperDragon || 0) : 0)
-          + (effect.mightMult ? (c.player.st.might || 0) * (val(effect.mightMult, up) - 1) : 0) + extraFor(c, effect, up);
-        const hits = effect.hits === 'X' ? ctx.x : effect.comboHits ? (ctx.combo || 0) + 1 : effect.hitsPerFamiliar ? 1 + Math.floor(familiar / effect.hitsPerFamiliar) : effect.hitsPerStatus ? val(effect.hits || 1, up) + statusCount(c) : val(effect.hits || 1, up);
+          + (effect.mightMult ? (c.player.st.might || 0) * (val(effect.mightMult, up) - 1) : 0) + extraFor(c, effect, up)
+          + (CARDS[ctx.id]?.type === 'attack' ? c.player.st.edge || 0 : 0);
+        const hits = effect.hits === 'X' ? ctx.x : effect.comboHits ? (ctx.combo || 0) + 1 : effect.hitsPerFamiliar ? 1 + Math.floor(familiar / effect.hitsPerFamiliar) : effect.hitsPerStatus ? val(effect.hits || 1, up) + statusCount(c)
+          : effect.hitsPerSteam ? Math.max(1, c.player.steam || 0) : val(effect.hits || 1, up);
         // Sword Saint (single-target attacks) and Paper Dragon (Paper Blades) hit everyone.
         const sweep = !effect.all && !effect.random && ((c.player.pw.swordSaint && CARDS[ctx.id]?.type === 'attack') || (ctx.id === 'paperBlade' && c.player.pw.paperDragon));
         for (let i = 0; i < hits; i++) {
@@ -645,6 +651,9 @@ function resolve(r, effects, up, target, ctx) {
       case 'damageWard': (effect.all ? living(c) : [target]).forEach(enemy => attackEnemy(r, enemy, c.player.ward, ctx.mult)); break;
       case 'ward': gainWard(r, v + (ctx.bonus || 0) + (effect.perKept ? val(effect.perKept, up) * (ctx.kept || 0) : 0) + extraFor(c, effect, up)); break;
       case 'steam': addSteam(r, v); break;
+      case 'halveSteam': addSteam(r, -Math.ceil((c.player.steam || 0) / 2)); break;
+      // Grand Inscription: every attack and defence in hand grows for good.
+      case 'inscribeHand': c.hand.filter(uid => CARDS[c.cards[uid].id].fx.some(item => item.op === 'damage' || item.op === 'ward')).forEach(uid => inscribe(r, uid, v)); break;
       case 'vent': releaseSteam(r); break;
       case 'doubleSteam': addSteam(r, c.player.steam || 0); break;
       case 'ifSteam': if ((c.player.steam || 0) >= effect.n) resolve(r, effect.then, up, target, ctx); break;
@@ -684,7 +693,8 @@ function resolve(r, effects, up, target, ctx) {
         const stacks = c.player.familiar || 0;
         const used = effect.half ? Math.floor(stacks / 2) : stacks;
         c.player.familiar = stacks - used;
-        if (used > 0 && target && !target.dead) attackEnemy(r, target, used * v, ctx.mult);
+        if (used > 0 && effect.all) living(c).forEach(enemy => attackEnemy(r, enemy, used * v, ctx.mult));
+        else if (used > 0 && target && !target.dead) attackEnemy(r, target, used * v, ctx.mult);
         break;
       }
       case 'burnFromFamiliar': {
@@ -803,7 +813,9 @@ export function playCard(r, uid, targetUid, chant = null) {
   }
   fx(r, { kind: 'play', card: inst.id, uid, up: inst.up, empowered, target: target?.uid || null });
   // The Day or Night line joins the card's effects when its half of the day is up.
-  const effects = [...card.fx, ...(card.onDay && isDay(c) ? card.onDay : []), ...(card.onNight && isNight(c) ? card.onNight : []), ...(empowered ? card.chant : [])];
+  const skyTimes = c.player.pw.celestial ? 2 : 1;
+  const skyFx = list => Array.from({ length: skyTimes }, () => list).flat();
+  const effects = [...card.fx, ...(card.onDay && isDay(c) ? skyFx(card.onDay) : []), ...(card.onNight && isNight(c) ? skyFx(card.onNight) : []), ...(empowered ? card.chant : [])];
   let repeats = 1, mult = 1;
   if (card.type === 'attack') {
     if (c.echo > 0) { repeats += 1; c.echo -= 1; }
@@ -849,6 +861,13 @@ function afterCardPlayed(r, inst) {
   if (c.player.pw.perpetualMotion && c.played % c.player.pw.perpetualMotion === 0) { c.energy += 1; fx(r, { kind: 'energy', amount: 1 }); drawCards(r, 1); }
   if (c.player.pw.origamiWorkshop && inst.id !== 'paperBlade') foldPaper(r, c.player.pw.origamiWorkshop);
   if (c.player.pw.sovereign && CARDS[inst.id].type === 'attack') feedFamiliar(r, c.player.pw.sovereign);
+  // Sword & Shield: attacks raise a guard; skills sharpen the next attack (Edge).
+  if (CARDS[inst.id].type === 'attack') delete c.player.st.edge;
+  if (c.player.pw.bladeBulwark) {
+    const type = CARDS[inst.id].type;
+    if (type === 'attack') gainWard(r, 3 * c.player.pw.bladeBulwark, false);
+    if (type === 'skill') { add(c.player.st, 'edge', 4 * c.player.pw.bladeBulwark); fx(r, { kind: 'buff', to: 'player', st: 'edge' }); }
+  }
   if (c.played === 6 && hasRelic(r, 'metronome')) { c.energy += 1; fx(r, { kind: 'energy', amount: 1 }); }
 }
 
@@ -911,8 +930,13 @@ export function endTurn(r) {
     fx(r, { kind: 'colossus', amount });
     living(c).forEach(enemy => hurtEnemy(r, enemy, amount));
   }
+  // Steam Titan turns the boiler into a weapon and never overheats.
+  if (c.player.pw.steamTitan && (c.player.steam || 0) > 0) {
+    fx(r, { kind: 'titan', amount: c.player.steam });
+    living(c).forEach(enemy => hurtEnemy(r, enemy, c.player.steam));
+  }
   // The boiler: 10 Steam or more at the end of the turn overheats it.
-  if ((c.player.steam || 0) >= OVERHEAT_AT) overheat(r);
+  if ((c.player.steam || 0) >= OVERHEAT_AT && !c.player.pw.steamTitan) overheat(r);
   else if (hasRelic(r, 'pressureGauge') && c.player.steam >= 7) { add(c.player.st, 'charge', 1); fx(r, { kind: 'buff', to: 'player', st: 'charge' }); }
   decay(c.player.st);
   c.echo = 0;

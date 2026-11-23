@@ -243,16 +243,17 @@ describe('Echo Archive', () => {
 });
 
 describe('Echo Archive combat clarity', () => {
-  async function seededFight(settings) {
+  async function seededFight(settings, hero = 'scribe', setup = () => {}) {
     localStorage.setItem('eg_echo_archive_meta', JSON.stringify({ runs: 3, tutorialDone: true, ...(settings ? { settings } : {}) }));
     const { createRun, runReducer } = await import('./engine/engine.js');
     const { availableNodes } = await import('./engine/map.js');
-    let run = createRun({ seed: 5, difficulty: 'standard' });
+    let run = createRun({ seed: 5, difficulty: 'standard', hero });
     run = runReducer(run, { type: 'EVENT_CHOOSE', index: 3 });
     run = runReducer(run, { type: 'EVENT_CONTINUE' });
     run = runReducer(run, { type: 'ACK_ACT' });
     run = runReducer(run, { type: 'MAP_SELECT', id: availableNodes(run)[0] });
     run.combat.enemies = [{ ...run.combat.enemies[0], id: 'bookworm', hp: 40, maxHp: 40, move: 'gnaw', st: {}, ward: 0 }];
+    setup(run.combat);
     localStorage.setItem('eg_echo_archive_run', JSON.stringify(run));
     render(<EchoArchive lv="elementary" onBack={vi.fn()} deps={deps()}/>);
     fireEvent.click(screen.getByRole('button', { name: /繼續遠征/ }));
@@ -273,6 +274,25 @@ describe('Echo Archive combat clarity', () => {
     await seededFight({ endWarn: false });
     fireEvent.click(screen.getByRole('button', { name: /結束回合/ }));
     expect(await screen.findByText('敵人行動中', {}, { timeout: 4000 })).toBeInTheDocument();
+  });
+
+  it('warns the Tinker before a full boiler overheats, even with the reminder off', async () => {
+    await seededFight({ endWarn: false }, 'tinker', c => { c.player.steam = 10; });
+    fireEvent.click(screen.getByRole('button', { name: /結束回合/ }));
+    expect(screen.getByRole('status')).toHaveTextContent('會過熱');
+    expect(screen.queryByText('敵人行動中')).toBeNull();
+  });
+
+  it('makes the Twilight Knight\'s boosted cards glow and shows the next turn\'s sky', async () => {
+    await seededFight(undefined, 'knight', c => {
+      const ids = ['sunblade', 'moonguard'];
+      c.hand = ids.map((id, i) => { const uid = `k${i}`; c.cards[uid] = { uid, id, up: false }; return uid; });
+    });
+    const sun = screen.getByRole('button', { name: /^Sunblade 日刃/ });
+    const moon = screen.getByRole('button', { name: /^Moonguard 月盾/ });
+    expect(sun).toHaveClass('is-sky-day');
+    expect(moon).not.toHaveClass('is-sky-night');
+    expect(screen.getByLabelText(/白晝：.*下回合是黑夜/)).toBeInTheDocument();
   });
 });
 

@@ -246,6 +246,8 @@ Object.assign(GLYPHS, {
   pearl: <><path d="M8 40C8 22 20 12 32 12S56 22 56 40Z" {...soft}/><path d="M8 40C8 22 20 12 32 12S56 22 56 40M8 40Q32 58 56 40" /><circle cx="32" cy="36" r="8" {...F}/><circle cx="29" cy="33" r="2.4" fill="#fff" stroke="none"/></>,
 });
 Object.assign(GLYPHS, { turbine: GLYPHS.perpetualMotion, heatSink: GLYPHS.stone, exhaust: GLYPHS.steam, safetyValve: GLYPHS.valve, dayborn: GLYPHS.sun, nightwatch: GLYPHS.moon, orbit: GLYPHS.stars, eternalTwilight: GLYPHS.eclipse });
+// Hero gacha powers and the Edge status reuse the closest existing icons.
+Object.assign(GLYPHS, { bladeBulwark: GLYPHS.shieldBash, edge: GLYPHS.whetblade, spiritKing: GLYPHS.sovereign, steamTitan: GLYPHS.steam, celestial: GLYPHS.crown });
 GLYPHS.clarity = GLYPHS.moon;
 GLYPHS.resonance = GLYPHS.wave;
 GLYPHS.scholar = GLYPHS.book;

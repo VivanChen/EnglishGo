@@ -18,8 +18,8 @@ export const HEROES = {
     utility: ['focus', 'insight', 'parry', 'barrier', 'smoke', 'haste', 'rewind', 'clarity', 'sanctum', 'mend', 'hex', 'echo', 'surge'],
   },
   tinker: {
-    en: 'The Tinker', zh: '機巧師', hp: 2, relic: 'pocketBoiler',
-    deck: ['wrench', 'wrench', 'wrench', 'wrench', 'plating', 'plating', 'plating', 'plating', 'stoke', 'steamBlast'],
+    en: 'The Tinker', zh: '機巧師', hp: 5, relic: 'pocketBoiler',
+    deck: ['wrench', 'wrench', 'wrench', 'wrench', 'plating', 'plating', 'plating', 'releaseValve', 'stoke', 'steamBlast'],
     style: '蒸汽與壓力', text: '出牌會累積 Steam，讓攻擊越來越痛；用蒸汽噴射一口氣洩壓，壓力夠高還會變強。小心：回合結束時 Steam 滿 10 就會過熱！',
     unlock: '在「鏽蝕鐘塔」打倒第二章的首領', goal: { zone: '2', where: '鏽蝕鐘塔', how: '打倒第一章首領後，選擇「鏽蝕鐘塔」那條路' },
     shares: ['ward', 'combo', 'fold'],
