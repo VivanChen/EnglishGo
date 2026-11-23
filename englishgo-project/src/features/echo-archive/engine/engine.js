@@ -44,6 +44,8 @@ export const cardPool = r => REWARD_POOL.filter(id => isUnlocked(id, r.unlocked)
 export const actBoss = r => r.map?.boss || ENCOUNTERS[zoneOf(r)]?.bosses[0];
 export const KEY_IDS = ['flame', 'page', 'echo'];
 export const hasAllKeys = r => KEY_IDS.every(id => r.keys?.[id]);
+// This act's boss ends the run: Act IV, or Act III without all three keys.
+export const isFinalAct = r => r.act >= 4 || (r.act === 3 && !hasAllKeys(r));
 
 // `daily` is a challenge from dailyChallenge(): it fixes the seed, plays on
 // Standard and adds its featured card. `silence` (0–10) only applies on Heroic.
@@ -574,16 +576,30 @@ function offerChoice(r, effect, up) {
   c.choice = { from: effect.from, action: effect.action, options, v: val(effect.v, up) || 0, energy: val(effect.energy, up) || 0 };
 }
 
+// The pile a choice's options come from.
+const choicePile = c => (c.choice.from === 'top' ? c.draw : c.choice.from === 'discard' ? c.discard : c.hand);
+
+// The rest of the play (a later effect, Momentum's draw, a reshuffle) can move
+// cards a choice was built from: only the ones still in their pile stay on
+// offer, or a card could end up in two piles at once.
+function pruneChoice(r) {
+  const c = r.combat;
+  if (!c?.choice) return;
+  const pile = choicePile(c);
+  c.choice.options = c.choice.options.filter(uid => pile.includes(uid));
+  if (!c.choice.options.length) c.choice = null;
+}
+
 export function chooseCard(r, uid) {
   const c = r.combat;
   const choice = c?.choice;
-  if (!choice || !choice.options.includes(uid)) return false;
+  if (!choice || !choice.options.includes(uid) || !choicePile(c).includes(uid)) return false;
   const take = pile => { c[pile] = c[pile].filter(item => item !== uid); };
   switch (choice.action) {
     case 'toHand':
       if (choice.from === 'top') {
         take('draw');
-        const rest = choice.options.filter(item => item !== uid);
+        const rest = choice.options.filter(item => item !== uid && c.draw.includes(item));
         c.draw = c.draw.filter(item => !rest.includes(item));
         c.discard.push(...rest);
       } else take('discard');
@@ -844,6 +860,7 @@ export function playCard(r, uid, targetUid, chant = null) {
   inst.kept = 0;
   if (card.type !== 'power') (cardFades(card, inst.up) ? c.faded : c.discard).push(uid);
   afterCardPlayed(r, inst);
+  pruneChoice(r);
   settle(r);
   return true;
 }
@@ -1151,7 +1168,8 @@ function leaveReward(r) {
   const after = r.reward?.after;
   (r.reward?.items || []).forEach(item => { if (item.kind === 'cards') skipCards(r, item); });
   r.reward = null;
-  if (after === 'boss' && r.act >= 4) { r.trueEnding = true; r.screen = 'victory'; return; }
+  // The last boss ends the run at once: a boss relic would never be used.
+  if (after === 'boss' && isFinalAct(r)) { if (r.act >= 4) r.trueEnding = true; r.screen = 'victory'; return; }
   if (after === 'boss') {
     r.bossRelics = shuffle(r, Object.keys(RELICS).filter(id => RELICS[id].tier === 'boss' && !hasRelic(r, id))).slice(0, 3);
     r.screen = 'bossRelic';
@@ -1161,7 +1179,7 @@ function leaveReward(r) {
 // After a boss, an act with two regions lets the player pick the route.
 function nextAct(r) {
   r.bossRelics = null;
-  if (r.act >= 4 || (r.act === 3 && !hasAllKeys(r))) { r.screen = 'victory'; return; }
+  if (isFinalAct(r)) { r.screen = 'victory'; return; }
   const routes = ROUTES[r.act + 1];
   if (routes) { r.routes = routes.map(String); r.screen = 'route'; return; }
   enterAct(r, r.act + 1);
@@ -1552,8 +1570,10 @@ export function runReducer(state, action) {
       else if (r.combat?.phase === 'lost') r.screen = 'defeat';
       break;
     case 'TAKE_REWARD': takeReward(r, action.index, action.choice); break;
-    case 'LEAVE_REWARD': leaveReward(r); break;
-    case 'BOSS_RELIC': if (action.id && r.bossRelics?.includes(action.id)) gainRelic(r, action.id); nextAct(r); break;
+    // Leaving and moving on only work from their own screen, so a stray or
+    // repeated tap can never skip a fight, an event or a whole act.
+    case 'LEAVE_REWARD': if (r.screen !== 'reward') return state; leaveReward(r); break;
+    case 'BOSS_RELIC': if (r.screen !== 'bossRelic') return state; if (action.id && r.bossRelics?.includes(action.id)) gainRelic(r, action.id); nextAct(r); break;
     case 'CHOOSE_ROUTE': if (r.screen === 'route' && r.routes?.includes(String(action.zone))) enterAct(r, r.act + 1, action.zone); else return state; break;
     case 'REST_HEAL': if (r.rest && !r.rest.done) { const before = r.hero.hp; r.hero.hp = Math.min(r.hero.maxHp, r.hero.hp + restHealAmount(r)); r.rest.healed = r.hero.hp - before; r.rest.done = true; } break;
     case 'REST_UPGRADE': if (r.rest && !r.rest.done && r.hero.deck.some(canUpgrade)) r.pending = { kind: 'upgrade', cancellable: true, source: 'rest' }; break;
@@ -1581,7 +1601,7 @@ export function runReducer(state, action) {
     case 'EVENT_GAME': finishWordGame(r, Math.max(0, Math.floor(action.score) || 0), action.words); break;
     case 'EVENT_DUEL': duelRound(r, action.move); break;
     case 'EVENT_CONTINUE': if (r.event?.result && !r.pending) { r.event = null; r.screen = 'map'; } break;
-    case 'LEAVE_ROOM': if (!r.pending) { r.shop = null; r.rest = null; r.treasure = null; r.screen = 'map'; } break;
+    case 'LEAVE_ROOM': if (r.pending || !['shop', 'rest', 'treasure'].includes(r.screen)) return state; r.shop = null; r.rest = null; r.treasure = null; r.screen = 'map'; break;
     default: return state;
   }
   return r;

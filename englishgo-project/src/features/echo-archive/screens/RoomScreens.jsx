@@ -3,7 +3,7 @@ import { ARCHETYPES, CARDS, archOf } from '../data/cards.js';
 import { POTIONS, RELICS } from '../data/relics.js';
 import { ACTS, ENCOUNTERS, ENEMIES, KEYS, bossName, bossOf } from '../data/enemies.js';
 import { HEROES, HERO_IDS, heroUnlocked } from '../data/heroes.js';
-import { SKIP_CARD_HP, canUpgrade, isFoil, restHealAmount, hasRelic } from '../engine/engine.js';
+import { SKIP_CARD_HP, canUpgrade, isFinalAct, isFoil, restHealAmount, hasRelic } from '../engine/engine.js';
 import CardFace, { KeywordList } from '../components/CardFace.jsx';
 import Glyph from '../components/Glyph.jsx';
 import { Backdrop, EnemyArt, PotionArt, SceneArt } from '../components/Creatures.jsx';
@@ -106,7 +106,7 @@ export function RewardScreen({ run, dispatch }) {
           {item.taken && <i className="ea-check" aria-hidden="true">✓</i>}
         </button>;
       })}</div>
-      <button type="button" className={`ea-btn ${pending ? '' : 'is-gold'}`} onClick={() => dispatch({ type: 'LEAVE_REWARD' })}>{reward.after === 'boss' ? '前往首領寶庫 →' : pending ? '略過剩下的獎勵 →' : '繼續前進 →'}</button>
+      <button type="button" className={`ea-btn ${pending ? '' : 'is-gold'}`} onClick={() => dispatch({ type: 'LEAVE_REWARD' })}>{reward.after === 'boss' ? (isFinalAct(run) ? '完成這趟遠征 →' : '前往首領寶庫 →') : pending ? '略過剩下的獎勵 →' :'繼續前進 →'}</button>
     </div>
     {choice && !choice.taken && <Modal title="選擇一張牌" kicker="CHOOSE A CARD" onClose={() => setChoosing(null)} wide className="ea-choice-modal">
       {choice.focus && <p className="ea-modal-note">你的牌組偏向 <b>{ARCHETYPES[choice.focus].zh}</b>，所以至少有一張選項會配合它。</p>}

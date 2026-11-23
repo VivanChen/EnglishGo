@@ -124,6 +124,7 @@ describe('Echo Archive', () => {
     const option = await screen.findByRole('button', { name: /蘋果/ });
     fireEvent.click(option);
     await waitFor(() => expect(trackWeak).toHaveBeenCalledWith('apple', -1), { timeout: 3000 });
+    expect(trackWeak).toHaveBeenCalledTimes(1);
     random.mockRestore();
     delete window.matchMedia;
   });

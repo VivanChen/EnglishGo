@@ -325,6 +325,35 @@ describe('echo archive expansion cards', () => {
     expect(run.combat.energy).toBe(2);
   });
 
+  it('never offers a card that the same play already drew (Foresee with Momentum)', () => {
+    const piles = c => ['hand', 'draw', 'discard', 'faded'].flatMap(pile => c[pile]);
+    let run = fresh();
+    run.combat.player.pw.momentum = 1;
+    const [a, b, d] = run.combat.draw;
+    run = act(run, { type: 'PLAY_CARD', uid: give(run, 'foresee') });
+    // Momentum drew the top card, so only the other two are still on offer.
+    expect(run.combat.hand).toContain(a);
+    expect(run.combat.choice.options).toEqual([b, d]);
+    expect(act(run, { type: 'CHOOSE_CARD', uid: a })).toBe(run);
+    run = act(run, { type: 'CHOOSE_CARD', uid: b });
+    const all = piles(run.combat);
+    expect(new Set(all).size).toBe(all.length);
+    expect(run.combat.hand).toContain(a);
+    expect(run.combat.hand).toContain(b);
+    expect(run.combat.discard).toContain(d);
+
+    // Recall: a reshuffle during the play takes its options away; the choice closes.
+    run = fresh();
+    run.combat.player.pw.momentum = 1;
+    const slash = run.combat.hand.find(uid => run.combat.cards[uid].id === 'slash') || give(run, 'slash');
+    run = act(run, { type: 'PLAY_CARD', uid: slash, target: 'e0' });
+    run.combat.draw = [];
+    run = act(run, { type: 'PLAY_CARD', uid: give(run, 'recall') });
+    expect(run.combat.choice).toBeNull();
+    const after = piles(run.combat);
+    expect(new Set(after).size).toBe(after.length);
+  });
+
   it('grows Patience while kept, upgrades with Whetblade and draws X+1 with Word Flood', () => {
     let run = fresh();
     const patience = give(run, 'patience');
@@ -494,6 +523,10 @@ describe('echo archive daily challenge', () => {
     const week = Array.from({ length: 7 }, (_, i) => dailyChallenge(`2026-12-0${i + 1}`));
     expect(new Set(week.map(day => day.seed)).size).toBe(7);
     week.forEach(day => expect(CARDS[day.card].rarity).toBe('rare'));
+    // The featured card always suits the day's hero.
+    const year = Array.from({ length: 365 }, (_, i) => dailyChallenge(dateKey(new Date(2026, 0, 1 + i))));
+    year.forEach(day => expect(inHeroPool(day.card, day.hero)).toBe(true));
+    expect(new Set(year.filter(day => day.hero === 'caller').map(day => day.card)).size).toBeGreaterThan(5);
     expect(dateKey(new Date(2026, 0, 5))).toBe('2026-01-05');
     expect(previousDateKey('2026-03-01')).toBe('2026-02-28');
     expect(dailyBonus(1)).toBe(30);
@@ -792,6 +825,37 @@ describe('echo archive keys and the last page', () => {
     expect(run.trueEnding).toBe(true);
     expect(run.stats.bosses).toBeGreaterThanOrEqual(1);
     expect(shardsForRun(run).parts.some(([label]) => label === '真結局')).toBe(true);
+  });
+
+  it('ends the run right after the last boss instead of offering a boss relic', () => {
+    const lastBoss = (keys, actNo) => {
+      const run = toMap(43);
+      run.act = actNo;
+      run.keys = keys;
+      run.screen = 'reward';
+      run.reward = { kind: 'boss', items: [{ kind: 'gold', amount: 80, taken: false }], after: 'boss' };
+      return act(run, { type: 'LEAVE_REWARD' });
+    };
+    const plain = lastBoss({ flame: true, page: false, echo: false }, 3);
+    expect(plain.screen).toBe('victory');
+    expect(plain.bossRelics).toBeFalsy();
+    expect(plain.trueEnding).toBe(false);
+    const keyed = lastBoss({ flame: true, page: true, echo: true }, 3);
+    expect(keyed.screen).toBe('bossRelic');
+    expect(keyed.bossRelics.length).toBeGreaterThan(0);
+    const final = lastBoss({ flame: true, page: true, echo: true }, 4);
+    expect(final.screen).toBe('victory');
+    expect(final.trueEnding).toBe(true);
+  });
+
+  it('ignores leave and boss-relic actions sent from another screen', () => {
+    const fight = intoCombat(7);
+    expect(fight.screen).toBe('combat');
+    for (const action of [{ type: 'LEAVE_ROOM' }, { type: 'LEAVE_REWARD' }, { type: 'BOSS_RELIC', id: null }]) {
+      expect(act(fight, action)).toBe(fight);
+    }
+    const map = toMap(43);
+    expect(act(map, { type: 'BOSS_RELIC', id: null })).toBe(map);
   });
 });
 

@@ -495,15 +495,18 @@ export default function CombatScreen({ run, dispatch, settings, pool, speak, pot
     dispatch({ type: 'PLAY_CARD', uid, target });
   }, [c, run, settings.chant, pool, dispatch, rememberFlight]);
 
+  // Read the open chant from a ref: a state updater must stay pure (React may
+  // run it twice), so the card is played and the word recorded exactly once.
+  const chantRef = useRef(null);
+  chantRef.current = chant;
   const finishChant = useCallback(ok => {
-    setChant(current => {
-      if (current) {
-        rememberFlight(current.uid, current.target);
-        dispatch({ type: 'PLAY_CARD', uid: current.uid, target: current.target, chant: ok === null ? null : { word: current.q.word, meaning: current.q.meaning, ok } });
-        if (ok !== null) onWord?.(current.q.word, ok);
-      }
-      return null;
-    });
+    const current = chantRef.current;
+    if (!current) return;
+    chantRef.current = null;
+    setChant(null);
+    rememberFlight(current.uid, current.target);
+    dispatch({ type: 'PLAY_CARD', uid: current.uid, target: current.target, chant: ok === null ? null : { word: current.q.word, meaning: current.q.meaning, ok } });
+    if (ok !== null) onWord?.(current.q.word, ok);
   }, [dispatch, onWord, rememberFlight]);
 
   const selectCard = useCallback(uid => {

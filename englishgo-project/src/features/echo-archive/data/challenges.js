@@ -1,4 +1,5 @@
 import { CARDS, REWARD_POOL } from './cards.js';
+import { inHeroPool } from './heroes.js';
 import { pick } from '../engine/rng.js';
 
 // Plain numbers the engine reads during a run. A run stores its own copy, so
@@ -100,9 +101,13 @@ export function dailyChallenge(key = dateKey()) {
   const holder = { rng: seed ^ 0x9e3779b9 };
   const blessing = pick(holder, Object.keys(DAILY_BLESSINGS));
   const trial = pick(holder, Object.keys(DAILY_TRIALS));
-  const card = pick(holder, REWARD_POOL.filter(id => CARDS[id].rarity === 'rare' && !CARDS[id].pack && !CARDS[id].hero));
+  const rares = REWARD_POOL.filter(id => CARDS[id].rarity === 'rare' && !CARDS[id].pack && !CARDS[id].hero);
+  const featured = pick(holder, rares);
   // Picked last so earlier days keep the same blessing, trial and card.
   const hero = pick(holder, ['scribe', 'caller']);
+  // The featured card must suit the day's hero (the Inkcaller has no blade,
+  // combo or ward cards); only those days draw it again.
+  const card = inHeroPool(featured, hero) ? featured : pick(holder, rares.filter(id => inHeroPool(id, hero)));
   return { date: key, seed, blessing, trial, card, hero };
 }
 
