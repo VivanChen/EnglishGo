@@ -307,7 +307,7 @@ export const CARDS = {
   wrench: { en: 'Wrench', zh: '扳手', type: 'attack', rarity: 'starter', cost: 1, target: 'enemy', glyph: 'wrench', hero: 'tinker', arch: 'steam', fx: [{ op: 'damage', v: [6, 9] }, { op: 'steam', v: 1 }] },
   plating: { en: 'Plating', zh: '鐵板', type: 'skill', rarity: 'starter', cost: 1, target: 'self', glyph: 'helm', hero: 'tinker', arch: 'steam', fx: [{ op: 'ward', v: [5, 8] }, { op: 'steam', v: 1 }] },
   stoke: { en: 'Stoke', zh: '加煤', type: 'skill', rarity: 'starter', cost: 1, target: 'self', glyph: 'kindle', hero: 'tinker', arch: 'steam', fx: [{ op: 'steam', v: [3, 4] }, { op: 'draw', v: 1 }], chant: [{ op: 'draw', v: 1 }] },
-  steamBlast: { en: 'Steam Blast', zh: '蒸汽噴射', type: 'attack', rarity: 'starter', cost: 1, target: 'enemy', glyph: 'steam', hero: 'tinker', arch: 'steam', fx: [{ op: 'damage', v: [4, 6], perSteam: [2, 3] }, { op: 'vent' }] },
+  steamBlast: { en: 'Steam Blast', zh: '蒸汽噴射', type: 'attack', rarity: 'starter', cost: 1, target: 'enemy', glyph: 'steam', hero: 'tinker', arch: 'steam', fx: [{ op: 'damage', v: [4, 6], perSteam: [3, 4] }, { op: 'ifSteam', n: 6, then: [{ op: 'buff', st: 'might', v: [1, 2] }] }, { op: 'vent' }] },
   pistonPunch: { en: 'Piston Punch', zh: '活塞拳', type: 'attack', rarity: 'common', cost: 1, target: 'enemy', glyph: 'fist', hero: 'tinker', arch: 'steam', fx: [{ op: 'damage', v: [4, 6], perSteam: 1 }] },
   rivetGun: { en: 'Rivet Gun', zh: '鉚釘槍', type: 'attack', rarity: 'common', cost: 1, target: 'enemy', glyph: 'pierce', hero: 'tinker', arch: 'steam', fx: [{ op: 'damage', v: [3, 4], hits: 2 }, { op: 'steam', v: 2 }] },
   spannerSpin: { en: 'Spanner Spin', zh: '扳手迴旋', type: 'attack', rarity: 'common', cost: 1, target: 'all', glyph: 'whirl', hero: 'tinker', arch: 'steam', fx: [{ op: 'damage', v: [5, 7], all: true }, { op: 'steam', v: 1 }] },
@@ -329,7 +329,7 @@ export const CARDS = {
   // Turns alternate Day (odd rounds) and Night (even rounds). `day`/`night` on
   // an effect add to its number; `onDay`/`onNight` on a card add effects.
   sunblade: { en: 'Sunblade', zh: '日刃', type: 'attack', rarity: 'starter', cost: 1, target: 'enemy', glyph: 'sunblade', hero: 'knight', arch: 'twilight', fx: [{ op: 'damage', v: [5, 7], day: [3, 4] }] },
-  moonguard: { en: 'Moonguard', zh: '月盾', type: 'skill', rarity: 'starter', cost: 1, target: 'self', glyph: 'moonshield', hero: 'knight', arch: 'twilight', fx: [{ op: 'ward', v: [4, 6], night: [3, 4] }] },
+  moonguard: { en: 'Moonguard', zh: '月盾', type: 'skill', rarity: 'starter', cost: 1, target: 'self', glyph: 'moonshield', hero: 'knight', arch: 'twilight', fx: [{ op: 'ward', v: [4, 6], night: [2, 3] }] },
   duskStrike: { en: 'Dusk Strike', zh: '暮光斬', type: 'attack', rarity: 'starter', cost: 2, target: 'enemy', glyph: 'sunblade', hero: 'knight', arch: 'twilight', fx: [{ op: 'damage', v: [9, 12] }], onDay: [{ op: 'debuff', st: 'exposed', v: 2 }], onNight: [{ op: 'ward', v: [6, 8] }], chant: [{ op: 'damage', v: [5, 7] }] },
   eclipse: { en: 'Eclipse', zh: '日月交替', type: 'skill', rarity: 'starter', cost: [1, 0], target: 'self', glyph: 'eclipse', hero: 'knight', arch: 'twilight', fx: [{ op: 'eclipse' }, { op: 'draw', v: 1 }] },
   solarFlare: { en: 'Solar Flare', zh: '日焰', type: 'attack', rarity: 'common', cost: 1, target: 'all', glyph: 'sun', hero: 'knight', arch: 'twilight', fx: [{ op: 'damage', v: [5, 7], all: true, day: 3 }] },

@@ -2,7 +2,7 @@
 export const RELICS = {
   inkwell: { en: 'Endless Inkwell', zh: '不竭墨水瓶', tier: 'starter', glyph: 'inkwell', color: '#7aa8ff', text: '每場戰鬥勝利後回復 6 生命。' },
   spiritJar: { en: 'Spirit Jar', zh: '靈瓶', tier: 'starter', glyph: 'jar', color: '#b48bff', hero: 'caller', text: '每場戰鬥開始時，墨靈 +2。' },
-  pocketBoiler: { en: 'Pocket Boiler', zh: '隨身鍋爐', tier: 'starter', glyph: 'steam', color: '#e8a25c', hero: 'tinker', text: '每場戰鬥開始時，Steam +3。' },
+  pocketBoiler: { en: 'Pocket Boiler', zh: '隨身鍋爐', tier: 'starter', glyph: 'steam', color: '#e8a25c', hero: 'tinker', text: '每場戰鬥開始時，Steam +2。每場戰鬥勝利後，回復 5 生命。' },
   twilightLocket: { en: 'Twilight Locket', zh: '暮光墜飾', tier: 'starter', glyph: 'eclipse', color: '#c7b6ff', hero: 'knight', text: '每次白晝與黑夜交替時，獲得 2 Ward。' },
   copperCoil: { en: 'Copper Coil', zh: '銅線圈', tier: 'common', glyph: 'gear', color: '#e08a4f', hero: 'tinker', text: '每回合開始時，Steam +1。' },
   sundial: { en: 'Sundial', zh: '日晷', tier: 'common', glyph: 'sun', color: '#ffd35c', hero: 'knight', text: '每次進入白晝時，抽 1 張牌。' },

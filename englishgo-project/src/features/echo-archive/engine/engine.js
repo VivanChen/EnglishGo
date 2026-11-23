@@ -444,7 +444,7 @@ function startCombat(r, kind, encounter, options = {}) {
   if (c.boons.includes('omen')) living(c).forEach(enemy => add(enemy.st, 'might', 1));
   c.player.familiar = (hasRelic(r, 'spiritJar') ? 2 : 0) + (hasRelic(r, 'spiritBell') ? 2 : 0);
   // The Tinker's boiler starts warm; the Twilight Knight's first turn is Day.
-  if (heroOf(r) === 'tinker') c.player.steam = hasRelic(r, 'pocketBoiler') ? 3 : 0;
+  if (heroOf(r) === 'tinker') c.player.steam = hasRelic(r, 'pocketBoiler') ? 2 : 0;
   if (heroOf(r) === 'knight') c.player.sky = 'day';
   if (hasRelic(r, 'paperCrane')) living(c).forEach(enemy => add(enemy.st, 'weak', 1));
   r.screen = 'combat';
@@ -758,6 +758,7 @@ function winCombat(r) {
   const c = r.combat;
   c.phase = 'won';
   if (hasRelic(r, 'inkwell')) heal(r, 6);
+  if (hasRelic(r, 'pocketBoiler')) heal(r, 5);
   if (c.kind === 'elite') r.stats.elites += 1;
   if (c.kind === 'boss') {
     r.stats.bosses += 1;

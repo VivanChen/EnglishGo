@@ -163,8 +163,8 @@ describe('the Tinker', () => {
   it('starts with a warm boiler and a deck of its own', () => {
     const run = tinker();
     expect(run.hero.relics).toEqual(['pocketBoiler']);
-    expect(run.combat.player.steam).toBe(3);
-    expect(cardContext(run).steam).toBe(3);
+    expect(run.combat.player.steam).toBe(2);
+    expect(cardContext(run).steam).toBe(2);
     expect(heroPool('tinker').every(id => inHeroPool(id, 'tinker'))).toBe(true);
     expect(heroPool('tinker')).toContain('steamHammer');
     expect(heroPool('scribe')).not.toContain('steamHammer');
@@ -175,20 +175,33 @@ describe('the Tinker', () => {
     let run = tinker();
     run.combat.enemies = [foe('pageCrab')];
     run = play(run, 'wrench');
-    expect(run.combat.player.steam).toBe(4);
+    expect(run.combat.player.steam).toBe(3);
     const hp = run.combat.enemies[0].hp;
     run = play(run, 'pistonPunch');
-    expect(hp - run.combat.enemies[0].hp).toBe(4 + 4);
+    expect(hp - run.combat.enemies[0].hp).toBe(4 + 3);
   });
 
-  it('vents all its Steam into a Steam Blast', () => {
+  it('vents all its Steam into a Steam Blast, gaining Might at high pressure', () => {
     let run = tinker();
     run.combat.enemies = [foe('reefWarden')];
     run.combat.player.steam = 6;
     const hp = run.combat.enemies[0].hp;
     run = play(run, 'steamBlast');
-    expect(hp - run.combat.enemies[0].hp).toBe(4 + 12);
+    expect(hp - run.combat.enemies[0].hp).toBe(4 + 18);
     expect(run.combat.player.steam).toBe(0);
+    expect(run.combat.player.st.might).toBe(1);
+    run.combat.player.steam = 5;
+    run = play(run, 'steamBlast');
+    expect(run.combat.player.st.might).toBe(1);
+  });
+
+  it('patches itself up after each win with the Pocket Boiler', () => {
+    let run = tinker();
+    run.combat.enemies = [foe('bubbleSprite', 'e0', { hp: 1 })];
+    run.hero.hp = 40;
+    run = play(run, 'wrench');
+    expect(run.combat.phase).toBe('won');
+    expect(run.hero.hp).toBe(45);
   });
 
   it('overheats at 10 Steam at the end of the turn', () => {
@@ -247,7 +260,7 @@ describe('the Twilight Knight', () => {
     expect(isNight(run.combat)).toBe(true);
     const ward = run.combat.player.ward;
     run = play(run, 'moonguard');
-    expect(run.combat.player.ward - ward).toBe(7);
+    expect(run.combat.player.ward - ward).toBe(6);
   });
 
   it('counts as both halves of the day under a Total Eclipse', () => {
