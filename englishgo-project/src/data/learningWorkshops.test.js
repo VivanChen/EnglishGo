@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { grammarRecord, grammarStep, createSpeakingRound, recordSpeakingAttempt, advanceSpeakingRound, reviewSpeakingRound, readSpeakingRound, songLineRange, songRecord } from './learningWorkshops.js';
+import { grammarRecord, grammarStep, grammarBuildSentences, grammarTiles, grammarBuildCheck, grammarMixedQuestions, createSpeakingRound, recordSpeakingAttempt, advanceSpeakingRound, reviewSpeakingRound, readSpeakingRound, songLineRange, songRecord } from './learningWorkshops.js';
 const rule = { t: 'Be', q: { s: 'I ___ ready.', o: ['am', 'is'], a: 0 } };
 describe('workshop progress', () => {
   it('unlocks grammar steps from valid saved answers and invalidates changed lessons', () => {
@@ -7,10 +7,41 @@ describe('workshop progress', () => {
     expect(grammarStep(record, 1)).toBe(0);
     expect(grammarStep({ ...record, studied: true }, 1)).toBe(1);
     const book = { lessons: { Be: { ...record, studied: true, drills: { 0: 1 }, answer: 0, earned: true } } };
-    expect(grammarStep(grammarRecord(book, rule, drills), 1)).toBe(2);
+    expect(grammarStep(grammarRecord(book, rule, drills), 1)).toBe(3);
+    expect(grammarStep(grammarRecord(book, rule, drills), 1, 1)).toBe(2);
     expect(grammarRecord(book, { ...rule, q: { ...rule.q, a: 1 } }, drills).earned).toBe(false);
     book.lessons.Be.drills[0] = 99;
     expect(grammarStep(grammarRecord(book, rule, drills), 1)).toBe(1);
+  });
+  it('keeps built sentences that still belong to the lesson and opens the challenge once all are built', () => {
+    const drills = [rule.q], sentences = [{ en: 'I am ready.', zh: '我準備好了。' }];
+    const book = { lessons: { Be: { ...grammarRecord({}, rule, drills), studied: true, drills: { 0: 0 }, built: ['I am ready.', 'Old sentence.', 3] } } };
+    const record = grammarRecord(book, rule, drills, sentences);
+    expect(record.built).toEqual(['I am ready.']);
+    expect(grammarStep(record, 1, 1)).toBe(3);
+    expect(grammarStep({ ...record, built: [] }, 1, 1)).toBe(2);
+    expect(grammarRecord({ lessons: { Be: { ...book.lessons.Be, built: 'bad' } } }, rule, drills).built).toEqual([]);
+  });
+  it('picks short translated examples as blocks and shuffles them the same way every time', () => {
+    const examples = [{ en: 'No translation here.', zh: '' }, { en: 'Hi.', zh: '嗨。' }, { en: 'We have finished the project.', zh: '我們完成了專題。' }, { en: 'We have finished the project.', zh: '重複' }, { en: 'She has been to Japan twice.', zh: '她去過日本兩次。' }, { en: 'I have lived here.', zh: '我住在這裡。' }];
+    expect(grammarBuildSentences(examples).map(s => s.en)).toEqual(['We have finished the project.', 'She has been to Japan twice.']);
+    for (const sentence of ['I am ready.', 'We have finished the project.', 'a b']) {
+      const tiles = grammarTiles(sentence);
+      expect(tiles).toEqual(grammarTiles(sentence));
+      expect(tiles.map(t => t.text)).not.toEqual(sentence.split(' '));
+      expect(tiles.map(t => t.text).sort()).toEqual(sentence.split(' ').sort());
+    }
+    expect(grammarBuildCheck('the cat and the dog', ['the', 'cat', 'and', 'the', 'dog']).correct).toBe(true);
+    expect(grammarBuildCheck('I am ready.', ['am', 'I', 'ready.'])).toEqual({ correct: false, slots: [false, false, true] });
+  });
+  it('mixes drills and challenges from chosen lessons and skips malformed questions', () => {
+    const rules = [{ t: 'A', q: { s: 'a ___', o: ['x', 'y'], a: 0 } }, { t: 'B', q: { s: 'b ___', o: ['x', 'y'], a: 1 } }, { t: 'C', q: { s: 'c ___', o: ['x'], a: 0 } }];
+    const drills = rule => rule.t === 'A' ? [{ s: 'a2 ___', o: ['x', 'y'], a: 1, e: 'why' }] : [];
+    const all = grammarMixedQuestions(rules, drills, { count: 10, random: () => .5 });
+    expect(all.map(q => q.s).sort()).toEqual(['a ___', 'a2 ___', 'b ___']);
+    expect(all.find(q => q.s === 'a2 ___')).toMatchObject({ topic: 'A', lesson: 0, e: 'why' });
+    expect(grammarMixedQuestions(rules, drills, { lessons: [1] }).map(q => q.topic)).toEqual(['B']);
+    expect(grammarMixedQuestions(rules, drills, { count: 2 })).toHaveLength(2);
   });
   it('preserves per-item awards across retries and reviews only missed items', () => {
     const round = createSpeakingRound([{ en: 'apple', zh: '蘋果' }, { en: 'dog', zh: '狗' }], 'mixed');

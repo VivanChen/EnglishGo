@@ -9,6 +9,8 @@
 .practice-world input::placeholder,.practice-world textarea::placeholder { color: var(--garden-muted); opacity: .8; }
 .practice-world h2,.practice-world h3 { color: var(--garden-ink); line-height: 1.45; overflow-wrap: anywhere; }
 .practice-world h2:focus { outline: none; }
+/* Headings take focus only so screen readers land on the new question; keyboard answering should not frame them. */
+.practice-world h2[tabindex="-1"]:focus-visible { outline: none !important; }
 .practice-world h2[tabindex] { scroll-margin-top: 155px; }
 .practice-world h3 { font-size: 20px; margin: 0 0 12px; }
 .practice-world p { margin: 8px 0 16px; color: var(--garden-muted); }
@@ -107,11 +109,28 @@
 .practice-review-meaning blockquote p[lang] { font-size: 20px; }
 .practice-manage { border-top: 1px solid var(--garden-line); margin-top: 32px; padding: 14px 0; color: var(--garden-muted); font-size: 14px; }
 .practice-manage summary { cursor: pointer; min-height: 44px; padding: 10px 0; }
+.practice-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.practice-config .practice-config-note { font-size: 13px; margin: 10px 0 0; }
+.practice-streak { display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; border-radius: 999px; background: #fdf1d8; color: #8a5a12; font-size: 13px; font-weight: 750; animation: practice-pop .35s ease-out; margin-left: auto; }
+.practice-question .practice-cloze { font-size: clamp(22px,3.2vw,30px); line-height: 1.9; margin: 22px auto 6px; max-width: 760px; font-weight: 650; }
+.practice-blank { display: inline-block; min-width: 3.6em; margin: 0 .2em; padding: 0 .35em; border-bottom: 3px solid var(--garden-green); color: var(--garden-green); line-height: 1.35; text-align: center; vertical-align: baseline; }
+.practice-blank.is-filled { background: var(--garden-green-soft); border-radius: 8px 8px 0 0; font-weight: 800; animation: practice-arrive .25s ease-out; }
+.practice-world .practice-cloze-zh { display: inline-block; margin: 4px 0 2px; padding: 6px 14px; border-radius: 999px; background: var(--garden-paper); border: 1px solid var(--garden-line); color: var(--garden-ink); font-size: 15px; }
+.practice-world .practice-keys { margin: 14px 0 0; font-size: 12px; color: var(--garden-muted); }
+.practice-feedback-word { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; }
+.practice-feedback-word b { font-size: 21px; color: var(--garden-ink); }
+.practice-feedback-word span[lang] { font-size: 14px; color: var(--garden-muted); }
+.practice-feedback-word span:not([lang]) { color: var(--garden-ink); font-weight: 650; }
+.practice-world .practice-feedback-word button { min-height: 36px; padding: 4px 12px; }
+.practice-world .practice-again { padding: 10px 14px; border-radius: 12px; background: var(--garden-white); border: 1px dashed #cfb787; color: var(--garden-ink); font-size: 14px; }
+@media(hover:none) { .practice-world .practice-keys { display: none; } }
+@keyframes practice-pop { 0% { transform: scale(.7); opacity: 0; } 70% { transform: scale(1.08); opacity: 1; } 100% { transform: none; } }
 @keyframes practice-arrive { from { opacity: .3; transform: translateY(5px); } to { opacity: 1; transform: none; } }
 @keyframes practice-wave { to { transform: scaleY(.55); } }
 .practice-spark { animation: practice-arrive .45s ease-out; }
 html[data-eg-theme=dark] .practice-art { filter: brightness(.75) saturate(.8); }
 html[data-eg-theme=dark] .practice-world .practice-primary { color: #152c25; }
+html[data-eg-theme=dark] .practice-streak { background: #4a3a1c; color: #f6d79a; }
 html[data-eg-calm=true] .practice-world *,html[data-eg-calm=true] .practice-world *::before { animation: none !important; transition: none !important; }
 @media(prefers-reduced-motion:reduce) { .practice-world * { animation: none !important; transition: none !important; } }
 @media(max-width:620px) {

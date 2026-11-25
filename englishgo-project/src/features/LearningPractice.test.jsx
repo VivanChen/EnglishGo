@@ -37,16 +37,51 @@ describe('practice experience', () => {
     expect(resumed.props.onXp).not.toHaveBeenCalled();
     expect(within(screen.getByRole('region', { name: '目前題目' })).getAllByRole('button').filter(b => b.className.includes('is-correct'))[0]).toBeDisabled();
   });
-  it('retries a wrong word, tracks it once, and does not award again in targeted review', () => {
+  it('brings a missed word back later in the round, tracks it once, and does not award again in targeted review', () => {
     const { props } = setup(); fireEvent.click(screen.getByRole('button', { name: '開始新的小任務 →' }));
+    const missed = saved().queue[0];
     choose(false); expect(props.trackWeak).toHaveBeenCalledTimes(1);
-    fireEvent.click(screen.getByRole('button', { name: '再試一次' })); choose(); next();
-    for (let i = 1; i < 5; i++) { choose(); next(); }
+    expect(screen.queryByRole('button', { name: '再試一次' })).not.toBeInTheDocument();
+    expect(screen.getByText(/過幾題會再出現一次/)).toBeInTheDocument();
+    expect(saved().queue).toHaveLength(6); expect(saved().queue[3]).toBe(missed);
+    next();
+    for (let i = 1; i < 6; i++) {
+      if (i === 3) expect(screen.getByText(/剛才的單字，再認識一次/)).toBeInTheDocument();
+      choose(); next();
+    }
+    expect(props.trackWeak).toHaveBeenCalledTimes(1);
     expect(props.onPerfect).not.toHaveBeenCalled();
     expect(props.onXp).toHaveBeenCalledTimes(5);
     fireEvent.click(screen.getByRole('button', { name: '只練需要再看的 1 題' })); choose(); next();
     expect(props.onXp).toHaveBeenCalledTimes(5);
     expect(screen.getByText('複習完成，辛苦了！')).toBeInTheDocument();
+  });
+  it('answers with number keys, moves on with Enter, and shows the running streak', () => {
+    setup(); fireEvent.click(screen.getByRole('button', { name: '開始新的小任務 →' }));
+    for (let i = 0; i < 3; i++) {
+      const state = saved(), q = state.questions[state.queue[state.index]];
+      fireEvent.keyDown(window, { key: String(q.options.indexOf(q.answer) + 1) });
+      expect(saved().feedback).toBe(true);
+      fireEvent.keyDown(window, { key: '2' });
+      expect(saved().index).toBe(i);
+      fireEvent.keyDown(window, { key: 'Enter' });
+    }
+    expect(saved()).toMatchObject({ index: 3, streak: 3, best: 3 });
+    expect(screen.getByText(/連對 3/)).toBeInTheDocument();
+  });
+  it('builds example-sentence blanks and can practise only weak words', () => {
+    const clozeWords = [{ w: 'apple', m: '蘋果', p: 'n.', ex: 'I eat an apple.', ez: '我吃一顆蘋果。' }, { w: 'dog', m: '狗', p: 'n.', ex: 'The dog runs.', ez: '狗在跑。' }, { w: 'cat', m: '貓', p: 'n.' }, { w: 'sun', m: '太陽', p: 'n.' }];
+    const deps = { words: clozeWords, fetchCloudVocab: vi.fn().mockResolvedValue([]), speak: vi.fn().mockReturnValue({}), stopSpeech: vi.fn(), playSound: vi.fn(), Hdr, c: { cl: '#507364' } };
+    render(<LearningPractice kind="quiz" lv="elementary" onBack={vi.fn()} weakWords={[{ w: 'dog', n: 2 }, { w: 'missing', n: 5 }]} deps={deps} />);
+    fireEvent.click(screen.getByRole('button', { name: '例句填空' }));
+    fireEvent.click(screen.getByRole('button', { name: '待加強單字 · 1 個' }));
+    fireEvent.click(screen.getByRole('button', { name: '開始新的小任務 →' }));
+    expect(saved().questions).toHaveLength(1);
+    expect(saved().questions[0]).toMatchObject({ kind: 'cloze', prompt: 'The ___ runs.', answer: 'dog' });
+    expect(screen.getByText('狗在跑。')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '♫ 聽例句提示' }));
+    expect(deps.speak.mock.lastCall[0]).toBe('The dog runs.');
+    expect(saved().records[0].hinted).toBe(true);
   });
   it('keeps listening silent until requested, pauses when hidden, and resumes without auto play', async () => {
     const { deps } = setup('listening');

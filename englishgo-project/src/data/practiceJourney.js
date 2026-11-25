@@ -31,26 +31,54 @@ export function compareDictation(expected, actual) {
   return { correct: normalizeDictation(expected) === normalizeDictation(actual), words, extras };
 }
 
-export function buildQuizQuestions(words, { mode = 'en2zh', count = 5, random = Math.random } = {}) {
+export const QUIZ_KINDS = ['en2zh', 'zh2en', 'cloze'];
+export const QUIZ_BLANK = '___';
+const QUIZ_MODES = [...QUIZ_KINDS, 'mix'];
+const escapeRegExp = text => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const posKey = item => String(item?.p || '').trim().toLowerCase().split(/[/,;\s]/)[0];
+
+function uniqueQuizWords(words) {
   const seen = new Set();
-  const pool = (words || []).filter(item => {
+  return (words || []).filter(item => {
     if (typeof item?.w !== 'string' || typeof item?.m !== 'string' || !item.w.trim() || !item.m.trim() || seen.has(wordKey(item.w))) return false;
     seen.add(wordKey(item.w)); return true;
   });
-  return shufflePractice(pool, random).flatMap((item, index) => {
-    const kind = mode === 'mix' ? (index % 2 ? 'zh2en' : 'en2zh') : mode;
-    const answer = kind === 'en2zh' ? item.m : item.w;
+}
+
+// Only the exact word is blanked, so the options always fit the sentence as written.
+// The Chinese sentence is required: it makes the one right answer clear among same-POS options.
+export function quizCloze(item) {
+  const word = String(item?.w || '').trim(), sentence = String(item?.ex || '');
+  if (!word || !sentence.trim() || !String(item?.ez || '').trim()) return null;
+  const pattern = () => new RegExp(`(^|[^A-Za-z'’-])${escapeRegExp(word)}(?=$|[^A-Za-z'’-])`, 'gi');
+  return pattern().test(sentence) ? sentence.replace(pattern(), (_, lead) => `${lead}${QUIZ_BLANK}`) : null;
+}
+
+// targets: the words to ask about (for example weak words); distractors still come from the whole pool.
+export function buildQuizQuestions(words, { mode = 'en2zh', count = 5, random = Math.random, targets = null } = {}) {
+  const askable = uniqueQuizWords(targets || words);
+  const pool = uniqueQuizWords([...askable, ...(words || [])]);
+  const used = { en2zh: 0, zh2en: 0, cloze: 0 };
+  return shufflePractice(askable, random).flatMap(item => {
+    const cloze = mode === 'cloze' || mode === 'mix' ? quizCloze(item) : null;
+    if (mode === 'cloze' && !cloze) return [];
+    // Mixed rounds keep the three kinds balanced, giving the blank to words that have an example.
+    const kind = mode !== 'mix' ? mode : (cloze ? ['cloze', 'en2zh', 'zh2en'] : ['en2zh', 'zh2en']).reduce((best, k) => used[k] < used[best] ? k : best);
+    const english = kind !== 'en2zh', answer = english ? item.w : item.m, same = posKey(item);
+    // Synonymous meanings must not create multiple defensible answers.
+    const others = shufflePractice(pool, random).filter(other => wordKey(other.w) !== wordKey(item.w) && wordKey(other.m) !== wordKey(item.m));
+    // Same part of speech first, so the answer cannot be guessed from the shape of the word alone.
+    const ranked = same ? [...others.filter(other => posKey(other) === same), ...others.filter(other => posKey(other) !== same)] : others;
     const options = new Map([[wordKey(answer), answer]]);
-    for (const other of shufflePractice(pool, random)) {
-      // Synonymous meanings must not create multiple defensible reverse answers.
-      if (wordKey(other.w) === wordKey(item.w) || wordKey(other.m) === wordKey(item.m)) continue;
-      const option = kind === 'en2zh' ? other.m : other.w;
-      options.set(wordKey(option), option);
+    for (const other of ranked) {
+      const option = english ? other.w : other.m;
+      if (!options.has(wordKey(option))) options.set(wordKey(option), option);
       if (options.size >= 4) break;
     }
     if (options.size < 2) return [];
+    used[kind]++;
     return [{ item: { ...item, ph: item.ph || '', ex: item.ex || '', ez: item.ez || '' }, kind,
-      prompt: kind === 'en2zh' ? item.w : item.m, answer, options: shufflePractice([...options.values()], random) }];
+      prompt: kind === 'cloze' ? cloze : kind === 'en2zh' ? item.w : item.m, answer, options: shufflePractice([...options.values()], random) }];
   }).slice(0, count);
 }
 
@@ -63,20 +91,21 @@ export function buildListeningQuestions(sentences, count = 3, random = Math.rand
 export function createPractice(kind, level, mode, questions) {
   return { version: 1, kind, level, mode, questions, queue: questions.map((_, i) => i), index: 0, round: 'main',
     records: questions.map(() => ({ attempts: 0, firstCorrect: null, hinted: false, earned: false })),
-    status: 'question', feedback: null, answer: '', pickedTiles: [], hintShown: false, completedMain: false };
+    status: 'question', feedback: null, answer: '', pickedTiles: [], hintShown: false, completedMain: false, streak: 0, best: 0 };
 }
 
 export function readPractice(value, kind, level) {
   if (!value || value.version !== 1 || value.kind !== kind || value.level !== level || !Array.isArray(value.questions)
     || !value.questions.length || value.questions.length > 10 || !Array.isArray(value.records) || value.records.length !== value.questions.length
-    || !Array.isArray(value.queue) || !value.queue.length || new Set(value.queue).size !== value.queue.length
+    || !Array.isArray(value.queue) || !value.queue.length || value.queue.some(i => value.queue.filter(j => j === i).length > 2)
     || value.queue.some(i => !Number.isInteger(i) || !value.questions[i]) || !Number.isInteger(value.index)
     || value.index < 0 || value.index >= value.queue.length || !['question', 'done'].includes(value.status)
-    || !['main', 'review'].includes(value.round) || !(kind === 'quiz' ? ['en2zh', 'zh2en', 'mix'] : ['tiles', 'typing']).includes(value.mode)
+    || !['main', 'review'].includes(value.round) || !(kind === 'quiz' ? QUIZ_MODES : ['tiles', 'typing']).includes(value.mode)
     || ![null, true, false].includes(value.feedback) || typeof value.answer !== 'string'
+    || [value.streak, value.best].some(n => n !== undefined && (!Number.isInteger(n) || n < 0))
     || value.records.some(r => !r || !Number.isInteger(r.attempts) || r.attempts < 0 || ![null, true, false].includes(r.firstCorrect) || typeof r.earned !== 'boolean' || typeof r.hinted !== 'boolean')
     || value.questions.some(q => !q || typeof q.answer !== 'string' || (kind === 'quiz'
-      ? typeof q.item?.w !== 'string' || typeof q.item?.m !== 'string' || typeof q.prompt !== 'string' || !['en2zh', 'zh2en'].includes(q.kind) || !Array.isArray(q.options) || q.options.some(o => typeof o !== 'string') || !q.options.includes(q.answer)
+      ? typeof q.item?.w !== 'string' || typeof q.item?.m !== 'string' || typeof q.prompt !== 'string' || !QUIZ_KINDS.includes(q.kind) || !Array.isArray(q.options) || q.options.some(o => typeof o !== 'string') || !q.options.includes(q.answer)
       : !Array.isArray(q.tiles) || q.tiles.some(t => typeof t.text !== 'string' || !Number.isInteger(t.id))))) return null;
   if (!Array.isArray(value.pickedTiles) || value.pickedTiles.some(id => !Number.isInteger(id) || !value.questions[value.queue[value.index]].tiles?.some(t => t.id === id))) return null;
   return value;
@@ -90,7 +119,7 @@ export function practiceReducer(state, action) {
   if (!state) return state;
   if (action.type === 'REVIEW' && state.status === 'done') {
     const queue = practiceNeedsReview(state);
-    return queue.length ? { ...state, queue, index: 0, round: 'review', status: 'question', feedback: null, answer: '', pickedTiles: [], hintShown: false } : state;
+    return queue.length ? { ...state, queue, index: 0, round: 'review', status: 'question', feedback: null, answer: '', pickedTiles: [], hintShown: false, streak: 0 } : state;
   }
   if (state.status !== 'question') return state;
   const qi = state.queue[state.index], question = state.questions[qi], record = state.records[qi];
@@ -104,7 +133,14 @@ export function practiceReducer(state, action) {
     const answer = action.value ?? state.answer;
     if (!String(answer).trim() || (state.kind === 'quiz' && !question.options.includes(answer))) return state;
     const correct = state.kind === 'quiz' ? answer === question.answer : normalizeDictation(answer) === normalizeDictation(question.answer);
-    return { ...state, answer, feedback: correct, records: state.records.map((r, i) => i === qi ? {
+    const streak = correct ? (state.streak || 0) + 1 : 0;
+    // A missed quiz word comes back a couple of questions later in the same round, once.
+    let queue = state.queue;
+    if (!correct && state.kind === 'quiz' && !queue.slice(state.index + 1).includes(qi) && queue.filter(i => i === qi).length < 2) {
+      const at = Math.min(queue.length, state.index + 3);
+      queue = [...queue.slice(0, at), qi, ...queue.slice(at)];
+    }
+    return { ...state, queue, answer, feedback: correct, streak, best: Math.max(state.best || 0, streak), records: state.records.map((r, i) => i === qi ? {
       ...r, attempts: r.attempts + 1, firstCorrect: r.firstCorrect ?? correct, earned: r.earned || correct,
     } : r) };
   }

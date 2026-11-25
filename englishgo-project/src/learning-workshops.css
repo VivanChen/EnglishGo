@@ -3,6 +3,39 @@
 .workshop-topic b { font-size: 21px; color: var(--garden-ink); }
 .workshop-topic>span:last-child { font-size: 13px; color: var(--garden-muted); }
 .workshop-stepper { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; margin: 24px 0; }
+.grammar-workshop .workshop-stepper { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0,1fr); }
+.grammar-map-progress { margin: 12px 0 0; max-width: 320px; }
+.practice-world .workshop-topic.is-mastered { border-color: var(--garden-green); background: linear-gradient(180deg,var(--garden-green-soft),var(--garden-white) 60%); }
+.grammar-topic-badge { display: inline-grid; place-items: center; width: 20px; height: 20px; margin-left: 8px; border-radius: 50%; background: var(--garden-green); color: var(--garden-white); font-size: 12px; letter-spacing: 0; vertical-align: 1px; }
+.grammar-topic-steps { display: flex; gap: 5px; }
+.grammar-topic-steps i { width: 22px; height: 6px; border-radius: 6px; background: var(--garden-line); }
+.grammar-topic-steps i.is-on { background: var(--garden-green); }
+.grammar-mixed-entry { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 22px 24px; margin: 0 0 8px; border-radius: 20px; border: 2px dashed var(--garden-green); background: var(--garden-white); }
+.grammar-mixed-entry>div { display: grid; gap: 4px; min-width: 0; }
+.grammar-mixed-entry b { font-size: 20px; color: var(--garden-ink); }
+.grammar-mixed-entry p { margin: 0; font-size: 14px; }
+.grammar-mixed-entry button { flex-shrink: 0; }
+.grammar-workshop .practice-blank { min-width: 3em; }
+.workshop-drill h4 .practice-blank,.workshop-pattern .practice-blank { border-bottom-width: 3px; }
+.grammar-builder { text-align: left; margin: 18px 0 8px; }
+.grammar-builder-head p { margin: 4px 0 14px; color: var(--garden-ink); }
+.grammar-builder-head b { color: var(--garden-green); }
+.grammar-builder .practice-sentence { min-height: 84px; }
+.grammar-builder .practice-sentence button.is-off { border: 2px dashed #ac8754; background: var(--garden-paper); }
+.grammar-builder[data-state=solved] .practice-sentence { border-style: solid; background: var(--garden-green-soft); }
+.grammar-builder[data-state=solved] .practice-sentence button:disabled { opacity: 1; background: var(--garden-white); }
+.grammar-builder .practice-feedback p[lang] { font-size: 20px; color: var(--garden-green); font-weight: 700; }
+.grammar-mixed { text-align: left; }
+.grammar-workshop .grammar-mixed-sentence { font-size: clamp(22px,3.2vw,30px); line-height: 1.9; text-align: center; margin: 22px 0 6px; }
+.grammar-mixed-score { padding: 4px 12px; border-radius: 999px; background: var(--garden-green-soft); color: var(--garden-green); font-size: 13px; }
+.grammar-mixed .practice-keys { text-align: center; }
+.grammar-mixed-topic b { color: var(--garden-green); }
+.practice-world .grammar-inline-listen { min-height: 34px; padding: 2px 10px; margin-left: 6px; vertical-align: middle; }
+.grammar-mixed-missed { display: grid; gap: 10px; max-width: 520px; margin: 8px auto 20px; text-align: left; }
+.grammar-mixed-missed h3 { font-size: 16px; margin: 0; }
+.practice-world .grammar-mixed-missed button { display: flex; align-items: center; gap: 12px; text-align: left; }
+.grammar-mixed-missed button b { flex: 1; color: var(--garden-ink); }
+.grammar-mixed-missed button span:first-child { font-size: 12px; color: var(--garden-muted); }
 .workshop-stepper button[aria-current=step] { background: var(--garden-green); color: var(--garden-white); font-weight: 750; }
 .workshop-lesson { text-align: left; }
 .workshop-lesson h2 { margin: 8px 0 24px; }
@@ -101,6 +134,8 @@ html[data-eg-theme=dark] .workshop-stepper button[aria-current=step] { color: #1
   .workshop-topic-grid { grid-template-columns: 1fr; gap: 12px; }
   .practice-world .workshop-topic { padding: 20px; }
   .workshop-stepper { gap: 6px; }
+  .grammar-mixed-entry { flex-direction: column; align-items: stretch; padding: 18px 16px; }
+  .grammar-builder .practice-tile-bank button,.grammar-builder .practice-sentence button { font-size: 16px; padding: 8px 12px; }
   .workshop-stepper button { padding: 10px 4px; font-size: 12px; }
   .workshop-pattern,.workshop-takeaway { padding: 18px 14px; }
   .workshop-examples>div { padding: 12px; }

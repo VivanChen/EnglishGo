@@ -274,13 +274,50 @@ describe('learning workshops', () => {
   });
   it('gates grammar stages, persists a wrong answer, then awards only the first correct retry', () => {
     const view = grammar(); click(/第 01 課/);
-    expect(screen.getByRole('button', { name: /3.*小挑戰/ })).toBeDisabled();
-    click('看懂了，練練看 →'); fireEvent.click(screen.getByTestId('grammar-drill-0-option-0')); click('準備好了，試試小挑戰 →');
+    expect(screen.getByRole('button', { name: /4.*小挑戰/ })).toBeDisabled();
+    click('看懂了，練練看 →'); fireEvent.click(screen.getByTestId('grammar-drill-0-option-0')); click('下一步：組組看 →');
+    expect(button('準備好了，試試小挑戰 →')).toBeDisabled();
+    click('I'); click('am'); click('ready.'); expect(screen.getByText('組好了！句子很通順')).toBeInTheDocument();
+    click('準備好了，試試小挑戰 →');
     fireEvent.click(screen.getByTestId('grammar-quiz-option-1')); expect(view.props.onXp).not.toHaveBeenCalled(); view.unmount();
     const resumed = grammar(); click('繼續上次這一課 →'); expect(screen.getByText('差一點，一起再看看')).toBeInTheDocument();
     click('再試一次'); fireEvent.click(screen.getByTestId('grammar-quiz-option-0')); expect(resumed.props.onXp).toHaveBeenCalledExactlyOnceWith(5);
     click('看看這一課的收穫 →'); click('回到句型地圖'); click('繼續上次這一課 →');
     expect(screen.getByTestId('grammar-quiz-option-0')).toBeDisabled(); expect(resumed.props.onXp).toHaveBeenCalledTimes(1);
+  });
+  it('flags misplaced blocks, lets the learner fix them, and reveals the order after two misses', () => {
+    const view = grammar(); click(/第 01 課/); click('看懂了，練練看 →'); fireEvent.click(screen.getByTestId('grammar-drill-0-option-0')); click('下一步：組組看 →');
+    click('am'); click('I'); click('ready.');
+    expect(screen.getByText('順序還差一點')).toBeInTheDocument();
+    expect(button('放回 am')).toHaveClass('is-off'); expect(button('放回 ready.')).not.toHaveClass('is-off');
+    expect(screen.queryByRole('button', { name: '看看正確順序' })).not.toBeInTheDocument();
+    click('全部重排'); expect(screen.getByText('點下面的積木，一塊一塊排上來…')).toBeInTheDocument();
+    click('am'); click('ready.'); click('I');
+    click('放回 I'); expect(screen.queryByText('順序還差一點')).not.toBeInTheDocument(); click('I');
+    click('看看正確順序');
+    expect(screen.getByText('先記住這個順序，下次一定行！')).toBeInTheDocument();
+    expect(button('準備好了，試試小挑戰 →')).toBeEnabled();
+    expect(JSON.parse(localStorage.getItem('eg_grammar_workshop_elementary')).lessons['Be 動詞'].built).toEqual(['I am ready.']);
+    expect(view.props.onXp).not.toHaveBeenCalled();
+  });
+  it('runs a mixed challenge that hides the lesson until answered and links back to it', () => {
+    const rules = [rule, { t: '現在進行式', q: { s: 'They ___ playing.', o: ['are', 'is'], a: 0 } }];
+    const view = grammar({ rules, grammarDrills: () => [] });
+    click('開始綜合挑戰 →');
+    expect(screen.getByText('綜合挑戰 · 1 / 2')).toBeInTheDocument();
+    expect(screen.queryByText(/這題考的是/)).not.toBeInTheDocument();
+    const first = screen.getByRole('heading', { level: 2 }).textContent.includes('They') ? rules[1] : rule;
+    fireEvent.keyDown(window, { key: '2' });
+    expect(screen.getByText('這題考的是：')).toBeInTheDocument();
+    expect(screen.getByText(first.t, { selector: 'b' })).toBeInTheDocument();
+    expect(view.props.onXp).not.toHaveBeenCalled();
+    fireEvent.keyDown(window, { key: 'Enter' });
+    fireEvent.click(screen.getByTestId('grammar-mixed-option-0'));
+    expect(view.props.onXp).toHaveBeenCalledExactlyOnceWith(2);
+    click('看看成果 →');
+    expect(screen.getByText('綜合挑戰完成！')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: new RegExp(first.t) }));
+    expect(screen.getByRole('heading', { name: first.t })).toBeInTheDocument();
   });
   it('ignores a grammar AI response after leaving the lesson', async () => {
     let resolve; const view = grammar({ generateGrammarAiExplanation: vi.fn(() => new Promise(r => { resolve = r; })) });
