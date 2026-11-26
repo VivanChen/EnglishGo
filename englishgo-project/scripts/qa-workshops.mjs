@@ -1,5 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { ELEMENTARY_SONGS } from '../src/data/elementarySongs.js';
+import { songLineRange } from '../src/data/learningWorkshops.js';
 import { pathToFileURL } from 'node:url';
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE ? pathToFileURL(process.env.PLAYWRIGHT_MODULE).href : 'playwright');
 const output = path.resolve('.superpowers/qa/workshops');
@@ -63,10 +65,12 @@ try {
     await click('播放'); await page.waitForFunction(() => { const a = document.querySelector('audio'); return !a.paused && a.currentTime > .3; }); await click('暫停');
     await click('逐句跟唱'); const sing = page.getByRole('region', { name: '逐句跟唱', exact: true }); await inspect('song-sing-ready');
     await sing.getByRole('button', { name: '♫ 聽這一句', exact: true }).click();
-    await page.waitForFunction(() => { const a = document.querySelector('audio'); return a.paused && a.currentTime >= 9.95 && a.currentTime <= 10.1; });
+    const lyrics = ELEMENTARY_SONGS[0].lines;
+    const phrase = songLineRange(lyrics, lyrics.findIndex(line => line.en), await page.locator('audio').evaluate(a => a.duration));
+    await page.waitForFunction(end => { const a = document.querySelector('audio'); return a.paused && Math.abs(a.currentTime - end) < .1; }, phrase.end);
     report.push({ width, name: 'actual-audio-phrase-stop', ...await page.locator('audio').evaluate(a => ({ paused: a.paused, time: a.currentTime, duration: a.duration, src: a.currentSrc })) });
-    await sing.getByRole('button', { name: '循環這一句', exact: true }).click(); await page.locator('audio').evaluate(a => { a.currentTime = 9.9; });
-    await page.waitForFunction(() => { const a = document.querySelector('audio'); return !a.paused && a.currentTime < 9.5; }); await inspect('song-loop');
+    await sing.getByRole('button', { name: '循環這一句', exact: true }).click(); await page.locator('audio').evaluate((a, end) => { a.currentTime = end - .1; }, phrase.end);
+    await page.waitForFunction(start => { const a = document.querySelector('audio'); return !a.paused && Math.abs(a.currentTime - start) < .4; }, phrase.start); await inspect('song-loop');
     await sing.getByRole('button', { name: '停止循環', exact: true }).click();
     for (let i = 0; i < 3; i++) { await sing.getByRole('button', { name: '我跟唱過了 ✓', exact: true }).click(); if (i < 2) await sing.getByRole('button', { name: '下一句', exact: true }).click(); }
     await inspect('song-three-phrases'); await click('慢聽 0.85x'); await click('隱藏中文');

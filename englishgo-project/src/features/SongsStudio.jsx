@@ -13,7 +13,7 @@ export default function SongsStudio({lv,onBack,onXp,deps}){
   const song=songs[si];const songLines=timingMode&&timingDraft.length?timingDraft:(song?.lines||[]);const lyricLines=useMemo(()=>songLines.map((l,i)=>({...l,i})).filter(l=>l.en),[songLines]);
   const singLines = lyricLines.filter(line => !/^\([^)]*\)$/.test(line.en));
   const singLine = singLines[Math.min(phrase, singLines.length - 1)];
-  const record = song ? songRecord(book, song) : {};
+  const record = useMemo(() => song ? songRecord(book, song) : {}, [book, song]);
   const writeRecord = (change, render = true) => {
     if (!song) return;
     const updated = change(songRecord(live.current, song));
@@ -30,21 +30,34 @@ export default function SongsStudio({lv,onBack,onXp,deps}){
   const hasCover=!!song?.cover;
   const weights=useMemo(()=>lyricLines.map(l=>Math.max(1,readingWords(l.en).length)),[lyricLines]);
   const totalWeight=weights.reduce((a,b)=>a+b,0)||1;
-  const hasTimedLyrics=lyricLines.length>0&&lyricLines.every(l=>Number.isFinite(Number(l.t)));
+  const hasTimedLyrics=lyricLines.length>0&&lyricLines.every(l=>Number.isFinite(l.t));
+  const ranges=useMemo(()=>lyricLines.map(line=>songLineRange(songLines,line.i,dur)),[lyricLines,songLines,dur]);
   const activeLine=useMemo(()=>{
     if(!lyricLines.length)return -1;
     if(!hasAudio)return -1;
     if(hasTimedLyrics){
-      if(time<Number(lyricLines[0].t)-0.15)return -1;
-      for(let i=lyricLines.length-1;i>=0;i--){if(time>=Number(lyricLines[i].t)-0.15)return lyricLines[i].i}
+      const clip=segment.current;
+      if(segmentMode==='once'&&clip&&time>=clip.end) return clip.index;
+      for(let i=lyricLines.length-1;i>=0;i--){
+        if(time>=lyricLines[i].t) return ranges[i]&&time<ranges[i].end ? lyricLines[i].i : -1;
+      }
       return -1;
     }
     if(!dur)return lyricLines[0]?.i??-1;
     let pos=(time/dur)*totalWeight,acc=0;for(let i=0;i<lyricLines.length;i++){acc+=weights[i];if(pos<=acc)return lyricLines[i].i}return lyricLines.at(-1)?.i??-1
-  },[time,dur,totalWeight,weights,lyricLines,hasTimedLyrics,hasAudio]);
+  },[time,dur,totalWeight,weights,lyricLines,hasTimedLyrics,hasAudio,ranges,segmentMode]);
   const activeLyricIdx=useMemo(()=>lyricLines.findIndex(l=>l.i===activeLine),[lyricLines,activeLine]);
   const activeLyric=activeLyricIdx>=0?lyricLines[activeLyricIdx]:null;
-  const linePct=useMemo(()=>{if(activeLyricIdx<0||!dur)return 0;const cur=Number(lyricLines[activeLyricIdx].t);const nxt=Number(lyricLines[activeLyricIdx+1]?.t||dur);if(!Number.isFinite(cur)||!Number.isFinite(nxt)||nxt<=cur)return 0;return Math.max(0,Math.min(100,((time-cur)/(nxt-cur))*100))},[activeLyricIdx,lyricLines,time,dur]);
+  let playbackText=activeLyric?.en;
+  if(!playbackText){
+    if(!playing&&time===0) playbackText="點播放開始，或點任一句歌詞重播。";
+    else if(dur>0&&time>=dur) playbackText="播放完畢";
+    else if(time<lyricLines[0]?.t) playbackText="前奏";
+    else if(time>=ranges.at(-1)?.end) playbackText="尾奏";
+    else playbackText="間奏";
+  }
+  const activeRange=ranges[activeLyricIdx];
+  const linePct=activeRange?Math.max(0,Math.min(100,(time-activeRange.start)/(activeRange.end-activeRange.start)*100)):0;
   const practiceItems=useMemo(()=>{
     if(!song)return[];
     const esc=s=>String(s).replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
@@ -61,7 +74,7 @@ export default function SongsStudio({lv,onBack,onXp,deps}){
   useEffect(()=>{
     const stored = song ? songRecord(live.current, song).practice : {};
     const next = { idx: Number.isInteger(stored.idx) ? Math.min(Math.max(0, stored.idx), Math.max(0, practiceItems.length-1)) : 0, pick: typeof stored.pick === 'string' ? stored.pick : null, score: Math.max(0, Number(stored.score)||0), done: stored.done===true };
-    practiceLive.current=next;setPractice(next);setPhrase(0);stopSegment();setTimingDraft((song?.lines||[]).map(l=>({...l})));setTimingExport("");setAudioError("");setAudioLoading(true);lineRefs.current={};setView("lyrics");songPanelRef.current?.scrollTo({top:0});
+    practiceLive.current=next;setPractice(next);setPhrase(0);stopSegment();setTimingDraft((song?.lines||[]).map(l=>({...l})));setTimingExport("");setAudioError("");setAudioLoading(true);setView("lyrics");songPanelRef.current?.scrollTo({top:0});
   },[song?.id]);
   useEffect(()=>{if(view!=="lyrics")songPanelRef.current?.scrollTo({top:0})},[view]);
   useEffect(()=>{const a=audioRef.current;if(a)a.playbackRate=speed},[speed,song?.id]);
@@ -70,9 +83,9 @@ export default function SongsStudio({lv,onBack,onXp,deps}){
     const storePosition = (render=true) => { if(metadataReady)writeRecord(r=>({...r,position:a.currentTime||0}),render); };
     const onTime=()=>{
       const clip=segment.current;
-      if(clip&&a.currentTime>=clip.end-.04){
+      if(clip&&a.currentTime>=clip.end){
         if(clip.repeat){a.currentTime=clip.start;}
-        else {if(!a.paused)a.pause();if(Math.abs(a.currentTime-clip.end)>.08)a.currentTime=clip.end;}
+        else {if(!a.paused)a.pause();if(a.currentTime!==clip.end)a.currentTime=clip.end;}
       }
       setTime(a.currentTime||0);
       if(Math.abs(a.currentTime-lastSaved)>3){lastSaved=a.currentTime;storePosition();}
@@ -80,7 +93,16 @@ export default function SongsStudio({lv,onBack,onXp,deps}){
     const onLoadStart=()=>{setAudioLoading(true);setAudioError("")};
     const onMeta=()=>{setDur(a.duration||0);setAudioLoading(false);setAudioError("");const position=songRecord(live.current,song).position;if(position>0&&Number.isFinite(a.duration))a.currentTime=Math.min(position,Math.max(0,a.duration-.1));metadataReady=true;setTime(a.currentTime||0);};
     const onCanPlay=()=>setAudioLoading(false);
-    const watchBoundary=()=>{if(!current||a.paused)return;if(segment.current&&a.currentTime>=segment.current.end-.025)onTime();frame=requestAnimationFrame(watchBoundary)};
+    let lastFrameTime=-1;
+    const watchBoundary=()=>{
+      if(!current||a.paused)return;
+      if(segment.current&&a.currentTime>=segment.current.end)onTime();
+      else if(Math.abs(a.currentTime-lastFrameTime)>=.04){
+        lastFrameTime=a.currentTime;
+        setTime(lastFrameTime);
+      }
+      frame=requestAnimationFrame(watchBoundary);
+    };
     const onPlay=()=>{setPlaying(true);setAudioLoading(false);setAudioError("");cancelAnimationFrame(frame);frame=requestAnimationFrame(watchBoundary)};
     const onPause=()=>{cancelAnimationFrame(frame);setPlaying(false);storePosition()};
     const onError=()=>{setPlaying(false);setAudioLoading(false);setAudioError("歌曲音訊載入失敗，請按「重新載入」後再試。")};
@@ -101,10 +123,17 @@ export default function SongsStudio({lv,onBack,onXp,deps}){
   const fmt=s=>`${Math.floor((s||0)/60)}:${String(Math.floor((s||0)%60)).padStart(2,"0")}`;
   const fmt1=s=>`${fmt(s)}.${Math.floor(((s||0)%1)*10)}`;
   const roundTime=s=>Math.max(0,Math.round(Number(s||0)*10)/10);
-  const updateLineTime=(idx,next)=>setTimingDraft(lines=>lines.map((line,i)=>i===idx?{...line,t:roundTime(next)}:line));
-  const nudgeLine=(idx,delta)=>setTimingDraft(lines=>lines.map((line,i)=>i===idx?{...line,t:roundTime(Number(line.t||0)+delta)}:line));
-  const nudgeAll=delta=>setTimingDraft(lines=>lines.map(line=>Number.isFinite(Number(line.t))?{...line,t:roundTime(Number(line.t)+delta)}:line));
-  const exportTimings=()=>{const text=`lines:[\n${(timingDraft.length?timingDraft:song.lines).map(line=>line.sec?`  {sec:${JSON.stringify(line.sec)}},`:`  {t:${roundTime(line.t)},en:${JSON.stringify(line.en)},zh:${JSON.stringify(line.zh)}},`).join("\n")}\n]`;setTimingExport(text);navigator.clipboard?.writeText(text).catch(()=>{})};
+  const retime=(line,sec)=>{
+    const t=roundTime(sec);
+    return Number.isFinite(line.end)?{...line,t,end:roundTime(t+line.end-line.t)}:{...line,t};
+  };
+  const updateLineTime=(idx,next)=>setTimingDraft(lines=>lines.map((line,i)=>i===idx?retime(line,next):line));
+  const nudgeLine=(idx,delta)=>setTimingDraft(lines=>lines.map((line,i)=>i===idx?retime(line,line.t+delta):line));
+  const nudgeAll=delta=>setTimingDraft(lines=>lines.map(line=>Number.isFinite(line.t)?retime(line,line.t+delta):line));
+  const exportTimings=()=>{
+    const text="lines:[\n"+(timingDraft.length?timingDraft:song.lines).map(line=>"  "+JSON.stringify(line)+",").join("\n")+"\n]";
+    setTimingExport(text);navigator.clipboard?.writeText(text).catch(()=>{});
+  };
   const calcStart=(line)=>{
     const idx=lyricLines.findIndex(l=>l.i===line?.i);if(idx<0)return 0;
     const timed=Number(line.t);
@@ -114,9 +143,15 @@ export default function SongsStudio({lv,onBack,onXp,deps}){
   const toggle=()=>{const a=audioRef.current;if(!a)return;stopSegment();if(a.paused)play();else pauseAudio()};
   const seekTo=(sec,auto=false)=>{const a=audioRef.current;if(!a)return;stopSegment();a.currentTime=Math.max(0,Math.min(sec,dur||sec));setTime(a.currentTime);writeRecord(r=>({...r,position:a.currentTime}));if(auto)play()};
   const retryAudio=()=>{const a=audioRef.current;if(!a)return;try{a.pause()}catch{}setPlaying(false);setTime(0);setDur(0);setAudioError("");setAudioLoading(true);a.load();play()};
-  const playLine=(line,repeat=false)=>{const range=songLineRange(songLines,line?.i,dur);if(!range)return;pauseAudio();segment.current={...range,repeat};setSegmentMode(repeat?'repeat':'once');audioRef.current.currentTime=range.start;setTime(range.start);play()};
+  const playLine=(line,repeat=false)=>{const range=songLineRange(songLines,line?.i,dur);if(!range)return;pauseAudio();segment.current={...range,index:line.i,repeat};setSegmentMode(repeat?'repeat':'once');audioRef.current.currentTime=range.start;setTime(range.start);play()};
   const seekLine=(line,auto=true)=>{if(auto&&songLineRange(songLines,line?.i,dur))playLine(line);else seekTo(calcStart(line),auto)};
-  const jumpLine=(delta)=>{if(!lyricLines.length)return;const base=activeLyricIdx>=0?activeLyricIdx:0;const next=Math.max(0,Math.min(lyricLines.length-1,base+delta));seekLine(lyricLines[next],true)};
+  const jumpLine=(delta)=>{
+    if(!lyricLines.length)return;
+    const following=lyricLines.findIndex(line=>line.t>time);
+    const insertion=following<0?lyricLines.length:following;
+    const next=activeLyricIdx>=0?activeLyricIdx+delta:insertion+(delta<0?-1:0);
+    seekLine(lyricLines[Math.max(0,Math.min(lyricLines.length-1,next))],true);
+  };
   const choosePractice=(opt)=>{const current=practiceLive.current;if(!currentPractice||current?.pick)return;const ok=opt===currentPractice.word;persistPractice({...current,pick:opt,score:current.score+(ok?1:0)});const key=String(currentPractice.line.i);if(ok&&!songRecord(live.current,song).earned[key]){writeRecord(r=>({...r,earned:{...r.earned,[key]:true}}));onXp?.(2)}};
   const nextPractice=()=>{const current=practiceLive.current;if(!current?.pick)return;pauseAudio(true);persistPractice(current.idx>=practiceItems.length-1?{...current,done:true,pick:null}:{...current,idx:current.idx+1,pick:null})};
   const resetPractice=()=>{pauseAudio(true);persistPractice({idx:0,pick:null,score:0,done:false})};
@@ -133,7 +168,7 @@ export default function SongsStudio({lv,onBack,onXp,deps}){
     <div className="song-player" style={{...S.card,padding:"18px 16px",marginBottom:10,borderTop:`4px solid ${c.cl}`,background:`linear-gradient(135deg,${c.bg}55,var(--color-background-primary,#fff))`}}>
       <div style={{display:"flex",gap:14,alignItems:"center",marginBottom:12,flexWrap:"wrap"}}>{hasCover?<button type="button" onClick={()=>hasAudio&&toggle()} aria-label={playing?"暫停歌曲":"播放歌曲"} title={playing?"暫停歌曲":"播放歌曲"} style={{position:"relative",width:"clamp(118px,28vw,172px)",aspectRatio:"1/1",border:`1px solid ${S.bd}`,borderRadius:16,overflow:"hidden",padding:0,background:S.bg2,boxShadow:"0 16px 34px rgba(0,0,0,.18)",cursor:hasAudio?"pointer":"default",flex:"0 0 auto"}}><img src={song.cover} alt={`${song.title} cover`} style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}}/><span style={{position:"absolute",left:"50%",top:"50%",transform:"translate(-50%,-50%)",width:54,height:54,borderRadius:999,background:"rgba(20,24,28,.84)",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:playing?24:25,fontWeight:900,boxShadow:"0 10px 22px rgba(0,0,0,.35)"}}>{playing?"Ⅱ":"▶"}</span></button>:<div className="song-art"><PracticeArt kind="listening"/></div>}<div style={{flex:"1 1 220px",minWidth:0}}><div style={{fontSize:21,fontWeight:900,color:S.t1,lineHeight:1.2}}>{song.title}</div><div style={{fontSize:12,color:S.t2,marginTop:3}}>{song.zhTitle} · {song.theme} · {song.level}</div></div></div>
       {hasAudio?<><audio key={song.id} ref={audioRef} src={song.audio} preload="metadata"/>
-      <div style={{padding:"12px",borderRadius:14,background:S.bg1,border:`1px solid ${S.bd}`,marginBottom:10}}><div style={{fontSize:11,fontWeight:800,color:"var(--garden-green)",marginBottom:5}}>現在播放</div><div style={{fontSize:16,fontWeight:900,color:S.t1,lineHeight:1.45,minHeight:24}}>{activeLyric?.en||"點播放開始，或點任一句歌詞重播。"}</div>{showZh&&activeLyric?.zh&&<div style={{fontSize:12,color:S.t2,lineHeight:1.5,marginTop:2}}>{activeLyric.zh}</div>}<div style={{height:4,background:S.bg2,borderRadius:999,overflow:"hidden",marginTop:9}}><div style={{height:"100%",width:`${linePct}%`,background:c.cl,borderRadius:999}}/></div></div>
+      <div style={{padding:"12px",borderRadius:14,background:S.bg1,border:`1px solid ${S.bd}`,marginBottom:10}}><div style={{fontSize:11,fontWeight:800,color:"var(--garden-green)",marginBottom:5}}>現在播放</div><div style={{fontSize:16,fontWeight:900,color:S.t1,lineHeight:1.45,minHeight:24}}>{playbackText}</div>{showZh&&activeLyric?.zh&&<div style={{fontSize:12,color:S.t2,lineHeight:1.5,marginTop:2}}>{activeLyric.zh}</div>}<div style={{height:4,background:S.bg2,borderRadius:999,overflow:"hidden",marginTop:9}}><div style={{height:"100%",width:`${linePct}%`,background:c.cl,borderRadius:999}}/></div></div>
       <input className="song-seek" type="range" aria-label="歌曲播放位置" min="0" max={Number.isFinite(dur)&&dur>0?dur:1} step="0.1" value={Math.min(time,dur||0)} disabled={!dur} onChange={e=>seekTo(Number(e.target.value),false)}/>
       <div style={{display:"flex",alignItems:"center",gap:7,fontSize:12,color:S.t3,marginBottom:10}}><span>{fmt(time)}</span><span style={{flex:1,textAlign:"center"}}>{audioError?"播放失敗":playing?"播放中":audioLoading&&!dur?"音訊載入中":"已暫停"}</span><span>{fmt(dur||0)}</span></div>
       {audioError&&<div role="alert" style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,flexWrap:"wrap",padding:"10px 11px",marginBottom:10,border:"1px solid #D96C5F",borderRadius:11,background:"#FFF1EF",color:"#8F2F25",fontSize:12,fontWeight:750,lineHeight:1.5}}><span>{audioError}</span><button onClick={retryAudio} style={{...S.btn,padding:"7px 11px",fontSize:12,background:"#8F2F25",color:"#fff",flex:"0 0 auto"}}>重新載入</button></div>}
@@ -150,7 +185,7 @@ export default function SongsStudio({lv,onBack,onXp,deps}){
     <div className="song-view-tabs" style={{display:"flex",gap:6,marginBottom:10}}><button aria-pressed={view==="lyrics"} onClick={()=>switchView("lyrics")} style={tabStyle("lyrics")}>歌詞同步</button><button aria-pressed={view==="practice"} onClick={()=>switchView("practice")} style={tabStyle("practice")}>歌詞填空</button><button aria-pressed={view==="sing"} onClick={()=>switchView("sing")} style={tabStyle("sing")}>逐句跟唱</button></div>
     <div className="song-panel" ref={songPanelRef} style={{height:view==="lyrics"?"clamp(340px, calc(100vh - 430px), 680px)":"auto",minHeight:0,overflowY:"auto",overscrollBehavior:"contain",scrollBehavior:"smooth",padding:"0 4px 12px",border:`1px solid ${S.bd}`,borderRadius:12,background:"rgba(255,255,255,.42)"}}>
     {view==="sing"?<SongSingAlong lines={singLines} index={Math.min(phrase,singLines.length-1)} practiced={record.practiced||[]} range={songLineRange(songLines,singLine?.i,dur)} mode={segmentMode} playing={playing} onChoose={choosePhrase} onPlay={repeat=>playLine(singLine,repeat)} onStop={()=>pauseAudio(true)} onMark={markPhrase} onBack={leave} showZh={showZh}/>:view==="lyrics"?<div style={{...S.card,padding:"14px 12px",marginBottom:10}}>
-      {songLines.map((line,i)=>line.sec?<div key={i} style={{fontSize:12,fontWeight:900,color:"var(--garden-green)",margin:"16px 4px 7px",letterSpacing:0}}>{line.sec}</div>:<div ref={el=>{if(el)lineRefs.current[i]=el}} key={i} onClick={()=>hasAudio&&seekLine({...line,i},true)} style={{padding:"11px 12px",borderRadius:12,background:activeLine===i?c.bg:S.bg2,border:`1px solid ${activeLine===i?c.cl:S.bd}`,marginBottom:7,cursor:hasAudio?"pointer":"default",transition:"all .15s",boxShadow:activeLine===i?"0 8px 20px rgba(15,110,86,.12)":"none"}}>
+      {songLines.map((line,i)=>line.sec?<div key={i} style={{fontSize:12,fontWeight:900,color:"var(--garden-green)",margin:"16px 4px 7px",letterSpacing:0}}>{line.sec}</div>:<div ref={el=>{lineRefs.current[i]=el}} aria-current={activeLine===i?"true":undefined} key={i} onClick={()=>hasAudio&&seekLine({...line,i},true)} style={{padding:"11px 12px",borderRadius:12,background:activeLine===i?c.bg:S.bg2,border:`1px solid ${activeLine===i?c.cl:S.bd}`,marginBottom:7,cursor:hasAudio?"pointer":"default",transition:"all .15s",boxShadow:activeLine===i?"0 8px 20px rgba(15,110,86,.12)":"none"}}>
         <div style={{display:"flex",gap:8,alignItems:"flex-start"}}><div style={{fontSize:11,color:activeLine===i?c.cl:S.t3,fontWeight:800,minWidth:34,paddingTop:3}}>{Number.isFinite(Number(line.t))?fmt(line.t):""}</div><div style={{flex:1,minWidth:0}}><div style={{fontSize:15,lineHeight:1.5,fontWeight:activeLine===i?900:700,color:S.t1}}>{line.en}</div>{showZh&&<div style={{fontSize:12,color:S.t2,marginTop:3,lineHeight:1.5}}>{line.zh}</div>}</div><button onClick={e=>{e.stopPropagation();seekLine({...line,i},true)}} style={{border:`1px solid ${S.bd}`,background:S.bg1,borderRadius:999,padding:"5px 8px",fontSize:11,color:"var(--garden-green)",cursor:"pointer",fontFamily:"inherit",fontWeight:800,flexShrink:0}}>重播</button></div>
     {timingMode&&<div onClick={e=>e.stopPropagation()} style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",marginTop:8,paddingTop:8,borderTop:`1px dashed ${S.bd}`}}><span style={{fontSize:11,fontWeight:900,color:c.cl}}>t={fmt1(line.t)}</span><button onClick={()=>updateLineTime(i,time)} style={{border:`1px solid ${c.cl}`,background:c.bg,color:c.cl,borderRadius:999,padding:"5px 8px",fontSize:11,fontWeight:900,cursor:"pointer",fontFamily:"inherit"}}>Set current</button><button onClick={()=>nudgeLine(i,-.1)} style={{border:`1px solid ${S.bd}`,background:S.bg1,color:S.t2,borderRadius:999,padding:"5px 8px",fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>-0.1s</button><button onClick={()=>nudgeLine(i,.1)} style={{border:`1px solid ${S.bd}`,background:S.bg1,color:S.t2,borderRadius:999,padding:"5px 8px",fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>+0.1s</button></div>}
       </div>)}

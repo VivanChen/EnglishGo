@@ -114,12 +114,22 @@ export function songLineRange(lines, index, duration) {
   const lyric = lines[index], start = lyric?.t;
   if (!lyric?.en || !Number.isFinite(start) || start < 0) return null;
   const next = lines.slice(index + 1).find(line => line.en && Number.isFinite(line.t) && line.t > start);
-  const end = next ? Number(next.t) : Number(duration);
+  // An explicit vocal end leaves room for an instrumental break.
+  const boundaries = [lyric.end, next?.t, duration].filter(value => Number.isFinite(value) && value > 0);
+  const end = Math.min(...boundaries);
   return Number.isFinite(end) && end > start ? { start, end } : null;
 }
 export function songRecord(book, song) {
-  const signature = JSON.stringify([song.audio, song.lines, song.vocab]), old = book?.songs?.[song.id];
-  if (old?.signature !== signature) return { signature, position: 0, practiced: [], practice: {}, earned: {}, listened: false };
+  const content = lines => lines.map(({ t, end, ...text }) => text);
+  const signature = JSON.stringify([song.audio, content(song.lines), song.vocab]), old = book?.songs?.[song.id];
+  let compatible = old?.signature === signature;
+  if (!compatible && typeof old?.signature === 'string') {
+    try {
+      const [audio, lines, vocab] = JSON.parse(old.signature);
+      compatible = JSON.stringify([audio, content(lines), vocab]) === signature;
+    } catch {}
+  }
+  if (!compatible) return { signature, position: 0, practiced: [], practice: {}, earned: {}, listened: false };
   return { signature, position: Math.max(0, Number(old.position) || 0), practiced: Array.isArray(old.practiced) ? old.practiced.filter(i => Number.isInteger(i) && song.lines[i]?.en) : [],
     practice: old.practice && typeof old.practice === 'object' ? old.practice : {}, earned: old.earned && typeof old.earned === 'object' ? old.earned : {}, listened: old.listened === true };
 }

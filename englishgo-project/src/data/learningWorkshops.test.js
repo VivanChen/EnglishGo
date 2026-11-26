@@ -83,10 +83,23 @@ describe('workshop progress', () => {
     expect(songLineRange([{ t: null, en: 'Missing' }], 0, 20)).toBeNull();
     expect(songLineRange(lines, 0, 24)).toBeNull();
   });
+  it('ends the vocal before an instrumental break and clips at the next lyric or audio end', () => {
+    const lines = [{ t: 2, end: 4.4, en: 'One' }, { sec: 'Chorus' }, { t: 8, end: 12, en: 'Two' }];
+    expect(songLineRange(lines, 0, 11)).toEqual({ start: 2, end: 4.4 });
+    expect(songLineRange(lines, 2, 11)).toEqual({ start: 8, end: 11 });
+    expect(songLineRange([{ ...lines[0], end: 10 }, lines[2]], 0, 11)).toEqual({ start: 2, end: 8 });
+  });
   it('invalidates song progress when source audio or lyrics change', () => {
     const song = { id: 'one', audio: '/one.mp3', lines: [{ t: 0, en: 'One' }], vocab: ['one'] };
     const book = { songs: { one: { ...songRecord({}, song), position: 10, practiced: [0, 99], listened: true } } };
     expect(songRecord(book, song).practiced).toEqual([0]);
     expect(songRecord(book, { ...song, audio: '/new.mp3' }).listened).toBe(false);
+  });
+  it('keeps saved practice and position when only the timestamps were recalibrated', () => {
+    const song = { id: 'one', audio: '/one.mp3', lines: [{ t: 3.2, end: 4.8, en: 'One' }], vocab: ['one'] };
+    const signature = JSON.stringify([song.audio, [{ t: 1, en: 'One' }], song.vocab]);
+    const book = { songs: { one: { signature, position: 4, practiced: [0], listened: true } } };
+    expect(songRecord(book, song)).toMatchObject({ position: 4, practiced: [0], listened: true });
+    expect(songRecord(book, { ...song, lines: [{ t: 3.2, en: 'Two' }] }).practiced).toEqual([]);
   });
 });

@@ -32,8 +32,8 @@ function speaking(supported = true, extra = {}, overrides = {}) {
   return { ...render(<StrictMode><SpeakingStudio {...props} /></StrictMode>), props, deps, instances };
 }
 const song = { id: 'song', title: 'One Song', audio: '/one.mp3', lines: [{ t: 2, en: 'One apple', zh: '一顆蘋果' }, { t: 5, en: 'Two dogs', zh: '兩隻狗' }], vocab: ['apple', 'dogs'], patterns: [] };
-function songs() {
-  const props = { lv: 'elementary', onBack: vi.fn(), onXp: vi.fn(), deps: { ...common(), SONGS: { elementary: [song] }, LV: { elementary: { cl: '#507364', ac: '#fff', bg: '#eee' } }, S: {}, readingWords: text => text.split(' '), shuffleCopy: a => a, scrollChildIntoPanel: vi.fn() } };
+function songs(source = song) {
+  const props = { lv: 'elementary', onBack: vi.fn(), onXp: vi.fn(), deps: { ...common(), SONGS: { elementary: [source] }, LV: { elementary: { cl: '#507364', ac: '#fff', bg: '#eee' } }, S: {}, readingWords: text => text.split(' '), shuffleCopy: a => a, scrollChildIntoPanel: vi.fn() } };
   const view = render(<StrictMode><SongsStudio {...props} /></StrictMode>), audio = view.container.querySelector('audio');
   Object.defineProperty(audio, 'duration', { configurable: true, value: 10 });
   Object.defineProperty(audio, 'paused', { configurable: true, writable: true, value: true });
@@ -344,6 +344,17 @@ describe('learning workshops', () => {
     audio.currentTime = 5.2; fireEvent.timeUpdate(audio); expect(audio.paused).toBe(true); expect(audio.currentTime).toBe(5);
     click('循環這一句'); audio.currentTime = 5; fireEvent.timeUpdate(audio); expect(audio.currentTime).toBe(2);
     click('歌詞填空'); expect(audio.paused).toBe(true); audio.currentTime = 7; fireEvent.timeUpdate(audio); expect(audio.currentTime).toBe(7); expect(props.onXp).not.toHaveBeenCalled();
+  });
+  it('clears the lyric in instrumental gaps and seeks to the correct adjacent phrase', () => {
+    const { audio, container } = songs({ ...song, lines: [{ ...song.lines[0], end: 3.6 }, song.lines[1]] });
+    const active = () => container.querySelector('.song-panel [aria-current="true"]');
+    audio.currentTime = 1.9; fireEvent.timeUpdate(audio); expect(active()).toBeNull();
+    click('下一句'); expect(audio.currentTime).toBe(2);
+    audio.currentTime = 3.7; fireEvent.timeUpdate(audio);
+    expect(audio.paused).toBe(true); expect(audio.currentTime).toBe(3.6); expect(active()).toHaveTextContent('One apple');
+    fireEvent.change(screen.getByRole('slider', { name: '歌曲播放位置' }), { target: { value: '4.9' } });
+    expect(active()).toBeNull(); expect(screen.getByText('間奏')).toBeInTheDocument();
+    click('下一句'); expect(audio.currentTime).toBe(5); expect(active()).toHaveTextContent('Two dogs');
   });
   it('restores song position without autoplay and preserves fill-in rewards across replay', () => {
     const view = songs(); view.audio.currentTime = 3.2; fireEvent.pause(view.audio); click('歌詞填空'); click('dogs'); click('再試一次'); click('apple'); expect(view.props.onXp).toHaveBeenCalledExactlyOnceWith(2); view.unmount();

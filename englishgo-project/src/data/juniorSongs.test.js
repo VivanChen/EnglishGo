@@ -25,14 +25,14 @@ describe("junior songs", () => {
     expect(timedLines.map((line) => line.t)).toEqual([...timedLines.map((line) => line.t)].sort((a, b) => a - b));
   });
 
-  it("uses calibrated Dream in Color timestamps exported from Timing Lab", () => {
+  it("matches the Dream in Color vocal entrances and repeated chorus", () => {
     const song = JUNIOR_SONGS.find((item) => item.id === "junior-dream-in-color");
     const byText = (text) => song.lines.find((line) => line.en === text);
     const timesFor = (text) => song.lines.filter((line) => line.en === text).map((line) => line.t);
 
-    expect(byText("숨겨왔던 너의 날개.").t).toBe(59);
+    expect(byText("숨겨왔던 너의 날개.").t).toBe(59.4);
     expect(byText("펼쳐봐 지금 이 순간에.").t).toBe(63.4);
-    expect(byText("Think in English, dream in color!").t).toBe(98.8);
+    expect(byText("Think in English, dream in color!").t).toBe(99.4);
     expect(timesFor("Lights on, let the lesson begin!")).toContain(149.3);
     expect(byText("See ya! Unlock the vibe!").t).toBe(172.7);
   });
