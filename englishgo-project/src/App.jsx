@@ -24,6 +24,7 @@ import { isPlaceholderExample, normalizeCardExample, parseVocabularyCSV as parse
 import { getCuratedVocabularyExample } from './data/curatedVocabularyExamples.js';
 import { generateStoryPayload } from "./features/storyGeneration.js";
 import { lookupExamMeanings } from './features/examMeaningService.js';
+import { pairSpeakItems } from './data/learningWorkshops.js';
 
 const PictureBooks=lazy(()=>import("./features/PictureBooks.jsx"));
 const PetTown=lazy(()=>import('./features/pet-town/PetTown.jsx'));
@@ -3160,14 +3161,10 @@ const SPEAK_FALLBACK = {
 async function fetchSpeakItems(lv,count=10){
   const cloud=await fetchCloudVocab(lv,count);
   if(!cloud?.length)return SPEAK_FALLBACK[lv];
-  const items=[];
-  cloud.forEach(w=>{
-    // Always add the word itself
-    items.push({en:w.w,zh:w.m,type:"word",pos:w.p});
-    // If has example, add sentence too
-    if(w.ex&&w.ez)items.push({en:w.ex,zh:w.ez,type:"sentence",keyword:w.w});
-  });
-  return items.sort(()=>Math.random()-.5).slice(0,count);
+  // Shuffle whole word groups so each word keeps its own example sentence next to it.
+  const groups=cloud.map(w=>[{en:w.w,zh:w.m,type:"word",pos:w.p},...(w.ex&&w.ez?[{en:w.ex,zh:w.ez,type:"sentence",keyword:w.w}]:[])]);
+  for(let i=groups.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[groups[i],groups[j]]=[groups[j],groups[i]];}
+  return groups.flat().slice(0,count);
 }
 
 const SPEAK_MODE_OPTIONS=[
@@ -3186,7 +3183,7 @@ function selectSpeakItemsByMode(source,mode){
     const sentences=list.filter(x=>x.type==="sentence");
     return sentences.length?sentences:list;
   }
-  return list;
+  return pairSpeakItems(list);
 }
 
 const PRONUNCIATION_HINTS={

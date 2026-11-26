@@ -1,7 +1,7 @@
 import { readCardPractice, cardPracticeStorageKey, speakingPhrases } from '../data/cardSpeaking.js';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import PracticeArt from '../components/PracticeArt.jsx';
-import { advanceSpeakingRound, createSpeakingRound, readSpeakingRound, recordSpeakingAttempt, reviewSpeakingRound, speechItemKey } from '../data/learningWorkshops.js';
+import { advanceSpeakingRound, createSpeakingRound, readSpeakingRound, recordSelfCheck, recordSpeakingAttempt, reviewSpeakingRound, speechItemKey } from '../data/learningWorkshops.js';
 import { useWorkshopStorage } from './workshopStorage.js';
 import { useVoiceRecording } from './useVoiceRecording.js';
 import VoiceReplay from './VoiceReplay.jsx';
@@ -69,17 +69,28 @@ export default function SpeakingStudio({ lv, onBack, onXp, apiKey, onOpenSetting
   }, [listening, voice.clip]);
   const demo = (text = currentItem?.en, rate = .85, label = '整句示範', context = {}, language = 'en-US') => {
     stopVoicePlayback(); if (voice.phase !== 'idle') cancelVoice(); demoToken.current++; stopSpeech(); setDemoError(false);
-    const token = ++demoToken.current;
-    setDemoPlaying({ text, label, started: false, word: -1, approximate: false, ...context });
+    const token = ++demoToken.current, { after, ...shown } = context;
+    setDemoPlaying({ text, label, started: false, word: -1, approximate: false, ...shown });
     const finish = () => { if (mounted.current && token === demoToken.current) { demoToken.current++; setDemoPlaying(null); } };
+    const ended = () => { const current = mounted.current && token === demoToken.current; finish(); if (current) after?.(); };
     const fail = () => { if (mounted.current && token === demoToken.current) { finish(); setDemoError(true); } };
     try {
       const handle = speak(text, language, rate, {
         ...speechHighlightEvents(text, update => { if (mounted.current && token === demoToken.current) setDemoPlaying(current => current ? { ...current, ...update } : null); }),
-        onend: finish, oncancel: finish, onerror: fail,
+        onend: ended, oncancel: finish, onerror: fail,
       });
       if (!handle) fail();
     } catch { fail(); }
+  };
+  // Demo first, then the learner's own take, so the two are heard back to back.
+  const compare = () => {
+    if (demoPlaying?.label === '對照聽') { stopDemo(); return; }
+    demo(currentItem.en, .85, '對照聽', { after: () => {
+      const audio = voiceAudio.current;
+      if (!audio) return;
+      audio.currentTime = 0;
+      try { Promise.resolve(audio.play()).catch(() => {}); } catch {}
+    } });
   };
   const start = () => {
     const next = createSpeakingRound(selectSpeakItemsByMode(source, mode), mode, count);
@@ -113,6 +124,13 @@ export default function SpeakingStudio({ lv, onBack, onXp, apiKey, onOpenSetting
     save(advanceSpeakingRound({ ...current, records: { ...current.records, [key]: { ...old, selfPracticed: true } } })); setResult(null);
   };
   const next = () => { cancel(); save(advanceSpeakingRound(live.current)); setResult(null); setRetryCue(null); };
+  const selfCheck = () => {
+    cancel(); setRetryCue(null);
+    const outcome = recordSelfCheck(live.current);
+    save(advanceSpeakingRound(outcome.round)); setResult(null);
+    if (outcome.reward) onXp?.(outcome.reward);
+    playSound('good');
+  };
   const pause = () => { cancel(); setRetryCue(null); setActive(false); };
   const leave = () => { cancel(); onBack(); };
   const header = <><Hdr t={practice ? "🎧 單字聽說練習" : "🗣️ 勇敢說出口"} onBack={leave} cl={c.cl} />
@@ -123,7 +141,7 @@ export default function SpeakingStudio({ lv, onBack, onXp, apiKey, onOpenSetting
   if (!active || !round) return <div className="practice-world speaking-studio">{header}<section className="practice-intro"><PracticeArt kind="listening" /><div><span className="practice-eyebrow">每次開口，都算進步</span><h2 ref={title} tabIndex={-1}>準備好了，再說給我聽</h2><p>先聽一次，再按麥克風跟讀。</p><p>先開口練 3 題，不計時，也不用一次就完美。</p></div></section>{round && <section className="practice-resume"><div><b>{round.done ? '上次的小練習完成了' : `上次練到 ${round.index + 1} / ${round.queue.length}`}</b><p>已經拿到的獎勵和練習紀錄都還在。</p></div><button className="practice-primary" onClick={() => { setResult(null); setActive(true); }}>{round.done ? '看看上次成果' : '繼續上次練習'}</button></section>}<section className="practice-config"><h3>練習模式</h3><div className="practice-choice-row">{modes.map(option => <button key={option.id} aria-label={option.label} aria-pressed={mode === option.id} onClick={() => setMode(option.id)}><b>{option.label}</b><small className="workshop-option-note">{option.desc}</small></button>)}</div><fieldset><legend>這次想練多少？</legend><div className="practice-choice-row">{[3, 5].map(n => <button key={n} aria-pressed={count === n} onClick={() => setCount(n)}>{n} 題小練習</button>)}</div></fieldset><p>{voice.supported ? '先聽示範，再錄下你的聲音。說好了，就用這段錄音檢查。' : '這個瀏覽器目前無法錄音，仍可聽示範、跟讀與保存練習進度。'}</p>{round && <p className="practice-save-note">開始新練習會取代上次這一輪的進度。</p>}<button className="practice-primary" onClick={start}>開始口說小練習 →</button></section>{note}</div>;
   const passedCount = round.items.filter(item => round.records[speechItemKey(item)]?.passed).length;
   const selfCount = round.items.filter(item => round.records[speechItemKey(item)]?.selfPracticed).length;
-  if (round.done) return <div className="practice-world speaking-studio">{header}<section className="practice-complete" aria-label="口說練習完成"><PracticeArt kind="listening" complete /><h2 ref={title} tabIndex={-1}>口說練習完成！</h2><p>練過 {round.queue.length} 題，給今天勇敢開口的自己一點鼓勵。</p><div className="practice-metrics"><div><b>{round.items.length}</b><span>這份任務</span></div><div><b>{passedCount}</b><span>完成檢查</span></div><div><b>{selfCount}</b><span>自行跟讀過</span></div></div><div className="practice-actions">{!practice && passedCount < round.items.length && <button className="practice-primary" onClick={() => { cancel(); save(reviewSpeakingRound(live.current)); setResult(null); }}>只練還想加強的</button>}{practice ? <button onClick={() => { cancel(); save({ ...live.current, index: 0, done: false }); setResult(null); }}>再練一次</button> : <button onClick={pause}>換個小練習</button>}<button onClick={leave}>{practice ? '回到單字卡繼續複習' : '回首頁休息'}</button></div></section><section className="practice-review-list"><h3>這次練過的英文</h3>{playback}{round.items.map(item => <div key={item.en}><div><b lang="en"><SpeechHighlight text={item.en} playback={demoPlaying} /></b><p>{item.zh}</p><small>{round.records[speechItemKey(item)]?.passed ? '完成檢查' : round.records[speechItemKey(item)]?.selfPracticed ? '已跟讀' : '下次可以再練'}</small></div><button aria-pressed={demoPlaying?.text === item.en} onClick={() => demoPlaying?.text === item.en ? stopDemo() : demo(item.en, .85, '成果重聽')} aria-label={`${demoPlaying?.text === item.en ? '停止朗讀' : '朗讀'} ${item.en}`}>{demoPlaying?.text === item.en ? '■' : '♫'}</button></div>)}</section>{note}</div>;
+  if (round.done) return <div className="practice-world speaking-studio">{header}<section className="practice-complete" aria-label="口說練習完成"><PracticeArt kind="listening" complete /><h2 ref={title} tabIndex={-1}>口說練習完成！</h2><p>練過 {round.queue.length} 題，給今天勇敢開口的自己一點鼓勵。</p><div className="practice-metrics"><div><b>{round.items.length}</b><span>這份任務</span></div><div><b>{passedCount}</b><span>完成檢查</span></div><div><b>{selfCount}</b><span>跟讀練習</span></div></div><div className="practice-actions">{!practice && passedCount < round.items.length && <button className="practice-primary" onClick={() => { cancel(); save(reviewSpeakingRound(live.current)); setResult(null); }}>只練還想加強的</button>}{practice ? <button onClick={() => { cancel(); save({ ...live.current, index: 0, done: false }); setResult(null); }}>再練一次</button> : <button onClick={pause}>換個小練習</button>}<button onClick={leave}>{practice ? '回到單字卡繼續複習' : '回首頁休息'}</button></div></section><section className="practice-review-list"><h3>這次練過的英文</h3>{playback}{round.items.map(item => <div key={item.en}><div><b lang="en"><SpeechHighlight text={item.en} playback={demoPlaying} /></b><p>{item.zh}</p><small>{round.records[speechItemKey(item)]?.passed ? '完成檢查' : round.records[speechItemKey(item)]?.recorded ? '錄音跟讀過' : round.records[speechItemKey(item)]?.selfPracticed ? '已跟讀' : '下次可以再練'}</small></div><button aria-pressed={demoPlaying?.text === item.en} onClick={() => demoPlaying?.text === item.en ? stopDemo() : demo(item.en, .85, '成果重聽')} aria-label={`${demoPlaying?.text === item.en ? '停止朗讀' : '朗讀'} ${item.en}`}>{demoPlaying?.text === item.en ? '■' : '♫'}</button></div>)}</section>{note}</div>;
   const sentence = currentItem.type === 'sentence', threshold = speakPassThreshold(currentItem), comparison = result;
   const nextLabel = round.index + 1 === round.queue.length ? '完成' : '下一個';
   const step = voice.clip ? 3 : listening ? 2 : 1;
@@ -145,13 +163,13 @@ export default function SpeakingStudio({ lv, onBack, onXp, apiKey, onOpenSetting
       {!voice.clip && <section className="speaking-capture" aria-label="換你說">
         {retryCue?.target === currentItem.en && <div className="speaking-retry-cue" role="note" aria-label="這次的小提醒"><span>小提醒</span><p>{retryCue.tip}{retryCue.focus !== currentItem.en && <> <b lang="en">{retryCue.focus}</b></>}</p></div>}
         <p className="speaking-capture-prompt">{listening ? '看著上面的英文，慢慢說。' : '換你說，準備好就按錄音。'}</p>
-        {listening && <div className="workshop-microphone" data-phase={phase} role="status"><b>{phase === 'starting' ? '準備麥克風，還沒開始收音' : phase === 'processing' ? '正在收好這段錄音' : '正在錄音，慢慢說就好'}</b>{phase === 'starting' && <p>第一次使用，請允許麥克風。</p>}{phase === 'listening' && <span className="voice-recording-time">● 錄音中 · {voice.seconds} / {voice.maxSeconds} 秒</span>}</div>}
+        {listening && <div className="workshop-microphone" data-phase={phase} role="status"><b>{phase === 'starting' ? '準備麥克風，還沒開始收音' : phase === 'processing' ? '正在收好這段錄音' : '正在錄音，慢慢說就好'}</b>{phase === 'starting' && <p>第一次使用，請允許麥克風。</p>}{phase === 'listening' && <span className="voice-recording-time">● 錄音中 · {voice.seconds} / {voice.maxSeconds} 秒</span>}{phase === 'listening' && voice.heard !== null && <div className="voice-level" data-heard={voice.heard}><span className="voice-level-bars" aria-hidden="true">{[0.08, 0.2, 0.35, 0.5, 0.68].map(step => <i key={step} className={voice.level >= step ? 'is-on' : ''} />)}</span><small>{voice.heard ? '有聽到你的聲音了！' : voice.seconds >= 2 ? '還沒聽到聲音，靠近麥克風說說看' : '麥克風在聽…'}</small></div>}</div>}
         <div className="practice-actions speaking-capture-actions">{voice.supported && <button ref={captureButton} className="practice-primary" disabled={phase === 'starting' || phase === 'processing'} onClick={phase === 'listening' ? finishListening : startListening}>{phase === 'starting' ? '準備麥克風…' : phase === 'processing' ? '正在收好錄音…' : phase === 'listening' ? '■ 說好了' : apiKey?.trim() ? '🎤 錄音並檢查' : '🎤 開始錄音'}</button>}{listening && <button type="button" onClick={() => { returnToRecord.current = true; cancelCapture(); }}>取消這次錄音</button>}</div>
         {voice.error && <div className="practice-hint" role="alert">{voice.error}</div>}
         {voice.supported ? <><p className="voice-capture-note">{apiKey?.trim() ? '說完按「說好了」，就會檢查這段錄音。' : '先錄音，聽聽自己的聲音。'}最長 {voice.maxSeconds} 秒。</p>{!apiKey?.trim() && !listening && <details className="speaking-setup"><summary>想要小提示？請大人幫忙設定</summary><p>設定語音小幫手後，錄完就能收到一句練習提示。</p><button type="button" onClick={onOpenSettings}>請大人幫忙設定</button></details>}{apiKey?.trim() && <p className="practice-save-note">錄音會傳給 Google Gemini 檢查，使用已設定的 API 額度。</p>}</> : <p className="practice-hint">這個瀏覽器暫時不能錄音，可以先聽示範，跟著唸。</p>}
       </section>}
-      {voice.clip && <RecordingAssessment key={`assessment:${voice.clip.url}`} clip={voice.clip} apiKey={apiKey} autoCheck={autoCheck.current} target={currentItem.en} comparison={comparison} threshold={threshold} onOpenSettings={onOpenSettings} onBeforeAnalyze={() => { stopDemo(); stopVoicePlayback(); }} onResult={transcript => scoreTranscript(currentItem, transcript)} onRecord={retry} onNext={next} nextLabel={nextLabel} onListen={(text, wordOffset) => demoPlaying?.label === '跟著唸' ? stopDemo() : demo(text, .65, '跟著唸', { sourceText: currentItem.en, wordOffset })} onReadTip={text => demoPlaying?.label === '小提示' ? stopDemo() : demo(text, .85, '小提示', {}, 'zh-TW')} playing={demoPlaying} playbackError={demoError}>
-        <VoiceReplay key={voice.clip.url} compact clip={voice.clip} audioRef={voiceAudio} onBeforePlay={replayStart} onDemo={() => demoPlaying?.label === '整句示範' ? stopDemo() : demo()} demoPlaying={demoPlaying?.label === '整句示範'} onDiscard={discard} />
+      {voice.clip && <RecordingAssessment key={`assessment:${voice.clip.url}`} clip={voice.clip} apiKey={apiKey} autoCheck={autoCheck.current} target={currentItem.en} comparison={comparison} threshold={threshold} onOpenSettings={onOpenSettings} onBeforeAnalyze={() => { stopDemo(); stopVoicePlayback(); }} onResult={transcript => scoreTranscript(currentItem, transcript)} onRecord={retry} onNext={next} nextLabel={nextLabel} onListen={(text, wordOffset) => demoPlaying?.label === '跟著唸' ? stopDemo() : demo(text, .65, '跟著唸', { sourceText: currentItem.en, wordOffset })} onReadTip={text => demoPlaying?.label === '小提示' ? stopDemo() : demo(text, .85, '小提示', {}, 'zh-TW')} playing={demoPlaying} playbackError={demoError} onCompare={compare} onSelfCheck={selfCheck} quiet={voice.clip.quiet === true}>
+        <VoiceReplay key={voice.clip.url} compact clip={voice.clip} audioRef={voiceAudio} onBeforePlay={replayStart} onDemo={apiKey?.trim() ? () => demoPlaying?.label === '整句示範' ? stopDemo() : demo() : null} demoPlaying={demoPlaying?.label === '整句示範'} onDiscard={discard} />
       </RecordingAssessment>}
       {record && !comparison && !voice.clip && !listening && <div><p className="practice-save-note">{record.passed ? '這題已經練得很棒了。' : record.selfPracticed ? '這題已經自行跟讀過。' : `上次試過 ${record.attempts} 次，可以再說說看。`}</p>{(record.passed || record.selfPracticed) && <button className="practice-primary" onClick={next}>{nextLabel}</button>}</div>}
       {!voice.clip && !listening && <details className="speaking-tools" open={toolsOpen}>

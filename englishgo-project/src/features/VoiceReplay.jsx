@@ -40,7 +40,7 @@ export default function VoiceReplay({ clip, audioRef, onBeforePlay, onDemo, demo
   };
   return <section className={`voice-replay${compact ? ' voice-replay-compact' : ''}`} aria-label="我的錄音">
     {!compact && <><div className="voice-replay-heading"><div><span className="practice-eyebrow">說完了，換自己聽聽看</span><h3>我的聲音</h3></div><span className="voice-replay-duration">{Math.max(1, Math.round(duration))} 秒錄音</span></div><p>聽聽每個字的發音，再和示範比較。</p></>}
-    <div className="practice-actions"><button type="button" className={compact ? undefined : 'practice-primary'} onClick={play}>{playing ? '■ 停止回放' : '▶ 聽我的錄音'}</button><button type="button" onClick={onDemo}>{demoPlaying ? '■ 停止示範' : '🔊 和示範比較'}</button></div>
+    <div className="practice-actions"><button type="button" className={compact ? undefined : 'practice-primary'} onClick={play}>{playing ? '■ 停止回放' : '▶ 聽我的錄音'}</button>{onDemo && <button type="button" onClick={onDemo}>{demoPlaying ? '■ 停止示範' : '🔊 和示範比較'}</button>}</div>
     {/* Some Android recordings expose absolute timestamps or Infinity as their
         media duration. Never feed those values into the visible player. */}
     <div className="voice-replay-progress"><span aria-label="錄音回放時間">{time(elapsed)} / {time(duration)}</span><progress max={duration || 1} value={elapsed} aria-label="錄音回放進度" aria-valuetext={`${time(elapsed)} / ${time(duration)}`} /></div>

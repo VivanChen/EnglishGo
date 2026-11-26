@@ -75,6 +75,32 @@ export function recordSpeakingAttempt(round, comparison, heard, threshold) {
     earned: !!old?.earned || passed, heard, comparison, selfPracticed: !!old?.selfPracticed,
   } } } };
 }
+// Without the AI check, a learner can still finish an item by recording, comparing with the
+// demo and judging it themselves. This is a small practice reward, separate from the check reward.
+export const SELF_CHECK_REWARD = 3;
+export function recordSelfCheck(round) {
+  const item = round.items[round.queue[round.index]], key = speechItemKey(item), old = round.records[key];
+  const reward = old?.earned || old?.practiceEarned ? 0 : SELF_CHECK_REWARD;
+  return { reward, round: { ...round, records: { ...round.records, [key]: {
+    attempts: 0, best: 0, heard: '', passed: false, earned: false, ...old, selfPracticed: true, recorded: true, practiceEarned: !!old?.practiceEarned || reward > 0,
+  } } } };
+}
+// "Word + sentence" mode: warm up on a word, then say it inside its own example sentence.
+// A word without its sentence borrows the next sentence that belongs to no listed word.
+export function pairSpeakItems(items) {
+  const list = (items || []).filter(Boolean), used = new Set(), out = [];
+  const words = new Set(list.filter(item => item.type !== 'sentence').map(speechItemKey));
+  const owner = item => speechItemKey({ en: item.keyword });
+  const take = item => { if (item && !used.has(item)) { used.add(item); out.push(item); } };
+  for (const item of list) {
+    if (used.has(item) || item.type === 'sentence') continue;
+    take(item);
+    take(list.find(other => !used.has(other) && other.type === 'sentence' && owner(other) === speechItemKey(item))
+      || list.find(other => !used.has(other) && other.type === 'sentence' && !words.has(owner(other))));
+  }
+  list.forEach(take);
+  return out;
+}
 export function advanceSpeakingRound(round) {
   return round.index + 1 >= round.queue.length ? { ...round, done: true } : { ...round, index: round.index + 1 };
 }

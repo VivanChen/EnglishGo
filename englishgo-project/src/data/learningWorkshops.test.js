@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { grammarRecord, grammarStep, grammarBuildSentences, grammarTiles, grammarBuildCheck, grammarMixedQuestions, createSpeakingRound, recordSpeakingAttempt, advanceSpeakingRound, reviewSpeakingRound, readSpeakingRound, songLineRange, songRecord } from './learningWorkshops.js';
+import { recordSelfCheck, pairSpeakItems, SELF_CHECK_REWARD, grammarRecord, grammarStep, grammarBuildSentences, grammarTiles, grammarBuildCheck, grammarMixedQuestions, createSpeakingRound, recordSpeakingAttempt, advanceSpeakingRound, reviewSpeakingRound, readSpeakingRound, songLineRange, songRecord } from './learningWorkshops.js';
 const rule = { t: 'Be', q: { s: 'I ___ ready.', o: ['am', 'is'], a: 0 } };
 describe('workshop progress', () => {
   it('unlocks grammar steps from valid saved answers and invalidates changed lessons', () => {
@@ -42,6 +42,25 @@ describe('workshop progress', () => {
     expect(all.find(q => q.s === 'a2 ___')).toMatchObject({ topic: 'A', lesson: 0, e: 'why' });
     expect(grammarMixedQuestions(rules, drills, { lessons: [1] }).map(q => q.topic)).toEqual(['B']);
     expect(grammarMixedQuestions(rules, drills, { count: 2 })).toHaveLength(2);
+  });
+  it('rewards a self-checked recording once and never after the AI check already paid', () => {
+    const round = createSpeakingRound([{ en: 'apple', zh: '蘋果' }, { en: 'dog', zh: '狗' }], 'mixed');
+    const first = recordSelfCheck(round);
+    expect(first.reward).toBe(SELF_CHECK_REWARD);
+    expect(first.round.records.apple).toMatchObject({ selfPracticed: true, recorded: true, practiceEarned: true, passed: false, earned: false });
+    expect(readSpeakingRound(JSON.parse(JSON.stringify(first.round)))).toEqual(first.round);
+    expect(recordSelfCheck(first.round).reward).toBe(0);
+    const checked = recordSpeakingAttempt(round, { pct: 100, result: [{ word: 'apple', ok: true }], extra: [] }, 'apple', 80).round;
+    expect(recordSelfCheck(checked)).toMatchObject({ reward: 0, round: { records: { apple: { passed: true, earned: true, recorded: true } } } });
+  });
+  it('pairs each word with its own sentence, borrowing an ownerless sentence when needed', () => {
+    const items = [
+      { en: 'Dogs bark.', zh: '狗會叫。', type: 'sentence', keyword: 'dog' }, { en: 'apple', zh: '蘋果', type: 'word' },
+      { en: 'Good morning!', zh: '早安！', type: 'sentence' }, { en: 'dog', zh: '狗', type: 'word' },
+      { en: 'I eat an apple.', zh: '我吃蘋果。', type: 'sentence', keyword: 'apple' }, { en: 'cat', zh: '貓', type: 'word' },
+    ];
+    expect(pairSpeakItems(items).map(item => item.en)).toEqual(['apple', 'I eat an apple.', 'dog', 'Dogs bark.', 'cat', 'Good morning!']);
+    expect(pairSpeakItems([{ en: 'Hi.', type: 'sentence' }, null])).toEqual([{ en: 'Hi.', type: 'sentence' }]);
   });
   it('preserves per-item awards across retries and reviews only missed items', () => {
     const round = createSpeakingRound([{ en: 'apple', zh: '蘋果' }, { en: 'dog', zh: '狗' }], 'mixed');

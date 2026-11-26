@@ -55,12 +55,26 @@
 .recording-assessment .voice-replay-compact { padding: 12px; margin: 16px 0; border-radius: 14px; }
 .speaking-practice-card .voice-replay-compact .practice-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 0; }
 .voice-replay-compact .practice-actions button { padding: 9px 6px; font-size: 14px; }
+.speaking-practice-card .voice-replay-compact .practice-actions:has(> button:only-child) { grid-template-columns: 1fr; }
 .voice-replay-compact .voice-replay-progress { padding: 0; margin: 12px 0 0; background: transparent; gap: 8px; }
 .voice-replay-options { font-size: 12px; color: var(--garden-muted); }
 .voice-replay-options summary { min-height: 36px; }
 .recording-assessment .recording-next-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 18px 0 0; }
 .recording-next-actions button { min-height: 54px; }
 .recording-recovery-actions:empty { display: none; }
+.practice-world .recording-next-actions .recording-skip { grid-column: 1 / -1; min-height: 40px; border: 0; background: transparent; color: var(--garden-muted); font-size: 14px; }
+.recording-self-check { margin: 4px 0 12px; }
+.recording-self-check .recording-child-tip { margin-bottom: 12px; }
+.practice-world .recording-compare { width: 100%; min-height: 52px; font-weight: 750; background: var(--garden-green-soft); border: 2px solid var(--garden-green); }
+.practice-world .recording-compare[aria-pressed=true] { background: var(--garden-white); }
+/* Live microphone loudness: five bars that light up as the child speaks. */
+.voice-level { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 10px; }
+.voice-level-bars { display: inline-flex; align-items: flex-end; gap: 4px; height: 26px; }
+.voice-level-bars i { width: 8px; border-radius: 4px; background: var(--garden-line); transition: background .1s; }
+.voice-level-bars i:nth-child(1) { height: 30%; } .voice-level-bars i:nth-child(2) { height: 48%; } .voice-level-bars i:nth-child(3) { height: 66%; } .voice-level-bars i:nth-child(4) { height: 84%; } .voice-level-bars i:nth-child(5) { height: 100%; }
+.voice-level-bars i.is-on { background: var(--garden-green); }
+.voice-level small { font-size: 13px; color: var(--garden-muted); }
+.voice-level[data-heard=true] small { color: var(--garden-green); font-weight: 700; }
 @media (max-width: 400px) {
   .speaking-flow-steps { gap: 4px; font-size: 12px; }
   .speaking-flow-steps li { gap: 4px; }

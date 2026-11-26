@@ -124,6 +124,56 @@ describe('one recording, one check', () => {
     expect(view.props.onXp).not.toHaveBeenCalled();
     click('完成'); expect(screen.getByRole('region', { name: '口說練習完成' })).toBeVisible();
   });
+  it('lets a no-key learner compare with the demo, judge the take and earn a small practice reward once', async () => {
+    const view = setup({ apiKey: '' }); await begin('🎤 開始錄音'); await finish();
+    expect(screen.getByRole('heading', { name: '錄好了！和示範比一比' })).toBeVisible();
+    click('▶ 示範 → 我的錄音，輪流聽');
+    expect(view.deps.speak).toHaveBeenLastCalledWith(card.en, 'en-US', .85, expect.any(Object));
+    expect(screen.getByRole('button', { name: '■ 停止對照' })).toHaveAttribute('aria-pressed', 'true');
+    expect(HTMLMediaElement.prototype.play).not.toHaveBeenCalled();
+    act(() => view.deps.speak.mock.lastCall[3].onend());
+    expect(HTMLMediaElement.prototype.play).toHaveBeenCalledOnce();
+    expect(screen.getByRole('button', { name: '■ 停止回放' })).toBeVisible();
+    click('▶ 示範 → 我的錄音，輪流聽'); click('■ 停止對照');
+    act(() => view.deps.speak.mock.lastCall[3].oncancel());
+    expect(HTMLMediaElement.prototype.play).toHaveBeenCalledOnce();
+    click('👍 很像了，完成');
+    expect(view.props.onXp).toHaveBeenCalledExactlyOnceWith(3);
+    expect(screen.getByRole('region', { name: '口說練習完成' })).toBeVisible();
+    expect(screen.getByText('錄音跟讀過')).toBeVisible();
+    expect(assessRecording).not.toHaveBeenCalled();
+    click('再練一次'); await begin('🎤 開始錄音'); await finish(); click('👍 很像了，完成');
+    expect(view.props.onXp).toHaveBeenCalledOnce();
+  });
+  it('shows the microphone hearing the child and flags a near-silent take', async () => {
+    let amplitude = 0;
+    const closed = vi.fn();
+    class FakeAudioContext {
+      createMediaStreamSource() { return { connect() {}, disconnect() {} }; }
+      createAnalyser() { return { fftSize: 1024, getByteTimeDomainData(data) { data.forEach((_, i) => { data[i] = 128 + (i % 2 ? amplitude : -amplitude); }); } }; }
+      resume() { return Promise.resolve(); }
+      close() { closed(); return Promise.resolve(); }
+    }
+    vi.stubGlobal('AudioContext', FakeAudioContext);
+    try {
+      const view = setup({ apiKey: '' }); await begin('🎤 開始錄音');
+      await act(() => new Promise(resolve => setTimeout(resolve, 250)));
+      expect(screen.getByText('麥克風在聽…')).toBeVisible();
+      expect(view.container.querySelectorAll('.voice-level-bars .is-on')).toHaveLength(0);
+      amplitude = 40;
+      await act(() => new Promise(resolve => setTimeout(resolve, 250)));
+      expect(screen.getByText('有聽到你的聲音了！')).toBeVisible();
+      expect(view.container.querySelectorAll('.voice-level-bars .is-on').length).toBeGreaterThan(2);
+      await finish();
+      expect(closed).toHaveBeenCalled();
+      expect(screen.getByRole('heading', { name: '錄好了！和示範比一比' })).toBeVisible();
+      amplitude = 0; await begin('🎤 再說一次');
+      await act(() => new Promise(resolve => setTimeout(resolve, 250)));
+      await finish();
+      expect(screen.getByRole('heading', { name: '聲音有點小喔' })).toBeVisible();
+      expect(screen.getByRole('button', { name: '🎤 再說一次' })).toHaveClass('practice-primary');
+    } finally { vi.unstubAllGlobals(); }
+  });
   it('keeps a no-key recording local and requires a click to check after setup', async () => {
     const view = setup({ apiKey: '' }); await begin('🎤 開始錄音'); await finish();
     expect(assessRecording).not.toHaveBeenCalled(); expect(view.props.onXp).not.toHaveBeenCalled();
