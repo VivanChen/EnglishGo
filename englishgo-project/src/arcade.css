@@ -244,3 +244,14 @@ html[data-eg-theme=dark] .arcade-letter-slots>span.is-filled { color:#335a6c; }
 .arcade-echo-copy b{font-size:13px;color:#ffe7a6;margin-top:6px}
 .arcade-echo-feature svg{width:40%;max-width:340px;align-self:stretch;flex:none}
 @media(max-width:600px){.arcade-echo-copy{padding:20px 16px;gap:5px}.arcade-echo-copy strong{font-size:26px;letter-spacing:2px}.arcade-echo-copy>span{font-size:11.5px}.arcade-echo-feature svg{width:36%}}
+.arcade-doodle-feature{position:relative;display:flex;align-items:stretch;width:100%;margin:0 0 22px;padding:0;text-align:left;border:3px solid #2b2d42;border-radius:24px;overflow:hidden;cursor:pointer;color:#2b2d42;font-family:inherit;background:linear-gradient(90deg,transparent 30px,#f6b3b3 30px,#f6b3b3 32px,transparent 32px),repeating-linear-gradient(180deg,transparent 0 29px,#dbe7f6 29px 31px),#fffdf6;box-shadow:0 6px 0 #2b2d42;transition:transform .18s,box-shadow .2s}
+.arcade-doodle-feature:hover{transform:translateY(-2px) rotate(-.3deg);box-shadow:0 8px 0 #2b2d42}
+.arcade-doodle-feature:focus-visible{outline:3px solid #3a7bf6;outline-offset:4px}
+.arcade-doodle-copy{display:flex;flex:1;flex-direction:column;gap:6px;padding:24px 22px 24px 48px;min-width:0}
+.arcade-doodle-copy small{font-size:11px;letter-spacing:2.2px;color:#ef4444;font-weight:900}
+.arcade-doodle-copy strong{font-size:34px;font-weight:950;letter-spacing:3px}
+.arcade-doodle-copy em{font:700 19px/1 'Chalkboard SE','Comic Sans MS','Comic Neue',sans-serif;color:#3a7bf6;font-style:normal;margin-top:-2px}
+.arcade-doodle-copy>span{font-size:13px;line-height:1.7;color:#4a4e69;max-width:400px}
+.arcade-doodle-copy b{align-self:flex-start;margin-top:6px;padding:5px 12px;border:2px solid #2b2d42;border-radius:999px;background:#ffd23f;font-size:13px;box-shadow:0 3px 0 #2b2d42}
+.arcade-doodle-feature img{width:46%;max-width:420px;flex:none;object-fit:cover;object-position:62% 60%;border-left:3px solid #2b2d42}
+@media(max-width:600px){.arcade-doodle-copy{padding:18px 12px 18px 40px;gap:5px}.arcade-doodle-copy strong{font-size:25px;letter-spacing:1px}.arcade-doodle-copy>span{font-size:11.5px}.arcade-doodle-feature img{width:38%}}

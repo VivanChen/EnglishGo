@@ -1,0 +1,16 @@
+Doodle Brawl sprites (heroes/, enemies/, weapons/, items/, pickups/, title.webp).
+
+Original EnglishGo artwork, generated on 2026-11-27 with the OpenAI image API
+(model: gpt-image-1.5, quality medium, transparent background; the title is
+1536x1024 on an opaque background), then trimmed to each figure, centred in a
+square and saved as WebP (heroes 384px, monsters 320-512px, weapons and items
+256px, pickups 128-192px; title 1200x800).
+
+Shared style prompt: cute hand-drawn doodle sticker for a children's arcade
+game, bold black felt-tip ink outline with slightly wobbly lines, flat bright
+marker coloring with a little crayon texture, one centred subject, no text.
+Weapons are drawn lying horizontally and pointing right so the arena can
+rotate them toward a target.
+
+The prompts live in scripts/generateDoodleBrawlArt.py; rerunning it only
+generates images whose prompt changed or are missing.

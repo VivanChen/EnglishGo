@@ -7,6 +7,10 @@ export default function ArcadeDiscovery({ lv, onSelect }) {
   const earned = Object.keys(ARCADE_GAMES).reduce((sum, game) => sum + ['practice', 'challenge'].reduce((total, mode) => total + Object.values(stageRecords(progress, lv, game, mode)).reduce((n, record) => n + (Number(record?.stars) || 0), 0), 0), 0);
   return <div className="arcade-discovery">
     <div className="arcade-island-heading"><div><b>歡迎來到遊戲探索島</b><p>先選一個世界。每次冒險，都能帶回一點英文。</p></div><span aria-label={`已收集 ${earned} 顆星`}>✦ {earned}</span></div>
+    <button type="button" className="arcade-doodle-feature" data-module-id="doodleBrawl" onClick={() => onSelect('doodleBrawl', 'game')}>
+      <span className="arcade-doodle-copy"><small>NEW · ARENA SURVIVAL</small><strong>塗鴉大亂鬥</strong><em lang="en">Doodle Brawl</em><span>墨水怪從筆記本裡跑出來了！拿起鉛筆、尺和紙飛機，撐過 12 波攻勢。</span><b>削好鉛筆出發 →</b></span>
+      <img src="/images/doodle-brawl/title.webp" alt="" loading="lazy" draggable="false"/>
+    </button>
     <button type="button" className="arcade-echo-feature" data-module-id="echoArchive" onClick={() => onSelect('echoArchive', 'game')}>
       <span className="arcade-echo-copy"><small>NEW · DECKBUILDING ADVENTURE</small><strong>回聲書庫</strong><em lang="en">Echo Archive</em><span>一副牌、一盞燈，登上被寂靜吞噬的三層書庫。組牌、選路線、打倒首領！</span><b>點亮提燈出發 →</b></span>
       <svg viewBox="0 0 360 220" aria-hidden="true">

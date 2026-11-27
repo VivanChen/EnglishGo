@@ -2556,7 +2556,7 @@ export default function App(){
          mod==="srs"?<SRS lv={lv} onBack={back} onLevelChange={nextLv=>navigateEnglishGo({lv:nextLv,sharedWord:null,customDeck:null},{replace:true})} onXp={n=>addXpWithTask(n,"srsToday")} onLearningEvent={onTownLearningEvent} onDone={()=>setStats(s=>({...s,srsRounds:s.srsRounds+1}))} trackWeak={trackWeak} sharedWord={sharedWord} apiKey={gemKey} weakWords={levelWeakWords} customCards={customDeck?.cards||null} customSource={customDeck?.source||""} resumeSession={srsSession} onSessionChange={rememberSrsSession} onPracticeSpeaking={practice=>navigateEnglishGo({lv,mod:"speak",menuGroup:"learn",sharedWord:null,customDeck:null,cardPractice:practice})} onOpenSettings={()=>openModule("settings","tools")}/>:
          mod==="quiz"?<QuizM lv={lv} weakWords={levelWeakWords} onBack={back} onXp={n=>addXpWithTask(n,"quizToday")} onPerfect={()=>setStats(s=>({...s,perfectQuiz:s.perfectQuiz+1}))} trackWeak={trackWeak} onReviewWords={cards=>navigateEnglishGo({lv,mod:"srs",menuGroup:"learn",sharedWord:null,customDeck:{cards,source:"小任務複習"}})}/>:
          mod==="speak"?<SpeakM lv={lv} cardPractice={cardPractice} onBack={back} onXp={n=>addXpWithTask(n,"speakToday")} apiKey={gemKey} onOpenSettings={()=>openModule("settings","tools")}/>:
-         mod==="colorIsland"?<ColorIslandM lv={lv} onBack={back} onXp={addXp}/>:mod==="wordDash"?<WordDashM lv={lv} onBack={back} onXp={addXp}/>:mod==="echoArchive"?<EchoArchiveM lv={lv} onBack={back} onXp={addXp} trackWeak={trackWeak}/>:mod==="whack"?<WhackM lv={lv} onBack={back} onXp={addXp}/>:
+         mod==="colorIsland"?<ColorIslandM lv={lv} onBack={back} onXp={addXp}/>:mod==="wordDash"?<WordDashM lv={lv} onBack={back} onXp={addXp}/>:mod==="echoArchive"?<EchoArchiveM lv={lv} onBack={back} onXp={addXp} trackWeak={trackWeak}/>:mod==="doodleBrawl"?<DoodleBrawlM lv={lv} onBack={back} onXp={addXp} trackWeak={trackWeak}/>:mod==="whack"?<WhackM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="match"?<MatchM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="bomb"?<BombM lv={lv} onBack={back} onXp={addXp}/>:
          mod==="grammar"?<GrammarM lv={lv} onBack={back} onXp={addXp} apiKey={gemKey} onOpenSettings={()=>openModule("settings","tools")}/>:
@@ -2703,6 +2703,7 @@ function MenuV2({lv,onSelect,activeGroup="learn",onGroupChange,daily,c,xp,coins,
     {id:"colorIsland",group:"game",icon:"C",t:"顏色生存島",d:"聽英文顏色指令，跑到安全平台",tag:"3D 生存挑戰"},
     {id:"wordDash",group:"game",icon:"D",t:"單字衝衝",d:"3D 天空障礙賽，聽英文衝對門",tag:"3D 闖關"},
     {id:"echoArchive",group:"game",icon:"E",t:"回聲書庫",d:"牌組構築冒險，詠唱英文符文擊退寂靜",tag:"卡牌冒險"},
+    {id:"doodleBrawl",group:"game",icon:"✎",t:"塗鴉大亂鬥",d:"文具武器大戰墨水怪，撐過 12 波攻勢",tag:"競技場生存"},
     {id:"whack",group:"game",icon:"W",t:"地鼠花園",d:"打地鼠聽音找字，幫花園種花",tag:"聽音挑戰"},
     {id:"match",group:"game",icon:"M",t:"記憶星空",d:"英文與中文快速配對",tag:"記憶配對"},
     {id:"bomb",group:"game",icon:"B",t:"火箭拼字",d:"字母積木補充火箭能量",tag:"拼字挑戰"},
@@ -3223,6 +3224,8 @@ const LazyWordDash=lazy(()=>import("./features/WordDash.jsx"));
 function WordDashM(props){return <Suspense fallback={<ModuleLoading label="正在搭建 3D 賽道…"/>}><LazyWordDash key={props.lv} {...props} deps={{V,speak:speakWebSpeech,stopSpeech,playSound,loadExtraWords,fetchCloudVocab}}/></Suspense>}
 const LazyEchoArchive=lazy(()=>import("./features/echo-archive/EchoArchive.jsx"));
 function EchoArchiveM(props){return <Suspense fallback={<ModuleLoading label="正在點亮書庫的提燈…"/>}><LazyEchoArchive key={props.lv} {...props} deps={{V,speak,stopSpeech,loadExtraWords,fetchCloudVocab}}/></Suspense>}
+const LazyDoodleBrawl=lazy(()=>import("./features/doodle-brawl/DoodleBrawl.jsx"));
+function DoodleBrawlM(props){return <Suspense fallback={<ModuleLoading label="正在削鉛筆…"/>}><LazyDoodleBrawl key={props.lv} {...props} deps={{V,speak,stopSpeech,loadExtraWords,fetchCloudVocab}}/></Suspense>}
 const LazyArcadeGames=lazy(()=>import("./features/ArcadeGames.jsx"));
 function ArcadeM({game,...props}){
   const deps={V,SCRAM,LV,loadExtraWords,fetchCloudVocab,speak,stopSpeech,playSound,Hdr};
